@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/array-element-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-match-one-element-of-an-array-property
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-match-one-element-of-an-array-property
  */
 
 declare(strict_types=1);

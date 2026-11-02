@@ -1329,6 +1329,39 @@ import {
 	isValidPropertyValue,
 } from '../../services/propertyValues.js'
 
+/**
+ * A metadata value, or 'Not set' when it is empty.
+ *
+ * @param {string|number} value The value
+ * @return {string|number} The value or 'Not set'
+ */
+function orNotSet(value) {
+	return value || 'Not set'
+}
+
+/**
+ * A metadata timestamp in local time, or 'Not set' when it is empty.
+ *
+ * @param {string} value The timestamp
+ * @return {string} The local time or 'Not set'
+ */
+function localTimeOrNotSet(value) {
+	return value ? new Date(value).toLocaleString() : 'Not set'
+}
+
+/**
+ * The validation state of a record's metadata.
+ *
+ * @param {object} self The record's metadata
+ * @return {string} 'Valid', 'Invalid' or 'Not validated'
+ */
+function validationText(self) {
+	if (self?.validation === null) {
+		return 'Not validated'
+	}
+	return self.validation ? 'Valid' : 'Invalid'
+}
+
 const BLANK_VALUES = {
 	string: () => '',
 	number: () => 0,
@@ -1696,64 +1729,20 @@ export default {
 			// Use formData instead of objectStore.objectItem to reflect real-time changes
 			const obj = this.formData || objectStore?.objectItem
 			if (!obj) return []
+			const self = obj['@self']
 
-			const metadata = []
-
-			// ID with copy action
-			metadata.push(['ID', obj.id || 'Not set', true])
-
-			// Register
-			metadata.push(['Register', this.registerTitle || 'Not set', false])
-
-			// Schema
-			metadata.push(['Schema', this.schemaTitle || 'Not set', false])
-
-			// Version
-			metadata.push(['Version', obj['@self']?.version || 'Not set', false])
-
-			// Created
-			metadata.push([
-				'Created',
-				obj['@self']?.created
-					? new Date(obj['@self'].created).toLocaleString()
-					: 'Not set',
-				false,
-			])
-
-			// Updated
-			metadata.push([
-				'Updated',
-				obj['@self']?.updated
-					? new Date(obj['@self'].updated).toLocaleString()
-					: 'Not set',
-				false,
-			])
-
-			// Validation
-			let validationText = 'Not validated'
-			if (obj['@self']?.validation !== null) {
-				validationText = obj['@self'].validation ? 'Valid' : 'Invalid'
-			}
-			metadata.push(['Validation', validationText, false])
-
-			// Owner
-			metadata.push(['Owner', obj['@self']?.owner || 'Not set', false])
-
-			// Application
-			metadata.push([
-				'Application',
-				obj['@self']?.application || 'Not set',
-				false,
-			])
-
-			// Organisation
-			metadata.push([
-				'Organisation',
-				obj['@self']?.organisation || 'Not set',
-				false,
-			])
-
-			return metadata
+			return [
+				['ID', orNotSet(obj.id), true],
+				['Register', orNotSet(this.registerTitle), false],
+				['Schema', orNotSet(this.schemaTitle), false],
+				['Version', orNotSet(self?.version), false],
+				['Created', localTimeOrNotSet(self?.created), false],
+				['Updated', localTimeOrNotSet(self?.updated), false],
+				['Validation', validationText(self), false],
+				['Owner', orNotSet(self?.owner), false],
+				['Application', orNotSet(self?.application), false],
+				['Organisation', orNotSet(self?.organisation), false],
+			]
 		},
 
 		isNewObject() {
@@ -2219,49 +2208,79 @@ export default {
 			this.error = null
 
 			try {
-				let dataToSave
-				if (this.activeTab === 1) {
-					if (!this.jsonData.trim()) {
-						throw new Error('JSON data cannot be empty')
-					}
-					try {
-						dataToSave = JSON.parse(this.jsonData)
-					} catch (e) {
-						throw new Error('Invalid JSON format: ' + e.message, {
-							cause: e,
-						})
-					}
-				} else {
-					dataToSave = this.formData
-				}
-
-				const type = `${this.currentRegister.id}-${this.currentSchema.id}`
-				objectStore.registerObjectType(
-					type,
-					this.currentSchema.id,
-					this.currentRegister.id,
-				)
-				const data = await objectStore.saveObject(type, dataToSave)
-				if (data) objectStore.setObjectItem(data)
-				await objectStore.refreshObjectList({
-					register: this.currentRegister.id,
-					schema: this.currentSchema.id,
-				})
-				objectStore.refetchSearchCollection()
-				this.success = !!data
-				if (this.success) {
-					// Re-initialize data to refresh jsonData with the newly created object
-					this.initializeData()
-					setTimeout(() => {
-						this.success = null
-					}, 2000)
-				}
+				this.markSaved(await this.storeObject(this.objectPayload()))
 			} catch (e) {
 				this.error = e.message || 'Failed to save object'
 				this.success = false
 			} finally {
 				this.isSaving = false
 			}
+		},
+
+		/**
+		 * Show whether the save returned an object. After a save the form is
+		 * re-initialised from the saved object and the notice clears after 2
+		 * seconds.
+		 *
+		 * @spec exclude modal submit handler delegating to objectStore.saveObject
+		 * @param {object|null} data The saved object
+		 * @return {void}
+		 */
+		markSaved(data) {
+			this.success = !!data
+			if (this.success) {
+				this.initializeData()
+				setTimeout(() => {
+					this.success = null
+				}, 2000)
+			}
+		},
+
+		/**
+		 * The object to save: the parsed JSON on the JSON tab, the form data
+		 * otherwise.
+		 *
+		 * @spec exclude modal submit handler delegating to objectStore.saveObject
+		 * @return {object} The object to save
+		 * @throws {Error} When the JSON is empty or does not parse
+		 */
+		objectPayload() {
+			if (this.activeTab !== 1) {
+				return this.formData
+			}
+			if (!this.jsonData.trim()) {
+				throw new Error('JSON data cannot be empty')
+			}
+			try {
+				return JSON.parse(this.jsonData)
+			} catch (e) {
+				throw new Error('Invalid JSON format: ' + e.message, { cause: e })
+			}
+		},
+
+		/**
+		 * Save the object under the current register and schema, select the
+		 * saved object and refresh the lists that show it.
+		 *
+		 * @spec exclude modal submit handler delegating to objectStore.saveObject
+		 * @param {object} dataToSave The object to save
+		 * @return {Promise<object|null>} The saved object
+		 */
+		async storeObject(dataToSave) {
+			const type = `${this.currentRegister.id}-${this.currentSchema.id}`
+			objectStore.registerObjectType(
+				type,
+				this.currentSchema.id,
+				this.currentRegister.id,
+			)
+			const data = await objectStore.saveObject(type, dataToSave)
+			if (data) objectStore.setObjectItem(data)
+			await objectStore.refreshObjectList({
+				register: this.currentRegister.id,
+				schema: this.currentSchema.id,
+			})
+			objectStore.refetchSearchCollection()
+			return data
 		},
 
 		/**

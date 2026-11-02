@@ -6,7 +6,6 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\SettingsController;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\VectorizationService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -28,7 +27,6 @@ class SettingsControllerGapTest extends TestCase {
 	private ContainerInterface&MockObject $container;
 	private IAppManager&MockObject $appManager;
 	private SettingsService&MockObject $settingsService;
-	private VectorizationService&MockObject $vectorizationService;
 	private LoggerInterface&MockObject $logger;
 
 	protected function setUp(): void {
@@ -40,7 +38,6 @@ class SettingsControllerGapTest extends TestCase {
 		$this->container = $this->createMock(ContainerInterface::class);
 		$this->appManager = $this->createMock(IAppManager::class);
 		$this->settingsService = $this->createMock(SettingsService::class);
-		$this->vectorizationService = $this->createMock(VectorizationService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
@@ -53,7 +50,6 @@ class SettingsControllerGapTest extends TestCase {
 			$this->container,
 			$this->appManager,
 			$this->settingsService,
-			$this->vectorizationService,
 			$this->logger,
 			$l10n
 		);
@@ -210,91 +206,6 @@ class SettingsControllerGapTest extends TestCase {
 	}
 
 	/**
-	 * Test updateSearchBackend with empty backend param (covers validation).
-	 */
-	public function testUpdateSearchBackendEmptyBackend(): void {
-		$this->request->method('getParams')
-			->willReturn([]);
-
-		$result = $this->controller->updateSearchBackend();
-
-		$this->assertEquals(400, $result->getStatus());
-		$data = $result->getData();
-		$this->assertStringContainsString('Backend parameter is required', $data['error']);
-	}
-
-	/**
-	 * Test semanticSearch with empty query.
-	 */
-	public function testSemanticSearchEmptyQuery(): void {
-		$result = $this->controller->semanticSearch('   ');
-
-		$this->assertEquals(400, $result->getStatus());
-	}
-
-	/**
-	 * Test semanticSearch success.
-	 */
-	public function testSemanticSearchSuccess(): void {
-		$this->vectorizationService->method('semanticSearch')
-			->willReturn([['id' => 1, 'score' => 0.95]]);
-
-		$result = $this->controller->semanticSearch('test query');
-
-		$this->assertEquals(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertTrue($data['success']);
-		$this->assertEquals(1, $data['total']);
-	}
-
-	/**
-	 * Test semanticSearch exception.
-	 */
-	public function testSemanticSearchException(): void {
-		$this->vectorizationService->method('semanticSearch')
-			->willThrowException(new \Exception('Error'));
-
-		$result = $this->controller->semanticSearch('query');
-
-		$this->assertEquals(500, $result->getStatus());
-	}
-
-	/**
-	 * Test hybridSearch with empty query.
-	 */
-	public function testHybridSearchEmptyQuery(): void {
-		$result = $this->controller->hybridSearch('  ');
-
-		$this->assertEquals(400, $result->getStatus());
-	}
-
-	/**
-	 * Test hybridSearch success.
-	 */
-	public function testHybridSearchSuccess(): void {
-		$this->vectorizationService->method('hybridSearch')
-			->willReturn(['results' => [], 'total' => 0]);
-
-		$result = $this->controller->hybridSearch('test query');
-
-		$this->assertEquals(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertTrue($data['success']);
-	}
-
-	/**
-	 * Test hybridSearch exception.
-	 */
-	public function testHybridSearchException(): void {
-		$this->vectorizationService->method('hybridSearch')
-			->willThrowException(new \Exception('Error'));
-
-		$result = $this->controller->hybridSearch('query');
-
-		$this->assertEquals(500, $result->getStatus());
-	}
-
-	/**
 	 * Test getDatabaseInfo with cached data.
 	 */
 	public function testGetDatabaseInfoWithCachedData(): void {
@@ -333,37 +244,4 @@ class SettingsControllerGapTest extends TestCase {
 		$this->assertEquals(500, $result->getStatus());
 	}
 
-	/**
-	 * Test semanticSearch with filters and provider.
-	 */
-	public function testSemanticSearchWithFiltersAndProvider(): void {
-		$this->vectorizationService->method('semanticSearch')
-			->with('test', 5, ['type' => 'document'], 'ollama')
-			->willReturn([]);
-
-		$result = $this->controller->semanticSearch('test', 5, ['type' => 'document'], 'ollama');
-
-		$this->assertEquals(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertTrue($data['success']);
-		$this->assertEquals(0, $data['total']);
-		$this->assertEquals(5, $data['limit']);
-	}
-
-	/**
-	 * Test hybridSearch with custom weights.
-	 */
-	public function testHybridSearchWithCustomWeights(): void {
-		$this->vectorizationService->method('hybridSearch')
-			->willReturn(['results' => [['id' => 1]], 'total' => 1]);
-
-		$result = $this->controller->hybridSearch(
-			'query',
-			10,
-			[],
-			['solr' => 0.7, 'vector' => 0.3]
-		);
-
-		$this->assertEquals(200, $result->getStatus());
-	}
 }

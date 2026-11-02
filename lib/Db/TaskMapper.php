@@ -239,7 +239,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return array<int, Task> The tasks, oldest first.
 	 *
-	 * @spec openspec/changes/task-find-by-key/specs/flow-tasks/spec.md
+	 * @spec openspec/specs/flow-tasks/spec.md
 	 */
 	public function findByKey(string $key): array {
 		$qb = $this->db->getQueryBuilder();

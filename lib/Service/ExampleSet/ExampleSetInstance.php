@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-finds-openregister-organisations-and-creates-the-ones-its-cast-needs-req-exs-016
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-finds-openregister-organisations-and-creates-the-ones-its-cast-needs-req-exs-016
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use Throwable;
 /**
  * The instance's address, and OpenRegister organisations found, created and deleted for an example set.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-finds-openregister-organisations-and-creates-the-ones-its-cast-needs-req-exs-016
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-finds-openregister-organisations-and-creates-the-ones-its-cast-needs-req-exs-016
  */
 class ExampleSetInstance {
 	/**
@@ -78,7 +78,7 @@ class ExampleSetInstance {
 	 *
 	 * @return array<string, string>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
+	 * @spec openspec/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
 	 */
 	public function values(): array {
 		$baseUrl = rtrim($this->config->getSystemValueString('overwrite.cli.url', ''), '/');
@@ -98,7 +98,7 @@ class ExampleSetInstance {
 	 *
 	 * @phpstan-impure It reads the instance, which ensure() changes.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-finds-openregister-organisations-and-creates-the-ones-its-cast-needs-req-exs-016
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-finds-openregister-organisations-and-creates-the-ones-its-cast-needs-req-exs-016
 	 */
 	public function uuids(): array {
 		try {
@@ -132,8 +132,8 @@ class ExampleSetInstance {
 	 *
 	 * @return array{uuid: string, created: bool, error: string}
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-finds-openregister-organisations-and-creates-the-ones-its-cast-needs-req-exs-016
-	 * @spec openspec/changes/example-set-organisation-gains-its-quota/specs/example-sets/spec.md#requirement-an-organisation-the-set-made-gains-the-quota-it-declares-later
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-finds-openregister-organisations-and-creates-the-ones-its-cast-needs-req-exs-016
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-organisation-the-set-made-gains-the-quota-it-declares-later
 	 */
 	public function ensure(array $declared, array $made=[]): array {
 		try {
@@ -193,7 +193,7 @@ class ExampleSetInstance {
 	 *
 	 * @return string The error, or '' when nothing was missing or it was written.
 	 *
-	 * @spec openspec/changes/example-set-organisation-gains-its-quota/specs/example-sets/spec.md#requirement-an-organisation-the-set-made-gains-the-quota-it-declares-later
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-organisation-the-set-made-gains-the-quota-it-declares-later
 	 */
 	private function fillQuota(Organisation $organisation, array $quota): string {
 		$fields  = [
@@ -240,7 +240,7 @@ class ExampleSetInstance {
 	 *
 	 * @return string `deleted` (also when it was already gone), `left` (it has other members) or `failed`.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
 	 */
 	public function delete(string $uuid, ?callable $ignorable = null): string {
 		try {

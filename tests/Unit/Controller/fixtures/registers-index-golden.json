@@ -1,0 +1,3638 @@
+{
+    "anonymous sees only public registers": {
+        "calls": [
+            {
+                "registerService.findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        1,
+                        2
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 5,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public too",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        3
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "staff",
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                }
+            ]
+        }
+    },
+    "anonymous with a forged userId": {
+        "calls": [
+            {
+                "registerService.findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        1,
+                        2
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 5,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public too",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        3
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "staff",
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                }
+            ]
+        }
+    },
+    "anonymous with stats": {
+        "calls": [
+            {
+                "registerService.findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false
+                ]
+            },
+            {
+                "schemaMapper.findMultipleOptimized": [
+                    [
+                        1,
+                        2,
+                        3
+                    ]
+                ]
+            },
+            {
+                "registerService.getSchemaObjectCounts": [
+                    1,
+                    [
+                        1,
+                        2
+                    ]
+                ]
+            },
+            {
+                "registerService.getSchemaObjectCounts": [
+                    5,
+                    [
+                        3
+                    ]
+                ]
+            },
+            {
+                "schemaMapper.findMultipleOptimized": [
+                    [
+                        1,
+                        2,
+                        3
+                    ]
+                ]
+            },
+            {
+                "auditTrailMapper.getStatistics": [
+                    1,
+                    null,
+                    []
+                ]
+            },
+            {
+                "auditTrailMapper.getStatistics": [
+                    5,
+                    null,
+                    []
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        {
+                            "id": 1,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": null,
+                            "title": "Schema 1",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null,
+                            "stats": {
+                                "objects": {
+                                    "total": 10
+                                }
+                            }
+                        },
+                        {
+                            "id": 2,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": null,
+                            "title": "Schema 2",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null,
+                            "stats": {
+                                "objects": {
+                                    "total": 20
+                                }
+                            }
+                        }
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "stats": {
+                        "objects": {
+                            "total": 28,
+                            "size": 200,
+                            "invalid": 4,
+                            "deleted": 2,
+                            "locked": 0
+                        },
+                        "logs": {
+                            "total": 3
+                        },
+                        "files": {
+                            "total": 0,
+                            "size": 0
+                        }
+                    }
+                },
+                {
+                    "id": 5,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public too",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        {
+                            "id": 3,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": null,
+                            "title": "Schema 3",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null,
+                            "stats": {
+                                "objects": {
+                                    "total": 30
+                                }
+                            }
+                        }
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "staff",
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "stats": {
+                        "objects": {
+                            "total": 29,
+                            "size": 100,
+                            "invalid": 2,
+                            "deleted": 1,
+                            "locked": 0
+                        },
+                        "logs": {
+                            "total": 3
+                        },
+                        "files": {
+                            "total": 0,
+                            "size": 0
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "extend as a string": {
+        "calls": [
+            {
+                "registerService.findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false
+                ]
+            },
+            {
+                "schemaMapper.findMultipleOptimized": [
+                    [
+                        1,
+                        2,
+                        3,
+                        500
+                    ]
+                ]
+            },
+            {
+                "schemaMapper.find": 500
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        {
+                            "id": 1,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": null,
+                            "title": "Schema 1",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null
+                        },
+                        {
+                            "id": 2,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": null,
+                            "title": "Schema 2",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null
+                        }
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 2,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Private",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        {
+                            "id": 2,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": null,
+                            "title": "Schema 2",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null
+                        },
+                        {
+                            "id": 3,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": null,
+                            "title": "Schema 3",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null
+                        },
+                        {
+                            "id": 500,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": null,
+                            "title": "Schema 500",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null
+                        }
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "staff"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 3,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Open read string",
+                    "version": null,
+                    "description": null,
+                    "schemas": [],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": "public"
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 4,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "No rules",
+                    "version": null,
+                    "description": null,
+                    "schemas": [],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": null,
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 5,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public too",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        {
+                            "id": 3,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": null,
+                            "title": "Schema 3",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null
+                        }
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "staff",
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                }
+            ]
+        }
+    },
+    "filters": {
+        "calls": [
+            {
+                "registerService.findAll": [
+                    null,
+                    null,
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    [],
+                    [],
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        1,
+                        2
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 2,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Private",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        2,
+                        3,
+                        500
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "staff"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 3,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Open read string",
+                    "version": null,
+                    "description": null,
+                    "schemas": [],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": "public"
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 4,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "No rules",
+                    "version": null,
+                    "description": null,
+                    "schemas": [],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": null,
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 5,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public too",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        3
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "staff",
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                }
+            ]
+        }
+    },
+    "limit and offset": {
+        "calls": [
+            {
+                "registerService.findAll": [
+                    5,
+                    10,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        1,
+                        2
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 2,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Private",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        2,
+                        3,
+                        500
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "staff"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 3,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Open read string",
+                    "version": null,
+                    "description": null,
+                    "schemas": [],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": "public"
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 4,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "No rules",
+                    "version": null,
+                    "description": null,
+                    "schemas": [],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": null,
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 5,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public too",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        3
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "staff",
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                }
+            ]
+        }
+    },
+    "no parameters": {
+        "calls": [
+            {
+                "registerService.findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        1,
+                        2
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 2,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Private",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        2,
+                        3,
+                        500
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "staff"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 3,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Open read string",
+                    "version": null,
+                    "description": null,
+                    "schemas": [],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": "public"
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 4,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "No rules",
+                    "version": null,
+                    "description": null,
+                    "schemas": [],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": null,
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 5,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public too",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        3
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "staff",
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                }
+            ]
+        }
+    },
+    "page with limit wins over offset": {
+        "calls": [
+            {
+                "registerService.findAll": [
+                    4,
+                    8,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        1,
+                        2
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 2,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Private",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        2,
+                        3,
+                        500
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "staff"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 3,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Open read string",
+                    "version": null,
+                    "description": null,
+                    "schemas": [],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": "public"
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 4,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "No rules",
+                    "version": null,
+                    "description": null,
+                    "schemas": [],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": null,
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 5,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public too",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        3
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "staff",
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                }
+            ]
+        }
+    },
+    "page without limit": {
+        "calls": [
+            {
+                "registerService.findAll": [
+                    null,
+                    7,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        1,
+                        2
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 2,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Private",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        2,
+                        3,
+                        500
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "staff"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 3,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Open read string",
+                    "version": null,
+                    "description": null,
+                    "schemas": [],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": "public"
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 4,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "No rules",
+                    "version": null,
+                    "description": null,
+                    "schemas": [],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": null,
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                {
+                    "id": 5,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public too",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        3
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "staff",
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                }
+            ]
+        }
+    },
+    "stats with schemas uses the bulk read": {
+        "calls": [
+            {
+                "registerService.findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false
+                ]
+            },
+            {
+                "schemaMapper.findMultipleOptimized": [
+                    [
+                        1,
+                        2,
+                        3,
+                        500
+                    ]
+                ]
+            },
+            {
+                "registerService.getSchemaObjectCounts": [
+                    1,
+                    [
+                        1,
+                        2
+                    ]
+                ]
+            },
+            {
+                "registerService.getSchemaObjectCounts": [
+                    2,
+                    [
+                        2,
+                        3
+                    ]
+                ]
+            },
+            {
+                "registerService.getSchemaObjectCounts": [
+                    3,
+                    []
+                ]
+            },
+            {
+                "registerService.getSchemaObjectCounts": [
+                    4,
+                    []
+                ]
+            },
+            {
+                "registerService.getSchemaObjectCounts": [
+                    5,
+                    [
+                        3
+                    ]
+                ]
+            },
+            {
+                "schemaMapper.findMultipleOptimized": [
+                    [
+                        1,
+                        2,
+                        3,
+                        500
+                    ]
+                ]
+            },
+            {
+                "schemaMapper.find": 500
+            },
+            {
+                "auditTrailMapper.getStatistics": [
+                    1,
+                    null,
+                    []
+                ]
+            },
+            {
+                "auditTrailMapper.getStatistics": [
+                    2,
+                    null,
+                    []
+                ]
+            },
+            {
+                "auditTrailMapper.getStatistics": [
+                    3,
+                    null,
+                    []
+                ]
+            },
+            {
+                "auditTrailMapper.getStatistics": [
+                    4,
+                    null,
+                    []
+                ]
+            },
+            {
+                "auditTrailMapper.getStatistics": [
+                    5,
+                    null,
+                    []
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        {
+                            "id": 1,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": null,
+                            "title": "Schema 1",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null,
+                            "stats": {
+                                "objects": {
+                                    "total": 10
+                                }
+                            }
+                        },
+                        {
+                            "id": 2,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": null,
+                            "title": "Schema 2",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null,
+                            "stats": {
+                                "objects": {
+                                    "total": 20
+                                }
+                            }
+                        }
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "stats": {
+                        "objects": {
+                            "total": 28,
+                            "size": 200,
+                            "invalid": 4,
+                            "deleted": 2,
+                            "locked": 0
+                        },
+                        "logs": {
+                            "total": 3
+                        },
+                        "files": {
+                            "total": 0,
+                            "size": 0
+                        }
+                    }
+                },
+                {
+                    "id": 2,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Private",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        {
+                            "id": 2,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": null,
+                            "title": "Schema 2",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null,
+                            "stats": {
+                                "objects": {
+                                    "total": 20
+                                }
+                            }
+                        },
+                        {
+                            "id": 3,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": null,
+                            "title": "Schema 3",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null,
+                            "stats": {
+                                "objects": {
+                                    "total": 30
+                                }
+                            }
+                        },
+                        {
+                            "id": 500,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": null,
+                            "title": "Schema 500",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null,
+                            "stats": {
+                                "objects": {
+                                    "total": 0
+                                }
+                            }
+                        }
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "staff"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "stats": {
+                        "objects": {
+                            "total": 48,
+                            "size": 200,
+                            "invalid": 4,
+                            "deleted": 2,
+                            "locked": 0
+                        },
+                        "logs": {
+                            "total": 3
+                        },
+                        "files": {
+                            "total": 0,
+                            "size": 0
+                        }
+                    }
+                },
+                {
+                    "id": 3,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Open read string",
+                    "version": null,
+                    "description": null,
+                    "schemas": [],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": "public"
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "stats": {
+                        "objects": {
+                            "total": 0,
+                            "size": 0,
+                            "invalid": 0,
+                            "deleted": 0,
+                            "locked": 0
+                        },
+                        "logs": {
+                            "total": 3
+                        },
+                        "files": {
+                            "total": 0,
+                            "size": 0
+                        }
+                    }
+                },
+                {
+                    "id": 4,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "No rules",
+                    "version": null,
+                    "description": null,
+                    "schemas": [],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": null,
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "stats": {
+                        "objects": {
+                            "total": 0,
+                            "size": 0,
+                            "invalid": 0,
+                            "deleted": 0,
+                            "locked": 0
+                        },
+                        "logs": {
+                            "total": 3
+                        },
+                        "files": {
+                            "total": 0,
+                            "size": 0
+                        }
+                    }
+                },
+                {
+                    "id": 5,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public too",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        {
+                            "id": 3,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": null,
+                            "title": "Schema 3",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null,
+                            "stats": {
+                                "objects": {
+                                    "total": 30
+                                }
+                            }
+                        }
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "staff",
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "stats": {
+                        "objects": {
+                            "total": 29,
+                            "size": 100,
+                            "invalid": 2,
+                            "deleted": 1,
+                            "locked": 0
+                        },
+                        "logs": {
+                            "total": 3
+                        },
+                        "files": {
+                            "total": 0,
+                            "size": 0
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "stats without schemas falls back to the mapper": {
+        "calls": [
+            {
+                "registerService.findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    [],
+                    false
+                ]
+            },
+            {
+                "objectMapper.getStatistics": [
+                    1,
+                    null,
+                    []
+                ]
+            },
+            {
+                "auditTrailMapper.getStatistics": [
+                    1,
+                    null,
+                    []
+                ]
+            },
+            {
+                "objectMapper.getStatistics": [
+                    2,
+                    null,
+                    []
+                ]
+            },
+            {
+                "auditTrailMapper.getStatistics": [
+                    2,
+                    null,
+                    []
+                ]
+            },
+            {
+                "objectMapper.getStatistics": [
+                    3,
+                    null,
+                    []
+                ]
+            },
+            {
+                "auditTrailMapper.getStatistics": [
+                    3,
+                    null,
+                    []
+                ]
+            },
+            {
+                "objectMapper.getStatistics": [
+                    4,
+                    null,
+                    []
+                ]
+            },
+            {
+                "auditTrailMapper.getStatistics": [
+                    4,
+                    null,
+                    []
+                ]
+            },
+            {
+                "objectMapper.getStatistics": [
+                    5,
+                    null,
+                    []
+                ]
+            },
+            {
+                "auditTrailMapper.getStatistics": [
+                    5,
+                    null,
+                    []
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        1,
+                        2
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "stats": {
+                        "objects": {
+                            "total": 1,
+                            "size": 2
+                        },
+                        "logs": {
+                            "total": 3
+                        },
+                        "files": {
+                            "total": 0,
+                            "size": 0
+                        }
+                    }
+                },
+                {
+                    "id": 2,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Private",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        2,
+                        3,
+                        500
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "staff"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "stats": {
+                        "objects": {
+                            "total": 1,
+                            "size": 2
+                        },
+                        "logs": {
+                            "total": 3
+                        },
+                        "files": {
+                            "total": 0,
+                            "size": 0
+                        }
+                    }
+                },
+                {
+                    "id": 3,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Open read string",
+                    "version": null,
+                    "description": null,
+                    "schemas": [],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": "public"
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "stats": {
+                        "objects": {
+                            "total": 1,
+                            "size": 2
+                        },
+                        "logs": {
+                            "total": 3
+                        },
+                        "files": {
+                            "total": 0,
+                            "size": 0
+                        }
+                    }
+                },
+                {
+                    "id": 4,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "No rules",
+                    "version": null,
+                    "description": null,
+                    "schemas": [],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": null,
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "stats": {
+                        "objects": {
+                            "total": 1,
+                            "size": 2
+                        },
+                        "logs": {
+                            "total": 3
+                        },
+                        "files": {
+                            "total": 0,
+                            "size": 0
+                        }
+                    }
+                },
+                {
+                    "id": 5,
+                    "uuid": null,
+                    "slug": null,
+                    "title": "Public too",
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        3
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": {
+                        "read": [
+                            "staff",
+                            "public"
+                        ]
+                    },
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "stats": {
+                        "objects": {
+                            "total": 1,
+                            "size": 2
+                        },
+                        "logs": {
+                            "total": 3
+                        },
+                        "files": {
+                            "total": 0,
+                            "size": 0
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}

@@ -18,7 +18,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/views-list-leaves-out-others-private-views/specs/saved-search-views/spec.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @spec openspec/changes/views-list-leaves-out-others-private-views/specs/saved-search-views/spec.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 class ViewMapperListsOnlyReachableViewsTest extends TestCase {
 

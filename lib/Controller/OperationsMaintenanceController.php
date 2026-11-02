@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+ * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use OCP\IUserSession;
  * the middleware refuses a non-administrator before this controller is even
  * built, and CSRF stays required on them.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+ * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
  */
 class OperationsMaintenanceController extends Controller {
 
@@ -71,7 +71,7 @@ class OperationsMaintenanceController extends Controller {
 	 *       so the middleware refuses a non-administrator before this
 	 *       controller is built, and CSRF stays required on the write.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 */
 	public function maintenance(): JSONResponse {
 		$method = $this->request->getMethod();
@@ -97,7 +97,7 @@ class OperationsMaintenanceController extends Controller {
 	 *
 	 * @return JSONResponse The bundle.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
 	 */
 	#[NoCSRFRequired]
 	public function supportBundle(): JSONResponse {
@@ -109,7 +109,7 @@ class OperationsMaintenanceController extends Controller {
 	 *
 	 * @return JSONResponse The facts.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
 	 */
 	#[NoCSRFRequired]
 	public function facts(): JSONResponse {

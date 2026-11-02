@@ -15,7 +15,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/file-download-audit-names-the-file/specs/file-actions/spec.md#requirement-a-download-audit-row-names-the-file
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-download-audit-row-names-the-file
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use ReflectionMethod;
 /**
  * The audit row a download writes carries the file's name beside its id.
  *
- * @spec openspec/changes/file-download-audit-names-the-file/specs/file-actions/spec.md#requirement-a-download-audit-row-names-the-file
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-download-audit-row-names-the-file
  */
 class FilesDownloadAuditNamesTheFileTest extends TestCase {
 	/**

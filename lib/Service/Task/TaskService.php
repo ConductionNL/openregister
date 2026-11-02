@@ -427,7 +427,7 @@ class TaskService implements TaskManagerInterface {
 	 *
 	 * @throws TaskValidationException When a field is unknown or invalid.
 	 *
-	 * @spec openspec/changes/flow-task-edit/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
 	 */
 	public function edit(string $uuid, array $changes, ?string $actor): Task {
 		$task = $this->openTaskFor(verb: 'edit', uuid: $uuid, actor: $actor);
@@ -845,7 +845,10 @@ class TaskService implements TaskManagerInterface {
 	 *
 	 * Refused on a task that is not completed with an approving outcome, and
 	 * refused AGAIN on one already consumed — the second refusal is the
-	 * whole point.
+	 * whole point. An outcome approves only when it is in the task's declared
+	 * `approvingOutcomes`, or in {@see TaskState::APPROVING_OUTCOMES} when the
+	 * task declares none; a completion that neither approves nor rejects is
+	 * refused as undecided.
 	 *
 	 * @param string $uuid The decided task's uuid.
 	 * @param string $source The consuming identity recorded as actor.
@@ -856,22 +859,11 @@ class TaskService implements TaskManagerInterface {
 	 * @throws TaskConflictException When not an unconsumed approving decision.
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
+	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
 	 */
 	public function consume(string $uuid, string $source, string $reason): Task {
 		$task = $this->tasks->findByUuid(uuid: $uuid);
-
-		$approved = ((string)$task->getState() === Task::STATE_COMPLETED
-			&& TaskState::isRejectingOutcome(outcome: $task->getOutcome()) === false);
-		if ($approved === false) {
-			throw new TaskConflictException(
-				message: sprintf(
-					"Verb 'consume' refused: task '%s' is not an approving decision (state '%s', outcome '%s').",
-					$uuid,
-					(string)$task->getState(),
-					(string)$task->getOutcome()
-				)
-			);
-		}
+		$this->assertApprovingDecision(task: $task);
 
 		$metadata = ($task->getMetadata() ?? []);
 		if (trim((string)($metadata['consumedAt'] ?? '')) !== '') {
@@ -905,6 +897,42 @@ class TaskService implements TaskManagerInterface {
 
 		return $persisted;
 	}//end consume()
+
+	/**
+	 * Refuse anything but a completed task with an approving outcome.
+	 *
+	 * @param Task $task The decided task.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskConflictException When the task is open, rejected or undecided.
+	 *
+	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
+	 */
+	private function assertApprovingDecision(Task $task): void {
+		$completed = ((string)$task->getState() === Task::STATE_COMPLETED);
+		if ($completed === false || TaskState::isRejectingOutcome(outcome: $task->getOutcome()) === true) {
+			throw new TaskConflictException(
+				message: sprintf(
+					"Verb 'consume' refused: task '%s' is not an approving decision (state '%s', outcome '%s').",
+					(string)$task->getUuid(),
+					(string)$task->getState(),
+					(string)$task->getOutcome()
+				)
+			);
+		}
+
+		$approving = TaskState::approvingSetOrDefault(declared: (($task->getTemplateSnapshot() ?? [])['approvingOutcomes'] ?? null));
+		if (TaskState::isApprovingOutcome(outcome: $task->getOutcome(), approving: $approving) === false) {
+			throw new TaskConflictException(
+				message: sprintf(
+					"Verb 'consume' refused: task '%s' is undecided: outcome '%s' neither approves nor rejects.",
+					(string)$task->getUuid(),
+					(string)$task->getOutcome()
+				)
+			);
+		}
+	}//end assertApprovingDecision()
 
 	/**
 	 * Enable a position: the sequence's own promotion verb.
@@ -1070,7 +1098,7 @@ class TaskService implements TaskManagerInterface {
 	 *
 	 * @return array<int, Task> The tasks; empty for a blank key.
 	 *
-	 * @spec openspec/changes/task-find-by-key/specs/flow-tasks/spec.md
+	 * @spec openspec/specs/flow-tasks/spec.md
 	 */
 	public function findByKey(string $key): array {
 		$key = trim($key);

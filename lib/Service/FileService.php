@@ -960,7 +960,7 @@ class FileService {
 	 *
 	 * @return string The share link needed to get the file or folder for the given IShare object
 	 *
-	 * @spec openspec/changes/share-links-use-the-request-host/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
 	 */
 	public function getShareLink(IShare $share): string {
 		return $this->shareUrls->shareLink(token: $share->getToken());

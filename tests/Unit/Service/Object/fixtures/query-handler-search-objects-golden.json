@@ -1,0 +1,1511 @@
+{
+    "plain search": {
+        "returned": {
+            "objects": [
+                "obj-0",
+                "obj-1"
+            ]
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "a": 1
+                }
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "a": 1
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "schemaMapper.find": "11"
+            }
+        ]
+    },
+    "no results": {
+        "returned": {
+            "objects": []
+        },
+        "calls": [
+            {
+                "normalise": []
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": [],
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            }
+        ]
+    },
+    "resolver absent": {
+        "returned": {
+            "objects": [
+                "obj-0",
+                "obj-1"
+            ]
+        },
+        "calls": [
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "_schema": "slug"
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "schemaMapper.find": "11"
+            }
+        ]
+    },
+    "resolver rewrites": {
+        "returned": {
+            "objects": [
+                "obj-0",
+                "obj-1"
+            ]
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "_schema": "slug"
+                }
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "_schema": 10
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "schemaMapper.find": "11"
+            }
+        ]
+    },
+    "resolver refuses": {
+        "returned": {
+            "exception": [
+                "Exception",
+                "schema reference names nothing"
+            ]
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "_schema": "missing"
+                }
+            }
+        ]
+    },
+    "views applied": {
+        "returned": {
+            "objects": [
+                "obj-0",
+                "obj-1"
+            ]
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "a": 1
+                }
+            },
+            {
+                "applyViews": [
+                    "v1"
+                ],
+                "query": {
+                    "a": 1
+                },
+                "required": false
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "a": 1,
+                    "_viewFilter": [
+                        "v1"
+                    ]
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "schemaMapper.find": "11"
+            }
+        ]
+    },
+    "views applied, scope required": {
+        "returned": {
+            "objects": [
+                "obj-0",
+                "obj-1"
+            ]
+        },
+        "calls": [
+            {
+                "normalise": []
+            },
+            {
+                "applyViews": [
+                    "v1"
+                ],
+                "query": [],
+                "required": true
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "_viewFilter": [
+                        "v1"
+                    ]
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "schemaMapper.find": "11"
+            }
+        ]
+    },
+    "empty views, scope required": {
+        "returned": {
+            "exception": [
+                "Exception",
+                "Refusing a view-scoped search without a view to scope it by."
+            ]
+        },
+        "calls": [
+            {
+                "normalise": []
+            }
+        ]
+    },
+    "no views, scope required": {
+        "returned": {
+            "exception": [
+                "Exception",
+                "Refusing a view-scoped search without a view to scope it by."
+            ]
+        },
+        "calls": [
+            {
+                "normalise": []
+            }
+        ]
+    },
+    "empty views": {
+        "returned": {
+            "objects": [
+                "obj-0",
+                "obj-1"
+            ]
+        },
+        "calls": [
+            {
+                "normalise": []
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": [],
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "schemaMapper.find": "11"
+            }
+        ]
+    },
+    "view adds _extend": {
+        "returned": {
+            "objects": [
+                {
+                    "rendered": "obj-0"
+                },
+                {
+                    "rendered": "obj-1"
+                }
+            ]
+        },
+        "calls": [
+            {
+                "normalise": []
+            },
+            {
+                "applyViews": [
+                    "v2"
+                ],
+                "query": [],
+                "required": false
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "_viewFilter": [
+                        "v2"
+                    ],
+                    "_extend": [
+                        "x"
+                    ]
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "render": [
+                    "obj-0",
+                    "obj-1"
+                ],
+                "extend": [
+                    "x"
+                ],
+                "filter": null,
+                "fields": null,
+                "unset": null,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ]
+    },
+    "flags passed through": {
+        "returned": {
+            "objects": [
+                "obj-0",
+                "obj-1"
+            ]
+        },
+        "calls": [
+            {
+                "normalise": []
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": [],
+                "org": "org-alice",
+                "rbac": false,
+                "multitenancy": true,
+                "ids": [
+                    "i1"
+                ],
+                "uses": "u1"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "schemaMapper.find": "11"
+            }
+        ]
+    },
+    "multitenancy off: no organisation": {
+        "returned": {
+            "objects": [
+                "obj-0",
+                "obj-1"
+            ]
+        },
+        "calls": [
+            {
+                "normalise": []
+            },
+            {
+                "mapper.searchObjects": [],
+                "org": null,
+                "rbac": true,
+                "multitenancy": false,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "schemaMapper.find": "11"
+            }
+        ]
+    },
+    "forged org and user in query": {
+        "returned": {
+            "objects": [
+                "obj-0",
+                "obj-1"
+            ]
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "_organisation": "org-mallory",
+                    "organisation": "org-mallory",
+                    "_activeOrgUuid": "org-mallory",
+                    "userId": "mallory",
+                    "@self": {
+                        "organisation": "org-mallory",
+                        "owner": "mallory"
+                    }
+                }
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "_organisation": "org-mallory",
+                    "organisation": "org-mallory",
+                    "_activeOrgUuid": "org-mallory",
+                    "userId": "mallory",
+                    "@self": {
+                        "organisation": "org-mallory",
+                        "owner": "mallory"
+                    }
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "schemaMapper.find": "11"
+            }
+        ]
+    },
+    "other session user": {
+        "returned": {
+            "objects": [
+                "obj-0",
+                "obj-1"
+            ]
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "userId": "alice"
+                }
+            },
+            {
+                "activeOrganisation for": "bob"
+            },
+            {
+                "mapper.searchObjects": {
+                    "userId": "alice"
+                },
+                "org": "org-bob",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "schemaMapper.find": "11"
+            }
+        ]
+    },
+    "no session user": {
+        "returned": {
+            "objects": [
+                "obj-0",
+                "obj-1"
+            ]
+        },
+        "calls": [
+            {
+                "normalise": []
+            },
+            {
+                "activeOrganisation for": null
+            },
+            {
+                "mapper.searchObjects": [],
+                "org": null,
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "schemaMapper.find": "11"
+            }
+        ]
+    },
+    "count true": {
+        "returned": {
+            "int": 2
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "_count": true
+                }
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "_count": true
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            }
+        ]
+    },
+    "count string true": {
+        "returned": {
+            "int": 2
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "_count": "true"
+                }
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "_count": "true"
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            }
+        ]
+    },
+    "count 1 is not count": {
+        "returned": {
+            "objects": [
+                "obj-0",
+                "obj-1"
+            ]
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "_count": 1
+                }
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "_count": 1
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "schemaMapper.find": "11"
+            }
+        ]
+    },
+    "count string 1 is not count": {
+        "returned": {
+            "objects": [
+                "obj-0",
+                "obj-1"
+            ]
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "_count": "1"
+                }
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "_count": "1"
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "schemaMapper.find": "11"
+            }
+        ]
+    },
+    "count false": {
+        "returned": {
+            "objects": [
+                "obj-0",
+                "obj-1"
+            ]
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "_count": false
+                }
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "_count": false
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "schemaMapper.find": "11"
+            }
+        ]
+    },
+    "count with extend": {
+        "returned": {
+            "int": 2
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "_count": true,
+                    "_extend": [
+                        "a"
+                    ]
+                }
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "_count": true,
+                    "_extend": [
+                        "a"
+                    ]
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            }
+        ]
+    },
+    "mapper returns int": {
+        "returned": {
+            "int": 7
+        },
+        "calls": [
+            {
+                "normalise": []
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": [],
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            }
+        ]
+    },
+    "mapper returns int, extend": {
+        "returned": {
+            "exception": [
+                "TypeError",
+                "MockObject_RenderObject::renderEntities(): Argument #1 ($entities) must be of type array, int given"
+            ]
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "_extend": "a"
+                }
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "_extend": "a"
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            }
+        ]
+    },
+    "extend renders": {
+        "returned": {
+            "objects": [
+                {
+                    "rendered": "obj-0"
+                },
+                {
+                    "rendered": "obj-1"
+                }
+            ]
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "_extend": [
+                        "a"
+                    ],
+                    "_filter": [
+                        "f"
+                    ],
+                    "_fields": [
+                        "x"
+                    ],
+                    "_unset": [
+                        "u"
+                    ]
+                }
+            },
+            {
+                "mapper.searchObjects": {
+                    "_extend": [
+                        "a"
+                    ],
+                    "_filter": [
+                        "f"
+                    ],
+                    "_fields": [
+                        "x"
+                    ],
+                    "_unset": [
+                        "u"
+                    ]
+                },
+                "org": null,
+                "rbac": false,
+                "multitenancy": false,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "render": [
+                    "obj-0",
+                    "obj-1"
+                ],
+                "extend": [
+                    "a"
+                ],
+                "filter": [
+                    "f"
+                ],
+                "fields": [
+                    "x"
+                ],
+                "unset": [
+                    "u"
+                ],
+                "rbac": false,
+                "multitenancy": false
+            }
+        ]
+    },
+    "extend string renders": {
+        "returned": {
+            "objects": [
+                {
+                    "rendered": "obj-0"
+                },
+                {
+                    "rendered": "obj-1"
+                }
+            ]
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "_extend": "a,b"
+                }
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "_extend": "a,b"
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "render": [
+                    "obj-0",
+                    "obj-1"
+                ],
+                "extend": "a,b",
+                "filter": null,
+                "fields": null,
+                "unset": null,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ]
+    },
+    "empty extend does not render": {
+        "returned": {
+            "objects": [
+                "obj-0",
+                "obj-1"
+            ]
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "_extend": "",
+                    "_fields": [],
+                    "_filter": null,
+                    "_unset": "0"
+                }
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "_extend": "",
+                    "_fields": [],
+                    "_filter": null,
+                    "_unset": "0"
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "schemaMapper.find": "11"
+            }
+        ]
+    },
+    "fields render": {
+        "returned": {
+            "objects": [
+                {
+                    "rendered": "obj-0"
+                },
+                {
+                    "rendered": "obj-1"
+                }
+            ]
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "_fields": "title"
+                }
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "_fields": "title"
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "render": [
+                    "obj-0",
+                    "obj-1"
+                ],
+                "extend": [],
+                "filter": null,
+                "fields": "title",
+                "unset": null,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ]
+    },
+    "filter render": {
+        "returned": {
+            "objects": [
+                {
+                    "rendered": "obj-0"
+                },
+                {
+                    "rendered": "obj-1"
+                }
+            ]
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "_filter": [
+                        "x"
+                    ]
+                }
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "_filter": [
+                        "x"
+                    ]
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "render": [
+                    "obj-0",
+                    "obj-1"
+                ],
+                "extend": [],
+                "filter": [
+                    "x"
+                ],
+                "fields": null,
+                "unset": null,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ]
+    },
+    "unset render": {
+        "returned": {
+            "objects": [
+                {
+                    "rendered": "obj-0"
+                },
+                {
+                    "rendered": "obj-1"
+                }
+            ]
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "_unset": "x"
+                }
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "_unset": "x"
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "render": [
+                    "obj-0",
+                    "obj-1"
+                ],
+                "extend": [],
+                "filter": null,
+                "fields": null,
+                "unset": "x",
+                "rbac": true,
+                "multitenancy": true
+            }
+        ]
+    },
+    "property auth on second schema": {
+        "returned": {
+            "objects": [
+                {
+                    "rendered": "obj-0"
+                },
+                {
+                    "rendered": "obj-1"
+                },
+                {
+                    "rendered": "obj-2"
+                },
+                {
+                    "rendered": "obj-3"
+                }
+            ]
+        },
+        "calls": [
+            {
+                "normalise": []
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": [],
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "schemaMapper.find": "11"
+            },
+            {
+                "render": [
+                    "obj-0",
+                    "obj-1",
+                    "obj-2",
+                    "obj-3"
+                ],
+                "extend": [],
+                "filter": null,
+                "fields": null,
+                "unset": null,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ]
+    },
+    "property auth on first schema": {
+        "returned": {
+            "objects": [
+                {
+                    "rendered": "obj-0"
+                },
+                {
+                    "rendered": "obj-1"
+                },
+                {
+                    "rendered": "obj-2"
+                }
+            ]
+        },
+        "calls": [
+            {
+                "normalise": []
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": [],
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "render": [
+                    "obj-0",
+                    "obj-1",
+                    "obj-2"
+                ],
+                "extend": [],
+                "filter": null,
+                "fields": null,
+                "unset": null,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ]
+    },
+    "guarded first stops the probe": {
+        "returned": {
+            "objects": [
+                {
+                    "rendered": "obj-0"
+                },
+                {
+                    "rendered": "obj-1"
+                }
+            ]
+        },
+        "calls": [
+            {
+                "normalise": []
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": [],
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "render": [
+                    "obj-0",
+                    "obj-1"
+                ],
+                "extend": [],
+                "filter": null,
+                "fields": null,
+                "unset": null,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ]
+    },
+    "repeat guarded schema": {
+        "returned": {
+            "objects": [
+                {
+                    "rendered": "obj-0"
+                }
+            ]
+        },
+        "calls": [
+            {
+                "normalise": []
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": [],
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "render": [
+                    "obj-0"
+                ],
+                "extend": [],
+                "filter": null,
+                "fields": null,
+                "unset": null,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ]
+    },
+    "all plain, repeats cached": {
+        "returned": {
+            "objects": [
+                "obj-0",
+                "obj-1",
+                "obj-2",
+                "obj-3"
+            ]
+        },
+        "calls": [
+            {
+                "normalise": []
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": [],
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "schemaMapper.find": "11"
+            }
+        ]
+    },
+    "schema lookup fails": {
+        "returned": {
+            "objects": [
+                {
+                    "rendered": "obj-0"
+                },
+                {
+                    "rendered": "obj-1"
+                },
+                {
+                    "rendered": "obj-2"
+                }
+            ]
+        },
+        "calls": [
+            {
+                "normalise": []
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": [],
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "99"
+            },
+            {
+                "schemaMapper.find": "11"
+            },
+            {
+                "render": [
+                    "obj-0",
+                    "obj-1",
+                    "obj-2"
+                ],
+                "extend": [],
+                "filter": null,
+                "fields": null,
+                "unset": null,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ]
+    },
+    "schema lookup fails only": {
+        "returned": {
+            "objects": [
+                "obj-0",
+                "obj-1"
+            ]
+        },
+        "calls": [
+            {
+                "normalise": []
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": [],
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "99"
+            }
+        ]
+    },
+    "null schema id": {
+        "returned": {
+            "exception": [
+                "TypeError",
+                "MockObject_SchemaMapper::find(): Argument #1 ($id) must be of type string|int, null given"
+            ]
+        },
+        "calls": [
+            {
+                "normalise": []
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": [],
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            }
+        ]
+    },
+    "complex skips the probe": {
+        "returned": {
+            "objects": [
+                {
+                    "rendered": "obj-0"
+                },
+                {
+                    "rendered": "obj-1"
+                }
+            ]
+        },
+        "calls": [
+            {
+                "normalise": {
+                    "_fields": [
+                        "a"
+                    ]
+                }
+            },
+            {
+                "activeOrganisation for": "alice"
+            },
+            {
+                "mapper.searchObjects": {
+                    "_fields": [
+                        "a"
+                    ]
+                },
+                "org": "org-alice",
+                "rbac": true,
+                "multitenancy": true,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "render": [
+                    "obj-0",
+                    "obj-1"
+                ],
+                "extend": [],
+                "filter": null,
+                "fields": [
+                    "a"
+                ],
+                "unset": null,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ]
+    },
+    "guarded, rbac off": {
+        "returned": {
+            "objects": [
+                {
+                    "rendered": "obj-0"
+                },
+                {
+                    "rendered": "obj-1"
+                }
+            ]
+        },
+        "calls": [
+            {
+                "normalise": []
+            },
+            {
+                "mapper.searchObjects": [],
+                "org": null,
+                "rbac": false,
+                "multitenancy": false,
+                "ids": null,
+                "uses": null
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\SchemaMapper"
+            },
+            {
+                "schemaMapper.find": "10"
+            },
+            {
+                "schemaMapper.find": "11"
+            },
+            {
+                "render": [
+                    "obj-0",
+                    "obj-1"
+                ],
+                "extend": [],
+                "filter": null,
+                "fields": null,
+                "unset": null,
+                "rbac": false,
+                "multitenancy": false
+            }
+        ]
+    }
+}

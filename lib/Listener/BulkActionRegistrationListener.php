@@ -74,7 +74,7 @@ class BulkActionRegistrationListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof BulkActionRegistrationEvent) === false) {

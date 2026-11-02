@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use OCP\IDBConnection;
  *
  * A row is `{fileId, users, groups, reason, setBy, setAt}`; `setAt` is ISO 8601.
  *
- * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
  */
 class FileRestrictionStore {
 
@@ -58,7 +58,7 @@ class FileRestrictionStore {
 	 *
 	 * @return array{fileId: int, users: list<string>, groups: list<string>, reason: string, setBy: string, setAt: string}|null The row.
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
 	 */
 	public function find(int $fileId): ?array {
 		return ($this->findMany(fileIds: [$fileId])[$fileId] ?? null);
@@ -71,7 +71,7 @@ class FileRestrictionStore {
 	 *
 	 * @return array<int, array{fileId: int, users: list<string>, groups: list<string>, reason: string, setBy: string, setAt: string}> The rows.
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
 	 */
 	public function findMany(array $fileIds): array {
 		$ids = array_values(array_unique(array_filter(array_map('intval', $fileIds), static fn (int $id): bool => $id > 0)));
@@ -112,7 +112,7 @@ class FileRestrictionStore {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
 	 */
 	public function save(int $fileId, array $users, array $groups, string $reason, string $setBy, DateTimeImmutable $setAt): void {
 		$values = [
@@ -151,7 +151,7 @@ class FileRestrictionStore {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
 	 */
 	public function delete(int $fileId): void {
 		$qb = $this->db->getQueryBuilder();

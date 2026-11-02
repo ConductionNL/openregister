@@ -43,7 +43,7 @@ use Psr\Log\LoggerInterface;
  *
  * @package OCA\OpenRegister\Tests\Unit\Service\Rules
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class ConditionDialectOnSavePathTest extends TestCase {
 
@@ -162,7 +162,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testTheFixtureItselfIsAValidSchema(): void {
 		$this->assertSame([], $this->codesFor([]));
@@ -174,7 +174,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testTheSavePathEvaluatesAnAstCondition(): void {
 		$this->assertTrue($this->holds(self::ABOVE_FIVE_HUNDRED['ast'], ['bedrag' => 900]));
@@ -191,7 +191,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testBothDialectsAnswerTheSameAboutTheSameRule(): void {
 		foreach ([['bedrag' => 900], ['bedrag' => 120], ['bedrag' => 500], []] as $object) {
@@ -209,7 +209,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testASchemaSaveAcceptsAnAstConditionAndAnAstAutoWhen(): void {
 		$this->assertNotContains(
@@ -229,7 +229,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testASchemaSaveStillAcceptsTheLegacyDialect(): void {
 		$this->assertNotContains(
@@ -244,7 +244,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAnUnknownOperatorIsRefusedAtSchemaSave(): void {
 		$this->assertContains(
@@ -262,7 +262,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testANestedUnknownOperatorIsRefusedToo(): void {
 		$this->assertContains(
@@ -281,7 +281,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testALiteralMapIsNotWalkedAsAnExpression(): void {
 		$this->assertTrue(

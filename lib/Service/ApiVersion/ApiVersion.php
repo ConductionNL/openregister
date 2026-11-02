@@ -37,7 +37,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 
 declare(strict_types=1);
@@ -212,7 +212,7 @@ class ApiVersion implements JsonSerializable {
 	 *
 	 * @return self The version.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public static function fromArray(array $declaration): self {
 		$prefixes = ($declaration['pathPrefixes'] ?? ['/']);
@@ -237,7 +237,7 @@ class ApiVersion implements JsonSerializable {
 	 *
 	 * @return bool True for supported and deprecated, false for withdrawn.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function isServed(): bool {
 		return ($this->status !== self::STATUS_WITHDRAWN);
@@ -249,7 +249,7 @@ class ApiVersion implements JsonSerializable {
 	 *
 	 * @return bool True when the status is deprecated.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function isDeprecated(): bool {
 		return ($this->status === self::STATUS_DEPRECATED);
@@ -263,7 +263,7 @@ class ApiVersion implements JsonSerializable {
 	 *
 	 * @return bool True when one of the declared prefixes matches.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function servesPath(string $path): bool {
 		$candidate = ('/' . ltrim($path, '/'));
@@ -288,7 +288,7 @@ class ApiVersion implements JsonSerializable {
 	 *
 	 * @return string|null The HTTP-date, or null when there is no date.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public static function toHttpDate(?string $isoDate): ?string {
 		if ($isoDate === null) {
@@ -313,7 +313,7 @@ class ApiVersion implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The published declaration.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function jsonSerialize(): array {
 		$published = [

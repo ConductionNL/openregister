@@ -78,7 +78,7 @@ class ExampleSetFileIdsTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
 	 *
 	 * @return void
 	 */
@@ -93,7 +93,7 @@ class ExampleSetFileIdsTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
 	 *
 	 * @return void
 	 */

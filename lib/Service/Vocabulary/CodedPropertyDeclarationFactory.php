@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ class CodedPropertyDeclarationFactory {
 	 *
 	 * @return CodedPropertyDeclaration|null The declaration, or null.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function fromProperty(mixed $property): ?CodedPropertyDeclaration {
 		$raw = $this->rawAnnotation(property: $property);
@@ -82,7 +82,7 @@ class CodedPropertyDeclarationFactory {
 	 *
 	 * @return array<string,CodedPropertyDeclaration> The declarations.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function fromProperties(array $properties): array {
 		$declarations = [];

@@ -100,7 +100,7 @@ class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 	 * kept as JSON text) is validated and written as text again when a change
 	 * touches another field of the object, without the change naming it.
 	 *
-	 * @spec openspec/changes/example-set-change-keeps-text/specs/example-sets/spec.md#requirement-a-change-sends-a-text-property-as-text
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-change-sends-a-text-property-as-text
 	 */
 	public function testAChangeSendsATextPropertyTheStoreReadsAsAStructureAsText(): void {
 		$this->store->textFields['cases case'][] = 'geometry';

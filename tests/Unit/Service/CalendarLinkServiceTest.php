@@ -208,7 +208,7 @@ class CalendarLinkServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/linked-events-carry-attendees/specs/calendar-integration/spec.md
+	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function testALinkedEventListsItsInviteesWithTheirAnswers(): void {
 		$link = new CalendarLink();

@@ -29,6 +29,8 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
+use OCA\OpenRegister\Db\MagicMapper\TableTermsFacet;
+use OCA\OpenRegister\Db\MagicMapper\TermsFacetUnion;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -104,12 +106,14 @@ class MagicFacetHandlerBucketLabelTest extends TestCase {
 
 		return $method->invoke(
 			$handler,
-			'openregister_table_1_2',
-			$column,
-			[],
-			false,
-			$this->createMock(Register::class),
-			$schema
+			new TableTermsFacet(
+				'openregister_table_1_2',
+				$column,
+				[],
+				false,
+				$this->createMock(Register::class),
+				$schema
+			)
 		);
 	}//end facetOver()
 
@@ -244,7 +248,7 @@ class MagicFacetHandlerBucketLabelTest extends TestCase {
 		$method = new ReflectionMethod(MagicFacetHandler::class, 'getTermsFacetUnion');
 		$method->setAccessible(true);
 
-		return $method->invoke($handler, $tableConfigs, $column, [], $tableConfigs[0]['schema'], false);
+		return $method->invoke($handler, new TermsFacetUnion(tableConfigs: $tableConfigs, field: $column, baseQuery: []));
 	}//end unionFacetOver()
 
 	/**

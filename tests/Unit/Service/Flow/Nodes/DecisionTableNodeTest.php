@@ -627,7 +627,7 @@ class DecisionTableNodeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/decision-table-stored-picker/specs/flow-decision-tables/spec.md#requirement-a-stored-decision-table-is-picked-from-the-register
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-stored-decision-table-is-picked-from-the-register
 	 */
 	public function testTheStoredTableIsPickedFromTheRegister(): void {
 		$fields = array_column(array: $this->node->configForm(), column_key: null, index_key: 'key');

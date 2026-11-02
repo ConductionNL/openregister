@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ class CorrectionsController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function __construct(
 		string $appName,
@@ -90,7 +90,7 @@ class CorrectionsController extends Controller {
 	 *
 	 * @contract tests/Unit/Controller/CorrectionsControllerTest.php
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function correct(string $register, string $schema, string $id): JSONResponse {
 		// `#[NoAdminRequired]` means "not only admins", never "no account".

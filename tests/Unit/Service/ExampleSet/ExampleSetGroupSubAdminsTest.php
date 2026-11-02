@@ -48,7 +48,7 @@ class ExampleSetGroupSubAdminsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-group-subadmins/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
 	 */
 	public function testASubAdminIsMadeKeptAndTakenAway(): void {
 		$this->handlers(subAdmins: ['sanne']);
@@ -73,7 +73,7 @@ class ExampleSetGroupSubAdminsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-group-subadmins/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-group-may-name-its-sub-admins-from-the-cast
 	 */
 	public function testAnUnknownSubAdminRefusesTheSet(): void {
 		$this->handlers(subAdmins: ['nobody']);

@@ -111,7 +111,7 @@ class ObjectReadAccess {
 	 *
 	 * @return Schema|null The schema.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
+	 * @spec openspec/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
 	 */
 	public function schemaOf(ObjectEntity $object): ?Schema {
 		try {
@@ -149,7 +149,7 @@ class ObjectReadAccess {
 	 *
 	 * @return int|null The register id.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function registerIdOf(ObjectEntity $object): ?int {
 		$register = $object->getRegister();

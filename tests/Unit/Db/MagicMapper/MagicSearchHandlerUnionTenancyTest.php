@@ -89,6 +89,7 @@ final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 		$rbac->method('buildRbacConditionsSql')->willReturn(['bypass' => true, 'conditions' => []]);
 		$rbac->method('hasConditionalRulesBypassingMultitenancy')->willReturn($conditionalBypass);
 		$rbac->method('currentCallerHoldsObjectGrants')->willReturn($holdsGrants);
+		$rbac->method('publicReadLiftsOrganisationFilter')->willReturn(true);
 
 		$organisation = $this->createMock(originalClassName: MagicOrganizationHandler::class);
 		$organisation->method('resolveOrganizationScope')->willReturn($scope);

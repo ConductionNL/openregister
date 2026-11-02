@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ContactMatchingService;
+use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -67,9 +67,9 @@ class ContactsController extends Controller {
 	/**
 	 * Contact matching service.
 	 *
-	 * @var ContactMatchingService
+	 * @var ContactMatcherInterface
 	 */
-	private readonly ContactMatchingService $matchingService;
+	private readonly ContactMatcherInterface $matchingService;
 
 	/**
 	 * Deep link registry service.
@@ -99,7 +99,7 @@ class ContactsController extends Controller {
 	 * @param IRequest $request HTTP request
 	 * @param ContactService $contactService Contact service
 	 * @param ObjectService $objectService Object service
-	 * @param ContactMatchingService $matchingService Contact matching service
+	 * @param ContactMatcherInterface $matchingService Contact matching service
 	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry
 	 * @param IL10N $l10n Localization service
 	 * @param LoggerInterface $logger Logger
@@ -112,7 +112,7 @@ class ContactsController extends Controller {
 		IRequest $request,
 		ContactService $contactService,
 		ObjectService $objectService,
-		ContactMatchingService $matchingService,
+		ContactMatcherInterface $matchingService,
 		DeepLinkRegistryService $deepLinkRegistry,
 		IL10N $l10n,
 		LoggerInterface $logger,

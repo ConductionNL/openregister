@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -65,7 +65,7 @@ final class JobScheduleServiceTest extends TestCase {
 	/**
 	 * A job nobody administered is enabled, and due.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 *
 	 * @return void
 	 */
@@ -80,7 +80,7 @@ final class JobScheduleServiceTest extends TestCase {
 	/**
 	 * A disabled job has no next due time AND is not allowed to run.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 *
 	 * @return void
 	 */
@@ -99,7 +99,7 @@ final class JobScheduleServiceTest extends TestCase {
 	/**
 	 * Enabling it again brings the next due time back.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 *
 	 * @return void
 	 */
@@ -117,7 +117,7 @@ final class JobScheduleServiceTest extends TestCase {
 	/**
 	 * The row carries the last run and the next due time, an interval apart.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 *
 	 * @return void
 	 */
@@ -138,7 +138,7 @@ final class JobScheduleServiceTest extends TestCase {
 	/**
 	 * A window keeps the job out of the hours it was not given.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 *
 	 * @return void
 	 */
@@ -156,7 +156,7 @@ final class JobScheduleServiceTest extends TestCase {
 	 * A nightly job is administered as 22 to 6 far more often than as 0 to 6,
 	 * and a naive start-to-end comparison reads 22 to 6 as "never".
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 *
 	 * @return void
 	 */
@@ -172,7 +172,7 @@ final class JobScheduleServiceTest extends TestCase {
 	/**
 	 * Administering one field leaves the others as they were.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 *
 	 * @return void
 	 */

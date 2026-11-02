@@ -38,6 +38,7 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Service\Object\ValidateObject
  * @covers \OCA\OpenRegister\Formats\UserFormat
+ * @uses   \OCA\OpenRegister\Db\Schema
  */
 class ValidateObjectPlannedUsersTest extends TestCase {
 	private ValidateObject $handler;
@@ -74,7 +75,7 @@ class ValidateObjectPlannedUsersTest extends TestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public function testAPlannedAccountPassesOnlyForThatCall(): void {
 		[$schema, $object] = $this->ticket();
@@ -87,7 +88,7 @@ class ValidateObjectPlannedUsersTest extends TestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public function testAnUndeclaredAccountIsStillRefusedAndAnExistingOneStillPasses(): void {
 		[$schema, $object] = $this->ticket();

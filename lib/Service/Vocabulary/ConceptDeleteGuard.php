@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -78,7 +78,7 @@ class ConceptDeleteGuard {
 	 *
 	 * @return boolean True when the object is a concept.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function isConcept(Schema $schema): bool {
 		return ((string)$schema->getSlug() === VocabularyImportService::SCHEMA_CONCEPT);
@@ -91,7 +91,7 @@ class ConceptDeleteGuard {
 	 *
 	 * @return boolean True when the delete must be refused as system-defined.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function isSystemDefined(array $concept): bool {
 		return $this->lifecycle->isSystemDefined(concept: $concept);
@@ -110,7 +110,7 @@ class ConceptDeleteGuard {
 	 *
 	 * @return array{count:int,holders:array<int,array{schema:string,property:string,count:int}>}
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function usage(array $concept, string $schemeUri): array {
 		$uri = trim((string)($concept['uri'] ?? ''));
@@ -197,7 +197,7 @@ class ConceptDeleteGuard {
 	 *
 	 * @return string The message.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function inUseMessage(array $concept, array $usage): string {
 		$label = trim((string)($concept['uri'] ?? 'this value'));
@@ -228,7 +228,7 @@ class ConceptDeleteGuard {
 	 *
 	 * @return string The message.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function systemDefinedMessage(array $concept): string {
 		return sprintf(

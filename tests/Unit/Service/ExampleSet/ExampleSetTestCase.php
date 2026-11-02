@@ -65,6 +65,8 @@ use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
@@ -81,6 +83,8 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\TaskAudit;
+use OCA\OpenRegister\Db\TaskAuditMapper;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -223,6 +227,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<int, EmailLink> The email links, by id. */
 	protected array $emailLinks = [];
 
+	/** @var array<string, object> Services a test adds to the container, by id. */
+	protected array $services = [];
+
 	/** @var array<int, string> The timeline kinds the fake knows. */
 	protected array $timelineKinds = ['statuswijziging', 'contactmoment'];
 
@@ -249,6 +256,9 @@ abstract class ExampleSetTestCase extends TestCase {
 
 	/** @var array<string, FlowRun> The stored flow runs, by uuid. */
 	protected array $flowRuns = [];
+
+	/** @var array<int, TaskAudit> The task audit entries the set appended, in order. */
+	protected array $taskAudits = [];
 
 	/** @var array<string, View> The saved views, by uuid. */
 	protected array $savedViews = [];
@@ -295,6 +305,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			FlowVersionService::class => $this->flowVersions(),
 			FlowService::class        => $this->flowService(),
 			FlowRunMapper::class      => $this->flowRunMapper(),
+			TaskAuditMapper::class    => $this->taskAuditMapper(),
 			ExampleSetDeckStore::class => $this->deckStore(),
 			ExampleSetCollectivesStore::class => $this->collectivesStore(),
 			ExampleSetTalkStore::class => $this->talkStore(),
@@ -310,6 +321,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			CaseItemMapper::class     => $this->caseItemMapper(),
 			IUserManager::class       => $this->createMock(IUserManager::class),
 			OrganisationService::class => $this->organisationService(),
+			default                   => $this->services[$id],
 		});
 		$files     = new ExampleSetFiles(container: $container);
 		$setConfig = new ExampleSetAppConfig(appConfig: $this->appConfigOfApps(), random: $this->random());
@@ -384,7 +396,9 @@ abstract class ExampleSetTestCase extends TestCase {
 				talkConversations: new ExampleSetTalkConversations(container: $container),
 				auditEntries: new ExampleSetAuditEntries(container: $container),
 				timelineEntries: new ExampleSetTimelineEntries(container: $container),
-				emailLinks: new ExampleSetEmailLinks(container: $container)
+				emailLinks: new ExampleSetEmailLinks(container: $container),
+				accessLinks: new ExampleSetAccessLinks(container: $container),
+				grants: new ExampleSetGrants(container: $container)
 			),
 			lock: new ExampleSetLock(locks: $this->locks)
 		);
@@ -415,7 +429,9 @@ abstract class ExampleSetTestCase extends TestCase {
 				talkConversations: new ExampleSetTalkConversations(container: $container),
 				auditEntries: new ExampleSetAuditEntries(container: $container),
 				timelineEntries: new ExampleSetTimelineEntries(container: $container),
-				emailLinks: new ExampleSetEmailLinks(container: $container)
+				emailLinks: new ExampleSetEmailLinks(container: $container),
+				accessLinks: new ExampleSetAccessLinks(container: $container),
+				grants: new ExampleSetGrants(container: $container)
 			),
 			lock: new ExampleSetLock(locks: $this->locks)
 		);
@@ -488,10 +504,13 @@ abstract class ExampleSetTestCase extends TestCase {
 			$state = TaskState::normalise(value: (string) ($data['state'] ?? Task::STATE_AVAILABLE))['state'];
 			$task  = new Task();
 			$task->setUuid('task-'.count($this->taskImports));
+			$task->setId(count($this->taskImports));
 			$task->setTaskKey((string) $data['key']);
 			$task->setTitle((string) $data['title']);
 			$task->setObjectUuid((string) $data['objectUuid']);
 			$task->setAssignee(isset($data['assignee']) === true ? (string) $data['assignee'] : null);
+			$task->setRunUuid(isset($data['runUuid']) === true ? (string) $data['runUuid'] : null);
+			$task->setNodeId(isset($data['nodeId']) === true ? (string) $data['nodeId'] : null);
 			$task->setState($state);
 			$task->setIsTerminal(TaskState::isTerminal(state: $state));
 			$this->engineTasks[(string) $task->getUuid()] = $task;
@@ -1060,6 +1079,28 @@ abstract class ExampleSetTestCase extends TestCase {
 			$this->flowRuns[(string) $run->getUuid()] = $run;
 			return $run;
 		});
+		$mapper->method('findByUuid')->willReturnCallback(
+			fn (string $uuid): FlowRun => ($this->flowRuns[$uuid] ?? throw new DoesNotExistException('no run '.$uuid))
+		);
+		$mapper->method('update')->willReturnCallback(function (FlowRun $run): FlowRun {
+			$this->flowRuns[(string) $run->getUuid()] = $run;
+			return $run;
+		});
+
+		return $mapper;
+	}
+
+	/**
+	 * A task audit mapper that appends to $taskAudits.
+	 *
+	 * @return TaskAuditMapper
+	 */
+	private function taskAuditMapper(): TaskAuditMapper {
+		$mapper = $this->createMock(TaskAuditMapper::class);
+		$mapper->method('insert')->willReturnCallback(function (TaskAudit $entry): TaskAudit {
+			$this->taskAudits[] = $entry;
+			return $entry;
+		});
 
 		return $mapper;
 	}
@@ -1222,6 +1263,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			$object->setUuid($uuid);
 			$object->setRegister('7');
 			$object->setSchema('9');
+			$object->setOwner($this->store->owners[$uuid] ?? null);
 			return $object;
 		});
 

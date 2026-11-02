@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/rematerialise-on-referenced-change/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
+ * @spec openspec/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
  */
 
 declare(strict_types=1);
@@ -159,7 +159,7 @@ class ReferencedCalculationRefresherTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/resave-restores-string-typed-values/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function testTheReSaveRestoresDecodedStringTypedValues(): void {
 		$service = $this->createMock(originalClassName: ObjectService::class);

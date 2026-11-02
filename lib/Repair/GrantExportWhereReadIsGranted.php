@@ -16,7 +16,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Throwable;
  * including one an administrator has already narrowed. Never throws, because a
  * single unreadable schema must not abort an app upgrade.
  *
- * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
 class GrantExportWhereReadIsGranted implements IRepairStep {
 
@@ -68,7 +68,7 @@ class GrantExportWhereReadIsGranted implements IRepairStep {
 	 *
 	 * @return string The step name.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function getName(): string {
 		return 'Grant the export right wherever the read right is granted';
@@ -81,7 +81,7 @@ class GrantExportWhereReadIsGranted implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function run(IOutput $output): void {
 		try {

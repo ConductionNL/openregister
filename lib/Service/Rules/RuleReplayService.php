@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use Throwable;
  * that `bulk-action-jobs` already owns. Writing a second executor here is how
  * the preview and the run drift apart.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 final class RuleReplayService {
 
@@ -113,7 +113,7 @@ final class RuleReplayService {
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Six facts about one replay, each read.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function preview(
 		Schema $schema,
@@ -183,7 +183,7 @@ final class RuleReplayService {
 	 *
 	 * @return int|null The count, or null when the selection names nothing.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function countOf(array $selection, ?int $registerId, ?int $schemaId): ?int {
 		$ids = ($selection['ids'] ?? null);

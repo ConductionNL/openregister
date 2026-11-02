@@ -21,6 +21,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\MigrationService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -35,10 +37,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  *   php occ openregister:migrate-storage to-magic 1 5
  *   php occ openregister:migrate-storage to-blob 1 5 --dry-run
  *   php occ openregister:migrate-storage to-magic 1 5 --status
- *
- * @SuppressWarnings(PHPMD.CyclomaticComplexity)
- * @SuppressWarnings(PHPMD.NPathComplexity)
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class MigrateStorageCommand extends Command {
 	/**
@@ -132,11 +130,6 @@ class MigrateStorageCommand extends Command {
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$direction = $input->getArgument('direction');
-		$registerArg = $input->getArgument('register');
-		$schemaArg = $input->getArgument('schema');
-		$batchSize = (int)$input->getOption('batch-size');
-		$dryRun = $input->getOption('dry-run');
-		$statusOnly = $input->getOption('status');
 
 		// Validate direction.
 		if (in_array($direction, ['to-magic', 'to-blob'], true) === false) {
@@ -144,18 +137,47 @@ class MigrateStorageCommand extends Command {
 			return self::FAILURE;
 		}
 
-		// Resolve register and schema.
 		try {
 			$resolved = $this->migrationService->resolveRegisterAndSchema(
-				registerId: $registerArg,
-				schemaId: $schemaArg
+				registerId: $input->getArgument('register'),
+				schemaId: $input->getArgument('schema')
 			);
-			$register = $resolved['register'];
-			$schema = $resolved['schema'];
 		} catch (\Exception $e) {
 			$output->writeln('<error>Failed to resolve register/schema: ' . $e->getMessage() . '</error>');
 			return self::FAILURE;
 		}
+
+		if ($this->writeStatus(output: $output, resolved: $resolved) === false) {
+			return self::FAILURE;
+		}
+
+		if ($input->getOption('status') === true) {
+			return self::SUCCESS;
+		}
+
+		$this->writePlan(input: $input, output: $output);
+
+		try {
+			$report = $this->migrate(input: $input, resolved: $resolved);
+		} catch (\Exception $e) {
+			$output->writeln('<error>Migration failed: ' . $e->getMessage() . '</error>');
+			return self::FAILURE;
+		}
+
+		return $this->writeReport(output: $output, report: $report);
+	}//end execute()
+
+	/**
+	 * Write the header and the storage status of the register and schema.
+	 *
+	 * @param OutputInterface                            $output   Output interface.
+	 * @param array{register: Register, schema: Schema} $resolved The resolved register and schema.
+	 *
+	 * @return bool False when the storage status could not be read.
+	 */
+	private function writeStatus(OutputInterface $output, array $resolved): bool {
+		$register = $resolved['register'];
+		$schema = $resolved['schema'];
 
 		$output->writeln('');
 		$output->writeln('<info>OpenRegister Storage Migration</info>');
@@ -164,65 +186,93 @@ class MigrateStorageCommand extends Command {
 		$output->writeln('  Schema:   <comment>' . $schema->getName() . '</comment> (ID: ' . $schema->getId() . ')');
 		$output->writeln('');
 
-		// Show status.
 		try {
 			$status = $this->migrationService->getStorageStatus(register: $register, schema: $schema);
 		} catch (\Exception $e) {
 			$output->writeln('<error>Failed to get storage status: ' . $e->getMessage() . '</error>');
-			return self::FAILURE;
+			return false;
 		}
 
 		$output->writeln('<info>Storage Status:</info>');
 		$output->writeln('  Blob storage:  <comment>' . $status['blobStorage']['count'] . ' objects</comment>');
-		$magicExists = $status['magicTable']['exists'];
 		$magicInfo = 'does not exist';
-		if ($magicExists === true) {
+		if ($status['magicTable']['exists'] === true) {
 			$magicInfo = $status['magicTable']['count'] . ' objects';
 		}
 
 		$output->writeln('  Magic table:   <comment>' . $magicInfo . '</comment>');
 		$output->writeln('');
+		return true;
+	}//end writeStatus()
 
-		if ($statusOnly === true) {
-			return self::SUCCESS;
-		}
-
-		// Run migration.
+	/**
+	 * Write the direction, dry-run flag and batch size of the migration about to run.
+	 *
+	 * @param InputInterface  $input  Input interface.
+	 * @param OutputInterface $output Output interface.
+	 *
+	 * @return void
+	 */
+	private function writePlan(InputInterface $input, OutputInterface $output): void {
 		$directionLabel = 'magic table -> blob';
-		if ($direction === 'to-magic') {
+		if ($input->getArgument('direction') === 'to-magic') {
 			$directionLabel = 'blob -> magic table';
 		}
 
 		$output->writeln('<info>Migrating: ' . $directionLabel . '</info>');
 
-		if ($dryRun === true) {
+		if ($input->getOption('dry-run') === true) {
 			$output->writeln('<comment>DRY RUN - no changes will be made</comment>');
 		}
 
-		$output->writeln('  Batch size: <comment>' . $batchSize . '</comment>');
+		$output->writeln('  Batch size: <comment>' . (int)$input->getOption('batch-size') . '</comment>');
 		$output->writeln('');
+	}//end writePlan()
 
-		try {
-			$report = $this->migrationService->migrateToBlobStorage(
-				register: $register,
-				schema: $schema,
+	/**
+	 * Run the migration.
+	 *
+	 * The blob migration always runs; `to-magic` then runs the magic-table
+	 * migration, and its report is the one returned.
+	 *
+	 * @param InputInterface                            $input    Input interface.
+	 * @param array{register: Register, schema: Schema} $resolved The resolved register and schema.
+	 *
+	 * @return array{total: int, migrated: int, skipped: int, failed: int, errors: array} The migration report.
+	 *
+	 * @throws \Exception When the migration fails.
+	 */
+	private function migrate(InputInterface $input, array $resolved): array {
+		$batchSize = (int)$input->getOption('batch-size');
+		$dryRun = $input->getOption('dry-run');
+
+		$report = $this->migrationService->migrateToBlobStorage(
+			register: $resolved['register'],
+			schema: $resolved['schema'],
+			batchSize: $batchSize,
+			dryRun: $dryRun
+		);
+		if ($input->getArgument('direction') === 'to-magic') {
+			$report = $this->migrationService->migrateToMagicTable(
+				register: $resolved['register'],
+				schema: $resolved['schema'],
 				batchSize: $batchSize,
 				dryRun: $dryRun
 			);
-			if ($direction === 'to-magic') {
-				$report = $this->migrationService->migrateToMagicTable(
-					register: $register,
-					schema: $schema,
-					batchSize: $batchSize,
-					dryRun: $dryRun
-				);
-			}
-		} catch (\Exception $e) {
-			$output->writeln('<error>Migration failed: ' . $e->getMessage() . '</error>');
-			return self::FAILURE;
 		}
 
-		// Display report.
+		return $report;
+	}//end migrate()
+
+	/**
+	 * Write the migration report and pick the exit code.
+	 *
+	 * @param OutputInterface                                                             $output Output interface.
+	 * @param array{total: int, migrated: int, skipped: int, failed: int, errors: array} $report The migration report.
+	 *
+	 * @return int FAILURE when any object failed, SUCCESS otherwise.
+	 */
+	private function writeReport(OutputInterface $output, array $report): int {
 		$output->writeln('<info>Migration Report:</info>');
 		$output->writeln('  Total source objects: <comment>' . $report['total'] . '</comment>');
 		$output->writeln('  Migrated:            <comment>' . $report['migrated'] . '</comment>');
@@ -246,5 +296,5 @@ class MigrateStorageCommand extends Command {
 
 		$output->writeln('<info>Migration completed successfully.</info>');
 		return self::SUCCESS;
-	}//end execute()
+	}//end writeReport()
 }//end class

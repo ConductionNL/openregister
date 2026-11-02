@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rematerialise-on-referenced-change/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
+ * @spec openspec/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use Throwable;
 /**
  * Re-saves the objects whose materialised calculations read a field of an updated object.
  *
- * @spec openspec/changes/rematerialise-on-referenced-change/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
+ * @spec openspec/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A re-save reads the referrers, resolves their schemas
  *   and hands each row back in its stored form; each collaborator is one of those steps.
@@ -110,7 +110,7 @@ class ReferencedCalculationRefresher {
 	 *
 	 * @return integer The number of objects re-saved.
 	 *
-	 * @spec openspec/changes/rematerialise-on-referenced-change/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
+	 * @spec openspec/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
 	 */
 	public function refresh(ObjectEntity $updated, ?ObjectEntity $old): int {
 		$uuid = (string) $updated->getUuid();
@@ -219,7 +219,7 @@ class ReferencedCalculationRefresher {
 	 *
 	 * @return array<string, array<int, string>> The pointing field => the target fields read.
 	 *
-	 * @spec openspec/changes/rematerialise-on-referenced-change/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
+	 * @spec openspec/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
 	 */
 	public function dependencies(Schema $schema, Schema $target): array {
 		$references = (($schema->getConfiguration() ?? [])['x-openregister-references'] ?? []);

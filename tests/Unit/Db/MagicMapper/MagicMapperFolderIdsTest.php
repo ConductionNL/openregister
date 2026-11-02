@@ -15,7 +15,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+ * @spec openspec/specs/organisation-usage-measured/spec.md
  */
 
 declare(strict_types=1);

@@ -221,7 +221,7 @@ class TriggerNodesTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnObjectTriggerScopeNamesOnePropertyAndValue(): void {
 		$config = ['event' => 'object.updated', 'register' => 'zaken', 'schema' => 'case'];

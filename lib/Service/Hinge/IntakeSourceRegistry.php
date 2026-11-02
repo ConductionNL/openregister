@@ -48,7 +48,7 @@ class IntakeSourceRegistry {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
@@ -63,7 +63,7 @@ class IntakeSourceRegistry {
 	 *
 	 * @return array<int, array> The sources, each as its object data.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function all(?string $kind = null): array {
 		$filters = [];
@@ -85,7 +85,7 @@ class IntakeSourceRegistry {
 	 *
 	 * @return array<int, array> The enabled sources.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function enabled(?string $kind = null): array {
 		return array_values(

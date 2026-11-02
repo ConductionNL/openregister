@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/file-actions/spec.md
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -61,7 +61,7 @@ use Psr\Log\NullLogger;
 /**
  * readFiles to list, addFiles to upload, deleteFiles to delete, on top of read.
  *
- * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/file-actions/spec.md
+ * @spec openspec/specs/file-actions/spec.md
  */
 class FilesControllerFileVerbsTest extends TestCase {
 

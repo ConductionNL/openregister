@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-talk-conversations/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use Throwable;
 /**
  * Checks, writes, proves and deletes the Talk conversations of an example set.
  *
- * @spec openspec/changes/example-set-talk-conversations/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
  */
 class ExampleSetTalkConversations extends ExampleSetEngineRows {
 
@@ -69,7 +69,7 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-talk-conversations/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
 	public function part(): string {
 		return 'talkConversations';
@@ -80,7 +80,7 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-talk-conversations/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
 	public function noun(): string {
 		return 'talk conversation';
@@ -94,7 +94,7 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-talk-conversations/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
 	public function refusal(array $data, array $users): string {
 		$unknown = array_diff(array_keys($data), self::FIELDS);
@@ -130,7 +130,7 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 *     entry: array{token: string, room: int, createdRoom: bool, object: string, link: int}|null
 	 * } The record entry, or why the write failed.
 	 *
-	 * @spec openspec/changes/example-set-talk-conversations/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
 	public function write(string $app, string $key, array $data): array {
 		$store = $this->store();
@@ -181,7 +181,7 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-talk-conversations/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
 	public function lost(array $entry): bool {
 		try {
@@ -198,7 +198,7 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 *
 	 * @return string `removed` or `failed`.
 	 *
-	 * @spec openspec/changes/example-set-talk-conversations/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
 	public function revert(array $entry): string {
 		try {

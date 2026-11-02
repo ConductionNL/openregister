@@ -61,7 +61,7 @@ use Throwable;
  * compile-time constants and isRevocable() derives its answer from them, so
  * injecting it would add a collaborator that can never vary.
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
 class PrincipalReachService {
 	/**
@@ -98,7 +98,7 @@ class PrincipalReachService {
 	 *
 	 * @return array<string, mixed> The reach listing.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function listFor(string $principal): array {
 		$principal = trim($principal);

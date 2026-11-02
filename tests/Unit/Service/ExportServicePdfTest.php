@@ -288,11 +288,8 @@ class ExportServicePdfTest extends TestCase {
 	// NOTE: the boundary conditions ("N rows over the cap throws" / "N rows
 	// at the cap doesn't throw") are asserted directly against the
 	// extracted `guardPdfRowCap()` helper via reflection, rather than by
-	// running MAX_PDF_EXPORT_ROWS (5000) objects through a real Dompdf
-	// render. Dompdf's table layout (`Cellmap`) has real, substantial
-	// per-row memory cost — exactly the risk the cap exists to bound — so a
-	// full-scale render-based test would itself be slow/memory-hungry
-	// rather than a fast unit assertion. The "under cap succeeds end to
+	// building a document of MAX_PDF_EXPORT_ROWS (5000) rows, which would
+	// make this a slow test rather than a fast unit assertion. The "under cap succeeds end to
 	// end" path is still covered at realistic scale by
 	// `testExportToPdfProducesValidPdfMagicBytes()` above, and the
 	// over-cap short-circuit (no rendering work happens) is covered by
@@ -333,7 +330,7 @@ class ExportServicePdfTest extends TestCase {
 
 		// A small array whose *count* (via a stub with a custom count) simulates
 		// an over-cap fetch cheaply: since the guard runs on count($objects)
-		// immediately after the fetch and before any HTML/Dompdf work, a real
+		// immediately after the fetch and before any document is built, a real
 		// over-cap array of lightweight ObjectEntity references is itself cheap
 		// (no rendering happens) — this proves the short-circuit rather than the
 		// guard math already covered above.

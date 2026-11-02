@@ -16,7 +16,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
+ * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ use OCP\IDBConnection;
  * Read a table's DECIMAL column sizes, so a save checks a value against the
  * column that will hold it rather than the size the schema asks for.
  *
- * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
+ * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
  */
 final class MagicNumberColumnSizes {
 
@@ -59,7 +59,7 @@ final class MagicNumberColumnSizes {
 	 *
 	 * @return array<string, array{precision: int, scale: int}> Sizes keyed by lower-cased column name.
 	 *
-	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
+	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
 	 */
 	public function sizes(string $tableName): array {
 		$key = strtolower($this->tablePrefix.$tableName);
@@ -91,7 +91,7 @@ final class MagicNumberColumnSizes {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
+	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
 	 */
 	public static function forget(string $fullTableName): void {
 		unset(self::$cache[strtolower($fullTableName)]);

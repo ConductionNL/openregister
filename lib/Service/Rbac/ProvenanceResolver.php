@@ -50,7 +50,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -60,7 +60,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 /**
  * Names the rule behind a granted action, and the deny behind an absent one.
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class ProvenanceResolver {
 
@@ -150,7 +150,7 @@ class ProvenanceResolver {
 	 *
 	 * @return array<string, mixed> The provenance record.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function forAction(
 		string $action,
@@ -219,7 +219,7 @@ class ProvenanceResolver {
 	 *
 	 * @return array<string, array<string, mixed>> The provenance, keyed by action.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function forActions(
 		array $actions,

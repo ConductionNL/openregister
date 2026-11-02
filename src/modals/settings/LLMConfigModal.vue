@@ -490,37 +490,6 @@
 						{{ selectedVectorBackend.performanceNote }}
 					</small>
 				</div>
-
-				<!-- Solr Configuration (only if Solr backend selected) -->
-				<div
-					v-if="
-						selectedVectorBackend && selectedVectorBackend.id === 'solr'
-					"
-					class="solr-config">
-					<div class="info-box">
-						<p>
-							{{
-								t(
-									'openregister',
-									'Vectors will be stored in your existing object and file collections',
-								)
-							}}
-						</p>
-						<p>
-							{{
-								t(
-									'openregister',
-									'Files → filecollection, objects → objectcollection',
-								)
-							}}
-						</p>
-						<p>
-							<strong>{{
-								t('openregister', 'Vector field: _embedding_')
-							}}</strong>
-						</p>
-					</div>
-				</div>
 			</div>
 
 			<!-- AI Features -->
@@ -1341,7 +1310,6 @@ export default {
 
 					vectorConfig: {
 						backend: this.selectedVectorBackend?.id || 'php',
-						solrField: '_embedding_', // Reserved field in Solr schema
 					},
 
 					enabledFeatures: this.aiFeatures
@@ -1507,42 +1475,6 @@ export default {
 						performanceNote: db.performanceNote,
 					})
 				}
-
-				// Solr backend (check if Solr is available)
-				let solrAvailable = false
-				let solrNote = 'Not connected'
-				try {
-					const solrResponse = await axios.get(
-						generateUrl('/apps/openregister/api/settings/solr-info'),
-					)
-					if (solrResponse.data.success && solrResponse.data.solr) {
-						const solr = solrResponse.data.solr
-						solrAvailable = solr.available || false
-
-						if (solrAvailable) {
-							solrNote =
-								'Very fast distributed vector search using KNN/HNSW indexing. Vectors stored in existing file and object collections.'
-						} else {
-							solrNote =
-								solr.error
-								|| 'SOLR not connected. Enable in Search Configuration.'
-						}
-					}
-				} catch (error) {
-					console.error('Failed to fetch Solr info:', error)
-					solrNote = 'Failed to check Solr status'
-				}
-
-				backends.push({
-					id: 'solr',
-					name: 'Solr 9+ Dense Vector',
-					description: solrAvailable
-						? 'Very fast distributed vector search (connected ✓)'
-						: 'Very fast distributed vector search (not connected)',
-					performance: solrAvailable ? 'very_fast' : null,
-					available: solrAvailable,
-					performanceNote: solrNote,
-				})
 
 				this.vectorBackendOptions = backends
 
@@ -1744,14 +1676,6 @@ export default {
 	font-size: 12px;
 	color: var(--color-text-maxcontrast);
 	font-style: italic;
-}
-
-.solr-config {
-	margin-top: 16px;
-	padding: 16px;
-	background: var(--color-background-hover);
-	border-radius: 8px;
-	border: 1px solid var(--color-border);
 }
 
 .test-result {

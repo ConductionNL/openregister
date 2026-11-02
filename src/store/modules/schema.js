@@ -11,6 +11,8 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { defineStore } from 'pinia'
 import { Schema } from '../../entities/index.js'
+import { objectAnswer } from '../../services/listPage.js'
+import { listStateActions } from './listState.js'
 
 // Module-scoped single-flight for refreshSchemaList; same rationale as the
 // register store — AppInitializationService and every search/dashboard
@@ -159,25 +161,7 @@ export const useSchemaStore = defineStore('schema', {
 				}
 			})
 		},
-		/**
-		 * Set pagination details
-		 *
-		 * @param {number} page - The current page number for pagination
-		 * @param {number} limit - The number of items to display per page
-		 * @spec exclude store setter (local pagination state)
-		 */
-		setPagination(page, limit = 14) {
-			this.pagination = { page, limit }
-		},
-		/**
-		 * Set query filters for schema list
-		 *
-		 * @param {object} filters - The filter criteria to apply to the schema list
-		 * @spec exclude store setter (local filter state)
-		 */
-		setFilters(filters) {
-			this.filters = { ...this.filters, ...filters }
-		},
+		...listStateActions(14),
 		/**
 		 * Refresh the schema list from the API.
 		 *
@@ -412,15 +396,7 @@ export const useSchemaStore = defineStore('schema', {
 				body: JSON.stringify(schema),
 			})
 
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
-
-			const responseData = await response.json()
-
-			if (!responseData || typeof responseData !== 'object') {
-				throw new Error('Invalid response data')
-			}
+			const responseData = await objectAnswer(response)
 
 			const data = new Schema(responseData)
 

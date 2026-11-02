@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { Source } from '../../entities/index.js'
+import { objectAnswer } from '../../services/listPage.js'
 
 export const useSourceStore = defineStore('source', {
 	state: () => ({
@@ -92,15 +93,7 @@ export const useSourceStore = defineStore('source', {
 				method: 'DELETE',
 			})
 
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
-
-			const responseData = await response.json()
-
-			if (!responseData || typeof responseData !== 'object') {
-				throw new Error('Invalid response data')
-			}
+			const responseData = await objectAnswer(response)
 
 			this.refreshSourceList()
 			this.setSourceItem(null)
@@ -135,15 +128,7 @@ export const useSourceStore = defineStore('source', {
 				body: JSON.stringify(sourceItem),
 			})
 
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
-
-			const responseData = await response.json()
-
-			if (!responseData || typeof responseData !== 'object') {
-				throw new Error('Invalid response data')
-			}
+			const responseData = await objectAnswer(response)
 
 			const data = new Source(responseData)
 

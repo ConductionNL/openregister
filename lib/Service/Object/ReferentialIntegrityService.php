@@ -39,6 +39,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphNode;
+use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphStep;
+use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphWalk;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCP\ICacheFactory;
@@ -191,8 +194,9 @@ class ReferentialIntegrityService {
 			return DeletionAnalysis::empty();
 		}
 
-		$visited = [];
-		return $this->walkDeletionGraph(object: $object, visited: $visited);
+		$walk = new DeletionGraphWalk();
+		$this->walkDeletionGraph(node: new DeletionGraphNode(object: $object, walk: $walk));
+		return $walk->toAnalysis();
 	}//end canDelete()
 
 	/**
@@ -872,212 +876,255 @@ class ReferentialIntegrityService {
 	}//end resolveSchemaRef()
 
 	/**
-	 * Walk the deletion graph recursively to build a DeletionAnalysis.
+	 * Walk the deletion graph from one object, adding what its deletion implies to the node's walk.
 	 *
-	 * @param ObjectEntity $object The object being analyzed for deletion.
-	 * @param array $visited Array of visited UUIDs for cycle detection (passed by reference).
-	 * @param array $chain The current chain path for debugging.
-	 * @param int $depth Current recursion depth.
+	 * @param DeletionGraphNode $node The object being analyzed for deletion.
 	 *
-	 * @return DeletionAnalysis The analysis for this object and its dependents.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Graph walking requires many conditional paths per action type
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple action types and fallback chains create many paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Core algorithm that handles all 5 action types inline
+	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function walkDeletionGraph(
-		ObjectEntity $object,
-		array &$visited,
-		array $chain = [],
-		int $depth = 0,
-	): DeletionAnalysis {
+	private function walkDeletionGraph(DeletionGraphNode $node): void {
 		// Cycle detection.
-		$uuid = $object->getUuid();
-		if (in_array($uuid, $visited, true) === true) {
-			return DeletionAnalysis::empty();
+		$uuid = $node->object->getUuid();
+		if ($node->walk->hasVisited(uuid: $uuid) === true) {
+			return;
 		}
 
 		// Depth limit.
-		if ($depth >= self::MAX_DEPTH) {
+		if ($node->depth >= self::MAX_DEPTH) {
 			$this->logger->warning(
 				message: '[ReferentialIntegrity] Max depth reached during graph walk',
-				context: ['uuid' => $uuid, 'depth' => $depth]
+				context: ['uuid' => $uuid, 'depth' => $node->depth]
 			);
-			return DeletionAnalysis::empty();
+			return;
 		}
 
-		$visited[] = $uuid;
+		$node->walk->markVisited(uuid: $uuid);
 
-		$schemaId = $object->getSchema();
+		$schemaId = $node->object->getSchema();
 		if ($schemaId === null || isset($this->relationIndex[$schemaId]) === false) {
-			return DeletionAnalysis::empty();
+			return;
 		}
 
-		$cascadeTargets = [];
-		$nullifyTargets = [];
-		$defaultTargets = [];
-		$blockers = [];
+		foreach ($this->relationIndex[$schemaId] as $dep) {
+			$this->walkDependent(node: $node, dep: $dep);
+		}
+	}//end walkDeletionGraph()
 
-		$dependents = $this->relationIndex[$schemaId];
-
-		foreach ($dependents as $dep) {
-			if (($dep['referenceKey'] ?? null) !== null) {
-				$blockers = array_merge(
-					$blockers,
-					$this->keyReferenceBlockers(object: $object, dep: $dep, chain: $chain)
-				);
-				continue;
-			}
-
-			// Find actual objects of the dependent schema that reference this object's UUID.
-			$referencingObjects = $this->findReferencingObjects(
-				sourceSchemaId: $dep['sourceSchemaId'],
-				propertyName: $dep['property'],
-				targetUuid: $uuid,
-				isArray: $dep['isArray']
+	/**
+	 * Walk the objects that cite a node's object through one relation.
+	 *
+	 * @param DeletionGraphNode    $node The object being analyzed for deletion.
+	 * @param array<string, mixed> $dep  The relation index entry.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function walkDependent(DeletionGraphNode $node, array $dep): void {
+		if (($dep['referenceKey'] ?? null) !== null) {
+			$node->walk->addBlockers(
+				blockers: $this->keyReferenceBlockers(object: $node->object, dep: $dep, chain: $node->chain)
 			);
-			if ($referencingObjects === null) {
-				// Not known whether anything cites it: refuse rather than delete past a RESTRICT.
-				$blockers[] = [
+			return;
+		}
+
+		// Find actual objects of the dependent schema that reference this object's UUID.
+		$uuid = $node->object->getUuid();
+		$referencingObjects = $this->findReferencingObjects(
+			sourceSchemaId: $dep['sourceSchemaId'],
+			propertyName: $dep['property'],
+			targetUuid: $uuid,
+			isArray: $dep['isArray']
+		);
+		if ($referencingObjects === null) {
+			// Not known whether anything cites it: refuse rather than delete past a RESTRICT.
+			$node->walk->addBlocker(
+				blocker: [
 					'objectUuid' => '',
 					'schema' => $dep['sourceSchemaId'],
 					'property' => $dep['property'],
 					'action' => 'RESTRICT',
 					'reason' => 'unverifiable',
-					'chain' => array_merge($chain, ["{$uuid} → {$dep['property']} (not verifiable)"]),
-				];
+					'chain' => array_merge($node->chain, ["{$uuid} → {$dep['property']} (not verifiable)"]),
+				]
+			);
+			return;
+		}
+
+		foreach ($referencingObjects as $refObj) {
+			// Skip already soft-deleted objects.
+			if ($refObj->getDeleted() !== null && empty($refObj->getDeleted()) === false) {
 				continue;
 			}
 
-			foreach ($referencingObjects as $refObj) {
-				// Skip already soft-deleted objects.
-				if ($refObj->getDeleted() !== null && empty($refObj->getDeleted()) === false) {
-					continue;
-				}
+			$this->applyOnDelete(step: new DeletionGraphStep(node: $node, dep: $dep, referencing: $refObj));
+		}
+	}//end walkDependent()
 
-				$stepDesc = "{$uuid} → {$refObj->getUuid()} ({$dep['onDelete']})";
-				$currentChain = array_merge($chain, [$stepDesc]);
+	/**
+	 * Add what the relation's onDelete action does to one referencing object.
+	 *
+	 * NO_ACTION, and any other value, adds nothing.
+	 *
+	 * @param DeletionGraphStep $step The referencing object and its relation.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function applyOnDelete(DeletionGraphStep $step): void {
+		switch ($step->dep['onDelete']) {
+			case 'RESTRICT':
+				$step->node->walk->addBlocker(blocker: $this->restrictBlocker(step: $step, chain: $step->chain));
+				break;
+			case 'CASCADE':
+				$this->cascadeStep(step: $step);
+				break;
+			case 'SET_NULL':
+				$this->setNullStep(step: $step);
+				break;
+			case 'SET_DEFAULT':
+				$this->setDefaultStep(step: $step);
+				break;
+		}
+	}//end applyOnDelete()
 
-				switch ($dep['onDelete']) {
-					case 'RESTRICT':
-						$blockers[] = [
-							'objectUuid' => $refObj->getUuid(),
-							'schema' => $dep['sourceSchemaId'],
-							'property' => $dep['property'],
-							'action' => 'RESTRICT',
-							'chain' => $currentChain,
-						];
-						break;
-
-					case 'CASCADE':
-						$cascadeTargets[] = [
-							'objectUuid' => $refObj->getUuid(),
-							'register' => $refObj->getRegister(),
-							'schema' => $dep['sourceSchemaId'],
-							'property' => $dep['property'],
-							'chain' => $currentChain,
-						];
-
-						// Recurse: what happens if we cascade-delete this object?
-						$subAnalysis = $this->walkDeletionGraph(
-							object: $refObj,
-							visited: $visited,
-							chain: $currentChain,
-							depth: $depth + 1
-						);
-						$blockers = array_merge($blockers, $subAnalysis->blockers);
-						$cascadeTargets = array_merge($cascadeTargets, $subAnalysis->cascadeTargets);
-						$nullifyTargets = array_merge($nullifyTargets, $subAnalysis->nullifyTargets);
-						$defaultTargets = array_merge($defaultTargets, $subAnalysis->defaultTargets);
-						break;
-
-					case 'SET_NULL':
-						if ($this->isRequiredProperty(
-							schemaId: $dep['sourceSchemaId'],
-							propertyName: $dep['property']
-						) === true
-						) {
-							// Falls back to RESTRICT.
-							$blockers[] = [
-								'objectUuid' => $refObj->getUuid(),
-								'schema' => $dep['sourceSchemaId'],
-								'property' => $dep['property'],
-								'action' => 'RESTRICT',
-								'chain' => array_merge($currentChain, ['(SET_NULL on required → RESTRICT)']),
-							];
-							break;
-						}
-
-						$nullifyTargets[] = [
-							'objectUuid' => $refObj->getUuid(),
-							'schema' => $dep['sourceSchemaId'],
-							'property' => $dep['property'],
-							'isArray' => $dep['isArray'],
-							'sourceUuid' => $uuid,
-						];
-						break;
-
-					case 'SET_DEFAULT':
-						$defaultValue = $this->getDefaultValue(
-							schemaId: $dep['sourceSchemaId'],
-							propertyName: $dep['property']
-						);
-						if ($defaultValue !== null) {
-							$defaultTargets[] = [
-								'objectUuid' => $refObj->getUuid(),
-								'schema' => $dep['sourceSchemaId'],
-								'property' => $dep['property'],
-								'defaultValue' => $defaultValue,
-							];
-							break;
-						}
-
-						// Falls back to SET_NULL → RESTRICT chain.
-						if ($this->isRequiredProperty(
-							schemaId: $dep['sourceSchemaId'],
-							propertyName: $dep['property']
-						) === true
-						) {
-							$blockers[] = [
-								'objectUuid' => $refObj->getUuid(),
-								'schema' => $dep['sourceSchemaId'],
-								'property' => $dep['property'],
-								'action' => 'RESTRICT',
-								'chain' => array_merge(
-									$currentChain,
-									['(SET_DEFAULT no default + required → RESTRICT)']
-								),
-							];
-							break;
-						}
-
-						$nullifyTargets[] = [
-							'objectUuid' => $refObj->getUuid(),
-							'schema' => $dep['sourceSchemaId'],
-							'property' => $dep['property'],
-							'isArray' => $dep['isArray'],
-							'sourceUuid' => $uuid,
-						];
-						break;
-
-					default:
-						// NO_ACTION: do nothing.
-						break;
-				}//end switch
-			}//end foreach
-		}//end foreach
-
-		return new DeletionAnalysis(
-			deletable: empty($blockers),
-			cascadeTargets: $cascadeTargets,
-			nullifyTargets: $nullifyTargets,
-			defaultTargets: $defaultTargets,
-			blockers: $blockers,
-			chainPaths: $chain
+	/**
+	 * CASCADE: the referencing object is deleted too, so walk on from it.
+	 *
+	 * @param DeletionGraphStep $step The referencing object and its relation.
+	 *
+	 * @return void
+	 */
+	private function cascadeStep(DeletionGraphStep $step): void {
+		$step->node->walk->addCascadeTarget(
+			target: [
+				'objectUuid' => $step->referencing->getUuid(),
+				'register' => $step->referencing->getRegister(),
+				'schema' => $step->dep['sourceSchemaId'],
+				'property' => $step->dep['property'],
+				'chain' => $step->chain,
+			]
 		);
-	}//end walkDeletionGraph()
+
+		$this->walkDeletionGraph(
+			node: new DeletionGraphNode(
+				object: $step->referencing,
+				walk: $step->node->walk,
+				chain: $step->chain,
+				depth: $step->node->depth + 1
+			)
+		);
+	}//end cascadeStep()
+
+	/**
+	 * SET_NULL: clear the reference, or block when the property is required.
+	 *
+	 * @param DeletionGraphStep $step The referencing object and its relation.
+	 *
+	 * @return void
+	 */
+	private function setNullStep(DeletionGraphStep $step): void {
+		if ($this->isStepPropertyRequired(step: $step) === true) {
+			$step->node->walk->addBlocker(
+				blocker: $this->restrictBlocker(
+					step: $step,
+					chain: array_merge($step->chain, ['(SET_NULL on required → RESTRICT)'])
+				)
+			);
+			return;
+		}
+
+		$step->node->walk->addNullifyTarget(target: $this->nullifyTarget(step: $step));
+	}//end setNullStep()
+
+	/**
+	 * SET_DEFAULT: reset the reference to its default; without one, behave as SET_NULL.
+	 *
+	 * @param DeletionGraphStep $step The referencing object and its relation.
+	 *
+	 * @return void
+	 */
+	private function setDefaultStep(DeletionGraphStep $step): void {
+		$defaultValue = $this->getDefaultValue(
+			schemaId: $step->dep['sourceSchemaId'],
+			propertyName: $step->dep['property']
+		);
+		if ($defaultValue !== null) {
+			$step->node->walk->addDefaultTarget(
+				target: [
+					'objectUuid' => $step->referencing->getUuid(),
+					'schema' => $step->dep['sourceSchemaId'],
+					'property' => $step->dep['property'],
+					'defaultValue' => $defaultValue,
+				]
+			);
+			return;
+		}
+
+		if ($this->isStepPropertyRequired(step: $step) === true) {
+			$step->node->walk->addBlocker(
+				blocker: $this->restrictBlocker(
+					step: $step,
+					chain: array_merge($step->chain, ['(SET_DEFAULT no default + required → RESTRICT)'])
+				)
+			);
+			return;
+		}
+
+		$step->node->walk->addNullifyTarget(target: $this->nullifyTarget(step: $step));
+	}//end setDefaultStep()
+
+	/**
+	 * Whether the referencing property is required on its schema.
+	 *
+	 * @param DeletionGraphStep $step The referencing object and its relation.
+	 *
+	 * @return bool
+	 */
+	private function isStepPropertyRequired(DeletionGraphStep $step): bool {
+		return $this->isRequiredProperty(
+			schemaId: $step->dep['sourceSchemaId'],
+			propertyName: $step->dep['property']
+		);
+	}//end isStepPropertyRequired()
+
+	/**
+	 * A RESTRICT blocker for a referencing object.
+	 *
+	 * @param DeletionGraphStep  $step  The referencing object and its relation.
+	 * @param array<int, string> $chain The chain to report.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function restrictBlocker(DeletionGraphStep $step, array $chain): array {
+		return [
+			'objectUuid' => $step->referencing->getUuid(),
+			'schema' => $step->dep['sourceSchemaId'],
+			'property' => $step->dep['property'],
+			'action' => 'RESTRICT',
+			'chain' => $chain,
+		];
+	}//end restrictBlocker()
+
+	/**
+	 * A nullify target for a referencing object.
+	 *
+	 * @param DeletionGraphStep $step The referencing object and its relation.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function nullifyTarget(DeletionGraphStep $step): array {
+		return [
+			'objectUuid' => $step->referencing->getUuid(),
+			'schema' => $step->dep['sourceSchemaId'],
+			'property' => $step->dep['property'],
+			'isArray' => $step->dep['isArray'],
+			'sourceUuid' => $step->node->object->getUuid(),
+		];
+	}//end nullifyTarget()
 
 	/**
 	 * The RESTRICT blockers for a reference that cites this object by a key property.

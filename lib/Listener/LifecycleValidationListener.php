@@ -328,7 +328,7 @@ class LifecycleValidationListener implements IEventListener {
 	 * @SuppressWarnings(PHPMD.StaticAccess) RuleDescriptor::idFor is the published
 	 *   derivation of a rule id.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function recordCondition(
 		ObjectEntity $object,

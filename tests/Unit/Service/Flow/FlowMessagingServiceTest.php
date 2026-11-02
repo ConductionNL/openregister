@@ -337,7 +337,7 @@ class FlowMessagingServiceTest extends TestCase {
 	/**
 	 * A preview composes each item's recipients, subject and body and sends nothing.
 	 *
-	 * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
 	 *
 	 * @return void
 	 */
@@ -358,7 +358,7 @@ class FlowMessagingServiceTest extends TestCase {
 	/**
 	 * A Talk preview names the conversation and posts nothing.
 	 *
-	 * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
 	 *
 	 * @return void
 	 */

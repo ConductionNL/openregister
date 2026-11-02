@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -95,7 +95,7 @@ class CodedPropertyDeclaration {
 	 *
 	 * @return boolean True when a context property or key is declared.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function isContextBound(): bool {
 		return ($this->contextProperty !== null || $this->contextKey !== null);
@@ -114,7 +114,7 @@ class CodedPropertyDeclaration {
 	 *
 	 * @return boolean True when the concept is in the subset.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function matchesContext(array $concept, ?string $context): bool {
 		if ($this->isContextBound() === false || $context === null || $context === '') {

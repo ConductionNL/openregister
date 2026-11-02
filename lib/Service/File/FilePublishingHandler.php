@@ -82,7 +82,7 @@ class FilePublishingHandler {
 	 *
 	 * @return PartyIndicatorGuard The guard.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	private function partyIndicatorGuard(): PartyIndicatorGuard {
 		return $this->container->get(PartyIndicatorGuard::class);

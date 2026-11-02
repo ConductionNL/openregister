@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+ * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
  */
 
 declare(strict_types=1);
@@ -69,7 +69,7 @@ class FlowDryRunService {
 	 *
 	 * @throws DoesNotExistException When the flow or the object is out of the caller's reach.
 	 *
-	 * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
 	 */
 	public function dryRun(string $flowId, string $register, string $schema, string $objectId): array {
 		// Throws for a flow outside the caller's organisation.

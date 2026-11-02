@@ -940,7 +940,7 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 	 * An opt-in e-mail reaches only the recipient who switched it on; the
 	 * other still gets the Nextcloud notification and no mail.
 	 *
-	 * @spec openspec/changes/notification-opt-in-channels/specs/notificatie-engine/spec.md#requirement-a-rule-can-declare-a-channel-that-is-off-until-someone-switches-it-on
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-rule-can-declare-a-channel-that-is-off-until-someone-switches-it-on
 	 */
 	public function testOptInEmailReachesOnlyWhoSwitchedItOn(): void {
 		$schema = $this->schemaWithNotification(

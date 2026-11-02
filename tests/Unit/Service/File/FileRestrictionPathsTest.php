@@ -13,7 +13,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
+ * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
  */
 
 declare(strict_types=1);
@@ -53,7 +53,7 @@ use Psr\Log\NullLogger;
 /**
  * A reader of the object who is not admitted to the restricted file gets it from no path; an admitted one from every path.
  *
- * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
+ * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
  */
 class FileRestrictionPathsTest extends TestCase {
 

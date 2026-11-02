@@ -462,7 +462,7 @@ class BulkControllerTest extends TestCase {
 	/**
 	 * The mixed-schema route checks the manage rule of every schema its rows name.
 	 *
-	 * @spec openspec/changes/bulk-save-applies-property-authorization/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
 	 */
 	public function testSaveMixedSchemaRefusesARowSchemaTheCallerMayNotManage(): void {
 		$user = $this->createMock(IUser::class);

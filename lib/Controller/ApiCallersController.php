@@ -32,7 +32,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -131,7 +131,7 @@ class ApiCallersController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200|403|500, array<string, mixed>, array<never, never>>
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 *
 	 * @contract tests/Unit/Controller/ApiCallersControllerTest.php
 	 */
@@ -193,7 +193,7 @@ class ApiCallersController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200|403, array<string, mixed>, array<never, never>>
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
+	 * @spec openspec/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
 	 *
 	 * @contract tests/Unit/Controller/ApiCallersControllerTest.php
 	 */
@@ -233,7 +233,7 @@ class ApiCallersController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200|400|403|500, array<string, mixed>, array<never, never>>
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
+	 * @spec openspec/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
 	 *
 	 * @contract tests/Unit/Controller/ApiCallersControllerTest.php
 	 */

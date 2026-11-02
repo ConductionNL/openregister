@@ -23,7 +23,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/sequential-cross-table-search-orders-like-union/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+ * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
  */
 
 declare(strict_types=1);

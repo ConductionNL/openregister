@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use Throwable;
  * admin only: a purpose is the legal basis a read is recorded under, and the
  * bar for adding one is the bar for adding a processing activity.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 class ProcessingPurposeController extends Controller {
 	/**
@@ -84,7 +84,7 @@ class ProcessingPurposeController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function index(): JSONResponse {
 		if ($this->userSession->getUser() === null) {
@@ -121,7 +121,7 @@ class ProcessingPurposeController extends Controller {
 	 *   refusal nobody can act on. Guarding this id while leaving the list open would
 	 *   protect nothing and hide the gap. Writes are admin-gated in create/update/destroy.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function show(string $id): JSONResponse {
 		if ($this->userSession->getUser() === null) {
@@ -147,7 +147,7 @@ class ProcessingPurposeController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function create(): JSONResponse {
 		if ($this->isAdmin() === false) {
@@ -198,7 +198,7 @@ class ProcessingPurposeController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function update(string $id): JSONResponse {
 		if ($this->isAdmin() === false) {
@@ -242,7 +242,7 @@ class ProcessingPurposeController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function destroy(string $id): JSONResponse {
 		if ($this->isAdmin() === false) {
@@ -277,7 +277,7 @@ class ProcessingPurposeController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function report(): JSONResponse {
 		if ($this->userSession->getUser() === null) {
@@ -308,7 +308,7 @@ class ProcessingPurposeController extends Controller {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ProcessingPurpose::isValidStatus is the
 	 *   entity's own vocabulary check, the same shape Verwerkingsactiviteit uses.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function hydrate(ProcessingPurpose $purpose): void {
 		foreach (['name', 'description', 'activity', 'organisationId'] as $field) {
@@ -338,7 +338,7 @@ class ProcessingPurposeController extends Controller {
 	 *
 	 * @return ProcessingPurpose|null The purpose, or null.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function resolve(string $identifier): ?ProcessingPurpose {
 		if (ctype_digit($identifier) === true) {
@@ -359,7 +359,7 @@ class ProcessingPurposeController extends Controller {
 	 *
 	 * @return array<string, mixed> The response body.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function serialize(ProcessingPurpose $purpose): array {
 		$activity = $this->registry->boundActivity(purpose: $purpose);
@@ -380,7 +380,7 @@ class ProcessingPurposeController extends Controller {
 	 *
 	 * @return string|null The trimmed value, or null when absent or empty.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function optionalParam(string $key): ?string {
 		$value = $this->request->getParam(key: $key);
@@ -398,7 +398,7 @@ class ProcessingPurposeController extends Controller {
 	 *
 	 * @return DateTime|null The parsed date, or null when absent or unparseable.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function optionalDate(string $key): ?DateTime {
 		$value = $this->optionalParam(key: $key);
@@ -418,7 +418,7 @@ class ProcessingPurposeController extends Controller {
 	 *
 	 * @return bool True when the caller is in the admin group.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function isAdmin(): bool {
 		$user = $this->userSession->getUser();
@@ -438,7 +438,7 @@ class ProcessingPurposeController extends Controller {
 	 *
 	 * @return JSONResponse HTTP 401.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function unauthorized(): JSONResponse {
 		return new JSONResponse(
@@ -452,7 +452,7 @@ class ProcessingPurposeController extends Controller {
 	 *
 	 * @return JSONResponse HTTP 403.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function forbidden(): JSONResponse {
 		return new JSONResponse(

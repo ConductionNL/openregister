@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -53,7 +53,7 @@ use OCP\IUserSession;
  *     is a true statement. Pushing it one layer down would record a run for a call that had
  *     not yet succeeded.
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 class ExportProfilesController extends Controller {
 
@@ -88,7 +88,7 @@ class ExportProfilesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -114,7 +114,7 @@ class ExportProfilesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -148,7 +148,7 @@ class ExportProfilesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -177,7 +177,7 @@ class ExportProfilesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -216,7 +216,7 @@ class ExportProfilesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -256,8 +256,8 @@ class ExportProfilesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -355,7 +355,7 @@ class ExportProfilesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

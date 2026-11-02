@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use OCP\IConfig;
  * can show the last result without re-running a full scan on every page load,
  * and so the support bundle can carry a result rather than a spinner.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-actions-run-as-observable-jobs-req-aoc-004
+ * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-actions-run-as-observable-jobs-req-aoc-004
  */
 class ConsistencyCheckJob extends RecordedQueuedJob {
 
@@ -81,7 +81,7 @@ class ConsistencyCheckJob extends RecordedQueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	protected function runRecorded(mixed $argument): void {
 		$findings = $this->check->check();

@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use Psr\Log\LoggerInterface;
 /**
  * The write side of per-file restrictions. Who may restrict a file is the calling app's rule.
  *
- * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
  */
 class FileRestrictionService {
 
@@ -65,7 +65,7 @@ class FileRestrictionService {
 	 *
 	 * @throws InvalidArgumentException When the file id, the principals or the reason is missing.
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
 	 */
 	public function restrict(int $fileId, array $users, array $groups, string $reason): array {
 		$users = $this->cleanList(values: $users);
@@ -119,7 +119,7 @@ class FileRestrictionService {
 	 *
 	 * @return array<string, mixed>|null The restriction it had, or null when it had none.
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
 	 */
 	public function lift(int $fileId): ?array {
 		$previous = $this->store->find(fileId: $fileId);
@@ -150,7 +150,7 @@ class FileRestrictionService {
 	 *
 	 * @return array<string, mixed>|null The stored restriction.
 	 *
-	 * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
 	 */
 	public function restrictionOf(int $fileId): ?array {
 		return $this->store->find(fileId: $fileId);

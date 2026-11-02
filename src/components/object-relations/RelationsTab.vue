@@ -117,6 +117,32 @@ import TableLargePlus from 'vue-material-design-icons/TableLargePlus.vue'
  */
 let fallbackRelationId = 0
 
+/** The fields a relation row's title, subtitle and timestamp come from, first set wins. */
+const RELATION_FIELDS = {
+	title: ['title', 'subject', 'summary', 'displayName', 'name'],
+	subtitle: ['subtitle'],
+	timestamp: ['timestamp', 'receivedAt', 'startsAt', 'createdAt', 'updatedAt'],
+}
+
+/** Per relation type, the fields its title and subtitle fall back to. */
+const TYPE_FALLBACK_FIELDS = new Map([
+	['email', { title: [], subtitle: ['fromEmail', 'from'] }],
+	['contact', { title: ['fullName', 'email'], subtitle: [] }],
+])
+
+const NO_FALLBACK_FIELDS = { title: [], subtitle: [] }
+
+/**
+ * The first set value among some fields of a raw relation.
+ *
+ * @param {object} raw The raw relation.
+ * @param {Array<string>} fields The fields, in order.
+ * @return {*} The first truthy value, or undefined.
+ */
+function firstSet(raw, fields) {
+	return fields.map((field) => raw[field]).find(Boolean)
+}
+
 /**
  * RelationsTab — unified timeline of every entity linked to an object.
  *
@@ -302,37 +328,22 @@ export default {
 		 * @spec exclude client-side normalisation of a single relation entry for display, UI plumbing
 		 */
 		normaliseEntry(raw) {
-			const type = raw.type || raw.entityType || 'unknown'
-			let title =
-				raw.title
-				|| raw.subject
-				|| raw.summary
-				|| raw.displayName
-				|| raw.name
+			const type = firstSet(raw, ['type', 'entityType']) || 'unknown'
+			const fallback = TYPE_FALLBACK_FIELDS.get(type) || NO_FALLBACK_FIELDS
+			const title =
+				firstSet(raw, [...RELATION_FIELDS.title, ...fallback.title]) || ''
+			const subtitle =
+				firstSet(raw, [...RELATION_FIELDS.subtitle, ...fallback.subtitle])
 				|| ''
-			let subtitle = raw.subtitle || ''
-			const timestamp =
-				raw.timestamp
-				|| raw.receivedAt
-				|| raw.startsAt
-				|| raw.createdAt
-				|| raw.updatedAt
-				|| null
-
-			if (type === 'email' && !subtitle) {
-				subtitle = raw.fromEmail || raw.from || ''
-			}
-
-			if (type === 'contact' && !title) {
-				title = raw.fullName || raw.email || ''
-			}
+			const timestamp = firstSet(raw, RELATION_FIELDS.timestamp) || null
 
 			// Hoisted so the property stays on one line: prettier wraps a long
 			// `id:` across lines, and eslint's vue/new-line-between-multi-line-property
 			// then demands a blank line after it. The `||` chain still
 			// short-circuits, so the counter only advances when it is used.
 			const id =
-				raw.id || raw.uid || raw.uuid || `${type}-${++fallbackRelationId}`
+				firstSet(raw, ['id', 'uid', 'uuid'])
+				|| `${type}-${++fallbackRelationId}`
 
 			return {
 				id,

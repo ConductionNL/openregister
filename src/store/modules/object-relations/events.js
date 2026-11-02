@@ -4,8 +4,13 @@
  */
 
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import { defineStore } from 'pinia'
+import {
+	loadRelations,
+	postAndRefetch,
+	pruneRelations,
+	relationUrl,
+} from './relationCache.js'
 
 /**
  * Store wrapping the per-object calendar-event endpoints.
@@ -40,15 +45,7 @@ export const useEventRelationsStore = defineStore('eventRelations', {
 		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
 		 */
 		_url(register, schema, id, suffix = '') {
-			return generateUrl(
-				'/apps/openregister/api/objects/{register}/{schema}/{id}/events'
-					+ suffix,
-				{
-					register,
-					schema,
-					id,
-				},
-			)
+			return relationUrl('events', { register, schema, id, suffix })
 		},
 
 		/**
@@ -58,31 +55,11 @@ export const useEventRelationsStore = defineStore('eventRelations', {
 		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
 		 */
 		async fetch(register, schema, id) {
-			const k = `${register}:${schema}:${id}`
-			this.loading = { ...this.loading, [k]: true }
-			this.errors = { ...this.errors, [k]: null }
-			this.calendarUnavailable = false
-
-			try {
-				const response = await axios.get(this._url(register, schema, id))
-				const list = response.data?.results || response.data || []
-				this.byObject = { ...this.byObject, [k]: list }
-				return list
-			} catch (err) {
-				if (err.response?.status === 501) {
-					this.calendarUnavailable = true
-					this.byObject = { ...this.byObject, [k]: [] }
-					return []
-				}
-
-				this.errors = {
-					...this.errors,
-					[k]: err.response?.data?.error || err.message || '',
-				}
-				throw err
-			} finally {
-				this.loading = { ...this.loading, [k]: false }
-			}
+			return loadRelations(this, {
+				url: this._url(register, schema, id),
+				key: `${register}:${schema}:${id}`,
+				flag: 'calendarUnavailable',
+			})
 		},
 
 		/**
@@ -93,12 +70,11 @@ export const useEventRelationsStore = defineStore('eventRelations', {
 		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
 		 */
 		async create(register, schema, id, payload) {
-			const response = await axios.post(
-				this._url(register, schema, id),
+			return postAndRefetch(this, {
+				url: this._url(register, schema, id),
 				payload,
-			)
-			await this.fetch(register, schema, id)
-			return response.data
+				object: [register, schema, id],
+			})
 		},
 
 		/**
@@ -109,12 +85,11 @@ export const useEventRelationsStore = defineStore('eventRelations', {
 		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
 		 */
 		async link(register, schema, id, payload) {
-			const response = await axios.post(
-				this._url(register, schema, id, '/link'),
+			return postAndRefetch(this, {
+				url: this._url(register, schema, id, '/link'),
 				payload,
-			)
-			await this.fetch(register, schema, id)
-			return response.data
+				object: [register, schema, id],
+			})
 		},
 
 		/**
@@ -128,10 +103,10 @@ export const useEventRelationsStore = defineStore('eventRelations', {
 			await axios.delete(
 				this._url(register, schema, id, '/' + encodeURIComponent(eventId)),
 			)
-			const k = `${register}:${schema}:${id}`
-			const next = (this.byObject[k] || []).filter((e) => e.id !== eventId)
-			this.byObject = { ...this.byObject, [k]: next }
-			return next
+			return pruneRelations(this, {
+				key: `${register}:${schema}:${id}`,
+				keep: (e) => e.id !== eventId,
+			})
 		},
 
 		/**

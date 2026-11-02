@@ -100,7 +100,7 @@ class EmailServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/email-link-sender-name-and-details/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-senders-display-name
+	 * @spec openspec/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-senders-display-name
 	 */
 	public function testLinkEmailKeepsTheSenderNameFromMail(): void {
 		$this->emailLinkMapper->method('findByObjectAndMessage')->willReturn(null);
