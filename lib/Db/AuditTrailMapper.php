@@ -71,8 +71,15 @@ use Throwable;
  * @SuppressWarnings(PHPMD.TooManyMethods) The class already carried TooManyPublicMethods
  *   for the same reason: this is the one place an audit row is written, and every entry
  *   point that writes one has to go through it or the hash chain has a second author.
+ * @SuppressWarnings(PHPMD.ExcessivePublicCount) Same reason: the slug backfill's run entry
+ *   (createSlugBackfillEntry) is one more entry point that must seal into the hash chain here.
  */
 class AuditTrailMapper extends QBMapper {
+
+	/**
+	 * The most changes one slug backfill entry lists; the rest is in the log.
+	 */
+	public const SLUG_BACKFILL_MAX_CHANGES = 1000;
 
 	/**
 	 * Request-scoped import-job tag.
@@ -3471,6 +3478,94 @@ class AuditTrailMapper extends QBMapper {
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createExportEntry()
+
+	/**
+	 * Create one immutable, hash-chained audit record for a slug backfill run.
+	 *
+	 * The backfill (`occ openregister:backfill-slugs`) writes the slug column directly: no per-object version and no
+	 * per-object audit row. This single entry per run keeps the change
+	 * reconstructable: it lists the objects whose slug changed with the old and
+	 * the new value (bounded, see slugBackfillResultSummary()). Hangs on the register and schema, not on an object, like
+	 * {@see createExportEntry()}.
+	 *
+	 * @param string $mode The run mode, `fill` (the only one: a set slug is never rewritten).
+	 * @param list<array{uuid: string, old: ?string, new: ?string}> $changes Every slug the run wrote (the entry keeps the first 1,000).
+	 * @param array<string, mixed> $summary The run's counters.
+	 * @param int|null $register Register id.
+	 * @param int|null $schema Schema id.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createExportEntry.
+	 */
+	public function createSlugBackfillEntry(
+		string $mode,
+		array $changes,
+		array $summary,
+		?int $register = null,
+		?int $schema = null,
+	): AuditTrail {
+		$userId = 'system';
+		$userName = 'System';
+		$user = $this->userSession->getUser();
+		if ($user !== null) {
+			$userId = $user->getUID();
+			$userName = $user->getDisplayName();
+		}
+
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setAction('slug.backfill.' . $mode);
+		// `changed` is NOT NULL and QBMapper writes only the fields a setter touched.
+		$auditTrail->setChanged([]);
+		$auditTrail->setRegister($register);
+		$auditTrail->setSchema($schema);
+		$auditTrail->setResultSummary($this->slugBackfillResultSummary(mode: $mode, changes: $changes, summary: $summary));
+		$auditTrail->setUser($userId);
+		$auditTrail->setUserName($userName);
+		$auditTrail->setCreated(new DateTime());
+
+		return $this->insertHashChained(auditTrail: $auditTrail);
+	}//end createSlugBackfillEntry()
+
+	/**
+	 * What a slug backfill entry stores: the counters and a bounded change list.
+	 *
+	 * The entry is hash-chained and cannot be edited afterwards, and the slugs
+	 * come from the schema's `objectSlugField`, which can be a name. So only the
+	 * first {@see SLUG_BACKFILL_MAX_CHANGES} changes are kept, each reduced to
+	 * uuid, old and new slug, next to the total count; the caller logs the full
+	 * list.
+	 *
+	 * @param string $mode    The run mode, `fill`.
+	 * @param array  $changes Every slug the run wrote.
+	 * @param array  $summary The run's counters.
+	 *
+	 * @return array<string, mixed> The result summary of the entry.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 */
+	public function slugBackfillResultSummary(string $mode, array $changes, array $summary): array {
+		$total = count($changes);
+		$listed = [];
+		foreach (array_slice($changes, 0, self::SLUG_BACKFILL_MAX_CHANGES) as $change) {
+			$listed[] = ['uuid' => ($change['uuid'] ?? null), 'old' => ($change['old'] ?? null), 'new' => ($change['new'] ?? null)];
+		}
+
+		$truncated = ($total > self::SLUG_BACKFILL_MAX_CHANGES);
+		$result = ['mode' => $mode, 'summary' => $summary, 'changes' => $listed, 'changesTotal' => $total, 'truncated' => $truncated];
+		if ($truncated === true) {
+			$result['note'] = sprintf(
+				'Only the first %d of %d changes are listed here; the full list is in the Nextcloud log (lines starting "[ObjectSlug] Slug backfill changes").',
+				self::SLUG_BACKFILL_MAX_CHANGES,
+				$total
+			);
+		}
+
+		return $result;
+	}//end slugBackfillResultSummary()
 
 	/**
 	 * The objects one user read most recently, newest first.

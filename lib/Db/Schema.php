@@ -2751,6 +2751,13 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *   Example: 'article.abstract'
 	 * - 'objectImageField': (string) A dot-notation path to the field for the object's image.
 	 *   Example: 'profile.avatar' (should contain base64 encoded image data)
+	 * - 'objectSlugField': (string) A dot-notation path or template for the field an
+	 *   object's slug is built from. Example: 'kenmerk'. The reserved value
+	 *   '@schema.name' builds the slug from the schema name and the object's name
+	 *   ('objectNameField') instead: '<schema slug>-<name>'. A slug is unique within
+	 *   the register and schema and does not change once set (#4037).
+	 * - 'objectSlugSuffix': (bool) Append a UTC date-time suffix to a slug that is
+	 *   already taken instead of saving the object without a slug. Default false.
 	 * - 'allowFiles': (bool) Whether this schema allows file attachments
 	 * - 'allowedTags': (array) Array of allowed file tags/types for file filtering
 	 * - 'autoShare': (bool) Create a Nextcloud share for every file uploaded to
@@ -2871,10 +2878,14 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return array Validated configuration
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-schema-configuration-must-accept-and-persist-the-object-slug-keys
 	 */
 	private function validateConfigurationArray(array $configuration): array {
 		$validatedConfig = [];
-		$stringFields = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
+		// `objectSlugField` was missing here, so every save and import dropped it
+		// and object slugs could not be switched on outside the database (#4037).
+		$stringFields = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField', 'objectSlugField'];
 		// `exportable` opts the schema into nextcloud-vue's native Export menu
 		// on an index page (or#4103). Off the allowlist it was dropped without
 		// a log line, so `allowExport: true` on every app page was a no-op.
@@ -2886,8 +2897,19 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 		// `draftsListed` (decision 216) is read by DraftListLens: false keeps the
 		// caller's own drafts out of the schema's lists by default.
 		// `autoShare` is the schema-level default FilePropertyHandler reads for
-		// every file property.
-		$boolFields = ['allowFiles', 'autoShare', 'defaultAutoShare', 'exportable', 'staging', 'additionalProperties', 'draftsVisible', 'draftsListed'];
+		// every file property. `objectSlugSuffix` (#4037) is read by
+		// ObjectSlugHandler: true appends a UTC date-time suffix to a colliding slug.
+		$boolFields = [
+			'allowFiles',
+			'autoShare',
+			'defaultAutoShare',
+			'exportable',
+			'staging',
+			'additionalProperties',
+			'draftsVisible',
+			'draftsListed',
+			'objectSlugSuffix',
+		];
 		// `implements` + `x-schema-org` carry the cross-app semantic-type
 		// markers (ADR-048); they must round-trip through the configuration
 		// column so SemanticTypeResolver can discover the schema. Their IRI
