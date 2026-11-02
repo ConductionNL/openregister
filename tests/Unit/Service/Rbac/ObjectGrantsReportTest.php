@@ -197,13 +197,14 @@ class ObjectGrantsReportTest extends TestCase {
 	 *
 	 * @return IShare The share.
 	 */
-	private function share(string $fullId, string $sharedWith, string $sharedBy, int $permissions = 1, ?DateTime $expires = null): IShare {
+	private function share(string $fullId, string $sharedWith, string $sharedBy, int $permissions = 1, ?DateTime $expires = null, ?DateTime $sharedAt = null): IShare {
 		$share = $this->createMock(IShare::class);
 		$share->method('getFullId')->willReturn($fullId);
 		$share->method('getSharedWith')->willReturn($sharedWith);
 		$share->method('getSharedBy')->willReturn($sharedBy);
 		$share->method('getPermissions')->willReturn($permissions);
 		$share->method('getExpirationDate')->willReturn($expires);
+		$share->method('getShareTime')->willReturn($sharedAt);
 		$share->method('getAttributes')->willReturn(null);
 		return $share;
 	}//end share()
@@ -290,6 +291,20 @@ class ObjectGrantsReportTest extends TestCase {
 		$user = $this->rowsNaming($report, 'tvisser');
 		$this->assertSame(['type' => 'user', 'id' => 'tvisser', 'displayName' => 'Tom Visser'], $user[0]['principal']);
 	}//end testARoleRuleNamesItsRoleAndAUserEntryIsAUser()
+
+	/**
+	 * A share names when it was made, as its share time.
+	 *
+	 * @return void
+	 */
+	public function testAShareNamesWhenItWasMade(): void {
+		$report = $this->rowsFor(
+			shares: ['ocinternal:41' => ['type' => 'group', 'share' => $this->share('ocinternal:41', 'juridische-zaken', 'pjansen', 1, null, new DateTime('2026-10-06T10:00:00+00:00'))]]
+		);
+
+		$rows = $this->rowsNaming($report, 'juridische-zaken');
+		$this->assertSame('2026-10-06T10:00:00+00:00', $rows[0]['sharedAt']);
+	}//end testAShareNamesWhenItWasMade()
 
 	/**
 	 * A share names who made it and when it ends.

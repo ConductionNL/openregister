@@ -65,6 +65,8 @@ use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
@@ -223,6 +225,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<int, EmailLink> The email links, by id. */
 	protected array $emailLinks = [];
 
+	/** @var array<string, object> Services a test adds to the container, by id. */
+	protected array $services = [];
+
 	/** @var array<int, string> The timeline kinds the fake knows. */
 	protected array $timelineKinds = ['statuswijziging', 'contactmoment'];
 
@@ -310,6 +315,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			CaseItemMapper::class     => $this->caseItemMapper(),
 			IUserManager::class       => $this->createMock(IUserManager::class),
 			OrganisationService::class => $this->organisationService(),
+			default                   => $this->services[$id],
 		});
 		$files     = new ExampleSetFiles(container: $container);
 		$setConfig = new ExampleSetAppConfig(appConfig: $this->appConfigOfApps(), random: $this->random());
@@ -384,7 +390,9 @@ abstract class ExampleSetTestCase extends TestCase {
 				talkConversations: new ExampleSetTalkConversations(container: $container),
 				auditEntries: new ExampleSetAuditEntries(container: $container),
 				timelineEntries: new ExampleSetTimelineEntries(container: $container),
-				emailLinks: new ExampleSetEmailLinks(container: $container)
+				emailLinks: new ExampleSetEmailLinks(container: $container),
+				accessLinks: new ExampleSetAccessLinks(container: $container),
+				grants: new ExampleSetGrants(container: $container)
 			),
 			lock: new ExampleSetLock(locks: $this->locks)
 		);
@@ -415,7 +423,9 @@ abstract class ExampleSetTestCase extends TestCase {
 				talkConversations: new ExampleSetTalkConversations(container: $container),
 				auditEntries: new ExampleSetAuditEntries(container: $container),
 				timelineEntries: new ExampleSetTimelineEntries(container: $container),
-				emailLinks: new ExampleSetEmailLinks(container: $container)
+				emailLinks: new ExampleSetEmailLinks(container: $container),
+				accessLinks: new ExampleSetAccessLinks(container: $container),
+				grants: new ExampleSetGrants(container: $container)
 			),
 			lock: new ExampleSetLock(locks: $this->locks)
 		);
@@ -1222,6 +1232,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			$object->setUuid($uuid);
 			$object->setRegister('7');
 			$object->setSchema('9');
+			$object->setOwner($this->store->owners[$uuid] ?? null);
 			return $object;
 		});
 
