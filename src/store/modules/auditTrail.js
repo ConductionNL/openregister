@@ -12,6 +12,22 @@ import {
 const apiUrl = '/index.php/apps/openregister/api'
 
 /**
+ * The statistics with every count at 0.
+ *
+ * @return {object} Every count at 0.
+ * @spec exclude Client-side empty state of the statistics; no backend contract.
+ */
+function emptyStatistics() {
+	return {
+		total: 0,
+		create: 0,
+		update: 0,
+		delete: 0,
+		read: 0,
+	}
+}
+
+/**
  * Store for managing audit trail logs
  * Provides functionality for retrieving, filtering, and managing audit trail entries
  */
@@ -26,22 +42,10 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		auditTrailItem: null,
 
 		// Pagination
-		auditTrailPagination: {
-			total: 0,
-			page: 1,
-			pages: 1,
-			limit: 50,
-			offset: 0,
-		},
+		auditTrailPagination: listPagination({}, 50),
 
 		// Statistics
-		statistics: {
-			total: 0,
-			create: 0,
-			update: 0,
-			delete: 0,
-			read: 0,
-		},
+		statistics: emptyStatistics(),
 
 		// Filters
 		auditTrailFilters: {},
@@ -283,13 +287,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 				return this.statistics
 			} catch (error) {
 				console.error('Error getting statistics:', error)
-				return {
-					total: 0,
-					create: 0,
-					update: 0,
-					delete: 0,
-					read: 0,
-				}
+				return emptyStatistics()
 			}
 		},
 
@@ -366,20 +364,8 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		clearAuditTrailStore() {
 			this.auditTrailList = []
 			this.auditTrailItem = null
-			this.auditTrailPagination = {
-				total: 0,
-				page: 1,
-				pages: 1,
-				limit: 50,
-				offset: 0,
-			}
-			this.statistics = {
-				total: 0,
-				create: 0,
-				update: 0,
-				delete: 0,
-				read: 0,
-			}
+			this.auditTrailPagination = listPagination({}, 50)
+			this.statistics = emptyStatistics()
 			this.auditTrailFilters = {}
 			this.auditTrailSearch = ''
 		},
