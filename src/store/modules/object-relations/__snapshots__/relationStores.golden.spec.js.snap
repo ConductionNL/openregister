@@ -38,6 +38,25 @@ exports[`contacts relations store golden a second fetch clears the unavailable f
 }
 `;
 
+exports[`contacts relations store golden exposes its actions and state 1`] = `
+{
+  "actions": [
+    "_hotUpdate",
+    "_url",
+    "createOrLink",
+    "fetch",
+    "get",
+    "unlink",
+  ],
+  "state": {
+    "byObject": {},
+    "contactsUnavailable": false,
+    "errors": {},
+    "loading": {},
+  },
+}
+`;
+
 exports[`contacts relations store golden fetch: 501 1`] = `
 {
   "get": [
@@ -390,6 +409,25 @@ exports[`deck relations store golden a second fetch clears the unavailable flag 
       "r:s:1": false,
       "r:s:2": false,
     },
+  },
+}
+`;
+
+exports[`deck relations store golden exposes its actions and state 1`] = `
+{
+  "actions": [
+    "_hotUpdate",
+    "_url",
+    "createOrLink",
+    "fetch",
+    "get",
+    "unlink",
+  ],
+  "state": {
+    "byObject": {},
+    "deckUnavailable": false,
+    "errors": {},
+    "loading": {},
   },
 }
 `;
@@ -750,6 +788,25 @@ exports[`emails relations store golden a second fetch clears the unavailable fla
 }
 `;
 
+exports[`emails relations store golden exposes its actions and state 1`] = `
+{
+  "actions": [
+    "_hotUpdate",
+    "_url",
+    "fetch",
+    "get",
+    "key",
+    "unlink",
+  ],
+  "state": {
+    "byObject": {},
+    "errors": {},
+    "loading": {},
+    "mailUnavailable": false,
+  },
+}
+`;
+
 exports[`emails relations store golden fetch: 501 1`] = `
 {
   "get": [
@@ -1083,6 +1140,26 @@ exports[`events relations store golden a second fetch clears the unavailable fla
       "r:s:1": false,
       "r:s:2": false,
     },
+  },
+}
+`;
+
+exports[`events relations store golden exposes its actions and state 1`] = `
+{
+  "actions": [
+    "_hotUpdate",
+    "_url",
+    "create",
+    "fetch",
+    "get",
+    "link",
+    "unlink",
+  ],
+  "state": {
+    "byObject": {},
+    "calendarUnavailable": false,
+    "errors": {},
+    "loading": {},
   },
 }
 `;

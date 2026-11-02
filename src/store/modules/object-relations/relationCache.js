@@ -118,3 +118,111 @@ export function pruneRelations(store, request) {
 	store.byObject = { ...store.byObject, [request.key]: next }
 	return next
 }
+
+/**
+ * The state of a relation store, with its unavailable flag cleared.
+ *
+ * @param {string} flag The name of the flag set when the backing app is missing.
+ * @return {object} The state.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-4
+ */
+export function relationState(flag) {
+	return { byObject: {}, loading: {}, errors: {}, [flag]: false }
+}
+
+/**
+ * A store action that posts a payload to an object's relation endpoint and
+ * refetches the object's relations.
+ *
+ * @param {string} suffix The path after the relation segment, e.g. `/link`.
+ * @return {function(string, string, string, object): Promise<Array>} The action.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-4
+ */
+export function postAction(suffix) {
+	return async function (register, schema, id, payload) {
+		return postAndRefetch(this, {
+			url: this._url(register, schema, id, suffix),
+			payload,
+			object: [register, schema, id],
+		})
+	}
+}
+
+/**
+ * The actions every relation store shares: the endpoint URL, fetching the
+ * relations of an object, unlinking one, and reading the cached list.
+ *
+ * @param {{kind: string, flag: string, arraysOnly?: boolean, refOf: function(object): string}} relation
+ *     The relation path segment, the unavailable flag, whether a non-list
+ *     answer becomes an empty list, and the reference an unlink matches.
+ * @return {object} The actions.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-4
+ */
+export function relationActions(relation) {
+	return {
+		/**
+		 * The relation endpoint URL of an object, with an optional path suffix.
+		 *
+		 * @param {string} register The register.
+		 * @param {string} schema The schema.
+		 * @param {string|number} id The object id.
+		 * @param {string} suffix The path after the relation segment.
+		 * @return {string} The URL.
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-4
+		 */
+		_url(register, schema, id, suffix = '') {
+			return relationUrl(relation.kind, { register, schema, id, suffix })
+		},
+		/**
+		 * Fetch and cache the relations of an object.
+		 *
+		 * @param {string} register The register.
+		 * @param {string} schema The schema.
+		 * @param {string|number} id The object id.
+		 * @return {Promise<Array>} The cached list.
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-4
+		 */
+		async fetch(register, schema, id) {
+			return loadRelations(this, {
+				url: this._url(register, schema, id),
+				key: `${register}:${schema}:${id}`,
+				flag: relation.flag,
+				arraysOnly: relation.arraysOnly,
+			})
+		},
+		/**
+		 * Unlink one relation and prune it from the object's cached list.
+		 *
+		 * @param {string} register The register.
+		 * @param {string} schema The schema.
+		 * @param {string|number} id The object id.
+		 * @param {string} ref The reference of the relation to unlink.
+		 * @return {Array} The pruned list.
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-4
+		 */
+		async unlink(register, schema, id, ref) {
+			await axios.delete(
+				this._url(register, schema, id, '/' + encodeURIComponent(ref)),
+			)
+			return pruneRelations(this, {
+				key: `${register}:${schema}:${id}`,
+				keep: (item) => relation.refOf(item) !== ref,
+			})
+		},
+		/**
+		 * The cached relations of an object.
+		 *
+		 * @param {string} register The register.
+		 * @param {string} schema The schema.
+		 * @param {string|number} id The object id.
+		 * @return {Array} The cached list, or an empty list.
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-4
+		 */
+		get(register, schema, id) {
+			return this.byObject[`${register}:${schema}:${id}`] || []
+		},
+	}
+}

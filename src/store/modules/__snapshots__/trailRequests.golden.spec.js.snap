@@ -65,6 +65,7 @@ exports[`trail store requests golden auditTrail.deleteAuditTrail([2]) failure wi
     "statisticsLoading": false,
   },
   "thrown": "Server says no",
+  "whileRunning": [],
 }
 `;
 
@@ -133,6 +134,76 @@ exports[`trail store requests golden auditTrail.deleteAuditTrail([2]) failure wi
     "statisticsLoading": false,
   },
   "thrown": "Failed to delete audit trail",
+  "whileRunning": [],
+}
+`;
+
+exports[`trail store requests golden auditTrail.deleteAuditTrail([2]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error deleting audit trail:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/audit-trails/2",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "DELETE",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+  "thrown": "Network down",
+  "whileRunning": [],
 }
 `;
 
@@ -201,6 +272,7 @@ exports[`trail store requests golden auditTrail.deleteAuditTrail([2]) ok 1`] = `
     },
     "statisticsLoading": false,
   },
+  "whileRunning": [],
 }
 `;
 
@@ -270,6 +342,7 @@ exports[`trail store requests golden auditTrail.deleteMultipleAuditTrails([[1,3]
     "statisticsLoading": false,
   },
   "thrown": "Server says no",
+  "whileRunning": [],
 }
 `;
 
@@ -339,6 +412,77 @@ exports[`trail store requests golden auditTrail.deleteMultipleAuditTrails([[1,3]
     "statisticsLoading": false,
   },
   "thrown": "Failed to delete audit trails",
+  "whileRunning": [],
+}
+`;
+
+exports[`trail store requests golden auditTrail.deleteMultipleAuditTrails([[1,3]]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error deleting audit trails:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/audit-trails",
+      {
+        "body": "{"ids":[1,3]}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "DELETE",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+  "thrown": "Network down",
+  "whileRunning": [],
 }
 `;
 
@@ -405,6 +549,7 @@ exports[`trail store requests golden auditTrail.deleteMultipleAuditTrails([[1,3]
     },
     "statisticsLoading": false,
   },
+  "whileRunning": [],
 }
 `;
 
@@ -473,6 +618,9 @@ exports[`trail store requests golden auditTrail.fetchStatistics([]) failure with
     "statisticsLoading": false,
   },
   "thrown": "Server says no",
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -541,6 +689,80 @@ exports[`trail store requests golden auditTrail.fetchStatistics([]) failure with
     "statisticsLoading": false,
   },
   "thrown": "Failed to fetch statistics",
+  "whileRunning": [
+    "statisticsLoading",
+  ],
+}
+`;
+
+exports[`trail store requests golden auditTrail.fetchStatistics([]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching statistics:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/audit-trails/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+  "thrown": "Network down",
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -618,6 +840,9 @@ exports[`trail store requests golden auditTrail.fetchStatistics([]) ok 1`] = `
     },
     "statisticsLoading": false,
   },
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -670,6 +895,7 @@ exports[`trail store requests golden auditTrail.getActionDistribution([]) failur
     },
     "statisticsLoading": false,
   },
+  "whileRunning": [],
 }
 `;
 
@@ -722,6 +948,60 @@ exports[`trail store requests golden auditTrail.getActionDistribution([]) failur
     },
     "statisticsLoading": false,
   },
+  "whileRunning": [],
+}
+`;
+
+exports[`trail store requests golden auditTrail.getActionDistribution([]) network failure 1`] = `
+{
+  "logged": [],
+  "requests": [],
+  "returned": [],
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+  "whileRunning": [],
 }
 `;
 
@@ -774,6 +1054,7 @@ exports[`trail store requests golden auditTrail.getActionDistribution([]) ok 1`]
     },
     "statisticsLoading": false,
   },
+  "whileRunning": [],
 }
 `;
 
@@ -852,6 +1133,9 @@ exports[`trail store requests golden auditTrail.getStatistics([]) failure with e
     },
     "statisticsLoading": false,
   },
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -930,6 +1214,90 @@ exports[`trail store requests golden auditTrail.getStatistics([]) failure withou
     },
     "statisticsLoading": false,
   },
+  "whileRunning": [
+    "statisticsLoading",
+  ],
+}
+`;
+
+exports[`trail store requests golden auditTrail.getStatistics([]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching statistics:",
+      "Network down",
+    ],
+    [
+      "Error getting statistics:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/audit-trails/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "create": 0,
+    "delete": 0,
+    "read": 0,
+    "total": 0,
+    "update": 0,
+  },
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -1011,6 +1379,9 @@ exports[`trail store requests golden auditTrail.getStatistics([]) ok 1`] = `
     },
     "statisticsLoading": false,
   },
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -1063,6 +1434,7 @@ exports[`trail store requests golden auditTrail.getTopObjects([]) failure with e
     },
     "statisticsLoading": false,
   },
+  "whileRunning": [],
 }
 `;
 
@@ -1115,6 +1487,60 @@ exports[`trail store requests golden auditTrail.getTopObjects([]) failure withou
     },
     "statisticsLoading": false,
   },
+  "whileRunning": [],
+}
+`;
+
+exports[`trail store requests golden auditTrail.getTopObjects([]) network failure 1`] = `
+{
+  "logged": [],
+  "requests": [],
+  "returned": [],
+  "state": {
+    "auditTrailFilters": {},
+    "auditTrailItem": null,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "auditTrailLoading": false,
+    "auditTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "auditTrailSearch": "",
+    "auditTrailSort": {},
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+    "statisticsLoading": false,
+  },
+  "whileRunning": [],
 }
 `;
 
@@ -1167,6 +1593,7 @@ exports[`trail store requests golden auditTrail.getTopObjects([]) ok 1`] = `
     },
     "statisticsLoading": false,
   },
+  "whileRunning": [],
 }
 `;
 
@@ -1236,6 +1663,9 @@ exports[`trail store requests golden deleted.fetchStatistics([]) failure with er
     "topDeletersLoading": false,
   },
   "thrown": "Server says no",
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -1305,6 +1735,81 @@ exports[`trail store requests golden deleted.fetchStatistics([]) failure without
     "topDeletersLoading": false,
   },
   "thrown": "Failed to fetch statistics",
+  "whileRunning": [
+    "statisticsLoading",
+  ],
+}
+`;
+
+exports[`trail store requests golden deleted.fetchStatistics([]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching statistics:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+  "thrown": "Network down",
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -1384,6 +1889,9 @@ exports[`trail store requests golden deleted.fetchStatistics([]) ok 1`] = `
     "topDeleters": [],
     "topDeletersLoading": false,
   },
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -1453,6 +1961,9 @@ exports[`trail store requests golden deleted.fetchTopDeleters([]) failure with e
     "topDeletersLoading": false,
   },
   "thrown": "Server says no",
+  "whileRunning": [
+    "topDeletersLoading",
+  ],
 }
 `;
 
@@ -1522,6 +2033,81 @@ exports[`trail store requests golden deleted.fetchTopDeleters([]) failure withou
     "topDeletersLoading": false,
   },
   "thrown": "Failed to fetch top deleters",
+  "whileRunning": [
+    "topDeletersLoading",
+  ],
+}
+`;
+
+exports[`trail store requests golden deleted.fetchTopDeleters([]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching top deleters:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/top-deleters",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+  "thrown": "Network down",
+  "whileRunning": [
+    "topDeletersLoading",
+  ],
 }
 `;
 
@@ -1602,6 +2188,9 @@ exports[`trail store requests golden deleted.fetchTopDeleters([]) ok 1`] = `
     },
     "topDeletersLoading": false,
   },
+  "whileRunning": [
+    "topDeletersLoading",
+  ],
 }
 `;
 
@@ -1671,6 +2260,7 @@ exports[`trail store requests golden deleted.permanentlyDelete([2]) failure with
     "topDeletersLoading": false,
   },
   "thrown": "Server says no",
+  "whileRunning": [],
 }
 `;
 
@@ -1740,6 +2330,77 @@ exports[`trail store requests golden deleted.permanentlyDelete([2]) failure with
     "topDeletersLoading": false,
   },
   "thrown": "Failed to permanently delete object",
+  "whileRunning": [],
+}
+`;
+
+exports[`trail store requests golden deleted.permanentlyDelete([2]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error permanently deleting object:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/2",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "DELETE",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+  "thrown": "Network down",
+  "whileRunning": [],
 }
 `;
 
@@ -1809,6 +2470,7 @@ exports[`trail store requests golden deleted.permanentlyDelete([2]) ok 1`] = `
     "topDeleters": [],
     "topDeletersLoading": false,
   },
+  "whileRunning": [],
 }
 `;
 
@@ -1879,6 +2541,7 @@ exports[`trail store requests golden deleted.permanentlyDeleteMultiple([[1,3]]) 
     "topDeletersLoading": false,
   },
   "thrown": "Server says no",
+  "whileRunning": [],
 }
 `;
 
@@ -1949,6 +2612,78 @@ exports[`trail store requests golden deleted.permanentlyDeleteMultiple([[1,3]]) 
     "topDeletersLoading": false,
   },
   "thrown": "Failed to permanently delete objects",
+  "whileRunning": [],
+}
+`;
+
+exports[`trail store requests golden deleted.permanentlyDeleteMultiple([[1,3]]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error permanently deleting objects:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted",
+      {
+        "body": "{"ids":[1,3]}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "DELETE",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+  "thrown": "Network down",
+  "whileRunning": [],
 }
 `;
 
@@ -2016,6 +2751,7 @@ exports[`trail store requests golden deleted.permanentlyDeleteMultiple([[1,3]]) 
     "topDeleters": [],
     "topDeletersLoading": false,
   },
+  "whileRunning": [],
 }
 `;
 
@@ -2085,6 +2821,7 @@ exports[`trail store requests golden deleted.restoreDeleted([2]) failure with er
     "topDeletersLoading": false,
   },
   "thrown": "Server says no",
+  "whileRunning": [],
 }
 `;
 
@@ -2154,6 +2891,77 @@ exports[`trail store requests golden deleted.restoreDeleted([2]) failure without
     "topDeletersLoading": false,
   },
   "thrown": "Failed to restore object",
+  "whileRunning": [],
+}
+`;
+
+exports[`trail store requests golden deleted.restoreDeleted([2]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error restoring object:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/2/restore",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+  "thrown": "Network down",
+  "whileRunning": [],
 }
 `;
 
@@ -2223,6 +3031,7 @@ exports[`trail store requests golden deleted.restoreDeleted([2]) ok 1`] = `
     "topDeleters": [],
     "topDeletersLoading": false,
   },
+  "whileRunning": [],
 }
 `;
 
@@ -2293,6 +3102,7 @@ exports[`trail store requests golden deleted.restoreMultiple([[1,3]]) failure wi
     "topDeletersLoading": false,
   },
   "thrown": "Server says no",
+  "whileRunning": [],
 }
 `;
 
@@ -2363,6 +3173,78 @@ exports[`trail store requests golden deleted.restoreMultiple([[1,3]]) failure wi
     "topDeletersLoading": false,
   },
   "thrown": "Failed to restore objects",
+  "whileRunning": [],
+}
+`;
+
+exports[`trail store requests golden deleted.restoreMultiple([[1,3]]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error restoring objects:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/deleted/restore",
+      {
+        "body": "{"ids":[1,3]}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedFilters": {},
+    "deletedItem": null,
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedLoading": false,
+    "deletedPagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "deletedSearch": "",
+    "selectedForBulkAction": [],
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+    "statisticsLoading": false,
+    "topDeleters": [],
+    "topDeletersLoading": false,
+  },
+  "thrown": "Network down",
+  "whileRunning": [],
 }
 `;
 
@@ -2430,6 +3312,7 @@ exports[`trail store requests golden deleted.restoreMultiple([[1,3]]) ok 1`] = `
     "topDeleters": [],
     "topDeletersLoading": false,
   },
+  "whileRunning": [],
 }
 `;
 
@@ -2518,6 +3401,7 @@ exports[`trail store requests golden searchTrail.cleanupSearchTrails([]) failure
     "userAgentStats": [],
   },
   "thrown": "Server says no",
+  "whileRunning": [],
 }
 `;
 
@@ -2606,6 +3490,96 @@ exports[`trail store requests golden searchTrail.cleanupSearchTrails([]) failure
     "userAgentStats": [],
   },
   "thrown": "Failed to cleanup search trails",
+  "whileRunning": [],
+}
+`;
+
+exports[`trail store requests golden searchTrail.cleanupSearchTrails([]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error cleaning up search trails:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/cleanup",
+      {
+        "body": "{"days":30}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Network down",
+  "whileRunning": [],
 }
 `;
 
@@ -2697,6 +3671,7 @@ exports[`trail store requests golden searchTrail.cleanupSearchTrails([]) ok 1`] 
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [],
 }
 `;
 
@@ -2785,6 +3760,7 @@ exports[`trail store requests golden searchTrail.cleanupSearchTrails([7]) failur
     "userAgentStats": [],
   },
   "thrown": "Server says no",
+  "whileRunning": [],
 }
 `;
 
@@ -2873,6 +3849,96 @@ exports[`trail store requests golden searchTrail.cleanupSearchTrails([7]) failur
     "userAgentStats": [],
   },
   "thrown": "Failed to cleanup search trails",
+  "whileRunning": [],
+}
+`;
+
+exports[`trail store requests golden searchTrail.cleanupSearchTrails([7]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error cleaning up search trails:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/cleanup",
+      {
+        "body": "{"days":7}",
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Network down",
+  "whileRunning": [],
 }
 `;
 
@@ -2964,6 +4030,7 @@ exports[`trail store requests golden searchTrail.cleanupSearchTrails([7]) ok 1`]
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [],
 }
 `;
 
@@ -3051,6 +4118,9 @@ exports[`trail store requests golden searchTrail.fetchActivity(["weekly"]) failu
     "userAgentStats": [],
   },
   "thrown": "Server says no",
+  "whileRunning": [
+    "activityLoading",
+  ],
 }
 `;
 
@@ -3138,6 +4208,99 @@ exports[`trail store requests golden searchTrail.fetchActivity(["weekly"]) failu
     "userAgentStats": [],
   },
   "thrown": "Failed to fetch activity data",
+  "whileRunning": [
+    "activityLoading",
+  ],
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchActivity(["weekly"]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching activity data:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/activity?interval=weekly",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Network down",
+  "whileRunning": [
+    "activityLoading",
+  ],
 }
 `;
 
@@ -3228,6 +4391,9 @@ exports[`trail store requests golden searchTrail.fetchActivity(["weekly"]) ok 1`
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [
+    "activityLoading",
+  ],
 }
 `;
 
@@ -3315,6 +4481,9 @@ exports[`trail store requests golden searchTrail.fetchActivity([]) failure with 
     "userAgentStats": [],
   },
   "thrown": "Server says no",
+  "whileRunning": [
+    "activityLoading",
+  ],
 }
 `;
 
@@ -3402,6 +4571,99 @@ exports[`trail store requests golden searchTrail.fetchActivity([]) failure witho
     "userAgentStats": [],
   },
   "thrown": "Failed to fetch activity data",
+  "whileRunning": [
+    "activityLoading",
+  ],
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchActivity([]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching activity data:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/activity?interval=daily",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Network down",
+  "whileRunning": [
+    "activityLoading",
+  ],
 }
 `;
 
@@ -3492,6 +4754,9 @@ exports[`trail store requests golden searchTrail.fetchActivity([]) ok 1`] = `
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [
+    "activityLoading",
+  ],
 }
 `;
 
@@ -3579,6 +4844,9 @@ exports[`trail store requests golden searchTrail.fetchPopularTerms([]) failure w
     "userAgentStats": [],
   },
   "thrown": "Server says no",
+  "whileRunning": [
+    "popularTermsLoading",
+  ],
 }
 `;
 
@@ -3666,6 +4934,99 @@ exports[`trail store requests golden searchTrail.fetchPopularTerms([]) failure w
     "userAgentStats": [],
   },
   "thrown": "Failed to fetch popular terms",
+  "whileRunning": [
+    "popularTermsLoading",
+  ],
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchPopularTerms([]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching popular terms:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/popular-terms?limit=10",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Network down",
+  "whileRunning": [
+    "popularTermsLoading",
+  ],
 }
 `;
 
@@ -3760,6 +5121,9 @@ exports[`trail store requests golden searchTrail.fetchPopularTerms([]) ok 1`] = 
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [
+    "popularTermsLoading",
+  ],
 }
 `;
 
@@ -3847,6 +5211,9 @@ exports[`trail store requests golden searchTrail.fetchPopularTerms([3]) failure 
     "userAgentStats": [],
   },
   "thrown": "Server says no",
+  "whileRunning": [
+    "popularTermsLoading",
+  ],
 }
 `;
 
@@ -3934,6 +5301,99 @@ exports[`trail store requests golden searchTrail.fetchPopularTerms([3]) failure 
     "userAgentStats": [],
   },
   "thrown": "Failed to fetch popular terms",
+  "whileRunning": [
+    "popularTermsLoading",
+  ],
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchPopularTerms([3]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching popular terms:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/popular-terms?limit=3",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Network down",
+  "whileRunning": [
+    "popularTermsLoading",
+  ],
 }
 `;
 
@@ -4028,6 +5488,9 @@ exports[`trail store requests golden searchTrail.fetchPopularTerms([3]) ok 1`] =
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [
+    "popularTermsLoading",
+  ],
 }
 `;
 
@@ -4115,6 +5578,7 @@ exports[`trail store requests golden searchTrail.fetchRegisterSchemaStats([]) fa
     "userAgentStats": [],
   },
   "thrown": "Server says no",
+  "whileRunning": [],
 }
 `;
 
@@ -4202,6 +5666,95 @@ exports[`trail store requests golden searchTrail.fetchRegisterSchemaStats([]) fa
     "userAgentStats": [],
   },
   "thrown": "Failed to fetch register schema statistics",
+  "whileRunning": [],
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchRegisterSchemaStats([]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching register schema statistics:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/register-schema-stats",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Network down",
+  "whileRunning": [],
 }
 `;
 
@@ -4296,6 +5849,7 @@ exports[`trail store requests golden searchTrail.fetchRegisterSchemaStats([]) ok
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [],
 }
 `;
 
@@ -4383,6 +5937,9 @@ exports[`trail store requests golden searchTrail.fetchStatistics([]) failure wit
     "userAgentStats": [],
   },
   "thrown": "Server says no",
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -4470,6 +6027,99 @@ exports[`trail store requests golden searchTrail.fetchStatistics([]) failure wit
     "userAgentStats": [],
   },
   "thrown": "Failed to fetch statistics",
+  "whileRunning": [
+    "statisticsLoading",
+  ],
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchStatistics([]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching search trail statistics:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Network down",
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -4562,6 +6212,9 @@ exports[`trail store requests golden searchTrail.fetchStatistics([]) ok 1`] = `
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -4649,6 +6302,9 @@ exports[`trail store requests golden searchTrail.fetchStatistics([{"from":"2026-
     "userAgentStats": [],
   },
   "thrown": "Server says no",
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -4736,6 +6392,99 @@ exports[`trail store requests golden searchTrail.fetchStatistics([{"from":"2026-
     "userAgentStats": [],
   },
   "thrown": "Failed to fetch statistics",
+  "whileRunning": [
+    "statisticsLoading",
+  ],
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchStatistics([{"from":"2026-01-01","to":"2026-02-01"}]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching search trail statistics:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/statistics?from=2026-01-01&to=2026-02-01",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Network down",
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -4828,6 +6577,9 @@ exports[`trail store requests golden searchTrail.fetchStatistics([{"from":"2026-
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -4915,6 +6667,9 @@ exports[`trail store requests golden searchTrail.fetchStatistics([{"to":"2026-02
     "userAgentStats": [],
   },
   "thrown": "Server says no",
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -5002,6 +6757,99 @@ exports[`trail store requests golden searchTrail.fetchStatistics([{"to":"2026-02
     "userAgentStats": [],
   },
   "thrown": "Failed to fetch statistics",
+  "whileRunning": [
+    "statisticsLoading",
+  ],
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchStatistics([{"to":"2026-02-01"}]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching search trail statistics:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/statistics?to=2026-02-01",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Network down",
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -5094,6 +6942,9 @@ exports[`trail store requests golden searchTrail.fetchStatistics([{"to":"2026-02
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -5181,6 +7032,7 @@ exports[`trail store requests golden searchTrail.fetchUserAgentStats([]) failure
     "userAgentStats": [],
   },
   "thrown": "Server says no",
+  "whileRunning": [],
 }
 `;
 
@@ -5268,6 +7120,95 @@ exports[`trail store requests golden searchTrail.fetchUserAgentStats([]) failure
     "userAgentStats": [],
   },
   "thrown": "Failed to fetch user agent statistics",
+  "whileRunning": [],
+}
+`;
+
+exports[`trail store requests golden searchTrail.fetchUserAgentStats([]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching user agent statistics:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/user-agent-stats",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "thrown": "Network down",
+  "whileRunning": [],
 }
 `;
 
@@ -5362,6 +7303,7 @@ exports[`trail store requests golden searchTrail.fetchUserAgentStats([]) ok 1`] 
       },
     ],
   },
+  "whileRunning": [],
 }
 `;
 
@@ -5453,6 +7395,9 @@ exports[`trail store requests golden searchTrail.getActivity(["monthly"]) failur
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [
+    "activityLoading",
+  ],
 }
 `;
 
@@ -5544,6 +7489,103 @@ exports[`trail store requests golden searchTrail.getActivity(["monthly"]) failur
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [
+    "activityLoading",
+  ],
+}
+`;
+
+exports[`trail store requests golden searchTrail.getActivity(["monthly"]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching activity data:",
+      "Network down",
+    ],
+    [
+      "Error getting activity data:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/activity?interval=monthly",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": [],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "whileRunning": [
+    "activityLoading",
+  ],
 }
 `;
 
@@ -5626,6 +7668,9 @@ exports[`trail store requests golden searchTrail.getActivity(["monthly"]) ok 1`]
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [
+    "activityLoading",
+  ],
 }
 `;
 
@@ -5717,6 +7762,9 @@ exports[`trail store requests golden searchTrail.getPopularTerms([4]) failure wi
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [
+    "popularTermsLoading",
+  ],
 }
 `;
 
@@ -5808,6 +7856,103 @@ exports[`trail store requests golden searchTrail.getPopularTerms([4]) failure wi
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [
+    "popularTermsLoading",
+  ],
+}
+`;
+
+exports[`trail store requests golden searchTrail.getPopularTerms([4]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching popular terms:",
+      "Network down",
+    ],
+    [
+      "Error getting popular terms:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/popular-terms?limit=4",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": [],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "whileRunning": [
+    "popularTermsLoading",
+  ],
 }
 `;
 
@@ -5898,6 +8043,9 @@ exports[`trail store requests golden searchTrail.getPopularTerms([4]) ok 1`] = `
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [
+    "popularTermsLoading",
+  ],
 }
 `;
 
@@ -5989,6 +8137,7 @@ exports[`trail store requests golden searchTrail.getRegisterSchemaStats([]) fail
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [],
 }
 `;
 
@@ -6080,6 +8229,99 @@ exports[`trail store requests golden searchTrail.getRegisterSchemaStats([]) fail
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [],
+}
+`;
+
+exports[`trail store requests golden searchTrail.getRegisterSchemaStats([]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching register schema statistics:",
+      "Network down",
+    ],
+    [
+      "Error getting register schema statistics:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/register-schema-stats",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": [],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "whileRunning": [],
 }
 `;
 
@@ -6170,6 +8412,7 @@ exports[`trail store requests golden searchTrail.getRegisterSchemaStats([]) ok 1
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [],
 }
 `;
 
@@ -6275,6 +8518,9 @@ exports[`trail store requests golden searchTrail.getStatistics([]) failure with 
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -6380,6 +8626,117 @@ exports[`trail store requests golden searchTrail.getStatistics([]) failure witho
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [
+    "statisticsLoading",
+  ],
+}
+`;
+
+exports[`trail store requests golden searchTrail.getStatistics([]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching search trail statistics:",
+      "Network down",
+    ],
+    [
+      "Error getting statistics:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/statistics",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": {
+    "averageExecutionTime": 0,
+    "averageResultsPerSearch": 0,
+    "queryComplexity": {
+      "complex": 0,
+      "medium": 0,
+      "simple": 0,
+    },
+    "successRate": 0,
+    "total": 0,
+    "totalResults": 0,
+    "uniqueOrganizations": 0,
+    "uniqueSearchTerms": 0,
+    "uniqueUsers": 0,
+  },
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -6480,6 +8837,9 @@ exports[`trail store requests golden searchTrail.getStatistics([]) ok 1`] = `
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [
+    "statisticsLoading",
+  ],
 }
 `;
 
@@ -6571,6 +8931,7 @@ exports[`trail store requests golden searchTrail.getUserAgentStats([]) failure w
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [],
 }
 `;
 
@@ -6662,6 +9023,99 @@ exports[`trail store requests golden searchTrail.getUserAgentStats([]) failure w
     "statisticsLoading": false,
     "userAgentStats": [],
   },
+  "whileRunning": [],
+}
+`;
+
+exports[`trail store requests golden searchTrail.getUserAgentStats([]) network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching user agent statistics:",
+      "Network down",
+    ],
+    [
+      "Error getting user agent statistics:",
+      "Network down",
+    ],
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/search-trails/user-agent-stats",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
+        },
+        "method": "GET",
+      },
+    ],
+  ],
+  "returned": [],
+  "state": {
+    "activity": {
+      "daily": [],
+      "hourly": [],
+      "monthly": [],
+      "weekly": [],
+    },
+    "activityLoading": false,
+    "auditTrailList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "deletedList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+      {
+        "id": 3,
+      },
+    ],
+    "popularTerms": [],
+    "popularTermsLoading": false,
+    "registerSchemaStats": [],
+    "searchTrailFilters": {},
+    "searchTrailItem": null,
+    "searchTrailList": [],
+    "searchTrailLoading": false,
+    "searchTrailPagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "searchTrailSearch": "",
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+    "statisticsLoading": false,
+    "userAgentStats": [],
+  },
+  "whileRunning": [],
 }
 `;
 
@@ -6752,5 +9206,6 @@ exports[`trail store requests golden searchTrail.getUserAgentStats([]) ok 1`] = 
       },
     ],
   },
+  "whileRunning": [],
 }
 `;
