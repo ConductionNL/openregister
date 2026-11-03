@@ -347,9 +347,6 @@
     "@nextcloud/no-deprecated-library-props": {
       "count": 9
     },
-    "jsdoc/require-param-type": {
-      "count": 28
-    },
     "no-console": {
       "count": 8
     },
@@ -433,9 +430,6 @@
     }
   },
   "src/modals/file/UploadFiles.vue": {
-    "jsdoc/require-param-type": {
-      "count": 10
-    },
     "vue/prefer-define-options": {
       "count": 1
     }
@@ -574,9 +568,6 @@
     "@nextcloud/no-deprecated-library-props": {
       "count": 1
     },
-    "jsdoc/require-param-type": {
-      "count": 10
-    },
     "no-console": {
       "count": 4
     },
@@ -615,9 +606,6 @@
   "src/modals/object/ViewObject.vue": {
     "@nextcloud/no-deprecated-library-props": {
       "count": 1
-    },
-    "jsdoc/require-param-type": {
-      "count": 56
     },
     "no-console": {
       "count": 3
@@ -776,9 +764,6 @@
     },
     "@nextcloud/no-deprecated-library-props": {
       "count": 1
-    },
-    "jsdoc/require-param-type": {
-      "count": 10
     },
     "no-console": {
       "count": 1
@@ -947,9 +932,6 @@
     },
     "@nextcloud/no-deprecated-library-props": {
       "count": 1
-    },
-    "jsdoc/require-param-type": {
-      "count": 16
     },
     "no-console": {
       "count": 2

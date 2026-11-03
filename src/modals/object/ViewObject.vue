@@ -1778,7 +1778,7 @@ export default {
 	watch: {
 		objectStore: {
 			/**
-			 * @param newValue
+			 * @param {object} newValue
 			 * @spec exclude watcher re-initializing data on store change
 			 */
 			handler(newValue) {
@@ -1793,7 +1793,7 @@ export default {
 		// Watch for schema changes to re-initialize data
 		currentSchema: {
 			/**
-			 * @param newSchema
+			 * @param {object|null} newSchema
 			 * @spec exclude watcher re-resolving schema and re-initializing data
 			 */
 			async handler(newSchema) {
@@ -1837,7 +1837,7 @@ export default {
 		// Watch for register changes to re-initialize data
 		currentRegister: {
 			/**
-			 * @param newRegister
+			 * @param {object|null} newRegister
 			 * @spec exclude watcher re-initializing data on register change
 			 */
 			handler(newRegister) {
@@ -1852,7 +1852,7 @@ export default {
 
 		jsonData: {
 			/**
-			 * @param newValue
+			 * @param {string} newValue
 			 * @spec exclude watcher syncing form from JSON editor
 			 */
 			handler(newValue) {
@@ -1864,7 +1864,7 @@ export default {
 
 		formData: {
 			/**
-			 * @param _newValue
+			 * @param {object} _newValue
 			 * @spec exclude watcher syncing JSON editor from form
 			 */
 			handler(_newValue) {
@@ -2042,7 +2042,7 @@ export default {
 		},
 
 		/**
-		 * @param isOpen
+		 * @param {boolean} isOpen
 		 * @spec exclude modal open/close UI handler
 		 */
 		handleDialogClose(isOpen) {
@@ -2094,7 +2094,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {unknown} value
 		 * @spec exclude client-side date validation helper
 		 */
 		isValidDate(value) {
@@ -2102,7 +2102,7 @@ export default {
 		},
 
 		/**
-		 * @param val
+		 * @param {unknown} val
 		 * @spec exclude display helper formatting value as JSON
 		 */
 		formatValue(val) {
@@ -2111,7 +2111,7 @@ export default {
 
 		getTheme,
 		/**
-		 * @param text
+		 * @param {string} text
 		 * @spec exclude clipboard UI helper
 		 */
 		async copyToClipboard(text) {
@@ -2321,7 +2321,7 @@ export default {
 		},
 
 		/**
-		 * @param str
+		 * @param {string} str
 		 * @spec exclude client-side JSON validation helper
 		 */
 		isValidJson(str) {
@@ -2355,9 +2355,9 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param index
-		 * @param value
+		 * @param {string} key
+		 * @param {number} index
+		 * @param {unknown} value
 		 * @spec exclude form-state helper updating an array item
 		 */
 		updateArrayItem(key, index, value) {
@@ -2368,7 +2368,7 @@ export default {
 		},
 
 		/**
-		 * @param v
+		 * @param {unknown} v
 		 * @spec exclude display/payload coercion helper for null values
 		 */
 		toDisplay(v) {
@@ -2376,7 +2376,7 @@ export default {
 		},
 
 		/**
-		 * @param v
+		 * @param {unknown} v
 		 * @spec exclude display/payload coercion helper for empty values
 		 */
 		toPayload(v) {
@@ -2384,7 +2384,7 @@ export default {
 		},
 
 		/**
-		 * @param key
+		 * @param {string} key
 		 * @spec exclude form-state helper adding an array item
 		 */
 		addArrayItem(key) {
@@ -2395,8 +2395,8 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param i
+		 * @param {string} key
+		 * @param {number} i
 		 * @spec exclude form-state helper removing an array item
 		 */
 		removeArrayItem(key, i) {
@@ -2406,8 +2406,8 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param val
+		 * @param {string} key
+		 * @param {string} val
 		 * @spec exclude form-state helper updating an object-typed field
 		 */
 		updateObjectField(key, val) {
@@ -2420,7 +2420,7 @@ export default {
 		},
 
 		/**
-		 * @param checked
+		 * @param {boolean} checked
 		 * @spec exclude file-selection UI toggle (select all)
 		 */
 		toggleSelectAllFiles(checked) {
@@ -2441,8 +2441,8 @@ export default {
 		},
 
 		/**
-		 * @param fileId
-		 * @param checked
+		 * @param {string|number} fileId
+		 * @param {boolean} checked
 		 * @spec exclude file-selection UI toggle (single file)
 		 */
 		toggleFileSelection(fileId, checked) {
@@ -2458,7 +2458,7 @@ export default {
 		},
 
 		/**
-		 * @param page
+		 * @param {number} page
 		 * @spec exclude files pagination UI handler
 		 */
 		onFilesPageChanged(page) {
@@ -2466,7 +2466,7 @@ export default {
 		},
 
 		/**
-		 * @param pageSize
+		 * @param {number} pageSize
 		 * @spec exclude files page-size UI handler
 		 */
 		onFilesPageSizeChanged(pageSize) {
@@ -2488,8 +2488,8 @@ export default {
 		// back to N sequential single-file calls when the runtime store
 		// doesn't expose batchFiles yet (older @conduction/nextcloud-vue).
 		/**
-		 * @param action
-		 * @param perFileFallback
+		 * @param {string} action
+		 * @param {Function} perFileFallback
 		 * @spec exclude file batch-action dispatch helper delegating to objectStore.batchFiles
 		 */
 		async _runBatchAction(action, perFileFallback) {
@@ -2529,7 +2529,7 @@ export default {
 		},
 
 		/**
-		 * @param file
+		 * @param {object} file
 		 * @spec exclude single file-delete handler delegating to objectStore.deleteFile
 		 */
 		async deleteFile(file) {
@@ -2548,7 +2548,7 @@ export default {
 		},
 
 		/**
-		 * @param file
+		 * @param {object} file
 		 * @spec exclude form-state handler entering file-label edit mode
 		 */
 		async editFileLabels(file) {
@@ -2575,7 +2575,7 @@ export default {
 		// API call shape is implemented in services/fileMetadata.js so it
 		// can be unit-tested without mounting this modal.
 		/**
-		 * @param file
+		 * @param {object} file
 		 * @spec exclude file-label save handler delegating to services/fileMetadata
 		 */
 		async saveFileLabels(file) {
@@ -2623,8 +2623,8 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param value
+		 * @param {string} key
+		 * @param {unknown} value
 		 * @spec exclude computed CSS-class helper for property validation state
 		 */
 		getPropertyValidationClass(key, value) {
@@ -2660,9 +2660,9 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param value
-		 * @param schemaProperty
+		 * @param {string} key
+		 * @param {unknown} value
+		 * @param {object} schemaProperty
 		 * @spec exclude client-side property-value validation helper
 		 */
 		isValidPropertyValue(key, value, schemaProperty) {
@@ -2673,8 +2673,8 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param value
+		 * @param {string} key
+		 * @param {unknown} value
 		 * @spec exclude display helper building property error message
 		 */
 		getPropertyErrorMessage(key, value) {
@@ -2753,8 +2753,8 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param event
+		 * @param {string} key
+		 * @param {MouseEvent} event
 		 * @spec exclude table-row click UI handler for inline edit
 		 */
 		handleRowClick(key, event) {
@@ -2807,7 +2807,7 @@ export default {
 		},
 
 		/**
-		 * @param key
+		 * @param {string} key
 		 * @spec exclude form-state handler selecting/focusing a property for edit
 		 */
 		selectProperty(key) {
@@ -2830,8 +2830,8 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param newValue
+		 * @param {string} key
+		 * @param {unknown} newValue
 		 * @spec exclude form-state handler updating a property value with type coercion
 		 */
 		updatePropertyValue(key, newValue) {
@@ -2894,9 +2894,9 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param oldValue
-		 * @param newValue
+		 * @param {string} key
+		 * @param {unknown} oldValue
+		 * @param {unknown} newValue
 		 * @spec exclude toast notification UI helper for property changes
 		 */
 		showPropertyChangeNotification(key, oldValue, newValue) {
@@ -2932,7 +2932,7 @@ export default {
 		},
 
 		/**
-		 * @param key
+		 * @param {string} key
 		 * @spec exclude display helper checking string-typed property
 		 */
 		isStringProperty(key) {
@@ -2941,8 +2941,8 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param value
+		 * @param {string} key
+		 * @param {unknown} value
 		 * @spec exclude display helper checking property editability (const/immutable)
 		 */
 		isPropertyEditable(key, value) {
@@ -2970,8 +2970,8 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param value
+		 * @param {string} key
+		 * @param {unknown} value
 		 * @spec exclude display helper building editability warning text
 		 */
 		getEditabilityWarning(key, value) {
@@ -2994,8 +2994,8 @@ export default {
 		},
 
 		/**
-		 * @param value
-		 * @param format
+		 * @param {string} value
+		 * @param {string} format
 		 * @spec exclude display helper delegating to dateUtils.stringToDate
 		 */
 		stringToDate(value, format) {
@@ -3003,7 +3003,7 @@ export default {
 		},
 
 		/**
-		 * @param key
+		 * @param {string} key
 		 * @spec exclude display helper mapping schema type to input type
 		 */
 		getPropertyInputType(key) {
@@ -3011,7 +3011,7 @@ export default {
 		},
 
 		/**
-		 * @param key
+		 * @param {string} key
 		 * @spec exclude display helper mapping schema type to input component
 		 */
 		getPropertyInputComponent(key) {
@@ -3167,8 +3167,8 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param value
+		 * @param {string} key
+		 * @param {unknown} value
 		 * @spec exclude display helper resolving value to show for a property
 		 */
 		getDisplayValue(key, value) {
