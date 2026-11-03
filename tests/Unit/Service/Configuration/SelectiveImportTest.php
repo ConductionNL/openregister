@@ -99,6 +99,20 @@ class SelectiveImportTest extends TestCase {
 	private array $imported = [];
 
 	/**
+	 * The order the import handler was called in.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $steps = [];
+
+	/**
+	 * What the import handler reports as kept local.
+	 *
+	 * @var array<int, array{slug: string, paths: array<int, string>}>
+	 */
+	private array $keptLocal = [];
+
+	/**
 	 * The configuration mapper double.
 	 *
 	 * @var ConfigurationMapper&MockObject
@@ -151,8 +165,20 @@ class SelectiveImportTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 
 		$importHandler = $this->createMock(ImportHandler::class);
+		$importHandler->method('startKeptLocalReport')->willReturnCallback(
+			function (): void {
+				$this->steps[] = 'start';
+			}
+		);
+		$importHandler->method('keptLocalReport')->willReturnCallback(
+			function (): array {
+				$this->steps[] = 'report';
+				return $this->keptLocal;
+			}
+		);
 		$importHandler->method('importFromJson')->willReturnCallback(
 			function (array $data) {
+				$this->steps[] = 'import';
 				$this->imported[] = $data;
 				$result = ['registers' => [], 'schemas' => [], 'objects' => [], 'endpoints' => [], 'sources' => [],
 					'mappings' => [], 'jobs' => [], 'synchronizations' => [], 'rules' => []];
@@ -358,4 +384,17 @@ class SelectiveImportTest extends TestCase {
 		$this->assertFalse($this->configuration->hasUpdateAvailable(), 'the next hourly run finds nothing to do');
 
 	}//end testAutoUpdateImportsEverythingAndMovesLocalVersion()
+	/**
+	 * The admin re-import reports the schema parts the guard kept local, from a fresh list.
+	 *
+	 * @return void
+	 */
+	public function testTheReimportReportsWhatTheGuardKeptLocal(): void {
+		$this->keptLocal = [['slug' => 'case', 'paths' => ['authorization']]];
+
+		$result = $this->service([self::remote()])->importConfigurationWithSelection(configuration: $this->configuration, selection: []);
+
+		$this->assertSame(['schemas' => [['slug' => 'case', 'paths' => ['authorization']]]], $result['keptLocal']);
+		$this->assertSame(['start', 'import', 'report'], $this->steps, 'the list is started before the import and read after it');
+	}//end testTheReimportReportsWhatTheGuardKeptLocal()
 }//end class

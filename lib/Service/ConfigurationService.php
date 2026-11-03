@@ -1101,6 +1101,7 @@ class ConfigurationService {
 		}
 
 		$remoteVersion = $remoteData['version'] ?? $remoteData['info']['version'] ?? null;
+		$this->getImportHandler()->startKeptLocalReport();
 		$result = $this->importFromJson(
 			data: $data,
 			configuration: $configuration,
@@ -1109,6 +1110,7 @@ class ConfigurationService {
 			version: $remoteVersion ?? $configuration->getVersion(),
 			force: false
 		);
+		$result['keptLocal'] = ['schemas' => $this->getImportHandler()->keptLocalReport()];
 
 		$configuration->setRegisters($this->mergeIds(existing: $configuration->getRegisters(), entities: $result['registers'] ?? []));
 		$configuration->setSchemas($this->mergeIds(existing: $configuration->getSchemas(), entities: $result['schemas'] ?? []));
