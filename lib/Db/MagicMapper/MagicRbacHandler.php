@@ -499,13 +499,7 @@ class MagicRbacHandler {
 			action: $action,
 			principals: $principals
 		) as $denial) {
-			$rule = $denial['rule'];
-			$match = null;
-			if (is_array($rule) === true && is_array(($rule['match'] ?? null)) === true
-				&& $this->conditionMatcher->namesUnknownMetadata(match: $rule['match']) === false
-			) {
-				$match = $this->buildMatchConditionsSql(match: $rule['match'], columnPrefix: $columnPrefix);
-			}
+			$match = $this->denialPredicateSql(rule: $denial['rule'], columnPrefix: $columnPrefix);
 
 			if ($match === null) {
 				$this->logger->warning(
@@ -530,6 +524,26 @@ class MagicRbacHandler {
 
 		return '(' . implode(' AND ', $terms) . ')';
 	}//end denyFilterSqlFor()
+
+	/**
+	 * The SQL of a conditional denial's clause, or null when it cannot select rows by column.
+	 *
+	 * A clause on metadata no record carries gets null, so the caller denies the whole list.
+	 *
+	 * @param mixed  $rule         The denial's rule.
+	 * @param string $columnPrefix Table alias to qualify each column with.
+	 *
+	 * @return string|null The predicate, or null.
+	 */
+	private function denialPredicateSql(mixed $rule, string $columnPrefix): ?string {
+		if (is_array($rule) === false || is_array(($rule['match'] ?? null)) === false
+			|| $this->conditionMatcher->namesUnknownMetadata(match: $rule['match']) === true
+		) {
+			return null;
+		}
+
+		return $this->buildMatchConditionsSql(match: $rule['match'], columnPrefix: $columnPrefix);
+	}//end denialPredicateSql()
 
 	/**
 	 * Apply RBAC filters to a query builder based on schema authorization
@@ -1808,15 +1822,26 @@ class MagicRbacHandler {
 				continue;
 			}
 
-			if ($this->conditionMatcher->namesUnknownMetadata(match: $rule['match'], object: $objectData) === true
-				|| $this->conditionMatcher->objectMatchesConditions(object: $objectData, match: $rule['match']) === true
-			) {
+			if ($this->denialSelects(match: $rule['match'], objectData: $objectData) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end deniesHere()
+
+	/**
+	 * Whether a denial's clause selects the row: it matches, or it names metadata no record carries.
+	 *
+	 * @param array<string, mixed> $match      The clause.
+	 * @param array<mixed>         $objectData The row as a rule reads it.
+	 *
+	 * @return bool True when the denial applies.
+	 */
+	private function denialSelects(array $match, array $objectData): bool {
+		return $this->conditionMatcher->namesUnknownMetadata(match: $match, object: $objectData) === true
+			|| $this->conditionMatcher->objectMatchesConditions(object: $objectData, match: $match) === true;
+	}//end denialSelects()
 
 	/**
 	 * The access predicate for one table, under one alias, as a single string.
