@@ -3055,8 +3055,9 @@ class MagicRbacHandler {
 	 * The verdict of a conditional rule.
 	 *
 	 * A rule whose match pins `_organisation` to the caller's organisation
-	 * admits only rows of that organisation by itself, so it neither lifts nor
-	 * keeps the filter. Any other rule the caller holds stays inside the
+	 * admits only rows of that organisation by itself, and a conditional
+	 * `public` rule admits rows anyone may read, so neither lifts nor keeps
+	 * the filter. Any other rule the caller holds stays inside the
 	 * caller's organisation unless it crosses organisations ({@see ruleCrossesOrganisations()}) and the caller
 	 * holds it through `public` or a group. A crossing rule held only through
 	 * `authenticated` or a user override binds its rows to the caller's
@@ -3072,7 +3073,9 @@ class MagicRbacHandler {
 			return self::RULE_NOT_HELD;
 		}
 
-		if ($this->pinsCallerOrganisation(value: ($rule['match']['_organisation'] ?? null)) === true) {
+		if (($rule['group'] ?? null) === 'public'
+			|| $this->pinsCallerOrganisation(value: ($rule['match']['_organisation'] ?? null)) === true
+		) {
 			return self::RULE_NOT_HELD;
 		}
 

@@ -89,6 +89,16 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 	private const PUBLIC_OPEN = ['group' => 'public', 'match' => ['status' => 'open']];
 
 	/**
+	 * stackiq's `connection` read rules, exactly as its register ships them.
+	 */
+	private const STACKIQ_CONNECTION = [
+		['group' => 'gebruik-beheerder', 'match' => ['_organisation' => '$organisation']],
+		['group' => 'public', 'match' => ['status' => 'open']],
+		['group' => 'aanbod-beheerder', 'match' => ['_organisation' => '$organisation']],
+		['group' => 'aanbod-beheerder', 'match' => ['provider' => '$organisation']],
+	];
+
+	/**
 	 * Every row of the fixture table.
 	 */
 	private const ALL_ROWS = ['other-open', 'other-permit', 'other-plain', 'other-provided', 'own-open', 'own-permit'];
@@ -234,6 +244,24 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 				true,
 				'admin',
 				self::ALL_ROWS,
+			],
+			'stackiq connection: a provider keeps the rows that name it' => [
+				self::STACKIQ_CONNECTION,
+				true,
+				'provider',
+				['other-open', 'other-provided', 'own-open', 'own-permit'],
+			],
+			'stackiq connection: a consumer reads its own rows and the public ones' => [
+				self::STACKIQ_CONNECTION,
+				true,
+				'consumer',
+				['other-open', 'own-open', 'own-permit'],
+			],
+			'without inheritance a team row matching the public rule stays in organisation' => [
+				[['group' => 'public', 'match' => ['caseType' => 'ct-permit']], self::TEAM_RULE],
+				false,
+				'team',
+				['own-permit'],
 			],
 			'without public inheritance the public rule does not apply' => [
 				[self::PUBLIC_OPEN, self::TEAM_RULE],
@@ -445,7 +473,8 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 	}//end testTheOrganisationConditionTakesTheBranch()
 
 	/**
-	 * Log a caller in: `team` (in team-toezicht), `plain` (no groups), `admin` or `anonymous`.
+	 * Log a caller in: `team` (in team-toezicht), `plain` (no groups), `provider`
+	 * (aanbod-beheerder), `consumer` (gebruik-beheerder), `admin` or `anonymous`.
 	 *
 	 * @param string $caller Who reads.
 	 *
@@ -459,7 +488,13 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 			return;
 		}
 
-		$groups = ['team' => ['team-toezicht'], 'plain' => [], 'admin' => ['admin']][$caller];
+		$groups = [
+			'team'     => ['team-toezicht'],
+			'plain'    => [],
+			'admin'    => ['admin'],
+			'provider' => ['aanbod-beheerder'],
+			'consumer' => ['gebruik-beheerder'],
+		][$caller];
 		$this->logIn(groups: $groups);
 		$this->groupManager->method('isAdmin')->willReturn($caller === 'admin');
 
