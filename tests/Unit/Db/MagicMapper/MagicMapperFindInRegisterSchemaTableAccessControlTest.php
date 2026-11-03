@@ -180,6 +180,8 @@ class MagicMapperFindInRegisterSchemaTableAccessControlTest extends TestCase {
 		$qb->method('where')->willReturnSelf();
 		$qb->method('andWhere')->willReturnSelf();
 		$qb->method('createNamedParameter')->willReturn(':param');
+		$qb->method('addOrderBy')->willReturnSelf();
+		$qb->method('createFunction')->willReturn($this->createMock(\OCP\DB\QueryBuilder\IQueryFunction::class));
 
 		$result = $this->createMock(IResult::class);
 		$result->method('fetch')->willReturn(false);
