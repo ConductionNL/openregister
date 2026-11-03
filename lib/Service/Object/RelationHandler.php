@@ -654,6 +654,10 @@ class RelationHandler {
 				'limit' => $limit,
 				'offset' => $offset,
 			];
+		} catch (MultipleObjectsReturnedException $e) {
+			// A slug two objects of the register and schema hold is an answer the
+			// caller must see (409, #4037), not an empty relation list.
+			throw $e;
 		} catch (\Exception $e) {
 			return $this->failedPage(error: $e, what: 'uses', objectId: $objectId, query: $query);
 		}//end try
@@ -1177,6 +1181,10 @@ class RelationHandler {
 				'limit' => $page->limit,
 				'offset' => $page->offset,
 			];
+		} catch (MultipleObjectsReturnedException $e) {
+			// A slug two objects of the register and schema hold is an answer the
+			// caller must see (409, #4037), not an empty relation list.
+			throw $e;
 		} catch (\Exception $e) {
 			return $this->failedPage(error: $e, what: 'used by', objectId: $objectId, query: $query);
 		}//end try

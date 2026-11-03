@@ -84,4 +84,39 @@ class ExampleSetGroupSubAdminsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: 0, actual: $this->accounts->userCreates);
 		$this->assertSame(expected: [], actual: $this->accounts->subAdmins);
 	}//end testAnUnknownSubAdminRefusesTheSet()
+
+	/**
+	 * Sub-admins on a group that exists and the set did not create refuse the set.
+	 *
+	 * @return void
+	 */
+	public function testASubAdminOnAGroupTheSetDidNotCreateRefusesTheSet(): void {
+		$this->handlers(subAdmins: ['sanne']);
+		$this->accounts->groups['cases-handlers'] = ['someone'];
+
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertContains(
+			needle: 'group "cases-handlers": it exists and this set did not create it, so the set may not name sub-admins of it',
+			haystack: $report['refusals']
+		);
+		$this->assertSame(expected: [], actual: $this->accounts->subAdmins);
+		$this->assertSame(expected: ['someone'], actual: $this->accounts->groups['cases-handlers']);
+	}//end testASubAdminOnAGroupTheSetDidNotCreateRefusesTheSet()
+
+	/**
+	 * Members are still added to a fragment group that exists before the set runs.
+	 *
+	 * @return void
+	 */
+	public function testMembersJoinAGroupThatExistedBeforeTheSet(): void {
+		$this->handlers(subAdmins: []);
+		$this->accounts->groups['cases-handlers'] = ['someone'];
+
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$this->assertSame(expected: 'created', actual: $report['memberships']['cases-handlers / esra.demir']);
+		$this->assertContains(needle: 'esra.demir', haystack: $this->accounts->groups['cases-handlers']);
+	}//end testMembersJoinAGroupThatExistedBeforeTheSet()
 }//end class

@@ -89,6 +89,30 @@ class ExampleSetDailyRefreshTest extends ExampleSetTestCase {
 	}//end testAMarkedSetIsRefreshedAgainstTheDayOfTheRun()
 
 	/**
+	 * A member the set added and an admin removed since stays removed after the daily refresh.
+	 *
+	 * @return void
+	 */
+	public function testTheRefreshDoesNotGiveBackAMembershipAnAdminRemoved(): void {
+		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$withMembers = array_filter($this->accounts->groups, static fn (array $members): bool => $members !== []);
+		$this->assertNotSame([], $withMembers, 'the set adds members');
+		$gid = (string) array_key_first($withMembers);
+		$uid = (string) $withMembers[$gid][0];
+		$this->accounts->removeFromGroup(gid: $gid, uid: $uid);
+		$users = $this->accounts->userCreates;
+
+		$daily = $this->daily();
+		$daily->mark(set: 'demo', daily: true);
+		$report = $daily->run(today: $this->today()->modify('+1 day'));
+
+		$this->assertSame([], $report['demo']['refusals'], (string) json_encode($report));
+		$this->assertFalse($this->accounts->inGroup(gid: $gid, uid: $uid), 'the removed member stays removed');
+		$this->assertSame(['membership '.$gid.' / '.$uid], $report['demo']['missing'], 'the refresh reports it, it does not redo it');
+		$this->assertSame($users, $this->accounts->userCreates, 'no account is made by a refresh');
+	}//end testTheRefreshDoesNotGiveBackAMembershipAnAdminRemoved()
+
+	/**
 	 * A marked set that is not installed (removed since) is skipped, never installed by the job.
 	 *
 	 * @return void

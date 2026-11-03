@@ -124,6 +124,8 @@ class FlowStateHandle implements JsonSerializable {
 	 * @param string $key The key to write.
 	 * @param mixed $value The value to store.
 	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 *
 	 * @return void
 	 */
 	public function set(string $key, mixed $value): void {
@@ -165,6 +167,8 @@ class FlowStateHandle implements JsonSerializable {
 
 	/**
 	 * The keys this handle set, still present in the state.
+	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
 	 *
 	 * @return array<int, string> The keys.
 	 */
