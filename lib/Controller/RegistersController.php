@@ -419,7 +419,7 @@ class RegistersController extends Controller {
 					registerId: (int)$register['id'],
 					schemaStats: ($statsByRegisterId[(int)$register['id']] ?? null)
 				),
-				'logs' => $this->auditTrailMapper->getStatistics(registerId: $register['id'], schemaId: null),
+				'logs' => $this->auditLogStats(registerId: (int)$register['id']),
 				'files' => [ 'total' => 0, 'size' => 0 ],
 			];
 		}
@@ -530,7 +530,7 @@ class RegistersController extends Controller {
 			if (in_array('@self.stats', $extend, true) === true) {
 				$registerArr['stats'] = [
 					'objects' => $this->objectEntityMapper->getStatistics(registerId: $registerArr['id'], schemaId: null),
-					'logs' => $this->auditTrailMapper->getStatistics(registerId: $registerArr['id'], schemaId: null),
+					'logs' => $this->auditLogStats(registerId: (int)$registerArr['id']),
 					'files' => [ 'total' => 0, 'size' => 0 ],
 				];
 			}
@@ -2132,6 +2132,26 @@ class RegistersController extends Controller {
 		$readGroups = ($authorization['read'] ?? []);
 		return is_array($readGroups) === true && in_array('public', $readGroups, true) === true;
 	}//end isPublicReadable()
+
+	/**
+	 * The audit-trail statistics of one register, for an administrator only.
+	 *
+	 * The count covers every entry of the register, whichever organisation the
+	 * object belongs to, so a non-admin or anonymous caller is given zeros.
+	 *
+	 * @param int $registerId The register id.
+	 *
+	 * @return array The statistics, or zeros for a non-admin.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md#requirement-the-instance-wide-audit-reads-are-admin-only
+	 */
+	private function auditLogStats(int $registerId): array {
+		if ($this->isCurrentUserAdmin() === false) {
+			return ['total' => 0, 'size' => 0];
+		}
+
+		return $this->auditTrailMapper->getStatistics(registerId: $registerId, schemaId: null);
+	}//end auditLogStats()
 
 	/**
 	 * Check whether the currently authenticated user is a Nextcloud administrator.

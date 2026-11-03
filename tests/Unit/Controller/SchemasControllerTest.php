@@ -80,6 +80,11 @@ class SchemasControllerTest extends TestCase {
 	 */
 	private ?\OCP\IUser $currentUser = null;
 
+	/**
+	 * Whether the signed-in user of the mocked session is an administrator.
+	 */
+	private bool $currentUserIsAdmin = true;
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -106,7 +111,7 @@ class SchemasControllerTest extends TestCase {
 		$userSession = $this->createMock(\OCP\IUserSession::class);
 		$userSession->method('getUser')->willReturnCallback(fn () => $this->currentUser);
 		$groupManager = $this->createMock(\OCP\IGroupManager::class);
-		$groupManager->method('isAdmin')->willReturnCallback(fn () => $this->currentUser !== null);
+		$groupManager->method('isAdmin')->willReturnCallback(fn () => $this->currentUser !== null && $this->currentUserIsAdmin === true);
 		$groupManager->method('getUserGroupIds')->willReturn(['admin']);
 
 		// destroy() also resolves SchemaDeletionService lazily (cascade + reclaim of an
@@ -1588,4 +1593,107 @@ class SchemasControllerTest extends TestCase {
 		$this->assertSame(400, $result->getStatus());
 		$this->assertStringContainsString("'\$in' operand", $result->getData()['error']);
 	}//end testUpdateRefusesANonListInOperandWith400NamingIt()
+
+	/**
+	 * Index with `@self.stats` for the current user, with audit counts on the mapper.
+	 *
+	 * @return array The response body.
+	 */
+	private function indexWithLogStats(): array {
+		$schema = $this->createMock(Schema::class);
+		$schema->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Test']);
+
+		$this->request->method('getParams')->willReturn(['_extend' => '@self.stats']);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
+		$this->schemaMapper->method('findAllExtendedBy')->willReturn([]);
+		$this->schemaMapper->method('getRegisterCountPerSchema')->willReturn([1 => 2]);
+		$this->objectMapper->method('getStatisticsGroupedBySchema')->willReturn([1 => ['total' => 10]]);
+
+		return $this->controller->index()->getData();
+	}//end indexWithLogStats()
+
+	public function testANonAdminListingSchemasIsNotGivenTheTrailCount(): void {
+		$this->currentUserIsAdmin = false;
+		$this->auditTrailMapper->expects($this->never())->method('getStatisticsGroupedBySchema');
+
+		$data = $this->indexWithLogStats();
+
+		$this->assertSame(['total' => 0, 'size' => 0], $data['results'][0]['stats']['logs']);
+		$this->assertSame(10, $data['results'][0]['stats']['objects']['total']);
+	}//end testANonAdminListingSchemasIsNotGivenTheTrailCount()
+
+	public function testAnAnonymousCallerListingSchemasIsNotGivenTheTrailCount(): void {
+		$this->currentUser = null;
+		$this->auditTrailMapper->expects($this->never())->method('getStatisticsGroupedBySchema');
+		$this->schemaMapper->method('findAll')->willReturn([]);
+		$this->request->method('getParams')->willReturn(['_extend' => '@self.stats']);
+
+		$this->assertSame(200, $this->controller->index()->getStatus());
+	}//end testAnAnonymousCallerListingSchemasIsNotGivenTheTrailCount()
+
+	public function testAnAdminListingSchemasIsGivenTheTrailCount(): void {
+		$this->auditTrailMapper->expects($this->once())->method('getStatisticsGroupedBySchema')
+			->with([1])->willReturn([1 => ['total' => 20, 'size' => 100]]);
+
+		$data = $this->indexWithLogStats();
+
+		$this->assertSame(['total' => 20, 'size' => 100], $data['results'][0]['stats']['logs']);
+	}//end testAnAdminListingSchemasIsGivenTheTrailCount()
+
+	/**
+	 * Show with `@self.stats` for the current user.
+	 *
+	 * @return array The response body.
+	 */
+	private function showWithLogStats(): array {
+		$this->request->method('getParam')->willReturnMap([['_extend', [], ['@self.stats']]]);
+		$this->schemaMapper->method('find')->willReturn($this->createRealSchema(1, 'Stats Schema'));
+		$this->schemaMapper->method('findExtendedBy')->willReturn([]);
+		$this->schemaMapper->method('getRegisterCountPerSchema')->willReturn([1 => 5]);
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 25]);
+
+		return $this->controller->show(1)->getData();
+	}//end showWithLogStats()
+
+	public function testANonAdminReadingASchemaIsNotGivenTheTrailCount(): void {
+		$this->currentUserIsAdmin = false;
+		$this->auditTrailMapper->expects($this->never())->method('getStatistics');
+
+		$data = $this->showWithLogStats();
+
+		$this->assertSame(['total' => 0, 'size' => 0], $data['stats']['logs']);
+		$this->assertSame(['total' => 25], $data['stats']['objects']);
+	}//end testANonAdminReadingASchemaIsNotGivenTheTrailCount()
+
+	public function testAnAdminReadingASchemaIsGivenTheTrailCount(): void {
+		$this->auditTrailMapper->expects($this->once())->method('getStatistics')
+			->with(null, 1)->willReturn(['total' => 50, 'size' => 200]);
+
+		$data = $this->showWithLogStats();
+
+		$this->assertSame(['total' => 50, 'size' => 200], $data['stats']['logs']);
+	}//end testAnAdminReadingASchemaIsGivenTheTrailCount()
+
+	public function testANonAdminAskingForSchemaStatsIsNotGivenTheTrailCount(): void {
+		$this->currentUserIsAdmin = false;
+		$this->auditTrailMapper->expects($this->never())->method('getStatistics');
+		$this->schemaMapper->method('find')->willReturn($this->createRealSchema(1, 'Stats Schema'));
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 7]);
+
+		$data = $this->controller->stats(1)->getData();
+
+		$this->assertSame(['total' => 0, 'size' => 0], $data['logs']);
+		$this->assertSame(7, $data['objectCount']);
+	}//end testANonAdminAskingForSchemaStatsIsNotGivenTheTrailCount()
+
+	public function testAnAdminAskingForSchemaStatsIsGivenTheTrailCount(): void {
+		$this->auditTrailMapper->expects($this->once())->method('getStatistics')
+			->with(null, 1)->willReturn(['total' => 9, 'size' => 90]);
+		$this->schemaMapper->method('find')->willReturn($this->createRealSchema(1, 'Stats Schema'));
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 7]);
+
+		$data = $this->controller->stats(1)->getData();
+
+		$this->assertSame(['total' => 9, 'size' => 90], $data['logs']);
+	}//end testAnAdminAskingForSchemaStatsIsGivenTheTrailCount()
 }//end class
