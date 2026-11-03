@@ -48,6 +48,7 @@ use Psr\Log\LoggerInterface;
  * honours the WHERE conditions it is given.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper
+ * @uses \OCA\OpenRegister\Db\EmptyPropertyClaim
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
