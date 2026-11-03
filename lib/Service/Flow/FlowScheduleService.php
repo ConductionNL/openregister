@@ -111,8 +111,7 @@ class FlowScheduleService {
 			// The registry guarantees a non-empty id — a candidate without one
 			// is dropped there, so every id here is one a resolver can load.
 			$uuid = $candidate['id'];
-			$since = (string)($candidate['since'] ?? '');
-			if ($this->isDue(cron: $cron, uuid: $uuid, since: $since, now: $now) === false) {
+			if ($this->isDue(candidate: $candidate, cron: $cron, now: $now) === false) {
 				continue;
 			}
 
@@ -289,15 +288,14 @@ class FlowScheduleService {
 	/**
 	 * Whether a cron occurrence has passed since the flow's baseline.
 	 *
+	 * @param array $candidate The candidate flow, shaped `{id, since, ...}`.
 	 * @param string $cron The cron expression.
-	 * @param string $uuid The flow uuid.
-	 * @param string $since When the flow was last saved, or the empty string.
 	 * @param DateTimeInterface $now The moment to evaluate against.
 	 *
 	 * @return boolean Whether the flow is due.
 	 */
-	private function isDue(string $cron, string $uuid, string $since, DateTimeInterface $now): bool {
-		$baseline = $this->baselineOf(uuid: $uuid, since: $since, now: $now);
+	private function isDue(array $candidate, string $cron, DateTimeInterface $now): bool {
+		$baseline = $this->baselineOf(candidate: $candidate, now: $now);
 		if ($baseline === null) {
 			return false;
 		}
@@ -316,16 +314,17 @@ class FlowScheduleService {
 	 *
 	 * The last fire when there is one, otherwise the flow's last save. A flow
 	 * with neither starts its clock at `$now`: the baseline is recorded and the
-	 * flow is not due on this tick. Never the epoch, which made every new
-	 * schedule due on the first tick that saw it, whatever date its cron names.
+	 * flow is not due on this tick. Never the epoch: measured from there, every
+	 * new schedule is due on the first tick that sees it, whatever its cron says.
 	 *
-	 * @param string $uuid The flow uuid.
-	 * @param string $since When the flow was last saved, or the empty string.
+	 * @param array $candidate The candidate flow; `since` is when it was last saved.
 	 * @param DateTimeInterface $now The moment to evaluate against.
 	 *
 	 * @return string|null The baseline, or null when the clock starts now.
 	 */
-	private function baselineOf(string $uuid, string $since, DateTimeInterface $now): ?string {
+	private function baselineOf(array $candidate, DateTimeInterface $now): ?string {
+		$uuid = (string)$candidate['id'];
+		$since = (string)($candidate['since'] ?? '');
 		$lastFire = $this->appConfig->getValueString(self::APP_ID, self::LAST_FIRE_KEY . $uuid, '');
 		if ($lastFire !== '') {
 			return $lastFire;
