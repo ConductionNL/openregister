@@ -561,7 +561,7 @@ export default {
 		},
 
 		/**
-		 * @param objectId
+		 * @param {string|number} objectId
 		 * @spec exclude Removes one object from the local migration selection; UI selection plumbing.
 		 */
 		removeObject(objectId) {
@@ -626,7 +626,7 @@ export default {
 		},
 
 		/**
-		 * @param schema
+		 * @param {object} schema
 		 * @spec exclude Flattens a schema definition into a name/type/required list; UI presentation helper.
 		 */
 		extractSchemaProperties(schema) {
@@ -731,7 +731,7 @@ export default {
 		},
 
 		/**
-		 * @param _sourceProperty
+		 * @param {string} _sourceProperty
 		 * @spec exclude UI-change handler re-syncing the mapping object; UI reactivity plumbing.
 		 */
 		updateMappingFromUI(_sourceProperty) {

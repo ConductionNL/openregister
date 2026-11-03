@@ -155,7 +155,7 @@ export default {
 		},
 
 		/**
-		 * @param objectId
+		 * @param {string|number} objectId
 		 * @spec exclude UI selection plumbing — removes an object from the mass-validate selection.
 		 */
 		removeObject(objectId) {

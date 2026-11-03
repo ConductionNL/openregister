@@ -977,7 +977,7 @@ export default {
 
 	methods: {
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		updateTitle(value) {
@@ -988,7 +988,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateDescription(value) {
@@ -999,7 +999,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateVersion(value) {
@@ -1010,7 +1010,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {object|null} value
 		 * @spec exclude Reactive form-field setter binding select value to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateType(value) {
@@ -1024,7 +1024,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateApp(value) {
@@ -1035,7 +1035,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {object|null} value
 		 * @spec exclude Reactive form-field setter binding selected application to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateApplication(value) {
@@ -1050,7 +1050,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping selected registers to IDs on configurationItem; UI plumbing.
 		 */
 		updateRegisters(value) {
@@ -1065,7 +1065,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping selected schemas to IDs on configurationItem; UI plumbing.
 		 */
 		updateSchemas(value) {
@@ -1080,7 +1080,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping selected objects to IDs on configurationItem; UI plumbing.
 		 */
 		updateObjects(value) {
@@ -1095,7 +1095,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping selected sources to IDs on configurationItem; UI plumbing.
 		 */
 		updateSources(value) {
@@ -1110,7 +1110,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping selected agents to IDs on configurationItem; UI plumbing.
 		 */
 		updateAgents(value) {
@@ -1125,7 +1125,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping selected views to IDs on configurationItem; UI plumbing.
 		 */
 		updateViews(value) {
@@ -1140,7 +1140,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping managed applications to IDs on configurationItem; UI plumbing.
 		 */
 		updateManagedApplications(value) {
@@ -1156,7 +1156,7 @@ export default {
 
 		// Management tab update methods
 		/**
-		 * @param value
+		 * @param {object|null} value
 		 * @spec exclude Reactive form-field setter binding source-type select to configurationItem; UI plumbing.
 		 */
 		updateSourceType(value) {
@@ -1170,7 +1170,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateSourceUrl(value) {
@@ -1181,7 +1181,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateLocalVersion(value) {
@@ -1192,7 +1192,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {boolean} value
 		 * @spec exclude Reactive form-field setter binding toggle to configurationItem; UI plumbing.
 		 */
 		updateAutoUpdate(value) {
@@ -1203,7 +1203,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping notification groups to values on configurationItem; UI plumbing.
 		 */
 		updateNotificationGroups(value) {
@@ -1217,7 +1217,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateGithubRepo(value) {
@@ -1228,7 +1228,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateGithubBranch(value) {
@@ -1239,7 +1239,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateGithubPath(value) {
@@ -1345,7 +1345,7 @@ export default {
 
 		// Search methods with debouncing
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchRegisters(query) {
@@ -1376,7 +1376,7 @@ export default {
 		},
 
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchSchemas(query) {
@@ -1405,7 +1405,7 @@ export default {
 		},
 
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch (register/schema-filtered) populating select options; UI search plumbing.
 		 */
 		searchObjects(query) {
@@ -1453,7 +1453,7 @@ export default {
 		},
 
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchSources(query) {
@@ -1482,7 +1482,7 @@ export default {
 		},
 
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchAgents(query) {
@@ -1511,7 +1511,7 @@ export default {
 		},
 
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchViews(query) {
@@ -1540,7 +1540,7 @@ export default {
 		},
 
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchApplications(query) {

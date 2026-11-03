@@ -182,7 +182,7 @@ export default {
 	methods: {
 		t,
 		/**
-		 * @param key
+		 * @param {string} key
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		humanize(key) {
@@ -196,8 +196,8 @@ export default {
 		/**
 		 * Pick an input control for a property based on its schema type.
 		 *
-		 * @param key
-		 * @param def
+		 * @param {string} key
+		 * @param {object} def
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		controlFor(key, def) {

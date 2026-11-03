@@ -46,7 +46,7 @@ appear; FAIL = any needle survives.
 ## Newman / Postman counterpart
 
 A Postman collection lives alongside this fixture directory at
-`tests/postman/openregister-anonymisation-tests.postman_collection.json` —
+`tests/integration/openregister-anonymisation-tests.postman_collection.json` —
 it drives `POST /api/files/{fileId}/anonymize` against PDF inputs and shares
 the same fixture-checkin guard. Both the PHPUnit and Newman flows promote
 themselves once a fixture lands.
@@ -63,6 +63,6 @@ real Woo PDF) lands here and the deferred §9.3 / §9.4 tasks tick to `[x]`.
 
 1. Drop the `.pdf` + `.expected.json` into this directory.
 2. Run `composer test:integration` (PHPUnit) or
-   `newman run tests/postman/openregister-anonymisation-tests.postman_collection.json`.
+   `newman run tests/integration/openregister-anonymisation-tests.postman_collection.json`.
 3. Confirm both runs are green; commit the fixture.
 4. Tick the matching tasks.md checkbox.

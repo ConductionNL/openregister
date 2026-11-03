@@ -516,7 +516,7 @@ export default {
 			try {
 				await auditTrailStore.refreshAuditTrailList()
 				this.updateFilteredCount()
-			} catch (error) {
+			} catch {
 				// Handle error silently
 			}
 		},
@@ -611,7 +611,7 @@ export default {
 				this.createCount = stats.create || 0
 				this.updateCount = stats.update || 0
 				this.deleteCount = stats.delete || 0
-			} catch (error) {
+			} catch {
 				// Handle error silently
 			}
 		},
@@ -631,7 +631,7 @@ export default {
 					count: action.count || 0,
 					percentage: action.percentage || 0,
 				}))
-			} catch (error) {
+			} catch {
 				// Handle error silently
 			}
 		},
@@ -650,7 +650,7 @@ export default {
 					name: object.objectId || object.name || `Object ${object.id}`,
 					count: object.count || 0,
 				}))
-			} catch (error) {
+			} catch {
 				// Handle error silently
 			}
 		},

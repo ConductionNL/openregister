@@ -174,7 +174,7 @@ export default {
 		},
 
 		/**
-		 * @param object
+		 * @param {object|null} object
 		 * @spec exclude computed display helper for copy-name preview
 		 */
 		getPreviewName(object) {

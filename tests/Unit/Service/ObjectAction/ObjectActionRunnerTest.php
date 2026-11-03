@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectAction;
 
+use OCA\OpenRegister\Service\Rbac\MatrixRowsFromApps;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -29,7 +30,9 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionInputs;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelfAssign;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriters;
 use OCP\AppFramework\Http;
 use OCP\IL10N;
 use OCP\IUser;
@@ -94,11 +97,11 @@ class ObjectActionRunnerTest extends TestCase {
 
 		return new ObjectActionRunner(
 			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-			new ObjectActionGate($this->permissions, $session, $l10n),
+			new ObjectActionGate($this->permissions, $session, $l10n, $this->createMock(MatrixRowsFromApps::class)),
 			new ObjectActionInputs(new OasRequestValidator()),
 			$this->steps,
 			$this->audit,
-			$this->transitions,
+			new ObjectActionWriters($this->transitions, $this->createMock(ObjectActionSelfAssign::class)),
 			$this->flows,
 			$this->macros,
 			$this->createMock(LoggerInterface::class)
