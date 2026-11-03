@@ -43,6 +43,7 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\FileService;
@@ -92,6 +93,16 @@ class DeleteObject {
 	 * @var array<int, array<string, mixed>>
 	 */
 	private array $lastRetainedTargets = [];
+
+	/**
+	 * Uuids whose delete guards a root delete asked before its cascade ran.
+	 *
+	 * The delete that follows takes its answer from here instead of asking the
+	 * guards (and every other ObjectDeletingEvent listener) a second time.
+	 *
+	 * @var array<string, true>
+	 */
+	private array $guardsAsked = [];
 
 	/**
 	 * Audit trail mapper
@@ -214,6 +225,14 @@ class DeleteObject {
 
 		$target = ($given ?? $this->lookUpDeletionTarget(object: $object, identifier: $identifier));
 
+		// Asked before the folder goes and before the row is marked deleted.
+		$uuid = (string)$target->object->getUuid();
+		if (isset($this->guardsAsked[$uuid]) === false) {
+			$this->objectEntityMapper->assertDeletable(entity: $target->object);
+		}
+
+		unset($this->guardsAsked[$uuid]);
+
 		if ($permanent === true) {
 			$this->deletePermanently(target: $target);
 			return true;
@@ -316,7 +335,9 @@ class DeleteObject {
 			entity: $objectEntity,
 			register: $target->register,
 			schema: $target->schema,
-			hardDelete: true
+			hardDelete: true,
+			// delete() asked the guards before the folder was removed.
+			dispatchEvents: false
 		);
 
 		if ($objectEntity->isDraft() === true) {
@@ -580,6 +601,7 @@ class DeleteObject {
 	 * @throws ReferentialIntegrityException If deletion is blocked by RESTRICT constraints.
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException If `$scoped` is true and the UUID is not present
 	 *                                                    in the given (register, schema) magic table.
+	 * @throws HookStoppedException When a delete guard refuses.
 	 * @throws Exception If there is an error during deletion.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
@@ -625,8 +647,7 @@ class DeleteObject {
 
 		// Reset cascade count for root deletions.
 		if ($originalObjectId === null) {
-			$this->lastCascadeCount = 0;
-			$this->lastRetainedTargets = [];
+			[$this->lastCascadeCount, $this->lastRetainedTargets, $this->guardsAsked] = [0, [], []];
 		}
 
 		// Resolve the lookup: when the caller has guaranteed a (register, schema)
@@ -644,14 +665,12 @@ class DeleteObject {
 			preResolved: $preResolved
 		);
 
-		$object = $context['object'];
-
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.ctx');
 
 		// Root deletions: check referential integrity and handle cascade.
 		if ($originalObjectId === null) {
 			$integrityResult = $this->handleIntegrityDeletion(
-				object: $object,
+				object: $context['object'],
 				context: $context,
 				uuid: $uuid
 			);
@@ -665,11 +684,14 @@ class DeleteObject {
 		try {
 			// Pass the already-resolved scope so delete() skips its own re-find.
 			return $this->delete(
-				object: $object,
+				object: $context['object'],
 				permanent: $permanent,
 				register: $this->contextRegisterEntity(context: $context),
 				schema: $this->contextSchemaEntity(context: $context)
 			);
+		} catch (HookStoppedException $e) {
+			// A guard's refusal carries its own message and status for the caller.
+			throw $e;
 		} catch (Exception $e) {
 			$this->logger->warning(
 				message: '[DeleteObject] Delete failed',
@@ -833,6 +855,10 @@ class DeleteObject {
 		array $context,
 		string $uuid,
 	): ?bool {
+		// The root's guards answer before any child is cascaded away.
+		$this->objectEntityMapper->assertDeletable(entity: $object);
+		$this->guardsAsked[(string)$object->getUuid()] = true;
+
 		$schemaId = $object->getSchema();
 		$hasIntegrityAction = $schemaId !== null
 			&& $this->integrityService->hasIncomingOnDeleteReferences($schemaId) === true;
