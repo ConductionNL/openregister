@@ -254,6 +254,25 @@ class ObjectServiceCreateMatchTest extends TestCase {
 	}//end testABodyMetadataKeyDoesNotSatisfyTheMatch()
 
 	/**
+	 * The transient record the create rule reads holds the body without its `@self` block or metadata keys.
+	 *
+	 * Listeners of a custom scope receive this record, so the strip must hold on the record
+	 * itself, not only in what the matcher reads.
+	 *
+	 * @return void
+	 */
+	public function testTheCreateCheckRecordCarriesNoSelfBlock(): void {
+		$method = new ReflectionMethod(ObjectService::class, 'buildIncomingObjectForCreateCheck');
+		$incoming = $method->invoke(
+			$this->objectService,
+			['title' => 't', '@self' => ['organisation' => 'org-a', 'owner' => 'alice'], '_owner' => 'alice', 0 => 'n']
+		);
+
+		$this->assertSame(expected: ['title' => 't', 0 => 'n'], actual: array_diff_key($incoming->getObject(), ['id' => true]));
+		$this->assertNull(actual: $incoming->getOwner());
+	}//end testTheCreateCheckRecordCarriesNoSelfBlock()
+
+	/**
 	 * Ordinary properties still answer a create rule after the metadata keys are dropped.
 	 *
 	 * @return void

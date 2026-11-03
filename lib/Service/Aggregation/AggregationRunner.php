@@ -93,6 +93,14 @@ use RuntimeException;
 class AggregationRunner {
 
 	/**
+	 * An organisation scope the native SQL cannot render: the boundary has a
+	 * branch for the caller's conditional `public` rules.
+	 *
+	 * @var string
+	 */
+	private const SCOPE_PUBLIC_BRANCH = 'public-branch';
+
+	/**
 	 * Hard cap on the number of rows the PHP fallback path will hydrate
 	 * per request. The native Postgres path (tryNativeAggregation) does
 	 * the work in SQL and is unaffected. Picked at 10 000 to keep peak
@@ -2819,6 +2827,13 @@ class AggregationRunner {
 		);
 		if ($rowRbac === false) {
 			return $orgScope;
+		}
+
+		// The list widens the boundary by the rows of the caller's conditional
+		// `public` rules; this SQL cannot, so a mode it does not know sends the
+		// aggregation to the PHP path, which reads through the list.
+		if ($this->magicMapper->organisationBoundaryHasPublicBranch(schema: $schema) === true) {
+			return ['mode' => self::SCOPE_PUBLIC_BRANCH, 'uuids' => []];
 		}
 
 		if ($this->magicMapper->organisationBoundaryWaivedByRbac(schema: $schema) === true) {
