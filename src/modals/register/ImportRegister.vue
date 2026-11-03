@@ -960,7 +960,7 @@ export default {
 		},
 
 		/**
-		 * @param option
+		 * @param {object|null} option
 		 * @spec exclude select-change UI handler updating register/schema stores
 		 */
 		async handleRegisterChange(option) {
@@ -990,7 +990,7 @@ export default {
 		},
 
 		/**
-		 * @param option
+		 * @param {object|null} option
 		 * @spec openspec/specs/data-import-export/spec.md
 		 */
 		async handleSchemaChange(option) {

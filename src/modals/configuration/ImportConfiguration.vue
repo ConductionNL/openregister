@@ -705,7 +705,7 @@ export default {
 		},
 
 		/**
-		 * @param result
+		 * @param {object} result
 		 * @spec exclude Per-card import handler dispatching to configurationStore.importFromGitHub/GitLab and refreshing lists; UI orchestration plumbing.
 		 */
 		async importDiscoveredConfiguration(result) {
@@ -912,7 +912,7 @@ export default {
 		},
 
 		/**
-		 * @param event
+		 * @param {Event} event
 		 * @spec exclude File-input change handler passing the picked file to validateAndSetFile; UI file-picker plumbing.
 		 */
 		handleFileSelect(event) {
@@ -923,7 +923,7 @@ export default {
 		},
 
 		/**
-		 * @param event
+		 * @param {DragEvent} event
 		 * @spec exclude Drag-drop handler passing the dropped file to validateAndSetFile; UI file-picker plumbing.
 		 */
 		handleFileDrop(event) {
@@ -935,7 +935,7 @@ export default {
 		},
 
 		/**
-		 * @param file
+		 * @param {File} file
 		 * @spec exclude Client-side JSON-type/size validation before accepting an upload file; UI validation helper.
 		 */
 		validateAndSetFile(file) {
@@ -968,7 +968,7 @@ export default {
 		},
 
 		/**
-		 * @param bytes
+		 * @param {number} bytes
 		 * @spec exclude Human-readable byte-size formatter for the file display; UI presentation helper.
 		 */
 		formatFileSize(bytes) {
@@ -1004,7 +1004,7 @@ export default {
 		},
 
 		/**
-		 * @param configuration
+		 * @param {object} configuration
 		 * @spec exclude Triggers the configurations check-version endpoint and surfaces update toasts; UI orchestration plumbing.
 		 */
 		async handleCheckVersion(configuration) {

@@ -72,7 +72,7 @@ export default {
 		},
 
 		/**
-		 * @param open
+		 * @param {boolean} open
 		 * @spec exclude modal open/close UI handler
 		 */
 		handleDialogClose(open) {

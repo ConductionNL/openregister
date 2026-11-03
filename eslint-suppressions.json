@@ -314,9 +314,6 @@
     }
   },
   "src/modals/application/DeleteApplication.vue": {
-    "jsdoc/require-param-type": {
-      "count": 1
-    },
     "no-console": {
       "count": 1
     },
@@ -372,9 +369,6 @@
     "@nextcloud/no-deprecated-library-props": {
       "count": 1
     },
-    "jsdoc/require-param-type": {
-      "count": 6
-    },
     "no-console": {
       "count": 2
     },
@@ -385,9 +379,6 @@
   "src/modals/configuration/PreviewConfiguration.vue": {
     "@nextcloud/no-deprecated-library-props": {
       "count": 1
-    },
-    "jsdoc/require-param-type": {
-      "count": 8
     },
     "no-console": {
       "count": 2
@@ -729,9 +720,6 @@
     "@nextcloud/no-deprecated-library-props": {
       "count": 1
     },
-    "jsdoc/require-param-type": {
-      "count": 2
-    },
     "no-console": {
       "count": 2
     },
@@ -842,9 +830,6 @@
     "@nextcloud/no-deprecated-library-props": {
       "count": 1
     },
-    "jsdoc/require-param-type": {
-      "count": 2
-    },
     "vue/custom-event-name-casing": {
       "count": 1
     }
@@ -861,9 +846,6 @@
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 1
     },
-    "jsdoc/require-param-type": {
-      "count": 1
-    },
     "no-console": {
       "count": 2
     }
@@ -871,9 +853,6 @@
   "src/modals/settings/LLMConfigModal.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 4
-    },
-    "jsdoc/require-param-type": {
-      "count": 2
     },
     "no-console": {
       "count": 2
@@ -885,9 +864,6 @@
   "src/modals/settings/MassValidateModal.vue": {
     "@nextcloud/no-deprecated-library-props": {
       "count": 1
-    },
-    "jsdoc/require-param-type": {
-      "count": 2
     },
     "vue/custom-event-name-casing": {
       "count": 2
@@ -939,9 +915,6 @@
     "@nextcloud/no-deprecated-library-props": {
       "count": 2
     },
-    "jsdoc/require-param-type": {
-      "count": 4
-    },
     "no-console": {
       "count": 1
     },
@@ -963,9 +936,6 @@
     },
     "@nextcloud/no-deprecated-library-props": {
       "count": 3
-    },
-    "jsdoc/require-param-type": {
-      "count": 1
     },
     "no-console": {
       "count": 3

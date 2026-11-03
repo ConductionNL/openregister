@@ -967,7 +967,7 @@ export default {
 	watch: {
 		// Fetch Ollama models when Ollama is selected
 		/**
-		 * @param newVal
+		 * @param {object|null} newVal
 		 * @spec exclude UI watcher — fetches Ollama models when the embedding provider is Ollama.
 		 */
 		selectedEmbeddingProvider(newVal) {
@@ -977,7 +977,7 @@ export default {
 		},
 
 		/**
-		 * @param newVal
+		 * @param {object|null} newVal
 		 * @spec exclude UI watcher — fetches Ollama models when the chat provider is Ollama.
 		 */
 		selectedChatProvider(newVal) {
