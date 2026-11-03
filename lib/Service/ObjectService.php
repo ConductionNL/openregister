@@ -50,6 +50,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
@@ -60,6 +61,7 @@ use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionGraph\ReadableDeletionAnalysis;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -4464,8 +4466,9 @@ class ObjectService implements ObjectServiceInterface
      * The multitenancy flag a paginated search runs with.
      *
      * A current schema whose read rule lists `public` is visible to every
-     * organisation, so multitenancy is switched off for it, unless the caller
-     * is signed in and the schema does not inherit public rights.
+     * organisation for an anonymous caller and an admin, so multitenancy is
+     * switched off for them. A signed-in caller keeps it and reads other
+     * organisations only through rules marked `crossOrganisation: true`.
      *
      * @param bool $multitenancy The caller's multitenancy flag.
      *
@@ -5052,6 +5055,20 @@ class ObjectService implements ObjectServiceInterface
     {
         return $this->deleteHandler;
     }//end getDeleteHandler()
+
+    /**
+     * A deletion analysis without the objects the signed-in caller cannot read.
+     *
+     * @param DeletionAnalysis $analysis The analysis of the unscoped integrity walk.
+     *
+     * @return DeletionAnalysis The analysis with unreadable objects counted per schema.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    public function readableDeletionAnalysis(DeletionAnalysis $analysis): DeletionAnalysis
+    {
+        return (new ReadableDeletionAnalysis(mapper: $this->objectMapper))->analysisFor(analysis: $analysis);
+    }//end readableDeletionAnalysis()
 
     /**
      * Get the permission handler.

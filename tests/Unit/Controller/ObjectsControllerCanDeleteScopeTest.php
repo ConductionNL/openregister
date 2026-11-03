@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\DeleteObject;
@@ -54,6 +55,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\WriteCause
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Dto\DeletionAnalysis
+ * @uses \OCA\OpenRegister\Exception\ReferentialIntegrityException
  */
 class ObjectsControllerCanDeleteScopeTest extends TestCase {
 
@@ -73,6 +75,18 @@ class ObjectsControllerCanDeleteScopeTest extends TestCase {
 	private int $analyses = 0;
 
 	private bool $inScope = false;
+
+	/**
+	 * The analyses handed to the readable redaction.
+	 *
+	 * @var array<int, DeletionAnalysis>
+	 */
+	private array $redacted = [];
+
+	/**
+	 * What the readable redaction answers.
+	 */
+	private const READABLE_BLOCKERS = [['objectUuid' => '', 'schema' => '7', 'action' => 'RESTRICT', 'reason' => 'not readable', 'count' => 1]];
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -102,6 +116,12 @@ class ObjectsControllerCanDeleteScopeTest extends TestCase {
 			function (): DeletionAnalysis {
 				$this->analyses++;
 				return new DeletionAnalysis(deletable: false, blockers: [['uuid' => 'referring-object', 'title' => 'Referring title']]);
+			}
+		);
+		$this->objectService->method('readableDeletionAnalysis')->willReturnCallback(
+			function (DeletionAnalysis $analysis): DeletionAnalysis {
+				$this->redacted[] = $analysis;
+				return new DeletionAnalysis(deletable: $analysis->deletable, blockers: self::READABLE_BLOCKERS);
 			}
 		);
 		$this->objectService->method('getDeleteHandler')->willReturn($deleteHandler);
@@ -159,6 +179,8 @@ class ObjectsControllerCanDeleteScopeTest extends TestCase {
 
 		$this->assertSame([[false, false]], $this->reads);
 		$this->assertSame(200, $result->getStatus());
+		$this->assertSame([['uuid' => 'referring-object', 'title' => 'Referring title']], $result->getData()['blockers']);
+		$this->assertSame([], $this->redacted);
 	}
 
 	public function testAnObjectInsideTheReadScopeIsAnalysed(): void {
@@ -167,6 +189,41 @@ class ObjectsControllerCanDeleteScopeTest extends TestCase {
 		$result = $this->controller()->canDelete('uuid-b', '1', '2', $this->objectService);
 
 		$this->assertSame(200, $result->getStatus());
-		$this->assertSame([['uuid' => 'referring-object', 'title' => 'Referring title']], $result->getData()['blockers']);
+		$this->assertSame(self::READABLE_BLOCKERS, $result->getData()['blockers']);
+		$this->assertSame(false, $result->getData()['deletable']);
+		$this->assertCount(1, $this->redacted);
+		$this->assertSame([['uuid' => 'referring-object', 'title' => 'Referring title']], $this->redacted[0]->blockers);
+	}
+
+	/**
+	 * A delete that RESTRICT blocks, answered for alice.
+	 *
+	 * @param bool $isAdmin Whether alice is in the admin group.
+	 *
+	 * @return array<string, mixed> The 409 body.
+	 */
+	private function blockedDelete(bool $isAdmin): array {
+		$analysis = new DeletionAnalysis(deletable: false, blockers: [['objectUuid' => 'referring-object', 'schema' => '7', 'action' => 'RESTRICT']]);
+		$this->objectService->method('deleteObject')->willThrowException(new ReferentialIntegrityException(analysis: $analysis));
+
+		$result = $this->controller(isAdmin: $isAdmin)->destroy('uuid-b', '1', '2', $this->objectService);
+		$this->assertSame(409, $result->getStatus());
+
+		return $result->getData();
+	}//end blockedDelete()
+
+	public function testABlockedDeleteAnswersANonAdminOnlyWhatTheyRead(): void {
+		$body = $this->blockedDelete(isAdmin: false);
+
+		$this->assertSame(self::READABLE_BLOCKERS, $body['blockers']);
+		$this->assertSame('Cannot delete object: 1 dependent object(s) block deletion', $body['message']);
+		$this->assertStringNotContainsString('referring-object', (string)json_encode($body));
+	}
+
+	public function testABlockedDeleteAnswersAnAdministratorInFull(): void {
+		$body = $this->blockedDelete(isAdmin: true);
+
+		$this->assertSame([['objectUuid' => 'referring-object', 'schema' => '7', 'action' => 'RESTRICT']], $body['blockers']);
+		$this->assertSame([], $this->redacted);
 	}
 }

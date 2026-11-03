@@ -10,10 +10,12 @@
  *
  * Authorization rules:
  *
- *   - List + show + accountability: any authenticated user. AVG Art 30 §4
- *     requires the verwerkingsregister to be available to supervisory
- *     authorities and indirectly to data subjects via access requests,
- *     so read paths intentionally don't gate on admin.
+ *   - List + show: any authenticated user, within the organisations they
+ *     belong to. AVG Art 30 §4 requires the verwerkingsregister to be
+ *     available to supervisory authorities and indirectly to data subjects
+ *     via access requests, so read paths intentionally don't gate on admin.
+ *   - Accountability: any authenticated user, within their active
+ *     organisation; administrators see every activity.
  *   - Create / update / delete: admin-only. Operators maintain the
  *     catalog; misconfigurations directly affect compliance.
  *
@@ -323,12 +325,14 @@ class VerwerkingsactiviteitenController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md#requirement-the-system-must-provide-an-art-30-4-accountability-report-aggregating-audit-events-per-processing-activity
 	 */
 	public function accountability(): JSONResponse {
-		// SECURITY (#1825): the Art 30 §4 report exposes one tenant's full
-		// processing register + audit aggregates. Non-admins only get
-		// their own organisation(s); admins get the full report.
+		// The Art 30 §4 report exposes one organisation's processing register
+		// and the audit counts of its activities. Audit rows carry no
+		// reliable organisation, so the report is scoped through the
+		// activities: a non-admin gets those of their active organisation,
+		// and rows are counted for those activities only.
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return $this->unauthorized();
@@ -337,7 +341,7 @@ class VerwerkingsactiviteitenController extends Controller {
 		$isAdmin = $this->isAdmin();
 		$accessibleOrgs = [];
 		if ($isAdmin === false) {
-			$accessibleOrgs = $this->accessibleOrganisationUuids();
+			$accessibleOrgs = $this->activeOrganisationUuids();
 			if ($accessibleOrgs === []) {
 				return new JSONResponse(data: ['count' => 0, 'activities' => []]);
 			}
@@ -536,6 +540,23 @@ class VerwerkingsactiviteitenController extends Controller {
 
 		return array_values(array_unique($uuids));
 	}//end accessibleOrganisationUuids()
+
+	/**
+	 * The active organisation of the current user, as a list of at most one uuid.
+	 *
+	 * The active organisation is one the user belongs to. An empty list means
+	 * deny-all.
+	 *
+	 * @return array<int, string> The active organisation's uuid, or none.
+	 */
+	private function activeOrganisationUuids(): array {
+		$uuid = (string)$this->organisationService->getActiveOrganisation()?->getUuid();
+		if ($uuid === '') {
+			return [];
+		}
+
+		return [$uuid];
+	}//end activeOrganisationUuids()
 
 	/**
 	 * Whether the active user may see an activity given its org binding.

@@ -9142,19 +9142,19 @@ class MagicMapper extends AbstractObjectMapper {
 
 	/**
 	 * Whether a default read's organisation boundary carries a branch for the
-	 * caller's conditional `public` rules.
+	 * caller's conditional `crossOrganisation` rules.
 	 *
 	 * @param Schema $schema The schema being read.
 	 *
 	 * @return bool True when it does.
 	 *
-	 * @see MagicSearchHandler::organisationBoundaryHasPublicBranch()
+	 * @see MagicSearchHandler::organisationBoundaryHasCrossOrganisationBranch()
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-multi-tenancy-integration-with-scopes
 	 */
-	public function organisationBoundaryHasPublicBranch(Schema $schema): bool {
-		return $this->searchHandler->organisationBoundaryHasPublicBranch(schema: $schema);
-	}//end organisationBoundaryHasPublicBranch()
+	public function organisationBoundaryHasCrossOrganisationBranch(Schema $schema): bool {
+		return $this->searchHandler->organisationBoundaryHasCrossOrganisationBranch(schema: $schema);
+	}//end organisationBoundaryHasCrossOrganisationBranch()
 
 	/**
 	 * Whether a default list read waives the organisation boundary for this

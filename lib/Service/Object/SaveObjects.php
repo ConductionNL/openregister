@@ -115,6 +115,13 @@ class SaveObjects {
 	private const AUDIT_INSERT_CHUNK_SIZE = 100;
 
 	/**
+	 * The safeguard action of a row whose stored row could not be resolved.
+	 *
+	 * @var string
+	 */
+	private const UNRESOLVED_ACTION = 'unresolved';
+
+	/**
 	 * Envelope keys that are never business data, whatever a schema declares.
 	 *
 	 * These identify or locate the object rather than describe it, so a schema
@@ -867,9 +874,10 @@ class SaveObjects {
 	 * @return array{0: array, 1: string|null}
 	 */
 	private function screenResolvedRow(array $row, BulkSafeguardRun $run): array {
-		$refusal = ($this->draftRefusal(run: $run)
+		$refusal = ($this->unresolvedRowRefusal(run: $run)
 			?? $this->organisationRefusal(run: $run)
 			?? $this->deletedRowRefusal(run: $run)
+			?? $this->draftRefusal(run: $run)
 			?? $this->appendOnlyRefusal(run: $run)
 			?? $this->permissionRefusal(run: $run));
 		if ($refusal !== null) {
@@ -931,6 +939,25 @@ class SaveObjects {
 	}//end draftRefusal()
 
 	/**
+	 * The refusal for a row whose stored row could not be resolved, or null.
+	 *
+	 * The writer upserts on the row's identity, so a lookup that was ambiguous
+	 * or failed does not make the row a create. Answered as a refused create,
+	 * like the organisation refusal, so the cause stays unannounced.
+	 *
+	 * @param BulkSafeguardRun $run The safeguard pass
+	 *
+	 * @return string|null
+	 */
+	private function unresolvedRowRefusal(BulkSafeguardRun $run): ?string {
+		if ($run->rowAction !== self::UNRESOLVED_ACTION) {
+			return null;
+		}
+
+		return 'Permission denied for action create on schema ' . $run->rowSchema->getSlug();
+	}//end unresolvedRowRefusal()
+
+	/**
 	 * The refusal for a row that would overwrite another organisation's row, or null.
 	 *
 	 * The stored row was found past the read filters, and the update rule it is
@@ -964,14 +991,18 @@ class SaveObjects {
 	/**
 	 * Whether the caller's own read finds the row the current bulk row updates.
 	 *
+	 * The read matches an identifier on the id, the slug and the uri as well,
+	 * so it counts only when it found the stored row itself, by its uuid.
+	 *
 	 * @param BulkSafeguardRun $run The safeguard pass
 	 *
-	 * @return bool False when the read does not find it or fails.
+	 * @return bool False when the read does not find the stored row or fails.
 	 */
 	private function callerReadsStoredRow(BulkSafeguardRun $run): bool {
+		$uuid = (string) $run->rowExisting->getUuid();
 		try {
-			$this->objectEntityMapper->find(
-				identifier: (string) $run->rowExisting->getUuid(),
+			$read = $this->objectEntityMapper->find(
+				identifier: $uuid,
 				register: $run->rowRegister,
 				schema: $run->rowSchema
 			);
@@ -979,7 +1010,7 @@ class SaveObjects {
 			return false;
 		}
 
-		return true;
+		return $read->getUuid() === $uuid;
 	}//end callerReadsStoredRow()
 
 	/**
@@ -1430,8 +1461,11 @@ class SaveObjects {
 				_multitenancy: false
 			);
 			return [$uuid, 'update', $existing];
-		} catch (\Throwable $e) {
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return [$uuid, 'create', null];
+		} catch (\Throwable $e) {
+			// Ambiguous or failed: not known which row the writer would land on.
+			return [$uuid, self::UNRESOLVED_ACTION, null];
 		}
 	}//end resolveSafeguardActionForRow()
 
