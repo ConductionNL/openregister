@@ -58,6 +58,7 @@ use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
+use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -88,11 +89,29 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Object\DraftCallerRule
  * @uses   \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses   \OCA\OpenRegister\Service\OrganisationContext
  */
 class ObjectServiceSharedMasterDataDeleteTest extends TestCase {
 
 	/** @var MockObject&DeleteObject */
 	private MockObject $deleteHandler;
+
+	/**
+	 * The schema each delete right was asked of.
+	 *
+	 * @var list<int|null>
+	 */
+	private array $rightsAskedOf = [];
+
+	/**
+	 * Whether a row's schema can be found.
+	 */
+	private bool $schemaResolves = true;
+
+	/**
+	 * Whether the caller's organisations can be found.
+	 */
+	private bool $organisationsResolve = true;
 
 	/**
 	 * A service acting for these organisations, with schema 2 or register 10 shared.
@@ -112,24 +131,49 @@ class ObjectServiceSharedMasterDataDeleteTest extends TestCase {
 		);
 		$orgs = $organisations;
 		$organisations = $this->createMock(OrganisationService::class);
-		$organisations->method('getUserActiveOrganisations')->willReturn($orgs);
-		$session = $this->createMock(IUserSession::class);
-		$mapper = $this->createMock(MagicMapper::class);
-		$mapper->method('find')->willReturnCallback(
-			static function (string|int $identifier): ObjectEntity {
-				$row = new ObjectEntity();
-				$row->setUuid((string)$identifier);
-				$row->setOrganisation('org-holder');
-				$row->setOwner('importer');
-				return $row;
+		$organisations->method('getUserActiveOrganisations')->willReturnCallback(
+			function () use ($orgs): array {
+				if ($this->organisationsResolve === false) {
+					throw new \RuntimeException('no session');
+				}
+
+				return $orgs;
 			}
+		);
+		$session = $this->createMock(IUserSession::class);
+		$permissions = $this->createMock(PermissionHandler::class);
+		$this->rightsAskedOf = [];
+		$permissions->method('checkPermission')->willReturnCallback(
+			function (Schema $schema): void {
+				$this->rightsAskedOf[] = $schema->getId();
+			}
+		);
+		$permissions->method('filterUuidsForPermissions')->willReturnArgument(0);
+		$schemas = $this->createMock(SchemaMapper::class);
+		$schemas->method('find')->willReturnCallback(
+			function (int|string $id): Schema {
+				if ($this->schemaResolves === false) {
+					throw new DoesNotExistException('gone');
+				}
+
+				return self::schema((int)$id);
+			}
+		);
+		$registers = $this->createMock(RegisterMapper::class);
+		$registers->method('find')->willReturnCallback(static fn (int|string $id): Register => self::register((int)$id));
+		$mapper = $this->createMock(MagicMapper::class);
+		$mapper->method('findMultipleAcrossAllMagicTables')->willReturnCallback(
+			static fn (array $uuids): array => array_map(self::row(...), $uuids)
+		);
+		$mapper->method('find')->willReturnCallback(
+			static fn (string|int $identifier): ObjectEntity => self::row((string)$identifier)
 		);
 
 		return new ObjectService(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->createMock(GetObject::class),
-			$this->createMock(PermissionHandler::class),
+			$permissions,
 			$this->createMock(RenderObject::class),
 			$this->createMock(SaveObject::class),
 			$this->createMock(SaveObjects::class),
@@ -148,8 +192,8 @@ class ObjectServiceSharedMasterDataDeleteTest extends TestCase {
 			$this->createMock(ValidationHandler::class),
 			$this->createMock(CascadingHandler::class),
 			$this->createMock(MigrationHandler::class),
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SchemaMapper::class),
+			$registers,
+			$schemas,
 			$this->createMock(ViewMapper::class),
 			$mapper,
 			$this->createMock(FileService::class),
@@ -166,6 +210,68 @@ class ObjectServiceSharedMasterDataDeleteTest extends TestCase {
 			$this->createMock(ObjectSourceRegistry::class)
 		);
 	}//end service()
+
+	/**
+	 * The holder's row, in register 10 and schema 2.
+	 *
+	 * @param string $uuid The row's uuid.
+	 *
+	 * @return ObjectEntity
+	 */
+	private static function row(string $uuid): ObjectEntity {
+		$row = new ObjectEntity();
+		$row->setUuid($uuid);
+		$row->setOrganisation('org-holder');
+		$row->setOwner('importer');
+		$row->setRegister('10');
+		$row->setSchema('2');
+
+		return $row;
+	}//end row()
+
+	/**
+	 * A register.
+	 *
+	 * @param int $id The register's id.
+	 *
+	 * @return Register
+	 */
+	private static function register(int $id): Register {
+		$register = new Register();
+		$register->setId($id);
+
+		return $register;
+	}//end register()
+
+	/**
+	 * A schema.
+	 *
+	 * @param int $id The schema's id.
+	 *
+	 * @return Schema
+	 */
+	private static function schema(int $id): Schema {
+		$schema = new Schema();
+		$schema->setId($id);
+		$schema->setSlug('schema' . $id);
+
+		return $schema;
+	}//end schema()
+
+	/**
+	 * Leave another call's register and schema on the service.
+	 *
+	 * @param ObjectService $service  The service.
+	 * @param int           $register The register left behind.
+	 * @param int           $schema   The schema left behind.
+	 *
+	 * @return void
+	 */
+	private static function leaveScope(ObjectService $service, int $register, int $schema): void {
+		$class = new ReflectionClass(ObjectService::class);
+		$class->getProperty('currentRegister')->setValue($service, self::register($register));
+		$class->getProperty('currentSchema')->setValue($service, self::schema($schema));
+	}//end leaveScope()
 
 	/**
 	 * Declarations with one shared table.
@@ -234,6 +340,197 @@ class ObjectServiceSharedMasterDataDeleteTest extends TestCase {
 		$this->deleteHandler->expects($this->once())->method('deleteObject')->willReturn(true);
 
 		self::delete($service, flags: false);
+	}
+
+	/**
+	 * Calls without a scope, each way a consumer's delete can arrive at the row.
+	 *
+	 * @return array<string, array{string, int, int|null, int|null}>
+	 */
+	public static function unscopedConsumerCalls(): array {
+		return [
+			'no scope, schema shared'            => [SharedMasterDataService::SCHEMAS, 2, null, null],
+			'no scope, register shared'          => [SharedMasterDataService::REGISTERS, 10, null, null],
+			'another call\'s scope, schema shared'   => [SharedMasterDataService::SCHEMAS, 2, 11, 3],
+			'another call\'s scope, register shared' => [SharedMasterDataService::REGISTERS, 10, 11, 3],
+		];
+	}//end unscopedConsumerCalls()
+
+	/**
+	 * @dataProvider unscopedConsumerCalls
+	 */
+	public function testAConsumerMayNotDeleteWithoutAScope(string $table, int $id, ?int $register, ?int $schema): void {
+		$service = $this->service(['org-consumer'], self::shared($table, $id));
+		if ($register !== null && $schema !== null) {
+			self::leaveScope($service, $register, $schema);
+		}
+
+		$this->deleteHandler->expects($this->never())->method('deleteObject');
+
+		$this->expectException(SharedMasterDataWriteException::class);
+		$service->deleteObject(uuid: 'holder-row');
+	}
+
+	public function testAScopeNamingOnlyARegisterIsAskedOfTheRow(): void {
+		$service = $this->service(['org-consumer'], self::shared(SharedMasterDataService::SCHEMAS, 2));
+		$this->deleteHandler->expects($this->never())->method('deleteObject');
+
+		$this->expectException(SharedMasterDataWriteException::class);
+		$service->deleteObject(uuid: 'holder-row', register: self::register(10));
+	}
+
+	public function testTheHolderMayDeleteWithoutAScope(): void {
+		$service = $this->service(['org-holder'], self::shared(SharedMasterDataService::SCHEMAS, 2));
+		$this->deleteHandler->expects($this->once())->method('deleteObject')->willReturn(true);
+
+		$service->deleteObject(uuid: 'holder-row');
+	}
+
+	public function testAScopeLeftBehindDoesNotRefuseARowOutsideTheShare(): void {
+		$service = $this->service(['org-consumer'], self::shared(SharedMasterDataService::SCHEMAS, 3));
+		self::leaveScope($service, 11, 3);
+		$this->deleteHandler->expects($this->once())->method('deleteObject')->willReturn(true);
+
+		$service->deleteObject(uuid: 'holder-row');
+	}
+
+	public function testTheRightIsAskedOfTheRowsSchemaNotOfAScopeLeftBehind(): void {
+		$service = $this->service(['org-other'], self::shared(SharedMasterDataService::SCHEMAS, 99));
+		self::leaveScope($service, 11, 3);
+		$this->deleteHandler->method('deleteObject')->willReturn(true);
+
+		$service->deleteObject(uuid: 'holder-row');
+
+		$this->assertSame([2], $this->rightsAskedOf);
+	}
+
+	public function testAScopeLeftBehindComesBackAfterTheDelete(): void {
+		$service = $this->service(['org-other'], self::shared(SharedMasterDataService::SCHEMAS, 99));
+		self::leaveScope($service, 11, 3);
+		$this->deleteHandler->method('deleteObject')->willReturn(true);
+
+		$service->deleteObject(uuid: 'holder-row');
+
+		$current = (new ReflectionClass(ObjectService::class))->getProperty('currentSchema')->getValue($service);
+		$this->assertSame(3, $current->getId());
+	}
+
+	public function testARowWhoseSchemaCannotBeFoundIsNotDeleted(): void {
+		$service = $this->service(['org-holder'], self::shared(SharedMasterDataService::SCHEMAS, 99));
+		self::leaveScope($service, 11, 3);
+		$this->schemaResolves = false;
+		$this->deleteHandler->expects($this->never())->method('deleteObject');
+
+		$this->expectException(\RuntimeException::class);
+		$service->deleteObject(uuid: 'holder-row');
+	}
+
+	public function testAConsumerMayNotDeleteFromASourcedSchemaNamedWithoutARegister(): void {
+		$service = $this->service(['org-consumer'], self::shared(SharedMasterDataService::SCHEMAS, 2));
+		$schema = self::schema(2);
+		$schema->setConfiguration(['x-openregister-object-source' => ['type' => 'external']]);
+
+		$this->expectException(SharedMasterDataWriteException::class);
+		$service->deleteObject(uuid: 'holder-row', schema: $schema);
+	}
+
+	public function testOrganisationsThatCannotBeResolvedConsumeNoShare(): void {
+		$this->organisationsResolve = false;
+		$service = $this->service(['org-consumer'], self::shared(SharedMasterDataService::SCHEMAS, 2));
+		$this->deleteHandler->expects($this->once())->method('deleteObject')->willReturn(true);
+
+		self::delete($service);
+	}
+
+	public function testAnAdministratorWithoutAScopeIsNotKeptFromIt(): void {
+		$service = $this->service(['org-consumer'], self::shared(SharedMasterDataService::SCHEMAS, 2));
+		$this->deleteHandler->expects($this->once())->method('deleteObject')->willReturn(true);
+
+		$service->deleteObject(uuid: 'holder-row', _rbac: false, _multitenancy: false);
+	}
+
+	/**
+	 * Either flag alone binds a delete to the organisation.
+	 *
+	 * @return array<string, array{bool, bool}>
+	 */
+	public static function singleFlags(): array {
+		return [
+			'multitenancy only' => [false, true],
+			'rbac only'         => [true, false],
+		];
+	}//end singleFlags()
+
+	/**
+	 * @dataProvider singleFlags
+	 */
+	public function testOneFlagIsEnoughToAskOnTheScopedRoute(bool $rbac, bool $multitenancy): void {
+		$service = $this->service(['org-consumer'], self::shared(SharedMasterDataService::SCHEMAS, 2));
+		$this->deleteHandler->expects($this->never())->method('deleteObject');
+
+		$this->expectException(SharedMasterDataWriteException::class);
+		$service->deleteObject(uuid: 'holder-row', register: self::register(10), schema: self::schema(2), _rbac: $rbac, _multitenancy: $multitenancy);
+	}
+
+	/**
+	 * @dataProvider singleFlags
+	 */
+	public function testOneFlagIsEnoughToAskWithoutAScope(bool $rbac, bool $multitenancy): void {
+		$service = $this->service(['org-consumer'], self::shared(SharedMasterDataService::SCHEMAS, 2));
+		$this->deleteHandler->expects($this->never())->method('deleteObject');
+
+		$this->expectException(SharedMasterDataWriteException::class);
+		$service->deleteObject(uuid: 'holder-row', _rbac: $rbac, _multitenancy: $multitenancy);
+	}
+
+	public function testAnOrganisationContextAsksOnTheScopedRouteWithTheFlagsOff(): void {
+		$service = $this->service(['org-consumer'], self::shared(SharedMasterDataService::SCHEMAS, 2));
+		$this->deleteHandler->expects($this->never())->method('deleteObject');
+
+		$this->expectException(SharedMasterDataWriteException::class);
+		OrganisationContext::run('org-consumer', static fn () => self::delete($service, flags: false));
+	}
+
+	public function testAnOrganisationContextAsksWithoutAScopeWithTheFlagsOff(): void {
+		$service = $this->service(['org-consumer'], self::shared(SharedMasterDataService::SCHEMAS, 2));
+		$this->deleteHandler->expects($this->never())->method('deleteObject');
+
+		$this->expectException(SharedMasterDataWriteException::class);
+		OrganisationContext::run('org-consumer', static fn () => $service->deleteObject(uuid: 'holder-row', _rbac: false, _multitenancy: false));
+	}
+
+	public function testABulkDeleteAsksOfTheRowsRegisterNotOfAScopeLeftBehind(): void {
+		$service = $this->service(['org-consumer'], self::shared(SharedMasterDataService::REGISTERS, 10));
+		self::leaveScope($service, 11, 3);
+		$this->deleteHandler->expects($this->never())->method('deleteObject');
+
+		$result = $service->deleteObjects(uuids: ['holder-row']);
+
+		$this->assertSame('OBJECT_NOT_PERMITTED', $result['skipped_reasons']['holder-row']['error'] ?? null);
+	}
+
+	public function testABulkDeleteInAnOrganisationContextAsksWithTheFlagsOff(): void {
+		$service = $this->service(['org-consumer'], self::shared(SharedMasterDataService::SCHEMAS, 2));
+		$this->deleteHandler->expects($this->never())->method('deleteObject');
+
+		$result = OrganisationContext::run(
+			'org-consumer',
+			static fn () => $service->deleteObjects(uuids: ['holder-row'], _rbac: false, _multitenancy: false)
+		);
+
+		$this->assertSame('OBJECT_NOT_PERMITTED', $result['skipped_reasons']['holder-row']['error'] ?? null);
+	}
+
+	/**
+	 * @dataProvider singleFlags
+	 */
+	public function testOneFlagIsEnoughToAskOnABulkDelete(bool $rbac, bool $multitenancy): void {
+		$service = $this->service(['org-consumer'], self::shared(SharedMasterDataService::SCHEMAS, 2));
+		$this->deleteHandler->expects($this->never())->method('deleteObject');
+
+		$result = $service->deleteObjects(uuids: ['holder-row'], _rbac: $rbac, _multitenancy: $multitenancy);
+
+		$this->assertSame('OBJECT_NOT_PERMITTED', $result['skipped_reasons']['holder-row']['error'] ?? null);
 	}
 
 	/**
