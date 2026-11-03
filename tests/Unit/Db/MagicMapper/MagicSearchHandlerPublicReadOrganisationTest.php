@@ -58,7 +58,9 @@ use PDO;
 use RuntimeException;
 
 /**
- * Tests the organisation filter decision for schemas with a `public` read rule.
+ * Tests the organisation filter decision for schemas with a `public` read rule:
+ * it reads every organisation for anonymous callers and admins, and for a
+ * signed-in caller only when the rule is marked `crossOrganisation: true`.
  */
 class MagicSearchHandlerPublicReadOrganisationTest extends TestCase {
 
@@ -164,8 +166,13 @@ class MagicSearchHandlerPublicReadOrganisationTest extends TestCase {
 			$cases[$label . ' authenticated user'] = [['authenticated'], $inherit, 'user', self::OWN_ROW];
 		}
 
-		$cases['inherit-on public user'] = [['public'], true, 'user', self::ALL_ROWS];
-		$cases['inherit-on public+authenticated user'] = [['public', 'authenticated'], true, 'user', self::ALL_ROWS];
+		$marked = ['group' => 'public', 'crossOrganisation' => true];
+		$cases['inherit-on public user'] = [['public'], true, 'user', self::OWN_ROW];
+		$cases['inherit-on public+authenticated user'] = [['public', 'authenticated'], true, 'user', self::OWN_ROW];
+		$cases['inherit-on marked public user'] = [[$marked], true, 'user', self::ALL_ROWS];
+		$cases['inherit-on marked public+authenticated user'] = [[$marked, 'authenticated'], true, 'user', self::ALL_ROWS];
+		$cases['inherit-off marked public user'] = [[$marked], false, 'user', []];
+		$cases['inherit-off marked public anonymous'] = [[$marked], false, 'anonymous', self::ALL_ROWS];
 		$cases['inherit-off public user'] = [['public'], false, 'user', []];
 		$cases['inherit-off public+authenticated user'] = [['public', 'authenticated'], false, 'user', self::OWN_ROW];
 		$cases['inherit-off conditional public+authenticated user'] = [
@@ -273,12 +280,31 @@ class MagicSearchHandlerPublicReadOrganisationTest extends TestCase {
 	}//end testSingleObjectReadDropsTheOrganisationFilterForAnonymous()
 
 	/**
-	 * The single-object read drops the organisation filter for a signed-in
-	 * caller when `public` is inherited.
+	 * The single-object read keeps the organisation filter for a signed-in
+	 * caller when an unmarked `public` is inherited.
 	 *
 	 * @return void
 	 */
-	public function testSingleObjectReadDropsTheOrganisationFilterWhenPublicIsInherited(): void {
+	public function testSingleObjectReadKeepsTheOrganisationFilterWhenAnUnmarkedPublicIsInherited(): void {
+		$this->logIn(caller: 'user');
+
+		$organisation = $this->organisationHandler();
+		$organisation->expects($this->once())->method('applyOrganizationFilter');
+
+		$this->searchHandler(organisation: $organisation)->applyAccessControlToQuery(
+			qb: $this->queryBuilder(),
+			schema: $this->schema(read: ['public', 'authenticated'], inherit: true)
+		);
+
+	}//end testSingleObjectReadKeepsTheOrganisationFilterWhenAnUnmarkedPublicIsInherited()
+
+	/**
+	 * The single-object read drops the organisation filter for a signed-in
+	 * caller when a marked `public` is inherited.
+	 *
+	 * @return void
+	 */
+	public function testSingleObjectReadDropsTheOrganisationFilterWhenAMarkedPublicIsInherited(): void {
 		$this->logIn(caller: 'user');
 
 		$organisation = $this->organisationHandler();
@@ -286,10 +312,10 @@ class MagicSearchHandlerPublicReadOrganisationTest extends TestCase {
 
 		$this->searchHandler(organisation: $organisation)->applyAccessControlToQuery(
 			qb: $this->queryBuilder(),
-			schema: $this->schema(read: ['public', 'authenticated'], inherit: true)
+			schema: $this->schema(read: [['group' => 'public', 'crossOrganisation' => true], 'authenticated'], inherit: true)
 		);
 
-	}//end testSingleObjectReadDropsTheOrganisationFilterWhenPublicIsInherited()
+	}//end testSingleObjectReadDropsTheOrganisationFilterWhenAMarkedPublicIsInherited()
 
 	/**
 	 * Who a `public` read rule lifts the organisation filter for.
@@ -303,7 +329,7 @@ class MagicSearchHandlerPublicReadOrganisationTest extends TestCase {
 			'admin, inherit off'     => ['admin', false, true],
 			'admin, inherit on'      => ['admin', true, true],
 			'user, inherit off'      => ['user', false, false],
-			'user, inherit on'       => ['user', true, true],
+			'user, inherit on'       => ['user', true, false],
 		];
 
 	}//end liftCases()

@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
@@ -2116,7 +2117,8 @@ class RegistersController extends Controller {
 	 * Whether an entity is anonymously readable via RBAC authorization.
 	 *
 	 * A resource is visible to anonymous callers when its authorization block
-	 * grants `read` access to the `public` group. This replaces the former
+	 * grants `read` access to the `public` group, as `"public"` or as
+	 * `{"group": "public"}` with no match. This replaces the former
 	 * published/depublished column gate: anonymous publication is an RBAC
 	 * concern, expressed as a `public`-group read rule on the entity.
 	 *
@@ -2129,8 +2131,7 @@ class RegistersController extends Controller {
 			return false;
 		}
 
-		$readGroups = ($authorization['read'] ?? []);
-		return is_array($readGroups) === true && in_array('public', $readGroups, true) === true;
+		return (new ReadRuleTenancy())->readsPublicUnconditionally(readRules: ($authorization['read'] ?? []));
 	}//end isPublicReadable()
 
 	/**

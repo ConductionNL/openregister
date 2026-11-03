@@ -232,6 +232,30 @@ class SchemasControllerTest extends TestCase {
 		$this->assertSame(200, $result->getStatus());
 	}//end testShowAnonymousPublishedSchemaReturns200()
 
+	public function testShowAnonymousSchemaWithAMarkedPublicRuleReturns200(): void {
+		// `{"group": "public"}` without match reads like `"public"`, also when marked.
+		$this->currentUser = null;
+		$schema = $this->createRealSchema(1, 'Public');
+		$schema->setAuthorization(['read' => [['group' => 'public', 'crossOrganisation' => true]]]);
+		$this->schemaMapper->method('findExtendedBy')->willReturn([]);
+
+		$this->request->method('getParam')->willReturn([]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->assertSame(200, $this->controller->show(1)->getStatus());
+	}//end testShowAnonymousSchemaWithAMarkedPublicRuleReturns200()
+
+	public function testShowAnonymousSchemaWithOnlyAConditionalPublicRuleReturns401(): void {
+		$this->currentUser = null;
+		$schema = $this->createRealSchema(1, 'Conditional');
+		$schema->setAuthorization(['read' => [['group' => 'public', 'match' => ['status' => 'open'], 'crossOrganisation' => true]]]);
+
+		$this->request->method('getParam')->willReturn([]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->assertSame(401, $this->controller->show(1)->getStatus());
+	}//end testShowAnonymousSchemaWithOnlyAConditionalPublicRuleReturns401()
+
 	public function testIndexAnonymousFiltersUnpublishedSchemas(): void {
 		// Anonymous list returns only schemas whose authorization grants public read.
 		// Use real Schema entities so getAuthorization() (a __call magic) works without mocking.
