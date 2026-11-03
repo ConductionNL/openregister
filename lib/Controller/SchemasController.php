@@ -43,6 +43,7 @@ use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
+use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
@@ -2436,7 +2437,8 @@ class SchemasController extends Controller {
 	 * Whether an entity is anonymously readable via RBAC authorization.
 	 *
 	 * A resource is visible to anonymous callers when its authorization block
-	 * grants `read` access to the `public` group. This replaces the former
+	 * grants `read` access to the `public` group, as `"public"` or as
+	 * `{"group": "public"}` with no match. This replaces the former
 	 * published/depublished column gate: anonymous publication is an RBAC
 	 * concern, expressed as a `public`-group read rule on the entity.
 	 *
@@ -2449,8 +2451,7 @@ class SchemasController extends Controller {
 			return false;
 		}
 
-		$readGroups = ($authorization['read'] ?? []);
-		return is_array($readGroups) === true && in_array('public', $readGroups, true) === true;
+		return (new ReadRuleTenancy())->readsPublicUnconditionally(readRules: ($authorization['read'] ?? []));
 	}//end isPublicReadable()
 
 	/**

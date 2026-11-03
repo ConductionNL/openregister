@@ -204,6 +204,18 @@ class RegistersControllerTest extends TestCase {
 		$this->assertSame(200, $result->getStatus());
 	}
 
+	public function testShowAnonymousRegisterWithAMarkedPublicRuleReturns200(): void {
+		// `{"group": "public"}` without match reads like `"public"`, also when marked.
+		$this->currentUser = null;
+		$register = $this->createRealRegister(1, 'Public');
+		$register->setAuthorization(['read' => [['group' => 'public', 'crossOrganisation' => true]]]);
+
+		$this->request->method('getParam')->willReturn([]);
+		$this->registerService->method('find')->willReturn($register);
+
+		$this->assertSame(200, $this->controller->show(1)->getStatus());
+	}
+
 	public function testIndexAnonymousFiltersUnpublishedRegisters(): void {
 		// Anonymous list returns only registers whose authorization grants public read.
 		// Use real Register entities so getAuthorization() (a __call magic) works without mocking.

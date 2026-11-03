@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
+use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IParameter;
@@ -57,9 +58,10 @@ use PDO;
 use RuntimeException;
 
 /**
- * Tests that only a conditional rule that crosses organisations lifts the organisation filter.
+ * Tests that only a rule marked `crossOrganisation: true` reads other organisations' rows.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
+ * @uses   \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
  * @uses   \OCA\OpenRegister\Service\Object\PermissionHandler
  * @uses   \OCA\OpenRegister\Db\Schema
@@ -79,9 +81,14 @@ class MagicRbacHandlerConditionalRuleTenancyTest extends TestCase {
 	private const TEAM_RULE = ['group' => 'team-toezicht', 'match' => ['caseType' => ['$in' => ['ct-permit']]]];
 
 	/**
-	 * The provider rule the rbac-scopes spec names as crossing organisations.
+	 * stackiq's provider rule, without the marker.
 	 */
 	private const PROVIDER_RULE = ['group' => 'aanbod-beheerder', 'match' => ['provider' => '$organisation']];
+
+	/**
+	 * The same provider rule, marked as crossing organisations.
+	 */
+	private const MARKED_PROVIDER_RULE = self::PROVIDER_RULE + ['crossOrganisation' => true];
 
 	/**
 	 * Subject under test.
@@ -180,20 +187,32 @@ class MagicRbacHandlerConditionalRuleTenancyTest extends TestCase {
 	 * @return array<string, array{0: array, 1: string[], 2: string[]}>
 	 */
 	public static function rowCases(): array {
+		$ownOrg = ['group' => 'aanbod-beheerder', 'match' => ['_organisation' => '$organisation']];
+		$ownOrgEq = ['group' => 'aanbod-beheerder', 'match' => ['_organisation' => ['$eq' => '$organisation'], 'status' => 'open']];
+		$providerEq = ['group' => 'aanbod-beheerder', 'match' => ['provider' => ['$eq' => '$organisation']]];
+		$all = ['other-open', 'other-permit', 'other-plain', 'other-provided', 'own-open', 'own-permit'];
+
 		return [
-			'team member sees only her own organisation\'s case'     => [[self::TEAM_RULE], ['team-toezicht'], ['own-permit']],
-			'provider rule still reads across organisations'          => [[self::PROVIDER_RULE], ['aanbod-beheerder'], ['other-provided']],
-			'provider rule through $eq reads across organisations'    => [
-				[['group' => 'aanbod-beheerder', 'match' => ['provider' => ['$eq' => '$organisation']]]],
+			'team member sees only her own organisation\'s case'      => [[self::TEAM_RULE], ['team-toezicht'], ['own-permit']],
+			'an unmarked provider rule stays inside the organisation' => [[self::PROVIDER_RULE], ['aanbod-beheerder'], []],
+			'a marked provider rule reads across organisations'       => [[self::MARKED_PROVIDER_RULE], ['aanbod-beheerder'], ['other-provided']],
+			'an unmarked provider rule through $eq stays inside'      => [[$providerEq], ['aanbod-beheerder'], []],
+			'a marked provider rule through $eq reads across'         => [
+				[$providerEq + ['crossOrganisation' => true]],
 				['aanbod-beheerder'],
 				['other-provided'],
 			],
-			'holding a team rule as well keeps the filter'            => [
+			'an unmarked provider rule beside a team rule stays inside' => [
 				[self::PROVIDER_RULE, self::TEAM_RULE],
 				['aanbod-beheerder', 'team-toezicht'],
 				['own-permit'],
 			],
-			'a declared crossing rule reads across organisations'     => [
+			'a marked provider rule widens the filter beside a team rule' => [
+				[self::MARKED_PROVIDER_RULE, self::TEAM_RULE],
+				['aanbod-beheerder', 'team-toezicht'],
+				['other-provided', 'own-permit'],
+			],
+			'a marked team rule reads across organisations'           => [
 				[self::TEAM_RULE + ['crossOrganisation' => true]],
 				['team-toezicht'],
 				['other-permit', 'own-permit'],
@@ -203,45 +222,56 @@ class MagicRbacHandlerConditionalRuleTenancyTest extends TestCase {
 				['team-toezicht'],
 				['own-permit'],
 			],
-			'a rule not held does not keep the filter'                => [
-				[self::PROVIDER_RULE, self::TEAM_RULE],
+			'a marked rule not held does not widen the filter'        => [
+				[self::PROVIDER_RULE, self::TEAM_RULE + ['crossOrganisation' => true]],
 				['aanbod-beheerder'],
-				['other-provided'],
+				[],
 			],
 			'an unconditional authenticated rule keeps the filter'    => [
-				[self::PROVIDER_RULE, 'authenticated'],
-				['aanbod-beheerder'],
-				['own-open', 'own-permit'],
-			],
-			'a conditional authenticated rule keeps the filter'      => [
-				[self::PROVIDER_RULE, ['group' => 'authenticated', 'match' => ['status' => 'open']]],
-				['aanbod-beheerder'],
-				['own-open'],
-			],
-			'an own-organisation rule beside the provider rule'       => [
-				[['group' => 'aanbod-beheerder', 'match' => ['_organisation' => '$organisation']], self::PROVIDER_RULE],
+				[self::MARKED_PROVIDER_RULE, 'authenticated'],
 				['aanbod-beheerder'],
 				['other-provided', 'own-open', 'own-permit'],
 			],
-			'an own-organisation rule through $eq beside the provider' => [
-				[['group' => 'aanbod-beheerder', 'match' => ['_organisation' => ['$eq' => '$organisation'], 'status' => 'open']], self::PROVIDER_RULE],
+			'a conditional authenticated rule keeps the filter'       => [
+				[self::MARKED_PROVIDER_RULE, ['group' => 'authenticated', 'match' => ['status' => 'open']]],
 				['aanbod-beheerder'],
 				['other-provided', 'own-open'],
 			],
-			'an own-organisation rule alone keeps the filter'        => [
-				[['group' => 'aanbod-beheerder', 'match' => ['_organisation' => '$organisation']]],
+			'a marked authenticated rule reads across organisations'  => [
+				[['group' => 'authenticated', 'match' => ['status' => 'open'], 'crossOrganisation' => true]],
+				[],
+				['other-open', 'own-open'],
+			],
+			'an own-organisation rule beside an unmarked provider rule' => [
+				[$ownOrg, self::PROVIDER_RULE],
 				['aanbod-beheerder'],
 				['own-open', 'own-permit'],
 			],
-			'a foreign organisation pin is not neutral'              => [
+			'an own-organisation rule beside a marked provider rule'  => [
+				[$ownOrg, self::MARKED_PROVIDER_RULE],
+				['aanbod-beheerder'],
+				['other-provided', 'own-open', 'own-permit'],
+			],
+			'an own-organisation rule through $eq beside a marked provider' => [
+				[$ownOrgEq, self::MARKED_PROVIDER_RULE],
+				['aanbod-beheerder'],
+				['other-provided', 'own-open'],
+			],
+			'an own-organisation rule alone keeps the filter'         => [[$ownOrg], ['aanbod-beheerder'], ['own-open', 'own-permit']],
+			'a foreign organisation pin reads nothing'                => [
 				[['group' => 'aanbod-beheerder', 'match' => ['_organisation' => 'org-other']], self::PROVIDER_RULE],
 				['aanbod-beheerder'],
 				[],
 			],
-			'a simple group rule still reads every row'               => [
+			'a simple group rule stays inside the organisation'       => [
 				[self::TEAM_RULE, 'case-admins'],
 				['team-toezicht', 'case-admins'],
-				['other-open', 'other-permit', 'other-plain', 'other-provided', 'own-open', 'own-permit'],
+				['own-open', 'own-permit'],
+			],
+			'a marked group rule without match reads every row'       => [
+				[self::TEAM_RULE, ['group' => 'case-admins', 'crossOrganisation' => true]],
+				['team-toezicht', 'case-admins'],
+				$all,
 			],
 		];
 
@@ -265,7 +295,8 @@ class MagicRbacHandlerConditionalRuleTenancyTest extends TestCase {
 	}//end testListReturnsTheExpectedRows()
 
 	/**
-	 * The aggregation and count fast path waives the boundary exactly where the list does.
+	 * The aggregation and count fast path knows the boundary is waived or
+	 * widened exactly where the list returns another organisation's rows.
 	 *
 	 * @param array    $read     The schema's read rules.
 	 * @param string[] $groups   The caller's groups.
@@ -277,9 +308,13 @@ class MagicRbacHandlerConditionalRuleTenancyTest extends TestCase {
 	public function testBoundaryDecisionMatchesTheRows(array $read, array $groups, array $expected): void {
 		$this->logIn(groups: $groups);
 
+		$schema = $this->schema(read: $read);
+		$search = $this->searchHandler();
+
 		$this->assertSame(
 			expected: (preg_grep('/^other-/', $expected) !== []),
-			actual: $this->searchHandler()->organisationBoundaryWaivedByRbac(schema: $this->schema(read: $read))
+			actual: $search->organisationBoundaryWaivedByRbac(schema: $schema)
+				|| $search->organisationBoundaryHasCrossOrganisationBranch(schema: $schema)
 		);
 
 	}//end testBoundaryDecisionMatchesTheRows()
@@ -303,25 +338,64 @@ class MagicRbacHandlerConditionalRuleTenancyTest extends TestCase {
 	}//end testSingleObjectReadByATeamMemberKeepsTheOrganisationFilter()
 
 	/**
-	 * A single-object read through the provider rule still drops the organisation filter.
+	 * A single-object read through an unmarked provider rule keeps the organisation filter.
 	 *
 	 * @return void
 	 */
-	public function testSingleObjectReadThroughTheProviderRuleDropsTheOrganisationFilter(): void {
+	public function testSingleObjectReadThroughAnUnmarkedProviderRuleKeepsTheOrganisationFilter(): void {
 		$this->logIn(groups: ['aanbod-beheerder']);
 
 		$organisation = $this->organisationHandler();
-		$organisation->expects($this->never())->method('applyOrganizationFilter');
+		$organisation->expects($this->once())->method('applyOrganizationFilter');
 
 		$this->searchHandler(organisation: $organisation)->applyAccessControlToQuery(
 			qb: $this->queryBuilder(),
 			schema: $this->schema(read: [self::PROVIDER_RULE])
 		);
 
-	}//end testSingleObjectReadThroughTheProviderRuleDropsTheOrganisationFilter()
+	}//end testSingleObjectReadThroughAnUnmarkedProviderRuleKeepsTheOrganisationFilter()
 
 	/**
-	 * Which match shapes cross organisations, read through the public decision.
+	 * A single-object read through a marked rule without match drops the organisation filter.
+	 *
+	 * @return void
+	 */
+	public function testSingleObjectReadThroughAMarkedRuleWithoutMatchDropsTheOrganisationFilter(): void {
+		$this->logIn(groups: ['aanbod-beheerder']);
+
+		$organisation = $this->organisationHandler();
+		$organisation->expects($this->never())->method('applyOrganizationFilter');
+		$organisation->expects($this->never())->method('resolveOrganizationScope');
+
+		$this->searchHandler(organisation: $organisation)->applyAccessControlToQuery(
+			qb: $this->queryBuilder(),
+			schema: $this->schema(read: [['group' => 'aanbod-beheerder', 'crossOrganisation' => true]])
+		);
+
+	}//end testSingleObjectReadThroughAMarkedRuleWithoutMatchDropsTheOrganisationFilter()
+
+	/**
+	 * A single-object read through a marked provider rule keeps the
+	 * organisation scope and widens it by the rule's rows.
+	 *
+	 * @return void
+	 */
+	public function testSingleObjectReadThroughAMarkedProviderRuleWidensTheOrganisationScope(): void {
+		$this->logIn(groups: ['aanbod-beheerder']);
+
+		$organisation = $this->organisationHandler();
+		$organisation->expects($this->never())->method('applyOrganizationFilter');
+		$organisation->expects($this->once())->method('resolveOrganizationScope');
+
+		$this->searchHandler(organisation: $organisation)->applyAccessControlToQuery(
+			qb: $this->queryBuilder(),
+			schema: $this->schema(read: [self::MARKED_PROVIDER_RULE])
+		);
+
+	}//end testSingleObjectReadThroughAMarkedProviderRuleWidensTheOrganisationScope()
+
+	/**
+	 * Match shapes, none of which crosses organisations without the marker.
 	 *
 	 * @return array<string, array{0: array, 1: bool}>
 	 */
@@ -347,25 +421,26 @@ class MagicRbacHandlerConditionalRuleTenancyTest extends TestCase {
 	}//end matchCases()
 
 	/**
-	 * Only a match that binds a field to the caller's tenancy crosses organisations.
+	 * Only the marker takes a rule across organisations, whatever its match binds.
 	 *
-	 * @param array $match    The rule's match.
-	 * @param bool  $crossing Whether the rule lifts the filter.
+	 * @param array $match        The rule's match.
+	 * @param bool  $bindsTenancy Whether the match binds a field to the caller's tenancy.
 	 *
 	 * @return void
 	 */
 	#[DataProvider('matchCases')]
-	public function testOnlyATenancyBoundMatchCrossesOrganisations(array $match, bool $crossing): void {
+	public function testOnlyTheMarkerCrossesOrganisations(array $match, bool $bindsTenancy): void {
 		$this->logIn(groups: ['g']);
+		$unmarked = $this->schema(read: [['group' => 'g', 'match' => $match]]);
+		$marked = $this->schema(read: [['group' => 'g', 'match' => $match, 'crossOrganisation' => true]]);
 
-		$this->assertSame(
-			expected: $crossing,
-			actual: $this->rbac->hasConditionalRulesBypassingMultitenancy(
-				schema: $this->schema(read: [['group' => 'g', 'match' => $match]])
-			)
-		);
+		$this->assertFalse(condition: $this->rbac->hasConditionalRulesBypassingMultitenancy(schema: $unmarked), message: 'unmarked lifts');
+		$this->assertFalse(condition: $this->rbac->hasCrossOrganisationBranch(schema: $unmarked), message: 'unmarked widens');
+		$this->assertFalse(condition: $this->rbac->hasConditionalRulesBypassingMultitenancy(schema: $marked), message: 'marked lifts');
+		$this->assertTrue(condition: $this->rbac->hasCrossOrganisationBranch(schema: $marked), message: 'marked widens');
+		$this->assertSame(expected: $bindsTenancy, actual: (new ReadRuleTenancy())->bindsFieldToCallerTenancy(rule: ['match' => $match]));
 
-	}//end testOnlyATenancyBoundMatchCrossesOrganisations()
+	}//end testOnlyTheMarkerCrossesOrganisations()
 
 	/**
 	 * A crossing rule held only through `authenticated` or a user override does not lift the filter.
@@ -407,43 +482,87 @@ class MagicRbacHandlerConditionalRuleTenancyTest extends TestCase {
 	}//end testAUserHeldCrossingRuleDoesNotLiftTheFilter()
 
 	/**
-	 * A user override that names another user is not held.
+	 * A marked rule whose match is not a list of conditions admits nothing,
+	 * so it neither lifts nor widens the organisation filter.
 	 *
 	 * @return void
 	 */
-	public function testAUserOverrideForSomeoneElseIsNotHeld(): void {
+	public function testAMarkedRuleWithAMalformedMatchDoesNotCross(): void {
+		$this->logIn(groups: ['aanbod-beheerder']);
+		$schema = $this->schema(read: [['group' => 'aanbod-beheerder', 'match' => 'open', 'crossOrganisation' => true]]);
+
+		$this->assertFalse(condition: $this->rbac->hasConditionalRulesBypassingMultitenancy(schema: $schema));
+		$this->assertFalse(condition: $this->rbac->hasCrossOrganisationBranch(schema: $schema));
+
+	}//end testAMarkedRuleWithAMalformedMatchDoesNotCross()
+
+	/**
+	 * A department matrix row marked as crossing organisations reaches the
+	 * decision through the resolved block, and an unmarked one does not.
+	 *
+	 * @return void
+	 */
+	public function testAMarkedMatrixRowWidensTheOrganisationFilter(): void {
+		$this->logIn(groups: ['aanbod-beheerder']);
+		$row = ['value' => 'team-a', 'group' => 'aanbod-beheerder', 'actions' => ['read'], 'where' => ['provider' => '$organisation']];
+		$matrix = static fn (array $row): array => [
+			'read'   => [],
+			'matrix' => ['field' => 'assignedGroup', 'userSource' => ['groups' => true], 'rows' => [$row]],
+		];
+
+		$marked = new Schema();
+		$marked->setId(8);
+		$marked->setAuthorization($matrix(row: $row + ['crossOrganisation' => true]));
+		$this->assertTrue(condition: $this->rbac->hasCrossOrganisationBranch(schema: $marked));
+
+		$unmarked = new Schema();
+		$unmarked->setId(9);
+		$unmarked->setAuthorization($matrix(row: $row));
+		$this->assertFalse(condition: $this->rbac->hasCrossOrganisationBranch(schema: $unmarked));
+
+	}//end testAMarkedMatrixRowWidensTheOrganisationFilter()
+
+	/**
+	 * A marked user rule is held only by the user it names.
+	 *
+	 * @return void
+	 */
+	public function testAMarkedUserRuleIsHeldOnlyByItsUser(): void {
 		$this->logIn(groups: ['aanbod-beheerder']);
 
+		$this->assertFalse(
+			condition: $this->rbac->hasConditionalRulesBypassingMultitenancy(
+				schema: $this->schema(read: [['user' => 'someone-else', 'crossOrganisation' => true]])
+			)
+		);
 		$this->assertTrue(
 			condition: $this->rbac->hasConditionalRulesBypassingMultitenancy(
-				schema: $this->schema(
-					read: [self::PROVIDER_RULE, ['user' => 'someone-else', 'match' => ['status' => 'x']]]
-				)
+				schema: $this->schema(read: [['user' => 'femke', 'crossOrganisation' => true]])
 			)
 		);
 
-	}//end testAUserOverrideForSomeoneElseIsNotHeld()
+	}//end testAMarkedUserRuleIsHeldOnlyByItsUser()
 
 	/**
 	 * stackiq's provider holds an own-organisation rule beside the provider
-	 * rule on usage, connection and aiSystem, and still reads the rows of
-	 * other organisations that name it as provider.
+	 * rule on usage, connection and aiSystem. With the marker on the
+	 * provider rule it reads the rows of other organisations that name it as
+	 * provider; without it, only its own.
 	 *
 	 * @return void
 	 */
-	public function testProbeStackiqProviderWithOwnOrgRuleStillCrosses(): void {
+	public function testProbeStackiqProviderCrossesOnlyWithTheMarker(): void {
 		$this->logIn(groups: ['aanbod-beheerder']);
+		$ownOrg = ['group' => 'aanbod-beheerder', 'match' => ['_organisation' => '$organisation']];
 
-		$rows = $this->visibleRows(
-			schema: $this->schema(
-				read: [['group' => 'aanbod-beheerder', 'match' => ['_organisation' => '$organisation']], self::PROVIDER_RULE]
-			)
-		);
+		$marked = $this->visibleRows(schema: $this->schema(read: [$ownOrg, self::MARKED_PROVIDER_RULE]));
+		$this->assertContains(needle: 'other-provided', haystack: $marked);
+		$this->assertNotContains(needle: 'other-permit', haystack: $marked);
 
-		$this->assertContains(needle: 'other-provided', haystack: $rows);
-		$this->assertNotContains(needle: 'other-permit', haystack: $rows);
+		$unmarked = $this->visibleRows(schema: $this->schema(read: [$ownOrg, self::PROVIDER_RULE]));
+		$this->assertNotContains(needle: 'other-provided', haystack: $unmarked);
 
-	}//end testProbeStackiqProviderWithOwnOrgRuleStillCrosses()
+	}//end testProbeStackiqProviderCrossesOnlyWithTheMarker()
 
 	/**
 	 * Log `femke` in with the given groups.
