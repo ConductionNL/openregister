@@ -287,27 +287,32 @@ Row-level security conditions MUST be translated to SQL WHERE clauses by `MagicR
 - **AND** no objects MUST be loaded into PHP memory
 
 ### Requirement: RLS MUST interact correctly with multi-tenancy isolation
-When both RLS conditional rules and multi-tenancy isolation are active, the system MUST avoid double-filtering on organisation. `MagicRbacHandler::hasConditionalRulesBypassingMultitenancy()` MUST detect when RBAC rules contain conditional matching on non-`_organisation` fields and bypass the separate multi-tenancy filter to prevent conflict.
+When both RLS conditional rules and multi-tenancy isolation are active, the system MUST avoid double-filtering on organisation without widening the tenant edge. `MagicRbacHandler::hasConditionalRulesBypassingMultitenancy()` MUST lift the separate multi-tenancy filter only for a caller whose conditional rules cross organisations, as defined in rbac-scopes (Multi-Tenancy Integration with Scopes).
 
 #### Scenario: RBAC with non-organisation match fields bypasses multi-tenancy
 - **GIVEN** schema `catalogi` has RBAC rule: `{ "read": [{ "group": "beheerders", "match": { "aanbieder": "$organisation" } }] }`
 - **AND** user `jan` is in `beheerders`
 - **WHEN** `MagicRbacHandler::hasConditionalRulesBypassingMultitenancy()` evaluates the rules
-- **THEN** `matchHasNonOrganisationFields()` MUST detect field `aanbieder` (not `_organisation`)
+- **THEN** it MUST detect that `aanbieder` is bound to the caller's organisation
 - **AND** the multi-tenancy WHERE clause MUST be skipped
 - **AND** RBAC MUST handle access control via `t.aanbieder = 'org-uuid'`
 
 #### Scenario: RBAC with only _organisation match does NOT bypass multi-tenancy
 - **GIVEN** schema `dossiers` has RBAC rule: `{ "read": [{ "group": "behandelaars", "match": { "_organisation": "$organisation" } }] }`
 - **WHEN** `hasConditionalRulesBypassingMultitenancy()` evaluates
-- **THEN** `matchHasNonOrganisationFields()` MUST return `false` (only `_organisation` field)
+- **THEN** it MUST return `false` (only the `_organisation` field is bound)
 - **AND** multi-tenancy filtering MAY remain active (RBAC and multi-tenancy produce equivalent filtering)
+
+#### Scenario: RBAC with a static match value does NOT bypass multi-tenancy
+- **GIVEN** schema `case` has RBAC rule: `{ "read": [{ "group": "team-toezicht", "match": { "caseType": { "$in": ["ct-permit"] } } }] }`
+- **WHEN** `hasConditionalRulesBypassingMultitenancy()` evaluates for a member of `team-toezicht`
+- **THEN** it MUST return `false` and the multi-tenancy WHERE clause MUST stay
 
 #### Scenario: Simple group rules bypass multi-tenancy
 - **GIVEN** schema `producten` has RBAC rule: `{ "read": ["public"] }`
 - **AND** user `jan` qualifies for `public`
 - **WHEN** `hasConditionalRulesBypassingMultitenancy()` evaluates
-- **THEN** `simpleRuleBypassesMultitenancy('public')` MUST return `true`
+- **THEN** the `public` rule MUST read every row for that caller
 - **AND** multi-tenancy filtering MUST be bypassed (user has unconditional access)
 
 ### Requirement: FLS MUST strip restricted fields from API responses and export outputs
@@ -435,6 +440,14 @@ When evaluating property-level authorization match conditions, `ConditionMatcher
 - **THEN** it MUST return `org-1` from `@self`, because the system sets `@self` and the writer of the data sets the body
 - **AND** a permission check MUST build `@self.organisation` from the record's own organisation, never from an `@self` block inside the record's data
 - **AND** the incoming data of a create check MUST NOT carry underscore-prefixed keys into the match
+
+#### Scenario: A rule on record metadata reads the record
+- **GIVEN** a record owned by `bob` in `org-b` whose data carries `{ "_owner": "alice", "@self": { "owner": "alice", "organisation": "org-a" } }`
+- **AND** a rule matching `_owner`, `_organisation`, `_schema` or `_register`
+- **WHEN** a permission check, the grants report, a related-object or global-search filter, or a property read rule evaluates it
+- **THEN** `@self` MUST hold the record's own metadata and replace any `@self` block in the data
+- **AND** body keys named after a metadata field (`_owner`, `_organisation`, ...) MUST NOT reach the match, also when the record's own field is empty
+- **AND** a conditional deny on `{ "_owner": "$userId" }` MUST refuse the record's owner
 
 #### Scenario: Non-underscore property does not check @self
 - **GIVEN** object data `{ "status": "open" }`

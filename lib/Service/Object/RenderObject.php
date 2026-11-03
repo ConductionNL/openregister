@@ -2625,8 +2625,9 @@ class RenderObject {
 	 * Strip the properties the reader's groups may not read, writeOnly included.
 	 *
 	 * Property authorization can reference `@self.organisation` or `_organisation`,
-	 * so a temporary `@self` is supplied when the data has none and removed again
-	 * afterwards (jsonSerialize re-adds it).
+	 * so the rules read a temporary `@self` built from the record's own metadata,
+	 * never one the data carries. The data's own `@self`, if any, is put back
+	 * afterwards (jsonSerialize re-adds the record's).
 	 *
 	 * @param ObjectEntity $entity     The entity being rendered
 	 * @param Schema       $schema     The object's schema
@@ -2638,28 +2639,24 @@ class RenderObject {
 	 */
 	private function filterAuthorizedProperties(ObjectEntity $entity, Schema $schema, array $objectData): array {
 		$objectDataWithSelf = $objectData;
-		if (isset($objectDataWithSelf['@self']) === false) {
-			$objectDataWithSelf['@self'] = [
-				'organisation' => $entity->getOrganisation(),
-				'owner'        => $entity->getOwner(),
-			];
-		}
+		$objectDataWithSelf['@self'] = $entity->getObjectArray();
 
-		$objectData = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $objectDataWithSelf);
+		$filtered = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $objectDataWithSelf);
 		$this->withholdEntityCopies(
 			entity: $entity,
 			schema: $schema,
-			removed: $this->removedProperties(before: $objectDataWithSelf, after: $objectData)
+			removed: $this->removedProperties(before: $objectDataWithSelf, after: $filtered)
 		);
 
-		if (isset($objectData['@self']) === true
-			&& count($objectData['@self']) <= 2
-			&& isset($objectData['@self']['organisation']) === true
-		) {
-			unset($objectData['@self']);
+		if (array_key_exists('@self', $objectData) === true) {
+			$filtered['@self'] = $objectData['@self'];
+
+			return $filtered;
 		}
 
-		return $objectData;
+		unset($filtered['@self']);
+
+		return $filtered;
 	}//end filterAuthorizedProperties()
 
 	/**

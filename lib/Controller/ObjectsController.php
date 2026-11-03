@@ -3428,13 +3428,14 @@ class ObjectsController extends Controller {
 	}//end ambiguousIdentifierResponse()
 
 	/**
-	 * Decide an ambiguous PATCH identifier on what the caller may read.
+	 * The object a PATCH merges into, read in the caller's own scope.
 	 *
-	 * The PATCH lookup reads without RBAC and multitenancy. When that finds
-	 * more than one object for a slug, the ambiguity is decided again on the
-	 * caller's own filtered set, as PUT does: one readable object is the
-	 * target, more than one is a 409, none is a 404. So a slug the caller can
-	 * see only once never reveals a second holder it cannot see.
+	 * Read as PUT reads it, with RBAC and multitenancy for a non-admin, so an
+	 * object the caller may not read is a 404 before the lock, the version
+	 * check or the merge can say anything about it. A slug is decided on the
+	 * caller's own filtered set: one readable object is the target, more than
+	 * one is a 409, none is a 404. So a slug the caller can see only once
+	 * never reveals a second holder it cannot see.
 	 *
 	 * @param string $id       The identifier as the caller sent it.
 	 * @param array  $resolved The resolved register and schema (`registerEntity`, `schemaEntity`).
@@ -4259,48 +4260,15 @@ class ObjectsController extends Controller {
 			]
 		);
 
-		// Initialize mergedData before conditional assignment.
-		$mergedData = $patchData;
-
-		// Check if the object exists and can be updated.
-		// Skip the existence check - let saveObject handle validation.
-		// This avoids multitenancy issues when trying to read back objects with invalid organisation UUIDs.
-		$existingObject = null;
-
 		// Update the object with merged data.
 		try {
-			// For PATCH, we need to merge with existing data.
-			// Use findSilent to get the existing object without triggering audit trail.
-			try {
-				$existingObject = $this->objectService->findSilent(
-					id: $id,
-					_extend: [],
-					files: false,
-					register: $resolved['registerEntity'],
-					schema: $resolved['schemaEntity'],
-					// Always disable RBAC for internal read.
-					_rbac: false,
-					// Always disable multitenancy for internal read.
-					_multitenancy: false
-				);
-			} catch (MultipleObjectsReturnedException $e) {
-				$existingObject = $this->findReadableForPatch(id: $id, resolved: $resolved, rbac: $rbac, multi: $multi);
-				if ($existingObject instanceof JSONResponse) {
-					return $existingObject;
-				}
-			} catch (\Exception $e) {
-				// If we can't find the object, return 404.
-				$this->logger->warning(
-					message: '[ObjectsController] Could not find object for PATCH',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'id' => $id,
-						'exception' => $e->getMessage(),
-					]
-				);
-				return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-			}//end try
+			// The object is read in the caller's own scope, as PUT reads it, so
+			// an object the caller may not read answers 404 before the lock,
+			// the version check or the merge can say anything about it.
+			$existingObject = $this->findReadableForPatch(id: $id, resolved: $resolved, rbac: $rbac, multi: $multi);
+			if ($existingObject instanceof JSONResponse) {
+				return $existingObject;
+			}
 
 			// The lock answers BEFORE the optimistic-concurrency check, before
 			// the merge and before validation, exactly as it does on PUT.
@@ -4502,24 +4470,11 @@ class ObjectsController extends Controller {
 		$multi = $isAdmin === false;
 
 		try {
-			// Find the existing object to merge with.
-			try {
-				$existingObject = $this->objectService->findSilent(
-					id: $id,
-					_extend: [],
-					files: false,
-					register: $resolved['registerEntity'],
-					schema: $resolved['schemaEntity'],
-					_rbac: false,
-					_multitenancy: false
-				);
-			} catch (MultipleObjectsReturnedException $e) {
-				$existingObject = $this->findReadableForPatch(id: $id, resolved: $resolved, rbac: $rbac, multi: $multi);
-				if ($existingObject instanceof JSONResponse) {
-					return $existingObject;
-				}
-			} catch (\Exception $e) {
-				return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+			// The object to merge with is read in the caller's own scope, as
+			// PATCH and PUT read it.
+			$existingObject = $this->findReadableForPatch(id: $id, resolved: $resolved, rbac: $rbac, multi: $multi);
+			if ($existingObject instanceof JSONResponse) {
+				return $existingObject;
 			}
 
 			// The lock answers BEFORE the merge and before validation, exactly
@@ -4769,12 +4724,16 @@ class ObjectsController extends Controller {
 			$objectService->setRegister(register: $register);
 			$objectService->setSchema(schema: $schema);
 
+			// Read in the caller's own scope, as the delete itself reads it: an
+			// object the caller may not read is a 404, not an analysis of what
+			// refers to it.
+			$scoped = ($this->isCurrentUserAdmin() === false);
 			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 				id: $id,
 				register: $register,
 				schema: $schema,
-				_rbac: false,
-				_multitenancy: false
+				_rbac: $scoped,
+				_multitenancy: $scoped
 			));
 			if ($objectEntity === null) {
 				return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
