@@ -892,7 +892,7 @@ export default {
 					generateUrl('/apps/openregister/api/settings/llm'),
 				)
 				return llmResponse.data.vectorConfig?.backend
-			} catch (e) {
+			} catch {
 				return undefined
 			}
 		},

@@ -1,0 +1,4 @@
+{
+	"description": "Old class name => new class name for every OpenRegister class that moved to a component directory. Read by lib/AppInfo/ClassAliasMap.php at boot and written by scripts/component-move.py. eager: alias at boot (required when another app names the class in instanceof, catch or a type declaration); otherwise the alias is made on first autoload.",
+	"aliases": {}
+}

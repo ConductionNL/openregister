@@ -340,7 +340,7 @@ export default {
 				if (this.dashboard) {
 					await this.loadWidgetData()
 				}
-			} catch (e) {
+			} catch {
 				// surfaced via store error
 			}
 		},
@@ -575,7 +575,7 @@ export default {
 			if (format === 'date') {
 				try {
 					return new Date(raw).toLocaleDateString()
-				} catch (e) {
+				} catch {
 					return String(raw)
 				}
 			}

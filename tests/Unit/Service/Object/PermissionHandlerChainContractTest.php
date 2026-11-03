@@ -106,14 +106,14 @@ class PermissionHandlerChainContractTest extends TestCase {
 				true,
 				[['userManager.get' => 'ana'], ...$matched],
 			],
-			'the object keeps its own @self.organisation' => [
+			'the record organisation wins over an @self.organisation in its data' => [
 				[
 					'auth'   => ['read' => [['group' => 'behandelaars', 'match' => $match]]],
 					'user'   => $ana,
 					'object' => ['owner' => 'bea', 'organisation' => 'org-1', 'data' => ['title' => 't', '@self' => ['organisation' => 'own']]],
 				],
 				true,
-				[['userManager.get' => 'ana'], ['cond' => [['id' => self::UUID, 'title' => 't', '@self' => ['organisation' => 'own']], $match]]],
+				[['userManager.get' => 'ana'], ['cond' => [['id' => self::UUID, 'title' => 't', '@self' => ['organisation' => 'org-1']], $match]]],
 			],
 			'public for an anonymous reader'  => [
 				['auth' => ['read' => [['group' => 'public', 'match' => $match]]], 'user' => null, 'object' => $object],
