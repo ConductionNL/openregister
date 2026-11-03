@@ -51,10 +51,10 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
-use OCA\OpenRegister\Service\Rbac\RecordMetadataConditions;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
+use OCA\OpenRegister\Service\Rbac\RuleColumns;
 use OCP\DB\QueryBuilder\IParameter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
@@ -444,7 +444,7 @@ class MagicRbacHandler {
 	 * @param string|null $userId        The caller.
 	 * @param string[]    $userGroups    The caller's group IDs.
 	 * @param string      $columnName    The `_authorization` column as this emitter references it.
-	 * @param string      $columnPrefix  Table alias to qualify each column with, empty for an unaliased UNION member.
+	 * @param RuleColumns $columns       The columns a `match` key may name, with their table alias.
 	 *
 	 * @return string|false|null The predicate, false when the caller is denied
 	 *                           outright, or null when nothing is enforced yet.
@@ -457,7 +457,7 @@ class MagicRbacHandler {
 		?string $userId,
 		array $userGroups,
 		string $columnName,
-		string $columnPrefix = '',
+		RuleColumns $columns,
 	): string|false|null {
 		if ($this->denyEnforcementMode()->enforces() === false) {
 			return null;
@@ -499,7 +499,7 @@ class MagicRbacHandler {
 			action: $action,
 			principals: $principals
 		) as $denial) {
-			$match = $this->denialPredicateSql(rule: $denial['rule'], columnPrefix: $columnPrefix);
+			$match = $this->denialPredicateSql(rule: $denial['rule'], columns: $columns);
 
 			if ($match === null) {
 				$this->logger->warning(
@@ -528,21 +528,24 @@ class MagicRbacHandler {
 	/**
 	 * The SQL of a conditional denial's clause, or null when it cannot select rows by column.
 	 *
-	 * A clause on metadata no record carries gets null, so the caller denies the whole list.
+	 * A clause on metadata no record carries, or on a key that names no column of
+	 * this table, gets null, so the caller denies the whole list: `NOT (1 = 0)`
+	 * would let every row through.
 	 *
-	 * @param mixed  $rule         The denial's rule.
-	 * @param string $columnPrefix Table alias to qualify each column with.
+	 * @param mixed       $rule    The denial's rule.
+	 * @param RuleColumns $columns The columns a `match` key may name, with their table alias.
 	 *
 	 * @return string|null The predicate, or null.
 	 */
-	private function denialPredicateSql(mixed $rule, string $columnPrefix): ?string {
+	private function denialPredicateSql(mixed $rule, RuleColumns $columns): ?string {
 		if (is_array($rule) === false || is_array(($rule['match'] ?? null)) === false
 			|| $this->conditionMatcher->namesUnknownMetadata(match: $rule['match']) === true
+			|| $columns->admits(match: $rule['match']) === false
 		) {
 			return null;
 		}
 
-		return $this->buildMatchConditionsSql(match: $rule['match'], columnPrefix: $columnPrefix);
+		return $this->buildMatchConditionsSql(match: $rule['match'], columnPrefix: $columns->prefix);
 	}//end denialPredicateSql()
 
 	/**
@@ -627,7 +630,7 @@ class MagicRbacHandler {
 			userId: $userId,
 			userGroups: $userGroups,
 			columnName: 't._authorization',
-			columnPrefix: 't.'
+			columns: new RuleColumns(schema: $schema, prefix: 't.')
 		);
 		if ($denyTerm === false) {
 			$qb->andWhere($qb->expr()->eq($qb->createNamedParameter(1), $qb->createNamedParameter(0)));
@@ -720,17 +723,16 @@ class MagicRbacHandler {
 		$conditions = $ownerAdmits;
 
 		// Resolve whether authenticated users inherit `public` rights once.
-		$inheritFromPublic = $this->authenticatedInheritsPublic(schema: $schema);
+		$caller = [
+			'groups'            => $userGroups,
+			'userId'            => $userId,
+			'inheritFromPublic' => $this->authenticatedInheritsPublic(schema: $schema),
+			'columns'           => new RuleColumns(schema: $schema, prefix: 't.'),
+		];
 
 		// Process each authorization rule.
 		foreach ($rules as $rule) {
-			$ruleCondition = $this->processAuthorizationRule(
-				qb: $qb,
-				rule: $rule,
-				userGroups: $userGroups,
-				userId: $userId,
-				inheritFromPublic: $inheritFromPublic
-			);
+			$ruleCondition = $this->processAuthorizationRule(qb: $qb, rule: $rule, caller: $caller);
 
 			if ($ruleCondition === true) {
 				// Unconditional access via this rule. That grant reaches every
@@ -882,7 +884,11 @@ class MagicRbacHandler {
 	public function getCrossOrganisationBranch(IQueryBuilder $qb, Schema $schema): mixed {
 		$branches = [];
 		foreach (($this->crossOrganisationMatches(schema: $schema) ?? []) as $match) {
-			$condition = $this->buildMatchConditions(qb: $qb, match: $match);
+			$condition = $this->impossibleCondition(qb: $qb);
+			if ((new RuleColumns(schema: $schema))->admits(match: $match) === true) {
+				$condition = $this->buildMatchConditions(qb: $qb, match: $match);
+			}
+
 			if ($condition !== null) {
 				$branches[] = $condition;
 			}
@@ -907,7 +913,11 @@ class MagicRbacHandler {
 	public function getCrossOrganisationBranchSql(Schema $schema): ?string {
 		$branches = [];
 		foreach (($this->crossOrganisationMatches(schema: $schema) ?? []) as $match) {
-			$condition = $this->buildMatchConditionsSql(match: $match);
+			$condition = self::IMPOSSIBLE_SQL_CONDITION;
+			if ((new RuleColumns(schema: $schema))->admits(match: $match) === true) {
+				$condition = $this->buildMatchConditionsSql(match: $match);
+			}
+
 			if ($condition !== null) {
 				$branches[] = $condition;
 			}
@@ -998,9 +1008,7 @@ class MagicRbacHandler {
 	 *
 	 * @param IQueryBuilder $qb Query builder
 	 * @param mixed $rule Authorization rule (string or array)
-	 * @param array $userGroups User's group IDs
-	 * @param string|null $userId Current user ID
-	 * @param bool $inheritFromPublic Whether auth users inherit public rights
+	 * @param array $caller The caller: groups, userId, inheritFromPublic, and the columns a `match` key may name.
 	 *
 	 * @return mixed True if unconditional access, SQL expression for conditional, null/false if no access
 	 *
@@ -1009,13 +1017,16 @@ class MagicRbacHandler {
 	private function processAuthorizationRule(
 		IQueryBuilder $qb,
 		mixed $rule,
-		array $userGroups,
-		?string $userId,
-		bool $inheritFromPublic,
+		array $caller,
 	): mixed {
 		// Simple rule: just a group name string.
 		if (is_string($rule) === true) {
-			return $this->processSimpleRule(rule: $rule, userGroups: $userGroups, userId: $userId, inheritFromPublic: $inheritFromPublic);
+			return $this->processSimpleRule(
+				rule: $rule,
+				userGroups: $caller['groups'],
+				userId: $caller['userId'],
+				inheritFromPublic: $caller['inheritFromPublic']
+			);
 		}
 
 		// Conditional rule: object with 'group' (or a 'user' override) and
@@ -1024,9 +1035,7 @@ class MagicRbacHandler {
 			return $this->processConditionalRule(
 				qb: $qb,
 				rule: $rule,
-				userGroups: $userGroups,
-				userId: $userId,
-				inheritFromPublic: $inheritFromPublic
+				caller: $caller
 			);
 		}
 
@@ -1112,9 +1121,7 @@ class MagicRbacHandler {
 	 *
 	 * @param IQueryBuilder $qb Query builder
 	 * @param array $rule Rule with 'group' and optional 'match'
-	 * @param array $userGroups User's group IDs
-	 * @param string|null $userId Current user ID
-	 * @param bool $inheritFromPublic Whether auth users inherit public rights
+	 * @param array $caller The caller: groups, userId, inheritFromPublic, and the columns a `match` key may name.
 	 *
 	 * @return mixed True if unconditional access, SQL expression for conditional, false if no access
 	 *
@@ -1123,10 +1130,11 @@ class MagicRbacHandler {
 	private function processConditionalRule(
 		IQueryBuilder $qb,
 		array $rule,
-		array $userGroups,
-		?string $userId,
-		bool $inheritFromPublic,
+		array $caller,
 	): mixed {
+		$userGroups = $caller['groups'];
+		$userId = $caller['userId'];
+		$inheritFromPublic = $caller['inheritFromPublic'];
 		$group = ($rule['group'] ?? null);
 		$match = $rule['match'] ?? null;
 
@@ -1153,6 +1161,11 @@ class MagicRbacHandler {
 		// If no match conditions, user has unconditional access via this rule.
 		if ($match === null || empty($match) === true) {
 			return true;
+		}
+
+		// A key that names no column of this table admits no row.
+		if ($caller['columns']->admits(match: $match) === false) {
+			return $this->impossibleCondition(qb: $qb);
 		}
 
 		// Build SQL conditions for the match criteria.
@@ -1377,7 +1390,7 @@ class MagicRbacHandler {
 		// raw-SQL emitter uses, so the two list paths cannot drift apart.
 		if ($operator === '$contains') {
 			$fragment = $this->buildContainsOperatorConditionSql(
-				columnName: "t.{$columnName}",
+				columnName: 't.'.$this->quotedColumn(columnName: $columnName),
 				operator: $operator,
 				operand: $operand
 			);
@@ -1529,17 +1542,30 @@ class MagicRbacHandler {
 	}//end buildArrayOperatorCondition()
 
 	/**
-	 * Convert camelCase property name to snake_case column name
+	 * The column name a `match` key renders to
 	 *
-	 * @param string $property Property name in camelCase
+	 * @param string $property The `match` key
 	 *
-	 * @return string Column name in snake_case
+	 * @return string The column name, safe whatever the key holds
 	 */
 	private function propertyToColumnName(string $property): string {
-		// Convert camelCase to snake_case.
-		$columnName = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', (new RecordMetadataConditions())->columnKey(key: $property));
-		return strtolower($columnName);
+		return (new RuleColumns())->columnOf(key: $property);
 	}//end propertyToColumnName()
+
+	/**
+	 * Quote a column name as this platform's identifier
+	 *
+	 * @param string $columnName The column name, from {@see propertyToColumnName()}
+	 *
+	 * @return string The quoted identifier
+	 */
+	private function quotedColumn(string $columnName): string {
+		if ($this->isPostgres() === true) {
+			return '"'.$columnName.'"';
+		}
+
+		return '`'.$columnName.'`';
+	}//end quotedColumn()
 
 	/**
 	 * Check if a user has permission to perform an action on a schema
@@ -2107,7 +2133,7 @@ class MagicRbacHandler {
 			userId: $userId,
 			userGroups: $userGroups,
 			columnName: $columnPrefix . '_authorization',
-			columnPrefix: $columnPrefix
+			columns: new RuleColumns(schema: $schema, prefix: $columnPrefix)
 		);
 		if ($denyTerm === false) {
 			return null;
@@ -2195,17 +2221,16 @@ class MagicRbacHandler {
 		string $columnPrefix = '',
 	): array {
 		// Resolve whether authenticated users inherit `public` rights once.
-		$inheritFromPublic = $this->authenticatedInheritsPublic(schema: $schema);
+		$caller = [
+			'groups'            => $userGroups,
+			'userId'            => $userId,
+			'inheritFromPublic' => $this->authenticatedInheritsPublic(schema: $schema),
+			'columns'           => new RuleColumns(schema: $schema, prefix: $columnPrefix),
+		];
 
 		$conditions = [];
 		foreach ($rules as $rule) {
-			$ruleResult = $this->processAuthorizationRuleSql(
-				columnPrefix: $columnPrefix,
-				rule: $rule,
-				userGroups: $userGroups,
-				userId: $userId,
-				inheritFromPublic: $inheritFromPublic
-			);
+			$ruleResult = $this->processAuthorizationRuleSql(rule: $rule, caller: $caller);
 
 			if ($ruleResult === true) {
 				// Unconditional access via this rule reaches every NON-private
@@ -2230,13 +2255,7 @@ class MagicRbacHandler {
 	 * Process a single authorization rule for raw SQL output.
 	 *
 	 * @param mixed $rule Authorization rule (string or array).
-	 * @param array $userGroups User's group IDs.
-	 * @param string|null $userId Current user ID.
-	 * @param bool $inheritFromPublic Whether auth users inherit public rights.
-	 * @param string $columnPrefix Table alias to qualify each column with, empty for an unaliased
-	 *                             UNION member. Unqualified, a column name still parses inside a
-	 *                             subquery and binds to the innermost FROM, which is silently wrong
-	 *                             the moment the related table does not carry it.
+	 * @param array $caller The caller: groups, userId, inheritFromPublic, and the columns a `match` key may name.
 	 *
 	 * @return mixed True if unconditional access, SQL string for conditional, false if no access.
 	 *
@@ -2244,26 +2263,22 @@ class MagicRbacHandler {
 	 */
 	private function processAuthorizationRuleSql(
 		mixed $rule,
-		array $userGroups,
-		?string $userId,
-		bool $inheritFromPublic,
-		string $columnPrefix = ''
+		array $caller,
 	): mixed {
 		// Simple rule: just a group name string.
 		if (is_string($rule) === true) {
-			return $this->processSimpleRule(rule: $rule, userGroups: $userGroups, userId: $userId, inheritFromPublic: $inheritFromPublic);
+			return $this->processSimpleRule(
+				rule: $rule,
+				userGroups: $caller['groups'],
+				userId: $caller['userId'],
+				inheritFromPublic: $caller['inheritFromPublic']
+			);
 		}
 
 		// Conditional rule: object with 'group' (or a 'user' override) and
 		// optional 'match'.
 		if (is_array($rule) === true && (isset($rule['group']) === true || isset($rule['user']) === true)) {
-			return $this->processConditionalRuleSql(
-				rule: $rule,
-				userGroups: $userGroups,
-				userId: $userId,
-				inheritFromPublic: $inheritFromPublic,
-				columnPrefix: $columnPrefix
-			);
+			return $this->processConditionalRuleSql(rule: $rule, caller: $caller);
 		}
 
 		return false;
@@ -2273,13 +2288,7 @@ class MagicRbacHandler {
 	 * Process a conditional authorization rule for raw SQL output.
 	 *
 	 * @param array $rule Rule with 'group' and optional 'match'.
-	 * @param array $userGroups User's group IDs.
-	 * @param string|null $userId Current user ID.
-	 * @param bool $inheritFromPublic Whether auth users inherit public rights.
-	 * @param string $columnPrefix Table alias to qualify each column with, empty for an unaliased
-	 *                             UNION member. Unqualified, a column name still parses inside a
-	 *                             subquery and binds to the innermost FROM, which is silently wrong
-	 *                             the moment the related table does not carry it.
+	 * @param array $caller The caller: groups, userId, inheritFromPublic, and the columns a `match` key may name.
 	 *
 	 * @return mixed True if unconditional access, SQL string for conditional, false if no access.
 	 *
@@ -2287,11 +2296,11 @@ class MagicRbacHandler {
 	 */
 	private function processConditionalRuleSql(
 		array $rule,
-		array $userGroups,
-		?string $userId,
-		bool $inheritFromPublic,
-		string $columnPrefix = ''
+		array $caller,
 	): mixed {
+		$userGroups = $caller['groups'];
+		$userId = $caller['userId'];
+		$inheritFromPublic = $caller['inheritFromPublic'];
 		$group = ($rule['group'] ?? null);
 		$match = $rule['match'] ?? null;
 
@@ -2327,8 +2336,13 @@ class MagicRbacHandler {
 			return true;
 		}
 
+		// A key that names no column of this table admits no row.
+		if ($caller['columns']->admits(match: $match) === false) {
+			return self::IMPOSSIBLE_SQL_CONDITION;
+		}
+
 		// Build SQL conditions for the match criteria.
-		return $this->buildMatchConditionsSql(match: $match, columnPrefix: $columnPrefix);
+		return $this->buildMatchConditionsSql(match: $match, columnPrefix: $caller['columns']->prefix);
 	}//end processConditionalRuleSql()
 
 	/**
@@ -2391,7 +2405,7 @@ class MagicRbacHandler {
 		// right by accident and silently wrong the moment the related table
 		// does not carry the column: SQL then resolves it against the OUTER
 		// row, so the access check would pass by testing the wrong record.
-		$columnName = $columnPrefix . $this->propertyToColumnName(property: $property);
+		$columnName = $columnPrefix . $this->quotedColumn(columnName: $this->propertyToColumnName(property: $property));
 
 		// Resolve dynamic variables in the value.
 		$resolvedValue = $this->resolveDynamicValue(value: $value);
@@ -2912,14 +2926,14 @@ class MagicRbacHandler {
 			return false;
 		}
 
-		$inheritFromPublic = $this->authenticatedInheritsPublic(schema: $schema);
+		$caller = [
+			'groups'            => $userGroups,
+			'userId'            => $userId,
+			'inheritFromPublic' => $this->authenticatedInheritsPublic(schema: $schema),
+			'columns'           => new RuleColumns(schema: $schema),
+		];
 		foreach ($rules as $rule) {
-			$verdict = $this->processAuthorizationRuleSql(
-				rule: $rule,
-				userGroups: $userGroups,
-				userId: $userId,
-				inheritFromPublic: $inheritFromPublic
-			);
+			$verdict = $this->processAuthorizationRuleSql(rule: $rule, caller: $caller);
 			if ($verdict !== false) {
 				return true;
 			}

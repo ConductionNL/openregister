@@ -33,6 +33,7 @@ use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionProperty;
@@ -44,6 +45,8 @@ use ReflectionProperty;
  * @covers \OCA\OpenRegister\Db\RegisterMapper
  * @covers \OCA\OpenRegister\Service\Rbac\MetadataConditionFindings
  * @covers \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @covers \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @covers \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
@@ -271,4 +274,177 @@ class UnknownMetadataConditionSaveRefusalTest extends TestCase {
 		$this->expectExceptionMessage('"_depublished"');
 		$this->validateAsTheSaveDoes(mapperClass: RegisterMapper::class, entity: $register);
 	}//end testARegisterRuleOnUnknownMetadataIsRefused()
+
+	/**
+	 * A schema save refuses a key that is malformed or names no property, naming the rule.
+	 *
+	 * @param string $key The key.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('refusedKeys')]
+	public function testASchemaRuleOnARefusedKeyIsRefused(string $key): void {
+		$schema = $this->schemaWith(
+			['deny' => ['read' => [['group' => 'editors', 'match' => [$key => 'a']]]]],
+			['status' => ['type' => 'string']]
+		);
+
+		$this->expectException(AuthorizationBlockException::class);
+		$this->expectExceptionMessage('The deny read rule for group "editors"');
+		$this->expectExceptionMessage('"'.$key.'"');
+		$this->validateAsTheSaveDoes(mapperClass: SchemaMapper::class, entity: $schema);
+	}//end testASchemaRuleOnARefusedKeyIsRefused()
+
+	/**
+	 * Keys a schema save refuses.
+	 *
+	 * @return array<string, array{0: string}> The keys.
+	 */
+	public static function refusedKeys(): array {
+		return [
+			'injection'  => ['x) or (1=1'],
+			'dotted'     => ['other.status'],
+			'undeclared' => ['secret'],
+		];
+	}//end refusedKeys()
+
+	/**
+	 * A key on a metadata prefix with injected text is refused by the metadata check.
+	 *
+	 * @return void
+	 */
+	public function testAnInjectedMetadataKeyIsRefused(): void {
+		$schema = $this->schemaWith(['read' => [['group' => 'g', 'match' => ['_owner) or (1=1' => 'a']]]]);
+
+		$this->expectException(AuthorizationBlockException::class);
+		$this->validateAsTheSaveDoes(mapperClass: SchemaMapper::class, entity: $schema);
+	}//end testAnInjectedMetadataKeyIsRefused()
+
+	/**
+	 * A property's own rule is judged against the schema's properties too.
+	 *
+	 * @return void
+	 */
+	public function testAPropertyRuleOnARefusedKeyIsRefused(): void {
+		$schema = $this->schemaWith(
+			[],
+			['note' => ['type' => 'string', 'authorization' => ['read' => [['group' => 'g', 'match' => ['secret' => 'a']]]]]]
+		);
+
+		$this->expectException(AuthorizationBlockException::class);
+		$this->expectExceptionMessage('in property "note" of schema');
+		$this->validateAsTheSaveDoes(mapperClass: SchemaMapper::class, entity: $schema);
+	}//end testAPropertyRuleOnARefusedKeyIsRefused()
+
+	/**
+	 * CONTROL: rules on declared properties and record metadata save.
+	 *
+	 * @return void
+	 */
+	public function testARuleOnADeclaredPropertySaves(): void {
+		$schema = $this->schemaWith(
+			['read' => [['group' => 'g', 'match' => ['firstName' => 'a', '_owner' => '$userId', '@self.organisation' => 'b']]]],
+			['firstName' => ['type' => 'string']]
+		);
+
+		$this->validateAsTheSaveDoes(mapperClass: SchemaMapper::class, entity: $schema);
+		$this->addToAssertionCount(1);
+	}//end testARuleOnADeclaredPropertySaves()
+
+	/**
+	 * A condition the stored block holds can stay, and other edits to the schema still save.
+	 *
+	 * @return void
+	 */
+	public function testASaveThatKeepsAStoredConditionSaves(): void {
+		$bad = ['group' => 'g', 'match' => ['x) or (1=1' => 'a']];
+		$schema = $this->schemaWith(['read' => [$bad]], ['status' => ['type' => 'string']]);
+		$schema->setId(5);
+
+		$this->validateAsTheSaveDoes(SchemaMapper::class, $schema, ['authorization' => json_encode(['read' => [$bad]]), 'properties' => '{}']);
+		$this->addToAssertionCount(1);
+	}//end testASaveThatKeepsAStoredConditionSaves()
+
+	/**
+	 * A property's stored condition on such a key can stay too.
+	 *
+	 * @return void
+	 */
+	public function testASaveThatKeepsAStoredPropertyConditionSaves(): void {
+		$properties = ['note' => ['type' => 'string', 'authorization' => ['read' => [['group' => 'g', 'match' => ['secret' => 'a']]]]]];
+		$schema = $this->schemaWith([], $properties);
+		$schema->setId(5);
+
+		$this->validateAsTheSaveDoes(SchemaMapper::class, $schema, ['authorization' => '{}', 'properties' => json_encode($properties)]);
+		$this->addToAssertionCount(1);
+	}//end testASaveThatKeepsAStoredPropertyConditionSaves()
+
+	/**
+	 * Dropping a property a stored rule names saves; the rule then admits no row.
+	 *
+	 * @return void
+	 */
+	public function testASaveThatDropsAPropertyARuleNamesSaves(): void {
+		$rule = ['group' => 'g', 'match' => ['status' => 'a']];
+		$schema = $this->schemaWith(['read' => [$rule]]);
+		$schema->setId(5);
+
+		$this->validateAsTheSaveDoes(
+			SchemaMapper::class,
+			$schema,
+			['authorization' => json_encode(['read' => [$rule]]), 'properties' => json_encode(['status' => ['type' => 'string']])]
+		);
+		$this->addToAssertionCount(1);
+	}//end testASaveThatDropsAPropertyARuleNamesSaves()
+
+	/**
+	 * Changing the value of a stored condition on such a key is refused.
+	 *
+	 * @return void
+	 */
+	public function testASaveThatChangesAStoredConditionIsRefused(): void {
+		$schema = $this->schemaWith(['read' => [['group' => 'g', 'match' => ['secret' => 'new']]]]);
+		$schema->setId(5);
+
+		$this->expectException(AuthorizationBlockException::class);
+		$this->expectExceptionMessage('"secret"');
+		$this->validateAsTheSaveDoes(
+			SchemaMapper::class,
+			$schema,
+			['authorization' => json_encode(['read' => [['group' => 'g', 'match' => ['secret' => 'old']]]]), 'properties' => '{}']
+		);
+	}//end testASaveThatChangesAStoredConditionIsRefused()
+
+	/**
+	 * A register's rule can name any schema's property, so only a malformed key is refused.
+	 *
+	 * @return void
+	 */
+	public function testARegisterRefusesOnlyAMalformedKey(): void {
+		$register = new Register();
+		$register->setSlug('zaken');
+		$register->setAuthorization(['read' => [['group' => 'public', 'match' => ['anyProperty' => 'a']]]]);
+		$this->validateAsTheSaveDoes(mapperClass: RegisterMapper::class, entity: $register);
+
+		$register->setAuthorization(['read' => [['group' => 'public', 'match' => ['x) or (1=1' => 'a']]]]);
+		$this->expectException(AuthorizationBlockException::class);
+		$this->expectExceptionMessage('"x) or (1=1"');
+		$this->validateAsTheSaveDoes(mapperClass: RegisterMapper::class, entity: $register);
+	}//end testARegisterRefusesOnlyAMalformedKey()
+
+	/**
+	 * A register save can keep a malformed condition it already holds.
+	 *
+	 * @return void
+	 */
+	public function testARegisterSaveKeepsAStoredMalformedKey(): void {
+		$rule = ['group' => 'public', 'match' => ['x) or (1=1' => 'a']];
+		$register = new Register();
+		$register->setId(9);
+		$register->setSlug('zaken');
+		$register->setAuthorization(['read' => [$rule]]);
+
+		$this->validateAsTheSaveDoes(RegisterMapper::class, $register, ['authorization' => json_encode(['read' => [$rule]])]);
+		$this->addToAssertionCount(1);
+	}//end testARegisterSaveKeepsAStoredMalformedKey()
 }//end class

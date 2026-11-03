@@ -34,6 +34,8 @@ use Symfony\Component\Console\Tester\CommandTester;
  * @covers \OCA\OpenRegister\Command\UnknownMetadataConditionsCommand
  * @uses   \OCA\OpenRegister\Service\Rbac\MetadataConditionFindings
  * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
@@ -105,6 +107,35 @@ class UnknownMetadataConditionsCommandTest extends TestCase {
 		$this->assertStringNotContainsString('schema 13', $display);
 		$this->assertStringContainsString('3 rule condition(s)', $display);
 	}//end testEveryStoredRuleIsListed()
+
+	/**
+	 * Rules on a malformed or undeclared key are listed, and the run exits 1.
+	 *
+	 * @return void
+	 */
+	public function testRulesOnUnknownKeysAreListed(): void {
+		$schema = new Schema();
+		$schema->setId(21);
+		$schema->setSlug('zaak');
+		$schema->setProperties(['status' => ['type' => 'string']]);
+		$schema->setAuthorization(['read' => [['group' => 'g', 'match' => ['status' => 'a', 'secret' => 'b', 'x) or (1=1' => 'c']]]]);
+
+		$register = new Register();
+		$register->setId(4);
+		$register->setSlug('zaken');
+		$register->setAuthorization(['read' => [['group' => 'h', 'match' => ['anyProperty' => 'a', 'y) or (1=1' => 'b']]]]);
+
+		$tester = $this->report(schemas: [$schema], registers: [$register]);
+		$display = $tester->getDisplay();
+
+		$this->assertSame(1, $tester->getStatusCode());
+		$this->assertStringContainsString('schema 21: The read rule for group "g" in schema "zaak" has a condition on "secret"', $display);
+		$this->assertStringContainsString('schema 21: The read rule for group "g" in schema "zaak" has a condition on "x) or (1=1"', $display);
+		$this->assertStringContainsString('register 4: The read rule for group "h" in register "zaken" has a condition on "y) or (1=1"', $display);
+		$this->assertStringNotContainsString('"status"', $display);
+		$this->assertStringNotContainsString('"anyProperty"', $display);
+		$this->assertStringContainsString('3 rule condition(s)', $display);
+	}//end testRulesOnUnknownKeysAreListed()
 
 	/**
 	 * Nothing stored on unknown metadata: the run says so and exits 0.

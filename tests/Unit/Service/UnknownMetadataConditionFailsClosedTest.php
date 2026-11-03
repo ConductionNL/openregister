@@ -74,6 +74,8 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  */
 class UnknownMetadataConditionFailsClosedTest extends TestCase {
 
@@ -447,9 +449,9 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 			)['conditions']
 		);
 
-		$this->assertStringContainsString("_owner = 'bob'", $sql(['@self.owner' => 'bob']));
-		$this->assertStringContainsString("_uuid = 'rec-1'", $sql(['@self.id' => 'rec-1']));
-		$this->assertStringContainsString("_expires > '2030-01-01'", $sql(['_expires' => ['$gt' => '2030-01-01']]));
+		$this->assertStringContainsString("`_owner` = 'bob'", $sql(['@self.owner' => 'bob']));
+		$this->assertStringContainsString("`_uuid` = 'rec-1'", $sql(['@self.id' => 'rec-1']));
+		$this->assertStringContainsString("`_expires` > '2030-01-01'", $sql(['_expires' => ['$gt' => '2030-01-01']]));
 		$this->assertStringNotContainsString('1 = 0', $sql(['_expires' => ['$gt' => '2030-01-01']]));
 	}//end testTheListNamesTheColumnOfAKnownKey()
 

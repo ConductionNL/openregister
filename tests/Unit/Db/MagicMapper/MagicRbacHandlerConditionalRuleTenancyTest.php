@@ -78,6 +78,8 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Rbac\MatrixRowWhere
  * @uses   \OCA\OpenRegister\Service\Rbac\MatrixRowsFromApps
  * @uses   \OCA\OpenRegister\Service\OrganisationContext
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  */
 class MagicRbacHandlerConditionalRuleTenancyTest extends TestCase {
 
@@ -610,6 +612,13 @@ class MagicRbacHandlerConditionalRuleTenancyTest extends TestCase {
 		$schema = new Schema();
 		$schema->setId(7);
 		$schema->setTitle('Case');
+		$schema->setProperties(
+			[
+				'caseType' => ['type' => 'string'],
+				'provider' => ['type' => 'string'],
+				'status'   => ['type' => 'string'],
+			]
+		);
 		$schema->setAuthorization(['read' => $read, 'inheritFromPublic' => false]);
 
 		return $schema;

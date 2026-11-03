@@ -74,6 +74,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
  * @uses \OCA\OpenRegister\Exception\HookStoppedException
  * @uses \OCA\OpenRegister\Exception\ObjectExistsException
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  *
  * @spec openspec/changes/insert-race-runs-update-guard/specs/object-lifecycle/spec.md
  */

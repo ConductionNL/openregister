@@ -50,6 +50,8 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  */
 class MagicMapperUnionRoutingTest extends TestCase {
 

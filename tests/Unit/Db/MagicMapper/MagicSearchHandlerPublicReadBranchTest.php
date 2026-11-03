@@ -78,6 +78,8 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
  * @uses   \OCA\OpenRegister\Service\OrganisationContext
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  */
 class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 
@@ -562,6 +564,13 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 		$schema = new Schema();
 		$schema->setId(7);
 		$schema->setTitle('Case');
+		$schema->setProperties(
+			[
+				'caseType' => ['type' => 'string'],
+				'provider' => ['type' => 'string'],
+				'status'   => ['type' => 'string'],
+			]
+		);
 		$schema->setAuthorization(['read' => $read, 'inheritFromPublic' => $inherit]);
 
 		return $schema;

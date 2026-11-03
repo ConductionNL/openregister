@@ -59,6 +59,8 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Rbac\MetadataConditionFindings
  * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  */
 class SaveTimeRefusalsInEveryModeTest extends TestCase {
 

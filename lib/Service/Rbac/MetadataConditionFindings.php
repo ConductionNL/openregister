@@ -236,7 +236,7 @@ class MetadataConditionFindings {
 	 *
 	 * @return array<string, array<int|string, mixed>> The lists.
 	 */
-	private function ruleLists(?array $authorization): array {
+	public function ruleLists(?array $authorization): array {
 		$lists = [];
 		foreach (($authorization ?? []) as $action => $rules) {
 			if (is_array($rules) === false) {
@@ -268,7 +268,7 @@ class MetadataConditionFindings {
 	 *
 	 * @return string The principal.
 	 */
-	private function principalOf(array $rule): string {
+	public function principalOf(array $rule): string {
 		if (is_string(($rule['group'] ?? null)) === true) {
 			return sprintf('group "%s"', $rule['group']);
 		}
@@ -288,7 +288,7 @@ class MetadataConditionFindings {
 	 *
 	 * @return array<string, mixed>|null The row, or null when there is none.
 	 */
-	private function storedRow(string $table, ?int $id): ?array {
+	public function storedRow(string $table, ?int $id): ?array {
 		if ($id === null || $this->db === null) {
 			return null;
 		}
@@ -316,7 +316,7 @@ class MetadataConditionFindings {
 	 *
 	 * @return array<int|string, mixed>|null The decoded value.
 	 */
-	private function decoded(mixed $value): ?array {
+	public function decoded(mixed $value): ?array {
 		if (is_string($value) === false) {
 			return null;
 		}

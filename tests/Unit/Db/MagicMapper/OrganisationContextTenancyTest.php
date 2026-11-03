@@ -84,6 +84,8 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\ArrayElementFilter
  * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  */
 class OrganisationContextTenancyTest extends TestCase {
 
@@ -475,6 +477,13 @@ class OrganisationContextTenancyTest extends TestCase {
 		$schema = new Schema();
 		$schema->setId(7);
 		$schema->setTitle('Vacancy');
+		$schema->setProperties(
+			[
+				'caseType' => ['type' => 'string'],
+				'provider' => ['type' => 'string'],
+				'status'   => ['type' => 'string'],
+			]
+		);
 		$schema->setAuthorization(['read' => $read, 'inheritFromPublic' => true]);
 
 		return $schema;
