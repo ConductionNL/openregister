@@ -830,7 +830,7 @@ export default {
 		},
 
 		/**
-		 * @param obj
+		 * @param {object} obj
 		 * @spec exclude Records the chosen merge target in local state; UI selection plumbing.
 		 */
 		selectTargetObject(obj) {
@@ -907,7 +907,7 @@ export default {
 		},
 
 		/**
-		 * @param property
+		 * @param {string} property
 		 * @spec exclude Builds the source/target/custom option list for a property dropdown; UI presentation helper.
 		 */
 		getMergeOptions(property) {
@@ -945,8 +945,8 @@ export default {
 		},
 
 		/**
-		 * @param property
-		 * @param selectedOption
+		 * @param {string} property
+		 * @param {object|null} selectedOption
 		 * @spec exclude Updates merged-data state when a per-property dropdown changes; UI reactivity plumbing.
 		 */
 		onPropertySelectionChange(property, selectedOption) {
@@ -963,8 +963,8 @@ export default {
 		},
 
 		/**
-		 * @param value
-		 * @param maxLength
+		 * @param {unknown} value
+		 * @param {number} maxLength
 		 * @spec exclude Stringifying/truncating value formatter for property display; UI presentation helper.
 		 */
 		displayValue(value, maxLength = 100) {
@@ -972,7 +972,7 @@ export default {
 				return 'N/A'
 			}
 
-			let displayText = ''
+			let displayText
 			if (typeof value === 'object') {
 				displayText = JSON.stringify(value, null, 2)
 			} else {
@@ -988,8 +988,8 @@ export default {
 		},
 
 		/**
-		 * @param text
-		 * @param maxLength
+		 * @param {string} text
+		 * @param {number} maxLength
 		 * @spec exclude Simple string-truncation helper for display; UI presentation helper.
 		 */
 		truncateText(text, maxLength) {
@@ -1093,7 +1093,7 @@ export default {
 		},
 
 		/**
-		 * @param bytes
+		 * @param {number} bytes
 		 * @spec exclude Human-readable byte-size formatter for file display; UI presentation helper.
 		 */
 		formatFileSize(bytes) {
@@ -1106,7 +1106,7 @@ export default {
 		},
 
 		/**
-		 * @param filename
+		 * @param {string} filename
 		 * @spec exclude Maps a filename extension to a friendly type label; UI presentation helper.
 		 */
 		getFileType(filename) {

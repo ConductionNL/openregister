@@ -723,7 +723,7 @@ export default {
 		 *
 		 * @spec exclude list-view export stub (not yet implemented)
 		 * @param {object} options - Export options
-		 * @param _options
+		 * @param {object} _options
 		 * @return {void}
 		 */
 		exportFilteredItems(_options) {
@@ -745,7 +745,7 @@ export default {
 				})
 				// Clear selection when page changes
 				this.selectedItems = []
-			} catch (error) {
+			} catch {
 				// Handle error silently
 			}
 		},

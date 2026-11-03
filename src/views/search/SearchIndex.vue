@@ -103,11 +103,20 @@ export default {
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-across-registers-global-search
 		 */
 		hasSelectedRegisters() {
-			return objectStore.searchParams.register != null
+			return (
+				objectStore.searchParams.register !== null
+				&& objectStore.searchParams.register !== undefined
+			)
 		},
 
+		/**
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-across-registers-global-search
+		 */
 		hasSelectedSchemas() {
-			return objectStore.searchParams.schema != null
+			return (
+				objectStore.searchParams.schema !== null
+				&& objectStore.searchParams.schema !== undefined
+			)
 		},
 
 		/**
@@ -291,7 +300,7 @@ export default {
 		 * from CnObjectCalendar's own `range-change` on (re)mount — the `:key`
 		 * binding on the component forces that remount.
 		 *
-		 * @param newVal
+		 * @param {string|number|null} newVal
 		 * @spec openspec/specs/saved-search-views/spec.md#requirement-presentation-components-are-shared-and-wired-not-owned-by-or-req-view-pres-05
 		 */
 		activeViewId(newVal) {
