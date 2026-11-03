@@ -660,6 +660,50 @@ class ObjectService implements ObjectServiceInterface
     }//end runAsAnonymous()
 
     /**
+     * Run a callable acting for one organisation, as a caller who is not a Nextcloud user.
+     *
+     * For code that serves callers outside Nextcloud's user base, such as a
+     * portal account whose organisation the app verified from a signed session
+     * or claim. Inside the callable:
+     *
+     * - the organisation is the caller's organisation for every tenancy
+     *   decision: the organisation filter (with its parent chain and shared
+     *   master data), the `$organisation` token in read rules, and the
+     *   organisation stamped on new objects;
+     * - the callable runs as {@see runAsAnonymous()}: the session user, an API
+     *   token's grant and the system scope do not apply, so with RBAC on only
+     *   `public` rules decide;
+     * - the organisation filter cannot be switched off: `_multitenancy: false`,
+     *   the admin bypass and rules marked `crossOrganisation` do not widen it.
+     *
+     * Only PHP code can open the context; nothing in a request can. It is
+     * restored when the callable ends, also on a throw, and nested contexts
+     * apply the innermost organisation.
+     *
+     * @param string   $organisationUuid The organisation to act for.
+     * @param callable $operation        The operation to run.
+     *
+     * @return mixed Whatever the callable returns.
+     *
+     * @throws InvalidArgumentException When the organisation does not exist.
+     *
+     * @spec openspec/changes/act-for-an-organisation/specs/rbac-scopes/spec.md
+     */
+    public function runForOrganisation(string $organisationUuid, callable $operation)
+    {
+        if ($this->organisationService->findContextOrganisation(uuid: $organisationUuid) === null) {
+            throw new InvalidArgumentException(
+                message: 'Cannot act for organisation "'.$organisationUuid.'": it does not exist.'
+            );
+        }
+
+        return OrganisationContext::run(
+            $organisationUuid,
+            fn () => $this->runAsAnonymous(operation: $operation)
+        );
+    }//end runForOrganisation()
+
+    /**
      * Set the current register context.
      *
      * @param Register|string|int $register The register object or its ID/UUID

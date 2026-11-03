@@ -490,8 +490,13 @@ class ConditionMatcher {
 		// ObjectService::runAsAnonymous() and runAs() both swap it. A flat memo
 		// resolved under an admin session would otherwise answer `@organisation.uuid`
 		// with that admin's organisation inside an evaluation meant to be anonymous,
-		// admitting their tenant's rows to a public read.
+		// admitting their tenant's rows to a public read. An organisation
+		// context is a subject of its own for the same reason.
 		$subject = ($this->userSession->getUser()?->getUID() ?? '_anon');
+		$contextUuid = OrganisationContext::current();
+		if ($contextUuid !== null) {
+			$subject = 'organisation-context:' . $contextUuid;
+		}
 		if (array_key_exists($subject, $this->cachedActiveOrg) === true) {
 			return $this->cachedActiveOrg[$subject];
 		}

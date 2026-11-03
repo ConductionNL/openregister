@@ -32,6 +32,7 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Audit\AuditAggregationService;
 use OCA\OpenRegister\Service\Audit\AuditSink;
+use OCA\OpenRegister\Service\Audit\OrganisationContextAttribution;
 use OCA\OpenRegister\Service\Audit\PurposeAttribution;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\TokenAttribution;
@@ -192,6 +193,9 @@ class AuditTrailMapper extends QBMapper {
 		// before the INSERT for the same reason again: the sealed half lives in
 		// `resultSummary`, which is inside the canonical JSON.
 		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+
+		// The organisation an organisation context acted for, sealed for the same reason.
+		(new OrganisationContextAttribution())->apply(auditTrail: $auditTrail);
 
 		$inserted = $this->insert(entity: $auditTrail);
 
@@ -1102,6 +1106,9 @@ class AuditTrailMapper extends QBMapper {
 		// stamping only the inserts would leave every bulk write by a koppeling
 		// unable to say which koppeling made it.
 		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+
+		// The organisation an organisation context acted for, sealed for the same reason.
+		(new OrganisationContextAttribution())->apply(auditTrail: $auditTrail);
 
 		// Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
 		$serializedSize = strlen(serialize($objectEntity->jsonSerialize()));

@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
@@ -219,6 +220,13 @@ class MagicOrganizationHandler {
 		?int $registerId = null,
 		?int $schemaId = null,
 	): array {
+		// Code acting for an organisation reads that organisation (and its
+		// parents and shared master data holders), never more: the session
+		// user, the admin bypass and the system context do not widen it.
+		if (OrganisationContext::isActive() === true) {
+			return $this->contextOrganizationScope(registerId: $registerId, schemaId: $schemaId);
+		}
+
 		$user = $this->userSession->getUser();
 
 		// CLI / no-session system context (occ commands, repair steps, cron
@@ -292,6 +300,34 @@ class MagicOrganizationHandler {
 		];
 
 	}//end resolveOrganizationScope()
+
+	/**
+	 * The organisation scope inside an organisation context.
+	 *
+	 * @param int|null $registerId The register of the table being read, for shared master data.
+	 * @param int|null $schemaId The schema of the table being read, for shared master data.
+	 *
+	 * @return array{mode: string, uuids: array<int, string>} SCOPE_IN, or SCOPE_NONE when the organisation is unknown.
+	 *
+	 * @spec openspec/changes/act-for-an-organisation/specs/rbac-scopes/spec.md
+	 */
+	private function contextOrganizationScope(?int $registerId, ?int $schemaId): array {
+		$orgUuids = $this->getActiveOrganizationUuids();
+		if ($orgUuids === []) {
+			return ['mode' => self::SCOPE_NONE, 'uuids' => []];
+		}
+
+		$sharedHolders = $this->sharedHolders(
+			registerId: $registerId,
+			schemaId: $schemaId,
+			consumerOrgUuids: $orgUuids
+		);
+
+		return [
+			'mode' => self::SCOPE_IN,
+			'uuids' => array_values(array_unique(array_merge($orgUuids, $sharedHolders))),
+		];
+	}//end contextOrganizationScope()
 
 	/**
 	 * The holder organisations whose rows in ONE register+schema pair the caller may read.
