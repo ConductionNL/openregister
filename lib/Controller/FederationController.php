@@ -544,6 +544,9 @@ class FederationController extends Controller {
 	 * record's uuid through `ids`, and accept only a hit on that same uuid
 	 * (`ids` also matches slugs). Other scopes have no query and are covered.
 	 *
+	 * `ids` replaces a share's own `_ids` condition in the search, so that list
+	 * is asked first.
+	 *
 	 * @param FederatedShare $share  The share being served.
 	 * @param ObjectEntity   $entity The record the URL id resolved to.
 	 *
@@ -558,6 +561,10 @@ class FederationController extends Controller {
 
 		$uuid = (string)$entity->getUuid();
 		$config = $this->buildScopeConfig(share: $share);
+		if ($this->ownIdsCoverObject(filters: $config['filters'], entity: $entity) === false) {
+			return false;
+		}
+
 		$config['ids'] = [$uuid];
 		$config['limit'] = 10;
 
@@ -571,6 +578,32 @@ class FederationController extends Controller {
 
 		return false;
 	}//end queryCoversObject()
+
+	/**
+	 * Whether a query's own `_ids` condition lists the record, by uuid or slug as the search does.
+	 *
+	 * An empty condition selects by nothing, as on the collection path. A `_ids`
+	 * that is not a list makes the collection search fail, so it covers nothing here.
+	 *
+	 * @param array<string, mixed> $filters The share's filters.
+	 * @param ObjectEntity         $entity  The record being addressed.
+	 *
+	 * @return boolean Whether the condition admits the record.
+	 */
+	private function ownIdsCoverObject(array $filters, ObjectEntity $entity): bool {
+		$listed = ($filters['_ids'] ?? null);
+		if (empty($listed) === true) {
+			return true;
+		}
+
+		if (is_array($listed) === false) {
+			return false;
+		}
+
+		$identifiers = array_filter([(string)$entity->getUuid(), (string)$entity->getSlug()], static fn (string $id): bool => $id !== '');
+
+		return array_intersect($identifiers, array_filter($listed, 'is_scalar')) !== [];
+	}//end ownIdsCoverObject()
 
 	/**
 	 * Whether a share's scope actually covers the single object being addressed.
