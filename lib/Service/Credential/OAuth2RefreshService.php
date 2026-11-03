@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -287,10 +288,12 @@ class OAuth2RefreshService {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
 	 */
 	public function persist(string $credentialId, string $scope, OAuth2TokenSet $set, array $extraMetadata = []): void {
-		$this->credentialStore->put($credentialId, $set->toStoredJson(), $scope);
+		// The secret is kept under the uuid of the stored credential, not under the identifier as sent.
+		$uuid = $this->storedCredentialUuid(credentialId: $credentialId);
+		$this->credentialStore->put($uuid, $set->toStoredJson(), $scope);
 
 		$this->writeMetadata(
-			credentialId: $credentialId,
+			credentialId: $uuid,
 			metadata: array_merge(
 				[
 					'status' => 'active',
@@ -590,6 +593,34 @@ class OAuth2RefreshService {
 	}//end markRelinkNeeded()
 
 	/**
+	 * The uuid of the stored credential an identifier names.
+	 *
+	 * @param string $credentialId The credential identifier.
+	 *
+	 * @return string
+	 *
+	 * @throws RuntimeException When no credential with a uuid is stored under it.
+	 * @throws Throwable When the lookup itself fails.
+	 */
+	private function storedCredentialUuid(string $credentialId): string {
+		$existing = WriteCause::asLookup(fn () => $this->objectService->find(
+			id: $credentialId,
+			register: CredentialBrokerService::REGISTER,
+			schema: CredentialBrokerService::SCHEMA,
+			_rbac: false,
+			_multitenancy: false,
+			_render: false
+		));
+
+		$uuid = (string) $existing?->getUuid();
+		if ($uuid === '') {
+			throw new RuntimeException('The credential to store the token set for is not stored.');
+		}
+
+		return $uuid;
+	}//end storedCredentialUuid()
+
+	/**
 	 * Write non-secret metadata back onto the credential object.
 	 *
 	 * Runs with RBAC and multitenancy off for the same reason `mint()` does: the
@@ -614,7 +645,8 @@ class OAuth2RefreshService {
 				_render: false
 			));
 
-			if ($existing === null) {
+			// A row without a uuid has nothing to be written under.
+			if ((string) $existing?->getUuid() === '') {
 				return;
 			}
 
@@ -625,7 +657,7 @@ class OAuth2RefreshService {
 				object: array_merge($data, $metadata),
 				register: CredentialBrokerService::REGISTER,
 				schema: CredentialBrokerService::SCHEMA,
-				uuid: ($existing->getUuid() ?? $credentialId),
+				uuid: $existing->getUuid(),
 				_rbac: false,
 				_multitenancy: false
 			);

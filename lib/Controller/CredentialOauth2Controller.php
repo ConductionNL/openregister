@@ -384,14 +384,15 @@ class CredentialOauth2Controller extends Controller {
 		}
 
 		$entity = $this->connections->findManageable(credentialId: $id, uid: $uid);
-		if ($entity === null) {
+		// Written by the uuid of the row the guard found, not by the identifier as
+		// sent; a row without a uuid is refused like one the caller may not manage.
+		$uuid = (string) ($entity?->getUuid() ?? '');
+		if ($uuid === '') {
 			return new JSONResponse(['message' => 'Request not permitted'], Http::STATUS_FORBIDDEN);
 		}
 
 		$data = $entity->jsonSerialize();
 		unset($data['@self']);
-		// Written by the uuid of the row the guard found, not by the identifier as sent.
-		$uuid = (string) ($entity->getUuid() ?? $id);
 
 		$lastError = '';
 		try {

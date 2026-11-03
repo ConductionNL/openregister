@@ -383,7 +383,7 @@ class CredentialController extends Controller {
 		// Raw property bag (no `@self` envelope / `id`) — the update carries only
 		// metadata, never a secret (there is none in the object).
 		// The write goes to the row the guard checked, by its uuid, not by the identifier as sent.
-		$uuid  = (string) ($existing->getUuid() ?? $id);
+		$uuid  = (string) $existing->getUuid();
 		$data  = $existing->getObject();
 		$scope = $this->scopeOf(data: $data);
 
@@ -516,7 +516,7 @@ class CredentialController extends Controller {
 				object: $data,
 				register: CredentialBrokerService::REGISTER,
 				schema: CredentialBrokerService::SCHEMA,
-				uuid: (string) ($existing->getUuid() ?? $id)
+				uuid: (string) $existing->getUuid()
 			);
 		} catch (Throwable $e) {
 			return new JSONResponse(['message' => 'Unable to update shares'], Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -625,7 +625,7 @@ class CredentialController extends Controller {
 			return $existing;
 		}
 
-		$uuid  = (string) ($existing->getUuid() ?? $id);
+		$uuid  = (string) $existing->getUuid();
 		$scope = $this->scopeOf(data: $existing->getObject());
 
 		try {
@@ -869,8 +869,9 @@ class CredentialController extends Controller {
 			$object = null;
 		}
 
-		if ($object === null) {
-			// Uniform 403 — never distinguish "missing" from "not yours".
+		// Uniform 403: never distinguish "missing" from "not yours". A row without
+		// a uuid is refused too, since its writes would have nothing to name it by.
+		if ($object === null || (string) $object->getUuid() === '') {
 			return new JSONResponse(['message' => 'Forbidden'], Http::STATUS_FORBIDDEN);
 		}
 

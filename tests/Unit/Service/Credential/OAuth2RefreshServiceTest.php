@@ -78,6 +78,44 @@ class OAuth2RefreshServiceTest extends TestCase {
 		$this->announcements = [];
 	}
 
+	public function testTheSecretIsKeptUnderTheStoredCredentialsUuid(): void {
+		$existing = new ObjectEntity();
+		$existing->setUuid('cred-uuid');
+		$existing->setObject($this->credential());
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('find')->willReturn($existing);
+		$objectService->method('saveObject')->willReturn(new ObjectEntity());
+
+		$set = OAuth2TokenSet::fromStoredJson(stored: $this->tokenSetJson(expiresIn: 3600));
+		$this->makeService(objectService: $objectService)->persist(credentialId: 'cred-slug', scope: 'personal', set: $set);
+
+		$this->assertSame(['cred-uuid'], array_keys($this->vault));
+	}
+
+	public function testATokenSetForACredentialThatIsNotStoredIsRefusedBeforeAnyWrite(): void {
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('find')->willReturn(null);
+		$objectService->expects($this->never())->method('saveObject');
+
+		$set = OAuth2TokenSet::fromStoredJson(stored: $this->tokenSetJson(expiresIn: 3600));
+		try {
+			$this->makeService(objectService: $objectService)->persist(credentialId: 'cred-slug', scope: 'personal', set: $set);
+			$this->fail('A token set for a credential that is not stored must be refused.');
+		} catch (\RuntimeException $e) {
+			$this->assertSame([], $this->vault);
+		}
+	}
+
+	public function testAStoredCredentialWithoutUuidIsRefusedBeforeAnyWrite(): void {
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('find')->willReturn(new ObjectEntity());
+		$objectService->expects($this->never())->method('saveObject');
+
+		$set = OAuth2TokenSet::fromStoredJson(stored: $this->tokenSetJson(expiresIn: 3600));
+		$this->expectException(\RuntimeException::class);
+		$this->makeService(objectService: $objectService)->persist(credentialId: 'cred-slug', scope: 'personal', set: $set);
+	}
+
 	public function testTheMetadataIsWrittenOnTheFoundRowByItsUuid(): void {
 		$existing = new ObjectEntity();
 		$existing->setUuid('cred-uuid');
@@ -147,11 +185,15 @@ class OAuth2RefreshServiceTest extends TestCase {
 			}
 		);
 
+		$stored = new ObjectEntity();
+		$stored->setUuid('cred-1');
+		$stored->setObject($this->credential());
 		$objectService = $this->createMock(ObjectService::class);
-		$objectService->method('find')->willReturnCallback(
-			function () use (&$order) {
+		$objectService->method('find')->willReturn($stored);
+		$objectService->method('saveObject')->willReturnCallback(
+			function () use (&$order): ObjectEntity {
 				$order[] = 'object';
-				return null;
+				return new ObjectEntity();
 			}
 		);
 
@@ -195,6 +237,22 @@ class OAuth2RefreshServiceTest extends TestCase {
 		} finally {
 			$this->assertSame([], $this->metadataWrites, 'a failed custody write must not move the object forward');
 		}
+	}
+
+	public function testARelinkDoesNotWriteARowWithoutUuid(): void {
+		$this->vault['cred-1'] = $this->tokenSetJson(expiresIn: 10);
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('find')->willReturn(new ObjectEntity());
+		$objectService->expects($this->never())->method('saveObject');
+		$service = $this->makeService(response: ['error' => 'invalid_grant'], objectService: $objectService);
+
+		$this->expectException(CredentialRelinkRequiredException::class);
+		$service->accessTokenFor(
+			credential: $this->credential(),
+			provider: $this->provider(),
+			credentialId: 'cred-1',
+			scope: 'personal'
+		);
 	}
 
 	public function testAnInvalidGrantRelinksNotifiesAndFailsClosed(): void {

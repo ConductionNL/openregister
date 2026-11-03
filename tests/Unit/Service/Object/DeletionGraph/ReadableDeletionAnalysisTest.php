@@ -223,12 +223,24 @@ class ReadableDeletionAnalysisTest extends TestCase {
 		$this->assertSame([['objectUuid' => '', 'schema' => '7', 'action' => 'RESTRICT', 'reason' => 'not readable', 'count' => 1]], $out->blockers);
 	}
 
-	public function testAReadIsMatchedOnTheUuidWhateverItsCase(): void {
-		$this->collisions['mine-9'] = 'MINE-9';
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public static function otherUuids(): array {
+		return ['a case variant' => ['THEIRS-9'], 'a longer uuid' => ['theirs-9x'], 'a shorter uuid' => ['theirs-']];
+	}//end otherUuids()
 
-		$out = $this->redaction()->analysisFor(analysis: new DeletionAnalysis(deletable: false, blockers: [self::blocker(uuid: 'mine-9', schema: '7')]));
+	/**
+	 * A read that answers with an object whose uuid only resembles the referrer's does not reveal it.
+	 *
+	 * @dataProvider otherUuids
+	 */
+	public function testAReadIsMatchedOnTheExactUuid(string $found): void {
+		$this->collisions['theirs-9'] = $found;
 
-		$this->assertSame([self::blocker(uuid: 'mine-9', schema: '7')], $out->blockers);
+		$out = $this->redaction()->analysisFor(analysis: new DeletionAnalysis(deletable: false, blockers: [self::blocker(uuid: 'theirs-9', schema: '7')]));
+
+		$this->assertSame([['objectUuid' => '', 'schema' => '7', 'action' => 'RESTRICT', 'reason' => 'not readable', 'count' => 1]], $out->blockers);
 	}
 
 	public function testAReadThatFailsHidesTheObject(): void {

@@ -2839,12 +2839,18 @@ class SaveObject {
 						$targetData[$inverseProperty][] = $objectEntity->getUuid();
 					}
 
-					// Save the updated target object.
+					// Save the updated target object, named by the uuid of the row found:
+					// the reference may be its id, which as a uuid would name another row.
+					$foundUuid = $targetObject->getUuid();
+					if ($foundUuid === null || $foundUuid === '') {
+						continue;
+					}
+
 					$this->saveObject(
 						register: $targetRegister,
 						schema: $resolvedSchemaId,
 						data: $targetData,
-						uuid: $targetUuid
+						uuid: $foundUuid
 					);
 				} catch (Exception $e) {
 					// Continue with other targets even if one fails.

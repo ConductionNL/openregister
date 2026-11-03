@@ -422,6 +422,18 @@ class CredentialOauth2ControllerTest extends TestCase {
 		$this->assertSame(['cred-uuid'], $this->revokedFor);
 	}
 
+	public function testDisconnectRefusesARowWithoutUuid(): void {
+		$controller = $this->makeController(
+			params: [],
+			manageable: ['provider' => 'mastodon', 'scope' => 'personal', 'owner' => 'alice'],
+			storedUuid: ''
+		);
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $controller->disconnect(id: 'cred-1')->getStatus());
+		$this->assertSame([], $this->disables);
+		$this->assertSame([], $this->revokedFor);
+	}
+
 	public function testAnUnreachableProviderStillDisconnectsLocally(): void {
 		// The branch that matters. A provider that cannot be reached must never keep a
 		// tenant connected: the alternative is a credential nobody can switch off

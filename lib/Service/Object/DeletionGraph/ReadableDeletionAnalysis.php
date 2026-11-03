@@ -209,7 +209,7 @@ final class ReadableDeletionAnalysis {
 		if (count($this->readable) < self::MAX_LOOKUPS) {
 			try {
 				// The read also matches ids, slugs and uris: only the object itself counts.
-				$readable = (strcasecmp((string) $this->mapper->find(identifier: $uuid)->getUuid(), $uuid) === 0);
+				$readable = ($this->mapper->find(identifier: $uuid)->getUuid() === $uuid);
 			} catch (\Throwable $e) {
 				$readable = false;
 			}

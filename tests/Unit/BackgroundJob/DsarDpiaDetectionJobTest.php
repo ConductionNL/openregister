@@ -150,6 +150,26 @@ class DsarDpiaDetectionJobTest extends TestCase {
 	}//end testThresholdCrossingFlagsUnflaggedCasesWithAudit()
 
 	/**
+	 * A found row without a uuid is not written: there is nothing to name it by.
+	 *
+	 * @return void
+	 */
+	public function testARowWithoutUuidIsNotFlagged(): void {
+		$this->wirePack(dpiaDetection: ['threshold' => 2, 'windowDays' => 30, 'groupBy' => ['type']]);
+		$this->wireCases([$this->renderedCase(uuid: 'a', flagged: false), $this->renderedCase(uuid: 'b', flagged: false)]);
+		$this->objectService->method('find')->willReturnCallback(
+			function () {
+				$entity = new ObjectEntity();
+				$entity->setObject(['type' => 'access', 'dpiaRequired' => false]);
+				return $entity;
+			}
+		);
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$this->runJob();
+	}//end testARowWithoutUuidIsNotFlagged()
+
+	/**
 	 * A flag is written on the row the lookup found, by that row's uuid.
 	 *
 	 * @return void
