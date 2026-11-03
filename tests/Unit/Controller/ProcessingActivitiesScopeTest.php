@@ -196,6 +196,18 @@ final class ProcessingActivitiesScopeTest extends TestCase {
 		self::assertSame('va-b1', $response->getData()['identifier']);
 	}//end testANonAdminCannotReadAnActivityOfAnotherOrganisationTheyBelongTo()
 
+	public function testAnOrganisationParameterDoesNotOpenAnotherOrganisationsActivity(): void {
+		foreach (['va-b1', '3', 'VA-3'] as $identifier) {
+			$response = $this->controller(
+				uid: 'jan',
+				world: ['active' => 'org-a', 'memberOf' => ['org-a', 'org-b'], 'params' => ['organisation' => 'org-b']]
+			)->show($identifier);
+
+			self::assertSame(404, $response->getStatus(), 'organisation=org-b opened ' . $identifier);
+			self::assertSame(['error' => 'Verwerkingsactiviteit not found', 'identifier' => $identifier], $response->getData());
+		}
+	}//end testAnOrganisationParameterDoesNotOpenAnotherOrganisationsActivity()
+
 	public function testANonAdminReadsAnActivityOfTheirActiveOrganisation(): void {
 		$response = $this->controller(uid: 'jan', world: ['active' => 'org-b', 'memberOf' => ['org-a', 'org-b']])->show('va-b1');
 
