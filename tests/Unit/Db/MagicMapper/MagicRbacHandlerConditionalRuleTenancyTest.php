@@ -218,6 +218,26 @@ class MagicRbacHandlerConditionalRuleTenancyTest extends TestCase {
 				['aanbod-beheerder'],
 				['own-open'],
 			],
+			'an own-organisation rule beside the provider rule'       => [
+				[['group' => 'aanbod-beheerder', 'match' => ['_organisation' => '$organisation']], self::PROVIDER_RULE],
+				['aanbod-beheerder'],
+				['other-provided', 'own-open', 'own-permit'],
+			],
+			'an own-organisation rule through $eq beside the provider' => [
+				[['group' => 'aanbod-beheerder', 'match' => ['_organisation' => ['$eq' => '$organisation'], 'status' => 'open']], self::PROVIDER_RULE],
+				['aanbod-beheerder'],
+				['other-provided', 'own-open'],
+			],
+			'an own-organisation rule alone keeps the filter'        => [
+				[['group' => 'aanbod-beheerder', 'match' => ['_organisation' => '$organisation']]],
+				['aanbod-beheerder'],
+				['own-open', 'own-permit'],
+			],
+			'a foreign organisation pin is not neutral'              => [
+				[['group' => 'aanbod-beheerder', 'match' => ['_organisation' => 'org-other']], self::PROVIDER_RULE],
+				['aanbod-beheerder'],
+				[],
+			],
 			'a simple group rule still reads every row'               => [
 				[self::TEAM_RULE, 'case-admins'],
 				['team-toezicht', 'case-admins'],
@@ -320,6 +340,7 @@ class MagicRbacHandlerConditionalRuleTenancyTest extends TestCase {
 			'provider $ne the organisation'      => [['provider' => ['$ne' => '$organisation']], false],
 			'provider $in with another value'    => [['provider' => ['$in' => ['$organisation', 'org-other']]], false],
 			'$eq beside another operator'        => [['provider' => ['$eq' => '$organisation', '$ne' => 'x']], false],
+			'_organisation in a membership set'  => [['_organisation' => ['$memberOf' => ['schema' => 'm', 'field' => 'a']]], false],
 			'membership set'                     => [['administrationId' => ['$memberOf' => ['schema' => 'm', 'field' => 'a']]], true],
 		];
 
@@ -382,6 +403,27 @@ class MagicRbacHandlerConditionalRuleTenancyTest extends TestCase {
 		);
 
 	}//end testAUserOverrideForSomeoneElseIsNotHeld()
+
+	/**
+	 * stackiq's provider holds an own-organisation rule beside the provider
+	 * rule on usage, connection and aiSystem, and still reads the rows of
+	 * other organisations that name it as provider.
+	 *
+	 * @return void
+	 */
+	public function testProbeStackiqProviderWithOwnOrgRuleStillCrosses(): void {
+		$this->logIn(groups: ['aanbod-beheerder']);
+
+		$rows = $this->visibleRows(
+			schema: $this->schema(
+				read: [['group' => 'aanbod-beheerder', 'match' => ['_organisation' => '$organisation']], self::PROVIDER_RULE]
+			)
+		);
+
+		$this->assertContains(needle: 'other-provided', haystack: $rows);
+		$this->assertNotContains(needle: 'other-permit', haystack: $rows);
+
+	}//end testProbeStackiqProviderWithOwnOrgRuleStillCrosses()
 
 	/**
 	 * Log `femke` in with the given groups.

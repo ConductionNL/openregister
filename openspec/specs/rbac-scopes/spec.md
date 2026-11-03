@@ -393,7 +393,7 @@ The system MUST cache frequently evaluated permission data to avoid repeated dat
 - **AND** each schema's RBAC groups MUST be reused when generating path operations without re-extraction
 
 ### Requirement: Multi-Tenancy Integration with Scopes
-RBAC scopes MUST integrate with the multi-tenancy system so that organisation-based data isolation works alongside group-based access control. A conditional rule keeps the organisation filter unless it crosses organisations. A rule crosses organisations when it binds a field other than `_organisation` to the caller's organisation (the bare `$organisation`, `$activeOrganisation` or `.uuid` token, or `{"$eq": <token>}`) or to the caller's membership (`$memberOf`), or when it declares `"crossOrganisation": true`. Any other match, such as a case type, a status or the caller's uid, selects rows inside the caller's organisation. The filter is lifted only when the caller holds at least one crossing rule and no conditional or `authenticated` rule that stays inside the organisation, because the RBAC predicate ORs every rule the caller holds. A simple group rule the caller holds still reads every row. Every read path (list, union search, facets, count, aggregation, export and the single-object read) takes this decision from `MagicRbacHandler::hasConditionalRulesBypassingMultitenancy()`.
+RBAC scopes MUST integrate with the multi-tenancy system so that organisation-based data isolation works alongside group-based access control. A conditional rule keeps the organisation filter unless it crosses organisations. A rule whose match pins `_organisation` to the caller's organisation (a token or `{"$eq": token}`) admits only that organisation's rows by itself, so it neither lifts nor keeps the filter. A rule crosses organisations when it binds a field other than `_organisation` to the caller's organisation (the bare `$organisation`, `$activeOrganisation` or `.uuid` token, or `{"$eq": <token>}`) or to the caller's membership (`$memberOf`), or when it declares `"crossOrganisation": true`. Any other match, such as a case type, a status or the caller's uid, selects rows inside the caller's organisation. The filter is lifted only when the caller holds at least one crossing rule and no conditional or `authenticated` rule that stays inside the organisation, because the RBAC predicate ORs every rule the caller holds. A simple group rule the caller holds still reads every row. Every read path (list, union search, facets, count, aggregation, export and the single-object read) takes this decision from `MagicRbacHandler::hasConditionalRulesBypassingMultitenancy()`.
 
 #### Scenario: Organisation filtering combined with RBAC
 - **GIVEN** user `jan` has active organisation `org-uuid-1` and is in group `behandelaars`
@@ -422,6 +422,12 @@ RBAC scopes MUST integrate with the multi-tenancy system so that organisation-ba
 - **AND** user `jan` is in both groups
 - **WHEN** `jan` lists catalogi
 - **THEN** the organisation filter MUST apply, so the `caseType` rule cannot reach other organisations' rows
+- @e2e exclude {covered by PHPUnit on the SQL list}
+
+#### Scenario: An own-organisation rule beside a crossing rule does not keep the filter
+- **GIVEN** schema `usage` has `{ "group": "aanbod-beheerder", "match": { "_organisation": "$organisation" } }` and `{ "group": "aanbod-beheerder", "match": { "provider": "$organisation" } }`
+- **WHEN** a member of `aanbod-beheerder` in `org-1` lists usages
+- **THEN** usages of other organisations whose `provider` is `org-1` MUST be returned, besides `org-1`'s own
 - @e2e exclude {covered by PHPUnit on the SQL list}
 
 #### Scenario: A rule may declare that it crosses organisations
@@ -1034,7 +1040,7 @@ after expansion SHALL be evaluated as written.
 
 ### Requirement: A matrix row may add conditions and an end
 
-A department matrix row SHALL accept `where`, extra conditions in the scope vocabulary joined with AND to the row's field condition, and `until`, after which the row grants nothing. A `where` key SHALL be a property of the schema or one of the metadata fields `_organisation` and `_owner`, which the system sets and every enforcement path reads from the row's own column; any other key is refused with `matrix.where-unknown-field`. The compiled scope SHALL be an ordinary conditional scope, evaluated identically on the PHP and SQL paths. A row whose `where` holds an empty `$in` SHALL be dropped whole.
+A department matrix row SHALL accept `where`, extra conditions in the scope vocabulary joined with AND to the row's field condition, and `until`, after which the row grants nothing. A `where` key SHALL be a property of the schema or one of the metadata fields `_organisation` and `_owner`, which the system sets and every enforcement path reads from the row's own column; any other key is refused with `matrix.where-unknown-field`. A `where` that binds a field other than `_organisation` to the caller's organisation (`"$organisation"`, `"$activeOrganisation"` or their `.uuid` form) compiles into a rule that reads other organisations' rows, so anyone who may write matrix rows could otherwise open that door. Such a row SHALL declare `"crossOrganisation": true` (the boolean); without it the validator refuses the row with `matrix.where-crosses-organisations` and the compiler drops it whole. The compiled scope SHALL be an ordinary conditional scope, evaluated identically on the PHP and SQL paths. A row whose `where` holds an empty `$in` SHALL be dropped whole.
 
 #### Scenario: an edit right limited to statuses
 
@@ -1051,6 +1057,14 @@ A department matrix row SHALL accept `where`, extra conditions in the scope voca
 - **WHEN** the schema is saved, or an app adds the row at check time
 - **THEN** the row is accepted and its compiled scope carries `_organisation: "$organisation"` beside the field condition
 - **AND** a `where` on `_uuid`, `_created` or another metadata field is refused
+- @e2e exclude {covered by unit tests on the validator and compiler}
+
+#### Scenario: a row whose where reads across organisations must say so
+
+- **GIVEN** a matrix row with `where` `{provider: "$organisation"}` and no `crossOrganisation`
+- **WHEN** the schema is saved, or an app adds the row at check time
+- **THEN** it is refused with `matrix.where-crosses-organisations` and the compiler drops it
+- **AND** the same row with `"crossOrganisation": true` compiles into `{provider: "$organisation"}` beside the field condition
 - @e2e exclude {covered by unit tests on the validator and compiler}
 
 #### Scenario: a row past its end

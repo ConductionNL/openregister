@@ -109,18 +109,6 @@ class MagicRbacHandler {
 	private const IMPOSSIBLE_SQL_CONDITION = '1 = 0';
 
 	/**
-	 * Match tokens that resolve to the caller's active organisation.
-	 *
-	 * @var string[]
-	 */
-	private const ORGANISATION_TOKENS = [
-		'$organisation',
-		'$activeOrganisation',
-		'$organisation.uuid',
-		'$activeOrganisation.uuid',
-	];
-
-	/**
 	 * Rule verdicts for the organisation filter, see {@see ruleBypassVerdict()}.
 	 */
 	private const RULE_NOT_HELD = 'not-held';
@@ -2961,8 +2949,10 @@ class MagicRbacHandler {
 	/**
 	 * The verdict of a conditional rule.
 	 *
-	 * A rule the caller holds stays inside the caller's organisation unless it
-	 * crosses organisations ({@see ruleCrossesOrganisations()}) and the caller
+	 * A rule whose match pins `_organisation` to the caller's organisation
+	 * admits only rows of that organisation by itself, so it neither lifts nor
+	 * keeps the filter. Any other rule the caller holds stays inside the
+	 * caller's organisation unless it crosses organisations ({@see ruleCrossesOrganisations()}) and the caller
 	 * holds it through `public` or a group. A crossing rule held only through
 	 * `authenticated` or a user override binds its rows to the caller's
 	 * organisation by its own match, so it neither lifts nor keeps the filter.
@@ -2974,6 +2964,10 @@ class MagicRbacHandler {
 	 */
 	private function conditionalRuleVerdict(array $rule, array $caller): string {
 		if ($this->callerHoldsConditionalRule(rule: $rule, caller: $caller) === false) {
+			return self::RULE_NOT_HELD;
+		}
+
+		if ($this->pinsCallerOrganisation(value: ($rule['match']['_organisation'] ?? null)) === true) {
 			return self::RULE_NOT_HELD;
 		}
 
@@ -3057,17 +3051,28 @@ class MagicRbacHandler {
 	 * @return bool True when the value binds the row to the caller's tenancy.
 	 */
 	private function valueBindsToCallerTenancy(mixed $value): bool {
-		if (is_array($value) === true) {
-			if (array_key_exists(MemberOfResolver::OPERATOR, $value) === true) {
-				return true;
-			}
-
-			return count($value) === 1 && array_key_exists('$eq', $value) === true
-				&& $this->valueBindsToCallerTenancy(value: $value['$eq']) === true;
+		if (is_array($value) === true && array_key_exists(MemberOfResolver::OPERATOR, $value) === true) {
+			return true;
 		}
 
-		return is_string($value) === true && in_array($value, self::ORGANISATION_TOKENS, true) === true;
+		return $this->pinsCallerOrganisation(value: $value);
 	}//end valueBindsToCallerTenancy()
+
+	/**
+	 * Whether a match value is the caller's organisation: the bare token or
+	 * `{"$eq": token}`, and nothing else.
+	 *
+	 * @param mixed $value The match value as written.
+	 *
+	 * @return bool True when the value equals the caller's organisation.
+	 */
+	private function pinsCallerOrganisation(mixed $value): bool {
+		if (is_array($value) === true && count($value) === 1 && array_key_exists('$eq', $value) === true) {
+			$value = $value['$eq'];
+		}
+
+		return is_string($value) === true && in_array($value, ConditionMatcher::ORGANISATION_TOKENS, true) === true;
+	}//end pinsCallerOrganisation()
 
 	/**
 	 * Resolve the effective authorization for a schema.

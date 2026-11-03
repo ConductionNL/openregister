@@ -316,7 +316,7 @@ class DepartmentMatrixValidator {
 			}
 		}
 
-		return $findings;
+		return array_merge($findings, (new MatrixRowWhere())->crossingFindings(row: $row, name: $name));
 	}//end whereFindings()
 
 	/**
