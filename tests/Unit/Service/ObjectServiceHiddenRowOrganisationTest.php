@@ -88,6 +88,18 @@ use ReflectionMethod;
  */
 /**
  * @covers \OCA\OpenRegister\Service\ObjectService
+ * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
+ * @uses \OCA\OpenRegister\Service\Object\DraftCallerRule
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
+ * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
  * @uses \OCA\OpenRegister\Service\Object\PermissionHandler
  * @uses \OCA\OpenRegister\Service\ConditionMatcher
  * @uses \OCA\OpenRegister\Service\OperatorEvaluator
@@ -199,14 +211,21 @@ class ObjectServiceHiddenRowOrganisationTest extends TestCase {
 	}//end setUp()
 
 	/**
-	 * A cascading handler that hands the object back unchanged.
+	 * What a save that got past the permission check ends in.
+	 *
+	 * @var string
+	 */
+	private const PAST_THE_CHECK = 'past the permission check';
+
+	/**
+	 * A cascading handler that ends the save, the first step after the permission check.
 	 *
 	 * @return CascadingHandler The handler.
 	 */
 	private function cascadingHandler(): CascadingHandler {
 		$handler = $this->createMock(CascadingHandler::class);
-		$handler->method('handlePreValidationCascading')->willReturnCallback(
-			static fn (array $object, $schema, ?string $uuid): array => [$object, $uuid]
+		$handler->method('handlePreValidationCascading')->willThrowException(
+			new \RuntimeException(self::PAST_THE_CHECK)
 		);
 		return $handler;
 	}//end cascadingHandler()
@@ -308,11 +327,11 @@ class ObjectServiceHiddenRowOrganisationTest extends TestCase {
 	}
 
 	/**
-	 * The refusal a full save by uuid ends in, or null when it got past the organisation check.
+	 * What a full save by uuid ends in: the refusal, or the step after the permission check.
 	 *
 	 * @param bool $multitenancy Whether the save keeps to the caller's organisations.
 	 *
-	 * @return string|null The message of the organisation refusal, or null.
+	 * @return string|null The message the save ended with.
 	 */
 	private function saveRefusal(bool $multitenancy): ?string {
 		$schema = new Schema();
@@ -330,10 +349,8 @@ class ObjectServiceHiddenRowOrganisationTest extends TestCase {
 				_rbac: true,
 				_multitenancy: $multitenancy
 			);
-		} catch (NotAuthorizedException $refusal) {
-			return $refusal->getMessage();
-		} catch (\Throwable) {
-			// Past the permission check, the mocked handlers end the save.
+		} catch (NotAuthorizedException|\RuntimeException $ended) {
+			return $ended->getMessage();
 		}
 
 		return null;
@@ -341,7 +358,7 @@ class ObjectServiceHiddenRowOrganisationTest extends TestCase {
 
 	public function testASaveCarriesItsMultitenancyIntoTheCheck(): void {
 		$this->assertSame('You may not change this object.', $this->saveRefusal(multitenancy: true));
-		$this->assertNull($this->saveRefusal(multitenancy: false));
+		$this->assertSame(self::PAST_THE_CHECK, $this->saveRefusal(multitenancy: false));
 	}
 
 	public function testAnotherOrganisationsRowIsRefusedBeforeTheUpdateRuleIsAsked(): void {
