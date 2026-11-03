@@ -414,7 +414,7 @@ The `Schema` entity MUST provide methods to check whether any property has autho
 - **THEN** it MUST return `_organisation` unchanged (no camelCase conversion needed)
 
 ### Requirement: ConditionMatcher MUST support @self property lookup for system fields
-When evaluating property-level authorization match conditions, `ConditionMatcher::getObjectValue()` MUST check both the direct property and the `@self` sub-object for underscore-prefixed properties. This allows conditions to reference system fields like `_organisation` which may be stored under `@self.organisation` in the rendered object format.
+When evaluating property-level authorization match conditions, `ConditionMatcher::getObjectValue()` MUST check both the `@self` sub-object and the direct property for underscore-prefixed properties, `@self` first. This allows conditions to reference system fields like `_organisation` which may be stored under `@self.organisation` in the rendered object format.
 
 #### Scenario: Direct property lookup
 - **GIVEN** object data `{ "status": "open", "_organisation": "org-1" }`
@@ -427,6 +427,14 @@ When evaluating property-level authorization match conditions, `ConditionMatcher
 - **AND** match condition references `_organisation`
 - **WHEN** `ConditionMatcher::getObjectValue($object, '_organisation')` is called
 - **THEN** it MUST strip the underscore prefix, check `@self.organisation`, and return `org-1`
+
+#### Scenario: @self answers before a body key of the same name
+- **GIVEN** object data `{ "_organisation": "org-2", "@self": { "organisation": "org-1" } }`
+- **AND** match condition references `_organisation`
+- **WHEN** `ConditionMatcher::getObjectValue($object, '_organisation')` is called
+- **THEN** it MUST return `org-1` from `@self`, because the system sets `@self` and the writer of the data sets the body
+- **AND** a permission check MUST build `@self.organisation` from the record's own organisation, never from an `@self` block inside the record's data
+- **AND** the incoming data of a create check MUST NOT carry underscore-prefixed keys into the match
 
 #### Scenario: Non-underscore property does not check @self
 - **GIVEN** object data `{ "status": "open" }`
