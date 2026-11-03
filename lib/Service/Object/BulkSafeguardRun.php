@@ -51,6 +51,13 @@ final class BulkSafeguardRun {
 	public bool $rbac = true;
 
 	/**
+	 * Whether writes keep to the caller's organisations; always true for a caller who is not an administrator.
+	 *
+	 * @var bool
+	 */
+	public bool $multitenancy = true;
+
+	/**
 	 * Whether rows are validated against their schema.
 	 *
 	 * @var bool

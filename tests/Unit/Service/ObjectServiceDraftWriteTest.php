@@ -273,6 +273,8 @@ class ObjectServiceDraftWriteTest extends TestCase {
 	 * @return void
 	 */
 	private function hiddenFromTheCaller(?string $status, bool $exists = true): void {
+		// The stored row lies inside the caller's organisations; only the read rules hide it.
+		$this->objectMapper->method('callerOrganisationsHold')->willReturn(true);
 		$this->objectMapper->method('find')->willReturnCallback(
 			static function (
 				string|int $identifier,

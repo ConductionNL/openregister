@@ -50,6 +50,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
@@ -60,6 +61,7 @@ use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionGraph\ReadableDeletionAnalysis;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -2415,7 +2417,8 @@ class ObjectService implements ObjectServiceInterface
             // Stored but hidden: the write lands on that row, so it must keep to
             // the caller's organisations and pass the update rule against it.
             if ($hidden !== null) {
-                $this->refuseAnotherOrganisationsRow(uuid: $uuid, _multitenancy: $_multitenancy);
+                $this->refuseAWriteOntoAnAppendOnlyRow();
+                $this->refuseAnotherOrganisationsRow(hidden: $hidden, _multitenancy: $_multitenancy);
                 $this->checkPermission(
                     schema: $this->currentSchema,
                     action: 'update',
@@ -2429,21 +2432,45 @@ class ObjectService implements ObjectServiceInterface
     }//end checkSavePermissions()
 
     /**
+     * Refuse a write onto a stored row the caller cannot read when the schema is append-only.
+     *
+     * Every write onto a stored row of an append-only schema gets one answer from
+     * guardWriteTarget(), visible or not. Answering a hidden row the same
+     * way before the organisation refusal and the update rule are asked keeps
+     * them from telling which rows belong to another organisation.
+     *
+     * @return void
+     *
+     * @throws AppendOnlyException When the schema is append-only.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function refuseAWriteOntoAnAppendOnlyRow(): void
+    {
+        if ($this->currentSchema?->isAppendOnly() !== true) {
+            return;
+        }
+
+        throw new AppendOnlyException(
+            schemaIdentifier: ($this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId()),
+            operation: 'update'
+        );
+    }//end refuseAWriteOntoAnAppendOnlyRow()
+
+    /**
      * Refuse a write by uuid onto a stored row outside the caller's organisations.
      *
      * The caller's own lookup did not find the row, and the update rule it is
-     * judged by next does not look at organisations. So the row is looked up
-     * once more with the organisation filter alone: a row that filter does not
-     * return belongs to another organisation, and the write would change it.
-     * A row the read rules hide but the organisation filter returns is left to
-     * the update rule, as before. Skipped when the write does not keep to the
-     * caller's organisations (an administrator, a job), and on an append-only
-     * schema: guardWriteTarget() refuses every write onto a stored row there,
-     * visible or not, with one message, and a second refusal here would tell
-     * the caller which rows belong to another organisation.
+     * judged by next does not look at organisations. So the row's organisation
+     * is compared with the caller's organisation scope directly, without the
+     * read rules: a `public` read rule that lifts the organisation filter for
+     * reading must not let a write land on another organisation's row. A row
+     * the read rules hide inside the caller's organisations is left to the
+     * update rule, as before. Skipped when the write does not keep to the
+     * caller's organisations (an administrator, a job).
      *
-     * @param string $uuid          The uuid of the stored row the caller cannot read.
-     * @param bool   $_multitenancy Whether the write keeps to the caller's organisations.
+     * @param ObjectEntity $hidden        The stored row the caller cannot read.
+     * @param bool         $_multitenancy Whether the write keeps to the caller's organisations.
      *
      * @return void
      *
@@ -2451,24 +2478,13 @@ class ObjectService implements ObjectServiceInterface
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
-    private function refuseAnotherOrganisationsRow(string $uuid, bool $_multitenancy): void
+    private function refuseAnotherOrganisationsRow(ObjectEntity $hidden, bool $_multitenancy): void
     {
-        if ($_multitenancy === false || $this->currentSchema?->isAppendOnly() === true) {
+        if ($_multitenancy === false || $this->objectMapper->callerOrganisationsHold(row: $hidden) === true) {
             return;
         }
 
-        try {
-            $this->objectMapper->find(
-                identifier: $uuid,
-                register: $this->currentRegister,
-                schema: $this->currentSchema,
-                includeDeleted: true,
-                _rbac: false,
-                _multitenancy: true
-            );
-        } catch (\OCP\AppFramework\Db\DoesNotExistException) {
-            throw new NotAuthorizedException(message: 'You may not change this object.');
-        }
+        throw new NotAuthorizedException(message: 'You may not change this object.');
     }//end refuseAnotherOrganisationsRow()
 
     /**
@@ -4457,8 +4473,9 @@ class ObjectService implements ObjectServiceInterface
      * The multitenancy flag a paginated search runs with.
      *
      * A current schema whose read rule lists `public` is visible to every
-     * organisation, so multitenancy is switched off for it, unless the caller
-     * is signed in and the schema does not inherit public rights.
+     * organisation for an anonymous caller and an admin, so multitenancy is
+     * switched off for them. A signed-in caller keeps it and reads other
+     * organisations only through rules marked `crossOrganisation: true`.
      *
      * @param bool $multitenancy The caller's multitenancy flag.
      *
@@ -5045,6 +5062,20 @@ class ObjectService implements ObjectServiceInterface
     {
         return $this->deleteHandler;
     }//end getDeleteHandler()
+
+    /**
+     * A deletion analysis without the objects the signed-in caller cannot read.
+     *
+     * @param DeletionAnalysis $analysis The analysis of the unscoped integrity walk.
+     *
+     * @return DeletionAnalysis The analysis with unreadable objects counted per schema.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    public function readableDeletionAnalysis(DeletionAnalysis $analysis): DeletionAnalysis
+    {
+        return (new ReadableDeletionAnalysis(mapper: $this->objectMapper))->analysisFor(analysis: $analysis);
+    }//end readableDeletionAnalysis()
 
     /**
      * Get the permission handler.

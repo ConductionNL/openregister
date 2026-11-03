@@ -8,8 +8,8 @@ status: in-progress
 
 Gives any AppHost-hosted app a read-only client for a remote "store" — another
 OpenRegister instance that exposes installable items over its objects API — so
-openbuild's application-template store, openconnector's connector store and
-hermiq's agent-template store share one engine-owned implementation instead of
+openbuild's application-template marketplace, openconnector's connector store and
+hermiq's agent-template marketplace share one engine-owned implementation instead of
 three app-local copies. The plane covers DISCOVERY only (configure / search /
 resolve); INSTALL stays in each consuming app, because cloning an application
 template, enabling a connector adapter and instantiating an agent template are
@@ -18,7 +18,7 @@ between apps is carried in a `StoreDescriptor` value object; everything else —
 SSRF guarding, redirect refusal, Bearer-token handling, outcome mapping and card
 normalisation — lives once in `GenericStoreService`. Implements ADR-080.
 
-@e2e exclude Backend HTTP client with no OpenRegister UI surface of its own — the store page belongs to the consuming app, and every behaviour here (SSRF rejection, redirect refusal, Bearer-only token transport, outcome mapping, card normalisation, descriptor-driven URL, slug verification) is asserted in tests/Unit/AppHost/GenericStoreServiceTest.php. Covered by PHPUnit.
+@e2e exclude Backend HTTP client with no OpenRegister UI surface of its own — the marketplace page belongs to the consuming app, and every behaviour here (SSRF rejection, redirect refusal, Bearer-only token transport, outcome mapping, card normalisation, descriptor-driven URL, slug verification) is asserted in tests/Unit/AppHost/GenericStoreServiceTest.php. Covered by PHPUnit.
 
 ## Requirements
 
@@ -53,7 +53,7 @@ the generic service.
 when the app's `registry_url` trims to a non-empty string. When it is not
 configured, `search()` MUST return outcome `not_configured` with an empty card
 list and `resolve()` MUST return `null`, and neither MUST issue an HTTP request.
-This is the fallback that lets a consuming app's store page render its built-in
+This is the fallback that lets a consuming app's marketplace page render its built-in
 items instead of an error.
 
 #### Scenario: Empty registry URL short-circuits the search
@@ -519,14 +519,14 @@ A store whose `registry_url` is `local` SHALL be read from the configured regist
 #### Scenario: a local catalogue
 
 - GIVEN pipelinq's `registry_url` is `local` and its register holds nine `commercial-template` objects
-- WHEN the store page searches
+- WHEN the marketplace page searches
 - THEN the nine items are returned as cards
 - AND no HTTP request is made
 
 #### Scenario: the schema is missing
 
 - GIVEN `registry_url` is `local` and the register has no `commercial-template` schema
-- WHEN the store page searches
+- WHEN the marketplace page searches
 - THEN the outcome is `store_unreachable` and there are no cards
 
 ### Requirement: A store page can publish through one route

@@ -1307,13 +1307,13 @@ class MagicSearchHandler {
 					multitenancyExplicit: $multitenancyExplicit
 				)
 			);
-			$publicBranch = null;
-			if ($multitenancyExplicit === false && $this->rbacHandler->hasPublicReadBranch(schema: $schema) === true) {
-				$publicBranch = $this->rbacHandler->getPublicReadBranchSql(schema: $schema);
+			$crossBranch = null;
+			if ($multitenancyExplicit === false && $this->rbacHandler->hasCrossOrganisationBranch(schema: $schema) === true) {
+				$crossBranch = $this->rbacHandler->getCrossOrganisationBranchSql(schema: $schema);
 			}
 
-			if ($orgCondition !== null && $publicBranch !== null) {
-				$orgCondition = '(' . $orgCondition . ' OR ' . $publicBranch . ')';
+			if ($orgCondition !== null && $crossBranch !== null) {
+				$orgCondition = '(' . $orgCondition . ' OR ' . $crossBranch . ')';
 			}
 
 			if ($orgCondition !== null) {
@@ -1421,18 +1421,18 @@ class MagicSearchHandler {
 
 	/**
 	 * Whether the organisation boundary of a default read carries a branch for
-	 * the rows the caller's conditional `public` rules admit, which a renderer
-	 * of its own (the aggregation fast path) cannot express.
+	 * the rows the caller's conditional `crossOrganisation` rules admit, which a
+	 * renderer of its own (the aggregation fast path) cannot express.
 	 *
 	 * @param Schema $schema The schema being read.
 	 *
-	 * @return bool True when the boundary has a public branch.
+	 * @return bool True when the boundary has a cross-organisation branch.
 	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-multi-tenancy-integration-with-scopes
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
 	 */
-	public function organisationBoundaryHasPublicBranch(Schema $schema): bool {
-		return $this->rbacHandler->hasPublicReadBranch(schema: $schema);
-	}//end organisationBoundaryHasPublicBranch()
+	public function organisationBoundaryHasCrossOrganisationBranch(Schema $schema): bool {
+		return $this->rbacHandler->hasCrossOrganisationBranch(schema: $schema);
+	}//end organisationBoundaryHasCrossOrganisationBranch()
 
 	/**
 	 * Whether a default read (no `_multi` asked for) waives the organisation
@@ -2754,10 +2754,10 @@ class MagicSearchHandler {
 	/**
 	 * Resolve the multitenancy flag based on public schema access and explicit request
 	 *
-	 * Public schemas bypass multitenancy by default, UNLESS the user explicitly requests
-	 * multitenancy with _multi=true. This allows public data to be visible across orgs
-	 * while still giving users the option to filter by their own organisation. A
-	 * signed-in caller on a schema that does not inherit public rights keeps it.
+	 * A schema with a `public` read rule bypasses multitenancy for an anonymous
+	 * caller and an admin, UNLESS the caller explicitly requests multitenancy with
+	 * _multi=true. A signed-in caller keeps it: they read other organisations'
+	 * rows only through rules marked `crossOrganisation: true`.
 	 *
 	 * @param bool $_multitenancy Current multitenancy flag
 	 * @param bool $multitenancyExplicit Whether multitenancy was explicitly requested
@@ -2777,11 +2777,11 @@ class MagicSearchHandler {
 			$readGroups = $schemaAuth['read'] ?? [];
 			$hasPublic = $this->hasPublicReadAccess(readRules: $readGroups);
 
-			// Public schemas bypass multitenancy UNLESS user explicitly set _multi=true.
+			// Public schemas bypass multitenancy for anonymous callers and admins
+			// UNLESS the caller explicitly set _multi=true.
 			if ($hasPublic === true
 				&& $multitenancyExplicit === false
 				&& $this->rbacHandler->publicReadLiftsOrganisationFilter(schema: $schema) === true
-				&& $this->rbacHandler->hasPublicReadBranch(schema: $schema) === false
 			) {
 				return false;
 			}
@@ -2820,16 +2820,16 @@ class MagicSearchHandler {
 	}//end registerIdFromQuery()
 
 	/**
-	 * Add the organisation boundary, widened by a public branch when there is one.
+	 * Add the organisation boundary, widened by a cross-organisation branch when there is one.
 	 *
-	 * @param IQueryBuilder $qb           The query builder.
-	 * @param array         $table        The table: `registerId`, `schemaId` and `withOrgless`.
-	 * @param mixed         $publicBranch The rows of the caller's conditional `public` rules, or null.
+	 * @param IQueryBuilder $qb          The query builder.
+	 * @param array         $table       The table: `registerId`, `schemaId` and `withOrgless`.
+	 * @param mixed         $crossBranch The rows of the caller's conditional `crossOrganisation` rules, or null.
 	 *
 	 * @return void
 	 */
-	private function applyOrganisationBoundary(IQueryBuilder $qb, array $table, mixed $publicBranch): void {
-		if ($publicBranch === null) {
+	private function applyOrganisationBoundary(IQueryBuilder $qb, array $table, mixed $crossBranch): void {
+		if ($crossBranch === null) {
 			$this->organizationHandler->applyOrganizationFilter(
 				qb: $qb,
 				adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
@@ -2843,7 +2843,7 @@ class MagicSearchHandler {
 		(new OrganisationScopeCondition())->apply(
 			qb: $qb,
 			scope: $this->organisationScopeFor(table: $table),
-			orAlso: $publicBranch
+			orAlso: $crossBranch
 		);
 	}//end applyOrganisationBoundary()
 
@@ -2870,8 +2870,8 @@ class MagicSearchHandler {
 	}//end organisationScopeFor()
 
 	/**
-	 * The rows the caller's conditional `public` rules admit, to OR into the
-	 * organisation filter, or null when the filter takes no such branch.
+	 * The rows the caller's conditional `crossOrganisation` rules admit, to OR
+	 * into the organisation filter, or null when the filter takes no such branch.
 	 *
 	 * @param IQueryBuilder $qb                   The query builder.
 	 * @param Schema        $schema               The schema being read.
@@ -2881,13 +2881,13 @@ class MagicSearchHandler {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the request posture, mirrored.
 	 */
-	private function publicBranch(IQueryBuilder $qb, Schema $schema, bool $multitenancyExplicit): mixed {
-		if ($multitenancyExplicit === true || $this->rbacHandler->hasPublicReadBranch(schema: $schema) === false) {
+	private function crossOrganisationBranch(IQueryBuilder $qb, Schema $schema, bool $multitenancyExplicit): mixed {
+		if ($multitenancyExplicit === true || $this->rbacHandler->hasCrossOrganisationBranch(schema: $schema) === false) {
 			return null;
 		}
 
-		return $this->rbacHandler->getPublicReadBranch(qb: $qb, schema: $schema);
-	}//end publicBranch()
+		return $this->rbacHandler->getCrossOrganisationBranch(qb: $qb, schema: $schema);
+	}//end crossOrganisationBranch()
 
 	/**
 	 * Apply access control filters (multitenancy and RBAC) to the query
@@ -2951,7 +2951,7 @@ class MagicSearchHandler {
 						multitenancyExplicit: $multitenancyExplicit
 					),
 				],
-				publicBranch: $this->publicBranch(qb: $qb, schema: $schema, multitenancyExplicit: $multitenancyExplicit)
+				crossBranch: $this->crossOrganisationBranch(qb: $qb, schema: $schema, multitenancyExplicit: $multitenancyExplicit)
 			);
 		}
 
