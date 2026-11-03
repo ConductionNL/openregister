@@ -169,6 +169,18 @@ class SchemasToolProviderTest extends TestCase {
 		$this->providerFor(groups: ['beheer'])->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'update', 'id' => 5, 'data' => ['authorization' => $block]]);
 	}//end testAManagerCannotAddACrossOrganisationMarker()
 
+	public function testAManagerMayKeepAMarkerAnAdministratorSet(): void {
+		$schema = $this->storedSchema();
+		$block = ['manage' => ['beheer'], 'read' => [['group' => 'public', 'crossOrganisation' => true]]];
+		$schema->setAuthorization($block);
+		$this->schemaMapper->expects($this->once())->method('updateFromArray')->willReturn($schema);
+
+		$this->providerFor(groups: ['beheer'])->invokeTool(
+			SchemasToolProvider::TOOL_ID,
+			['action' => 'update', 'id' => 5, 'data' => ['authorization' => $block]]
+		);
+	}//end testAManagerMayKeepAMarkerAnAdministratorSet()
+
 	#[DataProvider('markedBlocks')]
 	public function testAnAdministratorMayAddACrossOrganisationMarker(mixed $block): void {
 		$schema = $this->storedSchema();
