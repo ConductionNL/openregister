@@ -384,20 +384,9 @@ class FederationController extends Controller {
 	#[AnonRateLimit(limit: 20, period: 60)]
 	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function updateObject(string $shareToken, string $id): JSONResponse {
-		$share = $this->resolveWritableShare(shareToken: $shareToken);
-		if ($share === null) {
-			return new JSONResponse(data: ['error' => 'Invalid share or read-only'], statusCode: Http::STATUS_FORBIDDEN);
-		}
-
-		try {
-			$target = $this->reachableObject(share: $share, id: $id);
-		} catch (Throwable $e) {
-			$this->logger->error('[Federation] update object lookup failed: ' . $e->getMessage());
-			return new JSONResponse(data: ['error' => 'Could not update object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
-		}
-
-		if ($target === null) {
-			return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
+		$share = $this->writableTarget(shareToken: $shareToken, id: $id);
+		if ($share instanceof JSONResponse) {
+			return $share;
 		}
 
 		$data = (array)$this->request->getParams();
@@ -439,20 +428,9 @@ class FederationController extends Controller {
 	#[AnonRateLimit(limit: 20, period: 60)]
 	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function deleteObject(string $shareToken, string $id): JSONResponse {
-		$share = $this->resolveWritableShare(shareToken: $shareToken);
-		if ($share === null) {
-			return new JSONResponse(data: ['error' => 'Invalid share or read-only'], statusCode: Http::STATUS_FORBIDDEN);
-		}
-
-		try {
-			$target = $this->reachableObject(share: $share, id: $id);
-		} catch (Throwable $e) {
-			$this->logger->error('[Federation] delete object lookup failed: ' . $e->getMessage());
-			return new JSONResponse(data: ['error' => 'Could not delete object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
-		}
-
-		if ($target === null) {
-			return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
+		$share = $this->writableTarget(shareToken: $shareToken, id: $id);
+		if ($share instanceof JSONResponse) {
+			return $share;
 		}
 
 		try {
@@ -486,6 +464,34 @@ class FederationController extends Controller {
 
 		return $share;
 	}//end resolveWritableShare()
+
+	/**
+	 * The writable share when it may write the object, else the response that refuses the write.
+	 *
+	 * @param string $shareToken The scoped bearer share token.
+	 * @param string $id         The object id/uuid taken from the URL.
+	 *
+	 * @return FederatedShare|JSONResponse The share, or a 403, 404 or 500 response.
+	 */
+	private function writableTarget(string $shareToken, string $id): FederatedShare|JSONResponse {
+		$share = $this->resolveWritableShare(shareToken: $shareToken);
+		if ($share === null) {
+			return new JSONResponse(data: ['error' => 'Invalid share or read-only'], statusCode: Http::STATUS_FORBIDDEN);
+		}
+
+		try {
+			$target = $this->reachableObject(share: $share, id: $id);
+		} catch (Throwable $e) {
+			$this->logger->error('[Federation] write target lookup failed: ' . $e->getMessage());
+			return new JSONResponse(data: ['error' => 'Could not read shared object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+
+		if ($target === null) {
+			return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
+		}
+
+		return $share;
+	}//end writableTarget()
 
 	/**
 	 * The object a single-object call addresses, rendered, when the share reaches it.
