@@ -32,6 +32,7 @@ use ReflectionMethod;
  *
  * @covers \OCA\OpenRegister\Service\Audit\HistoryEntryRedactor
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Db\Schema
  */
 class HistoryEntryRedactorRecordTest extends TestCase {
 
