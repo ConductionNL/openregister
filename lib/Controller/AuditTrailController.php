@@ -265,6 +265,9 @@ class AuditTrailController extends Controller {
 			'from',
 			'to',
 			'identifier',
+			// The scoped list's cursor is where a walk resumes, not a column.
+			'cursor',
+			'_cursor',
 		];
 
 		return array_filter(

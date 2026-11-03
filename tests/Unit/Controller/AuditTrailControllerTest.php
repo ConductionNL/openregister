@@ -847,8 +847,8 @@ class AuditTrailControllerTest extends TestCase {
 
 		$lister = $this->createMock(ReadableAuditTrailLister::class);
 		$lister->method('page')->willReturnCallback(
-			static function (?string $userId, int $limit = 20, int|string|null $cursor = null) use (&$captured): array {
-				$captured = ['cursor' => $cursor];
+			static function (?string $userId, int $limit = 20, int|string|null $cursor = null, array $filters = []) use (&$captured): array {
+				$captured = ['cursor' => $cursor, 'filters' => $filters];
 
 				return ['results' => [], 'limit' => $limit, 'cursor' => $cursor, 'nextCursor' => null];
 			}
@@ -877,20 +877,34 @@ class AuditTrailControllerTest extends TestCase {
 		$captured = null;
 		$this->readableController(params: ['cursor' => 'sealed-abc'], captured: $captured)->readable();
 
-		$this->assertSame(['cursor' => 'sealed-abc'], $captured);
+		$this->assertSame('sealed-abc', $captured['cursor']);
 	}
 
 	public function testTheScopedListTakesNoOffsetAsTheStart(): void {
 		$captured = null;
 		$this->readableController(params: ['offset' => '40'], captured: $captured)->readable();
 
-		$this->assertSame(['cursor' => null], $captured);
+		$this->assertNull($captured['cursor']);
 	}
 
 	public function testTheScopedListStartsAtTheTopWithoutACursor(): void {
 		$captured = null;
 		$this->readableController(params: [], captured: $captured)->readable();
 
-		$this->assertSame(['cursor' => null], $captured);
+		$this->assertNull($captured['cursor']);
+	}
+
+	public function testTheCursorIsNotAlsoAFilter(): void {
+		$captured = null;
+		$this->readableController(params: ['cursor' => 'sealed-abc', '_cursor' => 'sealed-abc', 'object_uuid' => 'u1'], captured: $captured)->readable();
+
+		$this->assertSame(['object_uuid' => 'u1'], $captured['filters']);
+	}
+
+	public function testAnObjectFilterReachesTheScopedList(): void {
+		$captured = null;
+		$this->readableController(params: ['object_uuid' => 'u1'], captured: $captured)->readable();
+
+		$this->assertSame(['object_uuid' => 'u1'], $captured['filters']);
 	}
 }

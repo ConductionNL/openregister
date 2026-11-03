@@ -172,7 +172,14 @@ class ReadableAuditTrailLister {
 		// hidden property ever held the term.
 		$this->withReads = $this->history->readEvents()->maySeeReadEvents(userId: $userId);
 		$this->search = trim((string)$search);
-		$filters = $this->history->readerColumns(columns: $filters);
+		// Only the columns the trail query applies: a key it drops would make
+		// two walks over the same rows look like different scopes, and a
+		// cursor parameter echoed into the filters would make every page a
+		// new one.
+		$filters = array_intersect_key(
+			$this->history->readerColumns(columns: $filters),
+			array_flip(AuditTrailMapper::QUERY_COLUMNS)
+		);
 
 		$results = [];
 		$found = 0;
@@ -218,7 +225,7 @@ class ReadableAuditTrailLister {
 
 		$nextCursor = null;
 		if ($exhausted === false) {
-			$nextCursor = $this->cursors->seal(offset: $rawOffset, scope: $scope);
+			$nextCursor = $this->sealedCursor(offset: $rawOffset, scope: $scope);
 		}
 
 		return [
@@ -228,6 +235,22 @@ class ReadableAuditTrailLister {
 			'nextCursor' => $nextCursor,
 		];
 	}//end page()
+
+	/**
+	 * The cursor to resume at an offset, or none when the walk has no scope to seal it to.
+	 *
+	 * @param int         $offset The raw-trail offset to resume at.
+	 * @param string|null $scope  The scope of the walk.
+	 *
+	 * @return string|null The sealed cursor, or null.
+	 */
+	private function sealedCursor(int $offset, ?string $scope): ?string {
+		if ($scope === null) {
+			return null;
+		}
+
+		return $this->cursors->seal(offset: $offset, scope: $scope);
+	}//end sealedCursor()
 
 	/**
 	 * Append the readable rows of one batch, up to the room left on the page.

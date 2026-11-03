@@ -1294,4 +1294,96 @@ class ReadableAuditTrailListerTest extends TestCase {
 		$this->assertSame([], $page['results']);
 		$this->assertNull($page['nextCursor']);
 	}//end testRw126ControlShortHiddenTrailEnds()
+
+	/**
+	 * S1: what the controller hands the lister on page 2 (the cursor param also sits in filters) must still resume.
+	 *
+	 * @return void
+	 */
+	public function testRw139SecondPageResumesWhenTheCursorIsAlsoAFilter(): void {
+		$own = $this->entriesOf(count: 100, objectUuid: self::READABLE);
+		$lister = $this->rw126Lister(
+			trails: [self::READABLE => $own],
+			located: [$this->object(uuid: self::READABLE)],
+			readable: [self::READABLE => true]
+		);
+		$first = $lister->page(userId: 'alice', limit: 5, filters: ['object_uuid' => self::READABLE]);
+		$second = $lister->page(userId: 'alice', limit: 5, cursor: $first['nextCursor'], filters: ['object_uuid' => self::READABLE, 'cursor' => $first['nextCursor']]);
+		$this->assertSame('audit-' . self::READABLE . '-5', ($second['results'][0]['uuid'] ?? 'none'), 'page 2 restarted at the top');
+	}//end testRw139SecondPageResumesWhenTheCursorIsAlsoAFilter()
+
+	/**
+	 * S2: two callers' scopes must differ even when a filter value is not valid UTF-8.
+	 *
+	 * @return void
+	 */
+	public function testRw139ScopeKeepsTheCallerWhenAFilterIsNotUtf8(): void {
+		$cursors = $this->auditCursors();
+		$a = $cursors->scope(userId: 'alice', query: ['filters' => ['x' => "\xff"], 'search' => '']);
+		$b = $cursors->scope(userId: 'bob', query: ['filters' => ['x' => "\xff"], 'search' => '']);
+		$this->assertFalse($a !== null && $a === $b, 'scope collapsed to one value for every caller');
+		$this->assertNull($a, 'an unencodable scope must open nothing rather than fall back to a shared value');
+	}//end testRw139ScopeKeepsTheCallerWhenAFilterIsNotUtf8()
+
+	/**
+	 * S3: P2 replay, with a column findAll ignores carrying a non-UTF-8 value on both walks.
+	 *
+	 * @return void
+	 */
+	public function testRw139ReplayAcrossFiltersWithAnIgnoredNonUtf8Key(): void {
+		$mixed = array_merge(
+			$this->entriesOf(count: 37, objectUuid: self::HIDDEN),
+			[$this->entry(objectUuid: self::READABLE)],
+			$this->entriesOf(count: 50, objectUuid: self::HIDDEN . '-2')
+		);
+		$own = $this->entriesOf(count: 100, objectUuid: self::READABLE);
+		$lister = $this->rw126Lister(
+			trails: ['mixed' => $mixed, self::READABLE => $own],
+			located: [$this->object(uuid: self::HIDDEN), $this->object(uuid: self::HIDDEN . '-2'), $this->object(uuid: self::READABLE)],
+			readable: [self::READABLE => true, self::HIDDEN => false, self::HIDDEN . '-2' => false]
+		);
+		$first = $lister->page(userId: 'alice', limit: 1, filters: ['object_uuid' => 'mixed', 'x' => "\xff"]);
+		$replay = $lister->page(userId: 'alice', limit: 1, cursor: $first['nextCursor'], filters: ['object_uuid' => self::READABLE, 'x' => "\xff"]);
+		$this->assertSame('audit-' . self::READABLE . '-0', ($replay['results'][0]['uuid'] ?? 'none'), 'the replayed cursor kept its raw offset');
+	}//end testRw139ReplayAcrossFiltersWithAnIgnoredNonUtf8Key()
+
+	/**
+	 * A search that cannot be encoded gets no cursor, and no cursor resumes it.
+	 *
+	 * @return void
+	 */
+	public function testAnUnencodableSearchIsHandedNoCursorAndResumesNothing(): void {
+		$entries = $this->entriesOf(count: ReadableAuditTrailLister::SCAN_BUDGET + 10, objectUuid: self::HIDDEN);
+		$lister = $this->rw126Lister(
+			trails: ['' => $entries],
+			located: [$this->object(uuid: self::HIDDEN)],
+			readable: [self::HIDDEN => false]
+		);
+
+		$page = $lister->page(userId: 'alice', limit: 1, search: "\xff");
+		$this->assertNull($page['nextCursor']);
+
+		$sealed = $lister->page(userId: 'alice', limit: 1)['nextCursor'];
+		$this->queries = [];
+		$lister->page(userId: 'alice', limit: 1, cursor: $sealed, search: "\xff");
+		$this->assertSame(0, $this->queries[0][1]);
+	}//end testAnUnencodableSearchIsHandedNoCursorAndResumesNothing()
+
+	/**
+	 * Only the columns the trail query applies reach it, and only they make up the scope.
+	 *
+	 * @return void
+	 */
+	public function testOnlyAppliedColumnsReachTheQuery(): void {
+		$lister = $this->lister(
+			entries: [$this->entry(objectUuid: self::READABLE)],
+			located: [$this->object(uuid: self::READABLE)],
+			readable: [self::READABLE => true]
+		);
+
+		$lister->page(userId: 'alice', limit: 1, filters: ['object_uuid' => self::READABLE, 'x' => 'y', '_cursor' => 'c', 'cursor' => 'c']);
+
+		$this->assertSame(['object_uuid' => self::READABLE], $this->queries[0][2]);
+	}//end testOnlyAppliedColumnsReachTheQuery()
+
 }//end class

@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
+use JsonException;
 use OCP\Security\ICrypto;
 use Throwable;
 
@@ -59,22 +60,30 @@ class ReadableAuditCursor {
 	/**
 	 * The scope a cursor is sealed to: the caller and what they filtered and searched on.
 	 *
+	 * A walk whose caller, filters or search cannot be encoded (a value that
+	 * is not valid UTF-8) has no scope: its cursors never open, so it always
+	 * starts at the top, and it is handed no cursor.
+	 *
 	 * @param string $userId The caller.
 	 * @param array  $query  The filters and the search term of the walk.
 	 *
-	 * @return string The scope, a hash.
+	 * @return string|null The scope, a hash, or null when it cannot be encoded.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
 	 */
-	public function scope(string $userId, array $query): string {
-		return hash('sha256', (string)json_encode([$userId, $query]));
+	public function scope(string $userId, array $query): ?string {
+		try {
+			return hash('sha256', json_encode([$userId, $query], JSON_THROW_ON_ERROR));
+		} catch (JsonException $e) {
+			return null;
+		}
 	}//end scope()
 
 	/**
 	 * The cursor a client is given for an offset into the raw trail, sealed to its scope.
 	 *
 	 * @param int    $offset The raw-trail offset to resume at.
-	 * @param string $scope  The scope of the walk, from scope().
+	 * @param string $scope  The scope of the walk, from scope(); never null.
 	 *
 	 * @return string The sealed cursor.
 	 *
@@ -93,14 +102,14 @@ class ReadableAuditCursor {
 	 * search.
 	 *
 	 * @param int|string|null $cursor What the client handed back.
-	 * @param string          $scope  The scope of this walk, from scope().
+	 * @param string|null     $scope  The scope of this walk, from scope(); null opens nothing.
 	 *
 	 * @return int The offset, never negative.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
 	 */
-	public function open(int|string|null $cursor, string $scope): int {
-		if (is_string($cursor) === false || $cursor === '' || ctype_digit($cursor) === true) {
+	public function open(int|string|null $cursor, ?string $scope): int {
+		if ($scope === null || is_string($cursor) === false || $cursor === '' || ctype_digit($cursor) === true) {
 			return 0;
 		}
 

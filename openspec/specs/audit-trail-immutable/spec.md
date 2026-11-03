@@ -249,6 +249,10 @@ caller may not read. The cursor SHALL be sealed together with the caller and a
 hash of the filters and search it was walked under, and SHALL resume a walk only
 under that same caller, filters and search; no client-chosen offset SHALL be
 accepted, so every walk without such a cursor starts at the top of the trail.
+The scope SHALL hash only the filter columns the trail query applies, so the
+cursor parameter itself and any column the query drops do not change it. A walk
+whose caller, filters or search cannot be encoded SHALL have no scope: it is
+handed no cursor and no cursor resumes it.
 The doelbinding guard SHALL be decided once per register
 and schema within a request, so a list over many objects of a purpose-bound
 schema records one refusal, not one per object.

@@ -111,6 +111,11 @@ final class ReadableAuditCursorTest extends TestCase {
 		self::assertSame(2400, $this->openingTo(plaintext: 'audit-readable-cursor:s1:2400')->open(cursor: 'other', scope: 's1'));
 	}//end testATokenSealedForSomethingElseStartsAtTheTop()
 
+	public function testAWalkWithoutAScopeOpensNoCursor(): void {
+		self::assertSame(0, $this->openingTo(plaintext: 'audit-readable-cursor::40')->open(cursor: 'x', scope: null));
+		self::assertNull($this->auditCursors()->scope(userId: 'alice', query: ['filters' => [], 'search' => "\xff"]));
+	}//end testAWalkWithoutAScopeOpensNoCursor()
+
 	public function testASealedNonNumberStartsAtTheTop(): void {
 		self::assertSame(0, $this->openingTo(plaintext: 'audit-readable-cursor:s1:-3')->open(cursor: 'x', scope: 's1'));
 		self::assertSame(0, $this->openingTo(plaintext: 'audit-readable-cursor:s1:')->open(cursor: 'x', scope: 's1'));
