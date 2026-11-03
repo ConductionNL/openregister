@@ -46,7 +46,7 @@ AGENT_MODEL=${AGENT_MODEL:-"qwen2.5:3b"}
 SKIP_LEAK_CHECK=${SKIP_LEAK_CHECK:-0}
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-COLLECTION="$SCRIPT_DIR/openregister-flow-engine.postman_collection.json"
+COLLECTION="$SCRIPT_DIR/../integration/openregister-flow-engine.postman_collection.json"
 
 echo -e "${BLUE}━━━ Flow engine coverage ━━━${NC}"
 echo -e "  Base URL: ${YELLOW}$BASE_URL${NC}"
