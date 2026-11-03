@@ -22,7 +22,7 @@ class SchemaGeneratorTest extends TestCase {
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
-		$this->generator = new SchemaGenerator($this->registerMapper, $this->schemaMapper);
+		$this->generator = new SchemaGenerator($this->registerMapper, $this->schemaMapper, $this->createMock(\OCP\IUserSession::class));
 	}
 
 	/**
