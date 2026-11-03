@@ -286,11 +286,32 @@ final class AttributeToolScanner {
 			$descriptor['scope'] = $attribute->scope;
 		}
 
-		return ($descriptor + $this->taxonomyOf(attribute: $attribute));
+		return ($descriptor + $this->taxonomyOf(attribute: $attribute) + $this->titleOf(attribute: $attribute, method: $method));
 	}//end buildDescriptor()
 
 	/**
-	 * The declared title, grant-matrix taxonomy (subject, action) and reach, or an empty array.
+	 * The tool's human title (`#[McpToolTitle]`), as the descriptor's top-level `title`, or an empty array.
+	 *
+	 * A blank title is no declaration. The `annotations` map never carries it.
+	 *
+	 * @param McpTool          $attribute The method's #[McpTool].
+	 * @param ReflectionMethod $method    The attributed method.
+	 *
+	 * @return array{title?: string} The declared title only.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 */
+	private function titleOf(McpTool $attribute, ReflectionMethod $method): array {
+		$title = trim((string)$attribute->titleOn(method: $method));
+		if ($title === '') {
+			return [];
+		}
+
+		return ['title' => $title];
+	}//end titleOf()
+
+	/**
+	 * The grant-matrix taxonomy (subject, action) and the declared reach, or an empty array.
 	 *
 	 * Forwarded on the same additive terms as the annotation hints: a key is
 	 * present ONLY when the author declared it, never inferred from the method
@@ -314,10 +335,6 @@ final class AttributeToolScanner {
 	 */
 	private function taxonomyOf(McpTool $attribute): array {
 		$taxonomy = [];
-
-		if ($attribute->title !== null && trim($attribute->title) !== '') {
-			$taxonomy['title'] = $attribute->title;
-		}
 
 		if ($attribute->subject !== null && trim($attribute->subject) !== '') {
 			$taxonomy['subject'] = $attribute->subject;
