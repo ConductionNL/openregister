@@ -50,6 +50,19 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker
  * @covers \OCA\OpenRegister\Service\PropertyRbacHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Calculation\CalculationEvaluator
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRules
+ * @uses \OCA\OpenRegister\Service\Mcp\McpResourcesService
+ * @uses \OCA\OpenRegister\Service\Rbac\RevealCollector
+ * @uses \OCA\OpenRegister\Service\Rules\ConditionDialect
+ * @uses \OCA\OpenRegister\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Service\Search\PropertySearchProfile
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class ExplicitRevealTest extends TestCase {
 	use BuildsStateFieldRuleResolver;

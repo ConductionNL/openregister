@@ -46,6 +46,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Audit\PurposeRefusedException
+ * @uses \OCA\OpenRegister\Service\Relation\RelationGraphService
  */
 class ObjectRelationsControllerTreeTest extends TestCase {
 

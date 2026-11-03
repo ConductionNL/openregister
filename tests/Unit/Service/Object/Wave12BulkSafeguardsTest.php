@@ -44,6 +44,8 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Object\DraftCallerRule
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Service\Object\BulkSafeguardRun
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 class Wave12BulkSafeguardsTest extends TestCase {
 

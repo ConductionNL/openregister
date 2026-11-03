@@ -54,6 +54,14 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\BackgroundJob\RelatedRetentionRecalculationJob
  * @covers \OCA\OpenRegister\Listener\RelatedRetentionRecalculationListener
  * @covers \OCA\OpenRegister\Service\Archival\DependantRetentionIndex
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
+ * @uses \OCA\OpenRegister\Service\Archival\ActionDateFollower
+ * @uses \OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator
+ * @uses \OCA\OpenRegister\Service\Archival\SelectielijstResolver
+ * @uses \OCA\OpenRegister\Service\RetentionService
  */
 class RelatedRetentionRecalculationJobTest extends TestCase {
 

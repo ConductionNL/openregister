@@ -48,6 +48,10 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Service\TextExtractionService::getExtractedText
+ * @uses \OCA\OpenRegister\Db\Chunk
+ * @uses \OCA\OpenRegister\Service\TextExtraction\PdfExtractor
+ * @uses \OCA\OpenRegister\Service\TextExtraction\SpreadsheetExtractor
+ * @uses \OCA\OpenRegister\Service\TextExtraction\WordExtractor
  */
 final class TextExtractionReadBackTest extends TestCase {
 

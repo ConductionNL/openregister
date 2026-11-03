@@ -67,6 +67,8 @@ use stdClass;
 /**
  * A mapper that reads its locked row from memory and writes through the real
  * `update()` — the dispatch predicate under test.
+ * @uses \OCA\OpenRegister\Event\FlowRunTerminalEvent
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStop
  */
 class InMemoryFlowRunMapper extends FlowRunMapper {
 

@@ -32,6 +32,8 @@ use Psr\Log\NullLogger;
 
 /**
  * A stand-in for flow-business-timers' fired event, with its published surface.
+ * @uses \OCA\OpenRegister\Db\FlowTimer
+ * @uses \OCA\OpenRegister\Event\FlowTimerFiredEvent
  */
 final class FakeTimerFiredEvent extends Event {
 

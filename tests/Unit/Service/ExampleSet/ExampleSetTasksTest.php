@@ -56,6 +56,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskChecklist
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTimelineEntries
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class ExampleSetTasksTest extends ExampleSetTestCase {
 	protected function setUp(): void {

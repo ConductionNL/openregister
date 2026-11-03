@@ -39,6 +39,9 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetStore
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class ExampleSetStoreTest extends TestCase {
 	/**

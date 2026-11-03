@@ -54,6 +54,7 @@ use ReflectionMethod;
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\BulkSafeguardRun
  */
 class BulkSafeguardSchemaResolutionTest extends TestCase {
 

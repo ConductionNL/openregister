@@ -41,6 +41,13 @@ use Psr\Container\ContainerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\RevertHandler
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\ObjectRevertedEvent
+ * @uses \OCA\OpenRegister\Exception\ObjectStateWriteException
+ * @uses \OCA\OpenRegister\Service\Object\NotSuppliedHandler
  */
 final class RevertHandlerWriteGuardsTest extends TestCase {
 

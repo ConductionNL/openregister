@@ -41,6 +41,7 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler
+ * @uses \OCA\OpenRegister\Exception\AnalyzeRequestRejectedException
  */
 class OpenAnonymiserCredentialsTest extends TestCase {
 

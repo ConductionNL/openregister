@@ -36,6 +36,8 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Controller\RecordTemplatesController
+ * @uses \OCA\OpenRegister\Db\RecordTemplate
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
  */
 class RecordTemplatesControllerTest extends TestCase {
 

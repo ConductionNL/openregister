@@ -51,6 +51,9 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilter
  */
 class ExplicitRevealReReviewTest extends TestCase {
 

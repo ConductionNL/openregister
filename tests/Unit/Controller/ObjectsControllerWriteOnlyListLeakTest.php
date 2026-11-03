@@ -81,6 +81,7 @@ use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
  * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
  * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRules
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 	use BuildsStateFieldRuleResolver;

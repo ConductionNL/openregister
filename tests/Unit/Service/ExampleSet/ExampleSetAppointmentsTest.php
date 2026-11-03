@@ -20,6 +20,41 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
+ * @uses \OCA\OpenRegister\Db\CalendarLink
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLock
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetParties
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPaths
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPrerequisites
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProof
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class ExampleSetAppointmentsTest extends ExampleSetTestCase {
 	/**

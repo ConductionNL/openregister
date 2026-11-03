@@ -57,6 +57,11 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Service\Object\PermissionHandler
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  */
 class ReadableAuditTrailListerTest extends TestCase {
 

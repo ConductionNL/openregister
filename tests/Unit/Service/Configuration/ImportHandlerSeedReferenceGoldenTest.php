@@ -42,6 +42,8 @@ use Psr\Log\LoggerInterface;
  *
  * @coversDefaultClass \OCA\OpenRegister\Service\Configuration\ImportHandler
  * @uses \OCA\OpenRegister\Service\Configuration\SeedReferenceIndex
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class ImportHandlerSeedReferenceGoldenTest extends TestCase {
 

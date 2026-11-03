@@ -40,6 +40,11 @@ use Psr\Log\LoggerInterface;
  * regenerate the fixture.
  *
  * @coversDefaultClass \OCA\OpenRegister\Service\Configuration\PreviewHandler
+ * @uses \OCA\OpenRegister\Db\Configuration
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Configuration\ObjectChangePreview
  */
 class PreviewHandlerGoldenTest extends TestCase {
 
