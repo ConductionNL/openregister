@@ -2482,16 +2482,14 @@ class SaveObject {
 			$register = $register['id'] ?? $register;
 		}
 
-		// For cascading with inversedBy, preserve existing UUID for updates.
-		// For cascading without inversedBy, always create new objects (no UUID).
-		$uuid = null;
-		if (($definition['inversedBy'] ?? null) !== null) {
-			$uuid = $object['id'] ?? $object['@self']['id'] ?? null;
+		// A nested inline object is always created. The save would take its `id` or
+		// `@self.id` as the row to write onto, looked up past the read filters.
+		unset($object['id']);
+		if (is_array($object['@self'] ?? null) === true) {
+			unset($object['@self']['id'], $object['@self']['uuid']);
 		}
 
 		if (($definition['inversedBy'] ?? null) === null) {
-			// Remove any existing UUID/id fields to force new object creation.
-			unset($object['id']);
 			unset($object['@self']);
 		}
 
@@ -2499,13 +2497,6 @@ class SaveObject {
 		$schemaId = $this->resolveSchemaReference(reference: $definition['$ref']);
 		if ($schemaId === null) {
 			throw new Exception("Invalid schema reference: {$definition['$ref']}");
-		}
-
-		// For updates (UUID present): fill in missing schema properties with null.
-		// This ensures the magic mapper explicitly sets removed properties to NULL
-		// instead of leaving old values intact (magic mapper does partial updates).
-		if ($uuid !== null) {
-			$object = $this->fillMissingSchemaPropertiesWithNull(data: $object, schemaId: $schemaId);
 		}
 
 		try {
@@ -2516,7 +2507,7 @@ class SaveObject {
 				register: $register,
 				schema: $schemaId,
 				data: $object,
-				uuid: $uuid,
+				uuid: null,
 				folderId: null,
 				_rbac: true,
 				_multitenancy: true,
