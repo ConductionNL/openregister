@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import {
-	getListPage,
+	getRequest,
 	listPageQuery,
 	listPagination,
 	storeRequest,
@@ -151,28 +151,21 @@ export const useDeletedStore = defineStore('deleted', {
 		 * @spec exclude API passthrough to GET /api/deleted (list + pagination state)
 		 */
 		async fetchDeleted(options = {}) {
-			this.deletedLoading = true
-
-			try {
-				const query = listPageQuery(options, {
-					search: this.deletedSearch,
-					filters: this.deletedFilters,
-				})
-				const data = await getListPage(
-					`${apiUrl}/deleted?${query}`,
-					'Failed to fetch deleted objects',
-				)
-
-				this.setDeletedList(data.results || [])
-				this.setDeletedPagination(listPagination(data, 20))
-
-				return data
-			} catch (error) {
-				console.error('Error fetching deleted objects:', error)
-				throw error
-			} finally {
-				this.deletedLoading = false
-			}
+			const query = listPageQuery(options, {
+				search: this.deletedSearch,
+				filters: this.deletedFilters,
+			})
+			return storeRequest(this, {
+				flag: 'deletedLoading',
+				url: `${apiUrl}/deleted?${query}`,
+				request: getRequest('Failed to fetch deleted objects'),
+				log: (error) =>
+					console.error('Error fetching deleted objects:', error),
+				keep: (data) => {
+					this.setDeletedList(data.results || [])
+					this.setDeletedPagination(listPagination(data, 20))
+				},
+			})
 		},
 
 		/**

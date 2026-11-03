@@ -27,9 +27,14 @@ use InvalidArgumentException;
 use JsonSerializable;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use SimpleXMLElement;
 
 /**
@@ -49,6 +54,9 @@ use SimpleXMLElement;
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The object history resolves an object within its register and
+ *   schema (#4037), so those entities and the lookup's two outcomes are part of this service's vocabulary.
  */
 class LogService {
 
@@ -141,43 +149,17 @@ class LogService {
 	 *
 	 * @return \OCA\OpenRegister\Db\AuditTrail[] Array of audit trail log entries
 	 *
-	 * @throws \InvalidArgumentException If object does not belong to specified register/schema
-	 * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If no object with that identifier exists in the register and schema
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If the identifier is a slug two objects of the register and schema hold
 	 *
 	 * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-4
 	 */
 	public function getLogs(string $register, string $schema, string $id, array $config = []): array {
-		// Step 1: Get the object to ensure it exists.
-		// Include deleted objects so audit trail is accessible even after soft-delete.
-		// Use findAcrossAllSources to search across all magic tables.
-		$result = $this->unifiedObjectMapper->findAcrossAllSources(
-			identifier: $id,
-			includeDeleted: true,
-			_multitenancy: false,
-			_rbac: false
-		);
-		$object = $result['object'];
-
-		// Step 2: Validate object belongs to specified register/schema by comparing stored IDs.
-		// We skip entity resolution to allow access even if register/schema are soft-deleted.
-		// The object's register/schema fields store IDs as strings.
-		// We need to resolve the slugs to IDs for comparison.
-		try {
-			// Try to resolve slugs, but allow deleted entities.
-			$registerEntity = $this->registerMapper->find($register, _multitenancy: false, _rbac: false);
-			$schemaEntity = $this->schemaMapper->find($schema, _multitenancy: false, _rbac: false);
-
-			$registerMismatch = $object->getRegister() !== (string)$registerEntity->getId();
-			$schemaMismatch = $object->getSchema() !== (string)$schemaEntity->getId();
-			if ($registerMismatch === true || $schemaMismatch === true) {
-				throw new InvalidArgumentException('Object does not belong to specified register/schema');
-			}
-		} catch (\Exception $e) {
-			// If register/schema not found (likely deleted), we can't validate.
-			// But we still allow audit trail access for the object.
-		}
+		// Step 1: Resolve the object within the register and schema of the route
+		// (deleted objects included, so the history stays readable after a soft-delete).
+		$object = $this->findObjectInScope(register: $register, schema: $schema, id: $id);
 
 		// Step 3: Add object UUID to filters to restrict logs to this object.
 		$filters = $config['filters'] ?? [];
@@ -218,41 +200,17 @@ class LogService {
 	 *
 	 * @return int Number of log entries (0 or positive integer)
 	 *
-	 * @throws \InvalidArgumentException If object does not belong to specified register/schema
-	 * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If no object with that identifier exists in the register and schema
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If the identifier is a slug two objects of the register and schema hold
 	 *
 	 * @psalm-return int<0, max>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-4
 	 */
 	public function count(string $register, string $schema, string $id, array $config = []): int {
-		// Step 1: Get the object to ensure it exists.
-		// Include deleted objects so audit trail count is accessible even after soft-delete.
-		// Use findAcrossAllSources to search across all magic tables.
-		$result = $this->unifiedObjectMapper->findAcrossAllSources(
-			identifier: $id,
-			includeDeleted: true,
-			_multitenancy: false,
-			_rbac: false
-		);
-		$object = $result['object'];
-
-		// Step 2: Validate object belongs to specified register/schema by comparing stored IDs.
-		// We skip entity resolution to allow access even if register/schema are soft-deleted.
-		try {
-			// Try to resolve slugs, but allow deleted entities.
-			$registerEntity = $this->registerMapper->find($register, _multitenancy: false, _rbac: false);
-			$schemaEntity = $this->schemaMapper->find($schema, _multitenancy: false, _rbac: false);
-
-			$registerMismatch = $object->getRegister() !== (string)$registerEntity->getId();
-			$schemaMismatch = $object->getSchema() !== (string)$schemaEntity->getId();
-			if ($registerMismatch === true || $schemaMismatch === true) {
-				throw new InvalidArgumentException('Object does not belong to specified register/schema');
-			}
-		} catch (\Exception $e) {
-			// If register/schema not found (likely deleted), we can't validate.
-			// But we still allow audit trail access for the object.
-		}
+		// Step 1: Resolve the object within the register and schema of the route
+		// (deleted objects included, so the history stays readable after a soft-delete).
+		$object = $this->findObjectInScope(register: $register, schema: $schema, id: $id);
 
 		// Step 3: Get the logs this object matches, under the caller's own
 		// filters, with the UUID filter added exactly as getLogs() adds it.
@@ -268,6 +226,87 @@ class LogService {
 		// Step 4: Return count of log entries.
 		return count($logs);
 	}//end count()
+
+	/**
+	 * The object whose history is asked for, looked up within the register and schema of the route.
+	 *
+	 * The lookup is the one the object routes use (`MagicMapper::findInRegisterSchemaTable()`):
+	 * an id, uuid or slug of THIS register and schema, an exact id/uuid match winning over a
+	 * slug, a slug two objects hold refused as ambiguous. Before #4037 the history was looked
+	 * up across all tables and the register/schema check was swallowed, so a slug URL could
+	 * answer with another schema's history. When the register or schema itself no longer
+	 * resolves (soft-deleted), the scope cannot be built and the cross-table lookup remains,
+	 * so the history of an object in a deleted register stays readable.
+	 *
+	 * @param string $register The register identifier (slug or ID).
+	 * @param string $schema   The schema identifier (slug or ID).
+	 * @param string $id       The object identifier (ID, UUID or slug).
+	 *
+	 * @return ObjectEntity The object, deleted or not.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such object exists in the register and schema.
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException When the slug is held by more than one live object,
+	 *                                                                   or only by deleted ones.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 */
+	private function findObjectInScope(string $register, string $schema, string $id): ObjectEntity {
+		try {
+			$registerEntity = $this->registerMapper->find($register, _multitenancy: false, _rbac: false);
+			$schemaEntity = $this->schemaMapper->find($schema, _multitenancy: false, _rbac: false);
+		} catch (DoesNotExistException $e) {
+			// Register or schema gone (soft-deleted): no scope to search in; the
+			// history of the object itself stays readable, as before. Any other
+			// failure propagates: it is no reason to drop the scope.
+			$result = $this->unifiedObjectMapper->findAcrossAllSources(
+				identifier: $id,
+				includeDeleted: true,
+				_multitenancy: false,
+				_rbac: false
+			);
+			return $result['object'];
+		}
+
+		try {
+			return $this->inTable(id: $id, register: $registerEntity, schema: $schemaEntity, includeDeleted: true);
+		} catch (MultipleObjectsReturnedException $e) {
+			// A slug freed by a delete goes to the next object that saves without
+			// one, so a deleted and a live object can share it. The single live
+			// holder is the one meant; only when the live rows alone are still
+			// ambiguous, or none is live, is the lookup refused.
+			try {
+				return $this->inTable(id: $id, register: $registerEntity, schema: $schemaEntity, includeDeleted: false);
+			} catch (DoesNotExistException $none) {
+				throw $e;
+			}
+		}
+	}//end findObjectInScope()
+
+	/**
+	 * Look an object up in its register+schema table, without access filters.
+	 *
+	 * @param string   $id             Object id, uuid or slug.
+	 * @param Register $register       The register.
+	 * @param Schema   $schema         The schema.
+	 * @param bool     $includeDeleted Whether soft-deleted objects count.
+	 *
+	 * @return ObjectEntity The object.
+	 *
+	 * @throws DoesNotExistException            When no object matches.
+	 * @throws MultipleObjectsReturnedException When the identifier is ambiguous.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The one difference between the two lookups findObjectInScope() makes.
+	 */
+	private function inTable(string $id, Register $register, Schema $schema, bool $includeDeleted): ObjectEntity {
+		return $this->unifiedObjectMapper->findInRegisterSchemaTable(
+			identifier: $id,
+			register: $register,
+			schema: $schema,
+			_rbac: false,
+			_multitenancy: false,
+			includeDeleted: $includeDeleted
+		);
+	}//end inTable()
 
 	/**
 	 * Get all audit trail logs with optional filtering

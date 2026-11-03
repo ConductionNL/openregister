@@ -3,7 +3,8 @@
  */
 import { defineStore } from 'pinia'
 import {
-	getListPage,
+	copiedResults,
+	getRequest,
 	listPageQuery,
 	listPagination,
 	statisticsOrEmpty,
@@ -154,31 +155,21 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async fetchAuditTrails(options = {}) {
-			this.auditTrailLoading = true
-
-			try {
-				const query = listPageQuery(options, {
-					search: this.auditTrailSearch,
-					filters: this.auditTrailFilters,
-					sort: this.auditTrailSort,
-				})
-				const data = await getListPage(
-					`${apiUrl}/audit-trails?${query}`,
-					'Failed to fetch audit trails',
-				)
-
-				this.setAuditTrailList(
-					data.results ? JSON.parse(JSON.stringify(data.results)) : [],
-				)
-				this.setAuditTrailPagination(listPagination(data, 50))
-
-				return data
-			} catch (error) {
-				console.error('Error fetching audit trails:', error)
-				throw error
-			} finally {
-				this.auditTrailLoading = false
-			}
+			const query = listPageQuery(options, {
+				search: this.auditTrailSearch,
+				filters: this.auditTrailFilters,
+				sort: this.auditTrailSort,
+			})
+			return storeRequest(this, {
+				flag: 'auditTrailLoading',
+				url: `${apiUrl}/audit-trails?${query}`,
+				request: getRequest('Failed to fetch audit trails'),
+				log: (error) => console.error('Error fetching audit trails:', error),
+				keep: (data) => {
+					this.setAuditTrailList(copiedResults(data))
+					this.setAuditTrailPagination(listPagination(data, 50))
+				},
+			})
 		},
 
 		/**

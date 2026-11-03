@@ -112,6 +112,13 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 	private $onCreating = null;
 
 	/**
+	 * Run once inside the next ObjectUpdatingEvent, before it is recorded.
+	 *
+	 * @var callable|null
+	 */
+	private $onUpdating = null;
+
+	/**
 	 * The mapper with its table I/O stubbed.
 	 *
 	 * @param bool $taken Whether the uuid is already in the table.
@@ -129,6 +136,12 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 				if ($event instanceof ObjectCreatingEvent && $this->onCreating !== null) {
 					$hook             = $this->onCreating;
 					$this->onCreating = null;
+					$hook();
+				}
+
+				if ($event instanceof ObjectUpdatingEvent && $this->onUpdating !== null) {
+					$hook             = $this->onUpdating;
+					$this->onUpdating = null;
 					$hook();
 				}
 
@@ -372,4 +385,21 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 
 		$this->assertSame([ObjectCreatingEvent::class, ObjectCreatedEvent::class], $this->eventClasses());
 	}//end testAStoppedUpdateLeavesNoReplacedRowBehind()
+	public function testAWonInsertNestedInAnUpdatingListenerKeepsTheOuterUpdate(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		$this->onUpdating = function () use ($mapper, $register, $schema): void {
+			$this->taken = false;
+			$mapper->insert(entity: $this->entity('inner'), register: $register, schema: $schema);
+			$this->taken = true;
+		};
+
+		$mapper->insert(entity: $this->entity('closed'), register: $register, schema: $schema);
+
+		$last = end($this->dispatched);
+		$this->assertInstanceOf(ObjectUpdatedEvent::class, $last);
+		$this->assertSame('closed', $last->getNewObject()->getObject()['status']);
+		$this->assertSame('open', $last->getOldObject()?->getObject()['status']);
+	}//end testAWonInsertNestedInAnUpdatingListenerKeepsTheOuterUpdate()
+
 }//end class

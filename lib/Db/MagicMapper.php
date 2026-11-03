@@ -80,6 +80,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\DB\Exception as DbException;
+use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -89,6 +90,7 @@ use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -338,6 +340,11 @@ class MagicMapper extends AbstractObjectMapper {
 	 *   2 at 500/chunk, while quadrupling the fallback cost and the SQL size.
 	 */
 	private const MAGIC_TABLE_SCAN_CHUNK_SIZE = 100;
+
+	/**
+	 * Rows the identifier lookup reads at most (key matches first, then id order).
+	 */
+	private const IDENTIFIER_MATCH_LIMIT = 50;
 
 	/**
 	 * Request-scoped memo for {@see checkTableExistsInDatabase()}.
@@ -6806,23 +6813,24 @@ class MagicMapper extends AbstractObjectMapper {
 		$qb->select('*')->from($tableName, 't');
 
 		// Build identifier conditions (ID, UUID, slug, or URI).
-		$idParam = -1;
-		if (is_numeric($identifier) === true) {
-			$idParam = (int)$identifier;
-		}
+		$idParam = ($this->identifierAsId(identifier: $identifier) ?? -1);
 
 		$idCol = 't.' . self::METADATA_PREFIX . 'id';
 		$uuidCol = 't.' . self::METADATA_PREFIX . 'uuid';
 		$slugCol = 't.' . self::METADATA_PREFIX . 'slug';
 		$uriCol = 't.' . self::METADATA_PREFIX . 'uri';
+		$idNamed = $qb->createNamedParameter($idParam, IQueryBuilder::PARAM_INT);
+		$uuidNamed = $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR);
 		$qb->where(
 			$qb->expr()->orX(
-				$qb->expr()->eq($idCol, $qb->createNamedParameter($idParam, IQueryBuilder::PARAM_INT)),
-				$qb->expr()->eq($uuidCol, $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+				$qb->expr()->eq($idCol, $idNamed),
+				$qb->expr()->eq($uuidCol, $uuidNamed),
 				$qb->expr()->eq($slugCol, $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
 				$qb->expr()->eq($uriCol, $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
 			)
 		);
+
+		$this->orderKeyMatchesFirst(qb: $qb, keys: [$idCol => $idNamed, $uuidCol => $uuidNamed]);
 
 		// Exclude deleted objects by default (unless includeDeleted is true).
 		if ($includeDeleted === false) {
@@ -6852,18 +6860,13 @@ class MagicMapper extends AbstractObjectMapper {
 		}
 
 		try {
-			$result = $qb->executeQuery();
-			$row = $result->fetch();
-
-			if ($row === false) {
+			$rows = $this->fetchRows(result: $qb->executeQuery());
+			if ($rows === []) {
 				throw new DoesNotExistException('Object not found in magic table');
 			}
 
-			// Check for multiple results.
-			if ($result->fetch() !== false) {
-				$msg = 'Multiple objects found with same identifier';
-				throw new MultipleObjectsReturnedException($msg);
-			}
+			// Several rows: a key match wins, otherwise the identifier is ambiguous (#4037).
+			$row = $this->singleRow(rows: $rows, identifier: $identifier, register: $register, schema: $schema);
 
 			$objectEntity = $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
 
@@ -6889,6 +6892,580 @@ class MagicMapper extends AbstractObjectMapper {
 			throw new DoesNotExistException($e->getMessage());
 		}//end try
 	}//end findInRegisterSchemaTable()
+
+	/**
+	 * The object id an identifier names, when it is a canonical non-negative integer.
+	 *
+	 * `2024` is an id; `007`, `7.0`, `1e3` and `7 ` are not, they can only be a slug
+	 * (or uuid or uri). The query's id condition and the precedence pick both use this,
+	 * so a non-canonical number never reaches an id and never beats an exact slug match.
+	 *
+	 * @param string|int $identifier The identifier the caller sent.
+	 *
+	 * @return int|null The id, or null when the identifier is not a canonical integer.
+	 */
+	private function identifierAsId(string|int $identifier): ?int {
+		$text = (string)$identifier;
+		if (ctype_digit($text) === false || (string)(int)$text !== $text) {
+			return null;
+		}
+
+		return (int)$text;
+	}//end identifierAsId()
+
+	/**
+	 * Pick the row an identifier means among the rows it matched.
+	 *
+	 * One row is the answer. Several rows: the one whose `_id` or `_uuid` is the
+	 * identifier, when exactly one is; otherwise none (the identifier is
+	 * ambiguous).
+	 *
+	 * @param list<array<string, mixed>> $rows       The matched rows, at least one.
+	 * @param string|int                 $identifier The identifier the caller sent.
+	 *
+	 * @return array<string, mixed>|null The row, or null when the identifier is ambiguous.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 */
+	private function rowForIdentifier(array $rows, string|int $identifier): ?array {
+		if (count($rows) === 1) {
+			return $rows[0];
+		}
+
+		$byKey = [];
+		foreach ($rows as $row) {
+			// The same reading of the identifier as the query's id condition.
+			$idParam = $this->identifierAsId(identifier: $identifier);
+			$isId = $idParam !== null
+				&& isset($row[self::METADATA_PREFIX . 'id']) === true
+				&& (int)$row[self::METADATA_PREFIX . 'id'] === $idParam;
+			$isUuid = strcasecmp((string)($row[self::METADATA_PREFIX . 'uuid'] ?? ''), (string)$identifier) === 0;
+			if ($isId === true || $isUuid === true) {
+				$byKey[] = $row;
+			}
+		}
+
+		if (count($byKey) === 1) {
+			return $byKey[0];
+		}
+
+		return null;
+	}//end rowForIdentifier()
+
+	/**
+	 * The one row an identifier means, or an ambiguity refusal.
+	 *
+	 * At most IDENTIFIER_MATCH_LIMIT rows come back, key matches first. More than
+	 * one row, whatever is cut off, is still ambiguous unless a key match singles
+	 * one out: a cut never turns several rows into a single pick.
+	 *
+	 * Several rows can match one identifier only through a slug, because the
+	 * id and uuid are unique. A row matched by its id or uuid wins over rows
+	 * matched by a slug that happens to look the same (a numeric slug "2024"
+	 * next to the object with id 2024); only when that does not single out
+	 * one row is the identifier ambiguous. Both holders are logged for the
+	 * administrator and kept out of the message, which can reach an API caller.
+	 *
+	 * @param list<array<string, mixed>> $rows       The matched rows, at least one.
+	 * @param string|int                 $identifier The identifier the caller sent.
+	 * @param Register                   $register   The register (log context).
+	 * @param Schema                     $schema     The schema (log context).
+	 *
+	 * @return array<string, mixed> The row.
+	 *
+	 * @throws MultipleObjectsReturnedException When the identifier is ambiguous.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 */
+	private function singleRow(array $rows, string|int $identifier, Register $register, Schema $schema): array {
+		$row = $this->rowForIdentifier(rows: $rows, identifier: $identifier);
+		if ($row !== null) {
+			return $row;
+		}
+
+		$this->logger->warning(
+			message: sprintf(
+				'[ObjectSlug] Identifier "%s" is ambiguous in register %s (%s) / schema %s (%s): matches objects %s, %s',
+				(string)$identifier,
+				(string)$register->getSlug(),
+				(string)$register->getId(),
+				(string)$schema->getSlug(),
+				(string)$schema->getId(),
+				(string)($rows[0][self::METADATA_PREFIX . 'uuid'] ?? '?'),
+				(string)($rows[1][self::METADATA_PREFIX . 'uuid'] ?? '?')
+			),
+			context: [
+				'app' => 'openregister',
+				'path' => 'lookup',
+				'registerId' => $register->getId(),
+				'schemaId' => $schema->getId(),
+				'slug' => (string)$identifier,
+				'uuids' => array_map(static fn (array $match) => ($match[self::METADATA_PREFIX . 'uuid'] ?? null), $rows),
+			]
+		);
+		throw new MultipleObjectsReturnedException(
+			sprintf('Identifier "%s" matches more than one object in this register and schema', (string)$identifier)
+		);
+	}//end singleRow()
+
+	/**
+	 * Sort the rows an identifier matched by its id or uuid first, then by id, and cap them.
+	 *
+	 * So the precedence pick in singleRow() sees a key match whatever the cap cuts off,
+	 * and the same data always gives the same answer.
+	 *
+	 * @param IQueryBuilder                                          $qb   The identifier query.
+	 * @param array<string, \OCP\DB\QueryBuilder\IParameter|string> $keys Key column => its named parameter (id first, then uuid).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 */
+	private function orderKeyMatchesFirst(IQueryBuilder $qb, array $keys): void {
+		$matches = [];
+		foreach ($keys as $column => $named) {
+			$matches[] = $column . ' = ' . $named;
+		}
+
+		$qb->addOrderBy($qb->createFunction('CASE WHEN ' . implode(' OR ', $matches) . ' THEN 0 ELSE 1 END'), 'ASC');
+		$qb->addOrderBy((string)array_key_first($keys), 'ASC');
+		$qb->setMaxResults(self::IDENTIFIER_MATCH_LIMIT);
+	}//end orderKeyMatchesFirst()
+
+	/**
+	 * Every row of a result, with the cursor closed.
+	 *
+	 * @param IResult $result The executed query.
+	 *
+	 * @return list<array<string, mixed>> The rows.
+	 */
+	private function fetchRows(IResult $result): array {
+		$rows = [];
+		while (($row = $result->fetch()) !== false) {
+			$rows[] = $row;
+		}
+
+		$result->closeCursor();
+		return $rows;
+	}//end fetchRows()
+
+	/**
+	 * The live objects whose slug starts with a prefix, as slug => uuid pairs.
+	 *
+	 * For the seed import to find an object stored under a suffixed slug (`<slug>-<14 digits>`);
+	 * the caller keeps the rows that really are a suffixed variant. No RBAC or multitenancy
+	 * filter, as for every slug uniqueness query.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 * @param string   $prefix   The slug prefix, taken literally.
+	 * @param int      $limit    Most rows to return.
+	 *
+	 * @return list<array{slug: string, uuid: string}> The matches.
+	 */
+	public function findSlugsByPrefix(Register $register, Schema $schema, string $prefix, int $limit=50): array {
+		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+			return [];
+		}
+
+		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$qb = $this->db->getQueryBuilder();
+		$qb->select(self::METADATA_PREFIX . 'slug', self::METADATA_PREFIX . 'uuid')
+			->from($tableName)
+			->where($qb->expr()->like(self::METADATA_PREFIX . 'slug', $qb->createNamedParameter($this->db->escapeLikeParameter($prefix) . '%')))
+			->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'))
+			->orderBy(self::METADATA_PREFIX . 'id', 'ASC')
+			->setMaxResults($limit);
+		$result = $qb->executeQuery();
+		$matches = [];
+		while (($row = $result->fetch()) !== false) {
+			$matches[] = ['slug' => (string)$row[self::METADATA_PREFIX . 'slug'], 'uuid' => (string)$row[self::METADATA_PREFIX . 'uuid']];
+		}
+
+		$result->closeCursor();
+		return $matches;
+	}//end findSlugsByPrefix()
+
+	/**
+	 * The slug an object keeps when a move or migration takes it to another register or schema (#4037).
+	 *
+	 * Resolved lazily, as on restore: the slug handler needs this mapper.
+	 *
+	 * @param ObjectEntity $entity   The object being moved (still carrying its uuid).
+	 * @param Register     $register The target register.
+	 * @param Schema       $schema   The target schema.
+	 *
+	 * @return string|null The slug to store at the target.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 */
+	public function slugForMove(ObjectEntity $entity, Register $register, Schema $schema): ?string {
+		return $this->container->get(ObjectSlugHandler::class)->slugForMove(entity: $entity, register: $register, schema: $schema);
+	}//end slugForMove()
+
+	/**
+	 * Return the uuids of live objects that hold a slug in one register+schema table.
+	 *
+	 * No RBAC or multitenancy filter: uniqueness is a property of the data, so a
+	 * caller who cannot see the holder must still not take its slug. Soft-deleted
+	 * rows hold no slug, as on the read path.
+	 *
+	 * @param Register    $register    The register.
+	 * @param Schema      $schema      The schema.
+	 * @param string      $slug        The slug to look for.
+	 * @param string|null $excludeUuid The object being saved, which never collides with itself.
+	 *
+	 * @return list<string> The holders' uuids (at most one: enough to know the slug is taken).
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 */
+	public function findSlugHolders(
+		Register $register,
+		Schema $schema,
+		string $slug,
+		?string $excludeUuid=null,
+	): array {
+		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+			return [];
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select(self::METADATA_PREFIX . 'uuid')
+			->from($this->getTableNameForRegisterSchema(register: $register, schema: $schema))
+			->where($qb->expr()->eq(self::METADATA_PREFIX . 'slug', $qb->createNamedParameter($slug)))
+			->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'))
+			->setMaxResults(1);
+		if ($excludeUuid !== null) {
+			$qb->andWhere($qb->expr()->neq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($excludeUuid)));
+		}
+
+		$result = $qb->executeQuery();
+		$uuids = [];
+		while (($row = $result->fetch()) !== false) {
+			$uuids[] = (string)$row[self::METADATA_PREFIX . 'uuid'];
+		}
+
+		$result->closeCursor();
+		return $uuids;
+	}//end findSlugHolders()
+
+	/**
+	 * Load the slug state a bulk save or a backfill decides against, in two queries.
+	 *
+	 * `holders` maps each requested slug to the live uuids holding it; `stored`
+	 * maps each requested uuid to the slug its live row holds now (null when the
+	 * row has none, absent when the row does not exist yet). The IN lists are
+	 * split into chunks of 1,000 values. No access filter, as findSlugHolders().
+	 *
+	 * @param Register      $register The register.
+	 * @param Schema        $schema   The schema.
+	 * @param list<string>  $slugs    Candidate slugs.
+	 * @param list<string>  $uuids    Uuids of the rows being decided.
+	 *
+	 * @return array{holders: array<string, list<string>>, stored: array<string, string|null>}
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 */
+	public function findSlugState(Register $register, Schema $schema, array $slugs, array $uuids): array {
+		$state = ['holders' => [], 'stored' => []];
+		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+			return $state;
+		}
+
+		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$uuidCol = self::METADATA_PREFIX . 'uuid';
+		$slugCol = self::METADATA_PREFIX . 'slug';
+		$queries = [
+			'holders' => [$slugCol, array_values(array_unique(array_filter($slugs, static fn ($wanted) => $wanted !== null && $wanted !== '')))],
+			'stored' => [$uuidCol, array_values(array_unique(array_filter($uuids, static fn ($uuid) => $uuid !== null && $uuid !== '')))],
+		];
+		foreach ($queries as $kind => [$column, $values]) {
+			foreach (array_chunk($values, 1000) as $chunk) {
+				$qb = $this->db->getQueryBuilder();
+				$qb->select($uuidCol, $slugCol)
+					->from($tableName)
+					->where($qb->expr()->in($column, $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_STR_ARRAY)))
+					->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
+				$result = $qb->executeQuery();
+				while (($row = $result->fetch()) !== false) {
+					$rowSlug = $row[$slugCol];
+					if ($kind === 'holders') {
+						$state['holders'][(string)$rowSlug][] = (string)$row[$uuidCol];
+						continue;
+					}
+
+					$storedSlug = null;
+					if ($rowSlug !== null && $rowSlug !== '') {
+						$storedSlug = (string)$rowSlug;
+					}
+
+					$state['stored'][(string)$row[$uuidCol]] = $storedSlug;
+				}
+
+				$result->closeCursor();
+			}
+		}
+
+		return $state;
+	}//end findSlugState()
+
+	/**
+	 * List every slug held by more than one live object in a register+schema table.
+	 *
+	 * Slugs are compared case-folded; the report is keyed by the lower-cased slug.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return array<string, list<string>> Slug => holder uuids, oldest first.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 */
+	public function findDuplicateSlugs(Register $register, Schema $schema): array {
+		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+			return [];
+		}
+
+		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$slugCol = self::METADATA_PREFIX . 'slug';
+		$deletedCol = self::METADATA_PREFIX . 'deleted';
+
+		// Grouped case-folded: on a case-insensitive collation `Hello-World` and
+		// `hello-world` are one slug, and the save paths compare them that way.
+		$sub = $this->db->getQueryBuilder();
+		$folded = $sub->func()->lower($slugCol);
+		$sub->selectAlias($folded, 'slug_key')
+			->from($tableName)
+			->where($sub->expr()->isNotNull($slugCol))
+			->andWhere($sub->expr()->neq($slugCol, $sub->createNamedParameter('')))
+			->andWhere($sub->expr()->isNull($deletedCol))
+			->groupBy($folded)
+			->having('COUNT(*) > 1');
+		$result = $sub->executeQuery();
+		$slugs = [];
+		while (($row = $result->fetch()) !== false) {
+			$slugs[] = (string)$row['slug_key'];
+		}
+
+		$result->closeCursor();
+		if ($slugs === []) {
+			return [];
+		}
+
+		$duplicates = [];
+		foreach (array_chunk($slugs, 1000) as $chunk) {
+			$qb = $this->db->getQueryBuilder();
+			$qb->select(self::METADATA_PREFIX . 'uuid', $slugCol)
+				->from($tableName)
+				->where($qb->expr()->in($qb->func()->lower($slugCol), $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_STR_ARRAY)))
+				->andWhere($qb->expr()->isNull($deletedCol))
+				->orderBy(self::METADATA_PREFIX . 'created', 'ASC')
+				->addOrderBy(self::METADATA_PREFIX . 'id', 'ASC');
+			$rows = $qb->executeQuery();
+			while (($row = $rows->fetch()) !== false) {
+				$duplicates[mb_strtolower((string)$row[$slugCol])][] = (string)$row[self::METADATA_PREFIX . 'uuid'];
+			}
+
+			$rows->closeCursor();
+		}
+
+		return $duplicates;
+	}//end findDuplicateSlugs()
+
+	/**
+	 * Every slug held by a live object in a register+schema table, with its holders.
+	 *
+	 * Only `_uuid` and `_slug` are read, so this stays cheap on large tables.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return array<string, list<string>> Slug => holder uuids.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 */
+	public function findAllSlugs(Register $register, Schema $schema): array {
+		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+			return [];
+		}
+
+		$slugCol = self::METADATA_PREFIX . 'slug';
+		$qb = $this->db->getQueryBuilder();
+		$qb->select(self::METADATA_PREFIX . 'uuid', $slugCol)
+			->from($this->getTableNameForRegisterSchema(register: $register, schema: $schema))
+			->where($qb->expr()->isNotNull($slugCol))
+			->andWhere($qb->expr()->neq($slugCol, $qb->createNamedParameter('')))
+			->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
+		$result = $qb->executeQuery();
+		$slugs = [];
+		while (($row = $result->fetch()) !== false) {
+			$slugs[(string)$row[$slugCol]][] = (string)$row[self::METADATA_PREFIX . 'uuid'];
+		}
+
+		$result->closeCursor();
+		return $slugs;
+	}//end findAllSlugs()
+
+	/**
+	 * Page over the live rows of a register+schema table for the slug backfill.
+	 *
+	 * Keyset-paginated on `_id` (stable while the run writes). Returns the uuid,
+	 * the stored slug, `_created` for the oldest-first ordering the caller applies,
+	 * and the business data the slug is built from.
+	 *
+	 * A row that cannot be converted into an object is left out of `rows` and
+	 * logged with its uuid, but still counts in `fetched` and moves `lastId`: the
+	 * caller pages on what the database returned, so one unreadable row neither
+	 * ends the scan early nor is read again.
+	 *
+	 * @param Register $register   The register.
+	 * @param Schema   $schema     The schema.
+	 * @param int      $afterId    Last `_id` of the previous page (0 for the first).
+	 * @param int      $pageSize   Rows per page.
+	 *
+	 * @return array{
+	 *     rows: list<array{id: int, uuid: string, slug: string|null, created: string|null, object: array}>,
+	 *     fetched: int,
+	 *     lastId: int
+	 * } The convertible rows, how many rows the query returned, and the `_id` of the last one (`$afterId` when none).
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 */
+	public function findSlugBackfillPage(
+		Register $register,
+		Schema $schema,
+		int $afterId,
+		int $pageSize,
+	): array {
+		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+			return ['rows' => [], 'fetched' => 0, 'lastId' => $afterId];
+		}
+
+		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$result = $this->slugBackfillQuery(tableName: $tableName, afterId: $afterId, pageSize: $pageSize)->executeQuery();
+		$page = [];
+		$fetched = 0;
+		$lastId = $afterId;
+		while (($row = $result->fetch()) !== false) {
+			$fetched++;
+			$lastId = (int)$row[self::METADATA_PREFIX . 'id'];
+			$entry = $this->slugBackfillEntry(row: $row, register: $register, schema: $schema, tableName: $tableName);
+			if ($entry !== null) {
+				$page[] = $entry;
+			}
+		}
+
+		$result->closeCursor();
+		return ['rows' => $page, 'fetched' => $fetched, 'lastId' => $lastId];
+	}//end findSlugBackfillPage()
+
+	/**
+	 * The next page of live rows without a slug, in `_id` order.
+	 *
+	 * @param string $tableName The magic table.
+	 * @param int    $afterId   Last `_id` of the previous page.
+	 * @param int    $pageSize  Rows per page.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function slugBackfillQuery(string $tableName, int $afterId, int $pageSize): IQueryBuilder {
+		$idCol = 't.' . self::METADATA_PREFIX . 'id';
+		$slugCol = 't.' . self::METADATA_PREFIX . 'slug';
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($tableName, 't')
+			->where($qb->expr()->gt($idCol, $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->isNull('t.' . self::METADATA_PREFIX . 'deleted'))
+			// Only rows without a slug: a set slug is never rewritten by the backfill.
+			->andWhere($qb->expr()->orX($qb->expr()->isNull($slugCol), $qb->expr()->eq($slugCol, $qb->createNamedParameter(''))))
+			->orderBy($idCol, 'ASC')
+			->setMaxResults($pageSize);
+
+		return $qb;
+	}//end slugBackfillQuery()
+
+	/**
+	 * One backfill row as the planner reads it, or null (logged) when it cannot be converted.
+	 *
+	 * @param array<string, mixed> $row       The table row.
+	 * @param Register             $register  The register.
+	 * @param Schema               $schema    The schema.
+	 * @param string               $tableName The magic table (log context).
+	 *
+	 * @return array{id: int, uuid: string, slug: string|null, created: string|null, object: array}|null
+	 */
+	private function slugBackfillEntry(array $row, Register $register, Schema $schema, string $tableName): ?array {
+		$entity = $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
+		if ($entity === null) {
+			$this->logger->warning(
+				sprintf(
+					'[ObjectSlug] Backfill skipped object %s in table %s: the row could not be converted into an object',
+					(string)($row[self::METADATA_PREFIX . 'uuid'] ?? '?'),
+					$tableName
+				),
+				['app' => 'openregister', 'path' => 'backfill']
+			);
+			return null;
+		}
+
+		$entry = [
+			'id' => (int)$row[self::METADATA_PREFIX . 'id'],
+			'uuid' => (string)$row[self::METADATA_PREFIX . 'uuid'],
+			'slug' => null,
+			'created' => null,
+			'object' => $entity->getObject() ?? [],
+		];
+		$slug = ($row[self::METADATA_PREFIX . 'slug'] ?? null);
+		if ($slug !== null && $slug !== '') {
+			$entry['slug'] = (string)$slug;
+		}
+
+		$created = ($row[self::METADATA_PREFIX . 'created'] ?? null);
+		if ($created !== null) {
+			$entry['created'] = (string)$created;
+		}
+
+		return $entry;
+	}//end slugBackfillEntry()
+
+	/**
+	 * Write one object's slug column directly, for the slug backfill.
+	 *
+	 * No version bump, audit-trail entry or object event: the slug is derived
+	 * metadata, the same as openregister:backfill-system-owner (design D11).
+	 *
+	 * Only when the row still has no slug (null or empty), so a save that set
+	 * the slug while the backfill was planning is not undone.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 * @param string   $uuid     The object.
+	 * @param string   $slug     The new slug.
+	 *
+	 * @return int Rows updated: 0 when the row changed in the meantime.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 */
+	public function updateSlugColumn(
+		Register $register,
+		Schema $schema,
+		string $uuid,
+		string $slug,
+	): int {
+		$slugCol = self::METADATA_PREFIX . 'slug';
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableNameForRegisterSchema(register: $register, schema: $schema))
+			->set($slugCol, $qb->createNamedParameter($slug))
+			->where($qb->expr()->eq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($uuid)))
+			->andWhere(
+				$qb->expr()->orX(
+					$qb->expr()->isNull($slugCol),
+					$qb->expr()->eq($slugCol, $qb->createNamedParameter(''))
+				)
+			);
+
+		return $qb->executeStatement();
+	}//end updateSlugColumn()
 
 	/**
 	 * Find objects by a list of uuids within ONE register+schema table.
@@ -11296,6 +11873,14 @@ class MagicMapper extends AbstractObjectMapper {
 
 		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
+		// The slug it held may have been given to another object since the delete
+		// (#4037). Resolved lazily: the handler needs this mapper.
+		$restoredSlug = $this->container->get(ObjectSlugHandler::class)->slugForRestore(
+			entity: $entity,
+			register: $register,
+			schema: $schema
+		);
+
 		// Clear the soft-delete marker directly on the owning magic table.
 		// A native UPDATE avoids the Entity-layer array->null serialisation
 		// quirk for JSON columns.
@@ -11308,6 +11893,16 @@ class MagicMapper extends AbstractObjectMapper {
 					$qb->createNamedParameter($entity->getUuid())
 				)
 			);
+		if ($restoredSlug !== $entity->getSlug()) {
+			$slugType = \PDO::PARAM_STR;
+			if ($restoredSlug === null) {
+				$slugType = \PDO::PARAM_NULL;
+			}
+
+			$qb->set(self::METADATA_PREFIX . 'slug', $qb->createNamedParameter($restoredSlug, $slugType));
+			$entity->setSlug($restoredSlug);
+		}
+
 		$qb->executeStatement();
 
 		$entity->setDeleted(null);
