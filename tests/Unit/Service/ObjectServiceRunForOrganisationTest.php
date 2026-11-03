@@ -37,6 +37,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\OrganisationContext
  * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Db\Organisation
  */
 class ObjectServiceRunForOrganisationTest extends TestCase {
 
