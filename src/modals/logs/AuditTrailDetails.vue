@@ -259,7 +259,7 @@ export default {
 			if (!dateString) return '-'
 			try {
 				return new Date(dateString).toLocaleString()
-			} catch (error) {
+			} catch {
 				return dateString
 			}
 		},
@@ -287,7 +287,7 @@ export default {
 				}
 
 				return JSON.stringify(changes, null, 2)
-			} catch (error) {
+			} catch {
 				return String(changes)
 			}
 		},
@@ -315,7 +315,7 @@ export default {
 				}
 
 				return JSON.stringify(data, null, 2)
-			} catch (error) {
+			} catch {
 				return String(data)
 			}
 		},

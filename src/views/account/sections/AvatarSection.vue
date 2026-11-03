@@ -65,7 +65,7 @@ export default {
 			)
 			this.userId = data?.uid || ''
 			this.canChangeAvatar = data?.backendCapabilities?.avatar ?? true
-		} catch (e) {
+		} catch {
 			// Default to showing the section.
 		}
 	},

@@ -105,9 +105,10 @@ class DepartmentMatrixCompiler {
 	/**
 	 * Constructor.
 	 *
-	 * @param MatrixRowWhere|null $where Reads a row's `where`; a fresh one when null.
+	 * @param MatrixRowWhere|null $where           Reads a row's `where`; a fresh one when null.
+	 * @param array<int, string>  $declaredActions The actions the schema declares itself, which a row may grant too.
 	 */
-	public function __construct(?MatrixRowWhere $where = null) {
+	public function __construct(?MatrixRowWhere $where = null, private readonly array $declaredActions = []) {
 		$this->where = ($where ?? new MatrixRowWhere());
 	}//end __construct()
 
@@ -384,7 +385,7 @@ class DepartmentMatrixCompiler {
 		$actions = [];
 		foreach ($declared as $action) {
 			$action = trim((string)$action);
-			if (in_array($action, self::ACTIONS, true) === false) {
+			if (in_array($action, self::ACTIONS, true) === false && in_array($action, $this->declaredActions, true) === false) {
 				continue;
 			}
 

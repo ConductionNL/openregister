@@ -91,6 +91,7 @@ class ObjectGrantsReportTest extends TestCase {
 	 * @param string[]                                                          $types       The principal type filter.
 	 * @param array|null                                                        $objectBlock The case's own block.
 	 * @param array                                                             $roles       The register's role definitions.
+	 * @param string|null $organisation The record's own organisation.
 	 *
 	 * @return array<string, mixed> The report.
 	 */
@@ -103,6 +104,7 @@ class ObjectGrantsReportTest extends TestCase {
 		array $types = [],
 		?array $objectBlock = null,
 		array $roles = [],
+		?string $organisation = null,
 	): array {
 		$schema = new Schema();
 		$schema->setId(7);
@@ -172,6 +174,7 @@ class ObjectGrantsReportTest extends TestCase {
 		$object->setOwner('bea');
 		$object->setObject($record);
 		$object->setAuthorization($objectBlock);
+		$object->setOrganisation($organisation);
 
 		$report = new ObjectGrantsReport(
 			accessReport: $accessReport,
@@ -241,6 +244,29 @@ class ObjectGrantsReportTest extends TestCase {
 		$this->assertFalse($rows[0]['relative']);
 		$this->assertSame(['read', 'update'], $rows[0]['verbs']);
 	}//end testAFittingConditionalSchemaRuleIsARow()
+
+	/**
+	 * The record's own organisation, not an `@self` block in its data, decides whether a rule on `_organisation` fits.
+	 *
+	 * @return void
+	 */
+	public function testTheRecordsOwnOrganisationDecidesTheFit(): void {
+		$orgRule = ['group' => 'woo-team', 'match' => ['_organisation' => 'org-a']];
+
+		$forged = $this->rowsFor(
+			schemaBlock: ['read' => [$orgRule]],
+			record: ['caseType' => 'ct-1', '@self' => ['organisation' => 'org-a']],
+			organisation: 'org-b'
+		);
+		$this->assertSame(expected: [], actual: $this->rowsNaming(report: $forged, principalId: 'woo-team'));
+
+		$own = $this->rowsFor(
+			schemaBlock: ['read' => [$orgRule]],
+			record: ['caseType' => 'ct-1', '@self' => ['organisation' => 'org-b']],
+			organisation: 'org-a'
+		);
+		$this->assertCount(expectedCount: 1, haystack: $this->rowsNaming(report: $own, principalId: 'woo-team'));
+	}//end testTheRecordsOwnOrganisationDecidesTheFit()
 
 	/**
 	 * A conditional rule that does not fit the record is left out.

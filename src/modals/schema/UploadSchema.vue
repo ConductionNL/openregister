@@ -145,11 +145,9 @@ export default {
 				.then(({ response }) => {
 					this.success = response.ok
 					this.error = false
-					response.ok
-						&& (this.closeModalTimeout = setTimeout(
-							this.closeModal,
-							2000,
-						))
+					if (response.ok) {
+						this.closeModalTimeout = setTimeout(this.closeModal, 2000)
+					}
 				})
 				.catch((error) => {
 					this.success = false
@@ -163,14 +161,14 @@ export default {
 		},
 
 		/**
-		 * @param json
+		 * @param {string} json
 		 * @spec exclude UI validation helper — reports whether a string parses as JSON.
 		 */
 		validateJson(json) {
 			try {
 				JSON.parse(json)
 				return true
-			} catch (error) {
+			} catch {
 				return false
 			}
 		},

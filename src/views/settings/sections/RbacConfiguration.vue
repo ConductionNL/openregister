@@ -207,7 +207,7 @@ export default {
 			},
 
 			/**
-			 * @param value
+			 * @param {object} value
 			 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 			 */
 			set(value) {

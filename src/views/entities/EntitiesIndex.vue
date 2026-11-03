@@ -340,7 +340,7 @@ import { navigationStore } from '../../store/store.js'
  * @copyright 2024 Conduction B.V.
  * @license EUPL-1.2
  * @version 1.0.0
- * @link https://github.com/ConductionNL/openregister
+ * @see https://github.com/ConductionNL/openregister
  */
 export default {
 	name: 'EntitiesIndex',
