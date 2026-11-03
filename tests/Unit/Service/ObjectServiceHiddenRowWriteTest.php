@@ -436,6 +436,8 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 	public function testAHiddenRowsWriteContinuesWithItsUuid(): void {
 		// The identifier "7" names the hidden row by its id; its uuid is hidden-7.
 		$this->signedIn('mallory');
+		// The hidden row lies inside the caller's organisations; only the read rules hide it.
+		$this->objectMapper->method('callerOrganisationsHold')->willReturn(true);
 		$this->objectMapper->method('find')->willReturnCallback(
 			function (string|int $identifier, ?Register $register = null, ?Schema $schema = null, bool $includeDeleted = false, bool $_rbac = true): ObjectEntity {
 				if ($_rbac === true) {

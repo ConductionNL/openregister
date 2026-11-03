@@ -602,27 +602,51 @@ class AppendOnlyTest extends TestCase {
 	}//end testDeleteOfExistingObjectRefusedOnAppendOnlySchema()
 
 	/**
-	 * On an ordinary schema a caller-chosen uuid that does not exist yet keeps
-	 * today's upsert semantics: no insert-only flag is forced on it.
+	 * On an ordinary schema, a caller-chosen uuid that nothing the caller may see
+	 * answers to is written insert-only: a stored row of that identifier the
+	 * caller cannot see is refused, not updated.
 	 *
 	 * @return void
 	 */
-	public function testOrdinarySchemaInsertWithUuidKeepsUpsertSemantics(): void {
+	public function testOrdinarySchemaInsertWithAFreshUuidIsInsertOnly(): void {
+		$this->assertSame(true, $this->ordinaryInsertFailIfExists(rbac: true));
+	}//end testOrdinarySchemaInsertWithAFreshUuidIsInsertOnly()
+
+	/**
+	 * With RBAC off (an administrator, a job) the same insert keeps its upsert semantics.
+	 *
+	 * @return void
+	 */
+	public function testOrdinarySchemaInsertWithUuidKeepsUpsertSemanticsWithRbacOff(): void {
+		$this->assertSame(false, $this->ordinaryInsertFailIfExists(rbac: false));
+	}//end testOrdinarySchemaInsertWithUuidKeepsUpsertSemanticsWithRbacOff()
+
+	/**
+	 * The failIfExists flag the save handler gets for an insert by a fresh uuid on an ordinary schema.
+	 *
+	 * @param bool $rbac Whether the save is judged for the signed-in caller.
+	 *
+	 * @return bool|null
+	 */
+	private function ordinaryInsertFailIfExists(bool $rbac): ?bool {
 		$this->setProperty('currentSchema', $this->makeSchema(appendOnly: false, slug: 'ordinary'));
 		$this->setProperty('currentRegister', null);
 		$this->stubFind(existingUuid: null);
 
 		$savedEntity = new ObjectEntity();
+		$failIfExists = null;
 		$this->saveHandler->method('applyAlwaysDefaults')->willReturnArgument(1);
 		$this->saveHandler->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (mixed ...$args) use ($savedEntity): ObjectEntity {
-					$this->assertFalse(($args[12] ?? false));
+				function (mixed ...$args) use ($savedEntity, &$failIfExists): ObjectEntity {
+					$failIfExists = ($args[12] ?? null);
 					return $savedEntity;
 				}
 			);
 
-		$this->assertSame($savedEntity, $this->service->saveObject(object: ['id' => 'fresh-uuid']));
-	}//end testOrdinarySchemaInsertWithUuidKeepsUpsertSemantics()
+		$this->assertSame($savedEntity, $this->service->saveObject(object: ['id' => 'fresh-uuid'], _rbac: $rbac));
+
+		return $failIfExists;
+	}//end ordinaryInsertFailIfExists()
 }//end class
