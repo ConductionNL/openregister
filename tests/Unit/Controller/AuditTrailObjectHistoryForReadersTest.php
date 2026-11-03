@@ -160,7 +160,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 		$object->setSchema('7');
 		$object->setObject(['titel' => 'Nieuw', 'interneAantekening' => 'geheim-nu']);
 
-		$this->readAccess->method('readable')->willReturn($object);
+		$this->readAccess->method('readableOrAmbiguous')->willReturn($object);
 		$this->readAccess->method('schemaOf')->willReturn($this->schema);
 
 		return $object;
@@ -294,13 +294,25 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 	}
 
 	public function testAUserWhoMayNotReadTheObjectGets404AndNoEntryIsRead(): void {
-		$this->readAccess->method('readable')->willReturn(null);
+		$this->readAccess->method('readableOrAmbiguous')->willReturn(null);
 		$this->auditTrailMapper->expects($this->never())->method('findAll');
 		$this->logService->expects($this->never())->method('getLogs');
 
 		$result = $this->controllerFor('buitenstaander', false, ['users'])->objects('dossiq', 'zaak', self::OBJECT_UUID);
 
 		$this->assertSame(404, $result->getStatus());
+	}
+
+	public function testAReaderGetsTheSame409ForAnAmbiguousSlug(): void {
+		// #4037: a slug two objects of the register and schema hold is ambiguous for a
+		// reader too, not "not found", and neither object's history is read.
+		$this->readAccess->method('readableOrAmbiguous')->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('two'));
+		$this->auditTrailMapper->expects($this->never())->method('findAll');
+
+		$response = $this->controllerFor('alice', false, ['users'])->objects('dossiq', 'zaak', 'dubbel');
+
+		$this->assertSame(409, $response->getStatus());
+		$this->assertSame('ambiguous-identifier', $response->getData()['error']);
 	}
 
 	public function testTheDoelbindingRefusalOfTheObjectGetAppliesToItsHistory(): void {
@@ -368,7 +380,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 		$entry = $this->updateEntry();
 		$this->logService->expects($this->once())->method('getLogs')->willReturn([$entry]);
 		$this->logService->method('count')->willReturn(1);
-		$this->readAccess->expects($this->never())->method('readable');
+		$this->readAccess->expects($this->never())->method('readableOrAmbiguous');
 
 		$result = $this->controllerFor('admin', true, ['admin'])->objects('dossiq', 'zaak', self::OBJECT_UUID);
 
@@ -379,7 +391,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 
 	public function testAnAnonymousCallerGets401(): void {
 		$this->userSession->method('getUser')->willReturn(null);
-		$this->readAccess->expects($this->never())->method('readable');
+		$this->readAccess->expects($this->never())->method('readableOrAmbiguous');
 
 		$controller = new AuditTrailController(
 			'openregister',

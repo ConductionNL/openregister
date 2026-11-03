@@ -72,6 +72,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Service\Object\SaveObject\BulkObjectSlugs;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -174,6 +175,13 @@ class SaveObjects {
 	private static array $registerCache = [];
 
 	/**
+	 * The bulk slug pass (#4037), built on first use.
+	 *
+	 * @var BulkObjectSlugs|null
+	 */
+	private ?BulkObjectSlugs $bulkSlugs = null;
+
+	/**
 	 * Constructor for SaveObjects handler
 	 *
 	 * @param MagicMapper $objectEntityMapper Mapper for object entity database operations
@@ -236,6 +244,26 @@ class SaveObjects {
 
 		return $schema;
 	}//end loadSchemaWithCache()
+
+	/**
+	 * The slug rules for a prepared batch (#4037), built once.
+	 *
+	 * @return BulkObjectSlugs The bulk slug pass.
+	 */
+	private function bulkSlugs(): BulkObjectSlugs {
+		$this->bulkSlugs ??= new BulkObjectSlugs(
+			slugHandler: $this->saveHandler->getSlugHandler(),
+			registerMapper: $this->registerMapper,
+			logger: $this->logger,
+			schemaOf: fn (string $schemaId): Schema => $this->loadSchemaWithCache(schemaId: $schemaId)
+		);
+
+		return $this->bulkSlugs;
+	}//end bulkSlugs()
+
+
+
+
 
 	/**
 	 * Get comprehensive schema analysis from cache or generate new analysis
@@ -461,7 +489,9 @@ class SaveObjects {
 
 		// Process objects in chunks for optimal performance.
 		$chunkSize = $this->calculateOptimalChunkSize(totalObjects: count($processedObjects));
-		$chunks = array_chunk($processedObjects, $chunkSize);
+		// Decide object slugs per register+schema group, in batch order, before
+		// anything is written: the same rules as a single save (#4037).
+		$chunks = array_chunk($this->bulkSlugs()->apply(objects: $processedObjects, register: $register, schema: $schema), $chunkSize);
 
 		// SINGLE PATH PROCESSING - Process all chunks the same way regardless of size.
 		foreach ($chunks as $chunkIndex => $objectsChunk) {
@@ -1785,6 +1815,10 @@ class SaveObjects {
 	): array {
 		// NO ERROR SUPPRESSION: Let single-schema preparation errors bubble up immediately!
 		$selfData = $object['@self'] ?? [];
+
+		// The call to extractBusinessData() below drops an undeclared top-level
+		// `slug`. Keep it for the slug decision, which removes this key again (#4037).
+		$selfData[BulkObjectSlugs::CLIENT_SLUG_KEY] = $this->bulkSlugs()->clientSlugToCarry(selfData: $selfData, object: $object);
 
 		// PERFORMANCE: Use pre-loaded values instead of per-object lookups.
 		$selfData['register'] = $selfData['register'] ?? $registerId;
