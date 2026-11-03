@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Tests\Support\BuildsAuditCursors;
 use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 use OCA\OpenRegister\Db\Register;
 use Psr\Log\LoggerInterface;
@@ -71,10 +72,12 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders
  * @uses \OCA\OpenRegister\Service\Audit\HistoryEntryRedactor
  * @uses \OCA\OpenRegister\Service\PropertyRbacHandler
+ * @uses \OCA\OpenRegister\Service\Audit\ReadableAuditCursor
  */
 class ExplicitRevealAuditTrailTest extends TestCase {
 
 	use BuildsStateFieldRuleResolver;
+	use BuildsAuditCursors;
 
 	private const BSN = '123457609';
 
@@ -286,7 +289,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 				$this->createMock(originalClassName: PurposeGuard::class),
 				$reads
 			),
-			readEvents: $reads
+			cursors: $this->auditCursors()
 		);
 		$encoded = (string)json_encode(value: $lister->page(userId: 'alice', limit: 20));
 
