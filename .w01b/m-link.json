@@ -1,0 +1,1 @@
+[["default direction", "public string $direction = RelationTypeResolver::DIRECTION_OUTGOING;", "public string $direction = RelationTypeResolver::DIRECTION_INCOMING;"], ["incoming not switched", "$this->direction = RelationTypeResolver::DIRECTION_INCOMING;", "$this->direction = RelationTypeResolver::DIRECTION_OUTGOING;"]]

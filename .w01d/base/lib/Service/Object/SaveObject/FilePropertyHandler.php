@@ -1,0 +1,1612 @@
+<?php
+
+/**
+ * FilePropertyHandler
+ *
+ * This file is part of the OpenRegister app for Nextcloud.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
+ */
+
+namespace OCA\OpenRegister\Service\Object\SaveObject;
+
+use Exception;
+use finfo;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\File\ExecutableContentDetector;
+use OCA\OpenRegister\Service\File\FilePropertyRules;
+use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\SecurityService;
+use OCP\Files\File;
+use Psr\Log\LoggerInterface;
+
+/**
+ * Handles file property processing including upload, validation, and security checks.
+ *
+ * This handler is responsible for:
+ * - Processing uploaded files (multipart/form-data)
+ * - Detecting and validating file properties
+ * - Parsing file data from data URIs, base64, and URLs
+ * - Validating files against schema configuration
+ * - Security: blocking executable files
+ * - Managing file IDs in object data
+ * - Applying auto-tags to files
+ *
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link     https://github.com/ConductionNL/openregister
+ * @version  1.0.0
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     File processing requires comprehensive validation and parsing methods
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex file handling with multiple input formats
+ */
+class FilePropertyHandler {
+	/**
+	 * Constructor for FilePropertyHandler.
+	 *
+	 * @param LoggerInterface $logger Logger for logging operations
+	 * @param FileService $fileService File service for file operations
+	 * @param ExecutableContentDetector $executableDetector Shared executable-content detection
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	public function __construct(
+		private readonly LoggerInterface $logger,
+		private readonly FileService $fileService,
+		private readonly ExecutableContentDetector $executableDetector = new ExecutableContentDetector(),
+	) {
+	}//end __construct()
+
+	/**
+	 * Processes uploaded files from multipart/form-data and injects them into object data.
+	 *
+	 * This method handles PHP's $_FILES format uploaded via multipart/form-data requests.
+	 * It converts uploaded files into a format that can be processed by existing file handlers.
+	 *
+	 * @param array $uploadedFiles The uploaded files array (from IRequest::getUploadedFile()).
+	 * @param array $data The object data to inject files into.
+	 *
+	 * @psalm-param   array<string, array{
+	 *     name: string, type: string, tmp_name: string, error: int, size: int
+	 * }> $uploadedFiles
+	 * @psalm-param   array<string, mixed> $data
+	 * @phpstan-param array<string, array{
+	 *     name: string, type: string, tmp_name: string, error: int, size: int
+	 * }> $uploadedFiles
+	 * @phpstan-param array<string, mixed> $data
+	 *
+	 * @return array The modified object data with file content injected.
+	 *
+	 * @psalm-return   array<string, mixed>
+	 * @phpstan-return array<string, mixed>
+	 *
+	 * @throws Exception If file reading fails.
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	public function processUploadedFiles(array $uploadedFiles, array $data): array {
+		foreach ($uploadedFiles as $fieldName => $fileInfo) {
+			// Skip files with upload errors.
+			if ($fileInfo['error'] !== UPLOAD_ERR_OK) {
+				// Log the error but don't fail the entire request.
+				$this->logger->warning(
+					message: '[FilePropertyHandler] File upload error for field {field}: {error}',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'app' => 'openregister',
+						'field' => $fieldName,
+						'error' => $fileInfo['error'],
+						'filename' => $fileInfo['name'] ?? 'unknown',
+					]
+				);
+				continue;
+			}
+
+			// Read file content. Check readability first so an absent/unreadable
+			// tmp path throws our clear exception instead of leaking a
+			// file_get_contents() warning before returning false.
+			if (is_readable((string)($fileInfo['tmp_name'] ?? '')) === false) {
+				throw new Exception("Failed to read uploaded file for field '$fieldName'");
+			}
+
+			$fileContent = file_get_contents($fileInfo['tmp_name']);
+			if ($fileContent === false) {
+				throw new Exception("Failed to read uploaded file for field '$fieldName'");
+			}
+
+			// Create a data URI from the uploaded file.
+			// This allows the existing file handling logic to process it.
+			$mimeType = $fileInfo['type'] ?? 'application/octet-stream';
+			$base64Content = base64_encode($fileContent);
+			$dataUri = "data:$mimeType;base64,$base64Content";
+
+			// Handle array field names (e.g., 'images[]' or 'images[0]' becomes 'images').
+			// Strip the array suffix/index and treat as array property.
+			$isArrayField = false;
+			$cleanFieldName = $fieldName;
+
+			// Check for array notation: images[] or images[0], images[1], etc.
+			if (preg_match('/^(.+)\[\d*\]$/', $fieldName, $matches) === 1) {
+				$isArrayField = true;
+				$cleanFieldName = $matches[1];
+				// Extract 'images' from 'images[0]'.
+			}
+
+			// Inject the data URI into the object data.
+			// If the field already has a value in $data, the uploaded file takes precedence.
+			if ($isArrayField === true) {
+				// For array fields, append to array.
+				if (isset($data[$cleanFieldName]) === false) {
+					$data[$cleanFieldName] = [];
+				}
+
+				$data[$cleanFieldName][] = $dataUri;
+				continue;
+			}
+
+			// For single fields, set directly.
+			$data[$fieldName] = $dataUri;
+		}//end foreach
+
+		return $data;
+	}//end processUploadedFiles()
+
+	/**
+	 * Check if a value should be treated as a file property
+	 *
+	 * @param mixed $value The value to check
+	 * @param Schema|null $schema Optional schema for property-based checking
+	 * @param string|null $propertyName Optional property name for schema lookup
+	 *
+	 * @return bool True if the value should be treated as a file property
+	 * @phpstan-return bool
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple file format detection patterns required
+	 * @SuppressWarnings(PHPMD.NPathComplexity)       Many conditional paths for different file input formats
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file type detection requires checking many formats
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	public function isFileProperty($value, ?Schema $schema = null, ?string $propertyName = null): bool {
+		// If we have schema and property name, use schema-based checking.
+		if ($schema !== null && $propertyName !== null) {
+			$schemaProperties = $schema->getProperties() ?? [];
+
+			if (isset($schemaProperties[$propertyName]) === false) {
+				// Property not in schema, not a file.
+				return false;
+			}
+
+			$propertyConfig = $schemaProperties[$propertyName];
+			$propertyType = $propertyConfig['type'] ?? '';
+
+			// Check if it's a direct file property.
+			if ($propertyType === 'file') {
+				return true;
+			}
+
+			// Check if it's an array of files.
+			if (($propertyConfig['type'] ?? '') === 'array') {
+				$itemsConfig = $propertyConfig['items'] ?? [];
+				if (($itemsConfig['type'] ?? '') === 'file') {
+					return true;
+				}
+			}
+
+			return false;
+			// Property exists but is not configured as file type.
+		}//end if
+
+		// Fallback to format-based checking when schema info is not available.
+		// This is used within handleFileProperty for individual value validation.
+		// Check for single file (data URI, base64, URL with file extension, or file object).
+		if (is_string($value) === true) {
+			// Data URI format.
+			if (strpos($value, 'data:') === 0) {
+				return true;
+			}
+
+			// URL format (http/https) - but only if it looks like a downloadable file.
+			if (filter_var($value, FILTER_VALIDATE_URL) !== false
+				&& (strpos($value, 'http://') === 0 || strpos($value, 'https://') === 0)
+			) {
+				// Parse URL to get path.
+				$urlPath = parse_url($value, PHP_URL_PATH);
+				if ($urlPath !== null && $urlPath !== '') {
+					// Get file extension.
+					$extension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
+
+					// Common file extensions that indicate downloadable files.
+					$fileExtensions = $this->getCommonFileExtensions();
+
+					// Only treat as file if it has a recognized file extension.
+					if (in_array($extension, $fileExtensions) === true) {
+						return true;
+					}
+				}//end if
+
+				// Don't treat regular website URLs as files.
+				return false;
+			}//end if
+
+			// Base64 encoded string (simple heuristic).
+			if (base64_encode(base64_decode($value, true)) === $value && strlen($value) > 100) {
+				return true;
+			}
+		}//end if
+
+		// Check for file object (array with required file object properties).
+		if (is_array($value) === true && $this->isFileObject(value: $value) === true) {
+			return true;
+		}
+
+		// Check for array of files.
+		if (is_array($value) === true) {
+			foreach ($value as $item) {
+				if (is_string($item) === true) {
+					// Data URI.
+					if (strpos($item, 'data:') === 0) {
+						return true;
+					}
+
+					// URL with file extension.
+					if (filter_var($item, FILTER_VALIDATE_URL) !== false
+						&& (strpos($item, 'http://') === 0 || strpos($item, 'https://') === 0)
+					) {
+						$urlPath = parse_url($item, PHP_URL_PATH);
+						if ($urlPath !== null && $urlPath !== '') {
+							$extension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
+							$fileExtensions = $this->getCommonFileExtensions();
+							if (in_array($extension, $fileExtensions) === true) {
+								return true;
+							}
+						}//end if
+					}//end if
+
+					// Base64.
+					if (base64_encode(base64_decode($item, true)) === $item && strlen($item) > 100) {
+						return true;
+					}
+				} elseif (is_array($item) === true && $this->isFileObject(value: $item) === true) {
+					// File object in array.
+					return true;
+				}//end if
+			}//end foreach
+		}//end if
+
+		return false;
+	}//end isFileProperty()
+
+	/**
+	 * Checks if an array represents a file object.
+	 *
+	 * A file object should have at least an 'id' and either 'title' or 'path'.
+	 * This matches the structure returned by the file renderer.
+	 *
+	 * @param array $value The array to check.
+	 *
+	 * @psalm-param   array<string, mixed> $value
+	 * @phpstan-param array<string, mixed> $value
+	 *
+	 * @return bool Whether the array is a file object.
+	 *
+	 * @psalm-return   bool
+	 * @phpstan-return bool
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	public function isFileObject(array $value): bool {
+		// Must have an ID.
+		if (isset($value['id']) === false) {
+			return false;
+		}
+
+		// Must have either title or path (typical file object properties).
+		if (isset($value['title']) === false && isset($value['path']) === false) {
+			return false;
+		}
+
+		// Should not be a regular data array with other purposes.
+		// File objects typically have file-specific properties.
+		$fileProperties = [
+			'id',
+			'title',
+			'path',
+			'type',
+			'size',
+			'accessUrl',
+			'downloadUrl',
+			'labels',
+			'extension',
+			'hash',
+			'modified',
+			'published',
+		];
+		$hasFileProperties = false;
+
+		foreach ($fileProperties as $prop) {
+			if (($value[$prop] ?? null) !== null) {
+				$hasFileProperties = true;
+				break;
+			}
+		}
+
+		return $hasFileProperties;
+	}//end isFileObject()
+
+	/**
+	 * Generates a unique filename for uploaded files.
+	 *
+	 * This method creates a unique filename by combining the property name,
+	 * timestamp, and random bytes to ensure uniqueness.
+	 *
+	 * @param string $propertyName The name of the file property.
+	 * @param string $extension The file extension.
+	 * @param int|null $index Optional index for array properties.
+	 *
+	 * @return string The generated unique filename.
+	 *
+	 * @psalm-return   string
+	 * @phpstan-return string
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function generateFileName(
+		string $propertyName,
+		string $extension,
+		?int $index = null,
+	): string {
+		$timestamp = time();
+		$random = bin2hex(random_bytes(4));
+		$indexSuffix = '';
+		if ($index !== null) {
+			$indexSuffix = "_{$index}";
+		}
+
+		return "{$propertyName}{$indexSuffix}_{$timestamp}_{$random}.{$extension}";
+	}//end generateFileName()
+
+	/**
+	 * Prepares auto-tags for a file based on the property configuration.
+	 *
+	 * This method creates an array of tags to be attached to the file,
+	 * including the property name tag and any configured auto-tags.
+	 *
+	 * @param array $fileConfig The file property configuration from schema.
+	 * @param string $propertyName The name of the file property.
+	 * @param int|null $index Optional index for array properties.
+	 *
+	 * @psalm-param   array<string, mixed> $fileConfig
+	 * @phpstan-param array<string, mixed> $fileConfig
+	 *
+	 * @return string[] The prepared tags array.
+	 *
+	 * @psalm-return   list<string>
+	 * @phpstan-return array<int, string>
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $index kept for API consistency with other methods
+	 * @psalm-suppress                                UnusedParam $index kept for API consistency and future use
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function prepareAutoTags(
+		array $fileConfig,
+		string $propertyName,
+		?int $index = null,
+	): array {
+		// Note: $index parameter is kept for API consistency with generateFileName() and other methods.
+		// It could be used in the future to add index-specific tags like "array_item:0".
+		$tags = [];
+
+		// Add property name as tag.
+		$tags[] = "property:{$propertyName}";
+
+		// Add configured auto-tags.
+		if (isset($fileConfig['autoTags']) === true && is_array($fileConfig['autoTags']) === true) {
+			$tags = array_merge($tags, $fileConfig['autoTags']);
+		}
+
+		return array_values(array_unique($tags));
+	}//end prepareAutoTags()
+
+	/**
+	 * Handles a file property during save with validation and proper ID storage.
+	 *
+	 * This method processes file properties by:
+	 * - Validating files against schema property configuration (MIME type, size)
+	 * - Applying auto tags from the property configuration
+	 * - Storing file IDs in the object data instead of just attaching files
+	 * - Supporting both single files and arrays of files
+	 *
+	 * @param ObjectEntity $objectEntity The object entity being saved.
+	 * @param array $object The object data (passed by reference to update with file IDs).
+	 * @param string $propertyName The name of the file property.
+	 * @param Schema $schema The schema containing property configuration.
+	 *
+	 * @psalm-param   ObjectEntity $objectEntity
+	 * @psalm-param   array<string, mixed> $object
+	 * @psalm-param   string $propertyName
+	 * @psalm-param   Schema $schema
+	 * @phpstan-param ObjectEntity $objectEntity
+	 * @phpstan-param array<string, mixed> $object
+	 * @phpstan-param string $propertyName
+	 * @phpstan-param Schema $schema
+	 *
+	 * @return void
+	 *
+	 * @psalm-return   void
+	 * @phpstan-return void
+	 *
+	 * @throws Exception If file validation fails or file operations fail.
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	public function handleFileProperty(
+		ObjectEntity $objectEntity,
+		array &$object,
+		string $propertyName,
+		Schema $schema,
+	): void {
+		$fileValue = $object[$propertyName];
+		$target = new FilePropertyTarget(
+			objectEntity: $objectEntity,
+			name: $propertyName,
+			isArray: (($schema->getProperties() ?? [])[$propertyName]['type'] ?? '') === 'array',
+			fileConfig: $this->fileConfigOf(schema: $schema, propertyName: $propertyName)
+		);
+
+		// Handle file deletion: null for single files, empty array for array properties.
+		if ($fileValue === null || (is_array($fileValue) === true && empty($fileValue) === true)) {
+			$object[$propertyName] = $this->clearFileProperty(target: $target);
+			return;
+		}
+
+		if ($target->isArray === true) {
+			$object[$propertyName] = $this->storeFiles(target: $target, fileValue: $fileValue);
+			return;
+		}
+
+		if ($this->isFileProperty(value: $fileValue) === true) {
+			// Replace the file content with file ID in the object data.
+			$object[$propertyName] = $this->processSingleFileProperty(
+				objectEntity: $objectEntity,
+				fileInput: $fileValue,
+				propertyName: $propertyName,
+				fileConfig: $target->fileConfig
+			);
+		}
+	}//end handleFileProperty()
+
+	/**
+	 * The file configuration of a property: its own, or its items' for an array, with the
+	 * schema-level autoShare as a default.
+	 *
+	 * @param Schema $schema       The schema containing property configuration.
+	 * @param string $propertyName The name of the file property.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @throws Exception If the property is not in the schema or is not configured for files.
+	 */
+	private function fileConfigOf(Schema $schema, string $propertyName): array {
+		$schemaProperties = $schema->getProperties() ?? [];
+		if (isset($schemaProperties[$propertyName]) === false) {
+			throw new Exception("Property '$propertyName' not found in schema configuration");
+		}
+
+		$fileConfig = $schemaProperties[$propertyName];
+		if (($fileConfig['type'] ?? '') === 'array') {
+			$fileConfig = ($fileConfig['items'] ?? []);
+		}
+
+		if (($fileConfig['type'] ?? '') !== 'file') {
+			throw new Exception("Property '$propertyName' is not configured as a file property");
+		}
+
+		// Schema configuration.autoShare serves as a default for all file properties:
+		// when true, an NC share is automatically created for each uploaded file.
+		if (isset($fileConfig['autoShare']) === false) {
+			$schemaConfig = $schema->getConfiguration() ?? [];
+			if (isset($schemaConfig['autoShare']) === true) {
+				$fileConfig['autoShare'] = $schemaConfig['autoShare'];
+			} elseif (isset($schemaConfig['autoPublish']) === true) {
+				// DEPRECATED: autoPublish was renamed to autoShare in 2026; the legacy value is not acted on.
+				$this->logger->warning(
+					message: "[FilePropertyHandler] Schema config key 'autoPublish' is deprecated and ignored; "
+						. "rename it to 'autoShare' to keep auto-sharing uploaded files.",
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'app' => 'openregister',
+						'schemaId' => $schema->getId(),
+					]
+				);
+			}
+		}
+
+		return $fileConfig;
+	}//end fileConfigOf()
+
+	/**
+	 * Delete the files a property holds in the STORED object data and return its cleared value.
+	 *
+	 * The stored data is read, not the current entity state, which prepareObjectData may have
+	 * changed. A file that cannot be deleted is logged and skipped.
+	 *
+	 * @param FilePropertyTarget $target The file property.
+	 *
+	 * @return array<never>|null An empty array for an array property, else null.
+	 */
+	private function clearFileProperty(FilePropertyTarget $target): ?array {
+		$this->logger->info(
+			message: '[FilePropertyHandler] File property deletion requested',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'app' => 'openregister',
+				'propertyName' => $target->name,
+				'uuid' => $target->objectEntity->getUuid(),
+			]
+		);
+
+		$existingFileIds = ($target->objectEntity->getObject() ?? [])[$target->name] ?? null;
+
+		$this->logger->info(
+			message: '[FilePropertyHandler] Existing file IDs for deletion',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'app' => 'openregister',
+				'propertyName' => $target->name,
+				'existingFileIds' => $existingFileIds,
+			]
+		);
+
+		$fileIds = [$existingFileIds];
+		if (is_array($existingFileIds) === true) {
+			$fileIds = $existingFileIds;
+		}
+
+		foreach ($fileIds as $fileId) {
+			if (is_numeric($fileId) === true) {
+				$this->deleteStoredFile(target: $target, fileId: $fileId);
+			}
+		}
+
+		$cleared = null;
+		if ($target->isArray === true) {
+			$cleared = [];
+		}
+
+		$this->logger->info(
+			message: '[FilePropertyHandler] File property set to null/empty',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'app' => 'openregister',
+				'propertyName' => $target->name,
+				'newValue' => $cleared,
+			]
+		);
+
+		return $cleared;
+	}//end clearFileProperty()
+
+	/**
+	 * Delete one stored file of a property; a failure is logged, not thrown.
+	 *
+	 * @param FilePropertyTarget $target The file property.
+	 * @param mixed              $fileId The file id, numeric.
+	 *
+	 * @return void
+	 */
+	private function deleteStoredFile(FilePropertyTarget $target, mixed $fileId): void {
+		try {
+			$this->fileService->deleteFile(
+				file: (int)$fileId,
+				object: $target->objectEntity
+			);
+			$this->logger->info(
+				message: "[FilePropertyHandler] Deleted file $fileId for property {$target->name}",
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		} catch (Exception $e) {
+			// The file might already be deleted.
+			$this->logger->warning(
+				message: "[FilePropertyHandler] Failed to delete file $fileId: " . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+	}//end deleteStoredFile()
+
+	/**
+	 * Store every file of an array property and return their ids; items that are not files are dropped.
+	 *
+	 * @param FilePropertyTarget $target    The file property.
+	 * @param mixed              $fileValue The incoming value.
+	 *
+	 * @return array<int, int>
+	 *
+	 * @throws Exception If the value is not an array, or a file cannot be stored.
+	 */
+	private function storeFiles(FilePropertyTarget $target, mixed $fileValue): array {
+		if (is_array($fileValue) === false) {
+			throw new Exception("Property '{$target->name}' is configured as array but received non-array value");
+		}
+
+		$fileIds = [];
+		foreach ($fileValue as $index => $singleFileContent) {
+			if ($this->isFileProperty(value: $singleFileContent) === true) {
+				$fileIds[] = $this->processSingleFileProperty(
+					objectEntity: $target->objectEntity,
+					fileInput: $singleFileContent,
+					propertyName: $target->name,
+					fileConfig: $target->fileConfig,
+					index: $index
+				);
+			}
+		}
+
+		return $fileIds;
+	}//end storeFiles()
+
+	/**
+	 * Processes a single file property with validation, tagging, and storage.
+	 *
+	 * This method handles three types of file input:
+	 * - Base64 data URIs or encoded strings
+	 * - URLs (fetches file content from URL)
+	 * - File objects (existing files, returns existing ID or creates copy)
+	 *
+	 * @param ObjectEntity $objectEntity The object entity being saved.
+	 * @param mixed $fileInput The file input (string, URL, or file object).
+	 * @param string $propertyName The name of the file property.
+	 * @param array $fileConfig The file property configuration from schema.
+	 * @param int|null $index Optional index for array properties.
+	 *
+	 * @psalm-param   ObjectEntity $objectEntity
+	 * @psalm-param   mixed $fileInput
+	 * @psalm-param   string $propertyName
+	 * @psalm-param   array<string, mixed> $fileConfig
+	 * @psalm-param   int|null $index
+	 * @phpstan-param ObjectEntity $objectEntity
+	 * @phpstan-param mixed $fileInput
+	 * @phpstan-param string $propertyName
+	 * @phpstan-param array<string, mixed> $fileConfig
+	 * @phpstan-param int|null $index
+	 *
+	 * @return int The ID of the created/existing file.
+	 *
+	 * @psalm-return   int
+	 * @phpstan-return int
+	 *
+	 * @throws Exception If file validation fails or file operations fail.
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	public function processSingleFileProperty(
+		ObjectEntity $objectEntity,
+		$fileInput,
+		string $propertyName,
+		array $fileConfig,
+		?int $index = null,
+	): int {
+		try {
+			// Determine input type and process accordingly.
+			if (is_string($fileInput) === true) {
+				// Handle string inputs (base64, data URI, or URL).
+				return $this->processStringFileInput(
+					objectEntity: $objectEntity,
+					fileInput: $fileInput,
+					propertyName: $propertyName,
+					fileConfig: $fileConfig,
+					index: $index
+				);
+			}
+
+			if (is_array($fileInput) === true && $this->isFileObject(value: $fileInput) === true) {
+				// Handle file object input.
+				return $this->processFileObjectInput(
+					objectEntity: $objectEntity,
+					fileObject: $fileInput,
+					propertyName: $propertyName,
+					fileConfig: $fileConfig,
+					index: $index
+				);
+			}
+
+			throw new Exception("Unsupported file input type for property '$propertyName'");
+		} catch (Exception $e) {
+			throw $e;
+		}//end try
+	}//end processSingleFileProperty()
+
+	/**
+	 * Processes string file input (base64, data URI, or URL).
+	 *
+	 * @param ObjectEntity $objectEntity The object entity being saved.
+	 * @param string $fileInput The string input (base64, data URI, or URL).
+	 * @param string $propertyName The name of the file property.
+	 * @param array $fileConfig The file property configuration from schema.
+	 * @param int|null $index Optional index for array properties.
+	 *
+	 * @psalm-param ObjectEntity $objectEntity
+	 * @psalm-param string $fileInput
+	 * @psalm-param string $propertyName
+	 * @psalm-param array<string, mixed> $fileConfig
+	 * @psalm-param int|null $index
+	 *
+	 * @phpstan-param ObjectEntity $objectEntity
+	 * @phpstan-param string $fileInput
+	 * @phpstan-param string $propertyName
+	 * @phpstan-param array<string, mixed> $fileConfig
+	 * @phpstan-param int|null $index
+	 *
+	 * @return int The ID of the created file.
+	 *
+	 * @psalm-return   int
+	 * @phpstan-return int
+	 *
+	 * @throws Exception If file processing fails.
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function processStringFileInput(
+		ObjectEntity $objectEntity,
+		string $fileInput,
+		string $propertyName,
+		array $fileConfig,
+		?int $index = null,
+	) {
+		// Check if it's a URL.
+		$isUrl = filter_var($fileInput, FILTER_VALIDATE_URL) !== false
+			&& (strpos($fileInput, 'http://') === 0 || strpos($fileInput, 'https://') === 0);
+
+		if ($isUrl === true) {
+			// Fetch file content from URL.
+			$fileContent = $this->fetchFileFromUrl(url: $fileInput);
+			$fileData = $this->parseFileDataFromUrl(url: $fileInput, content: $fileContent);
+		}
+
+		if ($isUrl === false) {
+			// Parse as base64 or data URI.
+			$fileData = $this->parseFileData(fileContent: $fileInput);
+		}
+
+		// Validate file against property configuration.
+		$this->validateFileAgainstConfig(
+			fileData: $fileData,
+			fileConfig: $fileConfig,
+			propertyName: $propertyName,
+			index: $index
+		);
+
+		// Generate filename and prepare tags.
+		$filename = $this->generateFileName(
+			propertyName: $propertyName,
+			extension: $fileData['extension'],
+			index: $index
+		);
+
+		$autoTags = $this->prepareAutoTags(
+			fileConfig: $fileConfig,
+			propertyName: $propertyName,
+			index: $index
+		);
+
+		$autoShare = $fileConfig['autoShare'] ?? false;
+
+		// Create the file using FileService.
+		$file = $this->fileService->addFile(
+			objectEntity: $objectEntity,
+			fileName: $filename,
+			content: $fileData['content'],
+			share: $autoShare,
+			tags: $autoTags
+		);
+
+		return $file->getId();
+	}//end processStringFileInput()
+
+	/**
+	 * Processes file object input (existing file object).
+	 *
+	 * @param ObjectEntity $objectEntity The object entity being saved.
+	 * @param array $fileObject The file object input.
+	 * @param string $propertyName The name of the file property.
+	 * @param array $fileConfig The file property configuration from schema.
+	 * @param int|null $index Optional index for array properties.
+	 *
+	 * @psalm-param   ObjectEntity $objectEntity
+	 * @psalm-param   array<string, mixed> $fileObject
+	 * @psalm-param   string $propertyName
+	 * @psalm-param   array<string, mixed> $fileConfig
+	 * @psalm-param   int|null $index
+	 * @phpstan-param ObjectEntity $objectEntity
+	 * @phpstan-param array<string, mixed> $fileObject
+	 * @phpstan-param string $propertyName
+	 * @phpstan-param array<string, mixed> $fileConfig
+	 * @phpstan-param int|null $index
+	 *
+	 * @return int The ID of the existing or created file.
+	 *
+	 * @psalm-return   int
+	 * @phpstan-return int
+	 *
+	 * @throws Exception If file processing fails.
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function processFileObjectInput(
+		ObjectEntity $objectEntity,
+		array $fileObject,
+		string $propertyName,
+		array $fileConfig,
+		?int $index = null,
+	): int {
+		// If file object has a numeric ID, check if it's an existing file that belongs to this object.
+		$fileId = $fileObject['id'] ?? null;
+		if ($fileId !== null && is_numeric($fileId) === true) {
+			try {
+				// Try to retrieve the existing file.
+				$existingFile = $this->fileService->getFile(
+					object: $objectEntity,
+					file: (int)$fileId
+				);
+
+				if ($existingFile !== null) {
+					// File exists and belongs to this object - return the existing ID.
+					$this->logger->debug(
+						message: '[FilePropertyHandler] Using existing file ID {fileId} for property {property}',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'app' => 'openregister',
+							'fileId' => $fileId,
+							'property' => $propertyName,
+						]
+					);
+					return (int)$fileId;
+				}
+			} catch (Exception $e) {
+				// File doesn't exist or is not accessible - continue to create new file.
+				$this->logger->debug(
+					message: '[FilePropertyHandler] Could not retrieve existing file {fileId}: {error}',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'app' => 'openregister',
+						'fileId' => $fileId,
+						'error' => $e->getMessage(),
+					]
+				);
+			}//end try
+		}//end if
+
+		// No ID or existing file not accessible, create a new file.
+		// This requires downloadUrl or accessUrl to fetch content.
+		$fileUrl = $fileObject['downloadUrl'] ?? $fileObject['accessUrl'] ?? null;
+		if ($fileUrl === null) {
+			throw new Exception("File object for property '$propertyName' has no downloadable URL");
+		}
+
+		// Fetch and process as URL.
+		return $this->processStringFileInput(
+			objectEntity: $objectEntity,
+			fileInput: $fileUrl,
+			propertyName: $propertyName,
+			fileConfig: $fileConfig,
+			index: $index
+		);
+	}//end processFileObjectInput()
+
+	/**
+	 * Fetches file content from a URL.
+	 *
+	 * @param string $url The URL to fetch from.
+	 *
+	 * @return string The file content.
+	 *
+	 * @throws Exception If the URL cannot be fetched.
+	 *
+	 * @psalm-param    string $url
+	 * @phpstan-param  string $url
+	 * @psalm-return   string
+	 * @phpstan-return string
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function fetchFileFromUrl(string $url): string {
+		// SEC-SVC-2: validate the user-supplied URL against the shared anti-SSRF guard
+		// BEFORE issuing any request. This rejects non-http(s) schemes and any host that
+		// resolves to a loopback / private / reserved address (e.g. cloud metadata,
+		// localhost, RFC-1918), closing the full read-SSRF on this object-write path.
+		SecurityService::assertSafeFetchUrl($url);
+
+		// Create a context with appropriate options.
+		// SEC-SVC-2: redirects are DISABLED — follow_location would let a public URL
+		// 302-redirect to an internal address, defeating the point-in-time guard above.
+		$context = stream_context_create(
+			[
+				'http' => [
+					'timeout' => 30,
+					// 30 second timeout.
+					'user_agent' => 'OpenRegister/1.0',
+					'follow_location' => false,
+					'max_redirects' => 0,
+				],
+			]
+		);
+
+		$content = file_get_contents($url, false, $context);
+
+		if ($content === false) {
+			throw new Exception("Unable to fetch file from URL: $url");
+		}
+
+		return $content;
+	}//end fetchFileFromUrl()
+
+	/**
+	 * Parses file data from URL fetch results.
+	 *
+	 * @param string $url The original URL.
+	 * @param string $content The fetched content.
+	 *
+	 * @return (int|string)[]
+	 *
+	 * @throws Exception If the file data cannot be parsed.
+	 *
+	 * @psalm-param string $url
+	 * @psalm-param string $content
+	 *
+	 * @phpstan-param string $url
+	 * @phpstan-param string $content
+	 *
+	 * @psalm-return   array{content: string, mimeType: string, extension: string, size: int<0, max>}
+	 * @phpstan-return array{content: string, mimeType: string, extension: string, size: int}
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function parseFileDataFromUrl(string $url, string $content): array {
+		// Try to detect MIME type from content.
+		$finfo = new finfo(FILEINFO_MIME_TYPE);
+		$mimeType = $finfo->buffer($content);
+
+		if ($mimeType === false) {
+			$mimeType = 'application/octet-stream';
+		}
+
+		// Try to get extension from URL.
+		$parsedUrl = parse_url($url);
+		$path = $parsedUrl['path'] ?? '';
+		$extension = pathinfo($path, PATHINFO_EXTENSION);
+
+		// If no extension from URL, get from MIME type.
+		if (empty($extension) === true) {
+			$extension = $this->getExtensionFromMimeType(mimeType: $mimeType);
+		}
+
+		return [
+			'content' => $content,
+			'mimeType' => $mimeType,
+			'extension' => $extension,
+			'size' => strlen($content),
+		];
+	}//end parseFileDataFromUrl()
+
+	/**
+	 * Parses file data from various formats (data URI, base64) and extracts metadata.
+	 *
+	 * @param string $fileContent The file content to parse.
+	 *
+	 * @return (int|string)[]
+	 *
+	 * @throws Exception If the file data format is invalid.
+	 *
+	 * @psalm-param string $fileContent
+	 *
+	 * @phpstan-param string $fileContent
+	 *
+	 * @psalm-return   array{content: string, mimeType: string, extension: string, size: int<0, max>}
+	 * @phpstan-return array{content: string, mimeType: string, extension: string, size: int}
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	public function parseFileData(string $fileContent): array {
+		$mimeType = 'application/octet-stream';
+
+		// Initialize content before conditional assignment.
+		$content = '';
+
+		// Handle data URI format (data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...).
+		if (strpos($fileContent, 'data:') === 0) {
+			// Extract MIME type and content from data URI.
+			if (preg_match('/^data:([^;]+);base64,(.+)$/', $fileContent, $matches) !== 1) {
+				throw new Exception('Invalid data URI format');
+			}
+
+			$mimeType = $matches[1];
+			$content = base64_decode($matches[2], true);
+			// Strict mode.
+			if ($content === false) {
+				throw new Exception('Invalid base64 content in data URI');
+			}
+		}
+
+		if (strpos($fileContent, 'data:') !== 0) {
+			// Handle plain base64 content.
+			$content = base64_decode($fileContent, true);
+			// Strict mode.
+			if ($content === false) {
+				throw new Exception('Invalid base64 content');
+			}
+
+			// Try to detect MIME type from content.
+			$finfo = new finfo(FILEINFO_MIME_TYPE);
+			$detectedMimeType = $finfo->buffer($content);
+			if ($detectedMimeType !== false) {
+				$mimeType = $detectedMimeType;
+			}
+		}//end if
+
+		// Determine file extension from MIME type.
+		$extension = $this->getExtensionFromMimeType(mimeType: $mimeType);
+
+		return [
+			'content' => $content,
+			'mimeType' => $mimeType,
+			'extension' => $extension,
+			'size' => strlen($content),
+		];
+	}//end parseFileData()
+
+	/**
+	 * Validates a file against property configuration.
+	 *
+	 * @param array $fileData The parsed file data.
+	 * @param array $fileConfig The file property configuration.
+	 * @param string $propertyName The property name (for error messages).
+	 * @param int|null $index Optional array index (for error messages).
+	 *
+	 * @psalm-param   array{content: string, mimeType: string, extension: string, size: int} $fileData
+	 * @psalm-param   array<string, mixed> $fileConfig
+	 * @psalm-param   string $propertyName
+	 * @psalm-param   int|null $index
+	 * @phpstan-param array{content: string, mimeType: string, extension: string, size: int} $fileData
+	 * @phpstan-param array<string, mixed> $fileConfig
+	 * @phpstan-param string $propertyName
+	 * @phpstan-param int|null $index
+	 *
+	 * @return void
+	 *
+	 * @psalm-return   void
+	 * @phpstan-return void
+	 *
+	 * @throws Exception If validation fails.
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	public function validateFileAgainstConfig(
+		array $fileData,
+		array $fileConfig,
+		string $propertyName,
+		?int $index = null,
+	): void {
+		$errorPrefix = "File at $propertyName";
+		if ($index !== null) {
+			$errorPrefix = "File at {$propertyName}[{$index}]";
+		}
+
+		// Security: Block executable files (unless explicitly allowed).
+		$allowExecutables = $fileConfig['allowExecutables'] ?? false;
+		if ($allowExecutables === false) {
+			$this->blockExecutableFiles(fileData: $fileData, errorPrefix: $errorPrefix);
+		}
+
+		// Validate MIME type.
+		$allowedTypes = $this->resolveAllowedTypes(fileConfig: $fileConfig);
+		if (empty($allowedTypes) === false) {
+			if (in_array($fileData['mimeType'], $allowedTypes, true) === false) {
+				$allowedStr = implode(', ', $allowedTypes);
+				$mimeType = $fileData['mimeType'];
+				throw new Exception(
+					"$errorPrefix has invalid type '$mimeType'. Allowed types: $allowedStr"
+				);
+			}
+		}
+
+		// Validate file size.
+		$maxSize = $this->resolveMaxSizeBytes(fileConfig: $fileConfig);
+		if ($maxSize > 0) {
+			if ($fileData['size'] > $maxSize) {
+				$fileSize = $fileData['size'];
+				throw new Exception(
+					"$errorPrefix exceeds maximum size ($maxSize bytes). File size: $fileSize bytes"
+				);
+			}
+		}
+	}//end validateFileAgainstConfig()
+
+	/**
+	 * Resolve the MIME types a file property accepts.
+	 *
+	 * Two shapes are in use. A schema written through the API or as JSON sets
+	 * `allowedTypes` on the property. The schema property editor writes
+	 * `fileConfiguration.allowedMimeTypes`. The top-level key wins when both
+	 * are set, so schemas that already work keep their behaviour.
+	 *
+	 * @param array $fileConfig The file property configuration.
+	 *
+	 * @psalm-param   array<string, mixed> $fileConfig
+	 * @phpstan-param array<string, mixed> $fileConfig
+	 *
+	 * @return string[] The accepted MIME types, empty when any type is accepted.
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function resolveAllowedTypes(array $fileConfig): array {
+		return (new FilePropertyRules())->allowedTypes(fileConfig: $fileConfig);
+	}//end resolveAllowedTypes()
+
+	/**
+	 * Resolve the largest upload a file property accepts, in bytes.
+	 *
+	 * The top-level `maxSize` is in bytes. The editor's
+	 * `fileConfiguration.maxSize` is labelled and entered in megabytes, so it
+	 * is converted here; a plain rename would turn 10 MB into 10 bytes.
+	 *
+	 * @param array $fileConfig The file property configuration.
+	 *
+	 * @psalm-param   array<string, mixed> $fileConfig
+	 * @phpstan-param array<string, mixed> $fileConfig
+	 *
+	 * @return int The limit in bytes, 0 when there is no limit.
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function resolveMaxSizeBytes(array $fileConfig): int {
+		return (new FilePropertyRules())->maxSizeBytes(fileConfig: $fileConfig);
+	}//end resolveMaxSizeBytes()
+
+	/**
+	 * Blocks executable files from being uploaded for security.
+	 *
+	 * This method checks both file extensions and magic bytes to detect executables.
+	 *
+	 * @param array $fileData The file data containing content, mimeType, and filename.
+	 * @param string $errorPrefix The error message prefix for context.
+	 *
+	 * @psalm-param   array<string, mixed> $fileData
+	 * @psalm-param   string $errorPrefix
+	 * @phpstan-param array<string, mixed> $fileData
+	 * @phpstan-param string $errorPrefix
+	 *
+	 * @return void
+	 *
+	 * @psalm-return   void
+	 * @phpstan-return void
+	 *
+	 * @throws Exception If an executable file is detected.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple security checks for executable detection
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	public function blockExecutableFiles(array $fileData, string $errorPrefix): void {
+		// List of dangerous executable extensions.
+		$dangerousExtensions = $this->getDangerousExecutableExtensions();
+
+		// Check file extension.
+		if (($fileData['filename'] ?? null) !== null) {
+			$extension = strtolower(pathinfo($fileData['filename'], PATHINFO_EXTENSION));
+			if (in_array($extension, $dangerousExtensions, true) === true) {
+				$this->logger->warning(
+					message: '[FilePropertyHandler] Executable file upload blocked',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'app' => 'openregister',
+						'filename' => $fileData['filename'],
+						'extension' => $extension,
+						'mimeType' => $fileData['mimeType'] ?? 'unknown',
+					]
+				);
+
+				$errorMsg = "$errorPrefix is an executable file (.$extension). ";
+				$errorMsg .= 'Executable files are blocked for security reasons. ';
+				$errorMsg .= 'Allowed formats: documents, images, archives, data files.';
+				throw new Exception($errorMsg);
+			}
+		}//end if
+
+		// Check magic bytes (file signatures) in content. The filename is passed
+		// through because the embedded-PHP-tag scan is scoped by extension as
+		// well as by sniffed content type — see openregister#2776. An absent
+		// filename yields '', which is treated as text-ish and always scanned.
+		if (($fileData['content'] ?? null) !== null && empty($fileData['content']) === false) {
+			$this->detectExecutableMagicBytes(
+				content: $fileData['content'],
+				errorPrefix: $errorPrefix,
+				fileName: (string)($fileData['filename'] ?? '')
+			);
+		}
+
+		// Check MIME types for executables.
+		$executableMimeTypes = $this->getExecutableMimeTypes();
+
+		$mimeType = $fileData['mimeType'] ?? null;
+		if ($mimeType !== null && in_array($mimeType, $executableMimeTypes, true) === true) {
+			$this->logger->warning(
+				message: '[FilePropertyHandler] Executable MIME type blocked',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'app' => 'openregister',
+					'mimeType' => $mimeType,
+				]
+			);
+
+			throw new Exception(
+				"$errorPrefix has executable MIME type '$mimeType'. " . 'Executable files are blocked for security reasons.'
+			);
+		}
+	}//end blockExecutableFiles()
+
+	/**
+	 * Detects executable magic bytes in file content.
+	 *
+	 * Magic bytes are signatures at the start of files that identify the file type.
+	 * This provides defense-in-depth against renamed executables.
+	 *
+	 * The three checks themselves live in {@see ExecutableContentDetector}, the
+	 * single source of truth shared with {@see \OCA\OpenRegister\Service\File\FileValidationHandler}.
+	 * This method used to carry a byte-identical COPY of them, which is why
+	 * openregister#2776 — a legitimate PNG rejected as "contains PHP code" —
+	 * was a defect on this path too, not only on the `/files` endpoints. This
+	 * method now owns only its caller-facing message shape and its logging.
+	 *
+	 * The removed copy also carried a disabled `PK\x03\x04` (ZIP) entry, skipped
+	 * via a `false` description with a note that JARs are ZIPs and need deeper
+	 * inspection. It never matched anything, so dropping it changes nothing;
+	 * ZIP containers are handled by the shared binary-container sniff instead.
+	 *
+	 * @param string $content The file content to check.
+	 * @param string $errorPrefix The error message prefix.
+	 * @param string $fileName The filename, used for its extension only; '' when unknown.
+	 *
+	 * @psalm-param   string $content
+	 * @psalm-param   string $errorPrefix
+	 * @psalm-param   string $fileName
+	 * @phpstan-param string $content
+	 * @phpstan-param string $errorPrefix
+	 * @phpstan-param string $fileName
+	 *
+	 * @return void
+	 *
+	 * @psalm-return   void
+	 * @phpstan-return void
+	 *
+	 * @throws Exception If executable magic bytes are detected.
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function detectExecutableMagicBytes(string $content, string $errorPrefix, string $fileName = ''): void {
+		// Offset-0 executable signatures — universal, every file property.
+		$description = $this->executableDetector->matchExecutableSignature(content: $content);
+		if ($description !== null) {
+			$this->logger->warning(
+				message: '[FilePropertyHandler] Executable magic bytes detected',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'app' => 'openregister',
+					'type' => $description,
+				]
+			);
+
+			$msg = "$errorPrefix contains executable code ($description). ";
+			throw new Exception($msg . 'Executable files are blocked for security reasons.');
+		}
+
+		// Script shebangs — universal, every file property.
+		if ($this->executableDetector->hasScriptShebang(content: $content) === true) {
+			throw new Exception(
+				"$errorPrefix contains script shebang. Script files are blocked for security reasons."
+			);
+		}
+
+		// Embedded PHP tags — text-ish payloads only, see openregister#2776.
+		if ($this->executableDetector->containsEmbeddedPhpTag(content: $content, fileName: $fileName) === true) {
+			throw new Exception(
+				"$errorPrefix contains PHP code. PHP files are blocked for security reasons."
+			);
+		}
+	}//end detectExecutableMagicBytes()
+
+	/**
+	 * Gets file extension from MIME type.
+	 *
+	 * @param string $mimeType The MIME type.
+	 *
+	 * @psalm-param string $mimeType
+	 *
+	 * @phpstan-param string $mimeType
+	 *
+	 * @return string
+	 *
+	 * @psalm-return   string
+	 * @phpstan-return string
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function getExtensionFromMimeType(string $mimeType): string {
+		$mimeToExtension = [
+			// Images.
+			'image/jpeg' => 'jpg',
+			'image/jpg' => 'jpg',
+			'image/png' => 'png',
+			'image/gif' => 'gif',
+			'image/webp' => 'webp',
+			'image/svg+xml' => 'svg',
+			'image/bmp' => 'bmp',
+			'image/tiff' => 'tiff',
+			'image/x-icon' => 'ico',
+
+			// Documents.
+			'application/pdf' => 'pdf',
+			'application/msword' => 'doc',
+			'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+			'application/vnd.ms-excel' => 'xls',
+			'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
+			'application/vnd.ms-powerpoint' => 'ppt',
+			'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
+			'application/rtf' => 'rtf',
+			'application/vnd.oasis.opendocument.text' => 'odt',
+			'application/vnd.oasis.opendocument.spreadsheet' => 'ods',
+			'application/vnd.oasis.opendocument.presentation' => 'odp',
+
+			// Text.
+			'text/plain' => 'txt',
+			'text/csv' => 'csv',
+			'text/html' => 'html',
+			'text/css' => 'css',
+			'text/javascript' => 'js',
+			'application/json' => 'json',
+			'application/xml' => 'xml',
+			'text/xml' => 'xml',
+
+			// Archives.
+			'application/zip' => 'zip',
+			'application/x-rar-compressed' => 'rar',
+			'application/x-7z-compressed' => '7z',
+			'application/x-tar' => 'tar',
+			'application/gzip' => 'gz',
+
+			// Audio.
+			'audio/mpeg' => 'mp3',
+			'audio/wav' => 'wav',
+			'audio/ogg' => 'ogg',
+			'audio/aac' => 'aac',
+			'audio/flac' => 'flac',
+
+			// Video.
+			'video/mp4' => 'mp4',
+			'video/mpeg' => 'mpeg',
+			'video/quicktime' => 'mov',
+			'video/x-msvideo' => 'avi',
+			'video/webm' => 'webm',
+		];
+
+		return $mimeToExtension[$mimeType] ?? 'bin';
+	}//end getExtensionFromMimeType()
+
+	/**
+	 * Gets a list of common file extensions that indicate downloadable files.
+	 *
+	 * @return string[]
+	 *
+	 * @psalm-return   list{'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+	 *     'odt', 'ods', 'odp', 'rtf', 'txt', 'csv', 'jpg', 'jpeg', 'png',
+	 *     'gif', 'bmp', 'svg', 'webp', 'tiff', 'ico', 'mp4', 'avi', 'mov',
+	 *     'wmv', 'flv', 'webm', 'mkv', '3gp', 'mp3', 'wav', 'ogg', 'flac',
+	 *     'aac', 'm4a', 'wma', 'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz',
+	 *     'xml', 'json', 'sql', 'exe', 'dmg', 'iso', 'deb', 'rpm'}
+	 * @phpstan-return array<int, string>
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function getCommonFileExtensions(): array {
+		return [
+			// Documents.
+			'pdf',
+			'doc',
+			'docx',
+			'xls',
+			'xlsx',
+			'ppt',
+			'pptx',
+			'odt',
+			'ods',
+			'odp',
+			'rtf',
+			'txt',
+			'csv',
+			// Images.
+			'jpg',
+			'jpeg',
+			'png',
+			'gif',
+			'bmp',
+			'svg',
+			'webp',
+			'tiff',
+			'ico',
+			// Videos.
+			'mp4',
+			'avi',
+			'mov',
+			'wmv',
+			'flv',
+			'webm',
+			'mkv',
+			'3gp',
+			// Audio.
+			'mp3',
+			'wav',
+			'ogg',
+			'flac',
+			'aac',
+			'm4a',
+			'wma',
+			// Archives.
+			'zip',
+			'rar',
+			'7z',
+			'tar',
+			'gz',
+			'bz2',
+			'xz',
+			// Other common file types.
+			'xml',
+			'json',
+			'sql',
+			'exe',
+			'dmg',
+			'iso',
+			'deb',
+			'rpm',
+		];
+	}//end getCommonFileExtensions()
+
+	/**
+	 * Gets a list of dangerous executable extensions to block.
+	 *
+	 * @return string[]
+	 *
+	 * @psalm-return   list{'exe', 'bat', 'cmd', 'com', 'msi', 'scr', 'vbs',
+	 *     'vbe', 'js', 'jse', 'wsf', 'wsh', 'ps1', 'dll', 'sh', 'bash', 'csh',
+	 *     'ksh', 'zsh', 'run', 'bin', 'app', 'deb', 'rpm', 'php', 'phtml',
+	 *     'php3', 'php4', 'php5', 'phps', 'phar', 'py', 'pyc', 'pyo', 'pyw',
+	 *     'pl', 'pm', 'cgi', 'rb', 'rbw', 'jar', 'war', 'ear', 'class',
+	 *     'appimage', 'snap', 'flatpak', 'dmg', 'pkg', 'command', 'apk', 'elf',
+	 *     'out', 'o', 'so', 'dylib'}
+	 * @phpstan-return array<int, string>
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function getDangerousExecutableExtensions(): array {
+		return [
+			// Windows executables.
+			'exe',
+			'bat',
+			'cmd',
+			'com',
+			'msi',
+			'scr',
+			'vbs',
+			'vbe',
+			'js',
+			'jse',
+			'wsf',
+			'wsh',
+			'ps1',
+			'dll',
+			// Unix/Linux executables.
+			'sh',
+			'bash',
+			'csh',
+			'ksh',
+			'zsh',
+			'run',
+			'bin',
+			'app',
+			'deb',
+			'rpm',
+			// Scripts and code.
+			'php',
+			'phtml',
+			'php3',
+			'php4',
+			'php5',
+			'phps',
+			'phar',
+			'py',
+			'pyc',
+			'pyo',
+			'pyw',
+			'pl',
+			'pm',
+			'cgi',
+			'rb',
+			'rbw',
+			'jar',
+			'war',
+			'ear',
+			'class',
+			// Containers and packages.
+			'appimage',
+			'snap',
+			'flatpak',
+			// MacOS.
+			'dmg',
+			'pkg',
+			'command',
+			// Android.
+			'apk',
+			// Other dangerous.
+			'elf',
+			'out',
+			'o',
+			'so',
+			'dylib',
+		];
+	}//end getDangerousExecutableExtensions()
+
+	/**
+	 * Gets a list of executable MIME types to block.
+	 *
+	 * @return string[]
+	 *
+	 * @psalm-return   list{'application/x-executable',
+	 *     'application/x-sharedlib', 'application/x-dosexec',
+	 *     'application/x-msdownload', 'application/x-msdos-program',
+	 *     'application/x-sh', 'application/x-shellscript',
+	 *     'application/x-php', 'application/x-httpd-php', 'text/x-php',
+	 *     'text/x-shellscript', 'text/x-script.python',
+	 *     'application/x-python-code', 'application/java-archive'}
+	 * @phpstan-return array<int, string>
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function getExecutableMimeTypes(): array {
+		return [
+			'application/x-executable',
+			'application/x-sharedlib',
+			'application/x-dosexec',
+			'application/x-msdownload',
+			'application/x-msdos-program',
+			'application/x-sh',
+			'application/x-shellscript',
+			'application/x-php',
+			'application/x-httpd-php',
+			'text/x-php',
+			'text/x-shellscript',
+			'text/x-script.python',
+			'application/x-python-code',
+			'application/java-archive',
+		];
+	}//end getExecutableMimeTypes()
+}//end class

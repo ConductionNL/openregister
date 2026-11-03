@@ -1,0 +1,1277 @@
+<?php
+
+/**
+ * OpenRegister Facet Handler
+ *
+ * **CENTRALIZED FACETING SYSTEM**: This handler manages all faceting operations
+ * with intelligent fallback strategies, response caching, and performance optimization.
+ * Solves the fundamental pagination vs faceting architectural conflict.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Handler
+ * @package   OCA\OpenRegister\Service\Object
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ *
+ * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-type-auto-detection-from-property-definitions
+ * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+ * @spec openspec/specs/faceting-configuration/spec.md#requirement-metadata-facets-via-self-namespace
+ * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
+ * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
+ * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-response-standardized-format
+ * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-performance-optimization-via-hyperfacethandler
+ * @spec openspec/specs/faceting-configuration/spec.md
+ * @spec openspec/specs/faceting-configuration/spec.md
+ * @spec openspec/specs/faceting-configuration/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\Object;
+
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
+use OCA\OpenRegister\Service\Search\PropertySearchProfile;
+use Psr\Log\LoggerInterface;
+
+/**
+ * Facet Handler - Centralized Faceting Operations
+ *
+ * **ARCHITECTURAL BREAKTHROUGH**: Handles faceting concerns with intelligent fallback strategies
+ * that solve the pagination vs faceting conflict.
+ *
+ * **KEY FEATURES**:
+ * - Smart Fallback: Collection-wide facets when filters return empty.
+ * - Response Caching: Lightning-fast repeated requests.
+ * - Clean Architecture: Integrated handler pattern.
+ * - Performance Optimized: Multiple optimization strategies.
+ * - Backwards Compatible: Drop-in replacement for existing faceting.
+ *
+ * @category Handler
+ * @package  OCA\OpenRegister\Service\Object
+ * @author   Conduction Development Team <dev@conduction.nl>
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link     https://OpenRegister.app
+ * @version  2.0.0
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex faceting logic with multiple strategies
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ */
+class FacetHandler {
+	/**
+	 * Constructor for FacetHandler.
+	 *
+	 * @param MagicMapper $unifiedObjectMapper Unified object mapper with storage routing.
+	 * @param SchemaMapper $schemaMapper Schema database mapper.
+	 * @param FacetResponseCache $responseCache The response cache in front of facet computation.
+	 * @param LoggerInterface $logger Logger for debugging and monitoring.
+	 * @param PropertyRbacHandler|null $propertyRbac Withholds a facet over a property the caller may not read.
+	 *                                               Nullable and last so no construction site shifts; absent, a
+	 *                                               governed property is withheld, which is the safe direction.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	public function __construct(
+		private readonly MagicMapper $unifiedObjectMapper,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly FacetResponseCache $responseCache,
+		private readonly LoggerInterface $logger,
+		// LAST AND NULLABLE so every existing construction keeps working. The
+		// container always supplies it; null happens only in a hand-built test,
+		// and then a GOVERNED property is withheld, which is the safe direction.
+		private readonly ?PropertyRbacHandler $propertyRbac = null,
+	) {
+	}//end __construct()
+
+	/**
+	 * Get facets for objects based on query.
+	 *
+	 * **BREAKTHROUGH SOLUTION**: Solves the pagination vs faceting conflict by implementing
+	 * intelligent fallback strategies that ensure facets are always meaningful and relevant.
+	 *
+	 * **STRATEGY**:
+	 * 1. Check response cache first (lightning-fast repeated requests).
+	 * 2. Try facets on current filtered dataset.
+	 * 3. If empty + restrictive filters → fall back to collection-wide facets.
+	 * 4. Cache results for future requests.
+	 * 5. Include performance metadata.
+	 *
+	 * **PAGINATION INDEPENDENCE**: Facets are calculated on the complete filtered dataset,
+	 * ignoring pagination parameters (_limit, _offset, _page) to ensure users always see
+	 * relevant navigation options regardless of current page or limit.
+	 *
+	 * @param array $query The search query array.
+	 *
+	 * @throws \OCP\DB\Exception If database error occurs.
+	 *
+	 * @psalm-param   array<string, mixed> $query
+	 * @phpstan-param array<string, mixed> $query
+	 *
+	 * @return array Facet results with intelligent fallback and performance metadata.
+	 *
+	 * @psalm-return   array<string, mixed>
+	 * @phpstan-return array<string, mixed>
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	public function getFacetsForObjects(array $query = []): array {
+		$startTime = microtime(true);
+
+		// Extract facet configuration.
+		$facetConfig = $query['_facets'] ?? [];
+		if (empty($facetConfig) === true) {
+			return ['facets' => []];
+		}
+
+		// **BUGFIX**: Handle _facets as string (e.g., _facets=extend) by converting to array.
+		if (is_string($facetConfig) === true) {
+			// Handle special string values like "extend" or comma-separated field names.
+			$facetConfig = [$facetConfig];
+		}
+
+		// No reindex step for the numerically-indexed `_facets[]=foo&_facets[]=bar`
+		// form: PHP already delivers that as [0 => 'foo', 1 => 'bar'], and the
+		// array_values() that used to sit here only ran when array_is_list() was
+		// already true — i.e. never did anything.
+
+		// **PAGINATION INDEPENDENCE**: Remove pagination params for facet calculation.
+		$facetQuery = $query;
+		unset($facetQuery['_limit'], $facetQuery['_offset'], $facetQuery['_page'], $facetQuery['_facetable']);
+
+		// **RESPONSE CACHING**: Check cache first for identical requests.
+		$cacheKey = $this->responseCache->keyFor(facetQuery: $facetQuery, facetConfig: $facetConfig);
+		$cached = $this->responseCache->get(cacheKey: $cacheKey);
+		if ($cached !== null) {
+			return $cached;
+		}
+
+		// Discover non-aggregated facet fields from schema configurations.
+		$schemas = $this->getSchemasForQuery(baseQuery: $facetQuery);
+		$facetableConfig = $this->getFacetableFieldsFromSchemas(schemas: $schemas);
+
+		// **INTELLIGENT FACETING**: Try current filters first, then smart fallback.
+		$result = $this->calculateFacetsWithFallback(
+			facetQuery: $facetQuery,
+			facetableConfig: $facetableConfig
+		);
+
+		// **PERFORMANCE TRACKING**: Add timing metadata.
+		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
+		$result['performance_metadata']['total_execution_time_ms'] = $executionTime;
+
+		// **CACHE RESULTS**: Store for future requests.
+		$this->responseCache->put(cacheKey: $cacheKey, result: $result);
+
+		$this->logger->debug(
+			message: '[FacetHandler] FacetHandler completed facet calculation',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'executionTime' => $executionTime . 'ms',
+				'strategy' => $result['performance_metadata']['strategy'] ?? 'unknown',
+				'cacheUsed' => false,
+				'totalFacetResults' => $result['performance_metadata']['total_facet_results'] ?? 0,
+			]
+		);
+
+		return $result;
+	}//end getFacetsForObjects()
+
+	/**
+	 * Get facetable fields for discovery.
+	 *
+	 * PERFORMANCE OPTIMIZED**: Uses pre-computed schema facets stored in database
+	 * instead of runtime analysis for lightning-fast _facetable=true requests.
+	 *
+	 * @param array $baseQuery Base query filters to apply for context.
+	 * @param int $_sampleSize Sample size (kept for backward compatibility).
+	 *
+	 * @psalm-param array<string, mixed> $baseQuery
+	 * @psalm-param int $_sampleSize
+	 *
+	 * @phpstan-param array<string, mixed> $baseQuery
+	 * @phpstan-param int $_sampleSize
+	 *
+	 * @return array[]
+	 *
+	 * @psalm-return   array{'@self': array, object_fields: array}
+	 * @phpstan-return array<string, mixed>
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	public function getFacetableFields(array $baseQuery = [], int $_sampleSize = 100): array {
+		$startTime = microtime(true);
+
+		// Get schemas relevant to this query (cached for performance).
+		$schemas = $this->getSchemasForQuery(baseQuery: $baseQuery);
+
+		// **PERFORMANCE OPTIMIZATION**: Use pre-computed schema facets.
+		$facetableFields = $this->getFacetableFieldsFromSchemas(schemas: $schemas);
+
+		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
+
+		$selfCount = count($facetableFields['@self'] ?? []);
+		$objectCount = count($facetableFields['object_fields'] ?? []);
+		$this->logger->debug(
+			message: '[FacetHandler] Facetable fields discovery completed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'executionTime' => $executionTime . 'ms',
+				'schemaCount' => count($schemas),
+				'facetableFieldCount' => $selfCount + $objectCount,
+			]
+		);
+
+		return $facetableFields;
+	}//end getFacetableFields()
+
+	/**
+	 * Get metadata facetable fields.
+	 *
+	 * @return string[]
+	 *
+	 * @psalm-return   list{'register', 'schema', 'owner', 'organisation', 'created', 'updated'}
+	 * @phpstan-return array<int, string>
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	public function getMetadataFacetableFields(): array {
+		return [
+			'register',
+			'schema',
+			'owner',
+			'organisation',
+			'created',
+			'updated',
+		];
+	}//end getMetadataFacetableFields()
+
+	/**
+	 * Calculate facet count for performance metrics.
+	 *
+	 * @param bool $hasFacets Whether facets were requested.
+	 * @param array $query The query array.
+	 *
+	 * @psalm-param bool $hasFacets
+	 * @psalm-param array<string, mixed> $query
+	 *
+	 * @phpstan-param bool $hasFacets
+	 * @phpstan-param array<string, mixed> $query
+	 *
+	 * @return int The facet count.
+	 * @psalm-return   int<0, max>
+	 * @phpstan-return int
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-performance-optimization-via-hyperfacethandler
+	 */
+	public function getFacetCount(bool $hasFacets, array $query): int {
+		if ($hasFacets === false) {
+			return 0;
+		}
+
+		$facets = $query['_facets'] ?? [];
+		if (is_array($facets) === true) {
+			return count($facets);
+		}
+
+		return 0;
+	}//end getFacetCount()
+
+	/**
+	 * Calculate Facets with Intelligent Fallback Strategy.
+	 *
+	 * Implements smart fallback logic that ensures users always see meaningful facet
+	 * options, even when their current search/filters return zero results.
+	 * Also handles non-aggregated facets by making separate schema-scoped queries.
+	 *
+	 * @param array $facetQuery      Query for facet calculation (without pagination).
+	 * @param array $facetableConfig Facetable field configuration from schema discovery.
+	 *
+	 * @return array Facets with performance metadata including strategy and fallback status.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
+	 */
+	private function calculateFacetsWithFallback(array $facetQuery, array $facetableConfig = []): array {
+		// **STAGE 1**: Try facets with current filters.
+		$facets = $this->unifiedObjectMapper->getSimpleFacets($facetQuery);
+		$hasRestrictFilter = $this->hasRestrictiveFilters(query: $facetQuery);
+
+		// NOTE: The "intelligent fallback" that stripped object field filters and returned
+		// collection-wide facet counts has been removed. It caused #453: after selecting a
+		// Type filter, other facets showed full-dataset counts instead of scoped counts.
+		// Showing empty/scoped facets is correct; showing unscoped counts is misleading.
+		if ($hasRestrictFilter === true && $this->countFacetResults(facets: $facets) === 0) {
+			$this->logEmptyFilteredFacets(facetQuery: $facetQuery);
+		}
+
+		$facets = $this->withoutNonAggregatedOnlyFields(facets: $facets, facetableConfig: $facetableConfig);
+		$facets = array_replace(
+			$facets,
+			$this->nonAggregatedFacets(
+				facetQuery: $facetQuery,
+				nonAggregatedFields: ($facetableConfig['non_aggregated_fields'] ?? [])
+			)
+		);
+
+		// Extract per-facet metrics before transformation (if available).
+		$perFacetMetrics = $facets['_metrics'] ?? null;
+		unset($facets['_metrics']);
+
+		$performanceMetadata = [
+			'strategy' => 'filtered',
+			'fallback_used' => false,
+			'total_facet_results' => $this->countFacetResults(facets: $facets),
+			'has_restrictive_filters' => $hasRestrictFilter,
+		];
+		if ($perFacetMetrics !== null) {
+			$performanceMetadata['facet_db_ms'] = $perFacetMetrics;
+		}
+
+		return [
+			'facets' => $this->transformFacetsToStandardFormat(facets: $facets, facetableConfig: $facetableConfig),
+			'performance_metadata' => $performanceMetadata,
+		];
+	}//end calculateFacetsWithFallback()
+
+	/**
+	 * Note that a filtered query found no facet results; there is no collection-wide fallback.
+	 *
+	 * @param array $facetQuery Query for facet calculation (without pagination).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
+	 */
+	private function logEmptyFilteredFacets(array $facetQuery): void {
+		$this->logger->debug(
+			message: '[FacetHandler] Facets empty with restrictive filters — returning empty facets (no fallback)',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'originalQuery' => array_keys($facetQuery),
+				'totalResults' => 0,
+			]
+		);
+	}//end logEmptyFilteredFacets()
+
+	/**
+	 * Drop the aggregated facets of fields that are configured ONLY as non-aggregated.
+	 *
+	 * The mapper's getSimpleFacets returns every field of the magic table, but a field that is exclusively
+	 * non-aggregated (not in object_fields) gets its own schema-scoped facet instead.
+	 *
+	 * @param array $facets          Raw facets from the mapper
+	 * @param array $facetableConfig Facetable field configuration from schema discovery
+	 *
+	 * @return array The facets without those fields
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function withoutNonAggregatedOnlyFields(array $facets, array $facetableConfig): array {
+		$aggregatedFieldKeys = array_keys($facetableConfig['object_fields'] ?? []);
+		foreach ($facetableConfig['non_aggregated_fields'] ?? [] as $afterField) {
+			$fieldName = $afterField['field'];
+			if (in_array($fieldName, $aggregatedFieldKeys, true) === false && isset($facets[$fieldName]) === true) {
+				unset($facets[$fieldName]);
+			}
+		}
+
+		return $facets;
+	}//end withoutNonAggregatedOnlyFields()
+
+	/**
+	 * The schema-scoped facets of every non-aggregated field, keyed by their unique facet key.
+	 *
+	 * @param array $facetQuery          Query for facet calculation (without pagination)
+	 * @param array $nonAggregatedFields The non-aggregated fields: field, schemaId and facetConfig
+	 *
+	 * @return array The non-aggregated facets, each with its metadata for the transform step
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function nonAggregatedFacets(array $facetQuery, array $nonAggregatedFields): array {
+		$facets = [];
+		foreach ($nonAggregatedFields as $afterField) {
+			$facets = array_replace(
+				$facets,
+				$this->nonAggregatedFacet(facetQuery: $facetQuery, afterField: $afterField)
+			);
+		}
+
+		return $facets;
+	}//end nonAggregatedFacets()
+
+	/**
+	 * One non-aggregated field's facet from a query scoped to its schema; none when the query fails.
+	 *
+	 * The plural schema/register keys are removed so getSimpleFacets() takes the single-schema
+	 * path instead of the multi-schema UNION path. Every other key of the query is kept.
+	 *
+	 * @param array $facetQuery Query for facet calculation (without pagination)
+	 * @param array $afterField The non-aggregated field: field, schemaId and facetConfig
+	 *
+	 * @return array The facet under its unique key, or an empty array
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function nonAggregatedFacet(array $facetQuery, array $afterField): array {
+		$fieldName = $afterField['field'];
+		$schemaId = $afterField['schemaId'];
+		$config = $afterField['facetConfig'];
+
+		$scopedQuery = $facetQuery;
+		$scopedQuery['@self']['schema'] = $schemaId;
+		unset($scopedQuery['@self']['schemas'], $scopedQuery['_schemas']);
+
+		$facets = [];
+		try {
+			$scopedFacets = $this->unifiedObjectMapper->getSimpleFacets($scopedQuery);
+
+			// Remove metrics from scoped results.
+			unset($scopedFacets['_metrics']);
+
+			if (isset($scopedFacets[$fieldName]) === true) {
+				$uniqueKey = $this->generateNonAggregatedFacetKey(
+					fieldName: $fieldName,
+					schemaId: $schemaId,
+					facetConfig: $config
+				);
+
+				$facets[$uniqueKey] = $scopedFacets[$fieldName];
+				$facets[$uniqueKey]['_nonAggregated'] = true;
+				$facets[$uniqueKey]['_schemaId'] = $schemaId;
+				$facets[$uniqueKey]['_facetConfig'] = $config;
+				$facets[$uniqueKey]['_fieldName'] = $fieldName;
+			}
+		} catch (\Exception $e) {
+			$this->logNonAggregatedFailure(afterField: $afterField, exception: $e);
+		}//end try
+
+		return $facets;
+	}//end nonAggregatedFacet()
+
+	/**
+	 * Note that a non-aggregated field's scoped facet query failed; the field is left out.
+	 *
+	 * @param array      $afterField The non-aggregated field: field and schemaId
+	 * @param \Exception $exception  What the scoped query threw
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function logNonAggregatedFailure(array $afterField, \Exception $exception): void {
+		$this->logger->warning(
+			message: '[FacetHandler] Failed to get non-aggregated facet',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'field' => $afterField['field'],
+				'schemaId' => $afterField['schemaId'],
+				'error' => $exception->getMessage(),
+			]
+		);
+	}//end logNonAggregatedFailure()
+
+	/**
+	 * Generate a unique key for a non-aggregated facet entry.
+	 *
+	 * @param string $fieldName The property/field name.
+	 * @param int $schemaId The schema ID.
+	 * @param array $facetConfig The facet configuration.
+	 *
+	 * @return string A unique facet key.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function generateNonAggregatedFacetKey(string $fieldName, int $schemaId, array $facetConfig): string {
+		// Use sanitized title if available, otherwise use field_schema pattern.
+		if (empty($facetConfig['title']) === false) {
+			$key = preg_replace('/([a-z])([A-Z])/', '$1_$2', $facetConfig['title']);
+			$key = strtolower(str_replace(' ', '_', $key));
+			$key = preg_replace('/[^a-z0-9_]/', '', $key);
+			return $key;
+		}
+
+		return $fieldName . '_schema_' . $schemaId;
+	}//end generateNonAggregatedFacetKey()
+
+	/**
+	 * Transform facets from internal format to standardized external API format.
+	 *
+	 * Converts the internal structure:
+	 * ```
+	 * { "@self": { "register": { "type": "terms", "buckets": [{key, results, label}] } } }
+	 * ```
+	 *
+	 * To the external API format:
+	 * ```
+	 * { "_register": { "name": "_register", "type": "terms", "title": "Register", ... ,
+	 *                  "data": { "type": "terms", "total_count": N, "buckets": [{value, count, label}] } } }
+	 * ```
+	 *
+	 * @param array $facets Raw facets from mapper.
+	 * @param array $facetableConfig Facetable field config from schema discovery.
+	 *
+	 * @return array Transformed facets in standardized format.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-response-standardized-format
+	 */
+	private function transformFacetsToStandardFormat(array $facets, array $facetableConfig = []): array {
+		$transformed = [];
+		$order = 0;
+
+		// Build a lookup of aggregated field configs for custom title/description/order.
+		$aggregatedConfigs = [];
+		foreach ($facetableConfig['object_fields'] ?? [] as $fieldKey => $fieldInfo) {
+			if (isset($fieldInfo['facetConfig']) === true) {
+				$aggregatedConfigs[$fieldKey] = $fieldInfo['facetConfig'];
+			}
+		}
+
+		// Process @self metadata facets.
+		if (isset($facets['@self']) === true && is_array($facets['@self']) === true) {
+			$order = $this->transformMetadataFacets(
+				metadataFacets: $facets['@self'],
+				transformed: $transformed,
+				startOrder: $order
+			);
+		}//end if
+
+		// Process object field facets (non-@self).
+		foreach ($facets as $field => $facetData) {
+			if ($field === '@self') {
+				continue;
+			}
+
+			// Check if this is a non-aggregated facet (added by calculateFacetsWithFallback).
+			$isNonAggregated = $facetData['_nonAggregated'] ?? false;
+
+			if ($isNonAggregated === true) {
+				$order = $this->transformNonAggregatedFacet(
+					field: $field,
+					facetData: $facetData,
+					transformed: $transformed,
+					currentOrder: $order
+				);
+				continue;
+			}
+
+			$order = $this->transformAggregatedFacet(
+				field: $field,
+				facetData: $facetData,
+				aggregatedConfigs: $aggregatedConfigs,
+				transformed: $transformed,
+				currentOrder: $order
+			);
+		}//end foreach
+
+		return $transformed;
+	}//end transformFacetsToStandardFormat()
+
+	/**
+	 * Get the metadata facet definitions for @self fields.
+	 *
+	 * @return array Keyed by field name, each value contains title,
+	 *               description, data_type, index_field, index_type, enabled.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-type-auto-detection-from-property-definitions
+	 */
+	private function getMetadataDefinitions(): array {
+		return [
+			'register' => [
+				'title' => 'Register',
+				'description' => 'metadata field: Register',
+				'data_type' => 'integer',
+				'index_field' => 'self_register',
+				'index_type' => 'pint',
+				'enabled' => false,
+			],
+			'schema' => [
+				'title' => 'Type',
+				'description' => 'metadata field: Schema',
+				'data_type' => 'integer',
+				'index_field' => 'self_schema',
+				'index_type' => 'pint',
+				'enabled' => true,
+			],
+			'organisation' => [
+				'title' => 'Leverancier',
+				'description' => 'metadata field: Organisation',
+				'data_type' => 'string',
+				'index_field' => 'self_organisation',
+				'index_type' => 'string',
+				'enabled' => true,
+			],
+			'owner' => [
+				'title' => 'Owner',
+				'description' => 'metadata field: Owner',
+				'data_type' => 'string',
+				'index_field' => 'self_owner',
+				'index_type' => 'string',
+				'enabled' => true,
+			],
+			'created' => [
+				'title' => 'Created',
+				'description' => 'metadata field: Created',
+				'data_type' => 'datetime',
+				'index_field' => 'self_created',
+				'index_type' => 'pdate',
+				'enabled' => false,
+			],
+			'updated' => [
+				'title' => 'Updated',
+				'description' => 'metadata field: Updated',
+				'data_type' => 'datetime',
+				'index_field' => 'self_updated',
+				'index_type' => 'pdate',
+				'enabled' => false,
+			],
+		];
+	}//end getMetadataDefinitions()
+
+	/**
+	 * Transform @self metadata facets into the standard format.
+	 *
+	 * @param array $metadataFacets The @self facet data keyed by field name.
+	 * @param array $transformed Reference to the transformed output array.
+	 * @param int $startOrder The current order counter.
+	 *
+	 * @return int The updated order counter after processing metadata facets.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-metadata-facets-via-self-namespace
+	 */
+	private function transformMetadataFacets(array $metadataFacets, array &$transformed, int $startOrder): int {
+		$order = $startOrder;
+		$metadataDefinitions = $this->getMetadataDefinitions();
+
+		foreach ($metadataFacets as $field => $facetData) {
+			$order++;
+			$name = '_' . $field;
+			$definition = $metadataDefinitions[$field] ?? [
+				'title' => ucfirst($field),
+				'description' => 'metadata field: ' . ucfirst($field),
+				'data_type' => 'string',
+				'index_field' => 'self_' . $field,
+				'index_type' => 'string',
+				'enabled' => true,
+			];
+
+			$transformed[$name] = $this->buildFacetEntry(
+				name: $name,
+				facetData: $facetData,
+				definition: $definition,
+				source: 'metadata',
+				queryParameter: '@self[' . $field . ']',
+				order: $order
+			);
+		}//end foreach
+
+		return $order;
+	}//end transformMetadataFacets()
+
+	/**
+	 * Transform a non-aggregated object field facet into the standard format.
+	 *
+	 * Non-aggregated facets use config for title/description/order and include a schema ID.
+	 *
+	 * @param string $field The facet field key.
+	 * @param array $facetData The raw facet data (may contain internal metadata keys).
+	 * @param array $transformed Reference to the transformed output array.
+	 * @param int $currentOrder The current order counter.
+	 *
+	 * @return int The updated order counter.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function transformNonAggregatedFacet(
+		string $field,
+		array $facetData,
+		array &$transformed,
+		int $currentOrder,
+	): int {
+		$order = $currentOrder;
+
+		$afterConfig = $facetData['_facetConfig'] ?? [];
+		$afterSchemaId = $facetData['_schemaId'] ?? null;
+		$afterFieldName = $facetData['_fieldName'] ?? $field;
+
+		// Clean internal metadata from facet data before processing.
+		unset(
+			$facetData['_nonAggregated'],
+			$facetData['_schemaId'],
+			$facetData['_facetConfig'],
+			$facetData['_fieldName']
+		);
+
+		$configOrder = $afterConfig['order'] ?? null;
+		$facetOrder = ++$order;
+		if ($configOrder !== null) {
+			$facetOrder = (int)$configOrder;
+		}
+
+		if ($configOrder === null) {
+			$order = $facetOrder;
+		}
+
+		$title = $afterConfig['title'] ?? $facetData['title'] ?? $this->formatFieldTitle(field: $afterFieldName);
+		$description = $afterConfig['description'] ?? 'object field: ' . $afterFieldName;
+
+		$definition = [
+			'title' => $title,
+			'description' => $description,
+			'data_type' => $this->inferDataType(facetData: $facetData),
+			'index_field' => $this->sanitizeFieldName(field: $afterFieldName),
+			'index_type' => 'string',
+			'enabled' => true,
+		];
+
+		$transformed[$field] = $this->buildFacetEntry(
+			name: $afterFieldName,
+			facetData: $facetData,
+			definition: $definition,
+			source: 'object',
+			queryParameter: $afterFieldName,
+			order: $facetOrder,
+			schemaId: $afterSchemaId
+		);
+
+		return $order;
+	}//end transformNonAggregatedFacet()
+
+	/**
+	 * Transform an aggregated object field facet into the standard format.
+	 *
+	 * Aggregated facets use config overrides from the facetable configuration if available.
+	 *
+	 * @param string $field The facet field key.
+	 * @param array $facetData The raw facet data.
+	 * @param array $aggregatedConfigs Lookup of aggregated field configs keyed by field name.
+	 * @param array $transformed Reference to the transformed output array.
+	 * @param int $currentOrder The current order counter.
+	 *
+	 * @return int The updated order counter.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function transformAggregatedFacet(
+		string $field,
+		array $facetData,
+		array $aggregatedConfigs,
+		array &$transformed,
+		int $currentOrder,
+	): int {
+		$order = $currentOrder;
+		$fieldConfig = $aggregatedConfigs[$field] ?? null;
+
+		$configOrder = null;
+		if ($fieldConfig !== null) {
+			$configOrder = ($fieldConfig['order'] ?? null);
+		}
+
+		$facetOrder = ++$order;
+		if ($configOrder !== null) {
+			$facetOrder = (int)$configOrder;
+		}//end if
+
+		if ($configOrder === null) {
+			$order = $facetOrder;
+		}
+
+		// Use config title/description if available, then fall back to facet data or auto-generated.
+		$title = $facetData['title'] ?? $this->formatFieldTitle(field: $field);
+		if ($fieldConfig !== null && ($fieldConfig['title'] ?? null) !== null) {
+			$title = $fieldConfig['title'];
+		}
+
+		$description = 'object field: ' . $field;
+		if ($fieldConfig !== null && ($fieldConfig['description'] ?? null) !== null) {
+			$description = $fieldConfig['description'];
+		}
+
+		$definition = [
+			'title' => $title,
+			'description' => $description,
+			'data_type' => $this->inferDataType(facetData: $facetData),
+			'index_field' => $this->sanitizeFieldName(field: $field),
+			'index_type' => 'string',
+			'enabled' => true,
+		];
+
+		$transformed[$field] = $this->buildFacetEntry(
+			name: $field,
+			facetData: $facetData,
+			definition: $definition,
+			source: 'object',
+			queryParameter: $field,
+			order: $facetOrder
+		);
+
+		return $order;
+	}//end transformAggregatedFacet()
+
+	/**
+	 * Build a single facet entry in the standardized format.
+	 *
+	 * @param string $name The facet name.
+	 * @param array $facetData The raw facet data with type and buckets.
+	 * @param array $definition The facet definition (title, description, etc.).
+	 * @param string $source The source type (metadata or object).
+	 * @param string $queryParameter The query parameter for filtering.
+	 * @param int $order The display order.
+	 * @param int|null $schemaId Optional schema ID for non-aggregated facets.
+	 *
+	 * @return array The formatted facet entry.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-response-standardized-format
+	 */
+	private function buildFacetEntry(
+		string $name,
+		array $facetData,
+		array $definition,
+		string $source,
+		string $queryParameter,
+		int $order,
+		?int $schemaId = null,
+	): array {
+		$type = $facetData['type'] ?? 'terms';
+		$buckets = $facetData['buckets'] ?? [];
+
+		// Transform buckets to use value/count instead of key/results.
+		$transformedBuckets = [];
+		foreach ($buckets as $bucket) {
+			$transformedBuckets[] = [
+				'value' => $bucket['key'] ?? $bucket['value'] ?? '',
+				'count' => (int)($bucket['results'] ?? $bucket['count'] ?? 0),
+				'label' => $bucket['label'] ?? (string)($bucket['key'] ?? $bucket['value'] ?? ''),
+			];
+		}
+
+		$entry = [
+			'name' => $name,
+			'type' => $type,
+			'title' => $definition['title'],
+			'description' => $definition['description'],
+			'data_type' => $definition['data_type'],
+			'index_field' => $definition['index_field'],
+			'index_type' => $definition['index_type'],
+			'queryParameter' => $queryParameter,
+			'source' => $source,
+			'show_count' => true,
+			'enabled' => $definition['enabled'],
+			'order' => $order,
+			'data' => [
+				'type' => $type,
+				'total_count' => count($transformedBuckets),
+				'buckets' => $transformedBuckets,
+			],
+		];
+
+		// Add schema ID for non-aggregated facets so the frontend can scope queries.
+		if ($schemaId !== null) {
+			$entry['schema'] = $schemaId;
+		}
+
+		return $entry;
+	}//end buildFacetEntry()
+
+	/**
+	 * Format a field name as a human-readable title.
+	 *
+	 * @param string $field The field name (e.g., cloudDienstverleningsmodel).
+	 *
+	 * @return string The formatted title (e.g., Cloud Dienstverleningsmodel).
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-response-standardized-format
+	 */
+	private function formatFieldTitle(string $field): string {
+		// Convert camelCase to Title Case.
+		$spaced = preg_replace('/([a-z])([A-Z])/', '$1 $2', $field);
+		return ucfirst($spaced);
+	}//end formatFieldTitle()
+
+	/**
+	 * Sanitize a field name for use as an index field.
+	 *
+	 * @param string $field The field name.
+	 *
+	 * @return string The sanitized field name.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	private function sanitizeFieldName(string $field): string {
+		// Convert camelCase to snake_case.
+		$name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $field);
+		$name = strtolower($name);
+		// Remove any non-alphanumeric characters except underscore.
+		return preg_replace('/[^a-z0-9_]/', '_', $name);
+	}//end sanitizeFieldName()
+
+	/**
+	 * Infer the data type from facet data.
+	 *
+	 * @param array $facetData The facet data with type and buckets.
+	 *
+	 * @return string The inferred data type.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	private function inferDataType(array $facetData): string {
+		$type = $facetData['type'] ?? 'terms';
+
+		if ($type === 'date_histogram') {
+			return 'datetime';
+		}
+
+		if ($type === 'range') {
+			return 'number';
+		}
+
+		// Check bucket values to infer type.
+		$buckets = $facetData['buckets'] ?? [];
+		if (empty($buckets) === false) {
+			$firstValue = $buckets[0]['key'] ?? null;
+			if (is_int($firstValue) === true) {
+				return 'integer';
+			}
+
+			if (is_float($firstValue) === true) {
+				return 'number';
+			}
+		}
+
+		return 'string';
+	}//end inferDataType()
+
+	/**
+	 * Count total results across all facet buckets.
+	 *
+	 * @param array $facets Facet data structure.
+	 *
+	 * @return int Total number of facet results.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
+	 */
+	private function countFacetResults(array $facets): int {
+		$total = 0;
+
+		foreach ($facets as $facetGroup) {
+			if (is_array($facetGroup) === true) {
+				foreach ($facetGroup as $facet) {
+					if (($facet['buckets'] ?? null) !== null && is_array($facet['buckets']) === true) {
+						foreach ($facet['buckets'] as $bucket) {
+							$total += (int)($bucket['results'] ?? 0);
+						}
+					}
+				}
+			}
+		}
+
+		return $total;
+	}//end countFacetResults()
+
+	/**
+	 * Check if query has restrictive filters that might eliminate all results.
+	 *
+	 * @param array $query Query parameters.
+	 *
+	 * @return bool True if query has restrictive filters.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	private function hasRestrictiveFilters(array $query): bool {
+		// Check for search terms.
+		if (empty($query['_search']) === false) {
+			return true;
+		}
+
+		// Check for object field filters (anything not starting with _ or @self).
+		foreach ($query as $key => $value) {
+			if (str_starts_with($key, '_') === false && $key !== '@self' && empty($value) === false) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end hasRestrictiveFilters()
+
+	/**
+	 * Get schemas relevant to the current query (cached for performance).
+	 *
+	 * @param array $baseQuery Base query with register/schema filters.
+	 *
+	 * @return Schema[] Array of Schema objects.
+	 *
+	 * @psalm-return array<Schema>
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	private function getSchemasForQuery(array $baseQuery): array {
+		// Check for plural _schemas first (multi-schema publications queries).
+		// Disable RBAC/multitenancy since schemas are system-level entities needed for facet config.
+		$schemasPlural = $baseQuery['@self']['schemas'] ?? $baseQuery['_schemas'] ?? null;
+		if ($schemasPlural !== null && is_array($schemasPlural) === true && count($schemasPlural) > 0) {
+			return $this->schemaMapper->findMultiple(
+				ids: array_map('intval', $schemasPlural),
+				_rbac: false,
+				_multitenancy: false
+			);
+		}
+
+		// Check if specific schema (singular) is filtered in the query.
+		$schemaFilter = $baseQuery['@self']['schema'] ?? null;
+
+		if ($schemaFilter !== null) {
+			// Get specific schemas (bypass RBAC — schemas are system-level).
+			if (is_array($schemaFilter) === true) {
+				return $this->schemaMapper->findMultiple(
+					ids: $schemaFilter,
+					_rbac: false,
+					_multitenancy: false
+				);
+			}
+
+			try {
+				return [$this->schemaMapper->find(id: $schemaFilter, _multitenancy: false, _rbac: false)];
+			} catch (\Exception $e) {
+				return [];
+			}
+		}
+
+		// No specific schema filter - get all schemas for collection-wide facetable discovery.
+		// Null = no limit (get all). Bypass RBAC since schemas are system-level.
+		return $this->schemaMapper->findAll(limit: null, _rbac: false, _multitenancy: false);
+	}//end getSchemasForQuery()
+
+	/**
+	 * Normalize a facetable property value to a standard config array.
+	 *
+	 * Handles both boolean (`true`) and config object formats.
+	 * Returns `null` if the property is not facetable.
+	 *
+	 * @param mixed $facetable The facetable value from a schema property.
+	 *
+	 * @return array|null Normalized config or null if not facetable.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	private function normalizeFacetConfig(mixed $facetable): ?array {
+		if ($facetable === false || $facetable === null) {
+			return null;
+		}
+
+		if ($facetable === true) {
+			return [
+				'aggregated' => true,
+				'title' => null,
+				'description' => null,
+				'order' => null,
+			];
+		}
+
+		if (is_array($facetable) === true && empty($facetable) === false) {
+			return [
+				'aggregated' => $facetable['aggregated'] ?? true,
+				'title' => $facetable['title'] ?? null,
+				'description' => $facetable['description'] ?? null,
+				'order' => $facetable['order'] ?? null,
+			];
+		}
+
+		return null;
+	}//end normalizeFacetConfig()
+
+	/**
+	 * Get facetable fields from schema configurations.
+	 *
+	 * Discovers facetable fields from schema properties, supporting both
+	 * `facetable: true` (boolean) and `facetable: { aggregated, title, description, order }` (config object).
+	 * Non-aggregated fields are tracked separately with their schema context.
+	 *
+	 * @param array $schemas Array of Schema objects.
+	 *
+	 * @return array[] Facetable field configuration with non-aggregated field metadata.
+	 *
+	 * @psalm-return array{'@self': array, object_fields: array, non_aggregated_fields: array}
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) PropertySearchProfile reads a property array and
+	 *                                      holds no state; the search paths read it the same
+	 *                                      way, which is what keeps the declaration single.
+	 */
+	private function getFacetableFieldsFromSchemas(array $schemas): array {
+		$facetableFields = [
+			'@self' => $this->getDefaultMetadataFacets(),
+			'object_fields' => [],
+			'non_aggregated_fields' => [],
+			// Every property a list surface can search, with the match type it
+			// asked for and the control it wants rendered. Separate from
+			// object_fields because a property can be searchable without being
+			// facetable, and a surface that has to infer the control from the
+			// value is the drift this declaration removes.
+			'searchable_fields' => [],
+		];
+
+		foreach ($schemas as $schema) {
+			// **TYPE SAFETY**: Ensure we have a Schema object.
+			if (($schema instanceof Schema) === false) {
+				continue;
+			}
+
+			try {
+				$schemaId = $schema->getId();
+				$properties = $schema->getProperties() ?? [];
+				foreach ($properties as $propertyKey => $property) {
+					// 🔴 ADVERTISING A FACETABLE FIELD IS THE FIRST HALF OF THE
+					// LEAK AND THE EASIER HALF TO MISS. Even before any values
+					// are computed, naming a governed property here tells a
+					// caller the field exists and invites them to ask for its
+					// buckets. Withholding it at the source means there is no
+					// second place to remember.
+					if ($this->aggregateVisibility()->maySummarise(
+						schema: $schema,
+						property: (string)$propertyKey
+					) === false
+					) {
+						continue;
+					}
+
+					// Encrypted properties are never facetable, even when a schema
+					// author also sets `facetable: true` on one by mistake — the
+					// magic-table value is ciphertext (or, once
+					// MagicMapper::buildTableColumnsFromSchema() skips it, not even a
+					// real column), so grouping by it would be meaningless at best
+					// and a ciphertext leak into facet option labels at worst.
+					if (($property['x-openregister-encrypted'] ?? false) === true) {
+						continue;
+					}
+
+					$matchType = PropertySearchProfile::matchTypeFor(property: $property);
+					$inputControl = PropertySearchProfile::inputControlFor(property: $property);
+					$facetableFields['searchable_fields'][$propertyKey] = [
+						'matchType' => $matchType,
+						'inputControl' => $inputControl,
+						'declared' => PropertySearchProfile::declaresMatchType(property: $property),
+						'title' => $property['title'] ?? null,
+					];
+
+					$facetConfig = $this->normalizeFacetConfig(facetable: $property['facetable'] ?? false);
+					if ($facetConfig === null) {
+						continue;
+					}
+
+					// Determine facet type based on property type.
+					$facetType = $this->determineFacetTypeFromProperty(property: $property);
+
+					if ($facetConfig['aggregated'] === false) {
+						// Track non-aggregated fields separately with schema context.
+						$facetableFields['non_aggregated_fields'][] = [
+							'field' => $propertyKey,
+							'schemaId' => $schemaId,
+							'facetType' => $facetType,
+							'facetConfig' => $facetConfig,
+							'title' => $property['title'] ?? null,
+							'matchType' => $matchType,
+							'inputControl' => $inputControl,
+						];
+					}
+
+					if ($facetConfig['aggregated'] !== false) {
+						// Aggregated fields: merge across schemas (existing behavior).
+						$facetableFields['object_fields'][$propertyKey] = [
+							'type' => $facetType,
+							'title' => $property['title'] ?? null,
+							'facetConfig' => $facetConfig,
+							'matchType' => $matchType,
+							'inputControl' => $inputControl,
+						];
+					}
+				}//end foreach
+			} catch (\Exception $e) {
+				$schemaId = 'unknown';
+				if (method_exists($schema, 'getId') === true) {
+					$schemaId = $schema->getId();
+				}
+
+				$this->logger->error(
+					message: '[FacetHandler] Failed to get facetable fields from schema properties',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'error' => $e->getMessage(),
+						'schemaId' => $schemaId,
+					]
+				);
+				continue;
+			}//end try
+		}//end foreach
+
+		return $facetableFields;
+	}//end getFacetableFieldsFromSchemas()
+
+	/**
+	 * Get default metadata facets for @self fields.
+	 *
+	 * @return array Default metadata facet configuration.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-metadata-facets-via-self-namespace
+	 */
+	private function getDefaultMetadataFacets(): array {
+		return [
+			'register' => ['type' => 'terms'],
+			'schema' => ['type' => 'terms'],
+			'created' => ['type' => 'date_histogram', 'interval' => 'month'],
+			'updated' => ['type' => 'date_histogram', 'interval' => 'month'],
+			'owner' => ['type' => 'terms'],
+		];
+	}//end getDefaultMetadataFacets()
+
+	/**
+	 * Determine facet type from property configuration.
+	 *
+	 * @param array $property The property configuration.
+	 *
+	 * @return string The facet type ('terms' or 'date_histogram').
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-type-auto-detection-from-property-definitions
+	 */
+	private function determineFacetTypeFromProperty(array $property): string {
+		$type = $property['type'] ?? 'string';
+		$format = $property['format'] ?? null;
+
+		// Date/datetime fields use date_histogram.
+		if ($format === 'date' || $format === 'date-time' || $type === 'date') {
+			return 'date_histogram';
+		}
+
+		// All other types use terms aggregation.
+		return 'terms';
+	}//end determineFacetTypeFromProperty()
+	/**
+	 * The shared answer to "may a summary over this property be shown".
+	 *
+	 * @return AggregateVisibility The answer.
+	 */
+	private function aggregateVisibility(): AggregateVisibility {
+		return new AggregateVisibility(rbac: $this->propertyRbac, logger: $this->logger);
+	}//end aggregateVisibility()
+
+}//end class

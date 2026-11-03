@@ -1,0 +1,1 @@
+[["null service check v2", "if ($objectService === null || method_exists($objectService, 'saveObjects') === false) {", "if (method_exists($objectService, 'saveObjects') === false) {"]]

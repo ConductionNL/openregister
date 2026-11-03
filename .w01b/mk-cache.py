@@ -1,0 +1,35 @@
+import json, sys
+M = [
+ ("no scope reset", "public function getSingleObjectName(string|int $identifier): ?string {\n\t\t$this->beginNameScope();", "public function getSingleObjectName(string|int $identifier): ?string {"),
+ ("any key from cache", "$isUuid = str_contains($key, '-');", "$isUuid = true;"),
+ ("no key from cache", "$isUuid = str_contains($key, '-');", "$isUuid = false;"),
+ ("memory without source", "&& ($this->nameCache[$key] ?? null) !== null && isset($this->nameSources[$key]) === true) {", "&& ($this->nameCache[$key] ?? null) !== null) {"),
+ ("memory hit unchecked", "return ($this->visibleNames(candidates: [$key => $this->nameCache[$key]])[$key] ?? null);", "return $this->nameCache[$key];"),
+ ("memory hit not counted", "$this->stats['name_hits']++;\n\t\t\treturn ($this->visibleNames(candidates: [$key => $this->nameCache[$key]])", "return ($this->visibleNames(candidates: [$key => $this->nameCache[$key]])"),
+ ("distributed skipped", "if ($isUuid === true && $this->nameDistributedCache !== null) {", "if (false) {"),
+ ("distributed hit unchecked", "return ($this->visibleNames(candidates: [$key => $envelope['n']])[$key] ?? null);", "return $envelope['n'];"),
+ ("distributed not kept", "$this->nameCache[$key] = $envelope['n'];\n\t\t\t\t\t$this->rememberNameOrganisation(key: $key, organisation: $envelope['o'], source: $envelope['s']);\n\t\t\t\t\t$this->stats['name_hits']++;\n\t\t\t\t\treturn ($this->visibleNames(candidates: [$key => $envelope['n']])", "$this->rememberNameOrganisation(key: $key, organisation: $envelope['o'], source: $envelope['s']);\n\t\t\t\t\t$this->stats['name_hits']++;\n\t\t\t\t\treturn ($this->visibleNames(candidates: [$key => $envelope['n']])"),
+ ("distributed org not kept", "$this->rememberNameOrganisation(key: $key, organisation: $envelope['o'], source: $envelope['s']);\n\t\t\t\t\t$this->stats['name_hits']++;\n\t\t\t\t\treturn ($this->visibleNames(candidates: [$key => $envelope['n']])", "\t\t\t\t\t$this->stats['name_hits']++;\n\t\t\t\t\treturn ($this->visibleNames(candidates: [$key => $envelope['n']])"),
+ ("distributed warn", "message: '[CacheHandler] Failed to get object name from distributed cache',", "message: '[CacheHandler] Failed to get object name from distributed cache!',"),
+ ("miss not counted", "// Cache miss - load from database.\n\t\t$this->stats['name_misses']++;", "// Cache miss - load from database."),
+ ("org name no uuid fallback", "$name = $organisation->getName() ?? $organisation->getUuid();\n\t\t\t\tif ($name === null) {\n\t\t\t\t\treturn null;", "$name = $organisation->getName();\n\t\t\t\tif ($name === null) {\n\t\t\t\t\treturn null;"),
+ ("org answer unchecked", "return ($this->visibleNames(candidates: [$key => $name])[$key] ?? null);\n\t\t\t} catch", "return $name;\n\t\t\t} catch"),
+ ("org not cached", "source: self::NAME_SOURCE_ORGANISATION\n\t\t\t\t);", "source: 'x'\n\t\t\t\t);"),
+ ("lookup scoped rbac", "includeDeleted: false,\n\t\t\t\t_rbac: false,", "includeDeleted: false,\n\t\t\t\t_rbac: true,"),
+ ("lookup deleted", "includeDeleted: false,\n\t\t\t\t_rbac: false,", "includeDeleted: true,\n\t\t\t\t_rbac: false,"),
+ ("object name no uuid fallback", "$name = $object->getName() ?? $object->getUuid();\n\t\t\t$source = self::objectNameSource(", "$name = $object->getName();\n\t\t\t$source = self::objectNameSource("),
+ ("register only from object", "register: (($result['register'] ?? null)?->getId() ?? $object->getRegister()),", "register: $object->getRegister(),"),
+ ("schema only from object", "schema: (($result['schema'] ?? null)?->getId() ?? $object->getSchema())", "schema: $object->getSchema()"),
+ ("sourceless answered", "if ($name === null || $source === null) {", "if ($name === null) {"),
+ ("uuid alias always", "if ($uuid !== $key) {", "if (false) {"),
+ ("object answer unchecked", "return ($this->visibleNames(candidates: [$uuid => $name])[$uuid] ?? null);", "return $name;"),
+ ("object answer by key", "return ($this->visibleNames(candidates: [$uuid => $name])[$uuid] ?? null);", "return ($this->visibleNames(candidates: [$key => $name])[$key] ?? null);"),
+ ("cache org forged", "$this->setObjectName(identifier: $identifier, name: $name, organisation: $object->getOrganisation(), source: $source);", "$this->setObjectName(identifier: $identifier, name: $name, organisation: null, source: $source);"),
+ ("load log", "message: '[CacheHandler] Failed to load entity for name lookup',", "message: '[CacheHandler] Failed to load entity for name lookup!',"),
+]
+files=sys.argv[1:]; src={f:open(f).read() for f in files}; out=[]
+for l,a,b in M:
+    c=sum(src[f].count(a) for f in files)
+    if c!=1: print("COUNT",c,l); continue
+    out.append([l,a,b])
+json.dump(out,open('.w01b/m-cache-old.json','w')); print(len(out))

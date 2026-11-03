@@ -1,0 +1,157 @@
+[
+[
+"control-noop",
+"// Use database search.",
+"// Use database search (noop)."
+],
+[
+"no-source-shortcut",
+"if ($sourcePaginated !== null) {\n            return $sourcePaginated;",
+"if (false) {\n            return $sourcePaginated;"
+],
+[
+"source-rbac-forced",
+"$sourcePaginated = $this->paginateObjectSource(query: $query, _rbac: $_rbac);",
+"$sourcePaginated = $this->paginateObjectSource(query: $query, _rbac: true);"
+],
+[
+"multi-ignores-empty-array",
+"(is_array($selfSchema) === true && count($selfSchema) > 0)",
+"(is_array($selfSchema) === true)"
+],
+[
+"multi-no-schemas-key",
+"|| array_key_exists('_schemas', $query) === true\n            || (isset",
+"|| (isset"
+],
+[
+"multi-no-self-schemas",
+"|| (isset($query['@self']['schemas']) === true);",
+";"
+],
+[
+"self-schemas-key-exists",
+"|| (isset($query['@self']['schemas']) === true);",
+"|| (array_key_exists('schemas', $query['@self'] ?? []) === true);"
+],
+[
+"register-isset",
+"&& array_key_exists('_register', $query) === false",
+"&& isset($query['_register']) === false"
+],
+[
+"register-ignores-multi",
+"&& $isMultiSchemaCtx === false\n",
+"\n"
+],
+[
+"schema-isset",
+"&& array_key_exists('_schema', $query) === false",
+"&& isset($query['_schema']) === false"
+],
+[
+"schema-ignores-schemas",
+"&& array_key_exists('_schemas', $query) === false\n        ) {\n            $query['_schema']",
+"\n        ) {\n            $query['_schema']"
+],
+[
+"views-empty-applied",
+"if ($views !== null && empty($views) === false) {",
+"if ($views !== null) {"
+],
+[
+"source-not-stripped",
+"unset($query['_source']);",
+""
+],
+[
+"strip-before-views",
+"        // Apply view filters if provided.",
+"        unset($query['_source']);\n        // Apply view filters if provided."
+],
+[
+"public-loose",
+"if (in_array('public', $readGroups, true) === true) {",
+"if (in_array('public', $readGroups) === true) {"
+],
+[
+"public-ignored",
+"$effectiveMt = false;\n            }",
+"$effectiveMt = $_multitenancy;\n            }"
+],
+[
+"public-any-action",
+"$readGroups = $schemaAuth['read'] ?? [];",
+"$readGroups = array_merge(...array_values($schemaAuth));"
+],
+[
+"mt-raw",
+"_multitenancy: $effectiveMt,",
+"_multitenancy: $_multitenancy,"
+],
+[
+"rbac-forced",
+"            _rbac: $_rbac,\n            _multitenancy: $effectiveMt,",
+"            _rbac: true,\n            _multitenancy: $effectiveMt,"
+],
+[
+"deleted-dropped",
+"deleted: $deleted,\n            ids: $ids,",
+"deleted: false,\n            ids: $ids,"
+],
+[
+"ids-dropped",
+"ids: $ids,\n            uses: $uses\n        );\n        // Preserve",
+"ids: null,\n            uses: $uses\n        );\n        // Preserve"
+],
+[
+"uses-dropped",
+"uses: $uses\n        );\n        // Preserve",
+"uses: null\n        );\n        // Preserve"
+],
+[
+"source-overwritten",
+"$result['@self']['source']  = $result['@self']['source'] ?? 'database';",
+"$result['@self']['source']  = 'database';"
+],
+[
+"multi-annot-effective",
+"$result['@self']['multi']   = $_multitenancy;",
+"$result['@self']['multi']   = $effectiveMt;"
+],
+[
+"no-trim",
+"array_filter(array_map('trim', explode(',', $extend)))",
+"array_filter(explode(',', $extend))"
+],
+[
+"no-filter",
+"array_filter(array_map('trim', explode(',', $extend)))",
+"array_map('trim', explode(',', $extend))"
+],
+[
+"names-loose",
+"in_array('_names', $extend, true) === true",
+"in_array('_names', $extend) === true"
+],
+[
+"names-not-reset",
+"            $result['@self']['names'] = [];\n\n            if",
+"\n            if"
+],
+[
+"names-error-dropped",
+"$result['@self']['names_error'] = $e->getMessage();",
+""
+],
+[
+"names-empty-results",
+"if (is_array($resultsToProcess) === true && empty($resultsToProcess) === false) {",
+"if (is_array($resultsToProcess) === true) {"
+],
+[
+"trail-query-raw",
+"$this->recordSearchTrail(query: $query, result: $result, startTime: $searchStartTime);",
+"$this->recordSearchTrail(query: [], result: $result, startTime: $searchStartTime);"
+]
+]

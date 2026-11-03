@@ -1,0 +1,2490 @@
+<?php
+
+/**
+ * CacheHandler
+ *
+ * Service class responsible for caching frequently accessed objects to improve
+ * performance by reducing database queries. This service provides:
+ * - In-memory caching of ObjectEntity objects
+ * - Bulk preloading of relationship objects
+ * - Cache warming strategies
+ * - Memory-efficient cache management
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
+ */
+
+namespace OCA\OpenRegister\Service\Object;
+
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
+use OCP\AppFramework\IAppContainer;
+use OCP\IAppConfig;
+use OCP\ICacheFactory;
+use OCP\IDBConnection;
+use OCP\IGroupManager;
+use OCP\IMemcache;
+use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
+use RuntimeException;
+
+/**
+ * Cache service for ObjectEntity objects to improve performance
+ *
+ * This service provides efficient caching mechanisms to reduce database queries
+ * when dealing with related objects and frequently accessed entities.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister\Service
+ * @author    Conduction b.v. <info@conduction.nl>
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/OpenCatalogi/OpenRegister
+ * @version   GIT: <git_id>
+ * @copyright 2024 Conduction b.v.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Cache operations require many utility methods
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Public API for comprehensive cache management
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Public API for comprehensive cache management
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex cache invalidation and warming logic
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Cache handler requires multiple dependencies for comprehensive caching
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ */
+class CacheHandler implements ObjectNameCacheInterface {
+
+	/**
+	 * In-memory cache of objects indexed by ID/UUID
+	 *
+	 * @var array<string|int, ObjectEntity>
+	 */
+	private array $objectCache = [];
+
+	/**
+	 * Maximum number of objects to keep in memory cache
+	 *
+	 * @var integer
+	 */
+	private int $maxCacheSize = 1000;
+
+	/**
+	 * Maximum cache TTL for name caching (24 hours in seconds)
+	 *
+	 * UUIDs and names rarely change, so a longer TTL is appropriate.
+	 * Cache is invalidated on object update/delete operations anyway.
+	 *
+	 * @var int
+	 */
+	private const MAX_CACHE_TTL = 86400;
+
+	/**
+	 * Name source of an organisation's own name.
+	 *
+	 * @var string
+	 */
+	public const NAME_SOURCE_ORGANISATION = 'organisation';
+
+	/**
+	 * In-memory cache of object names indexed by ID/UUID
+	 *
+	 * Provides ultra-fast name lookups for frontend rendering without
+	 * requiring full object data retrieval.
+	 *
+	 * Keys are int|string, not string: the cache is written under BOTH the uuid
+	 * and the numeric id, and PHP coerces a canonical numeric string key to int.
+	 *
+	 * @var array<int|string, string>
+	 */
+	private array $nameCache = [];
+
+	/**
+	 * Owning organisation UUID for every entry in $nameCache (SEC-CTRL-2 step 2)
+	 *
+	 * The name cache is shared by every request served by this process, so the
+	 * tenancy of a cached name has to travel WITH the name. Keyed identically to
+	 * $nameCache; an identifier missing from this map has an unknown owner and is
+	 * therefore never served (fail closed).
+	 *
+	 * @var array<int|string, string|null> Keyed identically to $nameCache — see
+	 *                                     the key-coercion note there.
+	 */
+	private array $nameOrganisations = [];
+
+	/**
+	 * Where every entry in $nameCache came from, which is what decides who may see it
+	 *
+	 * NAME_SOURCE_ORGANISATION for an organisation's name (decided by the caller's
+	 * organisation scope), or "<registerId>:<schemaId>" for an object's name
+	 * (decided by the object read path, see visibleNames()). An entry without a
+	 * source is a cache MISS: it is resolved again, never served.
+	 *
+	 * @var array<int|string, string> Keyed identically to $nameCache.
+	 */
+	private array $nameSources = [];
+
+	/**
+	 * Read-path answers already given, per caller, per object UUID
+	 *
+	 * Spares a repeated lookup (a facet resolves one value per call) the same
+	 * access query. Keyed by user id plus active organisation, so a long-lived
+	 * process never hands one caller's answer to another, nor a user's answer in
+	 * one organisation to the same user acting in another; an object that
+	 * changes is forgotten for everyone (invalidateForObjectChange()).
+	 *
+	 * @var array<string, array<string, bool>>
+	 */
+	private array $readabilityMemo = [];
+
+	/**
+	 * Memoised name-visibility scope for the current request (SEC-CTRL-2 step 2)
+	 *
+	 * `null` combined with $nameScopeResolved === true means UNRESTRICTED (multi
+	 * tenancy switched off, or an admin with the override enabled). An array is
+	 * the list of organisation UUIDs whose names the caller may see; an empty
+	 * array means the caller may see none.
+	 *
+	 * @var array<int, string>|null
+	 */
+	private ?array $nameScope = null;
+
+	/**
+	 * Whether $nameScope has been resolved yet for this request
+	 *
+	 * @var bool
+	 */
+	private bool $nameScopeResolved = false;
+
+	/**
+	 * Distributed cache for object names
+	 *
+	 * @var IMemcache|null
+	 */
+	private ?IMemcache $nameDistributedCache = null;
+
+	/**
+	 * Cache hit statistics
+	 *
+	 * `warmup_breakdown` is written by the name-cache warm-up for diagnostics
+	 * and is absent until that has run, so it is optional here. It was missing
+	 * from this shape entirely, which is why assigning it read as
+	 * InvalidPropertyAssignmentValue: the declaration described eight int keys
+	 * and the code stored a ninth holding an array.
+	 *
+	 * @var array{hits: int, misses: int, preloads: int, query_hits: int,
+	 *            query_misses: int, name_hits: int, name_misses: int, name_warmups: int,
+	 *            warmup_breakdown?: array{organisations: int, objects_table: int,
+	 *                                     magic_tables: int, total_unique: int}}
+	 */
+	private array $stats = [
+		'hits' => 0,
+		'misses' => 0,
+		'preloads' => 0,
+		'query_hits' => 0,
+		'query_misses' => 0,
+		'name_hits' => 0,
+		'name_misses' => 0,
+		'name_warmups' => 0,
+	];
+
+	/**
+	 * Distributed cache for query results
+	 *
+	 * @var IMemcache|null
+	 */
+	private ?IMemcache $queryCache = null;
+
+	/**
+	 * In-memory cache for frequently accessed query results
+	 *
+	 * @var array<string, mixed>
+	 */
+	private array $inMemoryQueryCache = [];
+
+	/**
+	 * User session for cache key generation
+	 *
+	 * @var IUserSession
+	 */
+	private IUserSession $userSession;
+
+	/**
+	 * Container for lazy loading dependencies to break circular dependency
+	 *
+	 * @var IAppContainer|null
+	 */
+	private ?IAppContainer $container = null;
+
+	/**
+	 * Lazily loaded MagicMapper to break circular dependency
+	 *
+	 * @var MagicMapper|null
+	 */
+	private ?MagicMapper $objectMapper = null;
+
+	/**
+	 * Constructor for CacheHandler
+	 *
+	 * @param OrganisationMapper $organisationMapper The organisation entity mapper
+	 * @param LoggerInterface $logger Logger for performance monitoring
+	 * @param ICacheFactory|null $cacheFactory Cache factory for query result caching
+	 * @param IUserSession|null $userSession User session for cache key generation
+	 * @param IAppContainer|null $container Container for lazy loading dependencies (optional)
+	 * @param RegisterMapper|null $registerMapper Register mapper for magic table queries
+	 * @param SchemaMapper|null $schemaMapper Schema mapper for magic table queries
+	 * @param IDBConnection|null $db Database connection for magic table queries
+	 * @param IGroupManager|null $groupManager Group manager for the admin-override arm of the name scope
+	 * @param IAppConfig|null $appConfig App config for the multitenancy switches read by the name scope
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud constructor injection:
+	 * every parameter is a distinct collaborator resolved by the DI container, and the
+	 * two added by SEC-CTRL-2 step 2 are the same pair Db\MultiTenancyTrait consumes.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function __construct(
+		private readonly OrganisationMapper $organisationMapper,
+		private readonly LoggerInterface $logger,
+		?ICacheFactory $cacheFactory = null,
+		?IUserSession $userSession = null,
+		?IAppContainer $container = null,
+		private readonly ?RegisterMapper $registerMapper = null,
+		private readonly ?SchemaMapper $schemaMapper = null,
+		private readonly ?IDBConnection $db = null,
+		private readonly ?IGroupManager $groupManager = null,
+		private readonly ?IAppConfig $appConfig = null,
+	) {
+		// Initialize query cache if available.
+		if ($cacheFactory !== null) {
+			try {
+				$this->queryCache = $cacheFactory->createDistributed('openregister_query_results');
+				$this->nameDistributedCache = $cacheFactory->createDistributed('openregister_object_names');
+			} catch (\Exception $e) {
+				$this->logger->warning(
+					message: '[CacheHandler] Failed to initialize distributed caches',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}
+
+		$this->userSession = $userSession ?? new class {
+			/**
+			 * Get user.
+			 *
+			 * @return null
+			 *
+			 * @spec openspec/specs/object-lifecycle/spec.md
+			 */
+			public function getUser() {
+				return null;
+			}//end getUser()
+		};
+		$this->container = $container;
+	}//end __construct()
+
+	/**
+	 * Get the MagicMapper lazily to break circular dependency.
+	 *
+	 * @return MagicMapper The unified object mapper.
+	 *
+	 * @throws RuntimeException When container is not available.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function getObjectMapper(): MagicMapper {
+		if ($this->objectMapper === null) {
+			if ($this->container === null) {
+				throw new RuntimeException('[CacheHandler] Container required for lazy loading MagicMapper');
+			}
+
+			$this->objectMapper = $this->container->get(MagicMapper::class);
+		}
+
+		return $this->objectMapper;
+	}//end getObjectMapper()
+
+	/**
+	 * Get an object from cache or database
+	 *
+	 * This method first checks the in-memory cache before falling back to the database.
+	 * It automatically caches retrieved objects for future use.
+	 *
+	 * @param int|string $identifier The object ID or UUID
+	 *
+	 * @return ObjectEntity|null The object or null if not found
+	 *
+	 * @phpstan-return ObjectEntity|null
+	 * @psalm-return   ObjectEntity|null
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getObject(int|string $identifier): ?ObjectEntity {
+		// BUG-OBJ-6: the in-memory object cache is keyed per active-organisation so a
+		// cached entity loaded under one tenant's context can never be served to a
+		// different tenant within the same request lifecycle. The underlying find()
+		// already applies RBAC + multitenancy on a cache miss; the tenant-scoped key
+		// closes the cache-hit bypass.
+		$key = $this->buildObjectCacheKey(rawKey: (string)$identifier);
+
+		// Check cache first.
+		if (($this->objectCache[$key] ?? null) !== null) {
+			$this->stats['hits']++;
+			return $this->objectCache[$key];
+		}
+
+		// Cache miss - load from database (RBAC + multitenancy enforced by find()).
+		$this->stats['misses']++;
+
+		try {
+			$object = $this->getObjectMapper()->find($identifier);
+
+			// Cache the object with both ID and UUID as keys.
+			$this->cacheObject(object: $object);
+
+			return $object;
+		} catch (\Exception $e) {
+			return null;
+		}
+	}//end getObject()
+
+	/**
+	 * Build a tenant-scoped key for the in-memory object cache (BUG-OBJ-6).
+	 *
+	 * Prefixes the raw id/uuid with the caller's active organisation so a cached
+	 * entity is never shared across tenants. Falls back to a stable sentinel when
+	 * no active organisation can be resolved (anonymous / system context).
+	 *
+	 * @param string $rawKey The raw cache key (object id or uuid)
+	 *
+	 * @return string The tenant-scoped cache key
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function buildObjectCacheKey(string $rawKey): string {
+		return $this->getActiveOrganisationCacheScope() . '|' . $rawKey;
+	}//end buildObjectCacheKey()
+
+	/**
+	 * Resolve the active-organisation discriminator for object-cache keys (BUG-OBJ-6).
+	 *
+	 * @return string The active organisation UUID, or a sentinel for no/unknown org
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function getActiveOrganisationCacheScope(): string {
+		try {
+			$user = $this->userSession?->getUser();
+			if ($user === null) {
+				return '__no_org__';
+			}
+
+			$organisation = $this->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
+			if ($organisation === null || $organisation === '') {
+				return '__no_org__';
+			}
+
+			return $organisation;
+		} catch (\Throwable $e) {
+			// Never let cache-key resolution abort a read; isolate on a safe sentinel.
+			return '__no_org__';
+		}
+	}//end getActiveOrganisationCacheScope()
+
+	/**
+	 * Drop the memoised name scope so the next lookup re-reads the caller.
+	 *
+	 * Called at the top of every public name reader. The scope is memoised for
+	 * the duration of ONE call (a bulk lookup checks it once per name and would
+	 * otherwise walk the organisation hierarchy thousands of times), but it must
+	 * never survive between calls: a cron worker or a long-lived process serves
+	 * more than one caller, and a scope carried over is the same cross-tenant
+	 * reuse this change exists to close.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function beginNameScope(): void {
+		$this->nameScopeResolved = false;
+		$this->nameScope = null;
+	}//end beginNameScope()
+
+	/**
+	 * Resolve which organisations' names the current caller may see (SEC-CTRL-2 step 2).
+	 *
+	 * Mirrors Db\MultiTenancyTrait::applyOrganisationFilter() so a name is never
+	 * resolvable for an object the caller could not have read in the first place:
+	 *
+	 * - multitenancy switched off in config  -> unrestricted (null)
+	 * - admin with the admin override on     -> unrestricted (null)
+	 * - otherwise                            -> the active organisation plus its
+	 *                                           parents, exactly like the mappers
+	 * - no active organisation at all        -> [] (the trait's `1 = 0` arm)
+	 *
+	 * Memoised for the duration of one public call; see beginNameScope().
+	 *
+	 * @return array<int, string>|null Allowed organisation UUIDs, or null for unrestricted
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function resolveNameScope(): ?array {
+		if ($this->nameScopeResolved === true) {
+			return $this->nameScope;
+		}
+
+		$this->nameScopeResolved = true;
+		$this->nameScope = [];
+
+		try {
+			if ($this->isMultiTenancyDisabled() === true || $this->isAdminOverrideActive() === true) {
+				$this->nameScope = null;
+				return $this->nameScope;
+			}
+
+			$activeOrganisation = $this->resolveActiveOrganisationUuid();
+			if ($activeOrganisation === null || $activeOrganisation === '') {
+				return $this->nameScope;
+			}
+
+			$hierarchy = [$activeOrganisation];
+			try {
+				$resolved = $this->organisationMapper->getOrganisationHierarchy($activeOrganisation);
+				if (empty($resolved) === false) {
+					$hierarchy = $resolved;
+				}
+			} catch (\Throwable $e) {
+				// Hierarchy unavailable: fall back to the active organisation alone,
+				// which is the narrower (fail-closed) answer.
+				$this->logger->debug(
+					message: '[CacheHandler] Organisation hierarchy unavailable for name scope',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+				);
+			}
+
+			$this->nameScope = array_values(
+				array_filter(
+					array_map(fn ($uuid) => (string)$uuid, $hierarchy),
+					fn (string $uuid) => $uuid !== ''
+				)
+			);
+		} catch (\Throwable $e) {
+			// Never let scope resolution grant more than it should: an error means
+			// no organisation could be established, so nothing is visible.
+			$this->logger->warning(
+				message: '[CacheHandler] Name scope could not be resolved; denying all cached names',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+			$this->nameScope = [];
+		}//end try
+
+		return $this->nameScope;
+	}//end resolveNameScope()
+
+	/**
+	 * Whether multitenancy filtering is switched off instance-wide.
+	 *
+	 * @return bool True when the multitenancy config explicitly disables filtering
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function isMultiTenancyDisabled(): bool {
+		if ($this->appConfig === null) {
+			return false;
+		}
+
+		$raw = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+		if ($raw === '') {
+			return false;
+		}
+
+		$decoded = json_decode($raw, true);
+		if (is_array($decoded) === false) {
+			return false;
+		}
+
+		return ($decoded['enabled'] ?? true) === false;
+	}//end isMultiTenancyDisabled()
+
+	/**
+	 * Whether the caller is an admin acting under an enabled cross-tenant override.
+	 *
+	 * SaaS mode always wins and disables the override, mirroring MultiTenancyTrait.
+	 *
+	 * @return bool True when the caller may read names across organisations
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function isAdminOverrideActive(): bool {
+		if ($this->appConfig === null || $this->groupManager === null) {
+			return false;
+		}
+
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
+
+		$raw = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+		if ($raw === '') {
+			return false;
+		}
+
+		$decoded = json_decode($raw, true);
+		if (is_array($decoded) === false) {
+			return false;
+		}
+
+		if (($decoded['saasMode'] ?? false) === true) {
+			return false;
+		}
+
+		if (($decoded['adminOverride'] ?? false) !== true) {
+			return false;
+		}
+
+		return $this->groupManager->isAdmin($user->getUID());
+	}//end isAdminOverrideActive()
+
+	/**
+	 * Resolve the caller's active organisation UUID for name scoping.
+	 *
+	 * @return string|null The active organisation UUID, or null when none applies
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function resolveActiveOrganisationUuid(): ?string {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return $this->organisationMapper->getDefaultOrganisationFromConfig();
+		}
+
+		return $this->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
+	}//end resolveActiveOrganisationUuid()
+
+	/**
+	 * Per-object authorisation predicate for name resolution (SEC-CTRL-2 step 2).
+	 *
+	 * Answers "may THIS caller be told the name of an entity owned by THIS
+	 * organisation?". An entity whose owning organisation is unknown is refused:
+	 * absence of tenancy is not permission to disclose.
+	 *
+	 * @param string|null $organisation The owning organisation UUID of the entity
+	 *
+	 * @return bool True when the caller may see a name owned by that organisation
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function hasOrganisationAccess(?string $organisation): bool {
+		$scope = $this->resolveNameScope();
+		if ($scope === null) {
+			return true;
+		}
+
+		if ($organisation === null || $organisation === '') {
+			return false;
+		}
+
+		return in_array($organisation, $scope, true);
+	}//end hasOrganisationAccess()
+
+	/**
+	 * Record the owning organisation and the source of a cached name.
+	 *
+	 * @param string $key The name-cache key (object id or uuid)
+	 * @param string|null $organisation The owning organisation UUID, or null when unknown
+	 * @param string|null $source NAME_SOURCE_ORGANISATION, "<register>:<schema>", or null when unknown
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function rememberNameOrganisation(string $key, ?string $organisation, ?string $source = null): void {
+		$this->nameOrganisations[$key] = $organisation;
+		if ($source === null) {
+			unset($this->nameSources[$key]);
+			return;
+		}
+
+		$this->nameSources[$key] = $source;
+	}//end rememberNameOrganisation()
+
+	/**
+	 * The name source of an object: "<registerId>:<schemaId>", the table its read rule lives on.
+	 *
+	 * @param mixed $register The object's register id
+	 * @param mixed $schema The object's schema id
+	 *
+	 * @return string|null The source, or null when either id is missing
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	public static function objectNameSource(mixed $register, mixed $schema): ?string {
+		if (is_numeric($register) === false || is_numeric($schema) === false) {
+			return null;
+		}
+
+		return (int)$register . ':' . (int)$schema;
+	}//end objectNameSource()
+
+	/**
+	 * Wrap a name, its owning organisation and its source for the distributed cache.
+	 *
+	 * The distributed name cache is shared by every caller on the instance, so
+	 * what decides visibility has to be stored WITH the value. Keeping the KEY
+	 * unchanged is deliberate: every existing invalidation site removes
+	 * `name_<identifier>` and keeps working untouched.
+	 *
+	 * @param string $name The cached name
+	 * @param string|null $organisation The owning organisation UUID
+	 * @param string|null $source The name source (see $nameSources)
+	 *
+	 * @return array{n: string, o: string|null, s: string|null} The envelope stored in the distributed cache
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function buildNameEnvelope(string $name, ?string $organisation, ?string $source = null): array {
+		return ['n' => $name, 'o' => $organisation, 's' => $source];
+	}//end buildNameEnvelope()
+
+	/**
+	 * Read a distributed-cache entry as an envelope that can be decided.
+	 *
+	 * An entry without a source (a bare string, or an envelope written before
+	 * names followed read rights) is reported as a MISS rather than served: the
+	 * fail-closed direction across a deploy, and the database re-establishes it.
+	 *
+	 * @param mixed $cached The raw value read from the distributed cache
+	 *
+	 * @return array{n: string, o: string|null, s: string}|null The envelope, or null when unusable
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function readNameEnvelope(mixed $cached): ?array {
+		if (is_array($cached) === false || is_string($cached['n'] ?? null) === false) {
+			return null;
+		}
+
+		$organisation = $cached['o'] ?? null;
+		if ($organisation !== null && is_string($organisation) === false) {
+			return null;
+		}
+
+		$source = $cached['s'] ?? null;
+		if (is_string($source) === false || $source === '') {
+			return null;
+		}
+
+		return ['n' => $cached['n'], 'o' => $organisation, 's' => $source];
+	}//end readNameEnvelope()
+
+	/**
+	 * Keep only the names this caller may see.
+	 *
+	 * The rule: a caller gets the name of every object they may read, and
+	 * nothing for an object they may not read. "May read" is asked of the
+	 * object read path itself (MagicMapper::filterReadableUuids(), the RBAC +
+	 * multitenancy filter of GET /api/objects/{register}/{schema}/{id}), so the
+	 * two can never disagree. An organisation's name keeps the organisation
+	 * scope (hasOrganisationAccess()). A name without a known source is dropped.
+	 *
+	 * @param array<int|string, string> $candidates Identifier => name, every one already in the name cache
+	 *
+	 * @return array<string, string> The visible subset
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function visibleNames(array $candidates): array {
+		$visible = [];
+		$uuidsBySource = [];
+		foreach ($candidates as $key => $name) {
+			$key = (string)$key;
+			$source = $this->nameSources[$key] ?? null;
+			if ($source === self::NAME_SOURCE_ORGANISATION) {
+				if ($this->hasOrganisationAccess(organisation: ($this->nameOrganisations[$key] ?? null)) === true) {
+					$visible[$key] = $name;
+				}
+
+				continue;
+			}
+
+			if ($source !== null) {
+				$uuidsBySource[$source][] = $key;
+			}
+		}
+
+		// Ask the read path per table, remembering each answer per caller (user
+		// plus active organisation): a facet resolves one value per call, and the
+		// same question must not cost the same query twice. A failure is "none".
+		$caller = (string)$this->userSession->getUser()?->getUID() . '|' . $this->getActiveOrganisationCacheScope();
+		$memo = ($this->readabilityMemo[$caller] ?? []);
+		foreach ($uuidsBySource as $source => $uuids) {
+			$unknown = array_values(array_filter($uuids, fn (string $uuid): bool => isset($memo[$uuid]) === false));
+			if (empty($unknown) === false) {
+				[$registerId, $schemaId] = array_map('intval', explode(':', (string)$source, 2) + [1 => '0']);
+				$readable = [];
+				try {
+					$readable = $this->getObjectMapper()->filterReadableUuids(registerId: $registerId, schemaId: $schemaId, uuids: $unknown);
+				} catch (\Throwable $e) {
+					$this->logger->warning(
+						message: '[CacheHandler] Read access for names could not be established; disclosing none',
+						context: ['file' => __FILE__, 'line' => __LINE__, 'source' => $source, 'error' => $e->getMessage()]
+					);
+				}
+
+				foreach ($unknown as $uuid) {
+					$memo[$uuid] = in_array($uuid, $readable, true);
+				}
+			}
+
+			foreach ($uuids as $uuid) {
+				if (($memo[$uuid] ?? false) === true) {
+					$visible[$uuid] = $candidates[$uuid];
+				}
+			}
+		}//end foreach
+
+		$this->readabilityMemo[$caller] = $memo;
+
+		return $visible;
+	}//end visibleNames()
+
+	/**
+	 * Bulk preload objects to warm the cache
+	 *
+	 * This method loads multiple objects in a single database query and caches them
+	 * all, significantly improving performance for operations that access many objects.
+	 *
+	 * With a register, the identifiers are looked up in that register's tables
+	 * first and only the ones not found there in every table. A reference
+	 * nearly always points into its own register, and one lookup across every
+	 * magic table is a UNION over all of them (1.7k tables: 1.5-3.6 s).
+	 *
+	 * @param array $identifiers Array of object IDs/UUIDs to preload
+	 * @param int|null $registerId The register to look in first, or null for every table.
+	 *
+	 * @return ObjectEntity[]
+	 *
+	 * @phpstan-param array<int|string> $identifiers
+	 *
+	 * @phpstan-return array<ObjectEntity>
+	 *
+	 * @psalm-param array<int|string> $identifiers
+	 *
+	 * @psalm-return array<ObjectEntity>
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function preloadObjects(array $identifiers, ?int $registerId = null): array {
+		if (empty($identifiers) === true) {
+			return [];
+		}
+
+		// Filter out already cached objects (BUG-OBJ-6: tenant-scoped keys).
+		$identifiersToLoad = array_filter(
+			array_unique($identifiers),
+			fn ($id) => isset($this->objectCache[$this->buildObjectCacheKey(rawKey: (string)$id)]) === false
+		);
+
+		if (empty($identifiersToLoad) === true) {
+			// All objects already cached.
+			return array_filter(
+				array_map(
+					fn ($id) => $this->objectCache[$this->buildObjectCacheKey(rawKey: (string)$id)] ?? null,
+					$identifiers
+				),
+				fn ($obj) => $obj !== null
+			);
+		}
+
+		// Bulk load from database.
+		try {
+			$objects = $this->findForPreload(identifiers: array_values($identifiersToLoad), registerId: $registerId);
+
+			// Cache all loaded objects.
+			foreach ($objects as $object) {
+				$this->cacheObject(object: $object);
+			}
+
+			$this->stats['preloads'] += count($objects);
+
+			return $objects;
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[CacheHandler] Bulk preload failed in CacheHandler',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'exception' => $e->getMessage(),
+					'identifiersToLoad' => count($identifiersToLoad),
+				]
+			);
+			return [];
+		}//end try
+	}//end preloadObjects()
+
+	/**
+	 * Load objects by identifier, from one register's tables first when given.
+	 *
+	 * @param array<int|string> $identifiers The identifiers to load.
+	 * @param int|null $registerId The register to look in first.
+	 *
+	 * @return ObjectEntity[] The objects found.
+	 */
+	private function findForPreload(array $identifiers, ?int $registerId): array {
+		$mapper = $this->getObjectMapper();
+		if ($registerId === null) {
+			return $mapper->findMultiple($identifiers);
+		}
+
+		$objects = $mapper->findMultipleAcrossAllMagicTables(uuids: $identifiers, registerIdScope: $registerId);
+		$found = [];
+		foreach ($objects as $object) {
+			$found[(string)$object->getUuid()] = true;
+			$found[(string)$object->getId()] = true;
+		}
+
+		$missing = array_values(
+			array_filter(
+				$identifiers,
+				fn ($id) => isset($found[(string)$id]) === false
+			)
+		);
+		if ($missing === []) {
+			return $objects;
+		}
+
+		return array_merge($objects, $mapper->findMultiple($missing));
+	}//end findForPreload()
+
+	/**
+	 * Cache an object with memory management
+	 *
+	 * This method caches an object using both its ID and UUID as keys.
+	 * It implements LRU-style eviction when the cache becomes too large.
+	 *
+	 * @param ObjectEntity $object The object to cache
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function cacheObject(ObjectEntity $object): void {
+		// Check cache size and evict oldest entries if necessary.
+		// PERF-9: unset the oldest keys in a tight loop instead of rebuilding the whole
+		// cache with array_slice() (which reallocates the entire array on every insert
+		// once the cap is reached). PHP arrays preserve insertion order, so the leading
+		// keys returned by array_keys() are the oldest.
+		if (count($this->objectCache) >= $this->maxCacheSize) {
+			$entriesToRemove = (int)($this->maxCacheSize * 0.2);
+			if ($entriesToRemove < 1) {
+				$entriesToRemove = 1;
+			}
+
+			$oldestKeys = array_slice(array_keys($this->objectCache), 0, $entriesToRemove);
+			foreach ($oldestKeys as $oldestKey) {
+				unset($this->objectCache[$oldestKey]);
+			}
+		}
+
+		// Cache with ID (BUG-OBJ-6: tenant-scoped key).
+		$this->objectCache[$this->buildObjectCacheKey(rawKey: (string)$object->getId())] = $object;
+
+		// Also cache with UUID if available.
+		if (($object->getUuid() !== null) === true) {
+			$this->objectCache[$this->buildObjectCacheKey(rawKey: (string)$object->getUuid())] = $object;
+		}
+	}//end cacheObject()
+
+	/**
+	 * Get cache statistics
+	 *
+	 * Returns information about cache performance for monitoring and optimization.
+	 *
+	 * @return (float|int)[]
+	 *
+	 * @phpstan-return array{hits: int, misses: int, preloads: int,
+	 *     query_hits: int, query_misses: int, name_hits: int, name_misses: int,
+	 *     name_warmups: int, hit_rate: float, query_hit_rate: float,
+	 *     name_hit_rate: float, cache_size: int, query_cache_size: int,
+	 *     name_cache_size: int}
+	 *
+	 * @psalm-return array{hits: int, misses: int, preloads: int,
+	 *     query_hits: int, query_misses: int, name_hits: int,
+	 *     name_misses: int, name_warmups: int, hit_rate: float,
+	 *     query_hit_rate: float, name_hit_rate: float,
+	 *     cache_size: int<0, max>, query_cache_size: int<0, max>,
+	 *     name_cache_size: int<0, max>}
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getStats(): array {
+		$totalRequests = $this->stats['hits'] + $this->stats['misses'];
+		$hitRate = 0;
+		if ($totalRequests > 0) {
+			$hitRate = ($this->stats['hits'] / $totalRequests) * 100;
+		}
+
+		$totalQueryRequests = $this->stats['query_hits'] + $this->stats['query_misses'];
+		$queryHitRate = 0;
+		if ($totalQueryRequests > 0) {
+			$queryHitRate = ($this->stats['query_hits'] / $totalQueryRequests) * 100;
+		}
+
+		$totalNameRequests = $this->stats['name_hits'] + $this->stats['name_misses'];
+		$nameHitRate = 0;
+		if ($totalNameRequests > 0) {
+			$nameHitRate = ($this->stats['name_hits'] / $totalNameRequests) * 100;
+		}
+
+		// Get distributed cache count (persists across requests).
+		$distNameCacheCount = $this->getDistributedNameCacheCount();
+
+		return array_merge(
+			$this->stats,
+			[
+				'hit_rate' => round($hitRate, 2),
+				'query_hit_rate' => round($queryHitRate, 2),
+				'name_hit_rate' => round($nameHitRate, 2),
+				'cache_size' => count($this->objectCache),
+				'query_cache_size' => count($this->inMemoryQueryCache),
+				'name_cache_size' => count($this->nameCache),
+				'distributed_name_cache_size' => $distNameCacheCount,
+			]
+		);
+	}//end getStats()
+
+	/**
+	 * Clear query result caches
+	 *
+	 * This method clears cached search results. Called when objects are modified
+	 * to ensure cache consistency.
+	 *
+	 * @param string|null $pattern Optional pattern to clear specific cache entries
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function clearSearchCache(?string $pattern = null): void {
+		// Clear in-memory cache.
+		if ($pattern !== null) {
+			$this->inMemoryQueryCache = array_filter(
+				$this->inMemoryQueryCache,
+				function ($key) use ($pattern) {
+					return strpos($key, $pattern) === false;
+				},
+				ARRAY_FILTER_USE_KEY
+			);
+		}
+
+		if ($pattern === null) {
+			$this->inMemoryQueryCache = [];
+		}
+
+		// Clear distributed cache if available.
+		if ($this->queryCache !== null) {
+			try {
+				// For targeted clearing, we'd need a more sophisticated approach.
+				// For now, clear all to ensure consistency.
+				$this->queryCache->clear();
+			} catch (\Exception $e) {
+				$this->logger->warning(
+					message: '[CacheHandler] Failed to clear search cache',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'error' => $e->getMessage(),
+						'pattern' => $pattern,
+					]
+				);
+			}
+		}
+
+		$this->logger->debug(
+			message: '[CacheHandler] 🧹 SEARCH CACHE CLEARED',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'pattern' => $pattern ?? 'all']
+		);
+	}//end clearSearchCache()
+
+	/**
+	 * Clear all search caches related to a specific schema (across all users)
+	 *
+	 * **SCHEMA-WIDE INVALIDATION**: When objects in a schema change, we need to clear
+	 * all cached search results that could include objects from that schema.
+	 * This ensures colleagues see each other's changes immediately.
+	 *
+	 * @param int|null $schemaId Schema ID to invalidate
+	 * @param int|null $registerId Register ID for additional context
+	 * @param string $operation Operation performed ('create', 'update', 'delete')
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function clearSchemaRelatedCaches(?int $schemaId = null, ?int $registerId = null, string $operation = 'unknown'): void {
+		$startTime = microtime(true);
+
+		// **STRATEGY 1**: Clear all in-memory search caches (fast).
+		$this->inMemoryQueryCache = [];
+
+		// **STRATEGY 2**: Clear distributed cache entries that could contain objects from this schema.
+		if ($this->queryCache !== null && $schemaId !== null) {
+			try {
+				// Since we can't easily pattern-match keys in distributed cache,.
+				// We clear all search cache entries for now (nuclear approach).
+				// TODO: Implement more targeted cache clearing with schema-specific prefixes.
+				$this->queryCache->clear();
+
+				$this->logger->debug(
+					message: '[CacheHandler] Schema-related distributed caches cleared',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'schemaId' => $schemaId,
+						'registerId' => $registerId,
+						'operation' => $operation,
+						'strategy' => 'nuclear_clear',
+					]
+				);
+			} catch (\Exception $e) {
+				$this->logger->warning(
+					message: '[CacheHandler] Failed to clear schema-related distributed caches',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'schemaId' => $schemaId,
+						'error' => $e->getMessage(),
+					]
+				);
+			}//end try
+		}//end if
+
+		if ($schemaId === null) {
+			// Fallback: clear all search caches if no specific schema.
+			$this->clearSearchCache();
+		}//end if
+
+		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
+
+		// Determine strategy for logging.
+		$strategy = 'global_fallback';
+		if ($schemaId !== null) {
+			$strategy = 'schema_targeted';
+		}
+
+		$this->logger->info(
+			message: '[CacheHandler] Schema-related caches cleared for CUD operation',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schemaId' => $schemaId,
+				'registerId' => $registerId,
+				'operation' => $operation,
+				'executionTime' => $executionTime . 'ms',
+				'impact' => 'all_users_affected',
+				'strategy' => $strategy,
+			]
+		);
+	}//end clearSchemaRelatedCaches()
+
+	/**
+	 * Invalidate caches when objects are modified (CRUD operations)
+	 *
+	 * **MAIN CACHE INVALIDATION METHOD**: Called when objects are created,
+	 * updated, or deleted to ensure cache consistency across the application.
+	 *
+	 * @param ObjectEntity|null $object The object that was modified (null for bulk operations)
+	 * @param string $operation The operation performed (create/update/delete)
+	 * @param int|null $registerId Register ID for targeted invalidation
+	 * @param int|null $schemaId Schema ID for targeted invalidation
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function invalidateForObjectChange(
+		?ObjectEntity $object = null,
+		string $operation = 'unknown',
+		?int $registerId = null,
+		?int $schemaId = null,
+	): void {
+		$startTime = microtime(true);
+
+		// Extract context from object if provided.
+		if ($object !== null) {
+			// Extract register ID if not provided.
+			if ($registerId === null && $object->getRegister() !== null) {
+				$registerId = (int)$object->getRegister();
+			}
+
+			// Extract schema ID if not provided.
+			if ($schemaId === null && $object->getSchema() !== null) {
+				$schemaId = (int)$object->getSchema();
+			}
+
+			// Clear individual object from cache.
+			$this->clearObjectFromCache(object: $object);
+
+			// BUG-OBJ-7: drop any stale cached name for this object up-front, regardless
+			// of the operation label. The create/update branch below re-writes the fresh
+			// name; for any other (or unknown) operation the stale name is at least
+			// invalidated so a rename can never serve a stale value from cache.
+			$this->clearObjectNameFromCache(object: $object);
+
+			if ($operation === 'create' || $operation === 'update') {
+				// Update name cache for the modified object, carrying its tenancy and
+				// its table, so the entry is only served to callers who may read it.
+				$name = $object->getName() ?? $object->getUuid();
+				$organisation = $object->getOrganisation();
+				$source = self::objectNameSource(register: $registerId, schema: $schemaId);
+				$this->setObjectName(identifier: $object->getUuid(), name: $name, organisation: $organisation, source: $source);
+				if (($object->getId() !== null) === true && (string)$object->getId() !== $object->getUuid()) {
+					$this->setObjectName(identifier: $object->getId(), name: $name, organisation: $organisation, source: $source);
+				}
+			} elseif ($operation === 'delete') {
+				// Remove from in-memory name cache (name AND its recorded tenancy).
+				unset($this->nameCache[$object->getUuid()]);
+				unset($this->nameCache[(string)$object->getId()]);
+				unset($this->nameOrganisations[$object->getUuid()]);
+				unset($this->nameOrganisations[(string)$object->getId()]);
+
+				// Remove from distributed name cache.
+				if ($this->nameDistributedCache !== null) {
+					try {
+						$this->nameDistributedCache->remove('name_' . $object->getUuid());
+						if ($object->getId() !== null) {
+							$this->nameDistributedCache->remove('name_' . $object->getId());
+						}
+					} catch (\Exception $e) {
+						$this->logger->warning(
+							message: '[CacheHandler] Failed to remove object name from distributed cache',
+							context: [
+								'file' => __FILE__,
+								'line' => __LINE__,
+								'uuid' => $object->getUuid(),
+								'error' => $e->getMessage(),
+							]
+						);
+					}
+				}
+			}//end if
+		}//end if
+
+		// **SCHEMA-WIDE INVALIDATION**: Clear ALL search caches for this schema.
+		// This ensures colleagues see each other's changes immediately.
+		// SchemaId and registerId are already typed as ?int, so no conversion needed.
+		$schemaIdInt = $schemaId;
+		$registerIdInt = $registerId;
+
+		$this->clearSchemaRelatedCaches(schemaId: $schemaIdInt, registerId: $registerIdInt, operation: $operation);
+
+		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
+
+		$this->logger->info(
+			message: '[CacheHandler] Schema-wide cache invalidated for CRUD operation',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'operation' => $operation,
+				'registerId' => $registerId,
+				'schemaId' => $schemaId,
+				'objectId' => $object?->getId(),
+				'executionTime' => $executionTime . 'ms',
+				'scope' => 'all_users_in_schema',
+			]
+		);
+	}//end invalidateForObjectChange()
+
+	/**
+	 * Clear specific object from cache by ID/UUID
+	 *
+	 * @param ObjectEntity $object The object to remove from cache
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function clearObjectFromCache(ObjectEntity $object): void {
+		// BUG-OBJ-6: object-cache keys are tenant-scoped ("<org>|<rawKey>"). The active
+		// organisation at invalidation time may differ from the one in effect when the
+		// entry was written, so remove every scope's entry for this id/uuid by matching
+		// the raw-key suffix rather than a single scoped key.
+		$rawKeys = [(string)$object->getId()];
+		if (($object->getUuid() !== null) === true) {
+			$rawKeys[] = (string)$object->getUuid();
+		}
+
+		foreach ($rawKeys as $rawKey) {
+			$suffix = '|' . $rawKey;
+			foreach (array_keys($this->objectCache) as $cacheKey) {
+				if ($cacheKey === $rawKey || str_ends_with((string)$cacheKey, $suffix) === true) {
+					unset($this->objectCache[$cacheKey]);
+				}
+			}
+		}
+
+		$this->logger->debug(
+			message: '[CacheHandler] Individual object cleared from cache',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'objectId' => $object->getId(),
+				'objectUuid' => $object->getUuid(),
+			]
+		);
+	}//end clearObjectFromCache()
+
+	/**
+	 * Remove an object's cached name entries (in-memory + distributed) — BUG-OBJ-7.
+	 *
+	 * Drops the name cached under both the object's UUID and id so a subsequent
+	 * read recomputes the current name (fixing stale names after a rename).
+	 *
+	 * @param ObjectEntity $object The object whose cached name must be cleared
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function clearObjectNameFromCache(ObjectEntity $object): void {
+		$keys = [];
+		if ($object->getUuid() !== null) {
+			$keys[] = (string)$object->getUuid();
+		}
+
+		if ($object->getId() !== null) {
+			$keys[] = (string)$object->getId();
+		}
+
+		// A changed object may have changed who may read it: forget every
+		// caller's remembered answer for it.
+		foreach (array_keys($this->readabilityMemo) as $caller) {
+			foreach ($keys as $key) {
+				unset($this->readabilityMemo[$caller][$key]);
+			}
+		}
+
+		foreach ($keys as $key) {
+			unset($this->nameCache[$key]);
+			unset($this->nameOrganisations[$key]);
+			unset($this->nameSources[$key]);
+
+			if ($this->nameDistributedCache !== null) {
+				try {
+					$this->nameDistributedCache->remove('name_' . $key);
+				} catch (\Exception $e) {
+					$this->logger->warning(
+						message: '[CacheHandler] Failed to clear object name from distributed cache',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'identifier' => $key,
+							'error' => $e->getMessage(),
+						]
+					);
+				}
+			}
+		}//end foreach
+	}//end clearObjectNameFromCache()
+
+	/**
+	 * Clear all caches (Administrative Operation)
+	 *
+	 * **NUCLEAR OPTION**: Removes all cached objects, search results, name caches, and resets statistics.
+	 * Use sparingly - typically for administrative operations or major system changes.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function clearAllCaches(): void {
+		$startTime = microtime(true);
+
+		$this->objectCache = [];
+		$this->inMemoryQueryCache = [];
+		$this->nameCache = [];
+		$this->nameOrganisations = [];
+		$this->nameSources = [];
+		$this->readabilityMemo = [];
+		$this->stats = [
+			'hits' => 0,
+			'misses' => 0,
+			'preloads' => 0,
+			'query_hits' => 0,
+			'query_misses' => 0,
+			'name_hits' => 0,
+			'name_misses' => 0,
+			'name_warmups' => 0,
+		];
+
+		// Clear distributed query cache.
+		if ($this->queryCache !== null) {
+			try {
+				$this->queryCache->clear();
+			} catch (\Exception $e) {
+				$this->logger->warning(
+					message: '[CacheHandler] Failed to clear distributed query cache',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}
+
+		// Clear distributed name cache.
+		if ($this->nameDistributedCache !== null) {
+			try {
+				$this->nameDistributedCache->clear();
+			} catch (\Exception $e) {
+				$this->logger->warning(
+					message: '[CacheHandler] Failed to clear distributed name cache',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}
+
+		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
+
+		$this->logger->info(
+			message: '[CacheHandler] All object caches cleared (including name cache)',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'executionTime' => $executionTime . 'ms',
+			]
+		);
+	}//end clearAllCaches()
+
+	/**
+	 * Clear the cache (legacy method - kept for backward compatibility)
+	 *
+	 * @deprecated Use clearAllCaches() instead
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function clearCache(): void {
+		$this->clearAllCaches();
+	}//end clearCache()
+
+	// ========================================.
+	// OBJECT NAME CACHE METHODS.
+	// ========================================.
+
+	/**
+	 * Set object name in cache
+	 *
+	 * Stores the name of an object in both in-memory and distributed caches
+	 * for ultra-fast frontend rendering without full object retrieval.
+	 *
+	 * @param string|int $identifier Object ID or UUID
+	 * @param string $name Object name to cache
+	 * @param int $ttl Cache TTL in seconds (default: 24 hours)
+	 * @param string|null $organisation Owning organisation UUID (SEC-CTRL-2 step 2)
+	 * @param string|null $source Where the name came from: NAME_SOURCE_ORGANISATION or
+	 *                            "<registerId>:<schemaId>" (see objectNameSource()). Without
+	 *                            one the entry is never served; the next lookup resolves it again.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	public function setObjectName(
+		string|int $identifier,
+		string $name,
+		int $ttl = 86400,
+		?string $organisation = null,
+		?string $source = null,
+	): void {
+		$key = (string)$identifier;
+
+		// Enforce maximum cache TTL.
+		$ttl = min($ttl, self::MAX_CACHE_TTL);
+
+		// Store in in-memory cache, together with the tenancy of the entity the
+		// name belongs to (SEC-CTRL-2 step 2). Without the second map the cache
+		// is a cross-tenant disclosure channel of its own.
+		$this->nameCache[$key] = $name;
+		$this->rememberNameOrganisation(key: $key, organisation: $organisation, source: $source);
+
+		// Store in distributed cache if available.
+		if ($this->nameDistributedCache !== null) {
+			try {
+				$this->nameDistributedCache->set(
+					'name_' . $key,
+					$this->buildNameEnvelope(name: $name, organisation: $organisation, source: $source),
+					$ttl
+				);
+			} catch (\Exception $e) {
+				$this->logger->warning(
+					message: '[CacheHandler] Failed to cache object name in distributed cache',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'identifier' => $key,
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}
+
+		$this->logger->debug(
+			message: '[CacheHandler] 💾 OBJECT NAME CACHED',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'identifier' => $key,
+				'name' => $name,
+				'ttl' => $ttl . 's',
+			]
+		);
+	}//end setObjectName()
+
+	/**
+	 * Get single object name from cache or database
+	 *
+	 * Provides ultra-fast name lookup for frontend rendering.
+	 * Falls back to database if not cached.
+	 *
+	 * The database LOOKUP is unscoped (`findAcrossAllSources(..., _rbac: false,
+	 * _multitenancy: false)`, organisations first), so it can find anything. The
+	 * ANSWER is not: an object's name is only returned when the caller may read
+	 * the object (the object read path decides, see visibleNames()), and an
+	 * organisation's name only inside the caller's organisation scope. The same
+	 * decision gates every cache hit.
+	 *
+	 * It used to back `GET /api/names/{id}`, which was `#[PublicPage]` — any
+	 * anonymous caller holding a UUID could read that object's name across tenant
+	 * boundaries. That endpoint was removed (SEC-CTRL-2, gate-7); this method
+	 * survives only as an internal cache primitive and has no caller in `lib/`.
+	 *
+	 * A numeric id or slug is never answered from cache: the read path is asked
+	 * by UUID, so it goes to the database, which knows the UUID.
+	 *
+	 * @param string|int $identifier Object ID or UUID
+	 *
+	 * @return string|null Object name or null if not found
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Three cache layers plus a
+	 * two-source database fallback, each gated on the caller's read rights.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	public function getSingleObjectName(string|int $identifier): ?string {
+		$this->beginNameScope();
+		$key = (string)$identifier;
+
+		// The read path is asked by UUID, so only a UUID is answered from cache;
+		// a numeric id or slug goes to the database, which knows the UUID.
+		$isUuid = str_contains($key, '-');
+
+		// Check in-memory cache first (fastest). Whatever layer the name comes
+		// from, it is only returned when the caller may see it (visibleNames()).
+		if ($isUuid === true && ($this->nameCache[$key] ?? null) !== null && isset($this->nameSources[$key]) === true) {
+			$this->stats['name_hits']++;
+			return ($this->visibleNames(candidates: [$key => $this->nameCache[$key]])[$key] ?? null);
+		}
+
+		// Check distributed cache.
+		if ($isUuid === true && $this->nameDistributedCache !== null) {
+			try {
+				$envelope = $this->readNameEnvelope(cached: $this->nameDistributedCache->get('name_' . $key));
+				if ($envelope !== null) {
+					$this->nameCache[$key] = $envelope['n'];
+					$this->rememberNameOrganisation(key: $key, organisation: $envelope['o'], source: $envelope['s']);
+					$this->stats['name_hits']++;
+					return ($this->visibleNames(candidates: [$key => $envelope['n']])[$key] ?? null);
+				}
+			} catch (\Exception $e) {
+				$this->logger->warning(
+					message: '[CacheHandler] Failed to get object name from distributed cache',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'identifier' => $key,
+						'error' => $e->getMessage(),
+					]
+				);
+			}//end try
+		}//end if
+
+		// Cache miss - load from database.
+		$this->stats['name_misses']++;
+
+		try {
+			// STEP 1: Try to find as organisation first (they take priority).
+			try {
+				// The findByUuid() call throws rather than returning null; the catch below
+				// is the "no such organisation" path.
+				$organisation = $this->organisationMapper->findByUuid((string)$identifier);
+				$name = $organisation->getName() ?? $organisation->getUuid();
+				if ($name === null) {
+					return null;
+				}
+
+				$this->setObjectName(
+					identifier: $identifier,
+					name: $name,
+					organisation: $organisation->getUuid(),
+					source: self::NAME_SOURCE_ORGANISATION
+				);
+				return ($this->visibleNames(candidates: [$key => $name])[$key] ?? null);
+			} catch (\Exception $e) {
+				// Organisation not found, continue to objects.
+			}
+
+			// STEP 2: Find the object across all magic tables. The LOOKUP is
+			// unscoped; the ANSWER is decided by the object read path below.
+			$result = $this->getObjectMapper()->findAcrossAllSources(
+				identifier: $identifier,
+				includeDeleted: false,
+				_rbac: false,
+				_multitenancy: false
+			);
+			$object = ($result['object'] ?? null);
+			if ($object === null) {
+				return null;
+			}
+
+			$name = $object->getName() ?? $object->getUuid();
+			$source = self::objectNameSource(
+				register: (($result['register'] ?? null)?->getId() ?? $object->getRegister()),
+				schema: (($result['schema'] ?? null)?->getId() ?? $object->getSchema())
+			);
+			if ($name === null || $source === null) {
+				return null;
+			}
+
+			$uuid = (string)$object->getUuid();
+			$this->setObjectName(identifier: $identifier, name: $name, organisation: $object->getOrganisation(), source: $source);
+			if ($uuid !== $key) {
+				$this->setObjectName(identifier: $uuid, name: $name, organisation: $object->getOrganisation(), source: $source);
+			}
+
+			return ($this->visibleNames(candidates: [$uuid => $name])[$uuid] ?? null);
+		} catch (\Exception $e) {
+			$this->logger->debug(
+				message: '[CacheHandler] Failed to load entity for name lookup',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'identifier' => $key,
+					'error' => $e->getMessage(),
+				]
+			);
+		}//end try
+
+		return null;
+	}//end getSingleObjectName()
+
+	/**
+	 * Get multiple object names from cache or database
+	 *
+	 * Efficiently retrieves names for multiple objects using bulk operations
+	 * to minimize database queries.
+	 *
+	 * A caller gets the name of every object they may read, and nothing for an
+	 * object they may not read: the answer is a PARTIAL map, never an error.
+	 * Organisation names follow the caller's organisation scope.
+	 *
+	 * @param array $identifiers Array of object IDs/UUIDs
+	 *
+	 * @return array<string, string> Array mapping identifier => name
+	 *
+	 * @phpstan-param  array<string|int> $identifiers
+	 * @phpstan-return array<string, string>
+	 * @psalm-param    array<string|int> $identifiers
+	 * @psalm-return   array<string, string>
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	public function getMultipleObjectNames(array $identifiers): array {
+		if (empty($identifiers) === true) {
+			return [];
+		}
+
+		$this->beginNameScope();
+
+		// Who may see a candidate is decided once, at the end, by visibleNames():
+		// the object read path for an object, the organisation scope for an
+		// organisation. An entry whose source is unknown is a MISS, so the
+		// database can establish it.
+		$run = $this->collectCachedNames(identifiers: $identifiers);
+		$this->collectDistributedNames(run: $run);
+
+		if (empty($run->missing) === false) {
+			$this->loadNamesFromDatabase(run: $run);
+		}
+
+		// Only UUID -> name mappings are returned (database ids are excluded),
+		// and only those this caller may see.
+		$uuidCandidates = array_filter(
+			$run->candidates,
+			fn ($key): bool => str_contains((string)$key, '-'),
+			ARRAY_FILTER_USE_KEY
+		);
+		$uuidResults = $this->visibleNames(candidates: $uuidCandidates);
+
+		$this->logger->debug(
+			message: '[CacheHandler] 📦 BULK NAME LOOKUP COMPLETED',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'requested' => count($identifiers),
+				'total_found' => count($run->candidates),
+				'uuid_results_returned' => count($uuidResults),
+				'db_loads' => count($run->missing),
+			]
+		);
+
+		return $uuidResults;
+	}//end getMultipleObjectNames()
+
+	/**
+	 * Start a name lookup with the names the in-memory cache already holds with a known source.
+	 *
+	 * @param array<string|int> $identifiers The identifiers asked for.
+	 *
+	 * @return NameLookupRun The run, with every other identifier missing.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function collectCachedNames(array $identifiers): NameLookupRun {
+		$run = new NameLookupRun();
+		foreach ($identifiers as $identifier) {
+			$key = (string)$identifier;
+			if (($this->nameCache[$key] ?? null) !== null && isset($this->nameSources[$key]) === true) {
+				$run->candidates[$key] = $this->nameCache[$key];
+				$this->stats['name_hits']++;
+				continue;
+			}
+
+			$run->missing[] = $key;
+		}
+
+		return $run;
+	}//end collectCachedNames()
+
+	/**
+	 * Take the missing names the distributed cache holds as a valid envelope.
+	 *
+	 * @param NameLookupRun $run The lookup.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function collectDistributedNames(NameLookupRun $run): void {
+		if (empty($run->missing) === true || $this->nameDistributedCache === null) {
+			return;
+		}
+
+		$decided = [];
+		foreach ($run->missing as $key) {
+			try {
+				$envelope = $this->readNameEnvelope(cached: $this->nameDistributedCache->get('name_' . $key));
+				if ($envelope === null) {
+					continue;
+				}
+
+				$this->nameCache[$key] = $envelope['n'];
+				$this->rememberNameOrganisation(key: $key, organisation: $envelope['o'], source: $envelope['s']);
+				$run->candidates[$key] = $envelope['n'];
+				$decided[] = $key;
+				$this->stats['name_hits']++;
+			} catch (\Exception $e) {
+				// Continue processing other identifiers.
+			}//end try
+		}
+
+		$run->missing = array_values(array_diff($run->missing, $decided));
+	}//end collectDistributedNames()
+
+	/**
+	 * Load the still-missing names: organisations first, then objects, then magic-table rows.
+	 *
+	 * A load failure is logged and leaves the names found so far.
+	 *
+	 * @param NameLookupRun $run The lookup.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function loadNamesFromDatabase(NameLookupRun $run): void {
+		$this->stats['name_misses'] += count($run->missing);
+
+		try {
+			$this->loadOrganisationNames(run: $run);
+
+			if (empty($run->missing) === false) {
+				$this->loadObjectNames(run: $run);
+			}
+
+			if (empty($run->missing) === false) {
+				$this->loadMagicTableNames(run: $run);
+			}
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[CacheHandler] Failed to bulk load names from database',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'identifiers' => count($run->missing),
+					'error' => $e->getMessage(),
+				]
+			);
+		}//end try
+	}//end loadNamesFromDatabase()
+
+	/**
+	 * Load missing identifiers that are organisations; they take priority. An organisation's own tenancy is itself.
+	 *
+	 * @param NameLookupRun $run The lookup.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function loadOrganisationNames(NameLookupRun $run): void {
+		$organisations = $this->organisationMapper->findMultipleByUuid($run->missing);
+		foreach ($organisations as $organisation) {
+			$name = $organisation->getName() ?? $organisation->getUuid();
+			$key = $organisation->getUuid();
+
+			$this->setObjectName(
+				identifier: $key,
+				name: $name,
+				organisation: $key,
+				source: self::NAME_SOURCE_ORGANISATION
+			);
+			$run->candidates[$key] = $name;
+
+			$run->missing = array_diff($run->missing, [$key]);
+		}
+	}//end loadOrganisationNames()
+
+	/**
+	 * Load missing identifiers as objects across magic tables.
+	 *
+	 * An object without a known table has no read rule to ask, so it is left for the magic-table load.
+	 *
+	 * @param NameLookupRun $run The lookup.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function loadObjectNames(NameLookupRun $run): void {
+		$objects = $this->getObjectMapper()->findMultiple($run->missing);
+		foreach ($objects as $object) {
+			$source = self::objectNameSource(register: $object->getRegister(), schema: $object->getSchema());
+			if ($source === null) {
+				continue;
+			}
+
+			$name = $object->getName() ?? $object->getUuid();
+			$uuid = $object->getUuid();
+
+			$this->setObjectName(identifier: $uuid, name: $name, organisation: $object->getOrganisation(), source: $source);
+			$this->cacheUnderRequestedIdentifier(run: $run, object: $object);
+
+			$run->candidates[$uuid] = $name;
+			$run->missing = array_diff($run->missing, [$uuid]);
+		}
+	}//end loadObjectNames()
+
+	/**
+	 * Also cache a loaded object's name under the identifier it was asked by, when that is not its uuid.
+	 *
+	 * @param NameLookupRun $run    The lookup.
+	 * @param ObjectEntity  $object The loaded object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function cacheUnderRequestedIdentifier(NameLookupRun $run, ObjectEntity $object): void {
+		$uuid = $object->getUuid();
+		foreach ($run->missing as $originalId) {
+			if ($this->identifiesObject(identifier: (string)$originalId, object: $object) === false) {
+				continue;
+			}
+
+			if ((string)$originalId !== $uuid) {
+				$this->setObjectName(
+					identifier: $originalId,
+					name: ($object->getName() ?? $uuid),
+					organisation: $object->getOrganisation(),
+					source: self::objectNameSource(register: $object->getRegister(), schema: $object->getSchema())
+				);
+				$run->missing = array_diff($run->missing, [$originalId]);
+			}
+
+			break;
+		}
+	}//end cacheUnderRequestedIdentifier()
+
+	/**
+	 * Whether an identifier names an object: its uuid, database id, slug or uri.
+	 *
+	 * @param string       $identifier The requested identifier.
+	 * @param ObjectEntity $object     The object.
+	 *
+	 * @return bool True when the identifier names the object.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function identifiesObject(string $identifier, ObjectEntity $object): bool {
+		return $identifier === $object->getUuid()
+			|| $identifier === (string)$object->getId()
+			|| $identifier === $object->getSlug()
+			|| $identifier === $object->getUri();
+	}//end identifiesObject()
+
+	/**
+	 * Load the still-missing names from the magic tables, one IN query per table instead of N+1 lookups.
+	 *
+	 * A row without a known source is cached but never becomes a candidate.
+	 *
+	 * @param NameLookupRun $run The lookup.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function loadMagicTableNames(NameLookupRun $run): void {
+		$batchResults = $this->batchLoadNamesFromMagicTables(uuids: $run->missing);
+		foreach ($batchResults as $uuid => $entry) {
+			$this->setObjectName(
+				identifier: $uuid,
+				name: $entry['name'],
+				organisation: $entry['organisation'],
+				source: ($entry['source'] ?? null)
+			);
+			if (($entry['source'] ?? null) !== null) {
+				$run->candidates[$uuid] = $entry['name'];
+			}
+		}
+	}//end loadMagicTableNames()
+
+	/**
+	 * Get all object names with cache warmup
+	 *
+	 * Returns all object names in the system. Triggers cache warmup
+	 * to ensure optimal performance for subsequent name lookups.
+	 *
+	 * @param bool $forceWarmup Whether to force cache warmup even if cache exists
+	 *
+	 * @return array<string, string> Array mapping identifier => name
+	 *
+	 * @phpstan-return array<string, string>
+	 * @psalm-return   array<string, string>
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getAllObjectNames(bool $forceWarmup = false): array {
+		$this->beginNameScope();
+		$startTime = microtime(true);
+
+		// Check if we should trigger warmup.
+		$shouldWarmup = $forceWarmup || empty($this->nameCache);
+
+		if ($shouldWarmup === true) {
+			$this->warmupNameCache();
+		}
+
+		// Only UUID -> name mappings (database ids excluded; cast because PHP
+		// narrows numeric-looking keys to int), and only those this caller may
+		// see. The name cache is process-wide, so a cache warmed while serving
+		// one caller must never be handed whole to the next.
+		$uuidNames = $this->visibleNames(
+			candidates: array_filter(
+				$this->nameCache,
+				fn ($key): bool => str_contains((string)$key, '-'),
+				ARRAY_FILTER_USE_KEY
+			)
+		);
+
+		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
+
+		$this->logger->debug(
+			message: '[CacheHandler] All object names retrieved',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'total_cached' => count($this->nameCache),
+				'uuid_names_returned' => count($uuidNames),
+				'warmup_triggered' => $shouldWarmup,
+				'execution_time' => $executionTime . 'ms',
+			]
+		);
+
+		return $uuidNames;
+	}//end getAllObjectNames()
+
+	/**
+	 * Warmup name cache by preloading all object names
+	 *
+	 * Loads all object names from the database into cache to ensure
+	 * optimal performance for name lookup operations.
+	 *
+	 * @return int Number of names loaded into cache
+	 *
+	 * @psalm-return int<0, max>
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function warmupNameCache(): int {
+		$startTime = microtime(true);
+		$this->stats['name_warmups']++;
+
+		try {
+			$loadedCount = 0;
+			$magicNamesLoaded = 0;
+
+			// STEP 1: Load all organisations first (they take priority).
+			$organisations = $this->organisationMapper->findAllWithUserCount();
+			foreach ($organisations as $organisation) {
+				$name = $organisation->getName() ?? $organisation->getUuid();
+
+				// Cache by UUID only (not by database ID). An organisation's own
+				// tenancy is itself, so that is what is recorded alongside it.
+				if ($organisation->getUuid() !== null && $name !== null) {
+					$this->nameCache[$organisation->getUuid()] = $name;
+					$this->rememberNameOrganisation(
+						key: $organisation->getUuid(),
+						organisation: $organisation->getUuid(),
+						source: self::NAME_SOURCE_ORGANISATION
+					);
+					$loadedCount++;
+				}
+			}
+
+			// STEP 2: Load all objects from main table.
+			$objects = $this->getObjectMapper()->findAll();
+			foreach ($objects as $object) {
+				$name = $object->getName() ?? $object->getUuid();
+
+				// Cache by UUID only (not by database ID).
+				// Note: If an organisation has the same UUID, it will remain (organisations loaded first).
+				$uuid = $object->getUuid();
+				if ($uuid !== null && $name !== null && (($this->nameCache[$uuid] ?? null) === null) === true) {
+					$this->nameCache[$uuid] = $name;
+					$this->rememberNameOrganisation(
+						key: $uuid,
+						organisation: $object->getOrganisation(),
+						source: self::objectNameSource(register: $object->getRegister(), schema: $object->getSchema())
+					);
+					$loadedCount++;
+				}
+			}
+
+			// STEP 3: Load names from magic tables (overwrites names with proper enriched values).
+			if ($this->registerMapper !== null && $this->schemaMapper !== null && $this->db !== null) {
+				$magicNamesLoaded = $this->loadNamesFromMagicTables();
+			}
+
+			// STEP 4: Persist to distributed cache for cross-request availability.
+			$distributedCount = $this->persistNameCacheToDistributed();
+
+			$executionTime = round((microtime(true) - $startTime) * 1000, 2);
+
+			$this->logger->debug(
+				message: '[CacheHandler] Name cache warmed up',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'organisations_processed' => count($organisations),
+					'objects_processed' => count($objects),
+					'magic_names_loaded' => $magicNamesLoaded,
+					'distributed_cache_stored' => $distributedCount,
+					'total_names_cached' => count($this->nameCache),
+					'execution_time' => $executionTime . 'ms',
+				]
+			);
+
+			// Store breakdown for diagnostics.
+			$this->stats['warmup_breakdown'] = [
+				'organisations' => count($organisations),
+				'objects_table' => count($objects),
+				'magic_tables' => $magicNamesLoaded,
+				'total_unique' => count($this->nameCache),
+			];
+
+			return count($this->nameCache);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[CacheHandler] Name cache warmup failed',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'error' => $e->getMessage(),
+				]
+			);
+			return 0;
+		}//end try
+	}//end warmupNameCache()
+
+	/**
+	 * Load object names from magic tables.
+	 *
+	 * Queries all magic tables (register+schema combinations with magic mapping enabled)
+	 * to get proper enriched names. These names overwrite any UUID-based names from
+	 * the main objects table.
+	 *
+	 * @return int Number of names loaded from magic tables.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function loadNamesFromMagicTables(): int {
+		$loadedCount = 0;
+
+		try {
+			// Get all registers.
+			$registers = $this->registerMapper->findAll();
+
+			foreach ($registers as $register) {
+				$registerId = $register->getId();
+				$schemaIds = $register->getSchemas() ?? [];
+
+				foreach ($schemaIds as $schemaId) {
+					// Get schema slug for config lookup (config uses slugs as keys).
+					$schemaSlug = null;
+					try {
+						$schema = $this->schemaMapper->find((int)$schemaId);
+						$schemaSlug = $schema->getSlug();
+					} catch (\Exception $e) {
+						// Schema not found, continue without slug.
+					}
+
+					// Check if this schema has magic mapping enabled.
+					$magicEnabled = $register->isMagicMappingEnabledForSchema(
+						schemaId: (int)$schemaId,
+						schemaSlug: $schemaSlug
+					);
+					if ($magicEnabled === false) {
+						continue;
+					}
+
+					// Query the magic table for names.
+					$tableName = '*PREFIX*openregister_table_' . $registerId . '_' . $schemaId;
+
+					try {
+						// Check if table exists and has the name column.
+						// Magic table columns have underscore prefix: _id, _name, _deleted, etc.
+						// Note: _id is bigint (internal DB ID), we need _uuid (the UUID) for mapping.
+						// Filter: only exclude deleted objects.
+						// SEC-CTRL-2 step 2: `_organisation` is selected as well. It is the
+						// tenancy oracle for every object-backed name — the ObjectEntity
+						// produced by MagicMapper::rowToObjectEntity() never carries one.
+						$sql = 'SELECT "_uuid", "_name", "_organisation" FROM ' . $tableName . ' WHERE "_deleted" IS NULL';
+						$result = $this->db->executeQuery($sql);
+
+						while (($row = $result->fetch()) !== false) {
+							$uuid = $row['_uuid'] ?? null;
+							$name = $row['_name'] ?? null;
+							$rowOrganisation = $row['_organisation'] ?? null;
+
+							if ($uuid !== null) {
+								// Use name if available, otherwise fall back to UUID.
+								$effectiveName = $uuid;
+								if (($name !== null) && trim($name) !== '') {
+									$effectiveName = $name;
+								}
+
+								// Overwrite any existing name (magic table has enriched names).
+								$this->nameCache[$uuid] = $effectiveName;
+								$this->rememberNameOrganisation(
+									key: $uuid,
+									organisation: $rowOrganisation,
+									source: self::objectNameSource(register: $registerId, schema: $schemaId)
+								);
+								$loadedCount++;
+							}
+						}
+
+						$result->closeCursor();
+					} catch (\Exception $e) {
+						// Table might not exist or have different structure - skip silently.
+						$this->logger->debug(
+							message: '[CacheHandler] Could not query magic table for names',
+							context: [
+								'file' => __FILE__,
+								'line' => __LINE__,
+								'table' => $tableName,
+								'error' => $e->getMessage(),
+							]
+						);
+					}//end try
+				}//end foreach
+			}//end foreach
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[CacheHandler] Failed to load names from magic tables',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'error' => $e->getMessage(),
+				]
+			);
+		}//end try
+
+		return $loadedCount;
+	}//end loadNamesFromMagicTables()
+
+	/**
+	 * Batch load names for specific UUIDs from magic tables.
+	 *
+	 * Queries all magic tables with a single IN clause per table to efficiently
+	 * resolve multiple UUIDs at once. This replaces the N+1 individual lookups.
+	 *
+	 * @param array $uuids Array of UUIDs to look up.
+	 *
+	 * @return array<string, array{name: string, organisation: string|null, source: string|null}> Map of UUID to
+	 *                                                                                            name, owning organisation and name source.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Batch loading across multiple table types requires branching
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Table discovery, schema bulk-load
+	 * and the per-table batch query, now also carrying each row's owning organisation.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function batchLoadNamesFromMagicTables(array $uuids): array {
+		$results = [];
+
+		if (empty($uuids) === true) {
+			return $results;
+		}
+
+		// Filter to only UUID-like strings.
+		$uuidList = array_filter(
+			$uuids,
+			function ($id) {
+				return is_string($id) === true && str_contains($id, '-');
+			}
+		);
+
+		if (empty($uuidList) === true) {
+			return $results;
+		}
+
+		// The magic-table dependencies are optional constructor arguments. Without
+		// them there is no tenancy oracle, so the honest answer is "nothing
+		// resolved" rather than a fatal on a null mapper.
+		if ($this->registerMapper === null || $this->schemaMapper === null || $this->db === null) {
+			return $results;
+		}
+
+		try {
+			// Get all registers.
+			$registers = $this->registerMapper->findAll();
+
+			// Collect all schema IDs across all registers to load in one batch.
+			$allSchemaIds = [];
+			foreach ($registers as $register) {
+				foreach ($register->getSchemas() ?? [] as $schemaId) {
+					$allSchemaIds[(int)$schemaId] = true;
+				}
+			}
+
+			// Bulk-load all schemas in one query instead of N individual find() calls.
+			$schemaMap = [];
+			if (empty($allSchemaIds) === false) {
+				$schemaMap = $this->schemaMapper->findMultipleOptimized(ids: array_keys($allSchemaIds));
+			}
+
+			foreach ($registers as $register) {
+				// If we found all UUIDs, stop searching.
+				if (count($results) >= count($uuidList)) {
+					break;
+				}
+
+				$registerId = $register->getId();
+				$schemaIds = $register->getSchemas() ?? [];
+
+				foreach ($schemaIds as $schemaId) {
+					// If we found all UUIDs, stop searching.
+					if (count($results) >= count($uuidList)) {
+						break;
+					}
+
+					// Get schema slug from pre-loaded map (no individual query needed).
+					$schema = $schemaMap[(int)$schemaId] ?? null;
+					if ($schema === null) {
+						continue;
+					}
+
+					$schemaSlug = $schema->getSlug();
+
+					// Check if this schema has magic mapping enabled.
+					if ($register->isMagicMappingEnabledForSchema(
+						schemaId: (int)$schemaId,
+						schemaSlug: $schemaSlug
+					) === false
+					) {
+						continue;
+					}
+
+					// Build table name.
+					$tableName = 'oc_openregister_table_' . $registerId . '_' . $schemaId;
+
+					// Find UUIDs we still need to look up.
+					$remainingUuids = array_diff($uuidList, array_keys($results));
+					if (empty($remainingUuids) === true) {
+						break;
+					}
+
+					// Batch query this table.
+					$tableResults = $this->queryTableForNames(
+						tableName: $tableName,
+						uuids: array_values($remainingUuids),
+						source: self::objectNameSource(register: $registerId, schema: $schemaId)
+					);
+
+					$results = array_merge($results, $tableResults);
+				}//end foreach
+			}//end foreach
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[CacheHandler] Failed to batch load names from magic tables',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage(), 'uuid_count' => count($uuids)]
+			);
+		}//end try
+
+		return $results;
+	}//end batchLoadNamesFromMagicTables()
+
+	/**
+	 * Query a single magic table for names by UUIDs.
+	 *
+	 * @param string $tableName The table name (with oc_ prefix).
+	 * @param array $uuids Array of UUIDs to look up.
+	 * @param string|null $source The table's name source, "<registerId>:<schemaId>".
+	 *
+	 * @return array<string, array{name: string, organisation: string|null, source: string|null}> Map of UUID to
+	 *                                                                                            name, owning organisation and name source.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function queryTableForNames(string $tableName, array $uuids, ?string $source = null): array {
+		$results = [];
+
+		if (empty($uuids) === true) {
+			return $results;
+		}
+
+		// Try different name columns in order of preference.
+		$nameColumns = ['_name', 'naam', 'name', 'title'];
+
+		foreach ($nameColumns as $nameColumn) {
+			try {
+				// Build placeholders for IN clause.
+				$placeholders = implode(',', array_fill(0, count($uuids), '?'));
+
+				// SEC-CTRL-2 step 2: `_organisation` travels with the name so the
+				// caller's tenancy can be checked before the name is disclosed.
+				$sql = "SELECT _uuid, _organisation, {$nameColumn} as name_value
+                        FROM {$tableName}
+                        WHERE _uuid IN ({$placeholders})
+                        AND _deleted IS NULL";
+
+				// Raw SQL: QueryBuilder cannot accept a runtime-resolved magic
+				// table name nor a column name picked at runtime from a fixed
+				// allowlist. SQL itself is plain SELECT/IN/IS NULL — portable
+				// across MariaDB / MySQL / PostgreSQL.
+				$stmt = $this->db->prepare($sql);
+				foreach ($uuids as $index => $uuid) {
+					$stmt->bindValue((int)$index + 1, $uuid);
+				}
+
+				$stmt->execute();
+
+				while (($row = $stmt->fetch()) !== false) {
+					$uuid = $row['_uuid'];
+					$name = $row['name_value'];
+					$rowOrganisation = $row['_organisation'] ?? null;
+					if ($rowOrganisation !== null) {
+						$rowOrganisation = (string)$rowOrganisation;
+					}
+
+					if ($name !== null && trim((string)$name) !== '') {
+						$results[$uuid] = [
+							'name' => (string)$name,
+							'organisation' => $rowOrganisation,
+							'source' => $source,
+						];
+					}
+				}
+
+				// If we found results with this column, return them.
+				if (empty($results) === false) {
+					return $results;
+				}
+			} catch (\Exception $e) {
+				// Column doesn't exist, try next one.
+				continue;
+			}//end try
+		}//end foreach
+
+		return $results;
+	}//end queryTableForNames()
+
+	/**
+	 * Persist in-memory name cache to distributed cache.
+	 *
+	 * Iterates through all entries in the in-memory name cache and stores them
+	 * in the distributed cache (APCu) for cross-request availability.
+	 * This ensures that warmed-up names are available to subsequent requests
+	 * without requiring a fresh database query.
+	 *
+	 * @return int Number of entries stored in distributed cache.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function persistNameCacheToDistributed(): int {
+		if ($this->nameDistributedCache === null) {
+			return 0;
+		}
+
+		$storedCount = 0;
+		$ttl = self::MAX_CACHE_TTL;
+
+		foreach ($this->nameCache as $identifier => $name) {
+			try {
+				// SEC-CTRL-2 step 2: the KEY is deliberately unchanged so every
+				// existing invalidation site keeps matching; the tenancy rides in
+				// the VALUE, which also means an entity that moves organisation can
+				// never leave an orphaned entry under a stale prefix.
+				$this->nameDistributedCache->set(
+					'name_' . $identifier,
+					$this->buildNameEnvelope(
+						name: $name,
+						organisation: ($this->nameOrganisations[(string)$identifier] ?? null),
+						source: ($this->nameSources[(string)$identifier] ?? null)
+					),
+					$ttl
+				);
+				$storedCount++;
+			} catch (\Exception $e) {
+				// Log once per batch, not per entry to avoid log spam.
+				if ($storedCount === 0) {
+					$this->logger->warning(
+						message: '[CacheHandler] Failed to persist name cache entry to distributed cache',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'identifier' => $identifier,
+							'error' => $e->getMessage(),
+						]
+					);
+				}
+			}
+		}
+
+		// Store metadata with the count for cross-request stats.
+		try {
+			$this->nameDistributedCache->set('_metadata_count', $storedCount, $ttl);
+		} catch (\Exception $e) {
+			// Ignore metadata storage failures.
+		}
+
+		return $storedCount;
+	}//end persistNameCacheToDistributed()
+
+	/**
+	 * Get the name cache count from distributed cache metadata
+	 *
+	 * Returns the count of names stored in the distributed cache,
+	 * useful for cross-request statistics.
+	 *
+	 * @return int The number of names in distributed cache, or 0 if unavailable
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getDistributedNameCacheCount(): int {
+		if ($this->nameDistributedCache === null) {
+			return 0;
+		}
+
+		try {
+			$count = $this->nameDistributedCache->get('_metadata_count');
+			if ($count !== null) {
+				return (int)$count;
+			}
+
+			return 0;
+		} catch (\Exception $e) {
+			return 0;
+		}
+	}//end getDistributedNameCacheCount()
+
+	/**
+	 * Clear object name caches
+	 *
+	 * Removes all cached object names from both in-memory and distributed caches.
+	 * Called when objects are modified to ensure name consistency.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function clearNameCache(): void {
+		// Clear in-memory name cache and the tenancy recorded alongside it.
+		$this->nameCache = [];
+		$this->nameOrganisations = [];
+		$this->nameSources = [];
+		$this->readabilityMemo = [];
+
+		// Clear distributed name cache.
+		if ($this->nameDistributedCache !== null) {
+			try {
+				$this->nameDistributedCache->clear();
+			} catch (\Exception $e) {
+				$this->logger->warning(
+					message: '[CacheHandler] Failed to clear distributed name cache',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}
+
+		$this->logger->debug(
+			message: '[CacheHandler] OBJECT NAME CACHE CLEARED',
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end clearNameCache()
+}//end class

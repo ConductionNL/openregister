@@ -1,0 +1,17 @@
+[
+ ["control-noop", "// Remove all register/schema context from query to prevent filtering.", "// Remove all register/schema context (noop)."],
+ ["scope-rbac-getParam", "\t\t\t'rbac' => ($isAdmin === false),", "\t\t\t'rbac' => filter_var($this->request->getParam('_rbac', ($isAdmin === false)), FILTER_VALIDATE_BOOLEAN),"],
+ ["scope-multi-getParam", "\t\t\t'multi' => ($isAdmin === false),", "\t\t\t'multi' => filter_var($this->request->getParam('_multitenancy', ($isAdmin === false)), FILTER_VALIDATE_BOOLEAN),"],
+ ["scope-rbac-getParams", "\t\t\t'rbac' => ($isAdmin === false),", "\t\t\t'rbac' => filter_var($params['_rbac'] ?? ($isAdmin === false), FILTER_VALIDATE_BOOLEAN),"],
+ ["scope-multi-getParams", "\t\t\t'multi' => ($isAdmin === false),", "\t\t\t'multi' => filter_var($params['_multitenancy'] ?? ($isAdmin === false), FILTER_VALIDATE_BOOLEAN),"],
+ ["cross-rbac-getParam", "\t\t$query['_rbac'] = ($isAdmin === false);", "\t\t$query['_rbac'] = filter_var($this->request->getParam('_rbac', ($isAdmin === false)), FILTER_VALIDATE_BOOLEAN);"],
+ ["cross-multi-getParam", "\t\t$query['_multitenancy'] = ($isAdmin === false);", "\t\t$query['_multitenancy'] = filter_var($this->request->getParam('_multitenancy', ($isAdmin === false)), FILTER_VALIDATE_BOOLEAN);"],
+ ["cross-rbac-getParams", "\t\t$query['_rbac'] = ($isAdmin === false);", "\t\t$query['_rbac'] = filter_var($this->request->getParams()['_rbac'] ?? ($isAdmin === false), FILTER_VALIDATE_BOOLEAN);"],
+ ["cross-multi-getParams", "\t\t$query['_multitenancy'] = ($isAdmin === false);", "\t\t$query['_multitenancy'] = filter_var($this->request->getParams()['_multitenancy'] ?? ($isAdmin === false), FILTER_VALIDATE_BOOLEAN);"],
+ ["magic-rbac-getParam", "\t\t$query['_rbac'] = $listing['rbac'];", "\t\t$query['_rbac'] = filter_var($this->request->getParam('_rbac', $listing['rbac']), FILTER_VALIDATE_BOOLEAN);"],
+ ["magic-multi-getParam", "\t\t$query['_multitenancy'] = $listing['multi'];", "\t\t$query['_multitenancy'] = filter_var($this->request->getParam('_multitenancy', $listing['multi']), FILTER_VALIDATE_BOOLEAN);"],
+ ["magic-rbac-getParams", "\t\t$query['_rbac'] = $listing['rbac'];", "\t\t$query['_rbac'] = filter_var($this->request->getParams()['_rbac'] ?? $listing['rbac'], FILTER_VALIDATE_BOOLEAN);"],
+ ["magic-multi-getParams", "\t\t$query['_multitenancy'] = $listing['multi'];", "\t\t$query['_multitenancy'] = filter_var($this->request->getParams()['_multitenancy'] ?? $listing['multi'], FILTER_VALIDATE_BOOLEAN);"],
+ ["magic-overwrite-dropped", "\t\t$query['_rbac'] = $listing['rbac'];\n\t\t$query['_multitenancy'] = $listing['multi'];\n", ""],
+ ["cross-overwrite-dropped", "\t\t$query['_rbac'] = ($isAdmin === false);\n\t\t$query['_multitenancy'] = ($isAdmin === false);\n", ""]
+]

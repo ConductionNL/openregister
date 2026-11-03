@@ -1,0 +1,567 @@
+<?php
+
+/**
+ * The party record: its addresses, its indicators, and its place in a tree.
+ *
+ * A party is an object of a schema that declares `x-openregister-party`. It
+ * needs no Nextcloud account: everything a melder carries — the name, the
+ * addresses mail reaches them at, the indicators that travel with them —
+ * lives on the record, and the schema says which property holds which.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Party
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/specs/party-model/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\Party;
+
+use Exception;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\ObjectService;
+use Throwable;
+
+/**
+ * Reads a party record and the things that hang off it.
+ *
+ * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One class answers everything
+ *   a party record is asked: its declaration, its addresses, its indicators,
+ *   its place in the tree, and which party an inbound address belongs to. Each
+ *   reads the same declaration, so splitting them would mean four classes
+ *   resolving it four times and able to disagree.
+ * @SuppressWarnings(PHPMD.StaticAccess) `PartyDefinition::fromSchema()` is the
+ *   value object's named constructor; there is no instance to call it on.
+ */
+class PartyService {
+
+	/**
+	 * The effects an indicator may declare.
+	 *
+	 * @var array<int, string>
+	 */
+	public const EFFECTS = ['warn', 'refuse-publication', 'refuse-send'];
+
+	/**
+	 * Party declarations by schema id, for the life of the request.
+	 *
+	 * @var array<string, PartyDefinition|null>
+	 */
+	private array $definitions = [];
+
+	/**
+	 * The register and schema ids of every party table, for the life of the request.
+	 *
+	 * @var array<int, array{register: int, schema: int}>|null
+	 */
+	private ?array $partyTables = null;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param ObjectService $objects The object layer a party record lives in.
+	 * @param SchemaMapper $schemas The schemas, for the party declaration.
+	 * @param RegisterMapper|null $registers The registers carrying a party schema, so a lookup reads only
+	 *                                       the party tables; absent, every lookup searches the instance
+	 */
+	public function __construct(
+		private readonly ObjectService $objects,
+		private readonly SchemaMapper $schemas,
+		private readonly ?RegisterMapper $registers = null,
+	) {
+	}//end __construct()
+
+	/**
+	 * The party object with that uuid, null when there is none the caller may read.
+	 *
+	 * @param string $partyUuid The party's uuid.
+	 *
+	 * @return ObjectEntity|null The party.
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	public function find(string $partyUuid): ?ObjectEntity {
+		if (trim($partyUuid) === '') {
+			return null;
+		}
+
+		// The party tables first: an id alone makes the object layer search every
+		// magic table on the instance, which took seconds per party.
+		foreach ($this->partyTables() as $table) {
+			try {
+				$found = $this->objects->find(
+					id: $partyUuid,
+					register: $table['register'],
+					schema: $table['schema'],
+					_render: false,
+					_audit: false
+				);
+			} catch (Throwable) {
+				$found = null;
+			}
+
+			if ($found !== null) {
+				return $found;
+			}
+		}
+
+		try {
+			return $this->objects->find(id: $partyUuid, _render: false, _audit: false);
+		} catch (Throwable) {
+			return null;
+		}
+	}//end find()
+
+	/**
+	 * The register and schema ids of every table that holds party records.
+	 *
+	 * @return array<int, array{register: int, schema: int}> The tables.
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-is-looked-up-in-the-party-tables-first
+	 */
+	private function partyTables(): array {
+		if ($this->partyTables !== null) {
+			return $this->partyTables;
+		}
+
+		$tables = [];
+		if ($this->registers !== null) {
+			try {
+				foreach ($this->partySchemas() as $party) {
+					$schemaId = (int)$party['schema']->getId();
+					foreach ($this->registers->getAllRegisterIdsWithSchema(schemaId: $schemaId) as $registerId) {
+						$tables[] = ['register' => (int)$registerId, 'schema' => $schemaId];
+					}
+				}
+			} catch (Throwable) {
+				$tables = [];
+			}
+		}
+
+		$this->partyTables = $tables;
+
+		return $tables;
+	}//end partyTables()
+
+	/**
+	 * The object with that uuid, read without RBAC or multitenancy; null when there is none.
+	 *
+	 * For a trusted write with no user to read as, such as an occ example-set
+	 * install: there `find` answers a schema that refuses "Anonymous" as null.
+	 * Never for a request, which reads with its caller's rights through `find`.
+	 *
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return ObjectEntity|null The object.
+	 *
+	 * @spec openspec/changes/example-set-install-agrees-with-the-store/specs/example-sets/spec.md
+	 */
+	public function findUnscoped(string $uuid): ?ObjectEntity {
+		if (trim($uuid) === '') {
+			return null;
+		}
+
+		try {
+			return $this->objects->find(id: $uuid, _render: false, _audit: false, _rbac: false, _multitenancy: false);
+		} catch (Throwable) {
+			return null;
+		}
+	}//end findUnscoped()
+
+	/**
+	 * The party declaration of an object's schema, null when it is not a party.
+	 *
+	 * @param ObjectEntity $party The object.
+	 *
+	 * @return PartyDefinition|null The declaration.
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	public function definitionFor(ObjectEntity $party): ?PartyDefinition {
+		$schemaId = (string)($party->getSchema() ?? '');
+		if ($schemaId === '') {
+			return null;
+		}
+
+		if (array_key_exists($schemaId, $this->definitions) === true) {
+			return $this->definitions[$schemaId];
+		}
+
+		$definition = null;
+		try {
+			$definition = PartyDefinition::fromSchema(schema: $this->schemas->find($schemaId));
+		} catch (Throwable) {
+			$definition = null;
+		}
+
+		$this->definitions[$schemaId] = $definition;
+
+		return $definition;
+	}//end definitionFor()
+
+	/**
+	 * Every schema on the instance that declares itself a party schema.
+	 *
+	 * @return array<int, array{schema: Schema, definition: PartyDefinition}> The party schemas.
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	public function partySchemas(): array {
+		$found = [];
+		foreach ($this->schemas->findAll() as $schema) {
+			$definition = PartyDefinition::fromSchema(schema: $schema);
+			if ($definition !== null) {
+				$found[] = ['schema' => $schema, 'definition' => $definition];
+			}
+		}
+
+		return $found;
+	}//end partySchemas()
+
+	/**
+	 * The addresses a party holds, each normalised to `{kind, type, value, label}`.
+	 *
+	 * An entry that is a bare string reads as a correspondence address, which
+	 * is how a register that has always held one e-mail per party keeps
+	 * working without being rewritten.
+	 *
+	 * @param ObjectEntity $party The party.
+	 * @param PartyDefinition|null $definition The declaration, resolved when null.
+	 *
+	 * @return array<int, array{kind: string, type: string, value: string, label: string|null}> The addresses.
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	public function addresses(ObjectEntity $party, ?PartyDefinition $definition = null): array {
+		$definition ??= $this->definitionFor(party: $party);
+		if ($definition === null) {
+			return [];
+		}
+
+		$raw = ($party->getObject()[$definition->addressesProperty()] ?? null);
+		if (is_array($raw) === false) {
+			return [];
+		}
+
+		$addresses = [];
+		foreach ($raw as $entry) {
+			$address = self::normaliseAddress(entry: $entry);
+			if ($address !== null) {
+				$addresses[] = $address;
+			}
+		}
+
+		return $addresses;
+	}//end addresses()
+
+	/**
+	 * The addresses of one kind, in declaration order.
+	 *
+	 * @param ObjectEntity $party The party.
+	 * @param string $kind The address kind, `correspondence` / `case` / `location`.
+	 * @param PartyDefinition|null $definition The declaration, resolved when null.
+	 *
+	 * @return array<int, array{kind: string, type: string, value: string, label: string|null}> The addresses.
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	public function addressesOfKind(ObjectEntity $party, string $kind, ?PartyDefinition $definition = null): array {
+		return array_values(
+			array_filter(
+				$this->addresses(party: $party, definition: $definition),
+				static fn (array $address): bool => $address['kind'] === $kind
+			)
+		);
+	}//end addressesOfKind()
+
+	/**
+	 * The indicators a party carries, each normalised to `{key, label, effect, note}`.
+	 *
+	 * An entry naming no effect warns: an indicator somebody wrote down is an
+	 * indicator somebody meant, and the weakest effect is the safe reading.
+	 * An entry naming an effect this version does not know also warns, rather
+	 * than being dropped, for the same reason.
+	 *
+	 * @param ObjectEntity $party The party.
+	 * @param PartyDefinition|null $definition The declaration, resolved when null.
+	 *
+	 * @return array<int, array{key: string, label: string, effect: string, note: string|null}> The indicators.
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 */
+	public function indicators(ObjectEntity $party, ?PartyDefinition $definition = null): array {
+		$definition ??= $this->definitionFor(party: $party);
+		if ($definition === null) {
+			return [];
+		}
+
+		$raw = ($party->getObject()[$definition->indicatorsProperty()] ?? null);
+		if (is_array($raw) === false) {
+			return [];
+		}
+
+		$indicators = [];
+		foreach ($raw as $entry) {
+			$indicator = self::normaliseIndicator(entry: $entry);
+			if ($indicator !== null) {
+				$indicators[] = $indicator;
+			}
+		}
+
+		return $indicators;
+	}//end indicators()
+
+	/**
+	 * The party holding that address, null when no party does.
+	 *
+	 * Inbound mail from any address a party holds must reach that party
+	 * rather than create a second record. The full-text search narrows the
+	 * candidates; the exact comparison over the party's own addresses decides,
+	 * so a search that matches loosely never returns the wrong party.
+	 *
+	 * @param string $address The address as it arrived.
+	 *
+	 * @return ObjectEntity|null The party.
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	public function resolveByAddress(string $address): ?ObjectEntity {
+		$needle = self::normaliseValue(value: $address);
+		if ($needle === '') {
+			return null;
+		}
+
+		foreach ($this->partySchemas() as $party) {
+			$candidates = [];
+			try {
+				$candidates = $this->objects->findAll(
+					config: [
+						'filters' => ['schema' => $party['schema']->getId()],
+						'search' => $address,
+						'limit' => 50,
+					]
+				);
+			} catch (Throwable) {
+				$candidates = [];
+			}
+
+			foreach ($candidates as $candidate) {
+				if ($candidate instanceof ObjectEntity === false) {
+					continue;
+				}
+
+				if ($this->holdsAddress(party: $candidate, needle: $needle, definition: $party['definition']) === true) {
+					return $candidate;
+				}
+			}
+		}//end foreach
+
+		return null;
+	}//end resolveByAddress()
+
+	/**
+	 * Refuse a parent that would close a cycle or push the tree past its bound.
+	 *
+	 * @param string $partyUuid The party being given a parent.
+	 * @param string|null $parentUuid The proposed parent, null to clear.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception 400 naming the cycle or the depth.
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	public function assertParentAllowed(string $partyUuid, ?string $parentUuid): void {
+		if ($parentUuid === null || trim($parentUuid) === '') {
+			return;
+		}
+
+		if ($parentUuid === $partyUuid) {
+			throw new Exception('Party "' . $partyUuid . '" cannot be its own parent', 400);
+		}
+
+		$seen = [$partyUuid => true];
+		$cursor = $parentUuid;
+		$depth = 1;
+		while ($cursor !== null && $cursor !== '') {
+			if (isset($seen[$cursor]) === true) {
+				throw new Exception(
+					'Party "' . $parentUuid . '" cannot be the parent of "' . $partyUuid
+					. '": it would close a cycle through "' . $cursor . '"',
+					400
+				);
+			}
+
+			$seen[$cursor] = true;
+			$cursor = $this->parentOf(cursor: $cursor, partyUuid: $partyUuid, depth: $depth);
+			$depth++;
+		}//end while
+	}//end assertParentAllowed()
+
+	/**
+	 * One step up the parent chain, or null when the walk ends here.
+	 *
+	 * The walk ends at a party the caller cannot read and at a party whose
+	 * schema declares no parent: both mean there is no further edge this
+	 * instance can follow, and neither is a cycle.
+	 *
+	 * @param string $cursor The party being stepped over.
+	 * @param string $partyUuid The party the walk started from, for the message.
+	 * @param int $depth How many steps have been taken.
+	 *
+	 * @return string|null The next parent, or null when the chain ends.
+	 *
+	 * @throws Exception 400 when the chain is longer than the schema allows.
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	private function parentOf(string $cursor, string $partyUuid, int $depth): ?string {
+		$ancestor = $this->find(partyUuid: $cursor);
+		if ($ancestor === null) {
+			return null;
+		}
+
+		$definition = $this->definitionFor(party: $ancestor);
+		if ($definition === null || $definition->parentProperty() === null) {
+			return null;
+		}
+
+		if ($depth >= $definition->maxDepth()) {
+			throw new Exception(
+				'Party "' . $partyUuid . '" would sit deeper than the declared maximum of '
+				. $definition->maxDepth(),
+				400
+			);
+		}
+
+		return self::text(value: ($ancestor->getObject()[$definition->parentProperty()] ?? null));
+	}//end parentOf()
+
+	/**
+	 * Whether a party holds that exact address.
+	 *
+	 * @param ObjectEntity $party The party.
+	 * @param string $needle The normalised address.
+	 * @param PartyDefinition $definition The declaration.
+	 *
+	 * @return bool True when one of its addresses matches.
+	 */
+	private function holdsAddress(ObjectEntity $party, string $needle, PartyDefinition $definition): bool {
+		foreach ($this->addresses(party: $party, definition: $definition) as $address) {
+			if (self::normaliseValue(value: $address['value']) === $needle) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end holdsAddress()
+
+	/**
+	 * One address entry, normalised, or null when it carries no value.
+	 *
+	 * @param mixed $entry A string or an array.
+	 *
+	 * @return array{kind: string, type: string, value: string, label: string|null}|null The address.
+	 */
+	private static function normaliseAddress(mixed $entry): ?array {
+		if (is_string($entry) === true) {
+			$entry = ['value' => $entry];
+		}
+
+		if (is_array($entry) === false) {
+			return null;
+		}
+
+		$value = self::text(value: ($entry['value'] ?? ($entry['email'] ?? ($entry['address'] ?? null))));
+		if ($value === null) {
+			return null;
+		}
+
+		return [
+			'kind' => (self::text(value: ($entry['kind'] ?? null)) ?? 'correspondence'),
+			'type' => (self::text(value: ($entry['type'] ?? null)) ?? 'email'),
+			'value' => $value,
+			'label' => self::text(value: ($entry['label'] ?? null)),
+		];
+	}//end normaliseAddress()
+
+	/**
+	 * One indicator entry, normalised, or null when it names nothing.
+	 *
+	 * @param mixed $entry A string or an array.
+	 *
+	 * @return array{key: string, label: string, effect: string, note: string|null}|null The indicator.
+	 */
+	private static function normaliseIndicator(mixed $entry): ?array {
+		if (is_string($entry) === true) {
+			$entry = ['key' => $entry];
+		}
+
+		if (is_array($entry) === false) {
+			return null;
+		}
+
+		$key = self::text(value: ($entry['key'] ?? null));
+		if ($key === null) {
+			return null;
+		}
+
+		$effect = (self::text(value: ($entry['effect'] ?? null)) ?? 'warn');
+		if (in_array($effect, self::EFFECTS, true) === false) {
+			$effect = 'warn';
+		}
+
+		return [
+			'key' => $key,
+			'label' => (self::text(value: ($entry['label'] ?? null)) ?? $key),
+			'effect' => $effect,
+			'note' => self::text(value: ($entry['note'] ?? null)),
+		];
+	}//end normaliseIndicator()
+
+	/**
+	 * An address value reduced to what a comparison should care about.
+	 *
+	 * @param string $value The raw value.
+	 *
+	 * @return string The normalised value.
+	 */
+	private static function normaliseValue(string $value): string {
+		return mb_strtolower(trim($value));
+	}//end normaliseValue()
+
+	/**
+	 * A trimmed non-empty string, or null.
+	 *
+	 * @param mixed $value The raw value.
+	 *
+	 * @return string|null The text.
+	 */
+	private static function text(mixed $value): ?string {
+		if (is_scalar($value) === false) {
+			return null;
+		}
+
+		$text = trim((string)$value);
+		if ($text === '') {
+			return null;
+		}
+
+		return $text;
+	}//end text()
+}//end class

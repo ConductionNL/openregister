@@ -1,0 +1,1 @@
+[["estimate when empty v2", "if ($objectsToProcess > 0) {\n\t\t\t$this->estimatedChunks", "if ($objectsToProcess >= 0) {\n\t\t\t$this->estimatedChunks"]]

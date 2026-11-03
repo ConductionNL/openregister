@@ -1,0 +1,155 @@
+<?php
+
+/**
+ * DeleteFileHandler
+ *
+ * This file is part of the OpenRegister app for Nextcloud.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\File;
+
+use Exception;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCP\Files\File;
+use OCP\Files\IRootFolder;
+use OCP\Files\Node;
+use OCP\Files\NotPermittedException;
+use Psr\Log\LoggerInterface;
+
+/**
+ * Handles file deletion operations with Single Responsibility.
+ *
+ * This handler is responsible ONLY for:
+ * - Deleting single files
+ * - Deleting multiple files
+ * - Cleaning up shares and tags
+ * - Removing file metadata
+ *
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link     https://github.com/ConductionNL/openregister
+ * @version  1.0.0
+ */
+class DeleteFileHandler {
+	/**
+	 * Constructor for DeleteFileHandler.
+	 *
+	 * @param IRootFolder $rootFolder Root folder for file operations.
+	 * @param ReadFileHandler $readFileHandler Read file handler.
+	 * @param FileValidationHandler $fileValidHandler File validation handler.
+	 * @param FileOwnershipHandler $fileOwnershipHandler File ownership handler.
+	 * @param LoggerInterface $logger Logger for logging operations.
+	 * @param FileLockHandler $fileLockHandler Lock handler used to release / verify file locks on delete.
+	 */
+	public function __construct(
+		private readonly IRootFolder $rootFolder,
+		private readonly ReadFileHandler $readFileHandler,
+		private readonly FileValidationHandler $fileValidHandler,
+		private readonly FileOwnershipHandler $fileOwnershipHandler,
+		private readonly LoggerInterface $logger,
+		private readonly FileLockHandler $fileLockHandler,
+	) {
+	}//end __construct()
+
+	/**
+	 * Delete a file by node, path, or ID.
+	 *
+	 * This method can accept either a file path string, file ID integer, or a Node object for deletion.
+	 * When a Node object is provided, it will be deleted directly. When a string path or integer ID
+	 * is provided, the file will be located first and then deleted.
+	 *
+	 * @param Node|string|int $file The file Node object, path (from root), or file ID to delete.
+	 * @param ObjectEntity|null $object Optional object entity.
+	 *
+	 * @return bool True if successful, false if the file didn't exist.
+	 *
+	 * @throws Exception If deleting the file is not permitted or file operations fail.
+	 *
+	 * @psalm-param Node|string|int $file
+	 *
+	 * @spec openspec/specs/file-actions/spec.md#requirement-file-update-and-delete-enforce-per-action-node-permissions
+	 */
+	public function deleteFile(Node|string|int $file, ?ObjectEntity $object = null): bool {
+		// A Node is used as it is. Only a path or an id is resolved, and only
+		// those are cast for the log line: a Files Node is not Stringable, so
+		// casting before this check killed every Node caller (MergeHandler).
+		$fileName = '';
+		if ($file instanceof Node === true) {
+			$fileName = $file->getName();
+		}
+
+		if ($file instanceof Node === false) {
+			$fileName = (string)$file;
+			$file = $this->readFileHandler->getFile(object: $object, file: $file);
+		}
+
+		if ($file === null) {
+			$this->logger->error(
+				message: '[DeleteFileHandler] File ' . $fileName . ' not found for object ' . ($object?->getId() ?? 'unknown'),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return false;
+		}
+
+		if ($file instanceof File === false) {
+			$this->logger->error(
+				message: '[DeleteFileHandler] File is not a File instance, it\'s a: ' . get_class($file),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return false;
+		}
+
+		// Reject when the file is locked by someone else.
+		$this->fileLockHandler->assertCanModify($file->getId());
+
+		// Assert the session can reach the file (owned or shared).
+		$this->fileValidHandler->checkOwnership($file);
+
+		// Deleting additionally requires delete permission. NC enforces this
+		// natively on delete(), but we fail fast with a clear message.
+		if ($file->isDeletable() === false) {
+			throw new NotPermittedException("File {$file->getName()} is not deletable by the current session");
+		}
+
+		$fileId = $file->getId();
+		try {
+			$file->delete();
+			$survives = ($this->rootFolder->getFirstNodeById($fileId) !== null);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[DeleteFileHandler] Failed to delete file: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return false;
+		}
+
+		if ($survives === true) {
+			// Through the Node API Nextcloud ignores an operation a listener
+			// aborted (the frozen-object guard does): delete() returns, the file
+			// is still there. Saying true here makes every caller (the example
+			// set remover, the merge) believe a file is gone that is not.
+			$this->logger->warning(
+				message: '[DeleteFileHandler] The file was not deleted: it is still there after delete() '
+					. '(an operation was aborted, for instance by a frozen object).',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
+			);
+			return false;
+		}
+
+		return true;
+	}//end deleteFile()
+}//end class

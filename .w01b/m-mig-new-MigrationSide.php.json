@@ -1,0 +1,1 @@
+[["isLoaded register", "return $this->registerEntity !== null && $this->schemaEntity !== null;", "return $this->schemaEntity !== null;"], ["isLoaded schema", "return $this->registerEntity !== null && $this->schemaEntity !== null;", "return $this->registerEntity !== null;"]]

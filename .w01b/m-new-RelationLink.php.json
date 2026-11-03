@@ -1,0 +1,1 @@
+[["outgoing factory direction", "$link->direction = RelationTypeResolver::DIRECTION_OUTGOING;", "$link->direction = RelationTypeResolver::DIRECTION_INCOMING;"], ["incoming factory direction", "$link->direction = RelationTypeResolver::DIRECTION_INCOMING;", "$link->direction = RelationTypeResolver::DIRECTION_OUTGOING;"]]
