@@ -186,9 +186,7 @@ class ObjectActionRunner {
 			$right = 'update';
 		}
 
-		if ($this->gate->may(schema: $schema, right: $right, object: $object) === false
-			|| $this->gate->selfAssignGranted(schema: $schema, definition: $definition) === false
-		) {
+		if ($this->gate->mayRun(schema: $schema, right: $right, definition: $definition, object: $object) === false) {
 			return $refused(Http::STATUS_FORBIDDEN, ['error' => sprintf('You may not perform "%s" on this object.', $key)]);
 		}
 

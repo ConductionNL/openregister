@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
-use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
+use OCA\OpenRegister\Service\Rbac\MatrixRowsFromApps;
 use OCP\IL10N;
 use OCP\IUserSession;
 
@@ -50,14 +50,16 @@ class ObjectActionGate {
 	/**
 	 * Constructor.
 	 *
-	 * @param PermissionHandler $permissions The authorization block's judge.
-	 * @param IUserSession      $userSession The acting user.
-	 * @param IL10N             $l10n        Picks the reason's language.
+	 * @param PermissionHandler  $permissions The authorization block's judge.
+	 * @param IUserSession       $userSession The acting user.
+	 * @param IL10N              $l10n        Picks the reason's language.
+	 * @param MatrixRowsFromApps $appRows     The matrix rows apps provide, for a self-assign grant.
 	 */
 	public function __construct(
 		private readonly PermissionHandler $permissions,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l10n,
+		private readonly MatrixRowsFromApps $appRows,
 	) {
 	}//end __construct()
 
@@ -95,27 +97,51 @@ class ObjectActionGate {
 	}//end may()
 
 	/**
-	 * Whether a self-assign action has a grant written for it at all.
+	 * Whether the caller may run this action on the object.
 	 *
-	 * A self-assign action runs only when the schema grants it by name, in its
-	 * authorization block or in a matrix row. Without either, nobody may run
-	 * it, including on a schema whose empty block would otherwise default open.
-	 * Every other kind answers true here and is decided by may() alone.
+	 * Every kind but a self-assign is decided by may() on its right. A
+	 * self-assign runs only when the schema grants it by name, in its
+	 * authorization block or in a declared or app-provided matrix row; without
+	 * either nobody may run it, also on a schema whose empty block would
+	 * otherwise default open. Its right is then checked without the object
+	 * owner's bypass: owning an object does not make one its assignee.
 	 *
 	 * @param Schema                 $schema     The object's schema.
+	 * @param string                 $right      The right a non-self-assign action needs.
 	 * @param ObjectActionDefinition $definition The action.
+	 * @param ObjectEntity|null      $object     The object, or null for a selection.
 	 *
-	 * @return bool True when the grant is written, or the action is not a self-assign.
+	 * @return bool True when the caller may run it.
 	 *
 	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
 	 */
-	public function selfAssignGranted(Schema $schema, ObjectActionDefinition $definition): bool {
+	public function mayRun(Schema $schema, string $right, ObjectActionDefinition $definition, ?ObjectEntity $object): bool {
 		if ($definition->selfAssignField() === null) {
-			return true;
+			return $this->may(schema: $schema, right: $right, object: $object);
 		}
 
+		return $this->selfAssignNamed(schema: $schema, key: $definition->key)
+			&& $this->permissions->hasPermission(
+				schema: $schema,
+				action: $definition->key,
+				userId: $this->userId(),
+				objectOwner: null,
+				_rbac: true,
+				object: $object
+			);
+	}//end mayRun()
+
+	/**
+	 * Whether the schema names this self-assign action in a rule or in a matrix row, its app rows included.
+	 *
+	 * @param Schema $schema The schema.
+	 * @param string $key    The action key.
+	 *
+	 * @return bool True when a rule or a row grants it by name.
+	 */
+	private function selfAssignNamed(Schema $schema, string $key): bool {
 		$authorization = ($schema->getAuthorization() ?? []);
-		if (empty($authorization[$definition->key]) === false) {
+		if (empty($authorization[$key]) === false) {
 			return true;
 		}
 
@@ -124,9 +150,8 @@ class ObjectActionGate {
 			return false;
 		}
 
-		return is_string($matrix[DepartmentMatrixValidator::ROWS_FROM_KEY] ?? null) === true
-			|| $this->rowsName(rows: ($matrix['rows'] ?? null), key: $definition->key) === true;
-	}//end selfAssignGranted()
+		return $this->rowsName(rows: ($this->appRows->withAppRows(schema: $schema, matrix: $matrix)['rows'] ?? null), key: $key);
+	}//end selfAssignNamed()
 
 	/**
 	 * Whether a self-assign action's property is still empty on this object.

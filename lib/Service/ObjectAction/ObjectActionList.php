@@ -152,8 +152,7 @@ class ObjectActionList {
 	 */
 	private function mayRun(Schema $schema, ObjectActionDefinition $definition, ObjectEntity $object): bool {
 		return $definition->isRunnable() === true
-			&& $this->gate->may(schema: $schema, right: $definition->key, object: $object) === true
-			&& $this->gate->selfAssignGranted(schema: $schema, definition: $definition) === true;
+			&& $this->gate->mayRun(schema: $schema, right: $definition->key, definition: $definition, object: $object) === true;
 	}//end mayRun()
 
 	/**
@@ -187,7 +186,7 @@ class ObjectActionList {
 		$entries = [];
 		foreach ($this->definitions->forSchema(schema: $schema, register: $register) as $definition) {
 			if ($definition->isRunnable() === false || $definition->offersBulk() === false
-				|| $this->gate->may(schema: $schema, right: $definition->key, object: null) === false
+				|| $this->gate->mayRun(schema: $schema, right: $definition->key, definition: $definition, object: null) === false
 			) {
 				continue;
 			}

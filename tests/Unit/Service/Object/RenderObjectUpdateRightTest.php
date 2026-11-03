@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Rbac\MatrixRowsFromApps;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -98,7 +99,7 @@ class RenderObjectUpdateRightTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 		$actionList = new ObjectActionList(
 			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-			new ObjectActionGate($permissions, $userSession, $l10n),
+			new ObjectActionGate($permissions, $userSession, $l10n, $this->createMock(MatrixRowsFromApps::class)),
 			new ObjectActionInputs(new OasRequestValidator()),
 			$this->createMock(TransitionEngine::class),
 			$l10n

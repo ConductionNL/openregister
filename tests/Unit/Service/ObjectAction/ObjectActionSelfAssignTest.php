@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Flow\MacroActionValidator;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
+use OCA\OpenRegister\Service\Rbac\MatrixRowsFromApps;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -83,6 +84,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 		'anna' => ['team'],
 		'bram' => ['others'],
 		'root' => ['admin'],
+		'olga' => [],
 	];
 
 	/**
@@ -176,7 +178,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 	 *
 	 * @param Schema $schema The schema the handler resolves.
 	 *
-	 * @return array{0: PermissionHandler, 1: IUserSession}
+	 * @return array{0: PermissionHandler, 1: IUserSession, 2: MatrixRowsFromApps}
 	 */
 	private function permissions(Schema $schema): array {
 		$user = $this->createMock(IUser::class);
@@ -213,7 +215,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 			$dispatcher
 		);
 
-		return [$handler, $session];
+		return [$handler, $session, new MatrixRowsFromApps($dispatcher, new DepartmentMatrixValidator(), new NullLogger())];
 	}//end permissions()
 
 	/**
@@ -224,7 +226,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 	 * @return ObjectActionRunner
 	 */
 	private function runner(Schema $schema): ObjectActionRunner {
-		[$permissions, $session] = $this->permissions(schema: $schema);
+		[$permissions, $session, $appRows] = $this->permissions(schema: $schema);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
@@ -254,7 +256,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 
 		return new ObjectActionRunner(
 			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-			new ObjectActionGate($permissions, $session, $l10n),
+			new ObjectActionGate($permissions, $session, $l10n, $appRows),
 			new ObjectActionInputs(new OasRequestValidator()),
 			$this->createMock(ObjectActionStepsFlow::class),
 			$audit,
@@ -442,12 +444,12 @@ class ObjectActionSelfAssignTest extends TestCase {
 
 		$answer = $this->take(schema: $schema, object: self::object(assignee: null));
 
-		[$permissions, $session] = $this->permissions(schema: $schema);
+		[$permissions, $session, $appRows] = $this->permissions(schema: $schema);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 		$list = new ObjectActionList(
 			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-			new ObjectActionGate($permissions, $session, $l10n),
+			new ObjectActionGate($permissions, $session, $l10n, $appRows),
 			new ObjectActionInputs(new OasRequestValidator()),
 			$this->createMock(TransitionEngine::class),
 			$l10n
@@ -457,6 +459,58 @@ class ObjectActionSelfAssignTest extends TestCase {
 		$this->assertSame(403, $answer['status']);
 		$this->assertSame([self::ACTION => false], $list->canRun(object: self::object(assignee: null), schema: $schema));
 	}//end testAnAdministratorIsNotGrantedAnUngrantedAction()
+
+	/**
+	 * Without a rule or a row naming the action, an administrator is refused too.
+	 *
+	 * @param array<string, mixed> $authorization The block.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('ungrantedBlocks')]
+	public function testWithoutAGrantNotEvenAnAdministratorMayRunIt(array $authorization): void {
+		$this->uid = 'root';
+
+		$answer = $this->take(schema: self::schema(authorization: $authorization), object: self::object(assignee: null));
+
+		$this->assertSame(403, $answer['status']);
+		$this->assertSame([], $this->patches);
+	}//end testWithoutAGrantNotEvenAnAdministratorMayRunIt()
+
+	/**
+	 * App rows that do not name the action grant it to nobody: member, administrator or owner.
+	 *
+	 * @return void
+	 */
+	public function testAppRowsWithoutTheActionGrantItToNobody(): void {
+		$schema = self::schema(
+			authorization: ['read' => ['team'], 'matrix' => ['field' => 'group', 'userSource' => ['groups' => true], 'rowsFrom' => 'caseapp.rows']]
+		);
+		$this->appRows = [['group' => 'team', 'value' => '$self', 'actions' => ['read']]];
+
+		$answers = [];
+		foreach (['anna', 'root', 'olga'] as $uid) {
+			$this->uid = $uid;
+			$answers[$uid] = $this->take(schema: $schema, object: self::object(assignee: null))['status'];
+		}
+
+		$this->assertSame(['anna' => 403, 'root' => 403, 'olga' => 403], $answers);
+		$this->assertSame([], $this->patches);
+	}//end testAppRowsWithoutTheActionGrantItToNobody()
+
+	/**
+	 * Owning the object does not let its owner take it: the self-assign has no owner bypass.
+	 *
+	 * @return void
+	 */
+	public function testTheOwnerOutsideTheGrantIsRefused(): void {
+		$this->uid = 'olga';
+
+		$answer = $this->take(schema: self::schema(authorization: self::readOnlyTeam()), object: self::object(assignee: null));
+
+		$this->assertSame(403, $answer['status']);
+		$this->assertSame([], $this->patches);
+	}//end testTheOwnerOutsideTheGrantIsRefused()
 
 	/**
 	 * A declared matrix row grants the action to the caller whose value matches.
@@ -505,12 +559,12 @@ class ObjectActionSelfAssignTest extends TestCase {
 		$answers = [];
 		foreach (['anna' => null, 'bram' => null, 'anna-assigned' => 'bram'] as $case => $assignee) {
 			$this->uid = explode('-', $case)[0];
-			[$permissions, $session] = $this->permissions(schema: $schema);
+			[$permissions, $session, $appRows] = $this->permissions(schema: $schema);
 			$l10n = $this->createMock(IL10N::class);
 			$l10n->method('t')->willReturnArgument(0);
 			$list = new ObjectActionList(
 				new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-				new ObjectActionGate($permissions, $session, $l10n),
+				new ObjectActionGate($permissions, $session, $l10n, $appRows),
 				new ObjectActionInputs(new OasRequestValidator()),
 				$this->createMock(TransitionEngine::class),
 				$l10n
