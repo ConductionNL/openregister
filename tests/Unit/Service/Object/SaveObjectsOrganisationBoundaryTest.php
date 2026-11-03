@@ -315,6 +315,30 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 		$this->assertSame([], $out['passed']);
 	}
 
+	public function testAnAdministratorWithRbacOffIsNotAskedAboutOrganisations(): void {
+		$this->admin = true;
+
+		$out = $this->safeguard(
+			row: ['@self' => ['uuid' => self::FOREIGN], 'title' => 'changed'],
+			flags: ['rbac' => false, 'validation' => false, 'multitenancy' => true]
+		);
+
+		$this->assertCount(1, $out['passed']);
+		$this->assertSame([], $this->calls);
+	}
+
+	public function testOnAnAppendOnlySchemaTheRowsExistenceStaysUnannounced(): void {
+		$schema = $this->schema();
+		$schema->setAppendOnly(true);
+		$result = ['invalid' => [], 'statistics' => ['invalid' => 0, 'errors' => 0]];
+		$method = new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards');
+		$method->setAccessible(true);
+		$row = ['@self' => ['uuid' => self::FOREIGN], 'title' => 'overwritten'];
+		$method->invokeArgs($this->handler(), [[$row], $this->register(), $schema, ['rbac' => true, 'validation' => false], &$result]);
+
+		$this->assertSame(['Permission denied for action create on schema planned'], self::reasons($result['invalid']));
+	}
+
 	public function testABatchWithoutAMultitenancyFlagKeepsToOrganisations(): void {
 		$this->admin = true;
 
