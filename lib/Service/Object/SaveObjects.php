@@ -825,6 +825,7 @@ class SaveObjects {
 			rowRegister: $run->rowRegister,
 			existingByUuid: $run->existingByUuid
 		);
+		$this->setAsideDeletedRow(run: $run);
 
 		// A row that sends an explicit-reveal value back as its mask keeps the stored
 		// value, before validation refuses the mask's shape.
@@ -868,6 +869,7 @@ class SaveObjects {
 	private function screenResolvedRow(array $row, BulkSafeguardRun $run): array {
 		$refusal = ($this->draftRefusal(run: $run)
 			?? $this->organisationRefusal(run: $run)
+			?? $this->deletedRowRefusal(run: $run)
 			?? $this->appendOnlyRefusal(run: $run)
 			?? $this->permissionRefusal(run: $run));
 		if ($refusal !== null) {
@@ -979,6 +981,53 @@ class SaveObjects {
 
 		return true;
 	}//end callerReadsStoredRow()
+
+	/**
+	 * Keep a soft-deleted stored row apart from the row the current bulk row updates.
+	 *
+	 * The stored rows are looked up with the deleted ones, so the organisation of a
+	 * deleted row the writer would upsert onto is known. The row itself still counts
+	 * as a create, as it did when deleted rows were not looked up.
+	 *
+	 * @param BulkSafeguardRun $run The safeguard pass
+	 *
+	 * @return void
+	 */
+	private function setAsideDeletedRow(BulkSafeguardRun $run): void {
+		$run->rowDeleted = null;
+		if ($run->rowExisting === null || $run->rowExisting->isSoftDeleted() === false) {
+			return;
+		}
+
+		$run->rowDeleted  = $run->rowExisting;
+		$run->rowExisting = null;
+		$run->rowAction   = 'create';
+	}//end setAsideDeletedRow()
+
+	/**
+	 * The refusal for a row that would overwrite another organisation's soft-deleted row, or null.
+	 *
+	 * The writer upserts on the uuid with no deleted filter and stamps the caller as
+	 * the row's owner and organisation, which would move another organisation's
+	 * deleted row into the caller's trash. Answered as a refused create, like a live
+	 * row of another organisation. Skipped when the write does not keep to the
+	 * caller's organisations (an administrator).
+	 *
+	 * @param BulkSafeguardRun $run The safeguard pass
+	 *
+	 * @return string|null
+	 */
+	private function deletedRowRefusal(BulkSafeguardRun $run): ?string {
+		if ($run->rbac === false || $run->multitenancy === false || $run->rowDeleted === null) {
+			return null;
+		}
+
+		if ($this->objectEntityMapper->callerOrganisationsHold(row: $run->rowDeleted) === true) {
+			return null;
+		}
+
+		return 'Permission denied for action create on schema ' . $run->rowSchema->getSlug();
+	}//end deletedRowRefusal()
 
 	/**
 	 * The refusal for an update to an appendOnly schema, or null.
@@ -1376,6 +1425,7 @@ class SaveObjects {
 				identifier: $uuid,
 				register: $rowRegister,
 				schema: $boundedSchema,
+				includeDeleted: true,
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -1460,7 +1510,8 @@ class SaveObjects {
 				$existing[$groupKey] = $this->objectEntityMapper->findObjectsByUuidsInRegisterSchema(
 					register: $group['register'],
 					schema: $group['schema'],
-					uuids: $group['uuids']
+					uuids: $group['uuids'],
+					includeDeleted: true
 				);
 			} catch (\Throwable $e) {
 				// Leave the group OUT of the map — see the method docblock. The
