@@ -230,9 +230,15 @@ The system exposes an admin-only operational escape hatch at `DELETE /api/audit-
 
 The system SHALL offer a scoped audit list, separate from the admin-only
 instance-wide index, that returns audit entries only for objects the calling
-user may read. Readability SHALL be decided by the same RBAC funnel the object
-read path uses, so that a grant, a schema rule and a register rule all mean
-here what they mean everywhere else. An anonymous caller SHALL receive
+user may read. Readability SHALL be decided by the read path of the object GET,
+`ObjectService::find()` with RBAC and multitenancy on, reached through the reader
+path of one object's history, so that a grant, a schema rule, a register rule,
+a draft and the organisation boundary all mean here what they mean on the
+object. Each entry SHALL carry only what that object's history gives the same
+caller: the properties the caller may not see are removed from `changed`, the
+doelbinding guard of the object GET applies, a free-text search SHALL match the
+redacted entries and not the stored change set, and filters on `changed`,
+`session`, `request` and `ip_address` SHALL be ignored. An anonymous caller SHALL receive
 nothing. An entry whose object cannot be resolved, or whose schema cannot be
 resolved, SHALL be absent rather than present, so that every failure to decide
 hides a row instead of showing it. The scoped list SHALL be cursor paginated,
@@ -245,6 +251,20 @@ request.
 - **WHEN** the caller lists the scoped audit trail
 - **THEN** only the entries of the readable object are returned
 - @e2e exclude {the scope decision is a unit-level contract on ReadableAuditTrailLister, mutation-checked in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
+
+#### Scenario: an entry on another organisation's object is not shown
+
+- **GIVEN** an audit entry on an object of an organisation the caller is not active in, in a schema whose read rule admits the caller
+- **WHEN** the caller lists the scoped audit trail
+- **THEN** that entry is absent, because the object GET refuses that object to the caller
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php through the reader path of ObjectHistoryForReaders; a live run needs two organisations and a non-admin seed user}
+
+#### Scenario: a property the caller may not see is not in a scoped row
+
+- **GIVEN** an audit entry on a readable object whose change set holds a property behind a read rule the caller does not meet
+- **WHEN** the caller lists the scoped audit trail, with or without a search for that property's value
+- **THEN** the row carries no value of that property, and a search for it finds nothing
+- @e2e exclude {asserted with the real HistoryEntryRedactor in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
 
 #### Scenario: an anonymous caller is told nothing
 

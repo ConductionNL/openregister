@@ -45,11 +45,13 @@ appear; FAIL = any needle survives.
 
 ## Newman / Postman counterpart
 
-A Postman collection lives alongside this fixture directory at
-`tests/integration/openregister-anonymisation-tests.postman_collection.json` —
-it drives `POST /api/files/{fileId}/anonymize` against PDF inputs and shares
-the same fixture-checkin guard. Both the PHPUnit and Newman flows promote
-themselves once a fixture lands.
+The Postman collection at
+`tests/integration/openregister-anonymisation-tests.postman_collection.json`
+does not use this directory. It carries three synthetic one-page PDFs as
+collection variables, uploads them over WebDAV, marks the name with
+`/manual-entities` and drives `POST /api/files/{fileId}/anonymize` for the
+complete, the encrypted (422) and the residual case, so it runs on any fresh
+instance.
 
 ## Why no fixture is committed yet
 
