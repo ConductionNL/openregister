@@ -245,7 +245,11 @@ hides a row instead of showing it. The scoped list SHALL be cursor paginated,
 SHALL NOT count the table, and SHALL bound the number of rows it inspects per
 request. The page SHALL NOT say how many rows were inspected, and the cursor it
 hands out SHALL be sealed, because the raw-trail offset it holds counts rows the
-caller may not read. The doelbinding guard SHALL be decided once per register
+caller may not read. The cursor SHALL be sealed together with the caller and a
+hash of the filters and search it was walked under, and SHALL resume a walk only
+under that same caller, filters and search; no client-chosen offset SHALL be
+accepted, so every walk without such a cursor starts at the top of the trail.
+The doelbinding guard SHALL be decided once per register
 and schema within a request, so a list over many objects of a purpose-bound
 schema records one refusal, not one per object.
 
@@ -261,6 +265,13 @@ schema records one refusal, not one per object.
 - **GIVEN** a page that filled before the trail was exhausted
 - **WHEN** the caller reads `nextCursor`
 - **THEN** it is a sealed token that holds no number, it resumes after the rows already walked, and a token the list did not hand out starts at the top
+
+#### Scenario: a cursor or an offset cannot be steered
+
+- **GIVEN** a cursor handed out under one filter, and a caller sending a plain offset
+- **WHEN** the cursor is sent back under another filter, search or caller, or the plain offset is sent as the cursor or as `offset`
+- **THEN** the walk starts at the top of the trail, so neither tells where in the raw trail the caller's rows lie
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php and ReadableAuditCursorTest.php}
 - @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php and ReadableAuditCursorTest.php}
 
 #### Scenario: a purpose-bound schema is refused once a request

@@ -985,11 +985,11 @@ class ReadableAuditTrailListerTest extends TestCase {
 	}//end testAForgedCursorStartsAtTheTop()
 
 	/**
-	 * A plain offset is still read as one, so an offset-paging client keeps working.
+	 * A plain offset is not a place to resume: every walk the client did not get a cursor for starts at the top.
 	 *
 	 * @return void
 	 */
-	public function testAPlainOffsetIsStillAnOffset(): void {
+	public function testAPlainOffsetStartsAtTheTop(): void {
 		$lister = $this->lister(
 			entries: [$this->entry(objectUuid: self::READABLE)],
 			located: [$this->object(uuid: self::READABLE)],
@@ -997,9 +997,56 @@ class ReadableAuditTrailListerTest extends TestCase {
 		);
 
 		$lister->page(userId: 'alice', limit: 1, cursor: '40');
+		$lister->page(userId: 'alice', limit: 1, cursor: 40);
 
-		$this->assertSame(40, $this->queries[0][1]);
-	}//end testAPlainOffsetIsStillAnOffset()
+		$this->assertSame([0, 0], array_column($this->queries, 1));
+	}//end testAPlainOffsetStartsAtTheTop()
+
+	/**
+	 * A cursor handed to one caller does not resume another caller's walk.
+	 *
+	 * @return void
+	 */
+	public function testACursorDoesNotResumeAnotherCallersWalk(): void {
+		$lister = $this->lister(
+			entries: [
+				$this->entry(objectUuid: self::HIDDEN, action: 'create'),
+				$this->entry(objectUuid: self::READABLE),
+				$this->entry(objectUuid: self::HIDDEN, action: 'delete'),
+			],
+			located: [$this->object(uuid: self::HIDDEN), $this->object(uuid: self::READABLE)],
+			readable: [self::READABLE => true, self::HIDDEN => false]
+		);
+
+		$page = $lister->page(userId: 'alice', limit: 1);
+		$this->queries = [];
+		$lister->page(userId: 'bob', limit: 1, cursor: $page['nextCursor']);
+
+		$this->assertSame(0, $this->queries[0][1]);
+	}//end testACursorDoesNotResumeAnotherCallersWalk()
+
+	/**
+	 * A cursor walked without a search does not resume a walk with one.
+	 *
+	 * @return void
+	 */
+	public function testACursorDoesNotResumeAnotherSearch(): void {
+		$lister = $this->lister(
+			entries: [
+				$this->entry(objectUuid: self::HIDDEN, action: 'create'),
+				$this->entry(objectUuid: self::READABLE),
+				$this->entry(objectUuid: self::HIDDEN, action: 'delete'),
+			],
+			located: [$this->object(uuid: self::HIDDEN), $this->object(uuid: self::READABLE)],
+			readable: [self::READABLE => true, self::HIDDEN => false]
+		);
+
+		$page = $lister->page(userId: 'alice', limit: 1);
+		$this->queries = [];
+		$lister->page(userId: 'alice', limit: 1, cursor: $page['nextCursor'], search: 'Nieuw');
+
+		$this->assertSame(0, $this->queries[0][1]);
+	}//end testACursorDoesNotResumeAnotherSearch()
 
 	/**
 	 * A list over objects of a purpose-bound schema records one refusal, not one per object.
@@ -1108,4 +1155,143 @@ class ReadableAuditTrailListerTest extends TestCase {
 			$this->readsShown()
 		);
 	}//end historyWithRealGuard()
+
+	/**
+	 * A lister whose trail honours the object_uuid filter, the offset and the limit.
+	 *
+	 * @param array<string, array<AuditTrail>> $trails   Entries by object uuid ('' = unfiltered).
+	 * @param array<ObjectEntity>              $located  Objects the lookup finds.
+	 * @param array<string, bool>              $readable Read verdicts by uuid.
+	 *
+	 * @return ReadableAuditTrailLister The lister.
+	 */
+	private function rw126Lister(array $trails, array $located, array $readable): ReadableAuditTrailLister {
+		$auditMapper = $this->createMock(AuditTrailMapper::class);
+		$auditMapper->method('findAll')->willReturnCallback(
+			function (...$args) use ($trails): array {
+				$this->queries[] = $args;
+				$limit = (int)($args[0] ?? 200);
+				$offset = (int)($args[1] ?? 0);
+				$key = (string)(($args[2] ?? [])['object_uuid'] ?? '');
+				return array_slice(($trails[$key] ?? []), $offset, $limit);
+			}
+		);
+		$objectMapper = $this->createMock(MagicMapper::class);
+		$objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn($located);
+
+		return new ReadableAuditTrailLister(
+			auditTrailMapper: $auditMapper,
+			objectMapper: $objectMapper,
+			history: $this->history(located: $located, readable: $readable, groups: ['staff']),
+			cursors: $this->auditCursors()
+		);
+	}//end rw126Lister()
+
+	/**
+	 * Whether a page says there is more, without the sealed token's random bytes.
+	 *
+	 * @param array $page The page.
+	 *
+	 * @return array The comparable shape.
+	 */
+	private function rw126Shape(array $page): array {
+		return ['results' => array_column($page['results'], 'uuid'), 'more' => $page['nextCursor'] !== null];
+	}//end rw126Shape()
+
+	/**
+	 * P1: a hidden object's trail of 2345 rows and one of 2346 rows must answer alike at every plain offset.
+	 *
+	 * @return void
+	 */
+	public function testRw126PlainOffsetDoesNotTellTheHiddenTrailsLength(): void {
+		$short = $this->rw126Lister(
+			trails: [self::HIDDEN => $this->entriesOf(count: 2345, objectUuid: self::HIDDEN)],
+			located: [$this->object(uuid: self::HIDDEN)],
+			readable: [self::HIDDEN => false]
+		);
+		$long = $this->rw126Lister(
+			trails: [self::HIDDEN => $this->entriesOf(count: 2346, objectUuid: self::HIDDEN)],
+			located: [$this->object(uuid: self::HIDDEN)],
+			readable: [self::HIDDEN => false]
+		);
+
+		$a = $this->rw126Shape($short->page(userId: 'alice', limit: 20, cursor: '346', filters: ['object_uuid' => self::HIDDEN]));
+		$b = $this->rw126Shape($long->page(userId: 'alice', limit: 20, cursor: '346', filters: ['object_uuid' => self::HIDDEN]));
+		$this->assertSame($a, $b, 'offset 346: the answer tells a 2345-row hidden trail from a 2346-row one');
+	}//end testRw126PlainOffsetDoesNotTellTheHiddenTrailsLength()
+
+	/**
+	 * P1b: a binary search over plain offsets must not recover a hidden trail's exact length.
+	 *
+	 * @return void
+	 */
+	public function testRw126BinarySearchDoesNotRecoverTheHiddenCount(): void {
+		$secret = 5321;
+		$lister = $this->rw126Lister(
+			trails: [self::HIDDEN => $this->entriesOf(count: $secret, objectUuid: self::HIDDEN)],
+			located: [$this->object(uuid: self::HIDDEN)],
+			readable: [self::HIDDEN => false]
+		);
+		$lo = 0;
+		$hi = 100000;
+		$calls = 0;
+		while ($lo < $hi) {
+			$mid = intdiv($lo + $hi, 2);
+			$page = $lister->page(userId: 'alice', limit: 20, cursor: (string)$mid, filters: ['object_uuid' => self::HIDDEN]);
+			$calls++;
+			if ($page['nextCursor'] === null) {
+				$hi = $mid;
+			} else {
+				$lo = $mid + 1;
+			}
+		}
+
+		$this->assertNotSame($secret, $lo + ReadableAuditTrailLister::SCAN_BUDGET - 1, 'the exact hidden count was recovered');
+	}//end testRw126BinarySearchDoesNotRecoverTheHiddenCount()
+
+	/**
+	 * P2: a sealed cursor obtained under one filter must not resume another filter at its offset.
+	 *
+	 * Under filter A (a mixed user's trail) 37 unreadable rows precede the first readable one;
+	 * the cursor after that row is replayed on the caller's own object, whose 100 entries are all readable.
+	 *
+	 * @return void
+	 */
+	public function testRw126ACursorDoesNotCarryItsOffsetToAnotherFilter(): void {
+		$mixed = array_merge(
+			$this->entriesOf(count: 37, objectUuid: self::HIDDEN),
+			[$this->entry(objectUuid: self::READABLE)],
+			$this->entriesOf(count: 50, objectUuid: self::HIDDEN . '-2')
+		);
+		$own = $this->entriesOf(count: 100, objectUuid: self::READABLE);
+		$lister = $this->rw126Lister(
+			trails: ['mixed' => $mixed, self::READABLE => $own],
+			located: [$this->object(uuid: self::HIDDEN), $this->object(uuid: self::HIDDEN . '-2'), $this->object(uuid: self::READABLE)],
+			readable: [self::READABLE => true, self::HIDDEN => false, self::HIDDEN . '-2' => false]
+		);
+
+		$first = $lister->page(userId: 'alice', limit: 1, filters: ['object_uuid' => 'mixed']);
+		$this->assertCount(1, $first['results']);
+		$this->assertNotNull($first['nextCursor']);
+
+		$replay = $lister->page(userId: 'alice', limit: 1, cursor: $first['nextCursor'], filters: ['object_uuid' => self::READABLE]);
+		$got = ($replay['results'][0]['uuid'] ?? 'none');
+		$this->assertSame('audit-' . self::READABLE . '-0', $got, 'the replayed cursor revealed its raw offset');
+	}//end testRw126ACursorDoesNotCarryItsOffsetToAnotherFilter()
+
+	/**
+	 * Control: a filter with nothing readable and fewer than SCAN_BUDGET rows reports no more (must pass).
+	 *
+	 * @return void
+	 */
+	public function testRw126ControlShortHiddenTrailEnds(): void {
+		$lister = $this->rw126Lister(
+			trails: [self::HIDDEN => $this->entriesOf(count: 30, objectUuid: self::HIDDEN)],
+			located: [$this->object(uuid: self::HIDDEN)],
+			readable: [self::HIDDEN => false]
+		);
+		$page = $lister->page(userId: 'alice', limit: 20, filters: ['object_uuid' => self::HIDDEN]);
+		$this->assertSame([], $page['results']);
+		$this->assertNull($page['nextCursor']);
+	}//end testRw126ControlShortHiddenTrailEnds()
 }//end class

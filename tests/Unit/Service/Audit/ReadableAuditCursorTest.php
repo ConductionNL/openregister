@@ -1,7 +1,7 @@
 <?php
 
 /**
- * The scoped audit list's cursor leaves sealed and opens only to an offset.
+ * The scoped audit list's cursor opens only under the scope it was sealed to.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -48,55 +48,72 @@ final class ReadableAuditCursorTest extends TestCase {
 		return new ReadableAuditCursor($crypto);
 	}//end openingTo()
 
-	public function testASealedOffsetOpensToThatOffset(): void {
+	public function testASealedOffsetOpensToThatOffsetUnderItsScope(): void {
+		$cursors = $this->auditCursors();
+		$scope = $cursors->scope(userId: 'alice', query: ['filters' => ['user' => 'bob'], 'search' => '']);
+
+		self::assertSame(2400, $cursors->open(cursor: $cursors->seal(offset: 2400, scope: $scope), scope: $scope));
+		self::assertSame(0, $cursors->open(cursor: $cursors->seal(offset: 0, scope: $scope), scope: $scope));
+	}//end testASealedOffsetOpensToThatOffsetUnderItsScope()
+
+	public function testASealedOffsetDoesNotOpenUnderAnotherScope(): void {
+		$cursors = $this->auditCursors();
+		$scope = $cursors->scope(userId: 'alice', query: ['filters' => ['user' => 'bob'], 'search' => '']);
+		$cursor = $cursors->seal(offset: 2400, scope: $scope);
+
+		foreach ([
+			$cursors->scope(userId: 'carol', query: ['filters' => ['user' => 'bob'], 'search' => '']),
+			$cursors->scope(userId: 'alice', query: ['filters' => ['user' => 'dave'], 'search' => '']),
+			$cursors->scope(userId: 'alice', query: ['filters' => ['user' => 'bob'], 'search' => 'x']),
+		] as $other) {
+			self::assertSame(0, $cursors->open(cursor: $cursor, scope: $other));
+		}
+	}//end testASealedOffsetDoesNotOpenUnderAnotherScope()
+
+	public function testTheScopeNamesTheCallerAndTheQuery(): void {
 		$cursors = $this->auditCursors();
 
-		self::assertSame(2400, $cursors->open(cursor: $cursors->seal(offset: 2400)));
-		self::assertSame(0, $cursors->open(cursor: $cursors->seal(offset: 0)));
-	}//end testASealedOffsetOpensToThatOffset()
+		self::assertSame(
+			hash('sha256', (string)json_encode(['alice', ['filters' => [], 'search' => '']])),
+			$cursors->scope(userId: 'alice', query: ['filters' => [], 'search' => ''])
+		);
+	}//end testTheScopeNamesTheCallerAndTheQuery()
 
-	public function testTheOffsetIsSealedWithTheCursorPurpose(): void {
+	public function testTheOffsetIsSealedWithThePurposeAndTheScope(): void {
 		$crypto = $this->createMock(ICrypto::class);
-		$crypto->expects($this->once())->method('encrypt')->with('audit-readable-cursor:17')->willReturn('t');
+		$crypto->expects($this->once())->method('encrypt')->with('audit-readable-cursor:s1:17')->willReturn('t');
 
-		self::assertSame('t', (new ReadableAuditCursor($crypto))->seal(offset: 17));
-	}//end testTheOffsetIsSealedWithTheCursorPurpose()
+		self::assertSame('t', (new ReadableAuditCursor($crypto))->seal(offset: 17, scope: 's1'));
+	}//end testTheOffsetIsSealedWithThePurposeAndTheScope()
 
-	public function testNothingStartsAtTheTop(): void {
-		$crypto = $this->createMock(ICrypto::class);
-		$crypto->expects($this->never())->method('decrypt');
-		$cursors = new ReadableAuditCursor($crypto);
-
-		self::assertSame(0, $cursors->open(cursor: null));
-		self::assertSame(0, $cursors->open(cursor: ''));
-	}//end testNothingStartsAtTheTop()
-
-	public function testAPlainOffsetIsReadAsAnOffset(): void {
+	public function testNothingAndPlainNumbersStartAtTheTop(): void {
 		$crypto = $this->createMock(ICrypto::class);
 		$crypto->expects($this->never())->method('decrypt');
 		$cursors = new ReadableAuditCursor($crypto);
 
-		self::assertSame(40, $cursors->open(cursor: '40'));
-		self::assertSame(40, $cursors->open(cursor: 40));
-		self::assertSame(0, $cursors->open(cursor: -5));
-	}//end testAPlainOffsetIsReadAsAnOffset()
+		foreach ([null, '', '40', 40, '0', -5] as $cursor) {
+			self::assertSame(0, $cursors->open(cursor: $cursor, scope: 's1'));
+		}
+	}//end testNothingAndPlainNumbersStartAtTheTop()
 
 	public function testATamperedCursorStartsAtTheTop(): void {
 		$crypto = $this->createMock(ICrypto::class);
 		$crypto->method('decrypt')->willThrowException(new Exception('HMAC does not match.'));
 
-		self::assertSame(0, (new ReadableAuditCursor($crypto))->open(cursor: 'tampered'));
+		self::assertSame(0, (new ReadableAuditCursor($crypto))->open(cursor: 'tampered', scope: 's1'));
 	}//end testATamperedCursorStartsAtTheTop()
 
 	public function testATokenSealedForSomethingElseStartsAtTheTop(): void {
-		self::assertSame(0, $this->openingTo(plaintext: '2400')->open(cursor: 'other'));
-		self::assertSame(0, $this->openingTo(plaintext: 'tenant-key:2400')->open(cursor: 'other'));
-		self::assertSame(0, $this->openingTo(plaintext: 'audit-readable-cursor;2400')->open(cursor: 'other'));
+		self::assertSame(0, $this->openingTo(plaintext: '2400')->open(cursor: 'other', scope: 's1'));
+		self::assertSame(0, $this->openingTo(plaintext: 'tenant-key:2400')->open(cursor: 'other', scope: 's1'));
+		self::assertSame(0, $this->openingTo(plaintext: 'audit-readable-cursor;s1:2400')->open(cursor: 'other', scope: 's1'));
+		self::assertSame(0, $this->openingTo(plaintext: 'audit-readable-cursor:2400')->open(cursor: 'other', scope: 's1'));
+		self::assertSame(2400, $this->openingTo(plaintext: 'audit-readable-cursor:s1:2400')->open(cursor: 'other', scope: 's1'));
 	}//end testATokenSealedForSomethingElseStartsAtTheTop()
 
 	public function testASealedNonNumberStartsAtTheTop(): void {
-		self::assertSame(0, $this->openingTo(plaintext: 'audit-readable-cursor:-3')->open(cursor: 'x'));
-		self::assertSame(0, $this->openingTo(plaintext: 'audit-readable-cursor:')->open(cursor: 'x'));
-		self::assertSame(0, $this->openingTo(plaintext: 'audit-readable-cursor:12abc')->open(cursor: 'x'));
+		self::assertSame(0, $this->openingTo(plaintext: 'audit-readable-cursor:s1:-3')->open(cursor: 'x', scope: 's1'));
+		self::assertSame(0, $this->openingTo(plaintext: 'audit-readable-cursor:s1:')->open(cursor: 'x', scope: 's1'));
+		self::assertSame(0, $this->openingTo(plaintext: 'audit-readable-cursor:s1:12abc')->open(cursor: 'x', scope: 's1'));
 	}//end testASealedNonNumberStartsAtTheTop()
 }//end class

@@ -880,11 +880,11 @@ class AuditTrailControllerTest extends TestCase {
 		$this->assertSame(['cursor' => 'sealed-abc'], $captured);
 	}
 
-	public function testTheScopedListStillTakesAnOffsetAsTheStart(): void {
+	public function testTheScopedListTakesNoOffsetAsTheStart(): void {
 		$captured = null;
 		$this->readableController(params: ['offset' => '40'], captured: $captured)->readable();
 
-		$this->assertSame(['cursor' => 40], $captured);
+		$this->assertSame(['cursor' => null], $captured);
 	}
 
 	public function testTheScopedListStartsAtTheTopWithoutACursor(): void {

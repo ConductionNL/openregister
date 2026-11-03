@@ -127,13 +127,14 @@ class ReadableAuditTrailLister {
 	 * The cursor is an offset into the RAW trail, not into the filtered
 	 * result, because the filter is decided per row and not in SQL. That
 	 * offset counts rows the caller may not read, so it is handed out sealed
-	 * and no count of the walked rows is returned: a client hands back the
-	 * `nextCursor` it was given and is never told how many rows were skipped
-	 * to fill its page.
+	 * to the caller, filters and search it was walked under, no client-chosen
+	 * offset is accepted, and no count of the walked rows is returned: a
+	 * client hands back the `nextCursor` it was given and is never told how
+	 * many rows were skipped to fill its page.
 	 *
 	 * @param string|null     $userId  The caller, or null when anonymous.
 	 * @param int             $limit   How many readable rows the caller asked for.
-	 * @param int|string|null $cursor  A sealed cursor this list handed out, or a raw-trail offset.
+	 * @param int|string|null $cursor  A sealed cursor this list handed out under the same caller, filters and search.
 	 * @param array           $filters Column filters, as `AuditTrailMapper::findAll()` takes them.
 	 * @param string|null     $search  Optional free-text term.
 	 *
@@ -176,7 +177,8 @@ class ReadableAuditTrailLister {
 		$results = [];
 		$found = 0;
 		$scanned = 0;
-		$rawOffset = $this->cursors->open(cursor: $cursor);
+		$scope = $this->cursors->scope(userId: $userId, query: ['filters' => $filters, 'search' => $this->search]);
+		$rawOffset = $this->cursors->open(cursor: $cursor, scope: $scope);
 		$exhausted = false;
 
 		while ($found < $limit && $scanned < self::SCAN_BUDGET) {
@@ -216,7 +218,7 @@ class ReadableAuditTrailLister {
 
 		$nextCursor = null;
 		if ($exhausted === false) {
-			$nextCursor = $this->cursors->seal(offset: $rawOffset);
+			$nextCursor = $this->cursors->seal(offset: $rawOffset, scope: $scope);
 		}
 
 		return [

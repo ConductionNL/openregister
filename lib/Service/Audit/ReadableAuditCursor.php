@@ -1,18 +1,16 @@
 <?php
 
 /**
- * ReadableAuditCursor - the scoped audit list's cursor, sealed
+ * ReadableAuditCursor - the scoped audit list's cursor, sealed to its scope
  *
  * The scoped audit list resumes at an offset into the RAW trail, because which
- * rows a caller may read is decided per row and not in SQL. Handed out as a
- * number, that offset counts the rows the caller could not read: a caller
- * filtering on another organisation's object or user would learn how many
- * entries it has. So the offset leaves sealed with the instance secret, and a
- * sealed cursor is all a client gets to hand back.
- *
- * A plain number is still accepted on the way in, so a client that pages by
- * offset keeps working; reading from an offset the caller chose tells it
- * nothing.
+ * rows a caller may read is decided per row and not in SQL. That offset
+ * counts rows the caller could not read, so it is only ever handed out sealed
+ * with the instance secret, together with the scope it was walked under: the
+ * caller, and a hash of the filters and search. A cursor opens only under the
+ * same scope. Replayed under another filter, handed back by another caller,
+ * forged, or a plain number, it starts at the top of the trail, so no client
+ * can choose where in the raw trail a walk resumes.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -59,48 +57,62 @@ class ReadableAuditCursor {
 	}//end __construct()
 
 	/**
-	 * The cursor a client is given for an offset into the raw trail.
+	 * The scope a cursor is sealed to: the caller and what they filtered and searched on.
 	 *
-	 * @param int $offset The raw-trail offset to resume at.
+	 * @param string $userId The caller.
+	 * @param array  $query  The filters and the search term of the walk.
+	 *
+	 * @return string The scope, a hash.
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
+	 */
+	public function scope(string $userId, array $query): string {
+		return hash('sha256', (string)json_encode([$userId, $query]));
+	}//end scope()
+
+	/**
+	 * The cursor a client is given for an offset into the raw trail, sealed to its scope.
+	 *
+	 * @param int    $offset The raw-trail offset to resume at.
+	 * @param string $scope  The scope of the walk, from scope().
 	 *
 	 * @return string The sealed cursor.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
 	 */
-	public function seal(int $offset): string {
-		return $this->crypto->encrypt(self::PURPOSE . $offset);
+	public function seal(int $offset, string $scope): string {
+		return $this->crypto->encrypt(self::PURPOSE . $scope . ':' . $offset);
 	}//end seal()
 
 	/**
-	 * The raw-trail offset a client's cursor resumes at.
+	 * The raw-trail offset a client's cursor resumes at, under the given scope.
 	 *
-	 * A sealed cursor opens to its offset, a plain number is read as an
-	 * offset, and anything else, a tampered cursor included, starts at the
-	 * top of the trail.
+	 * Only a cursor sealed under the same scope opens to its offset. Anything
+	 * else starts at the top of the trail: no cursor, a plain number, a
+	 * tampered or forged token, or one sealed for another caller, filter or
+	 * search.
 	 *
 	 * @param int|string|null $cursor What the client handed back.
+	 * @param string          $scope  The scope of this walk, from scope().
 	 *
 	 * @return int The offset, never negative.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
 	 */
-	public function open(int|string|null $cursor): int {
-		if ($cursor === null || $cursor === '') {
+	public function open(int|string|null $cursor, string $scope): int {
+		if (is_string($cursor) === false || $cursor === '' || ctype_digit($cursor) === true) {
 			return 0;
 		}
 
-		if (is_int($cursor) === true || ctype_digit((string)$cursor) === true) {
-			return max(0, (int)$cursor);
-		}
-
 		try {
-			$plain = $this->crypto->decrypt((string)$cursor);
+			$plain = $this->crypto->decrypt($cursor);
 		} catch (Throwable $e) {
 			return 0;
 		}
 
-		$offset = substr($plain, strlen(self::PURPOSE));
-		if (str_starts_with($plain, self::PURPOSE) === false || ctype_digit($offset) === false) {
+		$prefix = self::PURPOSE . $scope . ':';
+		$offset = substr($plain, strlen($prefix));
+		if (str_starts_with($plain, $prefix) === false || ctype_digit($offset) === false) {
 			return 0;
 		}
 

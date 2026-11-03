@@ -438,15 +438,13 @@ class AuditTrailController extends Controller {
 
 		$params = $this->extractRequestParameters();
 
+		// Only a cursor this list handed out resumes a walk. An offset is not
+		// accepted: where a walk resumes in the raw trail is never the client's
+		// choice, because the raw trail counts rows the client may not read.
 		$cursor = null;
 		$requested = ($this->request->getParam(key: 'cursor') ?? $this->request->getParam(key: '_cursor'));
 		if ($requested !== null && $requested !== '') {
 			$cursor = (string)$requested;
-		} elseif (($params['offset'] ?? null) !== null) {
-			// An offset is accepted as a starting cursor so a client that only
-			// knows the older parameter still walks the list, rather than
-			// silently reading page one over and over.
-			$cursor = (int)$params['offset'];
 		}
 
 		$page = $this->readableLister->page(
