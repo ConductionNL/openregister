@@ -42,6 +42,7 @@ use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
+use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
@@ -2686,49 +2687,18 @@ class SchemasController extends Controller {
 	 * @param Schema $schema The schema to check manage permission for.
 	 *
 	 * @return bool True if the current user may manage this schema.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	private function checkSchemaManagePermission(Schema $schema): bool {
 		try {
-			$user = $this->container->get(\OCP\IUserSession::class)->getUser();
-			if ($user === null) {
-				return false;
-			}
+			$rights = new DefinitionWriteRights(
+				userSession: $this->container->get(\OCP\IUserSession::class),
+				groupManager: $this->container->get(\OCP\IGroupManager::class)
+			);
 
-			$groupManager = $this->container->get(\OCP\IGroupManager::class);
-
-			// Admins always pass.
-			if ($groupManager->isAdmin($user->getUID()) === true) {
-				return true;
-			}
-
-			$authorization = $schema->getAuthorization();
-
-			// Default-secure: no manage rule defined → admin-only (already failed above).
-			if (empty($authorization) === true || isset($authorization['manage']) === false) {
-				return false;
-			}
-
-			$userGroups = $groupManager->getUserGroupIds($user);
-			$manageRules = $authorization['manage'];
-			foreach ($userGroups as $groupId) {
-				foreach ($manageRules as $entry) {
-					if (is_string($entry) === true && $entry === $groupId) {
-						return true;
-					}
-
-					if (is_array($entry) === true && isset($entry['group']) === true && $entry['group'] === $groupId) {
-						return true;
-					}
-				}
-			}
+			return $rights->mayManage(authorization: $schema->getAuthorization());
 		} catch (\Throwable $e) {
 			return false;
-		}//end try
-
-		return false;
+		}
 	}//end checkSchemaManagePermission()
 
 	/**
