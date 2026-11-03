@@ -72,6 +72,11 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
  * @uses   \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\OrganisationScopeCondition
+ * @uses   \OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler
+ * @uses   \OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator
+ * @uses   \OCA\OpenRegister\Service\Rbac\MatrixRowWhere
+ * @uses   \OCA\OpenRegister\Service\Rbac\MatrixRowsFromApps
  */
 class MagicRbacHandlerConditionalRuleTenancyTest extends TestCase {
 
