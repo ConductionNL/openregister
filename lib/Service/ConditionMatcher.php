@@ -249,7 +249,13 @@ class ConditionMatcher {
 	}//end unwrapResolvedRelation()
 
 	/**
-	 * Get a value from the object: `@self` first for an underscore-prefixed property, then the body
+	 * Get a value from the object: `@self` for an underscore-prefixed property, else the body
+	 *
+	 * An underscore-prefixed property is metadata. When the object carries a
+	 * `@self`, that is the record's metadata and the only answer: a body key of
+	 * the same name is written by whoever wrote the body, and a field `@self`
+	 * lacks (`_published`, no longer record metadata) answers null. Only an
+	 * object without any `@self` falls back to its body.
 	 *
 	 * @param array $object Object data
 	 * @param string $property Property name
@@ -257,13 +263,8 @@ class ConditionMatcher {
 	 * @return mixed Property value or null
 	 */
 	private function getObjectValue(array $object, string $property): mixed {
-		// An underscore-prefixed property is metadata: `@self` answers it before
-		// a body key of the same name, which the writer of the body controls.
-		if (str_starts_with($property, '_') === true) {
-			$selfProperty = substr($property, 1);
-			if (isset($object['@self'][$selfProperty]) === true) {
-				return $object['@self'][$selfProperty];
-			}
+		if (str_starts_with($property, '_') === true && is_array($object['@self'] ?? null) === true) {
+			return ($object['@self'][substr($property, 1)] ?? null);
 		}
 
 		if (isset($object[$property]) === true) {
