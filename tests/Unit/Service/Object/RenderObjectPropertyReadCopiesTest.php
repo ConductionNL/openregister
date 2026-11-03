@@ -75,7 +75,7 @@ class RenderObjectPropertyReadCopiesTest extends TestCase {
 	 *
 	 * @return RenderObject
 	 */
-	private function renderer(Schema $schema): RenderObject {
+	private function renderer(Schema $schema, ?\OCA\OpenRegister\Service\PropertyRbacHandler $rbac = null): RenderObject {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn($schema);
 
@@ -88,7 +88,7 @@ class RenderObjectPropertyReadCopiesTest extends TestCase {
 			$this->createMock(\OCP\SystemTag\ISystemTagObjectMapper::class),
 			$this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class),
 			$this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class),
-			$this->realPropertyRbacHandler(),
+			($rbac ?? $this->realPropertyRbacHandler()),
 			$this->createMock(\Psr\Log\LoggerInterface::class),
 			$this->createMock(\OCA\OpenRegister\Service\FileService::class),
 			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
@@ -235,5 +235,27 @@ class RenderObjectPropertyReadCopiesTest extends TestCase {
 		$this->assertStringNotContainsString('LONG-SECRET', $json);
 		$this->assertSame(['members.0' => 'not-governed'], $rows[0]['@self']['relations']);
 		$this->assertSame('Zaaksysteem', $rows[0]['@self']['name']);
+	}
+	/**
+	 * The list path (entity rows) asks the property rules of the record's own metadata.
+	 */
+	public function testAnEntityRowIsFilteredOnTheRecordsMetadata(): void {
+		$seen = null;
+		$rbac = $this->createMock(\OCA\OpenRegister\Service\PropertyRbacHandler::class);
+		$rbac->method('filterReadableProperties')->willReturnCallback(
+			static function (Schema $schema, array $object) use (&$seen): array {
+				$seen = $object;
+				return $object;
+			}
+		);
+		$entity = $this->entity();
+		$entity->setOrganisation('org-b');
+		$entity->setObject(['name' => 'Zaaksysteem', '_organisation' => 'org-a', '@self' => ['organisation' => 'org-a']]);
+		$rows = [$entity];
+
+		$this->renderer($this->schema(), $rbac)->redactWriteOnlyFromRows($rows);
+
+		$this->assertSame('org-b', $seen['@self']['organisation'] ?? null);
+		$this->assertSame(['organisation' => 'org-a'], $rows[0]->getObject()['@self'] ?? null, 'the data keeps its own @self');
 	}
 }

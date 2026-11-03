@@ -82,4 +82,28 @@ class MagicMapperIdentifierPrecedenceTest extends TestCase {
 		// Not reachable with unique ids and uuids; the picker must not guess.
 		$this->assertNull($this->pick([$this->row(7, 'aaaa', null), $this->row(7, 'bbbb', null)], '7'));
 	}
+
+	public function testANumericUuidWinsOverTheObjectWithThatId(): void {
+		// A synchronisation that keeps the source's ids writes uuids such as "1".
+		$byId = $this->row(1, 'aaaa', null);
+		$byUuid = $this->row(9, '1', null);
+
+		$this->assertSame($byUuid, $this->pick([$byId, $byUuid], '1'));
+		$this->assertSame($byUuid, $this->pick([$byUuid, $byId], 1));
+	}
+
+	public function testTwoUuidHoldersInDifferentCaseStayAmbiguous(): void {
+		$uuid = '123e4567-e89b-12d3-a456-426614174000';
+		$lower = $this->row(3, $uuid, null);
+		$upper = $this->row(4, strtoupper($uuid), null);
+
+		$this->assertNull($this->pick([$lower, $upper], $uuid));
+	}
+
+	public function testANumericUuidAndASlugStillPickTheUuid(): void {
+		$byUuid = $this->row(9, '1', null);
+		$bySlug = $this->row(4, 'cccc', '1');
+
+		$this->assertSame($byUuid, $this->pick([$bySlug, $byUuid], '1'));
+	}
 }//end class

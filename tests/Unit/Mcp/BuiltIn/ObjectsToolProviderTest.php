@@ -203,10 +203,19 @@ class ObjectsToolProviderTest extends TestCase {
 				}
 			);
 
-		$result = $this->provider->invokeTool(ObjectsToolProvider::TOOL_ID, $this->args(['action' => 'update', 'id' => 'uuid-2', 'data' => ['name' => 'Edited']]));
+		$existing = new ObjectEntity();
+		$existing->setUuid('uuid-2');
+		$existing->setRegister('3');
+		$existing->setSchema('4');
+		$this->objectService->method('find')->willReturn($existing);
+
+		$result = $this->provider->invokeTool(ObjectsToolProvider::TOOL_ID, $this->args(['action' => 'update', 'id' => '2', 'data' => ['name' => 'Edited']]));
 
 		$this->assertSame(['name' => 'Edited'], $capturedArgs[0]);
-		$this->assertContains('uuid-2', $capturedArgs);
+		// The save writes the object the caller's read found, in its own register and schema.
+		$this->assertSame('uuid-2', ($capturedArgs['uuid'] ?? $capturedArgs[4]));
+		$this->assertSame('3', ($capturedArgs['register'] ?? $capturedArgs[2]));
+		$this->assertSame('4', ($capturedArgs['schema'] ?? $capturedArgs[3]));
 		$this->assertSame(['uuid' => 'uuid-2', 'name' => 'Edited'], $result);
 
 	}//end testUpdateReturnsSerializedObject()

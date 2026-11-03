@@ -1,12 +1,13 @@
 <?php
 
 /**
- * A conditional `public` read rule and the caller's other rules.
+ * A `public` read rule and the caller's other rules.
  *
- * For a signed-in caller who qualifies for `public`, a conditional public rule
- * widens the organisation filter by the rows it admits instead of lifting the
- * filter, so the caller's other rules keep to their own organisation. An
- * unconditional public rule, an anonymous caller and an admin read as before.
+ * For a signed-in caller who qualifies for `public`, a public rule keeps the
+ * organisation filter unless it is marked `crossOrganisation: true`. A marked
+ * conditional public rule widens the filter by the rows it admits, so the
+ * caller's other rules keep to their own organisation; a marked public rule
+ * without match reads every row. An anonymous caller and an admin read as before.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Db\MagicMapper
@@ -57,9 +58,10 @@ use PDO;
 use RuntimeException;
 
 /**
- * Tests that a conditional public rule widens the organisation filter by its own rows only.
+ * Tests that a marked public rule widens the organisation filter by its own rows only.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
+ * @uses   \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
  * @covers \OCA\OpenRegister\Db\MagicMapper\OrganisationScopeCondition
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler
@@ -75,6 +77,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\ArrayElementFilter
  * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Service\OrganisationContext
  */
 class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 
@@ -89,6 +92,16 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 	private const PUBLIC_OPEN = ['group' => 'public', 'match' => ['status' => 'open']];
 
 	/**
+	 * The same public rule, marked as crossing organisations.
+	 */
+	private const PUBLIC_OPEN_MARKED = self::PUBLIC_OPEN + ['crossOrganisation' => true];
+
+	/**
+	 * A public rule without match, marked as crossing organisations.
+	 */
+	private const PUBLIC_ALL_MARKED = ['group' => 'public', 'crossOrganisation' => true];
+
+	/**
 	 * stackiq's `connection` read rules, exactly as its register ships them.
 	 */
 	private const STACKIQ_CONNECTION = [
@@ -96,6 +109,16 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 		['group' => 'public', 'match' => ['status' => 'open']],
 		['group' => 'aanbod-beheerder', 'match' => ['_organisation' => '$organisation']],
 		['group' => 'aanbod-beheerder', 'match' => ['provider' => '$organisation']],
+	];
+
+	/**
+	 * stackiq's connection read rules with the markers its app PR adds.
+	 */
+	private const STACKIQ_CONNECTION_MARKED = [
+		['group' => 'gebruik-beheerder', 'match' => ['_organisation' => '$organisation']],
+		['group' => 'public', 'match' => ['status' => 'open'], 'crossOrganisation' => true],
+		['group' => 'aanbod-beheerder', 'match' => ['_organisation' => '$organisation']],
+		['group' => 'aanbod-beheerder', 'match' => ['provider' => '$organisation'], 'crossOrganisation' => true],
 	];
 
 	/**
@@ -195,76 +218,69 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 	 * @return array<string, array{0: array, 1: bool, 2: string, 3: string[]}>
 	 */
 	public static function rowCases(): array {
+		$publicPermit = ['group' => 'public', 'match' => ['caseType' => 'ct-permit']];
+		$own = ['own-open', 'own-permit'];
+
 		return [
-			'team member: public rows of every organisation, team rows of her own' => [
-				[self::PUBLIC_OPEN, self::TEAM_RULE],
+			'team member: an unmarked public rule stays inside the organisation' => [[self::PUBLIC_OPEN, self::TEAM_RULE], true, 'team', $own],
+			'team member: marked public rows of every organisation, team rows of her own' => [
+				[self::PUBLIC_OPEN_MARKED, self::TEAM_RULE],
 				true,
 				'team',
 				['other-open', 'own-open', 'own-permit'],
 			],
-			'signed-in caller with only the public rule' => [
-				[self::PUBLIC_OPEN],
-				true,
-				'plain',
-				['other-open', 'own-open'],
-			],
-			'two public rules each widen the filter'                               => [
-				[self::PUBLIC_OPEN, ['group' => 'public', 'match' => ['caseType' => 'ct-permit']], self::TEAM_RULE],
+			'signed-in caller with only the unmarked public rule'     => [[self::PUBLIC_OPEN], true, 'plain', ['own-open']],
+			'signed-in caller with only the marked public rule'       => [[self::PUBLIC_OPEN_MARKED], true, 'plain', ['other-open', 'own-open']],
+			'two marked public rules each widen the filter'           => [
+				[self::PUBLIC_OPEN_MARKED, $publicPermit + ['crossOrganisation' => true], self::TEAM_RULE],
 				true,
 				'team',
 				['other-open', 'other-permit', 'own-open', 'own-permit'],
 			],
-			'an unconditional public rule still reads every row'                   => [['public', self::TEAM_RULE], true, 'team', self::ALL_ROWS],
-			'a public rule without a match still reads every row' => [
-				[['group' => 'public'], self::TEAM_RULE],
+			'an unconditional public rule stays inside the organisation' => [['public', self::TEAM_RULE], true, 'team', $own],
+			'a public rule without a match stays inside the organisation' => [[['group' => 'public'], self::TEAM_RULE], true, 'team', $own],
+			'a marked public rule without a match reads every row'    => [[self::PUBLIC_ALL_MARKED, self::TEAM_RULE], true, 'team', self::ALL_ROWS],
+			'a marked matchless public rule beside a conditional one reads every row' => [
+				[self::PUBLIC_ALL_MARKED, self::PUBLIC_OPEN_MARKED, self::TEAM_RULE],
 				true,
 				'team',
 				self::ALL_ROWS,
 			],
-			'an unconditional public rule beside a conditional one reads every row' => [
-				['public', self::PUBLIC_OPEN, self::TEAM_RULE],
-				true,
-				'team',
-				self::ALL_ROWS,
-			],
-			'a matchless public rule beside a conditional one reads every row'    => [
-				[['group' => 'public'], self::PUBLIC_OPEN, self::TEAM_RULE],
-				true,
-				'team',
-				self::ALL_ROWS,
-			],
-			'anonymous reads the public rows of every organisation' => [
+			'anonymous reads the public rows of every organisation'   => [
 				[self::PUBLIC_OPEN, self::TEAM_RULE],
 				true,
 				'anonymous',
 				['other-open', 'own-open'],
 			],
-			'an admin reads every row' => [
-				[self::PUBLIC_OPEN, self::TEAM_RULE],
+			'anonymous reads the marked public rows of every organisation' => [
+				[self::PUBLIC_OPEN_MARKED, self::TEAM_RULE],
 				true,
-				'admin',
-				self::ALL_ROWS,
+				'anonymous',
+				['other-open', 'own-open'],
 			],
-			'stackiq connection: a provider keeps the rows that name it' => [
-				self::STACKIQ_CONNECTION,
+			'an admin reads every row'                                => [[self::PUBLIC_OPEN, self::TEAM_RULE], true, 'admin', self::ALL_ROWS],
+			'stackiq connection unmarked: a provider reads its own organisation' => [self::STACKIQ_CONNECTION, true, 'provider', $own],
+			'stackiq connection marked: a provider keeps the rows that name it' => [
+				self::STACKIQ_CONNECTION_MARKED,
 				true,
 				'provider',
 				['other-open', 'other-provided', 'own-open', 'own-permit'],
 			],
-			'stackiq connection: a consumer reads its own rows and the public ones' => [
-				self::STACKIQ_CONNECTION,
+			'stackiq connection unmarked: a consumer reads its own organisation' => [self::STACKIQ_CONNECTION, true, 'consumer', $own],
+			'stackiq connection marked: a consumer reads its own rows and the public ones' => [
+				self::STACKIQ_CONNECTION_MARKED,
 				true,
 				'consumer',
 				['other-open', 'own-open', 'own-permit'],
 			],
-			'without inheritance a team row matching the public rule stays in organisation' => [
-				[['group' => 'public', 'match' => ['caseType' => 'ct-permit']], self::TEAM_RULE],
+			'without inheritance a team row matching the marked public rule stays in organisation' => [
+				[$publicPermit + ['crossOrganisation' => true], self::TEAM_RULE],
 				false,
 				'team',
 				['own-permit'],
 			],
-			'without public inheritance the public rule does not apply' => [
-				[self::PUBLIC_OPEN, self::TEAM_RULE],
+			'without public inheritance the marked public rule does not apply' => [
+				[self::PUBLIC_OPEN_MARKED, self::TEAM_RULE],
 				false,
 				'team',
 				['own-permit'],
@@ -302,7 +318,7 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 		$this->assertSame(
 			expected: ['own-open', 'own-permit'],
 			actual: $this->visibleRows(
-				schema: $this->schema(read: [self::PUBLIC_OPEN, self::TEAM_RULE], inherit: true),
+				schema: $this->schema(read: [self::PUBLIC_OPEN_MARKED, self::TEAM_RULE], inherit: true),
 				query: ['_multitenancy' => true, '_multitenancy_explicit' => true]
 			)
 		);
@@ -310,34 +326,39 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 	}//end testExplicitMultitenancyKeepsTheStrictFilter()
 
 	/**
-	 * The aggregation decision: the boundary is not waived, and carries a public branch.
+	 * The aggregation decision: the boundary is not waived, and carries a cross-organisation branch.
 	 *
 	 * @return void
 	 */
-	public function testTheAggregationDecisionSeesThePublicBranch(): void {
+	public function testTheAggregationDecisionSeesTheCrossOrganisationBranch(): void {
 		$this->logInAs(caller: 'team');
-		$schema = $this->schema(read: [self::PUBLIC_OPEN, self::TEAM_RULE], inherit: true);
+		$schema = $this->schema(read: [self::PUBLIC_OPEN_MARKED, self::TEAM_RULE], inherit: true);
 
 		$this->assertFalse(condition: $this->searchHandler()->organisationBoundaryWaivedByRbac(schema: $schema));
-		$this->assertTrue(condition: $this->searchHandler()->organisationBoundaryHasPublicBranch(schema: $schema));
+		$this->assertTrue(condition: $this->searchHandler()->organisationBoundaryHasCrossOrganisationBranch(schema: $schema));
 
-	}//end testTheAggregationDecisionSeesThePublicBranch()
+	}//end testTheAggregationDecisionSeesTheCrossOrganisationBranch()
 
 	/**
-	 * An unconditional public rule beside a conditional one gives no branch,
-	 * so the aggregation keeps its native path.
+	 * A marked public rule without match beside a marked conditional one
+	 * lifts the filter and gives no branch, so the aggregation keeps its
+	 * native path; unmarked public rules give no branch either.
 	 *
 	 * @return void
 	 */
 	public function testAnUnconditionalPublicRuleGivesNoBranch(): void {
 		$this->logInAs(caller: 'team');
+		$cases = [
+			'marked matchless' => [self::PUBLIC_ALL_MARKED, self::PUBLIC_OPEN_MARKED, self::TEAM_RULE],
+			'unmarked'         => ['public', ['group' => 'public'], self::PUBLIC_OPEN, self::TEAM_RULE],
+		];
 
-		foreach (['public', ['group' => 'public']] as $unconditional) {
+		foreach ($cases as $name => $read) {
 			$this->assertFalse(
-				condition: $this->searchHandler()->organisationBoundaryHasPublicBranch(
-					schema: $this->schema(read: [$unconditional, self::PUBLIC_OPEN, self::TEAM_RULE], inherit: true)
+				condition: $this->searchHandler()->organisationBoundaryHasCrossOrganisationBranch(
+					schema: $this->schema(read: $read, inherit: true)
 				),
-				message: json_encode($unconditional)
+				message: $name
 			);
 		}
 
@@ -352,20 +373,20 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 		foreach (['anonymous', 'admin'] as $caller) {
 			$this->setUp();
 			$this->logInAs(caller: $caller);
-			$schema = $this->schema(read: [self::PUBLIC_OPEN, self::TEAM_RULE], inherit: true);
+			$schema = $this->schema(read: [self::PUBLIC_OPEN_MARKED, self::TEAM_RULE], inherit: true);
 
 			$this->assertTrue(condition: $this->searchHandler()->organisationBoundaryWaivedByRbac(schema: $schema), message: $caller);
-			$this->assertFalse(condition: $this->searchHandler()->organisationBoundaryHasPublicBranch(schema: $schema), message: $caller);
+			$this->assertFalse(condition: $this->searchHandler()->organisationBoundaryHasCrossOrganisationBranch(schema: $schema), message: $caller);
 		}
 
 	}//end testAnonymousAndAdminGetNoBranch()
 
 	/**
-	 * A single-object read by a team member applies the organisation filter with the public branch.
+	 * A single-object read by a team member applies the organisation filter with the cross-organisation branch.
 	 *
 	 * @return void
 	 */
-	public function testSingleObjectReadByATeamMemberKeepsTheFilterWithAPublicBranch(): void {
+	public function testSingleObjectReadByATeamMemberKeepsTheFilterWithACrossOrganisationBranch(): void {
 		$this->logInAs(caller: 'team');
 
 		$organisation = $this->organisationHandler();
@@ -378,10 +399,10 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 
 		$this->searchHandler(organisation: $organisation)->applyAccessControlToQuery(
 			qb: $qb,
-			schema: $this->schema(read: [self::PUBLIC_OPEN, self::TEAM_RULE], inherit: true)
+			schema: $this->schema(read: [self::PUBLIC_OPEN_MARKED, self::TEAM_RULE], inherit: true)
 		);
 
-	}//end testSingleObjectReadByATeamMemberKeepsTheFilterWithAPublicBranch()
+	}//end testSingleObjectReadByATeamMemberKeepsTheFilterWithACrossOrganisationBranch()
 
 	/**
 	 * A list that asks for the strict filter gets it without the public branch.
@@ -397,7 +418,7 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 
 		$this->searchHandler(organisation: $organisation)->buildFilteredQuery(
 			query: ['_multitenancy' => true, '_multitenancy_explicit' => true],
-			schema: $this->schema(read: [self::PUBLIC_OPEN, self::TEAM_RULE], inherit: true),
+			schema: $this->schema(read: [self::PUBLIC_OPEN_MARKED, self::TEAM_RULE], inherit: true),
 			tableName: 'openregister_table_1_7'
 		);
 
