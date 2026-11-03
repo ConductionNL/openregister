@@ -630,8 +630,7 @@ class DeleteObject {
 
 		// Reset cascade count for root deletions.
 		if ($originalObjectId === null) {
-			$this->lastCascadeCount = 0;
-			$this->lastRetainedTargets = [];
+			[$this->lastCascadeCount, $this->lastRetainedTargets] = [0, []];
 		}
 
 		// Resolve the lookup: when the caller has guaranteed a (register, schema)
@@ -649,14 +648,12 @@ class DeleteObject {
 			preResolved: $preResolved
 		);
 
-		$object = $context['object'];
-
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.ctx');
 
 		// Root deletions: check referential integrity and handle cascade.
 		if ($originalObjectId === null) {
 			$integrityResult = $this->handleIntegrityDeletion(
-				object: $object,
+				object: $context['object'],
 				context: $context,
 				uuid: $uuid
 			);
@@ -670,7 +667,7 @@ class DeleteObject {
 		try {
 			// Pass the already-resolved scope so delete() skips its own re-find.
 			return $this->delete(
-				object: $object,
+				object: $context['object'],
 				permanent: $permanent,
 				register: $this->contextRegisterEntity(context: $context),
 				schema: $this->contextSchemaEntity(context: $context)
