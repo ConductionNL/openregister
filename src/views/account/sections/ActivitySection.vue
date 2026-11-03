@@ -108,7 +108,7 @@ export default {
 		},
 
 		/**
-		 * @param timestamp
+		 * @param {string|number} timestamp
 		 * @spec exclude detail-view timestamp formatting helper for display only
 		 */
 		formatTime(timestamp) {

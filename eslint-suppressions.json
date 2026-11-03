@@ -1164,9 +1164,6 @@
   "src/views/account/sections/ActivitySection.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 1
-    },
-    "jsdoc/require-param-type": {
-      "count": 1
     }
   },
   "src/views/account/sections/AvatarSection.vue": {
@@ -1236,9 +1233,6 @@
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 1
     },
-    "jsdoc/require-param-type": {
-      "count": 1
-    },
     "no-console": {
       "count": 3
     },
@@ -1272,9 +1266,6 @@
   "src/views/logs/SearchTrailIndex.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 1
-    },
-    "jsdoc/require-param-type": {
-      "count": 3
     },
     "no-console": {
       "count": 10
@@ -1388,9 +1379,6 @@
     }
   },
   "src/views/search/SearchIndex.vue": {
-    "jsdoc/require-param-type": {
-      "count": 1
-    },
     "no-console": {
       "count": 4
     }
@@ -1485,9 +1473,6 @@
   },
   "src/views/settings/sections/RbacConfiguration.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    },
-    "jsdoc/require-param-type": {
       "count": 1
     }
   },
