@@ -167,7 +167,7 @@ class MarkImplicitCrossOrganisationReadRules implements IRepairStep {
 	 */
 	private function crossesImplicitly(mixed $rule): bool {
 		$tenancy = new ReadRuleTenancy();
-		if (is_array($rule) === false || $tenancy->isMarked(rule: $rule) === true || isset($rule['user']) === true) {
+		if (is_array($rule) === false || array_key_exists(MatrixRowWhere::CROSS_ORGANISATION_KEY, $rule) === true || isset($rule['user']) === true) {
 			return false;
 		}
 
