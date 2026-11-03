@@ -39,6 +39,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppInfo;
 
+use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AnnotationFixtureService;
+use OCP\IL10N;
 use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -61,6 +63,7 @@ use RuntimeException;
 
 require_once __DIR__ . '/../Mcp/Fixtures/AttributeFixtureService.php';
 require_once __DIR__ . '/../Mcp/Fixtures/CollidingFixtureService.php';
+require_once __DIR__ . '/../Mcp/Fixtures/AnnotationFixtureService.php';
 require_once __DIR__ . '/Fixtures/GlobalOcServerStub.php';
 
 /**
@@ -301,6 +304,27 @@ class AttributeMcpDiscoveryTest extends TestCase {
 		$this->assertContains('pipelinq.logContactmoment', $ids);
 
 	}//end testDeclaredScannableClassInAppContainerIsDiscovered()
+
+	public function testDiscoveredTitlesAreTranslatedThroughTheAppsOwnL10n(): void {
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(static fn (string $text): string => ['Create a task' => 'Taak aanmaken'][$text] ?? $text);
+		$shared = $this->sharedContainer(['dossiq']);
+		$appConers = [
+			'dossiq' => $this->container(
+				[
+					'OCA\\OpenRegister\\Mcp\\IMcpScannableServices::dossiq' => $this->scannableDeclaration([AnnotationFixtureService::class]),
+					IL10N::class => $l10n,
+				]
+			),
+		];
+
+		$providers = [];
+		$this->invokeCollect($shared, $appConers, $this->createMock(LoggerInterface::class), $providers);
+
+		$titles = array_column($providers[0]->getTools(), 'title', 'id');
+		$this->assertSame(['dossiq.createTask' => 'Taak aanmaken'], $titles);
+
+	}//end testDiscoveredTitlesAreTranslatedThroughTheAppsOwnL10n()
 
 	/**
 	 * REGRESSION (#390): the alias present ONLY in OR's shared container — the

@@ -227,9 +227,9 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 	}//end patchRoutes()
 
 	/**
-	 * Review finding (Robert, 30-10): the unfiltered PATCH lookup must not answer
-	 * 409 when the caller can read none of the holders; it decides on the
-	 * caller's own filtered set, as PUT does.
+	 * Review finding (Robert, 30-10): PATCH must not answer 409 when the caller
+	 * can read none of the holders. It reads only the caller's own filtered set,
+	 * as PUT does.
 	 *
 	 * @dataProvider patchRoutes
 	 */
@@ -257,7 +257,7 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 		};
 
 		$this->assertSame(404, $response->getStatus());
-		$this->assertSame([[false, false], [true, true]], $calls);
+		$this->assertSame([[true, true]], $calls, 'PATCH read the object outside the caller\'s own scope');
 		$this->assertStringNotContainsString('ambiguous', json_encode($response->getData()));
 	}
 }//end class

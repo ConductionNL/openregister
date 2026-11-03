@@ -197,6 +197,27 @@ class AccessReviewGateTest extends TestCase {
 	}//end testTheAssigneeIsAdmittedByTheReadGrantsRule()
 
 	/**
+	 * A rule on the record's metadata is matched on the record, not on what its data says.
+	 *
+	 * @return void
+	 */
+	public function testAReadGrantsRuleOnTheSchemaReadsTheRecord(): void {
+		$gate = $this->gateFor(
+			userId: 'tvisser',
+			resolved: ['read' => ['authenticated'], 'readGrants' => [['group' => 'authenticated', 'match' => ['_schema' => '7']]]],
+			hasPermission: static fn (): bool => true
+		);
+
+		$this->record->setSchema('7');
+		$this->record->setObject(['assignee' => 'tvisser', '@self' => ['schema' => '8']]);
+		$this->assertTrue($gate->mayReadGrants($this->record), 'the record schema did not answer');
+
+		$this->record->setSchema('8');
+		$this->record->setObject(['assignee' => 'tvisser', '@self' => ['schema' => '7']]);
+		$this->assertFalse($gate->mayReadGrants($this->record), 'the data answered for the record schema');
+	}//end testAReadGrantsRuleOnTheSchemaReadsTheRecord()
+
+	/**
 	 * A reader of the record without an admitting right is refused.
 	 *
 	 * @return void
@@ -274,6 +295,10 @@ class AccessReviewGateTest extends TestCase {
 			if (is_array($entry) === true && ($entry['group'] ?? null) === $groupId) {
 				$match = ($entry['match'] ?? []);
 				if ($match === [] || (($match['assignee'] ?? null) === '$userId' && ($objectData['assignee'] ?? null) === $userId)) {
+					return true;
+				}
+
+				if (isset($match['_schema']) === true && ($objectData['@self']['schema'] ?? null) === $match['_schema']) {
 					return true;
 				}
 			}

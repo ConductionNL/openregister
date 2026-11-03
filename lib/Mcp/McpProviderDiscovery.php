@@ -404,12 +404,12 @@ class McpProviderDiscovery {
 					continue;
 				}
 
-				$providers[] = new AttributeToolProvider(
+				$providers[] = (new AttributeToolProvider(
 					appId: $appId,
 					entries: $entries,
 					auditTrailMapper: $container->get(AuditTrailMapper::class),
 					logger: $logger
-				);
+				))->translatedBy(appContainer: $appContainer);
 			}//end foreach
 		} catch (\Throwable $e) {
 			$logger->warning(

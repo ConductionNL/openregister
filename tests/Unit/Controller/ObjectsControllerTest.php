@@ -3771,6 +3771,8 @@ class ObjectsControllerTest extends TestCase {
 		);
 		$deleteHandler = $this->createMock(\OCA\OpenRegister\Service\Object\DeleteObject::class);
 		$deleteHandler->method('canDelete')->willReturn($analysis);
+		// The caller reads every referring object.
+		$this->objectService->method('readableDeletionAnalysis')->willReturnArgument(0);
 		$this->objectService->method('getDeleteHandler')->willReturn($deleteHandler);
 
 		$result = $this->controller->canDelete('uuid-123', 'reg1', 'schema1', $this->objectService);

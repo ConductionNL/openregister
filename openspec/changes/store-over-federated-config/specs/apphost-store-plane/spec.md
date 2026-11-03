@@ -3,11 +3,11 @@
 ### Requirement: A store MUST be able to offer configuration, not only objects
 
 A leaf app SHALL be able to declare `store.types`, a list of shareable
-configuration type ids. When it does, the store surface SHALL list what
+configuration type ids. When it does, the marketplace surface SHALL list what
 `FederatedConfigService::discover()` returns for each declared type's topic,
 and each card SHALL carry the type id that produced it.
 
-A store item found this way MAY contain registers, schemas, objects, views,
+A marketplace item found this way MAY contain registers, schemas, objects, views,
 flows, sources and mappings together, because that is what a configuration set
 is. The plane SHALL NOT flatten such an item into objects of one schema.
 

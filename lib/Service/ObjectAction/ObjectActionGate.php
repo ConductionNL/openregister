@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
-use OCA\OpenRegister\Service\Rbac\MatrixRowsFromApps;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCP\IL10N;
 use OCP\IUserSession;
 
@@ -50,16 +50,14 @@ class ObjectActionGate {
 	/**
 	 * Constructor.
 	 *
-	 * @param PermissionHandler  $permissions The authorization block's judge.
-	 * @param IUserSession       $userSession The acting user.
-	 * @param IL10N              $l10n        Picks the reason's language.
-	 * @param MatrixRowsFromApps $appRows     The matrix rows apps provide, for a self-assign grant.
+	 * @param PermissionHandler $permissions The authorization block's judge, and its app matrix rows.
+	 * @param IUserSession      $userSession The acting user.
+	 * @param IL10N             $l10n        Picks the reason's language.
 	 */
 	public function __construct(
 		private readonly PermissionHandler $permissions,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l10n,
-		private readonly MatrixRowsFromApps $appRows,
 	) {
 	}//end __construct()
 
@@ -127,9 +125,35 @@ class ObjectActionGate {
 				userId: $this->userId(),
 				objectOwner: null,
 				_rbac: true,
-				object: $object
+				object: $this->withoutOwnership(object: $object)
 			);
 	}//end mayRun()
+
+	/**
+	 * The object as the permission check sees it for a self-assign: without its owner or owning group.
+	 *
+	 * A private-scope object admits its owner and its owning group for every
+	 * action; for a self-assign that would let owning the object grant it.
+	 *
+	 * @param ObjectEntity|null $object The object, or null for a selection.
+	 *
+	 * @return ObjectEntity|null A copy without owner and owning group.
+	 */
+	private function withoutOwnership(?ObjectEntity $object): ?ObjectEntity {
+		if ($object === null) {
+			return null;
+		}
+
+		$probe = clone $object;
+		$probe->setOwner(null);
+		$authorization = $probe->getAuthorization();
+		if (is_array($authorization) === true) {
+			unset($authorization[ObjectScopeResolver::OWNER_GROUP_KEY]);
+			$probe->setAuthorization($authorization);
+		}
+
+		return $probe;
+	}//end withoutOwnership()
 
 	/**
 	 * Whether the schema names this self-assign action in a rule or in a matrix row, its app rows included.
@@ -150,7 +174,7 @@ class ObjectActionGate {
 			return false;
 		}
 
-		return $this->rowsName(rows: ($this->appRows->withAppRows(schema: $schema, matrix: $matrix)['rows'] ?? null), key: $key);
+		return $this->rowsName(rows: ($this->permissions->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix)['rows'] ?? null), key: $key);
 	}//end selfAssignNamed()
 
 	/**
@@ -188,7 +212,12 @@ class ObjectActionGate {
 		}
 
 		foreach ($rows as $row) {
-			if (is_array($row) === true && in_array($key, (array)($row['actions'] ?? []), true) === true) {
+			if (is_array($row) === false) {
+				continue;
+			}
+
+			$actions = array_map(static fn ($action): string => trim((string)$action), (array)($row['actions'] ?? []));
+			if (in_array($key, $actions, true) === true) {
 				return true;
 			}
 		}
