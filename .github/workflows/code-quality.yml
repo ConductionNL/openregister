@@ -229,6 +229,10 @@ jobs:
       enable-eslint: true
       enable-phpunit: true
       enable-newman: true
+      # An LLM stub plus integriq and hermiq, which chat-streaming and the flow
+      # engine collection need on a fresh instance. A script for the same eval
+      # reason as playwright-seed-command below; the path is relative to server/.
+      newman-seed-command: bash apps/openregister/tests/integration/ci/seed.sh
       # Playwright starts from a deliberately SMALL spec set rather than the
       # whole of tests/e2e (58 files, several of which write fixtures or shell
       # out to occ). A gate that is red on arrival is a gate nobody turns on —
