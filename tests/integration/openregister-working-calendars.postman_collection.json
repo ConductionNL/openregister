@@ -440,6 +440,11 @@
           {
             "key": "Content-Type",
             "value": "application/json"
+          },
+          {
+            "key": "OCS-APIREQUEST",
+            "value": "true",
+            "description": "An API client must send this header: the preview is a CSRF-checked admin endpoint, and basic auth alone answers 412."
           }
         ],
         "url": {
@@ -485,6 +490,11 @@
           {
             "key": "Content-Type",
             "value": "application/json"
+          },
+          {
+            "key": "OCS-APIREQUEST",
+            "value": "true",
+            "description": "An API client must send this header: the preview is a CSRF-checked admin endpoint, and basic auth alone answers 412."
           }
         ],
         "url": {
