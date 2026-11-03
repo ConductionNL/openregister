@@ -22,7 +22,9 @@ malformed, and the only safe reading of a malformed grant is the narrow one.
 
 Shares of scope `register`, `schema` and `query` are unaffected: their breadth IS
 the grant, and the organisation and confidentiality filter remains their guard, on
-the single-object read and on `PUT` and `DELETE` alike.
+the single-object read and on `PUT` and `DELETE` alike. A `query` share reaches by
+id only an object its query selects. A share without an organisation writes
+nothing and serves only objects that carry no organisation.
 
 #### Scenario: An object-scope token cannot read a different object
 
@@ -52,6 +54,20 @@ the single-object read and on `PUT` and `DELETE` alike.
 - **THEN** the response status MUST be `404`
 - **AND** no save or delete MUST reach the object store
 - **AND** a `PUT` that does reach its object MUST store the share's organisation, whatever `@self.organisation` the body names
+
+#### Scenario: A query share reaches by id only what its query selects
+
+- **GIVEN** an accepted outgoing share with `scope: query`, a query filter and `permissions: read-write`
+- **WHEN** `GET`, `PUT` or `DELETE` is called for an id the query does not select
+- **THEN** the response status MUST be `404`
+- **AND** no save or delete MUST reach the object store
+
+#### Scenario: A share without an organisation fails closed
+
+- **GIVEN** an accepted outgoing share whose organisation is null or empty
+- **WHEN** `POST`, `PUT` or `DELETE` is called
+- **THEN** the response status MUST be `403` and nothing MUST be written
+- **AND** a `GET` of an object that carries an organisation MUST answer `404`
 
 #### Scenario: An object-scope share with no objectUri grants nothing
 

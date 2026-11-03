@@ -450,7 +450,7 @@ class FederationController extends Controller {
 	}//end deleteObject()
 
 	/**
-	 * Resolve a share that grants write access (accepted + read-write), or null.
+	 * Resolve a share that grants write access (accepted, read-write, bound to an organisation), or null.
 	 *
 	 * @param string $shareToken The scoped bearer share token.
 	 *
@@ -458,7 +458,7 @@ class FederationController extends Controller {
 	 */
 	private function resolveWritableShare(string $shareToken): ?FederatedShare {
 		$share = $this->resolveAcceptedShare(shareToken: $shareToken);
-		if ($share === null || $share->getPermissions() !== 'read-write') {
+		if ($share === null || $share->getPermissions() !== 'read-write' || (string)$share->getOrganisation() === '') {
 			return null;
 		}
 
@@ -513,7 +513,7 @@ class FederationController extends Controller {
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function reachableObject(FederatedShare $share, string $id): ?array {
-		if ($this->scopeCoversObject(share: $share, id: $id) === false) {
+		if ($this->scopeCoversObject(share: $share, id: $id) === false || $this->queryCoversObject(share: $share, id: $id) === false) {
 			return null;
 		}
 
@@ -535,6 +535,34 @@ class FederationController extends Controller {
 
 		return ($this->applyShareVisibility(objects: [$entity->jsonSerialize()], share: $share)[0] ?? null);
 	}//end reachableObject()
+
+	/**
+	 * Whether a query-scope share's filter selects the single object being addressed.
+	 *
+	 * The collection path serves only what the share's query selects; the
+	 * single-object paths ask the same query, narrowed to this id. Other
+	 * scopes have no query and are covered.
+	 *
+	 * @param FederatedShare $share The share being served.
+	 * @param string         $id    The object id/uuid taken from the URL.
+	 *
+	 * @return boolean Whether the share's query selects this object.
+	 *
+	 * @throws Throwable When the lookup itself fails.
+	 */
+	private function queryCoversObject(FederatedShare $share, string $id): bool {
+		if ($share->getScope() !== 'query') {
+			return true;
+		}
+
+		$config = $this->buildScopeConfig(share: $share);
+		$config['filters']['uuid'] = $id;
+		$config['limit'] = 1;
+
+		$this->setServeContext(share: $share);
+
+		return $this->objectService->findAll(config: $config, _rbac: false, _multitenancy: false) !== [];
+	}//end queryCoversObject()
 
 	/**
 	 * Whether a share's scope actually covers the single object being addressed.
@@ -770,13 +798,12 @@ class FederationController extends Controller {
 			array_filter(
 				$objects,
 				function (array $object) use ($share, $org) {
-					// Organisation guard: never serve another org's objects.
-					if ($org !== null && $org !== '') {
-						$self = ($object['@self'] ?? []);
-						$objOrg = (string)($self['organisation'] ?? $object['organisation'] ?? '');
-						if ($objOrg !== $org) {
-							return false;
-						}
+					// Organisation guard: never serve another org's objects. A share
+					// without an organisation serves only objects without one.
+					$self = ($object['@self'] ?? []);
+					$objOrg = (string)($self['organisation'] ?? $object['organisation'] ?? '');
+					if ($objOrg !== (string)$org) {
+						return false;
 					}
 
 					// Confidentiality guard for non-object scopes (object shares
