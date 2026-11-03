@@ -302,6 +302,28 @@ export function statisticsOrEmpty(store, job) {
 }
 
 /**
+ * A deep copy of a list answer's results, or an empty list when it has none.
+ *
+ * @param {object} data The list answer.
+ * @return {Array<object>} The results.
+ * @spec openspec/specs/audit-trail-immutable/spec.md
+ */
+export function copiedResults(data) {
+	return data.results ? JSON.parse(JSON.stringify(data.results)) : []
+}
+
+/**
+ * A GET request for `requestJson`, with the error text used when the server gives none.
+ *
+ * @param {string} failure The error text.
+ * @return {{method: string, failure: string}} The request.
+ * @spec openspec/specs/audit-trail-immutable/spec.md
+ */
+export function getRequest(failure) {
+	return { method: 'GET', failure }
+}
+
+/**
  * Run a request; a failure is logged and rethrown, wrapped in the `failure`
  * text when one is given.
  *
