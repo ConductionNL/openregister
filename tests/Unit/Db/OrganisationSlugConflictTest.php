@@ -272,7 +272,7 @@ class OrganisationSlugConflictTest extends TestCase {
 	public function testTheServiceDoesNotAdoptTheOrganisationHoldingTheSlug(): void {
 		$mapper = $this->createMock(OrganisationMapper::class);
 		$mapper->expects($this->once())->method('save')->willThrowException(
-			new DbalException("Duplicate entry 'gemeente-a' for key 'openregister_organisations.organisations_slug_unique'")
+			$this->uniqueViolation(message: "Duplicate entry 'gemeente-a' for key 'openregister_organisations.organisations_slug_unique'")
 		);
 		$mapper->expects($this->never())->method('findBySlug');
 		$this->mapper = $mapper;
@@ -281,6 +281,24 @@ class OrganisationSlugConflictTest extends TestCase {
 		$this->expectException(DbalException::class);
 		$this->service()->createOrganisation(name: 'Gemeente A', uuid: self::SECOND_UUID);
 	}//end testTheServiceDoesNotAdoptTheOrganisationHoldingTheSlug()
+
+	/**
+	 * A database failure with this message.
+	 *
+	 * The server's DbalException has a private constructor and is built from a Doctrine
+	 * exception by wrap(), which the test stub of the class does not have. Building it
+	 * without the constructor works against both.
+	 *
+	 * @param string $message The failure's message.
+	 *
+	 * @return DbalException
+	 */
+	private function uniqueViolation(string $message): DbalException {
+		$exception = (new \ReflectionClass(DbalException::class))->newInstanceWithoutConstructor();
+		(new \ReflectionProperty(\Exception::class, 'message'))->setValue($exception, $message);
+
+		return $exception;
+	}//end uniqueViolation()
 
 	/**
 	 * Alice's organisation "Gemeente A", with Bob as a member, created through the service.
