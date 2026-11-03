@@ -1035,10 +1035,11 @@ class SaveObjects {
 		$incoming = $object;
 		unset($incoming['@self']);
 		$stored = ($existing?->getObject() ?? []);
+		$record = ($existing?->getMatchEnvelope() ?? []);
 
 		$unauthorized = $propertyRbac->getUnauthorizedProperties(
 			schema: $schema,
-			object: ($existing?->getMatchEnvelope() ?? []),
+			object: $record,
 			incomingData: $incoming,
 			isCreate: $isCreate
 		);
@@ -1050,7 +1051,7 @@ class SaveObjects {
 			return [$object, null];
 		}
 
-		$omitted = $propertyRbac->collectOmittedProtectedProperties(schema: $schema, incoming: $incoming, stored: $stored);
+		$omitted = $propertyRbac->collectOmittedProtectedProperties(schema: $schema, incoming: $incoming, stored: $record);
 		if ($omitted === []) {
 			return [$object, null];
 		}

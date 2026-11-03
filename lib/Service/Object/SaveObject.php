@@ -4377,6 +4377,10 @@ class SaveObject {
 		?int $folderId,
 		?IUser $currentUser = null,
 	): ObjectEntity {
+		// The stored record as property rules see it, taken before this request's
+		// `@self` is applied to the entity.
+		$storedRecord = $existingObject->getMatchEnvelope();
+
 		// Set @self metadata properties.
 		$this->setSelfMetadata(objectEntity: $existingObject, selfData: $selfData, data: $data, currentUser: $currentUser);
 
@@ -4418,7 +4422,8 @@ class SaveObject {
 		// A property the writer may not read was stripped from what they were
 		// shown, so omitting it is not a request to clear it (openregister#4170);
 		// one they may not update cannot be cleared by omission either, since that
-		// is the write the property rule refuses. Both are carried forward.
+		// is the write the property rule refuses. Both are carried forward. The
+		// rules are asked of the stored record; the values come from $oldData.
 		$omittedWriteOnly = array_values(
 			array_unique(
 				array_merge(
@@ -4426,7 +4431,7 @@ class SaveObject {
 					$this->propertyRbacHandler->collectOmittedProtectedProperties(
 						schema: $schema,
 						incoming: $data,
-						stored: ($oldData ?? [])
+						stored: $storedRecord
 					)
 				)
 			)

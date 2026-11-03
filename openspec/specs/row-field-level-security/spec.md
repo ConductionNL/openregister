@@ -444,6 +444,18 @@ When evaluating property-level authorization match conditions, `ConditionMatcher
 - **AND** body keys named after a metadata field (`_owner`, `_organisation`, ...) MUST NOT reach the match, also when the record's own field is empty
 - **AND** a conditional deny on `{ "_owner": "$userId" }` MUST refuse the record's owner
 
+#### Scenario: Every property rule caller asks the record
+- **GIVEN** a property with an `update` or `read` rule matching `_organisation`, on an `org-b` record whose stored data carries `{ "_organisation": "org-a", "@self": { "organisation": "org-a" } }`
+- **WHEN** the save path decides whether an omitted property is carried forward (single save and bulk row), or the GraphQL update check, the GraphQL read filter, the list render of a record, a merge, a conflict report, an object's history or an access link evaluates the rule
+- **THEN** the rule MUST read the stored record's own metadata, and a request's `@self` MUST NOT count
+- **AND** a value carried forward MUST still come from the stored data
+
+#### Scenario: Published is not record metadata
+- **GIVEN** a rule matching `_published`, and an object that carries its record's `@self` and a body key `_published`
+- **WHEN** the rule is evaluated
+- **THEN** the body key MUST NOT answer it: published is no longer record metadata (see `deprecate-published-metadata`), so the condition is never met and grants nothing
+- **AND** any underscore-prefixed condition on an object that carries `@self` MUST be answered from `@self` alone; only an object without any `@self` falls back to its body
+
 #### Scenario: Non-underscore property does not check @self
 - **GIVEN** object data `{ "status": "open" }`
 - **AND** match condition references `status`

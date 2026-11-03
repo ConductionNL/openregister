@@ -159,6 +159,9 @@ class SaveObjectAdditionalTest extends TestCase {
 	/** @var MockObject&PropertyRbacHandler */
 	private $propertyRbacHandler;
 
+	/** @var TranslationHandler&MockObject */
+	private $translationHandler;
+
 	/** @var MockObject&LoggerInterface */
 	private $logger;
 
@@ -208,6 +211,8 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($this->mockUser);
 		$this->organisationService->method('getOrganisationForNewEntity')->willReturn('org-123');
 
+		$this->translationHandler = $this->createMock(TranslationHandler::class);
+
 		$this->saveObject = new SaveObject(
 			$this->objectEntityMapper,
 			$this->unifiedObjectMapper,
@@ -224,7 +229,7 @@ class SaveObjectAdditionalTest extends TestCase {
 			$this->settingsService,
 			$this->propertyRbacHandler,
 			$this->createMock(ComputedFieldHandler::class),
-			$this->createMock(TranslationHandler::class),
+			$this->translationHandler,
 			$this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
 			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
 			$this->logger,
@@ -1244,6 +1249,9 @@ class SaveObjectAdditionalTest extends TestCase {
 		$existingObject->setObject(['name' => 'Original', '_organisation' => 'org-a', '@self' => ['organisation' => 'org-a']]);
 
 		$this->unifiedObjectMapper->method('find')->willReturn($existingObject);
+		$this->translationHandler->method('normalizeTranslationsForSave')->willReturnCallback(
+			static fn (...$args): array => $args[0]
+		);
 
 		$seen = null;
 		$this->propertyRbacHandler->method('getUnauthorizedProperties')->willReturnCallback(
