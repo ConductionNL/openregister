@@ -48,6 +48,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Serializer\RegisterSerializer
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
  */
 class RegistersControllerIndexGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/registers-index-golden.json';
@@ -78,6 +79,7 @@ class RegistersControllerIndexGoldenTest extends TestCase {
 			'anonymous sees only public registers' => [['params' => [], 'anonymous' => true]],
 			'anonymous with a forged userId' => [['params' => ['userId' => 'alice', 'requestedBy' => 'alice'], 'anonymous' => true]],
 			'anonymous with stats' => [['params' => $stats, 'anonymous' => true]],
+			'signed-in non-admin with stats' => [['params' => $stats, 'admin' => false]],
 		];
 	}
 
@@ -125,6 +127,9 @@ class RegistersControllerIndexGoldenTest extends TestCase {
 			return ['total' => 3];
 		});
 
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('isAdmin')->willReturn($case['admin'] ?? true);
+
 		$logger = $this->createMock(LoggerInterface::class);
 		$controller = new RegistersController(
 			'openregister',
@@ -144,7 +149,7 @@ class RegistersControllerIndexGoldenTest extends TestCase {
 			$this->createMock(IAppManager::class),
 			$this->createMock(OasService::class),
 			$this->createMock(ContainerInterface::class),
-			$this->createMock(IGroupManager::class),
+			$groupManager,
 			$this->createMock(RegisterCacheHandler::class),
 			new RegisterSerializer($schemaMapper, $logger),
 			$this->createMock(MigrationPackService::class)

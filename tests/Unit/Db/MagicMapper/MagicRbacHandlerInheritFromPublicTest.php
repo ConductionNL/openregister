@@ -514,11 +514,11 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 
 	/**
 	 * With inheritFromPublic=true the authenticated user qualifies for the
-	 * 'public' rule, so the bypass is correctly granted.
+	 * plain 'public' rule, which keeps them inside their organisation.
 	 *
 	 * @return void
 	 */
-	public function testBypassAuthPublicRuleInheritTrueBypasses(): void {
+	public function testBypassAuthPlainPublicRuleInheritTrueDoesNotBypass(): void {
 		$this->mockUser(uid: 'alice', groups: ['users']);
 		$schema = $this->createSchema(
 			authorization: [
@@ -527,11 +527,53 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 			]
 		);
 
+		$this->assertFalse(
+			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(schema: $schema, action: 'read')
+		);
+
+	}//end testBypassAuthPlainPublicRuleInheritTrueDoesNotBypass()
+
+	/**
+	 * A marked 'public' rule without match takes an authenticated user who
+	 * inherits public rights across organisations.
+	 *
+	 * @return void
+	 */
+	public function testBypassAuthMarkedPublicRuleInheritTrueBypasses(): void {
+		$this->mockUser(uid: 'alice', groups: ['users']);
+		$schema = $this->createSchema(
+			authorization: [
+				'inheritFromPublic' => true,
+				'read' => [['group' => 'public', 'crossOrganisation' => true], 'authenticated'],
+			]
+		);
+
 		$this->assertTrue(
 			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(schema: $schema, action: 'read')
 		);
 
-	}//end testBypassAuthPublicRuleInheritTrueBypasses()
+	}//end testBypassAuthMarkedPublicRuleInheritTrueBypasses()
+
+	/**
+	 * A marked 'public' rule does not take an authenticated user across
+	 * organisations when the schema does not inherit public rights.
+	 *
+	 * @return void
+	 */
+	public function testBypassAuthMarkedPublicRuleInheritFalseDoesNotBypass(): void {
+		$this->mockUser(uid: 'alice', groups: ['users']);
+		$schema = $this->createSchema(
+			authorization: [
+				'inheritFromPublic' => false,
+				'read' => [['group' => 'public', 'crossOrganisation' => true]],
+			]
+		);
+
+		$this->assertFalse(
+			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(schema: $schema, action: 'read')
+		);
+
+	}//end testBypassAuthMarkedPublicRuleInheritFalseDoesNotBypass()
 
 	/**
 	 * Anonymous users always qualify for 'public', so the bypass holds even when
@@ -553,6 +595,26 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 		);
 
 	}//end testBypassAnonPublicRuleInheritFalseStillBypasses()
+
+	/**
+	 * An anonymous caller on a schema whose own rules do not let `public`
+	 * read every row does not lift the organisation filter.
+	 *
+	 * @return void
+	 */
+	public function testBypassAnonWithoutAnUnconditionalPublicRuleDoesNotBypass(): void {
+		$this->mockUser(uid: null);
+		$schema = $this->createSchema(
+			authorization: [
+				'read' => ['hr', ['group' => 'public', 'match' => ['status' => 'open']]],
+			]
+		);
+
+		$this->assertFalse(
+			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(schema: $schema, action: 'read')
+		);
+
+	}//end testBypassAnonWithoutAnUnconditionalPublicRuleDoesNotBypass()
 
 	/**
 	 * A conditional 'public' rule with a non-_organisation match must also be
