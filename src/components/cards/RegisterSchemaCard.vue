@@ -776,7 +776,7 @@ export default {
 
 	watch: {
 		/**
-		 * @param val
+		 * @param {boolean} val
 		 * @spec exclude UI handler/computed dialog-open trigger
 		 */
 		showEditRegisterDialog(val) {
@@ -819,7 +819,7 @@ export default {
 		},
 
 		/**
-		 * @param schemas
+		 * @param {Array<object|string|number>} schemas
 		 * @spec exclude computed mapping of schema ids to select options, UI plumbing
 		 */
 		getSchemaSelectValue(schemas) {
@@ -835,7 +835,7 @@ export default {
 		},
 
 		/**
-		 * @param formData
+		 * @param {object} formData
 		 * @spec exclude store passthrough saving register from dialog + refresh emit, contract owned by register capability
 		 */
 		async onSaveRegister(formData) {
@@ -917,7 +917,7 @@ export default {
 		},
 
 		/**
-		 * @param schema
+		 * @param {object} schema
 		 * @spec exclude computed read of schema property table mapping for icon display, UI plumbing
 		 */
 		hasMagicMapping(schema) {
@@ -931,7 +931,7 @@ export default {
 		},
 
 		/**
-		 * @param schema
+		 * @param {object} schema
 		 * @spec exclude computed active-object count from schema stats for display, UI plumbing
 		 */
 		getSchemaObjectCount(schema) {
@@ -944,7 +944,7 @@ export default {
 		},
 
 		/**
-		 * @param schema
+		 * @param {object} schema
 		 * @spec exclude API passthrough triggering magic-table sync with toast; sync contract owned by magic-table capability
 		 */
 		async syncMagicTable(schema) {
@@ -1036,8 +1036,8 @@ export default {
 		},
 
 		/**
-		 * @param schema
-		 * @param configurationType
+		 * @param {object} schema
+		 * @param {string} configurationType
 		 * @spec exclude API passthrough toggling schema magic/blob config with toast; schema contract owned by schema capability
 		 */
 		async setSchemaConfiguration(schema, configurationType) {
@@ -1134,7 +1134,7 @@ export default {
 		},
 
 		/**
-		 * @param schema
+		 * @param {object} schema
 		 * @spec exclude API passthrough triggering object validation with toast; validation contract owned by oas-validation capability
 		 */
 		async validateSchemaObjects(schema) {
@@ -1203,8 +1203,8 @@ export default {
 		},
 
 		/**
-		 * @param schema
-		 * @param hardDelete
+		 * @param {object} schema
+		 * @param {boolean} hardDelete
 		 * @spec exclude confirm-dialog + bulk-delete API passthrough with toast; bulk-delete contract owned by scoped-object-delete-api capability
 		 */
 		async deleteSchemaObjects(schema, hardDelete = false) {
@@ -1343,7 +1343,7 @@ export default {
 		},
 
 		/**
-		 * @param schema
+		 * @param {object} schema
 		 * @spec exclude confirm-dialog + schema-delete API passthrough with toast; schema contract owned by schema capability
 		 */
 		async removeSchemaFromRegister(schema) {
