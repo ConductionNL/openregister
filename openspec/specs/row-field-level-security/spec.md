@@ -441,6 +441,14 @@ When evaluating property-level authorization match conditions, `ConditionMatcher
 - **AND** a permission check MUST build `@self.organisation` from the record's own organisation, never from an `@self` block inside the record's data
 - **AND** the incoming data of a create check MUST NOT carry underscore-prefixed keys into the match
 
+#### Scenario: A rule on record metadata reads the record
+- **GIVEN** a record owned by `bob` in `org-b` whose data carries `{ "_owner": "alice", "@self": { "owner": "alice", "organisation": "org-a" } }`
+- **AND** a rule matching `_owner`, `_organisation`, `_schema` or `_register`
+- **WHEN** a permission check, the grants report, a related-object or global-search filter, or a property read rule evaluates it
+- **THEN** `@self` MUST hold the record's own metadata and replace any `@self` block in the data
+- **AND** body keys named after a metadata field (`_owner`, `_organisation`, ...) MUST NOT reach the match, also when the record's own field is empty
+- **AND** a conditional deny on `{ "_owner": "$userId" }` MUST refuse the record's owner
+
 #### Scenario: Non-underscore property does not check @self
 - **GIVEN** object data `{ "status": "open" }`
 - **AND** match condition references `status`
