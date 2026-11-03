@@ -4409,29 +4409,21 @@ class ImportHandler {
 
 
 	/**
-	 * Start a fresh list of the schema parts the shipped-baseline guard keeps local.
+	 * The schema parts the shipped-baseline guard kept local since the last call, and a fresh list.
 	 *
-	 * Called before an import whose result reports them, so one import never
-	 * reports another's.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
-	 */
-	public function startKeptLocalReport(): void {
-		$this->keptLocal = [];
-	}//end startKeptLocalReport()
-
-	/**
-	 * The schema parts the guard kept local since startKeptLocalReport().
+	 * Called once before an import whose result reports them, to drop what an
+	 * earlier import left, and once after it for the report.
 	 *
 	 * @return array<int, array{slug: string, paths: array<int, string>}> One entry per schema.
 	 *
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
-	public function keptLocalReport(): array {
-		return $this->keptLocal;
-	}//end keptLocalReport()
+	public function takeKeptLocalReport(): array {
+		$report = $this->keptLocal;
+		$this->keptLocal = [];
+
+		return $report;
+	}//end takeKeptLocalReport()
 
 	/**
 	 * Import configuration from an app's JSON data.
@@ -4478,7 +4470,7 @@ class ImportHandler {
 
 			// Run under its own import job id so the objects it creates can be
 			// removed by job later (a setup wizard's "remove this example set").
-			$this->startKeptLocalReport();
+			$this->takeKeptLocalReport();
 			$result = $this->importFromJsonAsJob(
 				data: $import->data,
 				configuration: $configuration,
@@ -4486,7 +4478,7 @@ class ImportHandler {
 				version: $version,
 				force: $force
 			);
-			$result['keptLocal'] = ['schemas' => $this->keptLocalReport()];
+			$result['keptLocal'] = ['schemas' => $this->takeKeptLocalReport()];
 
 			$update = new ImportedConfigurationUpdate(configuration: $configuration, result: $result);
 			if (count($result['registers']) > 0 || count($result['schemas']) > 0 || count($result['objects']) > 0) {

@@ -113,6 +113,13 @@ class SelectiveImportTest extends TestCase {
 	private array $keptLocal = [];
 
 	/**
+	 * What the guard keeps local while the import runs.
+	 *
+	 * @var \Closure
+	 */
+	private \Closure $onImport;
+
+	/**
 	 * The configuration mapper double.
 	 *
 	 * @var ConfigurationMapper&MockObject
@@ -133,6 +140,8 @@ class SelectiveImportTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
+		$this->onImport = static function (): void {
+		};
 
 		$this->configuration = new Configuration();
 		$this->configuration->setId(1);
@@ -165,20 +174,16 @@ class SelectiveImportTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 
 		$importHandler = $this->createMock(ImportHandler::class);
-		$importHandler->method('startKeptLocalReport')->willReturnCallback(
-			function (): void {
-				$this->steps[] = 'start';
-			}
-		);
-		$importHandler->method('keptLocalReport')->willReturnCallback(
+		$importHandler->method('takeKeptLocalReport')->willReturnCallback(
 			function (): array {
-				$this->steps[] = 'report';
-				return $this->keptLocal;
+				$this->steps[] = 'take';
+				return array_splice($this->keptLocal, 0);
 			}
 		);
 		$importHandler->method('importFromJson')->willReturnCallback(
 			function (array $data) {
 				$this->steps[] = 'import';
+				($this->onImport)();
 				$this->imported[] = $data;
 				$result = ['registers' => [], 'schemas' => [], 'objects' => [], 'endpoints' => [], 'sources' => [],
 					'mappings' => [], 'jobs' => [], 'synchronizations' => [], 'rules' => []];
@@ -390,11 +395,15 @@ class SelectiveImportTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheReimportReportsWhatTheGuardKeptLocal(): void {
-		$this->keptLocal = [['slug' => 'case', 'paths' => ['authorization']]];
+		$service = $this->service([self::remote()]);
+		$this->keptLocal = [['slug' => 'earlier', 'paths' => ['required']]];
+		$this->onImport = function (): void {
+			$this->keptLocal = [['slug' => 'case', 'paths' => ['authorization']]];
+		};
 
-		$result = $this->service([self::remote()])->importConfigurationWithSelection(configuration: $this->configuration, selection: []);
+		$result = $service->importConfigurationWithSelection(configuration: $this->configuration, selection: []);
 
-		$this->assertSame(['schemas' => [['slug' => 'case', 'paths' => ['authorization']]]], $result['keptLocal']);
-		$this->assertSame(['start', 'import', 'report'], $this->steps, 'the list is started before the import and read after it');
+		$this->assertSame(['schemas' => [['slug' => 'case', 'paths' => ['authorization']]]], $result['keptLocal'], 'an earlier import is not reported');
+		$this->assertSame(['take', 'import', 'take'], $this->steps, 'the list is emptied before the import and read after it');
 	}//end testTheReimportReportsWhatTheGuardKeptLocal()
 }//end class

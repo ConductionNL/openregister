@@ -252,4 +252,17 @@ class ImportHandlerKeptLocalReportTest extends TestCase {
 		$this->assertCount(1, $first['keptLocal']['schemas']);
 		$this->assertSame(['schemas' => []], $second['keptLocal']);
 	}//end testAnImportWithoutConflictsReportsNone()
+	/**
+	 * A conflict kept by an import outside an app import is not reported by the next app import.
+	 *
+	 * @return void
+	 */
+	public function testAnEarlierImportIsNotReportedByTheNextAppImport(): void {
+		$handler = $this->handler(definitions: [self::incoming(authorization: self::BASELINE)]);
+		$handler->importSchema(data: self::incoming(authorization: self::SHIPPED), slugsAndIdsMap: [], appId: 'dossiq', version: '0.20.90');
+
+		$result = $handler->importFromApp(appId: 'dossiq', data: [], version: '0.20.91');
+
+		$this->assertSame(['schemas' => []], $result['keptLocal']);
+	}//end testAnEarlierImportIsNotReportedByTheNextAppImport()
 }//end class
