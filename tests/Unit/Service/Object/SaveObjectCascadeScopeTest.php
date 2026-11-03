@@ -56,6 +56,14 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Exception\NotAuthorizedException
+ * @uses   \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectVersionHandler
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugBatch
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugClientValue
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
  */
 class SaveObjectCascadeScopeTest extends TestCase {
 
