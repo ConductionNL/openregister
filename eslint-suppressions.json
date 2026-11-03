@@ -1368,7 +1368,7 @@
   },
   "src/store/modules/translations.js": {
     "no-console": {
-      "count": 4
+      "count": 3
     }
   },
   "src/store/modules/views.js": {
