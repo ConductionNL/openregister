@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use OCA\OpenRegister\Service\Rbac\MemberOfResolver;
+use OCA\OpenRegister\Service\Rbac\RecordMetadataConditions;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -55,6 +56,13 @@ class ConditionMatcher {
 	 * @var array<string, string|null>
 	 */
 	private array $cachedActiveOrg = [];
+
+	/**
+	 * Reads which metadata keys a record carries.
+	 *
+	 * @var RecordMetadataConditions
+	 */
+	private readonly RecordMetadataConditions $metadataConditions;
 
 	/**
 	 * Supported `$user.<property>` dot-path tokens.
@@ -123,6 +131,7 @@ class ConditionMatcher {
 		private readonly ?IGroupManager $groupManager = null,
 		private readonly ?MemberOfResolver $memberOfResolver = null,
 	) {
+		$this->metadataConditions = new RecordMetadataConditions(logger: $logger);
 	}//end __construct()
 
 	/**
@@ -142,8 +151,29 @@ class ConditionMatcher {
 			}
 		}//end foreach
 
-		return true;
+		// A condition on metadata no record carries is never met, also where a
+		// missing value would satisfy it (`null`, `$exists: false`).
+		return $this->namesUnknownMetadata(match: $match, object: $object) === false;
 	}//end objectMatchesConditions()
+
+	/**
+	 * Whether a match clause names record metadata that no record carries
+	 *
+	 * Such a condition can never match a record, so every caller fails closed
+	 * on it: {@see objectMatchesConditions()} answers false, so an allow grants
+	 * nothing, and a deny caller treats it as selecting the row. Each schema and
+	 * key is logged once per matcher.
+	 *
+	 * @param array $match  Match conditions
+	 * @param array $object The object being evaluated, for the schema its `@self` names
+	 *
+	 * @return bool True when at least one condition names unknown metadata
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	public function namesUnknownMetadata(array $match, array $object = []): bool {
+		return $this->metadataConditions->refuses(match: $match, object: $object);
+	}//end namesUnknownMetadata()
 
 	/**
 	 * Filter out organisation matching for create operations

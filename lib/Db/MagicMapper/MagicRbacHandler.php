@@ -425,8 +425,9 @@ class MagicRbacHandler {
 	 *     conditional denial that could be compiled.
 	 *
 	 * A conditional denial that will not compile denies everything rather than
-	 * nothing. That over-denies, which is visible the moment somebody looks for
-	 * a row; the other direction leaks, which is not.
+	 * nothing, and so does one on metadata no record carries. That over-denies,
+	 * which is visible the moment somebody looks for a row; the other direction
+	 * leaks, which is not.
 	 *
 	 * STAGING (D15). The deny does not ship enforcing. Below `enforcing` this
 	 * emitter adds no predicate, because a staged deny that still removed rows
@@ -498,7 +499,9 @@ class MagicRbacHandler {
 		) as $denial) {
 			$rule = $denial['rule'];
 			$match = null;
-			if (is_array($rule) === true && is_array(($rule['match'] ?? null)) === true) {
+			if (is_array($rule) === true && is_array(($rule['match'] ?? null)) === true
+				&& $this->conditionMatcher->namesUnknownMetadata(match: $rule['match']) === false
+			) {
 				$match = $this->buildMatchConditionsSql(match: $rule['match'], columnPrefix: $columnPrefix);
 			}
 
@@ -1106,12 +1109,18 @@ class MagicRbacHandler {
 	/**
 	 * Build SQL conditions for match criteria
 	 *
+	 * A clause on metadata no record carries admits no row.
+	 *
 	 * @param IQueryBuilder $qb Query builder
 	 * @param array $match Match conditions
 	 *
 	 * @return mixed SQL expression or null if invalid
 	 */
 	private function buildMatchConditions(IQueryBuilder $qb, array $match): mixed {
+		if ($this->conditionMatcher->namesUnknownMetadata(match: $match) === true) {
+			return $this->impossibleCondition(qb: $qb);
+		}
+
 		$conditions = [];
 
 		foreach ($match as $property => $value) {
@@ -1760,10 +1769,8 @@ class MagicRbacHandler {
 				continue;
 			}
 
-			if ($this->conditionMatcher->objectMatchesConditions(
-				object: $objectData,
-				match: $rule['match']
-			) === true
+			if ($this->conditionMatcher->namesUnknownMetadata(match: $rule['match'], object: $objectData) === true
+				|| $this->conditionMatcher->objectMatchesConditions(object: $objectData, match: $rule['match']) === true
 			) {
 				return true;
 			}
@@ -2263,6 +2270,8 @@ class MagicRbacHandler {
 	/**
 	 * Build SQL conditions for match criteria.
 	 *
+	 * A clause on metadata no record carries admits no row.
+	 *
 	 * @param array $match Match conditions.
 	 * @param string $columnPrefix Table alias to qualify each column with, empty for an unaliased
 	 *                             UNION member. Unqualified, a column name still parses inside a
@@ -2272,6 +2281,10 @@ class MagicRbacHandler {
 	 * @return string|null SQL expression or null if invalid.
 	 */
 	private function buildMatchConditionsSql(array $match, string $columnPrefix = ''): ?string {
+		if ($this->conditionMatcher->namesUnknownMetadata(match: $match) === true) {
+			return self::IMPOSSIBLE_SQL_CONDITION;
+		}
+
 		$conditions = [];
 
 		foreach ($match as $property => $value) {

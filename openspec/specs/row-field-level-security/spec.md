@@ -461,6 +461,36 @@ When evaluating property-level authorization match conditions, `ConditionMatcher
 - **THEN** the body key MUST NOT answer it: published is no longer record metadata (see `deprecate-published-metadata`), so the condition is never met and grants nothing
 - **AND** any underscore-prefixed condition on an object that carries `@self` MUST be answered from `@self` alone; only an object without any `@self` falls back to its body
 
+### Requirement: A condition on metadata no record carries MUST be refused at save and fail closed when stored
+An underscore-prefixed `match` key names record metadata. The metadata a record carries is the set of fields of its `@self` envelope (`ObjectEntity::getMatchEnvelope()`), read from the entity rather than from a hand-kept list. A condition on any other underscore-prefixed key (`_published`, `_depublished`, a typo) can never match a record. Saving a schema, a property rule or a register whose grant or deny rules carry such a condition MUST be refused with a message that names the key, the action, the principal and the schema, property or register. A rule stored before this check MUST fail closed when evaluated: a deny on it denies, an allow on it grants nothing, on the single-object path, the relation path and the list query alike. Each schema and key MUST be logged once per request. `occ openregister:rbac:unknown-metadata-conditions` MUST list the stored schemas and registers that carry such a condition, without changing them.
+
+#### Scenario: A schema rule on `_published` is refused at save
+- **GIVEN** a schema whose `read` rule for group `public` matches `{ "_published": { "$lte": "$now" } }`
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with a message naming `_published`, the `read` rule, group `public` and the schema
+- **AND** the same holds for a deny entry, for a property's rule, and for a register's rule
+- **AND** a rule matching `_organisation`, `_owner` or another `@self` field MUST save
+
+#### Scenario: A stored deny on unknown metadata denies
+- **GIVEN** a stored schema whose `deny.update` entry for group `editors` matches `_published`
+- **WHEN** a member of `editors` updates a record, through the single-object check or the relation path
+- **THEN** the update MUST be denied
+- **AND** the list query for that caller MUST return no rows
+- **AND** the refusal MUST be logged once with the schema id and the key
+
+#### Scenario: A stored allow on unknown metadata grants nothing
+- **GIVEN** a stored rule for group `editors` matching `{ "_published": null }` or `{ "_published": { "$exists": false } }`
+- **WHEN** it is evaluated against a record, on the single-object path or as a list predicate
+- **THEN** it MUST NOT grant, although the record has no such value
+- **AND** the list predicate MUST NOT reference a `_published` column
+
+#### Scenario: Stored rules are reported, not rewritten
+- **GIVEN** stored schemas and registers, some with a condition on unknown metadata
+- **WHEN** an administrator runs `occ openregister:rbac:unknown-metadata-conditions`
+- **THEN** it MUST print one line per such condition, naming the schema or register, the rule and the key, and exit 1
+- **AND** it MUST NOT change any schema or register
+- **AND** on an instance without such conditions it MUST say so and exit 0
+
 #### Scenario: Non-underscore property does not check @self
 - **GIVEN** object data `{ "status": "open" }`
 - **AND** match condition references `status`
