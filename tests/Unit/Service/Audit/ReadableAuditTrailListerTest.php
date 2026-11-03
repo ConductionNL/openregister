@@ -227,8 +227,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 		return new ReadableAuditTrailLister(
 			auditTrailMapper: $auditMapper,
 			objectMapper: $objectMapper,
-			history: $this->history(located: $located, readable: $readable, groups: $groups),
-			readEvents: ($reads ?? $this->readsShown()),
+			history: $this->history(located: $located, readable: $readable, groups: $groups, reads: $reads),
 			cursors: $this->auditCursors()
 		);
 	}//end lister()
@@ -239,10 +238,11 @@ class ReadableAuditTrailListerTest extends TestCase {
 	 * @param array<ObjectEntity> $located  The objects the read check may return.
 	 * @param array<string, bool> $readable The read verdicts, by object uuid.
 	 * @param array<int, string>  $groups   The caller's groups.
+	 * @param ReadEventVisibility|null $reads The read-event rule, or one that shows reads.
 	 *
 	 * @return ObjectHistoryForReaders The history reader.
 	 */
-	private function history(array $located, array $readable, array $groups): ObjectHistoryForReaders {
+	private function history(array $located, array $readable, array $groups, ?ReadEventVisibility $reads = null): ObjectHistoryForReaders {
 		$byUuid = [];
 		foreach ($located as $object) {
 			$byUuid[$object->getUuid()] = $object;
@@ -309,7 +309,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			new HistoryEntryRedactor($properties),
 			$registerMapper,
 			$purposeGuard,
-			$this->readsShown()
+			($reads ?? $this->readsShown())
 		);
 	}//end history()
 
@@ -410,7 +410,6 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $objectMapper,
 			history: $history,
-			readEvents: $this->readsShown(),
 			cursors: $this->auditCursors()
 		))->page(userId: 'alice', limit: 20);
 
@@ -482,7 +481,6 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $objectMapper,
 			history: $reader,
-			readEvents: $this->readsShown(),
 			cursors: $this->auditCursors()
 		))->page(userId: 'alice', limit: 20);
 
@@ -642,7 +640,6 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $this->createMock(MagicMapper::class),
 			history: $this->createMock(ObjectHistoryForReaders::class),
-			readEvents: $this->readsShown(),
 			cursors: $this->auditCursors()
 		);
 
@@ -698,7 +695,6 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $objectMapper,
 			history: $reader,
-			readEvents: $this->readsShown(),
 			cursors: $this->auditCursors()
 		))->page(userId: 'alice', limit: 20);
 
@@ -725,7 +721,6 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $objectMapper,
 			history: $history,
-			readEvents: $this->readsShown(),
 			cursors: $this->auditCursors()
 		))->page(userId: 'alice', limit: 20);
 
@@ -754,7 +749,6 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $objectMapper,
 			history: $history,
-			readEvents: $this->readsShown(),
 			cursors: $this->auditCursors()
 		))->page(userId: 'alice', limit: 20);
 
@@ -815,7 +809,6 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $objectMapper,
 			history: $history,
-			readEvents: $this->readsShown(),
 			cursors: $this->auditCursors()
 		);
 
@@ -1043,7 +1036,6 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $objectMapper,
 			history: $history,
-			readEvents: $this->readsShown(),
 			cursors: $this->auditCursors()
 		))->page(userId: 'alice', limit: 20);
 

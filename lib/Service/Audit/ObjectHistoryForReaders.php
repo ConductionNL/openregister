@@ -308,6 +308,19 @@ class ObjectHistoryForReaders {
 	}//end registerOf()
 
 	/**
+	 * The rule on who may see read entries that this history applies.
+	 *
+	 * A list of many objects' entries applies the same rule as one object's history.
+	 *
+	 * @return ReadEventVisibility The rule.
+	 *
+	 * @spec openspec/changes/audit-read-events-visible-to/specs/audit-trail-immutable/spec.md#requirement-read-entries-are-shown-only-to-the-groups-named-for-them
+	 */
+	public function readEvents(): ReadEventVisibility {
+		return $this->readEvents;
+	}//end readEvents()
+
+	/**
 	 * Drop the filter or sort columns a reader may not use.
 	 *
 	 * @param array<string, mixed> $columns Column map from the request.

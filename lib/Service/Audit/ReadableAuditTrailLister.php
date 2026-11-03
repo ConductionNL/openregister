@@ -109,15 +109,14 @@ class ReadableAuditTrailLister {
 	 *
 	 * @param AuditTrailMapper        $auditTrailMapper Reads the candidate rows.
 	 * @param MagicMapper             $objectMapper     Locates an entry's object across the magic tables.
-	 * @param ObjectHistoryForReaders $history          Reads each object and redacts its entries as its history does.
-	 * @param ReadEventVisibility     $readEvents       Whether the caller may see who read an object.
+	 * @param ObjectHistoryForReaders $history          Reads each object and redacts its entries as its history does,
+	 *                                                  and holds the rule on who may see read entries.
 	 * @param ReadableAuditCursor     $cursors          Seals the raw-trail offset a client is handed.
 	 */
 	public function __construct(
 		private readonly AuditTrailMapper $auditTrailMapper,
 		private readonly MagicMapper $objectMapper,
 		private readonly ObjectHistoryForReaders $history,
-		private readonly ReadEventVisibility $readEvents,
 		private readonly ReadableAuditCursor $cursors,
 	) {
 	}//end __construct()
@@ -170,7 +169,7 @@ class ReadableAuditTrailLister {
 		// is matched against what the caller is given, after redaction: matched
 		// in SQL on the stored `changed`, it would tell the caller whether a
 		// hidden property ever held the term.
-		$this->withReads = $this->readEvents->maySeeReadEvents(userId: $userId);
+		$this->withReads = $this->history->readEvents()->maySeeReadEvents(userId: $userId);
 		$this->search = trim((string)$search);
 		$filters = $this->history->readerColumns(columns: $filters);
 
@@ -278,7 +277,7 @@ class ReadableAuditTrailLister {
 			return false;
 		}
 
-		if ($this->withReads === false && $this->readEvents->isReadAction(action: $entry->getAction()) === true) {
+		if ($this->withReads === false && $this->history->readEvents()->isReadAction(action: $entry->getAction()) === true) {
 			return false;
 		}
 

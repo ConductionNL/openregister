@@ -289,7 +289,6 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 				$this->createMock(originalClassName: PurposeGuard::class),
 				$reads
 			),
-			readEvents: $reads,
 			cursors: $this->auditCursors()
 		);
 		$encoded = (string)json_encode(value: $lister->page(userId: 'alice', limit: 20));
