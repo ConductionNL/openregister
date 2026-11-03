@@ -497,6 +497,29 @@ class ReadableAuditTrailListerTest extends TestCase {
 	}//end testAPropertyHiddenFromTheCallerIsNotInTheChangeSet()
 
 	/**
+	 * A property the object no longer holds stays hidden in the rows of its history.
+	 *
+	 * The read rule is decided on the stored object, and a cleared property is
+	 * not in it any more, but its old values are still in the change set.
+	 *
+	 * @return void
+	 */
+	public function testAPropertyTheObjectNoLongerHoldsStaysHidden(): void {
+		$object = $this->object(uuid: self::READABLE);
+		$object->setObject(['titel' => 'Nieuw']);
+
+		$page = $this->lister(
+			entries: [$this->entry(objectUuid: self::READABLE)],
+			located: [$object],
+			readable: [self::READABLE => true]
+		)->page(userId: 'alice', limit: 20);
+
+		$this->assertCount(1, $page['results']);
+		$this->assertArrayNotHasKey('interneAantekening', $page['results'][0]['changed']);
+		$this->assertStringNotContainsString('klokkenluider', (string)json_encode($page));
+	}//end testAPropertyTheObjectNoLongerHoldsStaysHidden()
+
+	/**
 	 * A caller the property rule names does see it.
 	 *
 	 * @return void
