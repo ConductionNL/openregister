@@ -758,11 +758,17 @@ class ObjectActionSelfAssignTest extends TestCase {
 		$answers = [];
 		foreach (['olga', 'bram', 'root'] as $uid) {
 			$this->uid = $uid;
-			$answers[$uid] = $this->take(schema: $schema, object: clone $object)['status'];
+			$answers[$uid] = $this->take(schema: $schema, object: $object)['status'];
+			$this->assertSame('olga', $object->getOwner(), 'the object itself keeps its owner');
+			$this->assertSame(['ownerGroup' => 'others'], $object->getAuthorization(), 'the object itself keeps its owning group');
 		}
 
 		$this->assertSame(['olga' => 403, 'bram' => 403, 'root' => 200], $answers, 'the owner and the owning group are refused; an administrator holds every right');
-		$this->assertSame('olga', $object->getOwner(), 'the object itself keeps its owner');
+
+		$this->uid = 'anna';
+		$owned = self::object(assignee: null);
+		$owned->setOwner('anna');
+		$this->assertSame(403, $this->take(schema: $schema, object: $owned)['status'], 'an owner in the granted group is refused on a private object too');
 	}//end testOnAPrivateObjectOwnershipGrantsNothing()
 
 	/**
