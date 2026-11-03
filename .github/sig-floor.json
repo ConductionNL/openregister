@@ -5,7 +5,8 @@
  "tools": {
   "lizard": "1.24.3"
  },
- "measured_at": "a45cfebd17cdbca925d20155464c28a1b8e2fd45",
+ "unit_reader": 2,
+ "measured_at": "89a21e67b7997670bf512f0cd59f4776d3c916b2",
  "checks": [
   "javascript duplication",
   "javascript unit_complexity >10",
@@ -14,6 +15,7 @@
   "javascript unit_interfacing >2",
   "javascript unit_interfacing >4",
   "javascript unit_interfacing >6",
+  "javascript unit_size >15",
   "javascript unit_size >30",
   "javascript unit_size >60",
   "php unit_complexity >25",
@@ -24,6 +26,7 @@
   "python module_coupling >50",
   "python unit_complexity >10",
   "python unit_complexity >25",
+  "python unit_complexity >5",
   "python unit_interfacing >2",
   "python unit_interfacing >4",
   "python unit_interfacing >6",
@@ -38,7 +41,6 @@
   "typescript unit_interfacing >6",
   "typescript unit_size >60",
   "vue unit_complexity >10",
-  "vue unit_complexity >25",
   "vue unit_complexity >5",
   "vue unit_interfacing >2",
   "vue unit_interfacing >4",
