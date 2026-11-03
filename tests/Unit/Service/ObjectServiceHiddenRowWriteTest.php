@@ -367,7 +367,10 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 		$this->saveOver(rbac: true);
 
 		$this->assertSame([['create', null, null, true, null], ['update', null, 'agent', true, 'draft-1']], $this->checks);
-		$this->assertContains([false, false], $this->lookups);
+		// The caller's own lookup, then the one past the read rule (unscoped, so a
+		// row of any organisation is found). The organisation is compared on that
+		// row, not looked up through the read filter.
+		$this->assertSame([[true, true], [false, false]], array_slice($this->lookups, 0, 2));
 		$this->assertNotContains([false, true], $this->lookups);
 	}//end testAStoredRowTheCallerCannotSeeMustPassCreateAndUpdate()
 

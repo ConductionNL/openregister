@@ -2408,6 +2408,7 @@ class ObjectService implements ObjectServiceInterface
             // Stored but hidden: the write lands on that row, so it must keep to
             // the caller's organisations and pass the update rule against it.
             if ($hidden !== null) {
+                $this->refuseAWriteOntoAnAppendOnlyRow();
                 $this->refuseAnotherOrganisationsRow(hidden: $hidden, _multitenancy: $_multitenancy);
                 $this->checkPermission(
                     schema: $this->currentSchema,
@@ -2420,6 +2421,32 @@ class ObjectService implements ObjectServiceInterface
             }
         }//end try
     }//end checkSavePermissions()
+
+    /**
+     * Refuse a write onto a stored row the caller cannot read when the schema is append-only.
+     *
+     * Every write onto a stored row of an append-only schema gets one answer from
+     * guardWriteTarget(), visible or not. Answering a hidden row the same
+     * way before the organisation refusal and the update rule are asked keeps
+     * them from telling which rows belong to another organisation.
+     *
+     * @return void
+     *
+     * @throws AppendOnlyException When the schema is append-only.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function refuseAWriteOntoAnAppendOnlyRow(): void
+    {
+        if ($this->currentSchema?->isAppendOnly() !== true) {
+            return;
+        }
+
+        throw new AppendOnlyException(
+            schemaIdentifier: ($this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId()),
+            operation: 'update'
+        );
+    }//end refuseAWriteOntoAnAppendOnlyRow()
 
     /**
      * Refuse a write by uuid onto a stored row outside the caller's organisations.

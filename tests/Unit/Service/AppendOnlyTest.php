@@ -32,7 +32,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Exception\AppendOnlyException;
-use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -552,8 +551,8 @@ class AppendOnlyTest extends TestCase {
 	}//end testInsertWithUuidHeldByAHiddenRowOfTheSameTenantIsRefused()
 
 	/**
-	 * A uuid held by a row in another tenant is refused by the organisation
-	 * boundary before the append-only gate, and never reaches the save handler.
+	 * A uuid held by a row in another tenant gets the same refusal as any other
+	 * stored row, so the answer does not tell another tenant's rows apart.
 	 *
 	 * @return void
 	 */
@@ -564,8 +563,8 @@ class AppendOnlyTest extends TestCase {
 		$this->objectMapper->method('callerOrganisationsHold')->willReturn(false);
 		$this->saveHandler->expects($this->never())->method('saveObject');
 
-		$this->expectException(NotAuthorizedException::class);
-		$this->expectExceptionMessage('You may not change this object.');
+		$this->expectException(AppendOnlyException::class);
+		$this->expectExceptionMessage('SCHEMA_APPEND_ONLY: Schema "xapi-statement" is append-only; update operations are not permitted.');
 
 		$this->service->saveObject(object: ['id' => 'other-tenant-uuid']);
 	}//end testInsertWithUuidHeldInAnotherTenantIsRefused()
