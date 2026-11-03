@@ -29,10 +29,10 @@ jest.mock('../store/store.js', () => {
 		}),
 	}
 })
-jest.mock(
-	'vue-material-design-icons/CloudUploadOutline.vue',
-	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-)
+jest.mock('vue-material-design-icons/CloudUploadOutline.vue', () => ({
+	__esModule: true,
+	default: { name: 'icon', render: () => null },
+}))
 /**
  * The @nextcloud/vue components as plain stubs: a <div data-nc="Name"> that
  * renders its slots and shows its props as attributes.
