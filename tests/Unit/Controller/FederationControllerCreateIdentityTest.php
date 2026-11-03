@@ -18,6 +18,10 @@
  * with `+`, which preserves the LEFT operand's keys, so a caller-supplied
  * `@self: {id: …}` survived it untouched.
  *
+ * An update or delete only reaches an object the share could read: the
+ * organisation and confidentiality filter of the read path runs on the stored
+ * object first, and an update pins the share's organisation as create does.
+ *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Controller
  *
@@ -41,6 +45,7 @@ use OCA\OpenRegister\Db\FederatedShareMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\Security\Bruteforce\IThrottler;
@@ -74,13 +79,28 @@ class FederationControllerCreateIdentityTest extends TestCase {
 	private ?array $written = null;
 
 	/**
+	 * The uuid the controller handed to deleteObject.
+	 *
+	 * @var string|null
+	 */
+	private ?string $deleted = null;
+
+	/**
+	 * The share the token resolves to; a case may narrow it after building the controller.
+	 *
+	 * @var FederatedShare
+	 */
+	private FederatedShare $share;
+
+	/**
 	 * Build the controller over a request carrying the given body.
 	 *
 	 * @param array<string, mixed> $params The request parameters.
+	 * @param ObjectEntity|null    $stored The stored object an update or delete addresses; null is not found.
 	 *
 	 * @return FederationController The controller.
 	 */
-	private function controller(array $params): FederationController {
+	private function controller(array $params, ?ObjectEntity $stored = null): FederationController {
 		$share = new FederatedShare();
 		$share->setDirection('outgoing');
 		$share->setStatus('accepted');
@@ -89,6 +109,7 @@ class FederationControllerCreateIdentityTest extends TestCase {
 		$share->setSchema('zaak');
 		$share->setOrganisation('org-a');
 		$share->setPermissions('read-write');
+		$this->share = $share;
 
 		$this->shareMapper = $this->createMock(FederatedShareMapper::class);
 		$this->shareMapper->method('findByToken')->willReturn($share);
@@ -105,6 +126,17 @@ class FederationControllerCreateIdentityTest extends TestCase {
 				return $this->createMock(ObjectEntity::class);
 			}
 		);
+		$this->objectService->method('deleteObject')->willReturnCallback(
+			function (...$args): bool {
+				$this->deleted = (string)($args[0] ?? '');
+				return true;
+			}
+		);
+		if ($stored === null) {
+			$this->objectService->method('find')->willThrowException(new DoesNotExistException('not found'));
+		} else {
+			$this->objectService->method('find')->willReturn($stored);
+		}
 
 		return new FederationController(
 			'openregister',
@@ -188,4 +220,213 @@ class FederationControllerCreateIdentityTest extends TestCase {
 		$this->assertSame('org-a', $this->written['@self']['organisation'] ?? null);
 		$this->assertSame('Federated addition', $this->written['title'] ?? null);
 	}//end testTheOrganisationPinAndThePayloadSurvive()
+
+	/**
+	 * A stored object of the given organisation and confidentiality.
+	 *
+	 * @param string $organisation    The organisation in its rendered `@self`.
+	 * @param string $confidentiality Its confidentiality.
+	 *
+	 * @return ObjectEntity The object.
+	 */
+	private function stored(string $organisation, string $confidentiality = 'openbaar'): ObjectEntity {
+		$entity = new ObjectEntity();
+		$entity->setUuid('obj-1');
+		$entity->setObject(['title' => 'Stored', 'confidentiality' => $confidentiality, '@self' => ['organisation' => $organisation]]);
+
+		return $entity;
+	}//end stored()
+
+	/**
+	 * An update keeps the share's organisation, whatever the body names.
+	 *
+	 * @return void
+	 */
+	public function testAnUpdatePinsTheSharesOrganisation(): void {
+		$controller = $this->controller(['title' => 'Changed', '@self' => ['organisation' => 'org-attacker']], $this->stored(organisation: 'org-a'));
+
+		$response = $controller->updateObject(shareToken: 'tok', id: 'obj-1');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame('org-a', $this->written['@self']['organisation'] ?? null);
+		$this->assertSame('Changed', $this->written['title'] ?? null);
+	}//end testAnUpdatePinsTheSharesOrganisation()
+
+	/**
+	 * Data the share may not read cannot be overwritten or deleted through it either.
+	 *
+	 * @return array<string, array{0: ObjectEntity|null}>
+	 */
+	public static function unreachableTargets(): array {
+		$other = new ObjectEntity();
+		$other->setUuid('obj-1');
+		$other->setObject(['title' => 'Theirs', 'confidentiality' => 'openbaar', '@self' => ['organisation' => 'org-b']]);
+		$secret = new ObjectEntity();
+		$secret->setUuid('obj-1');
+		$secret->setObject(['title' => 'Secret', 'confidentiality' => 'geheim', '@self' => ['organisation' => 'org-a']]);
+
+		return [
+			'another organisation' => [$other],
+			'a confidential object' => [$secret],
+			'no such object' => [null],
+		];
+	}//end unreachableTargets()
+
+	/**
+	 * An update of an object the share cannot reach is a 404 and writes nothing.
+	 *
+	 * @param ObjectEntity|null $stored The stored object.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider unreachableTargets
+	 */
+	public function testAnUnreachableObjectIsNotUpdated(?ObjectEntity $stored): void {
+		$controller = $this->controller(['title' => 'Changed'], $stored);
+
+		$response = $controller->updateObject(shareToken: 'tok', id: 'obj-1');
+
+		$this->assertSame(404, $response->getStatus());
+		$this->assertNull($this->written, 'the update reached the object store');
+	}//end testAnUnreachableObjectIsNotUpdated()
+
+	/**
+	 * A delete of an object the share cannot reach is a 404 and deletes nothing.
+	 *
+	 * @param ObjectEntity|null $stored The stored object.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider unreachableTargets
+	 */
+	public function testAnUnreachableObjectIsNotDeleted(?ObjectEntity $stored): void {
+		$controller = $this->controller([], $stored);
+
+		$response = $controller->deleteObject(shareToken: 'tok', id: 'obj-1');
+
+		$this->assertSame(404, $response->getStatus());
+		$this->assertNull($this->deleted, 'the delete reached the object store');
+	}//end testAnUnreachableObjectIsNotDeleted()
+
+	/**
+	 * An object the share reaches is still deleted.
+	 *
+	 * @return void
+	 */
+	public function testAReachableObjectIsDeleted(): void {
+		$controller = $this->controller([], $this->stored(organisation: 'org-a'));
+
+		$response = $controller->deleteObject(shareToken: 'tok', id: 'obj-1');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame('obj-1', $this->deleted);
+	}//end testAReachableObjectIsDeleted()
+
+	/**
+	 * An update stores the sharing organisation over the one the body names (ORX3 probe F1).
+	 *
+	 * @return void
+	 */
+	public function testProbeUpdateKeepsTheSharingOrganisation(): void {
+		$controller = $this->controller(['title' => 'x', '@self' => ['organisation' => 'org-b']], $this->recordOf(organisation: 'org-a'));
+
+		$controller->updateObject(shareToken: 'tok', id: 'obj-1');
+
+		$this->assertSame('org-a', $this->written['@self']['organisation'] ?? null);
+	}//end testProbeUpdateKeepsTheSharingOrganisation()
+
+	/**
+	 * A record of another organisation, by its own organisation field, is neither updated nor deleted (ORX3 probe F2, F3).
+	 *
+	 * @return void
+	 */
+	public function testProbeAnotherOrganisationsRecordIsNotWritten(): void {
+		$controller = $this->controller(['title' => 'x'], $this->recordOf(organisation: 'org-b'));
+
+		$this->assertSame(404, $controller->updateObject(shareToken: 'tok', id: 'obj-1')->getStatus());
+		$this->assertSame(404, $controller->deleteObject(shareToken: 'tok', id: 'obj-1')->getStatus());
+		$this->assertNull($this->written);
+		$this->assertNull($this->deleted);
+	}//end testProbeAnotherOrganisationsRecordIsNotWritten()
+
+	/**
+	 * A query-scope share reaches by id only what its query selects, on read and on write.
+	 *
+	 * @return void
+	 */
+	public function testAQueryShareReachesOnlyWhatItsQuerySelects(): void {
+		$controller = $this->controller(['title' => 'x'], $this->recordOf(organisation: 'org-a'));
+		$this->share->setScope('query');
+		$this->share->setQueryFilter(['status' => 'open']);
+		$asked = [];
+		$this->objectService->method('findAll')->willReturnCallback(
+			static function (...$args) use (&$asked): array {
+				$asked[] = ($args['config'] ?? $args[0])['filters'];
+				return [];
+			}
+		);
+
+		$this->assertSame(404, $controller->object(shareToken: 'tok', id: 'obj-1')->getStatus());
+		$this->assertSame(404, $controller->updateObject(shareToken: 'tok', id: 'obj-1')->getStatus());
+		$this->assertSame(404, $controller->deleteObject(shareToken: 'tok', id: 'obj-1')->getStatus());
+		$this->assertNull($this->written);
+		$this->assertNull($this->deleted);
+		$this->assertSame(['status' => 'open', 'uuid' => 'obj-1'], $asked[0]);
+	}//end testAQueryShareReachesOnlyWhatItsQuerySelects()
+
+	/**
+	 * An object the query selects is still updated through a query share.
+	 *
+	 * @return void
+	 */
+	public function testAQueryShareStillWritesWhatItsQuerySelects(): void {
+		$controller = $this->controller(['title' => 'x'], $this->recordOf(organisation: 'org-a'));
+		$this->share->setScope('query');
+		$this->share->setQueryFilter(['status' => 'open']);
+		$this->objectService->method('findAll')->willReturn([$this->recordOf(organisation: 'org-a')]);
+
+		$this->assertSame(200, $controller->updateObject(shareToken: 'tok', id: 'obj-1')->getStatus());
+		$this->assertSame('x', $this->written['title'] ?? null);
+	}//end testAQueryShareStillWritesWhatItsQuerySelects()
+
+	/**
+	 * A share without an organisation writes nothing and reads no organisation's object.
+	 *
+	 * @return void
+	 */
+	public function testAShareWithoutAnOrganisationFailsClosed(): void {
+		foreach ([null, ''] as $organisation) {
+			$this->written = null;
+			$this->deleted = null;
+			$controller = $this->controller(['title' => 'x'], $this->recordOf(organisation: 'org-a'));
+			$this->share->setOrganisation($organisation);
+
+			$this->assertSame(403, $controller->createObject(shareToken: 'tok')->getStatus());
+			$this->assertSame(403, $controller->updateObject(shareToken: 'tok', id: 'obj-1')->getStatus());
+			$this->assertSame(403, $controller->deleteObject(shareToken: 'tok', id: 'obj-1')->getStatus());
+			$this->assertSame(404, $controller->object(shareToken: 'tok', id: 'obj-1')->getStatus());
+			$this->assertNull($this->written);
+			$this->assertNull($this->deleted);
+		}
+
+		$controller = $this->controller([], $this->recordOf(organisation: null));
+		$this->share->setOrganisation('');
+		$this->assertSame(200, $controller->object(shareToken: 'tok', id: 'obj-1')->getStatus(), 'an object without an organisation');
+	}//end testAShareWithoutAnOrganisationFailsClosed()
+
+	/**
+	 * A stored record whose own organisation field is set, with an empty data body.
+	 *
+	 * @param string|null $organisation The record's organisation.
+	 *
+	 * @return ObjectEntity The record.
+	 */
+	private function recordOf(?string $organisation): ObjectEntity {
+		$entity = new ObjectEntity();
+		$entity->setUuid('obj-1');
+		$entity->setOrganisation($organisation);
+		$entity->setObject(['title' => 'Stored']);
+
+		return $entity;
+	}//end recordOf()
 }//end class
