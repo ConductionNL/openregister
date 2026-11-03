@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Flow\MacroActionValidator;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
+use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -106,6 +107,13 @@ class ObjectActionSelfAssignTest extends TestCase {
 	 * @var string
 	 */
 	private string $uid = 'anna';
+
+	/**
+	 * The object grants (shares) the permission handler reads, or null for none.
+	 *
+	 * @var ObjectGrantResolver|null
+	 */
+	private ?ObjectGrantResolver $grants = null;
 
 	/**
 	 * How often the app matrix rows were asked for.
@@ -222,7 +230,9 @@ class ObjectActionSelfAssignTest extends TestCase {
 			$config,
 			new NullLogger(),
 			$this->createMock(ContainerInterface::class),
-			$dispatcher
+			$dispatcher,
+			null,
+			$this->grants
 		);
 
 		return [$handler, $session];
@@ -767,9 +777,34 @@ class ObjectActionSelfAssignTest extends TestCase {
 
 		$this->uid = 'anna';
 		$owned = self::object(assignee: null);
+		$owned->setUuid('5b0c1f0e-0000-4000-8000-000000000002');
 		$owned->setOwner('anna');
 		$this->assertSame(403, $this->take(schema: $schema, object: $owned)['status'], 'an owner in the granted group is refused on a private object too');
 	}//end testOnAPrivateObjectOwnershipGrantsNothing()
+
+	/**
+	 * A share on a private object does not admit a self-assign: a share carries only CRUD and share bits.
+	 *
+	 * @return void
+	 */
+	public function testAShareOnAPrivateObjectDoesNotAdmitASelfAssign(): void {
+		$uuid = '5b0c1f0e-0000-4000-8000-000000000003';
+		$this->grants = $this->getMockBuilder(ObjectGrantResolver::class)
+			->setConstructorArgs([new NullLogger(), $this->createMock(ContainerInterface::class)])
+			->onlyMethods(['grantedObjectUuids'])
+			->getMock();
+		$this->grants->method('grantedObjectUuids')->willReturn([$uuid => 31]);
+		$this->assertTrue($this->grants->isGranted(userId: 'anna', objectUuid: $uuid, action: 'update'), 'the control: the share carries update');
+
+		$object = self::object(assignee: null);
+		$object->setUuid($uuid);
+		$this->uid = 'anna';
+
+		$answer = $this->take(schema: self::schema(authorization: self::readOnlyTeam() + ['scope' => 'private']), object: $object);
+
+		$this->assertSame(403, $answer['status']);
+		$this->assertSame([], $this->patches);
+	}//end testAShareOnAPrivateObjectDoesNotAdmitASelfAssign()
 
 	/**
 	 * A row naming the action with surrounding spaces grants it, as the validator and compiler read it.
