@@ -40,7 +40,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use ReflectionProperty;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
  * Unit tests for SaveObject's per-save call stack + circular-reference
@@ -82,7 +82,7 @@ class SaveObjectCircularReferenceTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 			tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
 			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			arrayLoader: new ArrayLoader(),
+			permissionHandler: $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class),
 			groupManager: $this->createMock(IGroupManager::class),
 			appConfig: $this->createMock(IAppConfig::class),
 			eventDispatcher: $this->createMock(IEventDispatcher::class),
