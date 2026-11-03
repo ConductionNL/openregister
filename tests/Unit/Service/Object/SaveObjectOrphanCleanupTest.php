@@ -147,7 +147,7 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 		$permissions->method('hasPermission')->willReturnCallback(
 			function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true, ?ObjectEntity $object = null): bool {
 				$this->asked[] = [$schema->getSlug(), $action, $userId, $objectOwner, $_rbac, $object?->getUuid()];
-				return $_rbac === false || $this->mayDelete;
+				return $this->mayDelete;
 			}
 		);
 
@@ -189,10 +189,17 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 	 * @param array       $items      The extra `items` keys of the property.
 	 * @param string|null $uuid       The incident to update, null to create one.
 	 * @param bool        $rbac       The RBAC mode of the save.
+	 * @param array       $config     The incident schema's configuration.
 	 *
 	 * @return bool
 	 */
-	private function saveRemovesRow(array $notes, array $items = ['inversedBy' => 'incident'], ?string $uuid = self::PARENT, bool $rbac = true): bool {
+	private function saveRemovesRow(
+		array $notes,
+		array $items = ['inversedBy' => 'incident'],
+		?string $uuid = self::PARENT,
+		bool $rbac = true,
+		array $config = ['orphanCleanup' => true]
+	): bool {
 		$handler = $this->handler();
 		$note = new Schema();
 		$note->setId(2);
@@ -200,6 +207,7 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 		$incident = new Schema();
 		$incident->setId(1);
 		$incident->setSlug('incident');
+		$incident->setConfiguration($config);
 		$incident->setProperties(
 			['notes' => ['type' => 'array', 'items' => ['$ref' => 'note'] + $items, 'objectConfiguration' => ['handling' => 'related-object']]]
 		);
@@ -319,12 +327,63 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 		$this->assertFalse($this->saveRemovesRow(notes: []));
 	}
 
-	public function testASaveWithRbacOffDeletesAnOwnedRowAnywhere(): void {
+	public function testASaveWithRbacOffDeletesAnOwnedRowOnlyWithTheCallersRights(): void {
 		$this->stored = ['notes' => [self::ROW]];
-		$this->held = false;
-		$this->mayDelete = false;
 
 		$this->assertTrue($this->saveRemovesRow(notes: [], rbac: false));
-		$this->assertSame([['note', 'delete', null, 'carol', false, self::ROW]], $this->asked);
+		$this->assertSame([['note', 'delete', null, 'carol', true, self::ROW]], $this->asked);
+	}
+
+	public function testASaveWithRbacOffKeepsToTheCallersOrganisations(): void {
+		$this->stored = ['notes' => [self::ROW]];
+		$this->held = false;
+
+		$this->assertFalse($this->saveRemovesRow(notes: [], rbac: false));
+	}
+
+	public function testASaveWithRbacOffKeepsToTheCallersDeleteRights(): void {
+		$this->stored = ['notes' => [self::ROW]];
+		$this->mayDelete = false;
+
+		$this->assertFalse($this->saveRemovesRow(notes: [], rbac: false));
+	}
+
+	/**
+	 * The configurations that leave the cleanup off.
+	 *
+	 * @return array<string, array{0: array}>
+	 */
+	public static function cleanupOff(): array {
+		return ['no flag' => [[]], 'flag off' => [['orphanCleanup' => false]]];
+	}//end cleanupOff()
+
+	/**
+	 * @dataProvider cleanupOff
+	 *
+	 * @param array $config The incident schema's configuration.
+	 */
+	public function testWithoutTheOptInARemovedReferenceOnlyLosesTheReference(array $config): void {
+		$this->stored = ['notes' => [self::ROW]];
+
+		$this->assertFalse($this->saveRemovesRow(notes: [], config: $config));
+		$this->assertNotContains(self::ROW, $this->finds);
+		$this->assertSame([], $this->asked);
+	}
+
+	/**
+	 * @dataProvider cleanupOff
+	 *
+	 * @param array $config The incident schema's configuration.
+	 */
+	public function testWithoutTheOptInASlugNamedInASaveTouchesNothing(array $config): void {
+		$this->assertFalse($this->saveRemovesRow(notes: ['row-slug'], config: $config));
+		$this->assertNotContains('row-slug', $this->finds);
+	}
+
+	public function testTheOptInSurvivesTheSchemasConfigurationCheck(): void {
+		$schema = new Schema();
+		$schema->setConfiguration(['orphanCleanup' => true]);
+
+		$this->assertTrue($schema->getConfiguration()['orphanCleanup']);
 	}
 }//end class

@@ -789,12 +789,12 @@ class SaveObjectCoverageTest extends TestCase {
 	}//end orphanPermissions()
 
 	/**
-	 * An orphan scope whose rows name parent `p-1` through `incident`, for a save with RBAC off.
+	 * An orphan scope whose rows name parent `p-1` through `incident`, within the caller's organisations.
 	 *
 	 * @return array
 	 */
 	private function orphanScope(): array {
-		$this->saveObject->enterCascadeScope(_rbac: false);
+		$this->objectEntityMapper->method('callerOrganisationsHold')->willReturn(true);
 
 		return ['register' => new Register(), 'schema' => new Schema(), 'inverse' => 'incident', 'parent' => 'p-1'];
 	}//end orphanScope()

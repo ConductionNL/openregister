@@ -1987,7 +1987,7 @@ class SaveObject {
 	 * @param ObjectEntity $objectEntity The parent object entity
 	 * @param Schema $schema The schema of the parent object
 	 * @param array $data The object data to process
-	 * @param array $stored The parent's data as stored before this save, the only source of orphans
+	 * @param array $stored The parent's stored data when its schema opted into orphan cleanup, else empty
 	 *
 	 * @return array The processed data with cascaded objects removed
 	 *
@@ -2515,8 +2515,8 @@ class SaveObject {
 	/**
 	 * Deletes orphaned related objects that are no longer referenced by the parent.
 	 *
-	 * When a parent object's array property is updated and some sub-objects are
-	 * removed, the sub-objects the parent owns are soft-deleted. A property without
+	 * When a schema sets `orphanCleanup` and a parent stops referencing some
+	 * sub-objects, the sub-objects the parent owns are soft-deleted. A property without
 	 * an inverse relation holds plain pointers, so nothing is deleted for it, and a
 	 * row that may not be deleted only loses the reference.
 	 *
@@ -2600,8 +2600,8 @@ class SaveObject {
 	 *
 	 * The row must be the referenced uuid itself (the lookup also matches slugs and
 	 * uris) and must name the parent through the inverse property, otherwise the
-	 * reference was a plain pointer to a row with a life of its own. A save with
-	 * RBAC off skips the caller's delete rights and organisation boundary.
+	 * reference was a plain pointer to a row with a life of its own. The caller's
+	 * delete rights and organisation boundary hold in every save, RBAC off included.
 	 *
 	 * @param ObjectEntity $orphan The row that was found.
 	 * @param array        $scope  The orphan scope, plus the referenced `uuid`.
@@ -2616,8 +2616,7 @@ class SaveObject {
 			return false;
 		}
 
-		$rbac = $this->cascadeRbacApplies();
-		if ($rbac === true && $this->objectEntityMapper->callerOrganisationsHold(row: $orphan) === false) {
+		if ($this->objectEntityMapper->callerOrganisationsHold(row: $orphan) === false) {
 			return false;
 		}
 
@@ -2625,7 +2624,6 @@ class SaveObject {
 			schema: $scope['schema'],
 			action: 'delete',
 			objectOwner: $orphan->getOwner(),
-			_rbac: $rbac,
 			object: $orphan
 		);
 	}//end orphanMayBeDeleted()
@@ -3414,20 +3412,9 @@ class SaveObject {
 		$this->permissionHandler->checkPermission(
 			schema: $schema,
 			action: 'create',
-			_rbac: $this->cascadeRbacApplies()
+			_rbac: in_array(needle: false, haystack: $this->cascadeScopes, strict: true) === false
 		);
 	}//end assertMayCascadeCreate()
-
-	/**
-	 * Whether the caller's rights count here: no enclosing save runs with RBAC off.
-	 *
-	 * @return bool False inside a save with RBAC off.
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md
-	 */
-	private function cascadeRbacApplies(): bool {
-		return in_array(needle: false, haystack: $this->cascadeScopes, strict: true) === false;
-	}//end cascadeRbacApplies()
 
 	/**
 	 * Resolve the soft-uniqueness checker from the app container, or null when
@@ -6175,8 +6162,12 @@ class SaveObject {
 			throw new Exception($errorMessage, 0, $e);
 		}
 
-		// The pre-cache below overwrites the entity's data with the incoming data.
-		$stored = ($objectEntity->getObject() ?? []);
+		// Removed references are only cleaned up when the schema opts in. Read before
+		// the pre-cache below overwrites the entity's data with the incoming data.
+		$stored = [];
+		if (($schema->getConfiguration()['orphanCleanup'] ?? false) === true) {
+			$stored = ($objectEntity->getObject() ?? []);
+		}
 
 		// Pre-populate the name cache with the parent object's name before cascading.
 		// This ensures that when sub-objects (e.g., koppelingen) resolve relation fields

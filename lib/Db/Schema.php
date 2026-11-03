@@ -2831,6 +2831,8 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * - 'objectSlugSuffix': (bool) Append a UTC date-time suffix to a slug that is
 	 *   already taken instead of saving the object without a slug. Default false.
 	 * - 'allowFiles': (bool) Whether this schema allows file attachments
+	 * - 'orphanCleanup': (bool) Soft-delete a child the parent owns through an inverse
+	 *   relation when the parent stops referencing it. Default false: the child stays.
 	 * - 'allowedTags': (array) Array of allowed file tags/types for file filtering
 	 * - 'autoShare': (bool) Create a Nextcloud share for every file uploaded to
 	 *   a file property of this schema, unless the property sets its own.
@@ -2972,7 +2974,8 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 		// every file property. `objectSlugSuffix` (#4037) is read by
 		// ObjectSlugHandler: true appends a UTC date-time suffix to a colliding slug.
 		// `fireEventsOnBulkWrites` is read by BulkWriteEvents: whether a bulk write
-		// runs the save events per row.
+		// runs the save events per row. `orphanCleanup` is read by SaveObject: a removed
+		// reference soft-deletes the child the parent owns.
 		$boolFields = [
 			'allowFiles',
 			'autoShare',
@@ -2984,6 +2987,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			'draftsListed',
 			'fireEventsOnBulkWrites',
 			'objectSlugSuffix',
+			'orphanCleanup',
 		];
 		// `implements` + `x-schema-org` carry the cross-app semantic-type
 		// markers (ADR-048); they must round-trip through the configuration
