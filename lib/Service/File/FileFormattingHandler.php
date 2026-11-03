@@ -466,9 +466,6 @@ class FileFormattingHandler {
 	 * @psalm-return   array<int, array<string, mixed>>
 	 * @phpstan-return array<int, array<string, mixed>>
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Many filter types require conditional branches
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple filter combinations create many execution paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive filter support requires extensive code
 	 */
 	private function applyFileFilters(array $formattedFiles, array $filters): array {
 		if (empty($filters) === true) {
@@ -477,101 +474,118 @@ class FileFormattingHandler {
 
 		return array_filter(
 			$formattedFiles,
-			function (array $file) use ($filters): bool {
-				// Filter by label presence (business logic filter).
-				if (($filters['_hasLabels'] ?? null) !== null) {
-					$hasLabels = empty($file['labels']) === false;
-					if ($filters['_hasLabels'] !== $hasLabels) {
-						return false;
-					}
-				}
-
-				// Filter for files without labels (business logic filter).
-				if (($filters['_noLabels'] ?? null) !== null && $filters['_noLabels'] === true) {
-					$hasLabels = empty($file['labels']) === false;
-					if ($hasLabels === true) {
-						return false;
-					}
-				}
-
-				// Filter by specific labels.
-				if (($filters['labels'] ?? null) !== null && empty($filters['labels']) === false) {
-					$fileLabels = $file['labels'] ?? [];
-					$hasMatchingLabel = false;
-
-					foreach ($filters['labels'] as $requiredLabel) {
-						if (in_array($requiredLabel, $fileLabels, true) === true) {
-							$hasMatchingLabel = true;
-							break;
-						}
-					}
-
-					if ($hasMatchingLabel === false) {
-						return false;
-					}
-				}
-
-				// Filter by single extension.
-				if (($filters['extension'] ?? null) !== null) {
-					$fileExtension = $file['extension'] ?? '';
-					if (strcasecmp($fileExtension, $filters['extension']) !== 0) {
-						return false;
-					}
-				}
-
-				// Filter by multiple extensions.
-				if (($filters['extensions'] ?? null) !== null && empty($filters['extensions']) === false) {
-					$fileExtension = $file['extension'] ?? '';
-					$hasMatchingExtension = false;
-
-					foreach ($filters['extensions'] as $allowedExtension) {
-						if (strcasecmp($fileExtension, $allowedExtension) === 0) {
-							$hasMatchingExtension = true;
-							break;
-						}
-					}
-
-					if ($hasMatchingExtension === false) {
-						return false;
-					}
-				}
-
-				// Filter by file size range.
-				if (($filters['minSize'] ?? null) !== null) {
-					$fileSize = $file['size'] ?? 0;
-					if ($fileSize < $filters['minSize']) {
-						return false;
-					}
-				}
-
-				if (($filters['maxSize'] ?? null) !== null) {
-					$fileSize = $file['size'] ?? 0;
-					if ($fileSize > $filters['maxSize']) {
-						return false;
-					}
-				}
-
-				// Filter by title/filename content.
-				if (($filters['title'] ?? null) !== null && empty($filters['title']) === false) {
-					$fileTitle = $file['title'] ?? '';
-					if (stripos($fileTitle, $filters['title']) === false) {
-						return false;
-					}
-				}
-
-				// Filter by search term (searches in title).
-				if (($filters['search'] ?? null) !== null && empty($filters['search']) === false) {
-					$fileTitle = $file['title'] ?? '';
-					if (stripos($fileTitle, $filters['search']) === false) {
-						return false;
-					}
-				}
-
-				// File passed all filters.
-				return true;
-			}
+			fn (array $file): bool => $this->fileMatchesLabelFilters(file: $file, filters: $filters) === true
+				&& $this->fileMatchesExtensionFilters(file: $file, filters: $filters) === true
+				&& $this->fileMatchesSizeFilters(file: $file, filters: $filters) === true
+				&& $this->fileMatchesTextFilters(file: $file, filters: $filters) === true
 		);
 	}//end applyFileFilters()
+
+	/**
+	 * Whether a file passes `_hasLabels`, `_noLabels` and `labels` (any one of them).
+	 *
+	 * @param array<string, mixed> $file    The formatted file.
+	 * @param array<string, mixed> $filters The filters.
+	 *
+	 * @return bool
+	 */
+	private function fileMatchesLabelFilters(array $file, array $filters): bool {
+		$hasLabels = empty($file['labels']) === false;
+		if (($filters['_hasLabels'] ?? null) !== null && $filters['_hasLabels'] !== $hasLabels) {
+			return false;
+		}
+
+		if (($filters['_noLabels'] ?? null) === true && $hasLabels === true) {
+			return false;
+		}
+
+		if (empty($filters['labels']) === true) {
+			return true;
+		}
+
+		return $this->anyLabelPresent(required: $filters['labels'], fileLabels: ($file['labels'] ?? []));
+	}//end fileMatchesLabelFilters()
+
+	/**
+	 * Whether any required label is among the file's labels, compared strictly.
+	 *
+	 * @param array $required   The labels of which one must be present.
+	 * @param array $fileLabels The file's labels.
+	 *
+	 * @return bool
+	 */
+	private function anyLabelPresent(array $required, array $fileLabels): bool {
+		foreach ($required as $requiredLabel) {
+			if (in_array($requiredLabel, $fileLabels, true) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end anyLabelPresent()
+
+	/**
+	 * Whether a file passes `extension` and `extensions` (any one of them), ignoring case.
+	 *
+	 * @param array<string, mixed> $file    The formatted file.
+	 * @param array<string, mixed> $filters The filters.
+	 *
+	 * @return bool
+	 */
+	private function fileMatchesExtensionFilters(array $file, array $filters): bool {
+		$fileExtension = $file['extension'] ?? '';
+		if (($filters['extension'] ?? null) !== null && strcasecmp($fileExtension, $filters['extension']) !== 0) {
+			return false;
+		}
+
+		if (empty($filters['extensions']) === true) {
+			return true;
+		}
+
+		foreach ($filters['extensions'] as $allowedExtension) {
+			if (strcasecmp($fileExtension, $allowedExtension) === 0) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end fileMatchesExtensionFilters()
+
+	/**
+	 * Whether a file's size lies within `minSize` and `maxSize`, a missing size counting as 0.
+	 *
+	 * @param array<string, mixed> $file    The formatted file.
+	 * @param array<string, mixed> $filters The filters.
+	 *
+	 * @return bool
+	 */
+	private function fileMatchesSizeFilters(array $file, array $filters): bool {
+		$fileSize = $file['size'] ?? 0;
+		if (($filters['minSize'] ?? null) !== null && $fileSize < $filters['minSize']) {
+			return false;
+		}
+
+		return ($filters['maxSize'] ?? null) === null || $fileSize <= $filters['maxSize'];
+	}//end fileMatchesSizeFilters()
+
+	/**
+	 * Whether a file's title contains `title` and `search`, ignoring case.
+	 *
+	 * @param array<string, mixed> $file    The formatted file.
+	 * @param array<string, mixed> $filters The filters.
+	 *
+	 * @return bool
+	 */
+	private function fileMatchesTextFilters(array $file, array $filters): bool {
+		$fileTitle = $file['title'] ?? '';
+		foreach (['title', 'search'] as $key) {
+			if (empty($filters[$key]) === false && stripos($fileTitle, $filters[$key]) === false) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end fileMatchesTextFilters()
 
 	/**
 	 * Build the `lock` response envelope for a given file id.
