@@ -2533,6 +2533,9 @@ class ObjectService implements ObjectServiceInterface
     private function buildIncomingObjectForCreateCheck(array $object): ObjectEntity
     {
         unset($object['@self']);
+        // Underscore-prefixed keys name metadata, which the system sets: a body
+        // key such as `_owner` must not answer a create rule's match.
+        $object = array_filter($object, static fn ($key): bool => str_starts_with((string) $key, '_') === false, ARRAY_FILTER_USE_KEY);
 
         $incoming = new ObjectEntity();
         $incoming->setObject($object);

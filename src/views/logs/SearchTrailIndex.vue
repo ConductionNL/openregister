@@ -749,7 +749,7 @@ export default {
 
 		formatBytes,
 		/**
-		 * @param checked
+		 * @param {boolean} checked
 		 * @spec exclude list-view select-all checkbox plumbing
 		 */
 		toggleSelectAll(checked) {
@@ -763,8 +763,8 @@ export default {
 		},
 
 		/**
-		 * @param id
-		 * @param checked
+		 * @param {string|number} id
+		 * @param {boolean} checked
 		 * @spec exclude list-view single-row selection toggle plumbing
 		 */
 		toggleSearchTrailSelection(id, checked) {

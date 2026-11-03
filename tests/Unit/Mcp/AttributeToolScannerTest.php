@@ -386,4 +386,23 @@ class AttributeToolScannerTest extends TestCase {
 		$this->assertSame('readOnlyHint', $named[0]['context']['annotations']);
 
 	}//end testAReservedMcpHintKeyInAnnotationsIsRejectedAndLogged()
+
+	// ── Declared title (the MCP descriptor's top-level `title`) ──────
+
+	public function testADeclaredTitleIsTheDescriptorsTopLevelTitle(): void {
+		$descriptor = $this->scanAnnotationFixture()['createTask'];
+
+		$this->assertSame('Create a task', $descriptor['title']);
+		$this->assertSame(['citizenIntake' => true], $descriptor['annotations'], 'the annotations stay as declared');
+		$this->assertArrayNotHasKey('title', $descriptor['annotations']);
+
+	}//end testADeclaredTitleIsTheDescriptorsTopLevelTitle()
+
+	public function testAnUndeclaredOrBlankTitleStaysOmitted(): void {
+		$descriptors = $this->scanAnnotationFixture();
+
+		$this->assertArrayNotHasKey('title', $descriptors['reassignCase']);
+		$this->assertArrayNotHasKey('title', $descriptors['blankTitleTool']);
+
+	}//end testAnUndeclaredOrBlankTitleStaysOmitted()
 }//end class

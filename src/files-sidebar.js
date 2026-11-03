@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			//
 			// ⚠️ `$mount(el)` REPLACED `el`; Vue 3's `mount(el)` renders INSIDE it.
 			// That is the correct behaviour here — the Files sidebar owns `el`.
-			mount(el, fileInfo, _context) {
+			mount(el, fileInfo) {
 				if (el._registerObjectsApp) {
 					el._registerObjectsApp.unmount()
 				}
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			name: t('openregister', 'Extraction'),
 			icon: textBoxSearchOutlineIcon,
 
-			mount(el, fileInfo, _context) {
+			mount(el, fileInfo) {
 				if (el._extractionApp) {
 					el._extractionApp.unmount()
 				}

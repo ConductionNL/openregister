@@ -1567,7 +1567,7 @@ class PermissionHandler {
 		$envelope = ($object->getObject() ?? []);
 		$organisation = $object->getOrganisation();
 		if ($organisation !== null) {
-			$envelope['@self'] = ((($envelope['@self'] ?? []) + ['organisation' => $organisation]));
+			$envelope['@self'] = array_replace(($envelope['@self'] ?? []), ['organisation' => $organisation]);
 		}
 
 		foreach ($conditional as $denial) {
@@ -2296,14 +2296,11 @@ class PermissionHandler {
 				// (and any other _-prefixed @self field) by stripping the underscore and looking
 				// up @self[<stripped>].
 				//
-				// Precedence: the `+` array union keeps any existing `@self.organisation` already
-				// present in $objectData, and only falls back to the separately-passed
-				// $objectOrganisation when @self has no `organisation` key. This matches the
-				// pre-unification behaviour where the object's own @self was authoritative and
-				// the explicit parameter was the fallback source.
+				// Precedence: the record's own organisation ($objectOrganisation) wins over an
+				// `@self.organisation` inside $objectData, which a request body can carry.
 				$envelope = ($objectData ?? []);
 				if ($objectOrganisation !== null) {
-					$envelope['@self'] = (($envelope['@self'] ?? []) + ['organisation' => $objectOrganisation]);
+					$envelope['@self'] = array_replace(($envelope['@self'] ?? []), ['organisation' => $objectOrganisation]);
 				}
 
 				if ($this->conditionMatcher->objectMatchesConditions(
@@ -2407,7 +2404,7 @@ class PermissionHandler {
 		// same envelope construction as the group path so _organisation resolves.
 		$envelope = ($objectData ?? []);
 		if ($objectOrganisation !== null) {
-			$envelope['@self'] = (($envelope['@self'] ?? []) + ['organisation' => $objectOrganisation]);
+			$envelope['@self'] = array_replace(($envelope['@self'] ?? []), ['organisation' => $objectOrganisation]);
 		}
 
 		return $this->conditionMatcher->objectMatchesConditions(
@@ -2923,7 +2920,7 @@ class PermissionHandler {
 
 		try {
 			$matrix = $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix);
-			$compiler = new DepartmentMatrixCompiler();
+			$compiler = new DepartmentMatrixCompiler(declaredActions: $schema->declaredActionNames());
 
 			$userId = $this->userSession->getUser()?->getUID();
 			$userGroups = [];

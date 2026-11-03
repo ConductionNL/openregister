@@ -90,7 +90,7 @@ class ObjectActionList {
 		$entries = [];
 		$named = [];
 		foreach ($this->definitions->forSchema(schema: $schema, register: $object->getRegister()) as $definition) {
-			if ($definition->isRunnable() === false || $this->gate->may(schema: $schema, right: $definition->key, object: $object) === false) {
+			if ($this->mayRun(schema: $schema, definition: $definition, object: $object) === false) {
 				continue;
 			}
 
@@ -113,6 +113,63 @@ class ObjectActionList {
 	}//end forObject()
 
 	/**
+	 * Which declared actions the caller may run on this object now, by key.
+	 *
+	 * The same three questions a run asks before it executes: the right, the
+	 * declared `when`, and for a self-assign an empty property. Computed for
+	 * the caller of this request on every call.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param Schema       $schema Its schema.
+	 *
+	 * @return array<string, bool> Action key => whether the caller may run it.
+	 *
+	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 */
+	public function canRun(ObjectEntity $object, Schema $schema): array {
+		$can = [];
+		foreach ($this->definitions->forSchema(schema: $schema, register: $object->getRegister()) as $definition) {
+			if ($definition->isRunnable() === false) {
+				continue;
+			}
+
+			$can[$definition->key] = $this->mayRun(schema: $schema, definition: $definition, object: $object)
+				&& $this->gate->selfAssignOpen(definition: $definition, object: $object)
+				&& $this->preconditionHolds(definition: $definition, object: $object);
+		}
+
+		return $can;
+	}//end canRun()
+
+	/**
+	 * Whether the caller holds the right to run this declared action on the object.
+	 *
+	 * @param Schema                 $schema     The schema.
+	 * @param ObjectActionDefinition $definition The action.
+	 * @param ObjectEntity           $object     The object.
+	 *
+	 * @return bool True when it is runnable and granted.
+	 */
+	private function mayRun(Schema $schema, ObjectActionDefinition $definition, ObjectEntity $object): bool {
+		return $definition->isRunnable() === true
+			&& $this->gate->mayRun(schema: $schema, right: $definition->key, definition: $definition, object: $object) === true;
+	}//end mayRun()
+
+	/**
+	 * Whether the action's declared `when` holds for the caller, with default inputs.
+	 *
+	 * @param ObjectActionDefinition $definition The action.
+	 * @param ObjectEntity           $object     The object.
+	 *
+	 * @return bool True when the precondition holds.
+	 */
+	private function preconditionHolds(ObjectActionDefinition $definition, ObjectEntity $object): bool {
+		$inputs = $this->inputs->withDefaults(schema: $definition->inputs, given: [], object: $object, userId: $this->gate->userId());
+
+		return $this->gate->whenHolds(definition: $definition, object: $object, inputs: $inputs);
+	}//end preconditionHolds()
+
+	/**
 	 * The actions offered on a selection of this schema's objects.
 	 *
 	 * The right is asked at schema level, so only owner-independent rules
@@ -129,7 +186,7 @@ class ObjectActionList {
 		$entries = [];
 		foreach ($this->definitions->forSchema(schema: $schema, register: $register) as $definition) {
 			if ($definition->isRunnable() === false || $definition->offersBulk() === false
-				|| $this->gate->may(schema: $schema, right: $definition->key, object: null) === false
+				|| $this->gate->mayRun(schema: $schema, right: $definition->key, definition: $definition, object: null) === false
 			) {
 				continue;
 			}
@@ -161,8 +218,13 @@ class ObjectActionList {
 			return $entry;
 		}
 
-		$inputs = $this->inputs->withDefaults(schema: $definition->inputs, given: [], object: $object, userId: $this->gate->userId());
-		if ($this->gate->whenHolds(definition: $definition, object: $object, inputs: $inputs) === false) {
+		if ($this->gate->selfAssignOpen(definition: $definition, object: $object) === false) {
+			$entry['available'] = false;
+			$entry['reason'] = $this->l10n->t('This object is already assigned.');
+			return $entry;
+		}
+
+		if ($this->preconditionHolds(definition: $definition, object: $object) === false) {
 			$entry['available'] = false;
 			$entry['reason'] = $this->gate->reason(definition: $definition);
 		}

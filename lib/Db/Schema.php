@@ -31,6 +31,7 @@ use JsonSerializable;
 use OCA\OpenRegister\Exception\CalendarDateKindException;
 use OCA\OpenRegister\Service\Calendar\ObjectDateDeclaration;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration;
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
@@ -1208,7 +1209,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
 	 */
-	private function declaredActionNames(): array {
+	public function declaredActionNames(): array {
 		$configuration = ($this->configuration ?? []);
 		if (is_array($configuration) === false) {
 			return [];
@@ -1224,7 +1225,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			// A declaration must NAME and DESCRIBE itself. An entry with no
 			// description is how an action ends up in a permission matrix with
 			// nothing telling the person granting it what they are agreeing to.
-			if (is_string($key) === false || $key === '') {
+			if (is_string($key) === false || $this->isDeclarableName(name: $key) === false) {
 				continue;
 			}
 
@@ -1241,6 +1242,27 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 
 		return $names;
 	}//end declaredActionNames()
+
+	/**
+	 * Whether a schema may declare an action under this name.
+	 *
+	 * A canonical verb or a control key is never a declared action: declaring
+	 * `deny` would otherwise take the deny block out of the save-time catalogue
+	 * check.
+	 *
+	 * @param string $name The declared key.
+	 *
+	 * @return bool True when the name is free for a declared action.
+	 *
+	 * @spec openspec/specs/declared-actions/spec.md
+	 */
+	private function isDeclarableName(string $name): bool {
+		if ($name === '' || isset(PermissionCatalogue::CANONICAL[$name]) === true) {
+			return false;
+		}
+
+		return in_array($name, PermissionCatalogue::CONTROL_KEYS, true) === false;
+	}//end isDeclarableName()
 
 	/**
 	 * Reject an authorization block that names an action the vocabulary does not know.
@@ -1380,6 +1402,11 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			return true;
 		}
 
+		if ($action === ExplicitReveal::KEY) {
+			$this->validateRevealValue(reveal: $value, context: $context);
+			return true;
+		}
+
 		// 🔴 EVERY OTHER CONTROL KEY, taken from the ONE list that already
 		// names them. `PermissionCatalogue::CONTROL_KEYS` exists precisely to
 		// say which keys of an authorization block are settings rather than
@@ -1408,7 +1435,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 		$remaining = array_values(
 			array_diff(
 				PermissionCatalogue::CONTROL_KEYS,
-				[ObjectScopeResolver::SCOPE_KEY, self::ROLES_KEY]
+				[ObjectScopeResolver::SCOPE_KEY, self::ROLES_KEY, ExplicitReveal::KEY]
 			)
 		);
 
@@ -1509,6 +1536,29 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			);
 		}
 	}//end validateScopeValue()
+
+	/**
+	 * Validate an authorization `reveal` value.
+	 *
+	 * Masking applies only to `explicit`, so any other value would save as a
+	 * property that is never masked.
+	 *
+	 * @param mixed  $reveal  The value to validate.
+	 * @param string $context Context for error messages.
+	 *
+	 * @throws InvalidAuthorizationRuleException When the value is not `explicit`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
+	 */
+	private function validateRevealValue(mixed $reveal, string $context): void {
+		if ($reveal !== ExplicitReveal::EXPLICIT) {
+			throw new InvalidAuthorizationRuleException(
+				message: "Authorization key '" . ExplicitReveal::KEY . "' in {$context} must be \"" . ExplicitReveal::EXPLICIT . '"'
+			);
+		}
+	}//end validateRevealValue()
 
 	/**
 	 * Validate property-level authorization

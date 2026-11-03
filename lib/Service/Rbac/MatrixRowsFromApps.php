@@ -122,7 +122,7 @@ class MatrixRowsFromApps {
 
 		$this->cache[$key] = $this->readable(
 			rows: $this->ask(schema: $schema, provider: $provider),
-			properties: ($schema->getProperties() ?? []),
+			schema: $schema,
 			field: $field,
 			provider: $provider
 		);
@@ -193,14 +193,16 @@ class MatrixRowsFromApps {
 	/**
 	 * The rows that read, each one that does not logged with its findings.
 	 *
-	 * @param array<int, array<string, mixed>> $rows       The rows.
-	 * @param array<string, mixed>             $properties The schema's properties.
-	 * @param string                           $field      The matrix field.
-	 * @param string                           $provider   The provider id, for the log.
+	 * @param array<int, array<string, mixed>> $rows     The rows.
+	 * @param Schema                           $schema   The schema, for its properties and declared actions.
+	 * @param string                           $field    The matrix field.
+	 * @param string                           $provider The provider id, for the log.
 	 *
 	 * @return array<int, array<string, mixed>> The rows that read.
 	 */
-	private function readable(array $rows, array $properties, string $field, string $provider): array {
+	private function readable(array $rows, Schema $schema, string $field, string $provider): array {
+		$properties = ($schema->getProperties() ?? []);
+		$validator = $this->validator->withDeclaredActions(declaredActions: $schema->declaredActionNames());
 		$kept = [];
 		foreach ($rows as $row) {
 			$group = '';
@@ -216,7 +218,7 @@ class MatrixRowsFromApps {
 				continue;
 			}
 
-			$findings = $this->validator->findingsForRow(row: $row, properties: $properties, field: $field);
+			$findings = $validator->findingsForRow(row: $row, properties: $properties, field: $field);
 			if ($findings !== []) {
 				$this->logger->warning(
 					message: '[MatrixRowsFromApps] A provider row does not read and was dropped',
