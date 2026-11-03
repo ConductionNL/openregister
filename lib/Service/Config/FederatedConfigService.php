@@ -62,6 +62,12 @@ class FederatedConfigService {
 	private const ALLOWLIST_KEY = 'federated_config_source_allowlist';
 
 	/**
+	 * App-config key: `true` lets a bundle in that no trusted key vouches for,
+	 * while the trusted-keys list is empty. Only an administrator can set it.
+	 */
+	private const ALLOW_UNVERIFIED_KEY = 'federated_config_allow_unverified_bundles';
+
+	/**
 	 * Trust-configuration fields → their app-config keys (for the governance API).
 	 *
 	 * @var array<string, string>
@@ -71,6 +77,7 @@ class FederatedConfigService {
 		'trustedKeys' => 'federated_config_trusted_keys',
 		'publishGroups' => 'federated_config_publish_groups',
 		'installGroups' => 'federated_config_install_groups',
+		'allowUnverifiedBundles' => self::ALLOW_UNVERIFIED_KEY,
 	];
 
 	/**
@@ -154,9 +161,10 @@ class FederatedConfigService {
 			throw new RuntimeException(sprintf('Source "%s" is not on this organisation\'s allowlist.', $source));
 		}
 
-		// Provenance: a tampered signature is always refused; an unsigned or
-		// untrusted-key bundle is refused only once the org enforces signing (a
-		// non-empty trusted-keys allowlist).
+		// Provenance: a tampered signature is always refused. Anyone can sign with
+		// a key of their own, so a bundle counts as verified only against a
+		// non-empty trusted-keys allowlist; without one, an administrator has to
+		// allow unverified bundles explicitly.
 		$verdict = $this->signer->verify(bundle: $bundle);
 		if ($verdict['signed'] === true && $verdict['valid'] === false) {
 			throw new RuntimeException('Bundle signature is invalid — refusing to install a tampered bundle.');
@@ -164,6 +172,15 @@ class FederatedConfigService {
 
 		if ($verdict['trusted'] === false) {
 			throw new RuntimeException('Bundle publisher key is not trusted by this organisation.');
+		}
+
+		if ($this->signer->enforced() === false
+			&& $this->appConfig->getValueString(self::APP_ID, self::ALLOW_UNVERIFIED_KEY, '') !== 'true'
+		) {
+			throw new RuntimeException(
+				'This organisation has no trusted publisher keys, so this bundle cannot be verified. '
+				.'An administrator can add a trusted key or allow unverified bundles.'
+			);
 		}
 
 		return $this->typeOrFail(typeId: $typeId)->deserialise(bundle: $bundle);
@@ -505,7 +522,7 @@ class FederatedConfigService {
 	/**
 	 * Set one trust-configuration value (the allowlist, trusted keys, or a group list).
 	 *
-	 * @param string $field One of `sourceAllowlist|trustedKeys|publishGroups|installGroups`.
+	 * @param string $field One of `sourceAllowlist|trustedKeys|publishGroups|installGroups|allowUnverifiedBundles`.
 	 * @param string $value The new value (comma-separated).
 	 *
 	 * @return void
