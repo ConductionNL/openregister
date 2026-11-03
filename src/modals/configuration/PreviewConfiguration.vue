@@ -460,7 +460,7 @@ export default {
 		},
 
 		/**
-		 * @param change
+		 * @param {object} change
 		 * @spec exclude Checkbox-state predicate for an object row in the preview list; UI state helper.
 		 */
 		isObjectSelected(change) {
@@ -469,8 +469,8 @@ export default {
 		},
 
 		/**
-		 * @param slug
-		 * @param checked
+		 * @param {string} slug
+		 * @param {boolean} checked
 		 * @spec exclude Toggles a register slug in/out of the selection set; UI selection plumbing.
 		 */
 		toggleRegisterSelection(slug, checked) {
@@ -486,8 +486,8 @@ export default {
 		},
 
 		/**
-		 * @param slug
-		 * @param checked
+		 * @param {string} slug
+		 * @param {boolean} checked
 		 * @spec exclude Toggles a schema slug in/out of the selection set; UI selection plumbing.
 		 */
 		toggleSchemaSelection(slug, checked) {
@@ -501,8 +501,8 @@ export default {
 		},
 
 		/**
-		 * @param change
-		 * @param checked
+		 * @param {object} change
+		 * @param {boolean} checked
 		 * @spec exclude Toggles an object id in/out of the selection set; UI selection plumbing.
 		 */
 		toggleObjectSelection(change, checked) {
@@ -552,7 +552,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {unknown} value
 		 * @spec exclude Truncating/stringifying value formatter for the preview table; UI presentation helper.
 		 */
 		formatValue(value) {

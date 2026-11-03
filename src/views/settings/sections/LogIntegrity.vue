@@ -239,7 +239,7 @@ import SettingsSection from '../../../components/shared/SettingsSection.vue'
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @link https://www.openregister.nl
+ * @see https://www.openregister.nl
  *
  * @spec openspec/specs/audit-hash-chain/spec.md
  */

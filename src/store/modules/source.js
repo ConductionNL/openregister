@@ -30,12 +30,11 @@ export const useSourceStore = defineStore('source', {
 		 * Refresh the source list from the API
 		 *
 		 * @param {string|null} search - Optional search term
-		 * @param {boolean} _soft - If true, don't show loading state (default: false)
 		 * @return {Promise} Promise with source list
 		 * @spec exclude API passthrough to GET /api/sources (list)
 		 */
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
-		async refreshSourceList(search = null, _soft = false) {
+		async refreshSourceList(search = null) {
 			// @todo this might belong in a service?
 			let endpoint = '/index.php/apps/openregister/api/sources'
 			if (search !== null && search !== '') {

@@ -880,7 +880,7 @@ export default {
 		// in tests/e2e/spec-coverage/{entity-management-modals, saved-search-views}.
 		'$root.registerStore.registerList': {
 			/**
-			 * @param newList
+			 * @param {Array<object>} newList
 			 * @spec exclude Vue watch handler plumbing; re-runs applyQueryParamsFromRoute when the register list finishes loading on /tables deep-links.
 			 */
 			handler(newList) {
@@ -897,7 +897,7 @@ export default {
 		// This watcher will update properties when schema changes
 		'$root.schemaStore.schemaItem': {
 			/**
-			 * @param newSchema
+			 * @param {object|null} newSchema
 			 * @spec exclude Vue watch handler plumbing; re-initialises object properties when the selected schema changes.
 			 */
 			handler(newSchema) {
@@ -915,8 +915,8 @@ export default {
 		// Watch for selected schemas changes to auto-expand new schemas
 		selectedSchemas: {
 			/**
-			 * @param newSchemas
-			 * @param oldSchemas
+			 * @param {Array<string|number>} newSchemas
+			 * @param {Array<string|number>|undefined} oldSchemas
 			 * @spec exclude Vue watch handler plumbing; auto-expands newly selected schema groups in the UI.
 			 */
 			handler(newSchemas, oldSchemas) {
@@ -939,7 +939,7 @@ export default {
 		// Watch for active view changes to sync the name input
 		'viewsStore.activeView': {
 			/**
-			 * @param newView
+			 * @param {object|null} newView
 			 * @spec exclude Vue watch handler plumbing; mirrors the active view's name into the editable name input.
 			 */
 			handler(newView) {
@@ -1005,7 +1005,7 @@ export default {
 		 * CnIndexSidebar @search: update store, keep searchTerms in sync for URL, and refetch.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
-		 * @param value
+		 * @param {string} value
 		 */
 		onSearchInput(value) {
 			const search = value || ''
@@ -1020,9 +1020,9 @@ export default {
 		 * CnIndexSidebar @filter-change: update store filters, keep facetFilters in sync, and refetch.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
-		 * @param root0
-		 * @param root0.key
-		 * @param root0.values
+		 * @param {object} root0
+		 * @param {string} root0.key
+		 * @param {Array|undefined} root0.values
 		 */
 		onFilterChange({ key, values }) {
 			const filters = {
@@ -1038,7 +1038,7 @@ export default {
 		 * CnIndexSidebar @columns-change: persist visible columns.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
-		 * @param columns
+		 * @param {Array<string>} columns
 		 */
 		onColumnsChange(columns) {
 			objectStore.setSearchVisibleColumns(columns)
@@ -1382,7 +1382,7 @@ export default {
 					total: objectStore.pagination.total || 0,
 					time: executionTime,
 				}
-			} catch (error) {
+			} catch {
 				// Search failed - error is handled by setting lastSearchStats to defaults
 				this.lastSearchStats = {
 					total: 0,
