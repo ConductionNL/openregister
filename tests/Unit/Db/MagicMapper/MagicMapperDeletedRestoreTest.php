@@ -355,6 +355,14 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 
 		$this->assertSame(0, $mapper->countDeletedAcrossAllMagicTables(_rbac: true, _multitenancy: true));
 		$this->assertSame(5, $mapper->countDeletedAcrossAllMagicTables(_rbac: false, _multitenancy: false));
+		$this->assertSame(
+			0,
+			\OCA\OpenRegister\Service\OrganisationContext::run(
+				'org-a',
+				static fn (): int => $mapper->countDeletedAcrossAllMagicTables(_rbac: false, _multitenancy: false)
+			),
+			'inside an organisation context the unscoped count is scoped'
+		);
 	}//end testScopedCountSkipsATableWhoseSchemaCannotBeResolved()
 
 	// -------------------------------------------------------------------------

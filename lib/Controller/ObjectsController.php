@@ -4117,14 +4117,16 @@ class ObjectsController extends Controller {
 
 		// Update the object.
 		try {
-			// Use the object service to validate and update the object.
+			// The write targets the object the caller's own read resolved, by its
+			// uuid: the save looks the identifier up again without the caller's
+			// scope, and the URL id alone can name another row there.
 			$objectEntity = $objectService->saveObject(
 				register: $resolved['register'],
 				schema: $resolved['schema'],
 				object: $object,
 				_rbac: $rbac,
 				_multitenancy: $multi,
-				uuid: $id,
+				uuid: ($existingObject->getUuid() ?? $id),
 				uploadedFiles: $uploadedFilesValue
 			);
 
@@ -4318,7 +4320,7 @@ class ObjectsController extends Controller {
 				object: $mergedData,
 				_rbac: $rbac,
 				_multitenancy: $multi,
-				uuid: $id
+				uuid: ($existingObject->getUuid() ?? $id)
 			);
 
 			$this->logger->debug(
@@ -4505,7 +4507,7 @@ class ObjectsController extends Controller {
 				object: $mergedData,
 				_rbac: $rbac,
 				_multitenancy: $multi,
-				uuid: $id,
+				uuid: ($existingObject->getUuid() ?? $id),
 				uploadedFiles: $uploadedFilesValue
 			);
 
@@ -4638,6 +4640,11 @@ class ObjectsController extends Controller {
 			// Reject delete on append-only schema with HTTP 405.
 			return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
 		} catch (ReferentialIntegrityException $exception) {
+			if ($this->isCurrentUserAdmin() === false) {
+				$readable = $objectService->readableDeletionAnalysis(analysis: $exception->getAnalysis());
+				$exception = new ReferentialIntegrityException(analysis: $readable);
+			}
+
 			return new JSONResponse(
 				data: $exception->toResponseBody(),
 				statusCode: 409
@@ -4741,6 +4748,9 @@ class ObjectsController extends Controller {
 
 			$deleteHandler = $objectService->getDeleteHandler();
 			$analysis = $deleteHandler->canDelete($objectEntity);
+			if ($scoped === true) {
+				$analysis = $objectService->readableDeletionAnalysis(analysis: $analysis);
+			}
 
 			return new JSONResponse(data: $analysis->toArray(), statusCode: 200);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $exception) {
