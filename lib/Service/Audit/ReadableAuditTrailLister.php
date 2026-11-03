@@ -10,12 +10,13 @@
  * than it was.
  *
  * The question is "which of these entries belong to objects this caller may
- * read", and it is answered by the funnel the object read path already uses,
- * `PermissionHandler::hasPermission()` with action `read` and the resolved
- * entity. That funnel consults `ObjectGrantResolver`, so an inherited grant
- * means here exactly what it means on the object itself. A second reachability
- * rule written for this page would be a second answer to the question the
- * whole RBAC layer exists for, and the two would drift.
+ * read, and what of them may the caller see", and it is answered by the reader
+ * path of one object's history, `ObjectHistoryForReaders::readerEntries()`.
+ * That path reads the object again through the object GET's read path,
+ * `ObjectService::find()` with RBAC and multitenancy on, so the organisation
+ * boundary, a grant, a schema rule, a draft and a deleted object mean here
+ * what they mean on the object. It runs the doelbinding guard of the object
+ * GET and removes from each entry the properties the caller may not see.
  *
  * Every unknown resolves to absent. No caller, no object uuid, an object that
  * no longer resolves, a schema that no longer resolves and any throwable all
@@ -44,11 +45,6 @@ namespace OCA\OpenRegister\Service\Audit;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use Throwable;
 
 /**
@@ -95,33 +91,31 @@ class ReadableAuditTrailLister {
 	public const WITHHELD_FIELDS = ['session', 'request', 'ipAddress'];
 
 	/**
-	 * Schemas already resolved in this run, by id.
+	 * Whether read entries are given to the caller of this run.
 	 *
-	 * @var array<int, Schema|null>
+	 * @var bool
 	 */
-	private array $schemaCache = [];
+	private bool $withReads = false;
 
 	/**
-	 * Masks explicit-reveal values in the rows, built on first use.
+	 * The free-text term of this run, matched against the redacted entries.
 	 *
-	 * @var ExplicitRevealTrailMasker|null
+	 * @var string
 	 */
-	private ?ExplicitRevealTrailMasker $revealMasker = null;
+	private string $search = '';
 
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapper  $auditTrailMapper  Reads the candidate rows.
-	 * @param MagicMapper       $objectMapper      Resolves an entry's object across the magic tables.
-	 * @param SchemaMapper      $schemaMapper      Resolves the object's schema.
-	 * @param PermissionHandler $permissionHandler Decides whether the caller may read the object.
-	 * @param ReadEventVisibility $readEvents      Whether the caller may see who read an object.
+	 * @param AuditTrailMapper        $auditTrailMapper Reads the candidate rows.
+	 * @param MagicMapper             $objectMapper     Locates an entry's object across the magic tables.
+	 * @param ObjectHistoryForReaders $history          Reads each object and redacts its entries as its history does.
+	 * @param ReadEventVisibility     $readEvents       Whether the caller may see who read an object.
 	 */
 	public function __construct(
 		private readonly AuditTrailMapper $auditTrailMapper,
 		private readonly MagicMapper $objectMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly PermissionHandler $permissionHandler,
+		private readonly ObjectHistoryForReaders $history,
 		private readonly ReadEventVisibility $readEvents,
 	) {
 	}//end __construct()
@@ -170,10 +164,13 @@ class ReadableAuditTrailLister {
 			];
 		}
 
-		$this->schemaCache = [];
-
-		// Who read an object is shown only to the groups named for it.
-		$withReads = $this->readEvents->maySeeReadEvents(userId: $userId);
+		// Who read an object is shown only to the groups named for it. A search
+		// is matched against what the caller is given, after redaction: matched
+		// in SQL on the stored `changed`, it would tell the caller whether a
+		// hidden property ever held the term.
+		$this->withReads = $this->readEvents->maySeeReadEvents(userId: $userId);
+		$this->search = trim((string)$search);
+		$filters = $this->history->readerColumns(columns: $filters);
 
 		$results = [];
 		$found = 0;
@@ -186,8 +183,7 @@ class ReadableAuditTrailLister {
 				limit: self::BATCH_SIZE,
 				offset: $rawOffset,
 				filters: $filters,
-				sort: ['created' => 'DESC'],
-				search: $search
+				sort: ['created' => 'DESC']
 			);
 
 			$batchSize = count($batch);
@@ -198,10 +194,9 @@ class ReadableAuditTrailLister {
 
 			$taken = $this->takeReadable(
 				batch: $batch,
-				readable: $this->readableUuids(userId: $userId, batch: $batch),
+				readable: $this->readerRows(batch: $batch),
 				room: ($limit - $found),
-				results: $results,
-				withReads: $withReads
+				results: $results
 			);
 
 			$found += $taken['kept'];
@@ -241,30 +236,24 @@ class ReadableAuditTrailLister {
 	 * for ever.
 	 *
 	 * @param array<AuditTrail>   $batch    The candidate rows, in order.
-	 * @param array<string, true> $readable The readable object uuids.
+	 * @param array<int, array>   $readable The redacted rows the caller may read, by batch index.
 	 * @param int                 $room     How many more rows the page may hold.
 	 * @param array               $results  The page so far, appended to in place.
-	 * @param bool                $withReads Whether read entries are given to this caller.
 	 *
 	 * @return array{consumed: int, kept: int} How many rows were walked and kept.
 	 */
-	private function takeReadable(array $batch, array $readable, int $room, array &$results, bool $withReads): array {
+	private function takeReadable(array $batch, array $readable, int $room, array &$results): array {
 		$consumed = 0;
 		$kept = 0;
 
-		foreach ($batch as $entry) {
+		foreach ($batch as $index => $entry) {
 			$consumed++;
 
-			$objectUuid = $entry->getObjectUuid();
-			if ($objectUuid === null || isset($readable[$objectUuid]) === false) {
+			if ($this->shows(entry: $entry, row: ($readable[$index] ?? null)) === false) {
 				continue;
 			}
 
-			if ($withReads === false && $this->readEvents->isReadAction(action: $entry->getAction()) === true) {
-				continue;
-			}
-
-			$results[] = $this->scopedRow(entry: $entry);
+			$results[] = $readable[$index];
 			$kept++;
 
 			if ($kept >= $room) {
@@ -276,28 +265,46 @@ class ReadableAuditTrailLister {
 	}//end takeReadable()
 
 	/**
-	 * The object uuids in this batch that the caller may read.
+	 * Whether one candidate row goes on the page.
 	 *
-	 * Resolved in one cross-table lookup rather than one per row: a page of
-	 * twenty entries on one case is twenty rows pointing at one object.
+	 * @param AuditTrail $entry The stored entry.
+	 * @param array|null $row   Its redacted form, or null when the caller may not read its object.
 	 *
+	 * @return bool True when the row is readable, not a hidden read entry, and matches the search.
+	 */
+	private function shows(AuditTrail $entry, ?array $row): bool {
+		if ($row === null) {
+			return false;
+		}
+
+		if ($this->withReads === false && $this->readEvents->isReadAction(action: $entry->getAction()) === true) {
+			return false;
+		}
+
+		return $this->search === '' || $this->history->matches(entry: $row, search: $this->search);
+	}//end shows()
+
+	/**
+	 * The rows of this batch the caller may read, redacted, by batch index.
+	 *
+	 * The objects are located in one cross-table lookup, and each object is
+	 * then read and its rows redacted once, however many rows point at it.
 	 * Soft-deleted objects are NOT included. An entry whose object is gone
 	 * stays on the admin surface, which is where the deletion itself is read.
 	 *
-	 * @param string           $userId The caller.
-	 * @param array<AuditTrail> $batch  The candidate rows.
+	 * @param array<AuditTrail> $batch The candidate rows.
 	 *
-	 * @return array<string, true> The readable object uuids, as a set.
+	 * @return array<int, array> The redacted readable rows, keyed by their index in the batch.
 	 */
-	private function readableUuids(string $userId, array $batch): array {
-		$uuids = $this->candidateUuids(batch: $batch);
-		if ($uuids === []) {
+	private function readerRows(array $batch): array {
+		$groups = $this->indicesByObject(batch: $batch);
+		if ($groups === []) {
 			return [];
 		}
 
 		try {
-			$objects = $this->objectMapper->findMultipleAcrossAllMagicTables(
-				uuids: $uuids,
+			$located = $this->objectMapper->findMultipleAcrossAllMagicTables(
+				uuids: array_keys($groups),
 				includeDeleted: false
 			);
 		} catch (Throwable $e) {
@@ -306,124 +313,47 @@ class ReadableAuditTrailLister {
 			return [];
 		}
 
-		$readable = [];
-		foreach ($objects as $object) {
-			$objectUuid = $object->getUuid();
-			if ($objectUuid !== null && $objectUuid !== '' && $this->mayRead(userId: $userId, object: $object) === true) {
-				$readable[$objectUuid] = true;
+		$rows = [];
+		foreach ($located as $object) {
+			$indices = ($groups[(string)$object->getUuid()] ?? []);
+			unset($groups[(string)$object->getUuid()]);
+			if ($indices === []) {
+				continue;
 			}
-		}
 
-		return $readable;
-	}//end readableUuids()
+			try {
+				$entries = $this->history->readerEntries(
+					located: $object,
+					rows: array_map(static fn (int $index): AuditTrail => $batch[$index], $indices)
+				);
+			} catch (Throwable $e) {
+				$entries = null;
+			}
+
+			if ($entries !== null && count($entries) === count($indices)) {
+				$rows += array_combine($indices, $entries);
+			}
+		}//end foreach
+
+		return $rows;
+	}//end readerRows()
 
 	/**
-	 * The distinct object uuids one batch of entries points at.
+	 * The batch indices of the rows, grouped by the object uuid they point at.
 	 *
 	 * @param array<AuditTrail> $batch The candidate rows.
 	 *
-	 * @return string[] The uuids, without repeats.
-	 *
-	 * @psalm-return list<string>
+	 * @return array<string, list<int>> The indices, by object uuid.
 	 */
-	private function candidateUuids(array $batch): array {
-		$uuids = [];
-		foreach ($batch as $entry) {
+	private function indicesByObject(array $batch): array {
+		$groups = [];
+		foreach ($batch as $index => $entry) {
 			$objectUuid = $entry->getObjectUuid();
 			if ($objectUuid !== null && $objectUuid !== '') {
-				$uuids[$objectUuid] = true;
+				$groups[$objectUuid][] = $index;
 			}
 		}
 
-		return array_keys($uuids);
-	}//end candidateUuids()
-
-	/**
-	 * Whether this caller may read this object.
-	 *
-	 * THE ONE FUNNEL. `PermissionHandler::hasPermission()` with action `read`
-	 * and the resolved entity is what the object read path itself asks, and it
-	 * consults `ObjectGrantResolver`, so an inherited grant means here exactly
-	 * what it means on the object. A second reachability rule written for this
-	 * page would be a second answer to the question the whole RBAC layer
-	 * exists for, and the two would drift.
-	 *
-	 * Every unknown answers no: a schema that will not resolve and a check
-	 * that throws both hide the row.
-	 *
-	 * @param string       $userId The caller.
-	 * @param ObjectEntity $object The object an entry belongs to.
-	 *
-	 * @return bool True when the caller may read it.
-	 */
-	private function mayRead(string $userId, ObjectEntity $object): bool {
-		$schemaId = $object->getSchema();
-		if ($schemaId === null) {
-			return false;
-		}
-
-		$schema = $this->schema(schemaId: (int)$schemaId);
-		if ($schema === null) {
-			return false;
-		}
-
-		try {
-			return $this->permissionHandler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: $userId,
-				objectOwner: $object->getOwner(),
-				_rbac: true,
-				object: $object
-			);
-		} catch (Throwable $e) {
-			return false;
-		}
-	}//end mayRead()
-
-	/**
-	 * A schema by id, resolved once per run.
-	 *
-	 * @param int $schemaId The schema id.
-	 *
-	 * @return Schema|null The schema, or null when it cannot be resolved.
-	 */
-	private function schema(int $schemaId): ?Schema {
-		if (array_key_exists($schemaId, $this->schemaCache) === true) {
-			return $this->schemaCache[$schemaId];
-		}
-
-		try {
-			$schema = $this->schemaMapper->find($schemaId);
-		} catch (Throwable $e) {
-			$schema = null;
-		}
-
-		if (($schema instanceof Schema) === false) {
-			$schema = null;
-		}
-
-		$this->schemaCache[$schemaId] = $schema;
-
-		return $schema;
-	}//end schema()
-
-	/**
-	 * One entry as the scoped surface renders it.
-	 *
-	 * @param AuditTrail $entry The entry.
-	 *
-	 * @return array The row, without the withheld fields.
-	 */
-	private function scopedRow(AuditTrail $entry): array {
-		// Explicit-reveal values leave masked, as on every trail route.
-		$this->revealMasker ??= new ExplicitRevealTrailMasker(schemaMapper: $this->schemaMapper);
-		$row = $this->revealMasker->mask(entries: [$entry->jsonSerialize()])[0];
-
-		foreach (self::WITHHELD_FIELDS as $field) {
-			unset($row[$field]);
-		}
-
-		return $row;
-	}//end scopedRow()
+		return $groups;
+	}//end indicesByObject()
 }//end class
