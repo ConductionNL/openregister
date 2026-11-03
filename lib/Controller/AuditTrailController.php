@@ -403,7 +403,8 @@ class AuditTrailController extends Controller {
 	 * it, so an error in this method cannot make that one wider than it was.
 	 *
 	 * What this returns is the entries of the objects the caller may read,
-	 * decided by the RBAC funnel the object read path already uses. An entry
+	 * decided by the object read path itself (RBAC and the organisation
+	 * boundary), with the properties the caller may not see removed. An entry
 	 * whose object is gone, whose schema is gone, or whose readability cannot
 	 * be decided is absent: every unknown hides a row. `session`, `request`
 	 * and `ipAddress` are withheld, because they answer "who else was on this
@@ -418,9 +419,10 @@ class AuditTrailController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
-	 * @no-admin-idor-exempt Guarded in-body and downstream: the lister resolves every row's object
-	 *     through PermissionHandler::hasPermission(action: 'read') for the SESSION's user, and takes
-	 *     no object identifier from the request that could name somebody else's row.
+	 * @no-admin-idor-exempt Guarded in-body and downstream: the lister reads every row's object
+	 *     through ObjectHistoryForReaders::readerEntries(), which is ObjectReadAccess::readable()
+	 *     (ObjectService::find with _rbac and _multitenancy on, as the object GET) for the SESSION's
+	 *     user, and takes no object identifier from the request that could name somebody else's row.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
 	 */
