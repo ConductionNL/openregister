@@ -2301,98 +2301,146 @@ class OasService {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Recursive schema validation with multiple reference types
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional paths for allOf, $ref, and nested validation
-	 *
 	 * @spec openspec/specs/oas-validation/spec.md#scenario-pagination-structure-follows-api-42
 	 */
 	private function validateSchemaReferences(array &$schema, string $context): void {
-		// Check allOf constructs.
-		if (isset($schema['allOf']) === true) {
-			if (is_array($schema['allOf']) === false || empty($schema['allOf']) === true) {
-				unset($schema['allOf']);
+		$this->validateAllOf(schema: $schema, context: $context);
+		$this->validateRef(schema: $schema, context: $context);
+		$this->validateNestedReferences(schema: $schema, context: $context);
+	}//end validateSchemaReferences()
+
+	/**
+	 * Keep only the allOf items that carry a $ref, a type or properties; drop an allOf left empty.
+	 *
+	 * @param array<string, mixed> $schema  The schema, repaired in place.
+	 * @param string               $context The schema's path, for the report.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md
+	 */
+	private function validateAllOf(array &$schema, string $context): void {
+		if (isset($schema['allOf']) === false) {
+			return;
+		}
+
+		if (is_array($schema['allOf']) === false || empty($schema['allOf']) === true) {
+			unset($schema['allOf']);
+			return;
+		}
+
+		$validAllOfItems = array_values(array_filter($schema['allOf'], fn ($item): bool => $this->isUsableAllOfItem(item: $item)));
+		if (empty($validAllOfItems) === false) {
+			$schema['allOf'] = $validAllOfItems;
+			return;
+		}
+
+		unset($schema['allOf']);
+		$this->report->addAutoCorrection(
+			path: $context . '.allOf',
+			message: 'allOf with no valid items was removed.',
+			code: OasValidationReport::CODE_INVALID_ALLOF,
+		);
+	}//end validateAllOf()
+
+	/**
+	 * Whether an allOf item carries a non-empty string $ref, a type or properties.
+	 *
+	 * @param mixed $item The allOf item.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md
+	 */
+	private function isUsableAllOfItem(mixed $item): bool {
+		if (is_array($item) === false || empty($item) === true) {
+			return false;
+		}
+
+		if (empty($item['$ref']) === false && is_string($item['$ref']) === true) {
+			return true;
+		}
+
+		return ($item['type'] ?? null) !== null || ($item['properties'] ?? null) !== null;
+	}//end isUsableAllOfItem()
+
+	/**
+	 * Repair a $ref: drop an empty or non-string one, match a component name case-insensitively,
+	 * and replace a dangling component reference with a string type.
+	 *
+	 * @param array<string, mixed> $schema  The schema, repaired in place.
+	 * @param string               $context The schema's path, for the report.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md
+	 */
+	private function validateRef(array &$schema, string $context): void {
+		if (($schema['$ref'] ?? null) === null) {
+			return;
+		}
+
+		if (empty($schema['$ref']) === true || is_string($schema['$ref']) === false) {
+			unset($schema['$ref']);
+			return;
+		}
+
+		$refPath = str_replace('#/components/schemas/', '', $schema['$ref']);
+		if (strpos($schema['$ref'], '#/components/schemas/') !== 0
+			|| isset($this->oas['components']['schemas'][$refPath]) === true
+		) {
+			return;
+		}
+
+		$existingName = $this->componentNamedLike(refPath: $refPath);
+		if ($existingName !== null) {
+			$schema['$ref'] = '#/components/schemas/' . $existingName;
+			return;
+		}
+
+		unset($schema['$ref']);
+		if (isset($schema['type']) === false) {
+			$schema['type'] = 'string';
+			$schema['description'] = $schema['description'] ?? 'Reference to ' . $refPath;
+		}
+
+		$this->report->addError(
+			path: $context . '.$ref',
+			message: 'Dangling $ref to "#/components/schemas/' . $refPath . '"; substituted with type=string.',
+			code: OasValidationReport::CODE_DANGLING_REF,
+		);
+	}//end validateRef()
+
+	/**
+	 * The component schema whose name matches ignoring case, if any.
+	 *
+	 * @param string $refPath The referenced component name.
+	 *
+	 * @return string|null The existing name.
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md
+	 */
+	private function componentNamedLike(string $refPath): ?string {
+		foreach (array_keys($this->oas['components']['schemas'] ?? []) as $existingName) {
+			if (strtolower($existingName) === strtolower($refPath)) {
+				return $existingName;
 			}
+		}
 
-			if (isset($schema['allOf']) === true && is_array($schema['allOf']) === true) {
-				$validAllOfItems = [];
-				foreach ($schema['allOf'] as $index => $item) {
-					// Suppress unused variable warning for $index - only processing items.
-					unset($index);
-					if (is_array($item) === false || empty($item) === true) {
-						continue;
-					}
+		return null;
+	}//end componentNamedLike()
 
-					// Validate each allOf item has required structure.
-					$hasValidRef = ($item['$ref'] ?? null) !== null
-						&& empty($item['$ref']) === false
-						&& is_string($item['$ref']) === true;
-					if ($hasValidRef === true) {
-						$validAllOfItems[] = $item;
-						continue;
-					}
-
-					if (($item['type'] ?? null) !== null || (($item['properties'] ?? null) !== null) === true) {
-						$validAllOfItems[] = $item;
-					}
-				}
-
-				// If no valid items remain, remove allOf.
-				if (empty($validAllOfItems) === true) {
-					unset($schema['allOf']);
-					$this->report->addAutoCorrection(
-						path: $context . '.allOf',
-						message: 'allOf with no valid items was removed.',
-						code: OasValidationReport::CODE_INVALID_ALLOF,
-					);
-				}
-
-				if (empty($validAllOfItems) === false) {
-					$schema['allOf'] = $validAllOfItems;
-				}
-			}//end if
-		}//end if
-
-		// Check $ref validity.
-		if (($schema['$ref'] ?? null) !== null) {
-			if (empty($schema['$ref']) === true || is_string($schema['$ref']) === false) {
-				unset($schema['$ref']);
-			}
-
-			if (isset($schema['$ref']) === true && is_string($schema['$ref']) === true) {
-				// Check if reference points to existing schema.
-				$refPath = str_replace('#/components/schemas/', '', $schema['$ref']);
-				if (strpos($schema['$ref'], '#/components/schemas/') === 0
-					&& isset($this->oas['components']['schemas'][$refPath]) === false
-				) {
-					// Try case-insensitive match against existing component names.
-					$resolved = false;
-					foreach (array_keys($this->oas['components']['schemas'] ?? []) as $existingName) {
-						if (strtolower($existingName) === strtolower($refPath)) {
-							$schema['$ref'] = '#/components/schemas/' . $existingName;
-							$resolved = true;
-							break;
-						}
-					}
-
-					// If no match found, remove the broken $ref and fall back to string type.
-					if ($resolved === false) {
-						unset($schema['$ref']);
-						if (isset($schema['type']) === false) {
-							$schema['type'] = 'string';
-							$schema['description'] = $schema['description'] ?? 'Reference to ' . $refPath;
-						}
-
-						$this->report->addError(
-							path: $context . '.$ref',
-							message: 'Dangling $ref to "#/components/schemas/' . $refPath . '"; substituted with type=string.',
-							code: OasValidationReport::CODE_DANGLING_REF,
-						);
-					}
-				}//end if
-			}//end if
-		}//end if
-
-		// Recursively check nested schemas (by reference so fixes are applied).
+	/**
+	 * Validate the references in properties, items and oneOf/anyOf/allOf items, in place.
+	 *
+	 * @param array<string, mixed> $schema  The schema, repaired in place.
+	 * @param string               $context The schema's path, for the report.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md
+	 */
+	private function validateNestedReferences(array &$schema, string $context): void {
 		if (($schema['properties'] ?? null) !== null) {
 			foreach ($schema['properties'] as $propName => &$property) {
 				if (is_array($property) === true) {
@@ -2407,21 +2455,19 @@ class OasService {
 			$this->validateSchemaReferences(schema: $schema['items'], context: "{$context}.items");
 		}
 
-		// Recursively check oneOf/anyOf/allOf items for broken refs.
 		foreach (['oneOf', 'anyOf', 'allOf'] as $compositionKey) {
-			if (($schema[$compositionKey] ?? null) !== null && is_array($schema[$compositionKey]) === true) {
-				foreach ($schema[$compositionKey] as $idx => &$compositionItem) {
-					if (is_array($compositionItem) === true) {
-						$this->validateSchemaReferences(
-							schema: $compositionItem,
-							context: "{$context}.{$compositionKey}[{$idx}]"
-						);
-					}
-				}
-
-				unset($compositionItem);
+			if (is_array($schema[$compositionKey] ?? null) === false) {
+				continue;
 			}
+
+			foreach ($schema[$compositionKey] as $idx => &$compositionItem) {
+				if (is_array($compositionItem) === true) {
+					$this->validateSchemaReferences(schema: $compositionItem, context: "{$context}.{$compositionKey}[{$idx}]");
+				}
+			}
+
+			unset($compositionItem);
 		}
-	}//end validateSchemaReferences()
+	}//end validateNestedReferences()
 
 }//end class
