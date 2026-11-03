@@ -48,6 +48,16 @@ class RecordMetadataConditions {
 	private static ?array $fields = null;
 
 	/**
+	 * Match keys that name an envelope field under another name.
+	 *
+	 * The envelope carries the record's uuid as `id`; the magic table column,
+	 * and so the list query, names it `_uuid`.
+	 *
+	 * @var array<string, string>
+	 */
+	private const ALIASES = ['uuid' => 'id'];
+
+	/**
 	 * The schema and key pairs already logged by {@see refuses()}.
 	 *
 	 * @var array<string, true>
@@ -71,11 +81,46 @@ class RecordMetadataConditions {
 	 */
 	public function fields(): array {
 		if (self::$fields === null) {
-			self::$fields = array_map('strval', array_keys((new ObjectEntity())->getMatchEnvelope()['@self']));
+			self::$fields = array_merge(
+				array_map('strval', array_keys((new ObjectEntity())->getMatchEnvelope()['@self'])),
+				array_keys(self::ALIASES)
+			);
 		}
 
 		return self::$fields;
 	}//end fields()
+
+	/**
+	 * The value a condition on this property reads.
+	 *
+	 * An underscore-prefixed property is metadata. When the object carries a
+	 * `@self`, that is the record's metadata and the only answer: a body key of
+	 * the same name is written by whoever wrote the body. A field the `@self`
+	 * holds as empty answers null; so does a field this `@self` lacks, and a key
+	 * that names no record metadata at all, which callers refuse before asking
+	 * ({@see unknownKeys()}). Only an object without any `@self` falls back to
+	 * its body.
+	 *
+	 * @param array<int|string, mixed> $object   The object.
+	 * @param string                   $property The condition's key.
+	 *
+	 * @return mixed The value, or null.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	public function valueIn(array $object, string $property): mixed {
+		if (str_starts_with($property, '_') === false || is_array(($object['@self'] ?? null)) === false) {
+			return ($object[$property] ?? null);
+		}
+
+		$field = substr($property, 1);
+		$field = (self::ALIASES[$field] ?? $field);
+		if (array_key_exists($field, $object['@self']) === false) {
+			return null;
+		}
+
+		return $object['@self'][$field];
+	}//end valueIn()
 
 	/**
 	 * The underscore-prefixed keys of a `match` clause that name no record metadata.

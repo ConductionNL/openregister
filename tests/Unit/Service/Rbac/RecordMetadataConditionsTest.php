@@ -59,8 +59,9 @@ class RecordMetadataConditionsTest extends TestCase {
 	public function testTheKnownFieldsAreTheRecordEnvelope(): void {
 		$envelope = (new ObjectEntity())->getMatchEnvelope()['@self'];
 
-		$this->assertSame(array_keys($envelope), $this->conditions->fields());
+		$this->assertSame(array_merge(array_keys($envelope), ['uuid']), $this->conditions->fields());
 		$this->assertContains('organisation', $this->conditions->fields());
+		$this->assertSame([], $this->conditions->unknownKeys(match: ['_uuid' => 'x']));
 		$this->assertNotContains('published', $this->conditions->fields());
 		$this->assertNotContains('depublished', $this->conditions->fields());
 	}//end testTheKnownFieldsAreTheRecordEnvelope()

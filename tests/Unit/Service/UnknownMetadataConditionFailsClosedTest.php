@@ -390,7 +390,7 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 	}//end testTheListAllowAdmitsNoRow()
 
 	/**
-	 * On the QueryBuilder path, a public rule on unknown metadata admits no row.
+	 * On the QueryBuilder path, a rule on unknown metadata admits no row.
 	 *
 	 * @return void
 	 */
@@ -437,8 +437,9 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 		);
 
 		$handler = $this->rbacHandler();
-		$unknown = $handler->getPublicReadBranch($qb, $this->schemaWith(['read' => [['group' => 'public', 'match' => ['_published' => true]]]]));
-		$control = $handler->getPublicReadBranch($qb, $this->schemaWith(['read' => [['group' => 'public', 'match' => ['_organisation' => 'org-a']]]]));
+		$rule = static fn (array $match): array => ['read' => [['group' => 'editors', 'crossOrganisation' => true, 'match' => $match]]];
+		$unknown = $handler->getCrossOrganisationBranch($qb, $this->schemaWith($rule(['_published' => true])));
+		$control = $handler->getCrossOrganisationBranch($qb, $this->schemaWith($rule(['_organisation' => 'org-a'])));
 
 		$this->assertSame('eq(1,0)', (string)$unknown);
 		$this->assertSame('eq(t._organisation,"org-a")', (string)$control);
