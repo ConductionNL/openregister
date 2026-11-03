@@ -4126,7 +4126,7 @@ class ObjectsController extends Controller {
 				object: $object,
 				_rbac: $rbac,
 				_multitenancy: $multi,
-				uuid: (string)$existingObject->getUuid(),
+				uuid: ($existingObject->getUuid() ?? $id),
 				uploadedFiles: $uploadedFilesValue
 			);
 
@@ -4320,7 +4320,7 @@ class ObjectsController extends Controller {
 				object: $mergedData,
 				_rbac: $rbac,
 				_multitenancy: $multi,
-				uuid: (string)$existingObject->getUuid()
+				uuid: ($existingObject->getUuid() ?? $id)
 			);
 
 			$this->logger->debug(
@@ -4507,7 +4507,7 @@ class ObjectsController extends Controller {
 				object: $mergedData,
 				_rbac: $rbac,
 				_multitenancy: $multi,
-				uuid: (string)$existingObject->getUuid(),
+				uuid: ($existingObject->getUuid() ?? $id),
 				uploadedFiles: $uploadedFilesValue
 			);
 

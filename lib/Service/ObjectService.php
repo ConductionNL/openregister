@@ -1890,7 +1890,18 @@ class ObjectService implements ObjectServiceInterface
         [$object, $uuid] = $this->extractUuidAndNormalizeObject(object: $object, uuid: $options['uuid']);
 
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:context+uuid');
-        $this->checkSavePermissions(uuid: $uuid, _rbac: $options['_rbac'], object: $object);
+        // The write continues with the row the permission check ran on. The save
+        // looks its identifier up again without the caller's scope, where the
+        // same identifier can name another row (an id that is another row's uuid,
+        // a slug that is another row's id).
+        $checked = $this->checkSavePermissions(uuid: $uuid, _rbac: $options['_rbac'], object: $object);
+        if ($checked !== null) {
+            $uuid = $checked;
+        } else if ($uuid !== null && $options['_rbac'] === true && $this->currentSchema !== null) {
+            // Nothing the caller may see answers to this identifier: the write may only insert.
+            $options['failIfExists'] = true;
+        }
+
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:permissions.check');
 
         $options['failIfExists'] = $this->guardWriteTarget(uuid: $uuid, failIfExists: $options['failIfExists']);
@@ -2334,14 +2345,15 @@ class ObjectService implements ObjectServiceInterface
      * @param bool        $_rbac  Whether to apply RBAC checks
      * @param array       $object The incoming object data, which a create rule's match reads
      *
-     * @return void
+     * @return string|null The uuid of the stored row the update check ran on, or null for a create
+     *                     check or when there is no schema to check against.
      *
      * @throws Exception If permission check fails
      */
-    private function checkSavePermissions(?string $uuid, bool $_rbac, array $object=[]): void
+    private function checkSavePermissions(?string $uuid, bool $_rbac, array $object=[]): ?string
     {
         if ($this->currentSchema === null) {
-            return;
+            return null;
         }
 
         // A create rule may carry a `match` on the object being created, so the
@@ -2358,7 +2370,7 @@ class ObjectService implements ObjectServiceInterface
                 _rbac: $_rbac,
                 object: $incoming
             );
-            return;
+            return null;
         }
 
         // UUID provided - check if object exists to determine CREATE vs UPDATE.
@@ -2385,6 +2397,7 @@ class ObjectService implements ObjectServiceInterface
                 _rbac: $_rbac,
                 object: $existingObject
             );
+            return $existingObject->getUuid();
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Not found FOR THIS CALLER: new, or stored and hidden from them.
             $hidden = $this->refuseSomebodyElsesDraft(uuid: $uuid, _rbac: $_rbac);
@@ -2409,8 +2422,11 @@ class ObjectService implements ObjectServiceInterface
                     _rbac: $_rbac,
                     object: $hidden
                 );
+                return $hidden->getUuid();
             }
         }//end try
+
+        return null;
     }//end checkSavePermissions()
 
     /**
