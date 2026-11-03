@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
@@ -76,6 +77,7 @@ class SaveObjectCascadeNestedIdentityTest extends TestCase {
 		$reflection->getProperty('schemaReferenceCache')->setValue($handler, ['note' => '2']);
 		$reflection->getProperty('schemaCache')->setValue($handler, ['2' => $note]);
 		$reflection->getProperty('urlGenerator')->setValue($handler, $this->createMock(IURLGenerator::class));
+		$reflection->getProperty('permissionHandler')->setValue($handler, $this->createMock(PermissionHandler::class));
 
 		$parent = new ObjectEntity();
 		$parent->setUuid('p-1');
