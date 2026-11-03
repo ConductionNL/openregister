@@ -71,9 +71,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/registers",
         "body": {
           "mode": "raw",
           "raw": "{\"title\": \"watchers newman register\", \"description\": \"watchers collection fixture\"}"
@@ -110,9 +108,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
         "body": {
           "mode": "raw",
           "raw": "{\"title\": \"watchers newman schema\", \"description\": \"watchers collection fixture\", \"properties\": {\"key\": {\"type\": \"string\", \"title\": \"Key\", \"maxLength\": 255}}, \"authorization\": {\"read\": [\"authenticated\"], \"create\": [\"authenticated\"], \"update\": [\"authenticated\"], \"delete\": [\"authenticated\"]}}"
@@ -149,9 +145,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
         "body": {
           "mode": "raw",
           "raw": "{\"key\": \"followed\"}"
@@ -189,9 +183,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watch"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watch"
       },
       "event": [
         {
@@ -228,9 +220,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}"
       },
       "event": [
         {
@@ -266,9 +256,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watchers"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watchers"
       },
       "event": [
         {
@@ -306,9 +294,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watch"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watch"
       },
       "event": [
         {
@@ -340,9 +326,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watchers"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watchers"
       },
       "event": [
         {
@@ -374,9 +358,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watch"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watch",
         "body": {
           "mode": "raw",
           "raw": "{\"notify\": false}"
@@ -412,9 +394,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}"
       },
       "event": [
         {
@@ -447,9 +427,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watchers"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watchers"
       },
       "event": [
         {
@@ -482,9 +460,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watch"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watch",
         "body": {
           "mode": "raw",
           "raw": "{\"notify\": true}"
@@ -520,9 +496,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?_watching=true&_limit=100"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?_watching=true&_limit=100"
       },
       "event": [
         {
@@ -556,9 +530,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watch"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watch"
       },
       "event": [
         {
@@ -590,9 +562,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}"
       },
       "event": [
         {
@@ -625,9 +595,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?_watching=true&_limit=100"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?_watching=true&_limit=100"
       },
       "event": [
         {
@@ -660,9 +628,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watchers/{{username}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watchers/{{username}}"
       },
       "event": [
         {
@@ -694,9 +660,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watchers/{{username}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watchers/{{username}}"
       },
       "event": [
         {
@@ -728,9 +692,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/watch"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/watch"
       },
       "event": [
         {
@@ -764,9 +726,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}"
       },
       "event": [
         {
@@ -798,9 +758,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
       },
       "event": [
         {
@@ -832,9 +790,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
       },
       "event": [
         {
@@ -847,6 +803,24 @@
           }
         }
       ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// The quality workflow passes base_url, admin_user and admin_password; take",
+          "// them for this collection's own names when those are not given.",
+          "[['baseUrl', 'base_url'], ['username', 'admin_user'], ['password', 'admin_password'], ['adminUser', 'admin_user'], ['adminPassword', 'admin_password']].forEach(function (pair) {",
+          "    var given = pm.environment.get(pair[1]);",
+          "    if (given !== undefined && pm.environment.get(pair[0]) === undefined) {",
+          "        pm.collectionVariables.set(pair[0], given);",
+          "    }",
+          "});"
+        ]
+      }
     }
   ]
 }

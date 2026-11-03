@@ -736,7 +736,7 @@ type GroupBucket {
 - **Fully implemented -- JSON Schema composition**: `CompositionHandler` handles `allOf` (merged fields), `oneOf` (UnionType), `anyOf` (InterfaceType).
 - **Fully implemented -- audit trail integration**: `_auditTrail` field on every object type, delegating to `AuditTrailMapper.findAll()`.
 - **Fully implemented -- multi-tenancy**: `resolveList()` passes `_multitenancy: true` to `searchObjectsPaginated()`.
-- **Tests present**: Unit tests in `tests/Unit/Service/GraphQL/` (SchemaGeneratorTest, GraphQLErrorFormatterTest, QueryComplexityAnalyzerTest, ScalarTypesTest) and integration test in `tests/Service/GraphQLIntegrationTest.php`. Postman collection at `tests/postman/openregister-graphql-tests.postman_collection.json`.
+- **Tests present**: Unit tests in `tests/Unit/Service/GraphQL/` (SchemaGeneratorTest, GraphQLErrorFormatterTest, QueryComplexityAnalyzerTest, ScalarTypesTest) and integration test in `tests/Service/GraphQLIntegrationTest.php`. Postman collection at `tests/integration/openregister-graphql-tests.postman_collection.json`.
 
 ## Standards & References
 

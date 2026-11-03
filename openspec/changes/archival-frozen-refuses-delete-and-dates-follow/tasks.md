@@ -11,8 +11,8 @@
 
 ## 3. Proof and docs
 
-- [ ] 3.1 Newman: freeze a record, try `DELETE` (refused), unfreeze, delete (done). Collection written: `tests/newman/openregister-frozen-delete.postman_collection.json`; tick after its first live pass.
-- [ ] 3.2 Newman: set a client's end date, read its and its contact's destruction dates, clear it, read them again. Collection written: `tests/newman/openregister-dates-follow.postman_collection.json`; tick after its first live pass.
+- [ ] 3.1 Newman: freeze a record, try `DELETE` (refused), unfreeze, delete (done). Collection written: `tests/integration/openregister-frozen-delete.postman_collection.json`; tick after its first live pass.
+- [ ] 3.2 Newman: set a client's end date, read its and its contact's destruction dates, clear it, read them again. Collection written: `tests/integration/openregister-dates-follow.postman_collection.json`; tick after its first live pass.
 - [x] 3.3 Document both in `docs/` beside archiving and freezing.
 
 Acceptance:
