@@ -56,7 +56,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use stdClass;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
  * Testable Schema subclass to avoid mocking Entity __call magic methods.
@@ -230,7 +230,7 @@ class SaveObjectAdditionalTest extends TestCase {
 			$this->logger,
 			$this->createMock(TmloService::class),
 			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			new ArrayLoader([])
+			$this->createMock(PermissionHandler::class)
 		);
 
 		$this->reflection = new ReflectionClass(SaveObject::class);
