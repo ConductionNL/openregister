@@ -146,8 +146,17 @@ class ObjectActionValidator {
 		$refusals = [];
 		foreach (ObjectActionDefinition::parse(configuration: ($schema->getConfiguration() ?? [])) as $key => $definition) {
 			$field = $definition->selfAssignField();
-			if ($field !== null && array_key_exists($field, $properties) === false) {
+			if ($field === null) {
+				continue;
+			}
+
+			if (is_array($properties[$field] ?? null) === false) {
 				$refusals[] = sprintf('Action "%s": "selfAssign" names "%s", which is not a property of this schema.', $key, $field);
+				continue;
+			}
+
+			if (($properties[$field]['type'] ?? 'string') !== 'string') {
+				$refusals[] = sprintf('Action "%s": "selfAssign" names "%s", which does not hold a string.', $key, $field);
 			}
 		}
 

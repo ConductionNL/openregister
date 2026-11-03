@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectAction;
 
+use OCA\OpenRegister\Db\EmptyPropertyClaim;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -24,6 +25,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\MatrixRowsRequestedEvent;
+use OCA\OpenRegister\Exception\PropertyAlreadySetException;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\IDBConnection;
@@ -103,6 +105,13 @@ class ObjectActionSelfAssignTest extends TestCase {
 	 * @var string
 	 */
 	private string $uid = 'anna';
+
+	/**
+	 * The stored row's values, as the conditional write sees them.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private array $stored = [];
 
 	/**
 	 * Matrix rows the provider app answers with.
@@ -223,7 +232,14 @@ class ObjectActionSelfAssignTest extends TestCase {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('patchObject')->willReturnCallback(
 			function (string $objectId, array $data, mixed $register, mixed $schema, bool $_rbac, bool $_multitenancy = true, ?IUser $currentUser = null): ObjectEntity {
+				// The row, as the database holds it: a held claim writes only while its property is empty.
+				$claimed = EmptyPropertyClaim::consume(uuid: $objectId);
+				if ($claimed !== null && in_array($this->stored[$claimed] ?? null, [null, ''], true) === false) {
+					throw new PropertyAlreadySetException(message: 'This object is already assigned.');
+				}
+
 				$this->patches[] = ['id' => $objectId, 'data' => $data, 'rbac' => $_rbac, 'user' => $currentUser?->getUID()];
+				$this->stored = array_merge($this->stored, $data);
 				$saved = self::object(assignee: null);
 				$saved->setObject(array_merge($saved->getObject(), $data));
 				return $saved;
@@ -285,6 +301,47 @@ class ObjectActionSelfAssignTest extends TestCase {
 		$this->assertSame('anna', $this->audited[0][7] ?? null, 'the audit names the caller');
 		$this->assertSame([['step' => 'assignee', 'kind' => 'selfAssign']], $this->audited[0][5] ?? null, 'the audit names the one property');
 	}//end testAReadOnlyMemberTakesAnUnassignedCase()
+
+	/**
+	 * Two claims that both read the case as empty: exactly one wins, the other gets 409.
+	 *
+	 * @return void
+	 */
+	public function testOfTwoClaimsOnOneEmptyCaseExactlyOneWins(): void {
+		$schema = self::schema(authorization: ['read' => ['team'], self::ACTION => ['team', 'others']]);
+
+		$first = $this->take(schema: $schema, object: self::object(assignee: null));
+		$this->uid = 'bram';
+		$second = $this->take(schema: $schema, object: self::object(assignee: null));
+
+		$this->assertSame([200, 409], [$first['status'], $second['status']]);
+		$this->assertSame('action-precondition-unmet', $second['body']['error'] ?? null);
+		$this->assertSame('anna', $this->stored['assignee'] ?? null, 'the first claim stands');
+		$this->assertCount(1, $this->audited, 'only the winning run is audited');
+	}//end testOfTwoClaimsOnOneEmptyCaseExactlyOneWins()
+
+	/**
+	 * A field that does not hold a string is refused at save.
+	 *
+	 * @return void
+	 */
+	public function testTheFieldMustHoldAString(): void {
+		$validator = new ObjectActionValidator(
+			$this->createMock(MacroActionValidator::class),
+			$this->createMock(IUserSession::class),
+			$this->createMock(IGroupManager::class)
+		);
+		$schema = self::schema(authorization: self::readOnlyTeam());
+		$schema->setProperties(['assignee' => ['description' => 'Who handles it.']]);
+		$this->assertSame([], $validator->refusals(schema: $schema), 'the control: an untyped property holds a string');
+
+		$schema->setProperties(['assignee' => ['type' => 'object']]);
+
+		$this->assertSame(
+			['Action "take": "selfAssign" names "assignee", which does not hold a string.'],
+			$validator->refusals(schema: $schema)
+		);
+	}//end testTheFieldMustHoldAString()
 
 	/**
 	 * An assigned case is refused, and nothing is written.
@@ -599,5 +656,29 @@ class ObjectActionSelfAssignTest extends TestCase {
 		$this->expectExceptionMessageMatches('/names the action "grab"/');
 		$validate->invoke($mapper, self::schema(authorization: $matrix('grab')));
 	}//end testTheSchemaSaveReadsTheDeclaredActionsIntoTheMatrixCheck()
+
+	/**
+	 * A write that fails before it reaches the table leaves no claim behind for the next write.
+	 *
+	 * @return void
+	 */
+	public function testAFailedWriteLeavesNoClaimBehind(): void {
+		[, $session] = $this->permissions(schema: self::schema(authorization: self::readOnlyTeam()));
+		$objects = $this->createMock(ObjectService::class);
+		$objects->method('patchObject')->willThrowException(new \RuntimeException('validation failed'));
+		$definition = ObjectActionDefinition::fromDeclaration(
+			key: self::ACTION,
+			definition: ['name' => 'Take', 'description' => 'Take it.', 'selfAssign' => ['field' => 'assignee']]
+		);
+
+		try {
+			(new ObjectActionSelfAssign($objects, $session))->assign(object: self::object(assignee: null), definition: $definition);
+			$this->fail('the failed write must still fail');
+		} catch (\RuntimeException $e) {
+			$this->assertSame('validation failed', $e->getMessage());
+		}
+
+		$this->assertNull(EmptyPropertyClaim::consume(uuid: '5b0c1f0e-0000-4000-8000-000000000001'));
+	}//end testAFailedWriteLeavesNoClaimBehind()
 
 }//end class

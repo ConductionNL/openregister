@@ -4,11 +4,13 @@
 
 ### Requirement: A declared action may assign the caller to one empty property
 
-A schema MAY declare an action whose body is `"selfAssign": {"field": "<property>"}`. The field SHALL be a property of
-the schema. The action SHALL accept no `inputs`, no `elevate` and no `async` mode.
+A schema MAY declare an action whose body is `"selfAssign": {"field": "<property>"}`. The field SHALL be a string
+property of the schema. The action SHALL accept no `inputs`, no `elevate` and no `async` mode.
 
 Running it SHALL set only that property, to the uid of the signed-in caller taken from the session. Any value in the
-request SHALL be ignored. It SHALL be refused with 409 when the property is not empty. It SHALL NOT require or imply the
+request SHALL be refused. It SHALL be refused with 409 when the property is not empty. The write SHALL change the
+stored row only while the property is still empty, so of two callers who both read it as empty exactly one succeeds
+and the other is refused with 409. It SHALL NOT require or imply the
 caller's `update` right. The audit entry and the object's history SHALL name the caller.
 
 It SHALL run only for a caller the schema grants it by name, through its authorization block or a matrix row. When
@@ -23,9 +25,14 @@ neither names it, nobody may run it, including on a schema whose authorization b
 - **WHEN** the same member runs `claim` on an object whose `assignee` is set
 - **THEN** the run is refused with 409 and the object is unchanged
 
-#### Scenario: A uid in the request is ignored
-- **WHEN** the member runs `claim` with `{"assignee": "someone-else"}` in the request
-- **THEN** `assignee` is the member's own uid
+#### Scenario: A uid in the request is refused
+- **WHEN** the member runs `claim` with `{"inputs": {"assignee": "someone-else"}}`
+- **THEN** the run is refused with 422 and the object is unchanged
+
+#### Scenario: Two claims on one empty object
+- **GIVEN** two members of `team` who both read the object with an empty `assignee`
+- **WHEN** both run `claim`
+- **THEN** exactly one run succeeds and the other is refused with 409
 
 #### Scenario: Without a grant nobody may run it
 - **GIVEN** a schema that declares `claim` and names it in no rule and no matrix row

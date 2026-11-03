@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\PropertyAlreadySetException;
 use OCA\OpenRegister\Service\Flow\FlowNextHint;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\MacroActionBinding;
@@ -272,6 +273,11 @@ class ObjectActionRunner {
 	private function runSelfAssign(ObjectEntity $object, ObjectActionDefinition $definition): array {
 		try {
 			$saved = $this->writers->selfAssign->assign(object: $object, definition: $definition);
+		} catch (PropertyAlreadySetException $e) {
+			return $this->answer(
+				status: Http::STATUS_CONFLICT,
+				body: ['error' => self::PRECONDITION_UNMET, 'message' => $e->getMessage(), 'action' => $definition->key]
+			);
 		} catch (Throwable $e) {
 			return $this->answer(status: Http::STATUS_UNPROCESSABLE_ENTITY, body: ['error' => $e->getMessage(), 'action' => $definition->key]);
 		}

@@ -7,7 +7,8 @@
  * session, never from the request. It passes the save without the caller's
  * `update` right, because the action's own grant has already been checked by
  * the runner; the session user stays the actor, so the audit trail and the
- * object's history name the caller.
+ * object's history name the caller. The write is conditional on the property
+ * still being empty (EmptyPropertyClaim), so two callers cannot both take it.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -28,13 +29,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectAction;
 
+use OCA\OpenRegister\Db\EmptyPropertyClaim;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\PropertyAlreadySetException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IUserSession;
 use RuntimeException;
 
 /**
  * The write of a self-assign action.
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) EmptyPropertyClaim is the request-scoped claim the mapper reads, as DraftStatusPolicy is.
  *
  * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
  */
@@ -61,6 +66,7 @@ class ObjectActionSelfAssign {
 	 * @return ObjectEntity The saved object.
 	 *
 	 * @throws RuntimeException When there is no caller or the action is not a self-assign.
+	 * @throws PropertyAlreadySetException When another caller filled the property after it was read as empty.
 	 *
 	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
 	 */
@@ -71,13 +77,19 @@ class ObjectActionSelfAssign {
 			throw new RuntimeException('A self-assign action needs a signed-in caller.');
 		}
 
-		return $this->objects->patchObject(
-			objectId: (string)$object->getUuid(),
-			data: [$field => $user->getUID()],
-			register: $object->getRegister(),
-			schema: $object->getSchema(),
-			_rbac: false,
-			currentUser: $user
-		);
+		$uuid = (string)$object->getUuid();
+		EmptyPropertyClaim::hold(uuid: $uuid, property: $field);
+		try {
+			return $this->objects->patchObject(
+				objectId: $uuid,
+				data: [$field => $user->getUID()],
+				register: $object->getRegister(),
+				schema: $object->getSchema(),
+				_rbac: false,
+				currentUser: $user
+			);
+		} finally {
+			EmptyPropertyClaim::consume(uuid: $uuid);
+		}
 	}//end assign()
 }//end class
