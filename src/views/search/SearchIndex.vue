@@ -109,6 +109,9 @@ export default {
 			)
 		},
 
+		/**
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-across-registers-global-search
+		 */
 		hasSelectedSchemas() {
 			return (
 				objectStore.searchParams.schema !== null
