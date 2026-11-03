@@ -256,17 +256,7 @@ class ObjectActionRunner {
 
 		$this->recordRun(object: $saved, definition: $definition, run: null, inputs: $inputs, changes: [], outcome: FlowRun::STATUS_COMPLETED);
 
-		return $this->answer(
-			status: Http::STATUS_OK,
-			body: [
-				'run' => null,
-				'outcome' => FlowRun::STATUS_COMPLETED,
-				'action' => $definition->key,
-				'kind' => ObjectActionDefinition::KIND_TRANSITION,
-				'next' => ($definition->next ?? FlowNextHint::STAY),
-				'object' => $saved->jsonSerialize(),
-			]
-		);
+		return $this->savedAnswer(definition: $definition, saved: $saved);
 	}//end runTransition()
 
 	/**
@@ -289,18 +279,30 @@ class ObjectActionRunner {
 		$changes = [['step' => (string)$definition->selfAssignField(), 'kind' => ObjectActionDefinition::KIND_SELF_ASSIGN]];
 		$this->recordRun(object: $saved, definition: $definition, run: null, inputs: [], changes: $changes, outcome: FlowRun::STATUS_COMPLETED);
 
+		return $this->savedAnswer(definition: $definition, saved: $saved);
+	}//end runSelfAssign()
+
+	/**
+	 * The answer to a run that wrote the object itself, a transition or a self-assign.
+	 *
+	 * @param ObjectActionDefinition $definition The action.
+	 * @param ObjectEntity           $saved      The saved object.
+	 *
+	 * @return array{status: int, body: array<string, mixed>} The answer.
+	 */
+	private function savedAnswer(ObjectActionDefinition $definition, ObjectEntity $saved): array {
 		return $this->answer(
 			status: Http::STATUS_OK,
 			body: [
 				'run' => null,
 				'outcome' => FlowRun::STATUS_COMPLETED,
 				'action' => $definition->key,
-				'kind' => ObjectActionDefinition::KIND_SELF_ASSIGN,
+				'kind' => (string)$definition->kind,
 				'next' => ($definition->next ?? FlowNextHint::STAY),
 				'object' => $saved->jsonSerialize(),
 			]
 		);
-	}//end runSelfAssign()
+	}//end savedAnswer()
 
 	/**
 	 * Run a flow or steps body through the one flow engine.
