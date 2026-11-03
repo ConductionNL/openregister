@@ -55,6 +55,7 @@ use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\DraftListLens;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -1375,6 +1376,7 @@ class MagicSearchHandler {
 	 * @return bool True when the organisation filter must be emitted.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flags are the request posture, mirrored.
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	private function multitenancyApplies(
 		Schema $schema,
@@ -1382,6 +1384,11 @@ class MagicSearchHandler {
 		bool $_multitenancy,
 		bool $multitenancyExplicit,
 	): bool {
+		// Code acting for an organisation always reads inside it.
+		if (OrganisationContext::isActive() === true) {
+			return true;
+		}
+
 		if ($_multitenancy === false) {
 			return false;
 		}
@@ -2766,12 +2773,17 @@ class MagicSearchHandler {
 	 * @return bool Resolved multitenancy flag
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-when-inheritfrompublic-is-false-authenticated-users-must-not-qualify-for-public-rules
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	private function resolveMultitenancyFlag(
 		bool $_multitenancy,
 		bool $multitenancyExplicit,
 		Schema $schema,
 	): bool {
+		if (OrganisationContext::isActive() === true) {
+			return true;
+		}
+
 		if ($_multitenancy === true) {
 			$schemaAuth = $schema->getAuthorization();
 			$readGroups = $schemaAuth['read'] ?? [];

@@ -194,6 +194,13 @@ class OrganisationService {
 	private ?SettingsService $settingsService = null;
 
 	/**
+	 * Organisations named by an organisation context, by uuid (null = not found).
+	 *
+	 * @var array<string, Organisation|null>
+	 */
+	private array $contextOrganisations = [];
+
+	/**
 	 * OrganisationService constructor
 	 *
 	 * @param OrganisationMapper $organisationMapper Organisation database mapper
@@ -501,8 +508,16 @@ class OrganisationService {
 	 * @return Organisation|null The active organisation or null.
 	 *
 	 * @spec openspec/specs/saas-multi-tenant/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	public function getActiveOrganisation(?array $preloadedOrgs = null): ?Organisation {
+		// Code acting for an organisation answers with that organisation,
+		// whoever holds the session.
+		$contextUuid = OrganisationContext::current();
+		if ($contextUuid !== null) {
+			return $this->findContextOrganisation(uuid: $contextUuid);
+		}
+
 		$user = $this->getCurrentUser();
 		if ($user === null) {
 			return null;
@@ -536,6 +551,34 @@ class OrganisationService {
 
 		return $organisation;
 	}//end getActiveOrganisation()
+
+	/**
+	 * The organisation an organisation context acts for.
+	 *
+	 * Memoised per request by uuid. An organisation that does not exist answers
+	 * null, so the organisation filter admits nothing.
+	 *
+	 * @param string $uuid The organisation uuid the context names.
+	 *
+	 * @return Organisation|null The organisation, or null when it does not exist.
+	 *
+	 * @spec openspec/changes/act-for-an-organisation/specs/rbac-scopes/spec.md
+	 */
+	public function findContextOrganisation(string $uuid): ?Organisation {
+		if (array_key_exists($uuid, $this->contextOrganisations) === true) {
+			return $this->contextOrganisations[$uuid];
+		}
+
+		try {
+			$organisation = $this->organisationMapper->findByUuid($uuid);
+		} catch (DoesNotExistException $e) {
+			$organisation = null;
+		}
+
+		$this->contextOrganisations[$uuid] = $organisation;
+
+		return $organisation;
+	}//end findContextOrganisation()
 
 	/**
 	 * Set the active organisation for the current user

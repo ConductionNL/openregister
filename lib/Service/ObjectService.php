@@ -662,6 +662,50 @@ class ObjectService implements ObjectServiceInterface
     }//end runAsAnonymous()
 
     /**
+     * Run a callable acting for one organisation, as a caller who is not a Nextcloud user.
+     *
+     * For code that serves callers outside Nextcloud's user base, such as a
+     * portal account whose organisation the app verified from a signed session
+     * or claim. Inside the callable:
+     *
+     * - the organisation is the caller's organisation for every tenancy
+     *   decision: the organisation filter (with its parent chain and shared
+     *   master data), the `$organisation` token in read rules, and the
+     *   organisation stamped on new objects;
+     * - the callable runs as {@see runAsAnonymous()}: the session user, an API
+     *   token's grant and the system scope do not apply, so with RBAC on only
+     *   `public` rules decide;
+     * - the organisation filter cannot be switched off: `_multitenancy: false`,
+     *   the admin bypass and rules marked `crossOrganisation` do not widen it.
+     *
+     * Only PHP code can open the context; nothing in a request can. It is
+     * restored when the callable ends, also on a throw, and nested contexts
+     * apply the innermost organisation.
+     *
+     * @param string   $organisationUuid The organisation to act for.
+     * @param callable $operation        The operation to run.
+     *
+     * @return mixed Whatever the callable returns.
+     *
+     * @throws InvalidArgumentException When the organisation does not exist.
+     *
+     * @spec openspec/changes/act-for-an-organisation/specs/rbac-scopes/spec.md
+     */
+    public function runForOrganisation(string $organisationUuid, callable $operation)
+    {
+        if ($this->organisationService->findContextOrganisation(uuid: $organisationUuid) === null) {
+            throw new InvalidArgumentException(
+                message: 'Cannot act for organisation "'.$organisationUuid.'": it does not exist.'
+            );
+        }
+
+        return OrganisationContext::run(
+            $organisationUuid,
+            fn () => $this->runAsAnonymous(operation: $operation)
+        );
+    }//end runForOrganisation()
+
+    /**
      * Set the current register context.
      *
      * @param Register|string|int $register The register object or its ID/UUID
@@ -1892,12 +1936,23 @@ class ObjectService implements ObjectServiceInterface
         [$object, $uuid] = $this->extractUuidAndNormalizeObject(object: $object, uuid: $options['uuid']);
 
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:context+uuid');
-        $this->checkSavePermissions(
+        // The write continues with the row the permission check ran on. The save
+        // looks its identifier up again without the caller's scope, where the
+        // same identifier can name another row (an id that is another row's uuid,
+        // a slug that is another row's id).
+        $checked = $this->checkSavePermissions(
             uuid: $uuid,
             _rbac: $options['_rbac'],
             object: $object,
             _multitenancy: $options['_multitenancy']
         );
+        if ($checked !== null) {
+            $uuid = $checked;
+        } else if ($uuid !== null && $options['_rbac'] === true && $this->currentSchema !== null) {
+            // Nothing the caller may see answers to this identifier: the write may only insert.
+            $options['failIfExists'] = true;
+        }
+
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:permissions.check');
 
         $options['failIfExists'] = $this->guardWriteTarget(uuid: $uuid, failIfExists: $options['failIfExists']);
@@ -2342,14 +2397,15 @@ class ObjectService implements ObjectServiceInterface
      * @param array       $object        The incoming object data, which a create rule's match reads
      * @param bool        $_multitenancy Whether the write keeps to the caller's organisations
      *
-     * @return void
+     * @return string|null The uuid of the stored row the update check ran on, or null for a create
+     *                     check or when there is no schema to check against.
      *
      * @throws Exception If permission check fails
      */
-    private function checkSavePermissions(?string $uuid, bool $_rbac, array $object=[], bool $_multitenancy=true): void
+    private function checkSavePermissions(?string $uuid, bool $_rbac, array $object=[], bool $_multitenancy=true): ?string
     {
         if ($this->currentSchema === null) {
-            return;
+            return null;
         }
 
         // A create rule may carry a `match` on the object being created, so the
@@ -2366,7 +2422,7 @@ class ObjectService implements ObjectServiceInterface
                 _rbac: $_rbac,
                 object: $incoming
             );
-            return;
+            return null;
         }
 
         // UUID provided - check if object exists to determine CREATE vs UPDATE.
@@ -2393,6 +2449,7 @@ class ObjectService implements ObjectServiceInterface
                 _rbac: $_rbac,
                 object: $existingObject
             );
+            return $existingObject->getUuid();
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Not found FOR THIS CALLER: new, or stored and hidden from them.
             $hidden = $this->refuseSomebodyElsesDraft(uuid: $uuid, _rbac: $_rbac);
@@ -2420,8 +2477,11 @@ class ObjectService implements ObjectServiceInterface
                     _rbac: $_rbac,
                     object: $hidden
                 );
+                return $hidden->getUuid();
             }
         }//end try
+
+        return null;
     }//end checkSavePermissions()
 
     /**
@@ -6011,7 +6071,7 @@ class ObjectService implements ObjectServiceInterface
 
         // Apply RBAC and multi-organization filtering if enabled.
         $filteredUuids = $uuids;
-        if ($_rbac === true || $_multitenancy === true) {
+        if ($_rbac === true || OrganisationContext::multitenancy(requested: $_multitenancy) === true) {
             $filteredUuids = $this->permissionHandler->filterUuidsForPermissions(
                 uuids: $uuids,
                 _rbac: $_rbac,
