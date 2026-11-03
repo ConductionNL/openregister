@@ -2124,6 +2124,7 @@ class ImportHandler {
 
 		try {
 			unset($data['id'], $data['uuid'], $data['organisation']);
+			$data = $this->withoutOrphanCleanupForNonAdmin(data: $data);
 			$data = $this->normaliseImportedProperties(data: $data, slugsAndIdsMap: $slugsAndIdsMap);
 
 			// A slug is resolved within the target register(s) when the caller
@@ -2143,6 +2144,38 @@ class ImportHandler {
 			throw new Exception('Failed to import schema: ' . $e->getMessage(), $e->getCode(), $e);
 		}//end try
 	}//end importSchema()
+
+	/**
+	 * Drop `orphanCleanup` from a schema a signed-in non-administrator imports.
+	 *
+	 * The flag makes saves soft-delete rows and importing into a register needs only
+	 * its `manage` rule. An import without a session (an app at boot, a repair step)
+	 * keeps the flag.
+	 *
+	 * @param array $data The schema data.
+	 *
+	 * @return array The schema data.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function withoutOrphanCleanupForNonAdmin(array $data): array {
+		$user = $this->userSession?->getUser();
+		if ($user === null || $this->groupManager?->isAdmin($user->getUID()) === true) {
+			return $data;
+		}
+
+		$configuration = ($data['configuration'] ?? null);
+		if (is_string($configuration) === true) {
+			$configuration = json_decode($configuration, associative: true);
+		}
+
+		if (is_array($configuration) === true && array_key_exists('orphanCleanup', $configuration) === true) {
+			unset($configuration['orphanCleanup']);
+			$data['configuration'] = $configuration;
+		}
+
+		return $data;
+	}//end withoutOrphanCleanupForNonAdmin()
 
 	/**
 	 * Refuse a schema whose shape fails the minimal meta-schema, before it is mutated.

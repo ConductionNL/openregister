@@ -2478,6 +2478,10 @@ class SaveObjectTest extends TestCase {
 	private function orphanScope(): array {
 		$this->objectEntityMapper->method('callerOrganisationsHold')->willReturn(true);
 
+		$guard = $this->createMock(\OCA\OpenRegister\Service\Object\OrphanDeletionGuard::class);
+		$guard->method('allows')->willReturn(true);
+		(new \ReflectionProperty(SaveObject::class, 'orphanGuard'))->setValue($this->handler, $guard);
+
 		return ['register' => new Register(), 'schema' => new Schema(), 'inverse' => 'incident', 'parent' => 'p-1'];
 	}//end orphanScope()
 
@@ -2523,25 +2527,6 @@ class SaveObjectTest extends TestCase {
 		// Should not throw.
 		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['error-uuid'], $this->orphanScope()]);
 		$this->assertTrue(true);
-	}
-
-	public function testDeleteOrphanedRelatedObjectsUsesSystemUserWhenNoUser(): void {
-		$orphanedEntity = new ObjectEntity();
-		$orphanedEntity->setUuid('orphan-uuid');
-		$orphanedEntity->setObject(['incident' => 'p-1']);
-
-		$this->objectEntityMapper->method('find')
-			->willReturn($orphanedEntity);
-
-		$this->userSession->method('getUser')->willReturn(null);
-
-		$this->objectEntityMapper->expects($this->once())
-			->method('update');
-
-		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['orphan-uuid'], $this->orphanScope()]);
-
-		$deleted = $orphanedEntity->getDeleted();
-		$this->assertSame('system', $deleted['deletedBy']);
 	}
 
 	// =========================================================================

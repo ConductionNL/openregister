@@ -568,11 +568,38 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 		$this->assertFalse($this->saveRemovesRow(notes: []));
 	}
 
-	public function testARowOthersDependOnIsNotDeleted(): void {
+	/**
+	 * The kinds of row that depend on the row.
+	 *
+	 * @return array<string, array{0: DeletionAnalysis}>
+	 */
+	public static function dependants(): array {
+		$row = [['objectUuid' => 'x']];
+
+		return [
+			'cascade' => [new DeletionAnalysis(deletable: true, cascadeTargets: $row)],
+			'nullify' => [new DeletionAnalysis(deletable: true, nullifyTargets: $row)],
+			'default' => [new DeletionAnalysis(deletable: true, defaultTargets: $row)],
+		];
+	}//end dependants()
+
+	/**
+	 * @dataProvider dependants
+	 *
+	 * @param DeletionAnalysis $analysis The integrity analysis.
+	 */
+	public function testARowOthersDependOnIsNotDeleted(DeletionAnalysis $analysis): void {
 		$this->stored = ['notes' => [self::ROW]];
-		$this->analysis = new DeletionAnalysis(deletable: true, nullifyTargets: [['objectUuid' => 'x']]);
+		$this->analysis = $analysis;
 
 		$this->assertFalse($this->saveRemovesRow(notes: []));
+	}
+
+	public function testTheDeletionNamesTheCaller(): void {
+		$this->stored = ['notes' => [self::ROW]];
+
+		$this->assertTrue($this->saveRemovesRow(notes: []));
+		$this->assertSame('alice', $this->row->getDeleted()['deletedBy']);
 	}
 
 	public function testASaveWithoutASignedInUserDeletesNothing(): void {

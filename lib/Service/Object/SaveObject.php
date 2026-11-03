@@ -2564,14 +2564,9 @@ class SaveObject {
 				}
 
 				// Soft delete: set deletion metadata and update (consistent with DeleteObject).
-				$user = $this->userSession->getUser();
-				$userId = 'system';
-				if ($user !== null) {
-					$userId = $user->getUID();
-				}
-
+				// The guard admits only a signed-in caller.
 				$deletionData = [
-					'deletedBy' => $userId,
+					'deletedBy' => $this->userSession->getUser()?->getUID(),
 					'deletedAt' => (new DateTime())->format(DateTime::ATOM),
 					'objectId' => $orphanedObject->getUuid(),
 					'reason' => 'orphaned-related-object',

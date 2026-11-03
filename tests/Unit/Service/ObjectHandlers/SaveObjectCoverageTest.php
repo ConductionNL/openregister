@@ -796,6 +796,10 @@ class SaveObjectCoverageTest extends TestCase {
 	private function orphanScope(): array {
 		$this->objectEntityMapper->method('callerOrganisationsHold')->willReturn(true);
 
+		$guard = $this->createMock(\OCA\OpenRegister\Service\Object\OrphanDeletionGuard::class);
+		$guard->method('allows')->willReturn(true);
+		(new \ReflectionProperty(SaveObject::class, 'orphanGuard'))->setValue($this->saveObject, $guard);
+
 		return ['register' => new Register(), 'schema' => new Schema(), 'inverse' => 'incident', 'parent' => 'p-1'];
 	}//end orphanScope()
 
@@ -814,29 +818,6 @@ class SaveObjectCoverageTest extends TestCase {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('test-user');
 		$this->userSession->method('getUser')->willReturn($user);
-
-		$this->objectEntityMapper->expects($this->once())
-			->method('update');
-
-		$this->invokePrivate('deleteOrphanedRelatedObjects', [
-			['aaaaaaaa-bbbb-cccc-dddd-111111111111'],
-			$this->orphanScope(),
-		]);
-	}
-
-	/**
-	 * Test deleteOrphanedRelatedObjects uses system user when no session user.
-	 *
-	 * @return void
-	 */
-	public function testDeleteOrphanedRelatedObjectsSystemUser(): void {
-		$orphan = $this->createObjectEntity(10, 'aaaaaaaa-bbbb-cccc-dddd-111111111111');
-		$orphan->setObject(['incident' => 'p-1']);
-
-		$this->objectEntityMapper->method('find')
-			->willReturn($orphan);
-
-		$this->userSession->method('getUser')->willReturn(null);
 
 		$this->objectEntityMapper->expects($this->once())
 			->method('update');
