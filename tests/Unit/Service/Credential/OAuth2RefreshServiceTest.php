@@ -239,6 +239,35 @@ class OAuth2RefreshServiceTest extends TestCase {
 		}
 	}
 
+	public function testARelinkWritesTheFoundRowByItsUuid(): void {
+		$this->vault['cred-1'] = $this->tokenSetJson(expiresIn: 10);
+		$existing = new ObjectEntity();
+		$existing->setUuid('cred-uuid');
+		$existing->setObject($this->credential());
+		$written = [];
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('find')->willReturn($existing);
+		$objectService->method('saveObject')->willReturnCallback(
+			function (...$args) use (&$written): ObjectEntity {
+				$written[] = ($args['uuid'] ?? $args[4] ?? null);
+				return new ObjectEntity();
+			}
+		);
+		$service = $this->makeService(response: ['error' => 'invalid_grant'], objectService: $objectService);
+
+		try {
+			$service->accessTokenFor(
+				credential: $this->credential(),
+				provider: $this->provider(),
+				credentialId: 'cred-1',
+				scope: 'personal'
+			);
+			$this->fail('a revoked grant must raise the typed relink exception');
+		} catch (CredentialRelinkRequiredException $expected) {
+			$this->assertSame(['cred-uuid'], $written);
+		}
+	}
+
 	public function testARelinkDoesNotWriteARowWithoutUuid(): void {
 		$this->vault['cred-1'] = $this->tokenSetJson(expiresIn: 10);
 		$objectService = $this->createMock(ObjectService::class);

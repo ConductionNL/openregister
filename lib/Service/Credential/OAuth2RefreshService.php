@@ -44,6 +44,7 @@ namespace OCA\OpenRegister\Service\Credential;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
@@ -289,7 +290,7 @@ class OAuth2RefreshService {
 	 */
 	public function persist(string $credentialId, string $scope, OAuth2TokenSet $set, array $extraMetadata = []): void {
 		// The secret is kept under the uuid of the stored credential, not under the identifier as sent.
-		$uuid = $this->storedCredentialUuid(credentialId: $credentialId);
+		$uuid = (string) $this->storedCredential(credentialId: $credentialId)->getUuid();
 		$this->credentialStore->put($uuid, $set->toStoredJson(), $scope);
 
 		$this->writeMetadata(
@@ -593,32 +594,31 @@ class OAuth2RefreshService {
 	}//end markRelinkNeeded()
 
 	/**
-	 * The uuid of the stored credential an identifier names.
+	 * The stored credential an identifier names, past RBAC and multitenancy.
 	 *
 	 * @param string $credentialId The credential identifier.
 	 *
-	 * @return string
+	 * @return ObjectEntity The credential, which has a uuid to be written under.
 	 *
 	 * @throws RuntimeException When no credential with a uuid is stored under it.
 	 * @throws Throwable When the lookup itself fails.
 	 */
-	private function storedCredentialUuid(string $credentialId): string {
-		$existing = WriteCause::asLookup(fn () => $this->objectService->find(
-			id: $credentialId,
+	private function storedCredential(string $credentialId): ObjectEntity {
+		$stored = WriteCause::asLookup(fn () => $this->objectService->find(
 			register: CredentialBrokerService::REGISTER,
 			schema: CredentialBrokerService::SCHEMA,
+			id: $credentialId,
+			_render: false,
 			_rbac: false,
-			_multitenancy: false,
-			_render: false
+			_multitenancy: false
 		));
 
-		$uuid = (string) $existing?->getUuid();
-		if ($uuid === '') {
-			throw new RuntimeException('The credential to store the token set for is not stored.');
+		if ($stored === null || (string) $stored->getUuid() === '') {
+			throw new RuntimeException('The credential is not stored.');
 		}
 
-		return $uuid;
-	}//end storedCredentialUuid()
+		return $stored;
+	}//end storedCredential()
 
 	/**
 	 * Write non-secret metadata back onto the credential object.
@@ -636,19 +636,7 @@ class OAuth2RefreshService {
 	 */
 	private function writeMetadata(string $credentialId, array $metadata): void {
 		try {
-			$existing = WriteCause::asLookup(fn () => $this->objectService->find(
-				id: $credentialId,
-				register: CredentialBrokerService::REGISTER,
-				schema: CredentialBrokerService::SCHEMA,
-				_rbac: false,
-				_multitenancy: false,
-				_render: false
-			));
-
-			// A row without a uuid has nothing to be written under.
-			if ((string) $existing?->getUuid() === '') {
-				return;
-			}
+			$existing = $this->storedCredential(credentialId: $credentialId);
 
 			$data = $existing->jsonSerialize();
 			unset($data['@self']);

@@ -2815,47 +2815,16 @@ class SaveObject {
 
 			// Update each target object.
 			foreach ($validUuids as $targetUuid) {
-				// Ensure targetUuid is string (filter already validated it is a valid UUID string).
-				$targetUuid = (string)$targetUuid;
-				try {
-					// Find the target object.
-					$targetObject = $this->objectEntityMapper->find($targetUuid);
-					// Find() throws DoesNotExistException, never returns null.
-					// Get current data from target object.
-					$targetData = $targetObject->getObject();
-
-					// Initialize inverse property as array if it doesn't exist.
-					if (isset($targetData[$inverseProperty]) === false) {
-						$targetData[$inverseProperty] = [];
-					}
-
-					// Ensure inverse property is an array.
-					if (is_array($targetData[$inverseProperty]) === false) {
-						$targetData[$inverseProperty] = [$targetData[$inverseProperty]];
-					}
-
-					// Add current object's UUID to the inverse property if not already present.
-					if (in_array($objectEntity->getUuid(), $targetData[$inverseProperty], true) === false) {
-						$targetData[$inverseProperty][] = $objectEntity->getUuid();
-					}
-
-					// Save the updated target object, named by the uuid of the row found:
-					// the reference may be its id, which as a uuid would name another row.
-					$foundUuid = $targetObject->getUuid();
-					if ($foundUuid === null || $foundUuid === '') {
-						continue;
-					}
-
-					$this->saveObject(
-						register: $targetRegister,
-						schema: $resolvedSchemaId,
-						data: $targetData,
-						uuid: $foundUuid
-					);
-				} catch (Exception $e) {
-					// Continue with other targets even if one fails.
-				}//end try
-			}//end foreach
+				$this->writeBackToTarget(
+					reference: (string)$targetUuid,
+					link: [
+						'inverseProperty' => $inverseProperty,
+						'register' => $targetRegister,
+						'schema' => $resolvedSchemaId,
+						'source' => $objectEntity->getUuid(),
+					]
+				);
+			}
 
 			// Remove the property from source object if configured to do so.
 			if ($removeFromSource === true) {
@@ -2865,6 +2834,46 @@ class SaveObject {
 
 		return $data;
 	}//end handleInverseRelationsWriteBack()
+
+	/**
+	 * Add the source object to one target's inverse property and save the target.
+	 *
+	 * The target is saved by the uuid of the row found: the reference may be its
+	 * id, which as a uuid would name another row. A target that cannot be read or
+	 * saved does not stop the other targets.
+	 *
+	 * @param string $reference The target's uuid or id, as the source holds it.
+	 * @param array{inverseProperty: string, register: mixed, schema: mixed, source: string|null} $link The inverse relation.
+	 *
+	 * @return void
+	 */
+	private function writeBackToTarget(string $reference, array $link): void {
+		try {
+			$targetObject = $this->objectEntityMapper->find($reference);
+			$foundUuid = $targetObject->getUuid();
+			if ($foundUuid === null || $foundUuid === '') {
+				return;
+			}
+
+			$inverse = ($targetObject->getObject()[$link['inverseProperty']] ?? []);
+			if (is_array($inverse) === false) {
+				$inverse = [$inverse];
+			}
+
+			if (in_array($link['source'], $inverse, true) === false) {
+				$inverse[] = $link['source'];
+			}
+
+			$this->saveObject(
+				register: $link['register'],
+				schema: $link['schema'],
+				data: array_replace($targetObject->getObject(), [$link['inverseProperty'] => $inverse]),
+				uuid: $foundUuid
+			);
+		} catch (Exception $e) {
+			return;
+		}
+	}//end writeBackToTarget()
 
 	/**
 	 * Sanitizes empty strings and handles empty objects/arrays based on schema definitions.
