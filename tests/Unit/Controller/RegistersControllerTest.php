@@ -69,6 +69,11 @@ class RegistersControllerTest extends TestCase {
 	 */
 	private ?\OCP\IUser $currentUser = null;
 
+	/**
+	 * Whether the signed-in user of the mocked session is an administrator.
+	 */
+	private bool $currentUserIsAdmin = true;
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -94,7 +99,7 @@ class RegistersControllerTest extends TestCase {
 		$this->currentUser = $this->createMock(\OCP\IUser::class);
 		$this->currentUser->method('getUID')->willReturn('admin');
 		$this->userSession->method('getUser')->willReturnCallback(fn () => $this->currentUser);
-		$this->groupManager->method('isAdmin')->willReturnCallback(fn () => $this->currentUser !== null);
+		$this->groupManager->method('isAdmin')->willReturnCallback(fn () => $this->currentUser !== null && $this->currentUserIsAdmin === true);
 		$this->groupManager->method('getUserGroupIds')->willReturn(['admin']);
 
 		// checkRegisterManagePermission() resolves IGroupManager via the container
@@ -202,6 +207,18 @@ class RegistersControllerTest extends TestCase {
 		$result = $this->controller->show(1);
 
 		$this->assertSame(200, $result->getStatus());
+	}
+
+	public function testShowAnonymousRegisterWithAMarkedPublicRuleReturns200(): void {
+		// `{"group": "public"}` without match reads like `"public"`, also when marked.
+		$this->currentUser = null;
+		$register = $this->createRealRegister(1, 'Public');
+		$register->setAuthorization(['read' => [['group' => 'public', 'crossOrganisation' => true]]]);
+
+		$this->request->method('getParam')->willReturn([]);
+		$this->registerService->method('find')->willReturn($register);
+
+		$this->assertSame(200, $this->controller->show(1)->getStatus());
 	}
 
 	public function testIndexAnonymousFiltersUnpublishedRegisters(): void {
@@ -2124,6 +2141,56 @@ class RegistersControllerTest extends TestCase {
 		$this->assertSame(409, $result->getStatus());
 		$this->assertSame('learniq.demo', $result->getData()['app']);
 		$this->assertStringContainsString('occ openregister:objects:purge --import-job job-demo', $result->getData()['error']);
+	}
+
+	public function testANonAdminListingRegistersIsNotGivenTheTrailCount(): void {
+		$this->currentUserIsAdmin = false;
+		$this->auditTrailMapper->expects($this->never())->method('getStatistics');
+		$this->request->method('getParams')->willReturn(['_extend' => ['@self.stats']]);
+		$this->registerService->method('findAll')->willReturn([$this->createRealRegister(1, 'Test')]);
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 5]);
+
+		$data = $this->controller->index()->getData();
+
+		$this->assertSame(['total' => 0, 'size' => 0], $data['results'][0]['stats']['logs']);
+		$this->assertSame(['total' => 5], $data['results'][0]['stats']['objects']);
+	}
+
+	public function testAnAdminListingRegistersIsGivenTheTrailCount(): void {
+		$this->auditTrailMapper->expects($this->once())->method('getStatistics')
+			->with(1, null)->willReturn(['total' => 3, 'size' => 30]);
+		$this->request->method('getParams')->willReturn(['_extend' => ['@self.stats']]);
+		$this->registerService->method('findAll')->willReturn([$this->createRealRegister(1, 'Test')]);
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 5]);
+
+		$data = $this->controller->index()->getData();
+
+		$this->assertSame(['total' => 3, 'size' => 30], $data['results'][0]['stats']['logs']);
+	}
+
+	public function testANonAdminReadingARegisterIsNotGivenTheTrailCount(): void {
+		$this->currentUserIsAdmin = false;
+		$this->auditTrailMapper->expects($this->never())->method('getStatistics');
+		$this->request->method('getParam')->willReturn('@self.stats');
+		$this->registerService->method('find')->willReturn($this->createRealRegister(1, 'Test'));
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 10]);
+
+		$data = $this->controller->show(1)->getData();
+
+		$this->assertSame(['total' => 0, 'size' => 0], $data['stats']['logs']);
+		$this->assertSame(['total' => 10], $data['stats']['objects']);
+	}
+
+	public function testAnAdminReadingARegisterIsGivenTheTrailCount(): void {
+		$this->auditTrailMapper->expects($this->once())->method('getStatistics')
+			->with(1, null)->willReturn(['total' => 5, 'size' => 50]);
+		$this->request->method('getParam')->willReturn('@self.stats');
+		$this->registerService->method('find')->willReturn($this->createRealRegister(1, 'Test'));
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 10]);
+
+		$data = $this->controller->show(1)->getData();
+
+		$this->assertSame(['total' => 5, 'size' => 50], $data['stats']['logs']);
 	}
 
 }

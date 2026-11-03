@@ -244,7 +244,7 @@ class CascadingHandler {
 			$createdObject = $this->saveHandler->saveObject(
 				register: $targetRegister,
 				schema: $targetSchema,
-				data: $objectData,
+				data: self::withoutIdentity(objectData: $objectData),
 				uuid: null,
 				// Let it generate a new UUID.
 				folderId: null,
@@ -270,4 +270,27 @@ class CascadingHandler {
 			return null;
 		}//end try
 	}//end createRelatedObject()
+
+	/**
+	 * A nested object without the identity it carries.
+	 *
+	 * A nested inline object is always created, never updated. The save handler
+	 * takes `id` or `@self.id` as the uuid to write to and looks that uuid up
+	 * past the read filters, so a caller-chosen id there would overwrite the row
+	 * of that uuid with no permission check. The new object gets its own uuid.
+	 *
+	 * @param array $objectData The nested object.
+	 *
+	 * @return array The nested object without `id`, `@self.id` and `@self.uuid`.
+	 *
+	 * @spec openspec/specs/reference-existence-validation/spec.md
+	 */
+	private static function withoutIdentity(array $objectData): array {
+		unset($objectData['id']);
+		if (is_array($objectData['@self'] ?? null) === true) {
+			unset($objectData['@self']['id'], $objectData['@self']['uuid']);
+		}
+
+		return $objectData;
+	}//end withoutIdentity()
 }//end class

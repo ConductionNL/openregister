@@ -53,7 +53,10 @@ class ReferentialIntegrityException extends Exception {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(DeletionAnalysis $analysis, int $code = 0, ?Exception $previous = null) {
-		$blockerCount = count($analysis->blockers);
+		$blockerCount = 0;
+		foreach ($analysis->blockers as $blocker) {
+			$blockerCount += (int) ($blocker['count'] ?? 1);
+		}
 		$message = "Cannot delete object: {$blockerCount} dependent object(s) block deletion";
 
 		parent::__construct(message: $message, code: $code, previous: $previous);

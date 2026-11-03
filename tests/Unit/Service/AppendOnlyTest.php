@@ -530,10 +530,29 @@ class AppendOnlyTest extends TestCase {
 	}//end testInsertWithExistingUuidRefusedOnAppendOnlySchema()
 
 	/**
-	 * A uuid held by a row the caller cannot see (another tenant) is refused
-	 * exactly like a visible one: the existence question is asked unfiltered,
-	 * so the invisible row can never be overwritten, and the refusal carries
-	 * the same message either way.
+	 * A uuid held by a row the caller cannot see inside their own organisations
+	 * is refused exactly like a visible one: the existence question is asked
+	 * unfiltered, so the invisible row can never be overwritten, and the
+	 * refusal carries the same message either way.
+	 *
+	 * @return void
+	 */
+	public function testInsertWithUuidHeldByAHiddenRowOfTheSameTenantIsRefused(): void {
+		$this->setProperty('currentSchema', $this->makeSchema(appendOnly: true, slug: 'xapi-statement'));
+		$this->setProperty('currentRegister', null);
+		$this->stubFind(existingUuid: 'hidden-uuid', onlyUnfiltered: true);
+		$this->objectMapper->method('callerOrganisationsHold')->willReturn(true);
+		$this->saveHandler->expects($this->never())->method('saveObject');
+
+		$this->expectException(AppendOnlyException::class);
+		$this->expectExceptionMessage('SCHEMA_APPEND_ONLY: Schema "xapi-statement" is append-only; update operations are not permitted.');
+
+		$this->service->saveObject(object: ['id' => 'hidden-uuid']);
+	}//end testInsertWithUuidHeldByAHiddenRowOfTheSameTenantIsRefused()
+
+	/**
+	 * A uuid held by a row in another tenant gets the same refusal as any other
+	 * stored row, so the answer does not tell another tenant's rows apart.
 	 *
 	 * @return void
 	 */
@@ -541,6 +560,7 @@ class AppendOnlyTest extends TestCase {
 		$this->setProperty('currentSchema', $this->makeSchema(appendOnly: true, slug: 'xapi-statement'));
 		$this->setProperty('currentRegister', null);
 		$this->stubFind(existingUuid: 'other-tenant-uuid', onlyUnfiltered: true);
+		$this->objectMapper->method('callerOrganisationsHold')->willReturn(false);
 		$this->saveHandler->expects($this->never())->method('saveObject');
 
 		$this->expectException(AppendOnlyException::class);
