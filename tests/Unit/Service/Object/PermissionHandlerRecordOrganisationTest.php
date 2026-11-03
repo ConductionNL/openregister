@@ -247,6 +247,116 @@ class PermissionHandlerRecordOrganisationTest extends TestCase {
 	}//end testAConditionalDenyReadsTheRecordsOwnOrganisation()
 
 	/**
+	 * Data that names metadata other than the organisation, against the rule it tries to satisfy.
+	 *
+	 * @return array<string, array{0: string, 1: mixed, 2: array<string, mixed>}>
+	 */
+	public static function forgedMetadata(): array {
+		return [
+			'_owner from @self'     => ['_owner', '$userId', ['@self' => ['owner' => 'alice']]],
+			'_owner from the body'  => ['_owner', '$userId', ['_owner' => 'alice']],
+			'_schema from @self'    => ['_schema', '7', ['@self' => ['schema' => '7']]],
+			'_register in the body' => ['_register', '3', ['_register' => '3']],
+			'_published from @self' => ['_published', true, ['@self' => ['published' => true]]],
+		];
+
+	}//end forgedMetadata()
+
+	/**
+	 * A rule on the record's owner, schema or register is not satisfied by the record's data.
+	 *
+	 * @param string               $field The metadata field the rule matches on.
+	 * @param mixed                $value The value the rule wants.
+	 * @param array<string, mixed> $data  The record's data.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider forgedMetadata
+	 */
+	public function testTheRecordsDataDoesNotStandInForItsMetadata(string $field, mixed $value, array $data): void {
+		$schema = $this->schemaWith(authorization: ['read' => ['editors'], 'update' => [['group' => 'editors', 'match' => [$field => $value]]]]);
+		$record = $this->record(organisation: 'org-b', data: $data);
+		$record->setUuid('rec-meta-' . md5(serialize($data)));
+
+		$this->assertFalse(
+			condition: $this->handler->hasPermission(schema: $schema, action: 'update', userId: 'alice', objectOwner: 'bob', object: $record),
+			message: 'the data answered ' . $field
+		);
+
+	}//end testTheRecordsDataDoesNotStandInForItsMetadata()
+
+	/**
+	 * The record's own owner, schema and register answer a rule on them.
+	 *
+	 * @return void
+	 */
+	public function testTheRecordsOwnMetadataAnswers(): void {
+		foreach (['_owner' => '$userId', '_schema' => '7', '_register' => '3'] as $field => $value) {
+			$schema = $this->schemaWith(authorization: ['read' => ['editors'], 'update' => [['group' => 'editors', 'match' => [$field => $value]]]]);
+			$record = $this->record(organisation: 'org-b', data: ['title' => 'x', '@self' => ['owner' => 'bob', 'schema' => '8', 'register' => '4']]);
+			$record->setUuid('rec-own-' . $field);
+			$record->setOwner('carol');
+			$record->setSchema('7');
+			$record->setRegister('3');
+			if ($field === '_owner') {
+				$record->setOwner('alice');
+			}
+
+			$this->assertTrue(
+				condition: $this->handler->hasPermission(schema: $schema, action: 'update', userId: 'alice', objectOwner: 'carol', object: $record),
+				message: 'the record did not answer ' . $field
+			);
+		}
+
+	}//end testTheRecordsOwnMetadataAnswers()
+
+	/**
+	 * A four-eyes deny on `_owner` bites the record's owner, whatever its data says.
+	 *
+	 * @return void
+	 */
+	public function testAConditionalDenyOnTheOwnerReadsTheRecordsOwner(): void {
+		$schema = $this->schemaWith(
+			authorization: [
+				'read'   => ['editors'],
+				'update' => ['editors'],
+				'deny'   => ['update' => [['group' => 'editors', 'match' => ['_owner' => '$userId']]]],
+			]
+		);
+
+		$own = $this->record(organisation: 'org-b', data: ['title' => 'x', '@self' => ['owner' => 'bob'], '_owner' => 'bob']);
+		$own->setUuid('rec-four-eyes');
+		$own->setOwner('alice');
+		$this->assertFalse(
+			condition: $this->handler->hasPermission(schema: $schema, action: 'update', userId: 'alice', objectOwner: 'alice', object: $own)
+		);
+
+		$other = $this->record(organisation: 'org-b', data: ['title' => 'x', '@self' => ['owner' => 'alice'], '_owner' => 'alice']);
+		$other->setUuid('rec-four-eyes-other');
+		$this->assertTrue(
+			condition: $this->handler->hasPermission(schema: $schema, action: 'update', userId: 'alice', objectOwner: 'bob', object: $other)
+		);
+
+	}//end testAConditionalDenyOnTheOwnerReadsTheRecordsOwner()
+
+	/**
+	 * A schema with the given authorization block.
+	 *
+	 * @param array<string, mixed> $authorization The block.
+	 *
+	 * @return Schema
+	 */
+	private function schemaWith(array $authorization): Schema {
+		$schema = new Schema();
+		$schema->setId(94);
+		$schema->setTitle('Metadata');
+		$schema->setAuthorization($authorization);
+
+		return $schema;
+
+	}//end schemaWith()
+
+	/**
 	 * A schema whose `editors` may update the records of `org-a`.
 	 *
 	 * @return Schema

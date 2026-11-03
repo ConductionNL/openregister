@@ -156,6 +156,21 @@ final class MarkImplicitCrossOrganisationReadRulesTest extends TestCase {
 		self::assertStringContainsString('Schema 7 has 2 read rule(s)', implode("\n", $this->logged));
 	}//end testAnUnmarkedPublicRuleIsLoggedAsNarrowedAndAMarkedOneIsNot()
 
+	public function testARuleThatAlreadySaysCrossOrganisationIsLeftAsWritten(): void {
+		$bound = ['group' => 'aanbod-beheerder', 'match' => ['provider' => '$organisation']];
+		$read = [
+			$bound + ['crossOrganisation' => false],
+			['group' => 'team', 'match' => ['provider' => '$organisation'], 'crossOrganisation' => null],
+			['group' => 'gebruik', 'match' => ['consumer' => '$organisation'], 'crossOrganisation' => 'no'],
+		];
+		$schema = $this->schema(['read' => $read]);
+
+		$this->sweep([$schema]);
+
+		self::assertSame([], $this->written);
+		self::assertSame($read, $schema->getAuthorization()['read']);
+	}//end testARuleThatAlreadySaysCrossOrganisationIsLeftAsWritten()
+
 	public function testASecondRunChangesNothing(): void {
 		$schema = $this->schema(['read' => [['group' => 'aanbod-beheerder', 'match' => ['provider' => '$organisation']]]]);
 

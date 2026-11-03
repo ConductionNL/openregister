@@ -42,6 +42,8 @@ final class ReadRuleTenancy {
 	 * @param mixed $rule The rule as written.
 	 *
 	 * @return bool True when the rule is marked.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
 	 */
 	public function isMarked(mixed $rule): bool {
 		return is_array($rule) === true && ($rule[MatrixRowWhere::CROSS_ORGANISATION_KEY] ?? false) === true;
@@ -54,6 +56,8 @@ final class ReadRuleTenancy {
 	 * @param mixed $rule The rule or matrix row as written.
 	 *
 	 * @return array<string, true> `['crossOrganisation' => true]` or an empty list.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
 	 */
 	public function markerOf(mixed $rule): array {
 		return array_filter([MatrixRowWhere::CROSS_ORGANISATION_KEY => $this->isMarked(rule: $rule)]);
@@ -66,6 +70,8 @@ final class ReadRuleTenancy {
 	 * @param mixed $readRules The `read` rules of an authorization block.
 	 *
 	 * @return bool True when `public` reads unconditionally.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
 	 */
 	public function readsPublicUnconditionally(mixed $readRules): bool {
 		if (is_array($readRules) === false) {
@@ -95,6 +101,8 @@ final class ReadRuleTenancy {
 	 * @param array $rule The conditional rule.
 	 *
 	 * @return bool True when such a field is bound.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
 	 */
 	public function bindsFieldToCallerTenancy(array $rule): bool {
 		$match = ($rule['match'] ?? null);
@@ -119,6 +127,8 @@ final class ReadRuleTenancy {
 	 * @param mixed $value The match value as written.
 	 *
 	 * @return bool True when the value binds the row to the caller's tenancy.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
 	 */
 	public function bindsCallerTenancy(mixed $value): bool {
 		if (is_array($value) === true && array_key_exists(MemberOfResolver::OPERATOR, $value) === true) {
@@ -135,6 +145,8 @@ final class ReadRuleTenancy {
 	 * @param mixed $value The match value as written.
 	 *
 	 * @return bool True when the value equals the caller's organisation.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
 	 */
 	public function pinsCallerOrganisation(mixed $value): bool {
 		if (is_array($value) === true && count($value) === 1 && array_key_exists('$eq', $value) === true) {

@@ -113,7 +113,7 @@
         "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
         "body": {
           "mode": "raw",
-          "raw": "{\"title\": \"frozen-files-{{run}}\", \"slug\": \"frozen-files-{{run}}\", \"properties\": {\"title\": {\"type\": \"string\"}}}"
+          "raw": "{\"title\": \"frozen-files-{{run}}\", \"slug\": \"frozen-files-{{run}}\", \"properties\": {\"title\": {\"type\": \"string\"}}, \"x-openregister-archive\": {\"enabled\": true}}"
         }
       },
       "event": [

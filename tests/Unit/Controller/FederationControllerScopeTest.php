@@ -189,6 +189,21 @@ class FederationControllerScopeTest extends TestCase {
 	}//end testAnObjectScopeTokenCannotDeleteADifferentObject()
 
 	/**
+	 * A read-only share writes nothing, not even to the object it grants.
+	 *
+	 * @return void
+	 */
+	public function testAReadOnlyShareCannotUpdateOrDelete(): void {
+		$this->shareMapper->method('findByToken')->willReturn($this->objectScopeShare('read'));
+		$this->objectService->expects($this->never())->method('saveObject');
+		$this->objectService->expects($this->never())->method('deleteObject');
+
+		$this->assertSame(403, $this->controller->updateObject(shareToken: 'tok', id: 'granted-1')->getStatus());
+		$this->assertSame(403, $this->controller->deleteObject(shareToken: 'tok', id: 'granted-1')->getStatus());
+
+	}//end testAReadOnlyShareCannotUpdateOrDelete()
+
+	/**
 	 * A REGISTER/SCHEMA-scope share is unaffected: its breadth IS the grant,
 	 * and `applyShareVisibility()` remains the guard there. Narrowing it here
 	 * would have broken federation rather than secured it.

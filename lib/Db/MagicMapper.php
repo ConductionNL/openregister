@@ -13429,9 +13429,7 @@ class MagicMapper extends AbstractObjectMapper {
 
 			$schema = $schemaEntityCache[$schemaId];
 
-			$objectData = $object->getObject() ?? [];
-			$objectData['_organisation'] = $object->getOrganisation();
-			$objectData['_owner'] = $object->getOwner();
+			$objectData = $object->getMatchEnvelope();
 
 			if ($this->rbacHandler->hasPermission(
 				schema: $schema,

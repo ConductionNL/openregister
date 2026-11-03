@@ -42,6 +42,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -113,25 +114,13 @@ class ObjectHistoryForReaders {
 			return null;
 		}
 
-		$objectUuid = $object->getUuid();
-		$schemaEntity = $this->access->schemaOf(object: $object);
-		if ($objectUuid === null || $objectUuid === '' || $schemaEntity === null) {
-			// Every unknown hides: without the schema the property rules cannot
-			// be applied, and an unfiltered history is the leak this prevents.
+		$schemaEntity = $this->readerSchema(object: $object);
+		if ($schemaEntity === null) {
 			return null;
 		}
-
-		$registerEntity = $this->registerOf(object: $object);
-		if ($registerEntity === null) {
-			return null;
-		}
-
-		// The same doelbinding guard the object GET runs, after the read check
-		// so a refusal never confirms an object the caller may not see.
-		$this->purposeGuard->enforce(register: $registerEntity, schema: $schemaEntity);
 
 		$filters = $this->readerColumns(columns: ($params['filters'] ?? []));
-		$filters['object_uuid'] = $objectUuid;
+		$filters['object_uuid'] = $object->getUuid();
 
 		$sort = $this->readerColumns(columns: ($params['sort'] ?? []));
 		if ($sort === []) {
@@ -151,6 +140,78 @@ class ObjectHistoryForReaders {
 			['readEventsVisible' => $this->readEvents->maySeeReadEvents()]
 		);
 	}//end page()
+
+	/**
+	 * Entries of one object as its reader is given them, or null when the caller may not read it.
+	 *
+	 * For a caller that found the object some other way, such as the scoped
+	 * audit list. The object is read again through the object GET's read path
+	 * by its register, schema and uuid, so the organisation boundary, RBAC,
+	 * drafts and deleted objects decide here as they do on the object, and the
+	 * doelbinding guard and property redaction of page() apply.
+	 *
+	 * @param ObjectEntity      $located The object the entries point at, as some lookup found it.
+	 * @param array<AuditTrail> $rows    Entries of that object.
+	 *
+	 * @return array<int, array>|null The redacted entries in the order given, or null when not readable.
+	 *
+	 * @throws PurposeRefusedException When the schema asks for a purpose and none usable was named.
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
+	 */
+	public function readerEntries(ObjectEntity $located, array $rows): ?array {
+		$uuid = $located->getUuid();
+		if ($uuid === null || $uuid === '') {
+			return null;
+		}
+
+		$object = $this->access->readable(
+			register: (string)$located->getRegister(),
+			schema: (string)$located->getSchema(),
+			id: $uuid
+		);
+		if ($object === null || $object->getUuid() !== $uuid) {
+			return null;
+		}
+
+		$schemaEntity = $this->readerSchema(object: $object);
+		if ($schemaEntity === null) {
+			return null;
+		}
+
+		return $this->redactor->redact(rows: $rows, schema: $schemaEntity, object: $object);
+	}//end readerEntries()
+
+	/**
+	 * The schema a readable object's entries are redacted with, after the doelbinding guard.
+	 *
+	 * Every unknown hides: without the schema the property rules cannot be
+	 * applied, and an unfiltered history is the leak this prevents. The guard
+	 * runs after the read check, so a refusal never confirms an object the
+	 * caller may not see.
+	 *
+	 * @param ObjectEntity $object An object the read check returned.
+	 *
+	 * @return Schema|null The schema, or null when the object's uuid, schema or register does not resolve.
+	 *
+	 * @throws PurposeRefusedException When the schema asks for a purpose and none usable was named.
+	 */
+	private function readerSchema(ObjectEntity $object): ?Schema {
+		$objectUuid = $object->getUuid();
+		$schemaEntity = $this->access->schemaOf(object: $object);
+		if ($objectUuid === null || $objectUuid === '' || $schemaEntity === null) {
+			return null;
+		}
+
+		$registerEntity = $this->registerOf(object: $object);
+		if ($registerEntity === null) {
+			return null;
+		}
+
+		$this->purposeGuard->enforce(register: $registerEntity, schema: $schemaEntity);
+
+		return $schemaEntity;
+	}//end readerSchema()
 
 	/**
 	 * Search and page the redacted entries.
@@ -214,8 +275,10 @@ class ObjectHistoryForReaders {
 	 * @param array<string, mixed> $columns Column map from the request.
 	 *
 	 * @return array<string, mixed> The columns without the blocked ones.
+	  *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
 	 */
-	private function readerColumns(array $columns): array {
+	public function readerColumns(array $columns): array {
 		foreach (self::READER_BLOCKED_COLUMNS as $column) {
 			unset($columns[$column]);
 		}
@@ -233,8 +296,10 @@ class ObjectHistoryForReaders {
 	 * @param string $search The search term.
 	 *
 	 * @return bool True when the term occurs in the entry's change set.
+	  *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
 	 */
-	private function matches(array $entry, string $search): bool {
+	public function matches(array $entry, string $search): bool {
 		$encoded = json_encode(($entry['changed'] ?? []), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 		if ($encoded === false) {
 			return false;
