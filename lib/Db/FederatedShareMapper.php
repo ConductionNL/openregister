@@ -195,6 +195,29 @@ class FederatedShareMapper extends QBMapper {
 	}//end findAll()
 
 	/**
+	 * Every outgoing share that is not revoked or declined, across all organisations.
+	 *
+	 * No organisation filter: for administrator reports from the command line only.
+	 *
+	 * @return FederatedShare[] The shares, oldest first.
+	 *
+	 * @psalm-return list<FederatedShare>
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
+	 */
+	public function findLiveOutgoingAcrossOrganisations(): array {
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')
+			->from('openregister_federated_shares')
+			->where($qb->expr()->eq('direction', $qb->createNamedParameter('outgoing')))
+			->andWhere($qb->expr()->notIn('status', $qb->createNamedParameter(['revoked', 'declined'], IQueryBuilder::PARAM_STR_ARRAY)))
+			->orderBy('id', 'ASC');
+
+		return $this->findEntities(query: $qb);
+	}//end findLiveOutgoingAcrossOrganisations()
+
+	/**
 	 * Insert a new federated share, stamping uuid/timestamps/organisation.
 	 *
 	 * @param Entity $entity The share to insert.
