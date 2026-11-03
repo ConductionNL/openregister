@@ -61,6 +61,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore;
+use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Quality\DedupCreatePolicy;
@@ -3069,7 +3070,7 @@ class SaveObject {
 		// Placed here, beside the object-source guard, for the same reason that
 		// one is here: it is a property of the RESOURCE being written, decided
 		// before anything is prepared, validated or persisted.
-		if ($persist === true && $_multitenancy === true) {
+		if ($persist === true && OrganisationContext::multitenancy(requested: $_multitenancy) === true) {
 			$this->refuseSharedMasterDataWrite(registerId: $registerId, schemaId: $schemaId, uuid: $uuid);
 		}
 

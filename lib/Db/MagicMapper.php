@@ -73,6 +73,7 @@ use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
+use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
@@ -6892,7 +6893,7 @@ class MagicMapper extends AbstractObjectMapper {
 		// in-org / owner reads through,
 		// - filters out other-org rows → no row → DoesNotExistException → 404
 		// (existence is not leaked).
-		if ($_rbac === true || $_multitenancy === true) {
+		if ($_rbac === true || OrganisationContext::multitenancy(requested: $_multitenancy) === true) {
 			$this->searchHandler->applyAccessControlToQuery(
 				qb: $qb,
 				schema: $schema,
@@ -7812,7 +7813,7 @@ class MagicMapper extends AbstractObjectMapper {
 			// filters, the caller may not read it — treat it exactly like "not found
 			// in this table" (no distinct error, no existence leak) and keep scanning
 			// the remaining candidates instead of trusting this hit.
-			if ($_rbac === true || $_multitenancy === true) {
+			if ($_rbac === true || OrganisationContext::multitenancy(requested: $_multitenancy) === true) {
 				if ($schema === null) {
 					// Can't resolve the schema that would tell us whether this read
 					// is authorized (register/schema deleted mid-scan, or load
@@ -8842,7 +8843,7 @@ class MagicMapper extends AbstractObjectMapper {
 		bool $_rbac,
 		bool $_multitenancy,
 	): bool {
-		if ($_rbac === false && $_multitenancy === false) {
+		if ($_rbac === false && OrganisationContext::multitenancy(requested: $_multitenancy) === false) {
 			return true;
 		}
 

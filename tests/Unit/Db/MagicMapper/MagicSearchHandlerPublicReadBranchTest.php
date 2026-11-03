@@ -77,6 +77,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\ArrayElementFilter
  * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Service\OrganisationContext
  */
 class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 
