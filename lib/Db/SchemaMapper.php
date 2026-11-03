@@ -2475,7 +2475,7 @@ class SchemaMapper extends QBMapper {
 			return;
 		}
 
-		$findings = (new DepartmentMatrixValidator())->validate(
+		$findings = (new DepartmentMatrixValidator(declaredActions: $schema->declaredActionNames()))->validate(
 			properties: ($schema->getProperties() ?? []),
 			authorization: $authorization
 		);

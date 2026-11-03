@@ -33,6 +33,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
 use OCP\IL10N;
 use OCP\IUserSession;
 
@@ -91,6 +93,83 @@ class ObjectActionGate {
 			object: $object
 		);
 	}//end may()
+
+	/**
+	 * Whether a self-assign action has a grant written for it at all.
+	 *
+	 * A self-assign action runs only when the schema grants it by name, in its
+	 * authorization block or in a matrix row. Without either, nobody may run
+	 * it, including on a schema whose empty block would otherwise default open.
+	 * Every other kind answers true here and is decided by may() alone.
+	 *
+	 * @param Schema                 $schema     The object's schema.
+	 * @param ObjectActionDefinition $definition The action.
+	 *
+	 * @return bool True when the grant is written, or the action is not a self-assign.
+	 *
+	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 */
+	public function selfAssignGranted(Schema $schema, ObjectActionDefinition $definition): bool {
+		if ($definition->selfAssignField() === null) {
+			return true;
+		}
+
+		$authorization = ($schema->getAuthorization() ?? []);
+		if (empty($authorization[$definition->key]) === false) {
+			return true;
+		}
+
+		$matrix = ($authorization[DepartmentMatrixCompiler::KEY] ?? null);
+		if (is_array($matrix) === false) {
+			return false;
+		}
+
+		return is_string($matrix[DepartmentMatrixValidator::ROWS_FROM_KEY] ?? null) === true
+			|| $this->rowsName(rows: ($matrix['rows'] ?? null), key: $definition->key) === true;
+	}//end selfAssignGranted()
+
+	/**
+	 * Whether a self-assign action's property is still empty on this object.
+	 *
+	 * @param ObjectActionDefinition $definition The action.
+	 * @param ObjectEntity           $object     The object.
+	 *
+	 * @return bool True when the property is empty, or the action is not a self-assign.
+	 *
+	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 */
+	public function selfAssignOpen(ObjectActionDefinition $definition, ObjectEntity $object): bool {
+		$field = $definition->selfAssignField();
+		if ($field === null) {
+			return true;
+		}
+
+		$value = (($object->getObject() ?? [])[$field] ?? null);
+
+		return in_array($value, [null, '', []], true);
+	}//end selfAssignOpen()
+
+	/**
+	 * Whether any declared matrix row grants this action.
+	 *
+	 * @param mixed  $rows The declared rows.
+	 * @param string $key  The action key.
+	 *
+	 * @return bool True when a row names it.
+	 */
+	private function rowsName(mixed $rows, string $key): bool {
+		if (is_array($rows) === false) {
+			return false;
+		}
+
+		foreach ($rows as $row) {
+			if (is_array($row) === true && in_array($key, (array)($row['actions'] ?? []), true) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end rowsName()
 
 	/**
 	 * Whether the action's `when` holds for this object and these inputs.
