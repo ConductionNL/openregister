@@ -27,6 +27,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\ConditionMatcher
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
  */
 class Wave12ConditionMatcherDotSyntaxTest extends TestCase {
 

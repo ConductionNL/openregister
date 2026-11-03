@@ -25,8 +25,11 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\BulkRowRules;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -37,6 +40,7 @@ use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
@@ -56,6 +60,9 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 
 	private PropertyRbacHandler $rbac;
 
+	/** @var OrganisationService&\PHPUnit\Framework\MockObject\MockObject */
+	private $organisations;
+
 	/**
 	 * A save handler acting as a member of the given groups.
 	 *
@@ -72,10 +79,16 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 
+		$this->organisations = $this->createMock(OrganisationService::class);
 		$this->rbac = new PropertyRbacHandler(
 			$session,
 			$groupManager,
-			$this->createMock(ConditionMatcher::class),
+			new ConditionMatcher(
+				$session,
+				$this->createMock(ContainerInterface::class),
+				new OperatorEvaluator($this->createMock(LoggerInterface::class)),
+				$this->createMock(LoggerInterface::class)
+			),
 			$this->createMock(LoggerInterface::class),
 			self::stateFieldRuleResolver($session, $groupManager)
 		);
@@ -91,7 +104,7 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 			$this->schemaMapper,
 			$this->createMock(RegisterMapper::class),
 			$this->createMock(IURLGenerator::class),
-			$this->createMock(OrganisationService::class),
+			$this->organisations,
 			$this->createMock(CacheHandler::class),
 			$this->createMock(SettingsService::class),
 			$this->rbac,
@@ -138,20 +151,103 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 	 * @param Schema               $schema  The schema.
 	 * @param array<string, mixed> $stored  The stored object.
 	 * @param array<string, mixed> $data    The PUT payload.
+	 * @param string|null          $org     The stored record's organisation.
 	 *
 	 * @return array<string, mixed> The prepared object.
 	 */
-	private function prepareUpdate(SaveObject $handler, Schema $schema, array $stored, array $data): array {
+	private function prepareUpdate(SaveObject $handler, Schema $schema, array $stored, array $data, ?string $org = null): array {
 		$existing = new ObjectEntity();
 		$existing->setUuid('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
 		$existing->setSchema((string)$schema->getId());
 		$existing->setRegister('65');
+		$existing->setOrganisation($org);
 		$existing->setObject($stored);
 		$method = new ReflectionMethod(SaveObject::class, 'prepareObjectForUpdate');
 		$method->setAccessible(true);
 
-		return $method->invokeArgs($handler, [$existing, $schema, $data, [], null, null])->getObject();
+		return $method->invokeArgs($handler, [$existing, $schema, $data, ['organisation' => 'org-a'], null, null])->getObject();
 	}//end prepareUpdate()
+
+	/**
+	 * A schema whose `restricted` only staff of organisation org-a may update.
+	 *
+	 * @return Schema
+	 */
+	private function orgPinnedSchema(): Schema {
+		$schema = $this->documentSchema();
+		$staffOfOrgA = [['group' => 'staff', 'match' => ['_organisation' => 'org-a']]];
+		$schema->setProperties(
+			[
+				'title' => ['type' => 'string'],
+				'restricted' => ['type' => 'boolean', 'authorization' => ['read' => $staffOfOrgA, 'update' => $staffOfOrgA]],
+			]
+		);
+
+		return $schema;
+	}//end orgPinnedSchema()
+
+	/**
+	 * Whether an omitted `restricted` is carried forward is decided on the record, not on its stored body.
+	 *
+	 * The stored body of an org-b record claims org-a twice over; neither claim makes
+	 * the caller someone who may clear it by leaving it out. The request's own `@self`
+	 * moves the record to org-a, of which the caller is a member, and does not count
+	 * either: the decision is the stored record's.
+	 *
+	 * @return void
+	 */
+	public function testTheCarryForwardIsDecidedOnTheRecord(): void {
+		$handler = $this->handlerAs(['staff']);
+		$this->organisations->method('hasAccessToOrganisation')->willReturn(true);
+		$schema = $this->orgPinnedSchema();
+		$stored = ['title' => 'Offerte', 'restricted' => true, '_organisation' => 'org-a', '@self' => ['organisation' => 'org-a']];
+
+		$result = $this->prepareUpdate($handler, $schema, $stored, ['title' => 'Offerte v2'], 'org-b');
+
+		$this->assertTrue($result['restricted'], 'an org-b record lost a property its caller may not update');
+	}//end testTheCarryForwardIsDecidedOnTheRecord()
+
+	/**
+	 * A bulk row runs the same carry-forward decision on the record, and still takes the value from the stored body.
+	 *
+	 * @return void
+	 */
+	public function testABulkRowDecidesTheCarryForwardOnTheRecord(): void {
+		$this->handlerAs(['staff']);
+		$schema = $this->orgPinnedSchema();
+		$bulk = (new ReflectionClass(SaveObjects::class))->newInstanceWithoutConstructor();
+		$rules = new BulkRowRules(propertyRbac: $this->rbac);
+		(fn () => $this->rowRules = $rules)->call($bulk);
+		$apply = new ReflectionMethod(SaveObjects::class, 'applyPropertyAuthorization');
+		$apply->setAccessible(true);
+
+		$forged = new ObjectEntity();
+		$forged->setOrganisation('org-b');
+		$forged->setObject(['title' => 'Offerte', 'restricted' => true, '_organisation' => 'org-a', '@self' => ['organisation' => 'org-a']]);
+		[$row, $refusal] = $apply->invoke($bulk, ['title' => 'Offerte v2'], $schema, $forged, false);
+		$this->assertNull($refusal);
+		$this->assertTrue($row['restricted'] ?? null, 'an org-b row lost a property its caller may not update');
+
+		$own = new ObjectEntity();
+		$own->setOrganisation('org-a');
+		$own->setObject(['title' => 'Offerte', 'restricted' => true]);
+		[$row] = $apply->invoke($bulk, ['title' => 'Offerte v2'], $schema, $own, false);
+		$this->assertArrayNotHasKey('restricted', $row, 'staff of the record\'s organisation clear it by leaving it out');
+	}//end testABulkRowDecidesTheCarryForwardOnTheRecord()
+
+	/**
+	 * Staff of the record's own organisation still clear `restricted` by leaving it out.
+	 *
+	 * @return void
+	 */
+	public function testTheRecordsOwnOrganisationStillClearsByOmission(): void {
+		$handler = $this->handlerAs(['staff']);
+		$schema = $this->orgPinnedSchema();
+
+		$result = $this->prepareUpdate($handler, $schema, ['title' => 'Offerte', 'restricted' => true], ['title' => 'Offerte v2'], 'org-a');
+
+		$this->assertNull($result['restricted']);
+	}//end testTheRecordsOwnOrganisationStillClearsByOmission()
 
 	public function testAPutWithoutTheProtectedPropertiesKeepsThem(): void {
 		$handler = $this->handlerAs(['staff']);

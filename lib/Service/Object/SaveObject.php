@@ -61,6 +61,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore;
+use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Quality\DedupCreatePolicy;
@@ -3021,7 +3022,7 @@ class SaveObject {
 		// Placed here, beside the object-source guard, for the same reason that
 		// one is here: it is a property of the RESOURCE being written, decided
 		// before anything is prepared, validated or persisted.
-		if ($persist === true && $_multitenancy === true) {
+		if ($persist === true && OrganisationContext::multitenancy(requested: $_multitenancy) === true) {
 			$this->refuseSharedMasterDataWrite(registerId: $registerId, schemaId: $schemaId, uuid: $uuid);
 		}
 
@@ -3074,7 +3075,7 @@ class SaveObject {
 					);
 					// The find() call throws DoesNotExistException rather than returning
 					// null — that catch below is the real "missing" path.
-					$existingObjectData = $tempExistingObject->getObject();
+					$existingObjectData = $tempExistingObject->getMatchEnvelope();
 				} catch (DoesNotExistException $e) {
 					// Object doesn't exist, treat as create.
 					$isCreate = true;
@@ -4394,6 +4395,10 @@ class SaveObject {
 		?int $folderId,
 		?IUser $currentUser = null,
 	): ObjectEntity {
+		// The stored record as property rules see it, taken before this request's
+		// `@self` is applied to the entity.
+		$storedRecord = $existingObject->getMatchEnvelope();
+
 		// Set @self metadata properties.
 		$this->setSelfMetadata(objectEntity: $existingObject, selfData: $selfData, data: $data, currentUser: $currentUser);
 
@@ -4435,7 +4440,8 @@ class SaveObject {
 		// A property the writer may not read was stripped from what they were
 		// shown, so omitting it is not a request to clear it (openregister#4170);
 		// one they may not update cannot be cleared by omission either, since that
-		// is the write the property rule refuses. Both are carried forward.
+		// is the write the property rule refuses. Both are carried forward. The
+		// rules are asked of the stored record; the values come from $oldData.
 		$omittedWriteOnly = array_values(
 			array_unique(
 				array_merge(
@@ -4443,7 +4449,7 @@ class SaveObject {
 					$this->propertyRbacHandler->collectOmittedProtectedProperties(
 						schema: $schema,
 						incoming: $data,
-						stored: ($oldData ?? [])
+						stored: $storedRecord
 					)
 				)
 			)

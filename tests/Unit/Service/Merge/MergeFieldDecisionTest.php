@@ -510,4 +510,34 @@ class MergeFieldDecisionTest extends TestCase {
 
 		$this->assertSame('into-uuid', $operation['mergedIntoUuid']);
 	}//end testAPairWithoutTheRestrictedPropertyStillMerges()
+
+	/**
+	 * The read rule is asked of the record's own metadata, not of a `@self` its stored data carries.
+	 *
+	 * The rule double admits only organisation org-a. The losing record belongs to
+	 * org-b and its stored data claims org-a; the merge is refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
+	 */
+	public function testTheReadRuleIsAskedOfTheRecord(): void {
+		[$from, $into] = $this->buildPair(['medicalNote' => 'x', '_organisation' => 'org-a', '@self' => ['organisation' => 'org-a']]);
+		$from->setOrganisation('org-b');
+		$into->setOrganisation('org-a');
+		$into->setObject(array_merge($into->getObject(), ['@self' => ['organisation' => 'org-a']]));
+		$this->schemaMapper->method('find')->willReturn($this->schemaWithConfig(withPropertyAuthorization: true));
+		$this->objectService->method('find')->willReturnCallback(
+			static fn (...$args): ?ObjectEntity => ['from-uuid' => $from, 'into-uuid' => $into][($args[0] ?? '')] ?? null
+		);
+		$this->objectService->method('findAll')->willReturn([]);
+		$this->propertyRbac->method('canReadProperty')->willReturnCallback(
+			static fn (...$args): bool => (($args[2]['@self']['organisation'] ?? null) === 'org-a')
+		);
+		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturn(new AuditTrail());
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$this->expectException(MergeNotFullyReadableException::class);
+		$this->service->executeMerge(from: 'from-uuid', into: 'into-uuid', reason: 'same person', mergedBy: 'handler');
+	}//end testTheReadRuleIsAskedOfTheRecord()
 }//end class

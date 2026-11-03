@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
+use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
@@ -823,6 +824,10 @@ class MagicRbacHandler {
 	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
 	 */
 	public function publicReadLiftsOrganisationFilter(Schema $schema): bool {
+		if (OrganisationContext::isActive() === true) {
+			return false;
+		}
+
 		return $this->getCurrentUserId() === null || $this->isAdmin() === true;
 	}//end publicReadLiftsOrganisationFilter()
 
@@ -837,7 +842,7 @@ class MagicRbacHandler {
 	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
 	 */
 	public function hasCrossOrganisationBranch(Schema $schema): bool {
-		if ($this->getCurrentUserId() === null || $this->isAdmin() === true) {
+		if (OrganisationContext::isActive() === true || $this->getCurrentUserId() === null || $this->isAdmin() === true) {
 			return false;
 		}
 
@@ -2902,6 +2907,11 @@ class MagicRbacHandler {
 	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
 	 */
 	public function hasConditionalRulesBypassingMultitenancy(Schema $schema, string $action = 'read'): bool {
+		// Code acting for an organisation stays inside it: no rule lifts the filter.
+		if (OrganisationContext::isActive() === true) {
+			return false;
+		}
+
 		if ($this->isAdmin() === true) {
 			return true;
 		}
