@@ -336,7 +336,7 @@ class DeleteObject {
 			register: $target->register,
 			schema: $target->schema,
 			hardDelete: true,
-			// delete() asked the guards before the folder was removed.
+			// The guards were asked in delete(), before the folder was removed.
 			dispatchEvents: false
 		);
 
