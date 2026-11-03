@@ -275,8 +275,6 @@ class FederationController extends Controller {
 	 * @return JSONResponse The object or an error.
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -288,33 +286,18 @@ class FederationController extends Controller {
 			return new JSONResponse(data: ['error' => 'Invalid, unaccepted or revoked share'], statusCode: Http::STATUS_FORBIDDEN);
 		}
 
-		if ($this->scopeCoversObject(share: $share, id: $id) === false) {
-			return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
-		}
-
 		try {
-			$entity = WriteCause::asLookup(fn () => $this->objectService->find(
-				id: $id,
-				register: $share->getRegister(),
-				schema: $share->getSchema(),
-				_rbac: false,
-				_multitenancy: false
-			));
+			$visible = $this->reachableObject(share: $share, id: $id);
 		} catch (Throwable $e) {
 			$this->logger->error('[Federation] serve object failed: ' . $e->getMessage());
 			return new JSONResponse(data: ['error' => 'Could not read shared object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
-		if ($entity === null) {
+		if ($visible === null) {
 			return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
 		}
 
-		$visible = $this->applyShareVisibility(objects: [$entity->jsonSerialize()], share: $share);
-		if (count($visible) === 0) {
-			return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
-		}
-
-		return new JSONResponse(data: $visible[0]);
+		return new JSONResponse(data: $visible);
 	}//end object()
 
 	/**
@@ -406,13 +389,23 @@ class FederationController extends Controller {
 			return new JSONResponse(data: ['error' => 'Invalid share or read-only'], statusCode: Http::STATUS_FORBIDDEN);
 		}
 
-		if ($this->scopeCoversObject(share: $share, id: $id) === false) {
+		try {
+			$target = $this->reachableObject(share: $share, id: $id);
+		} catch (Throwable $e) {
+			$this->logger->error('[Federation] update object lookup failed: ' . $e->getMessage());
+			return new JSONResponse(data: ['error' => 'Could not update object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+
+		if ($target === null) {
 			return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
 		}
 
 		$data = (array)$this->request->getParams();
 		unset($data['shareToken'], $data['id'], $data['_route']);
-		$data['@self'] = (($data['@self'] ?? []) + ['organisation' => $share->getOrganisation()]);
+		// Assigned, as on create: `+` would keep a caller-supplied organisation.
+		$self = (array)($data['@self'] ?? []);
+		$self['organisation'] = $share->getOrganisation();
+		$data['@self'] = $self;
 
 		try {
 			$saved = $this->objectService->saveObject(
@@ -451,7 +444,14 @@ class FederationController extends Controller {
 			return new JSONResponse(data: ['error' => 'Invalid share or read-only'], statusCode: Http::STATUS_FORBIDDEN);
 		}
 
-		if ($this->scopeCoversObject(share: $share, id: $id) === false) {
+		try {
+			$target = $this->reachableObject(share: $share, id: $id);
+		} catch (Throwable $e) {
+			$this->logger->error('[Federation] delete object lookup failed: ' . $e->getMessage());
+			return new JSONResponse(data: ['error' => 'Could not delete object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+
+		if ($target === null) {
 			return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
 		}
 
@@ -486,6 +486,49 @@ class FederationController extends Controller {
 
 		return $share;
 	}//end resolveWritableShare()
+
+	/**
+	 * The object a single-object call addresses, rendered, when the share reaches it.
+	 *
+	 * Every single-object endpoint runs without access control, so this is its
+	 * guard: the id must be inside the share's scope, the object must exist,
+	 * and it must pass the same organisation and confidentiality filter the
+	 * collection path applies. Anything else is null, which the endpoints
+	 * answer with a 404 so a token cannot tell "outside the grant" from
+	 * "does not exist".
+	 *
+	 * @param FederatedShare $share The share being served.
+	 * @param string         $id    The object id/uuid taken from the URL.
+	 *
+	 * @return array<string, mixed>|null The rendered object, or null.
+	 *
+	 * @throws Throwable When the lookup itself fails.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
+	 */
+	private function reachableObject(FederatedShare $share, string $id): ?array {
+		if ($this->scopeCoversObject(share: $share, id: $id) === false) {
+			return null;
+		}
+
+		try {
+			$entity = WriteCause::asLookup(fn () => $this->objectService->find(
+				id: $id,
+				register: $share->getRegister(),
+				schema: $share->getSchema(),
+				_rbac: false,
+				_multitenancy: false
+			));
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+
+		if ($entity === null) {
+			return null;
+		}
+
+		return ($this->applyShareVisibility(objects: [$entity->jsonSerialize()], share: $share)[0] ?? null);
+	}//end reachableObject()
 
 	/**
 	 * Whether a share's scope actually covers the single object being addressed.
