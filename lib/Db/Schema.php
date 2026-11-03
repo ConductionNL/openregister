@@ -1225,7 +1225,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			// A declaration must NAME and DESCRIBE itself. An entry with no
 			// description is how an action ends up in a permission matrix with
 			// nothing telling the person granting it what they are agreeing to.
-			if (is_string($key) === false || $key === '') {
+			if (is_string($key) === false || $this->isDeclarableName(name: $key) === false) {
 				continue;
 			}
 
@@ -1242,6 +1242,27 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 
 		return $names;
 	}//end declaredActionNames()
+
+	/**
+	 * Whether a schema may declare an action under this name.
+	 *
+	 * A canonical verb or a control key is never a declared action: declaring
+	 * `deny` would otherwise take the deny block out of the save-time catalogue
+	 * check.
+	 *
+	 * @param string $name The declared key.
+	 *
+	 * @return bool True when the name is free for a declared action.
+	 *
+	 * @spec openspec/specs/declared-actions/spec.md
+	 */
+	private function isDeclarableName(string $name): bool {
+		if ($name === '' || isset(PermissionCatalogue::CANONICAL[$name]) === true) {
+			return false;
+		}
+
+		return in_array($name, PermissionCatalogue::CONTROL_KEYS, true) === false;
+	}//end isDeclarableName()
 
 	/**
 	 * Reject an authorization block that names an action the vocabulary does not know.

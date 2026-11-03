@@ -381,6 +381,100 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 	}//end testARevealValueOtherThanExplicitIsRefused()
 
 	/**
+	 * Reveal values that are not exactly `explicit` are refused.
+	 *
+	 * @return array<string, array{mixed}>
+	 */
+	public static function wrongRevealValues(): array {
+		return [
+			'true' => [true],
+			'other case' => ['Explicit'],
+		];
+	}//end wrongRevealValues()
+
+	/**
+	 * A reveal value that only looks like `explicit` is refused.
+	 *
+	 * @param mixed $value The reveal value.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('wrongRevealValues')]
+	public function testARevealValueThatIsNotExactlyExplicitIsRefused(mixed $value): void {
+		$schema = new Schema();
+		$schema->setProperties(
+			[
+				'bsn' => [
+					'type' => 'string',
+					'authorization' => ['read' => ['brp-raadplegers'], ExplicitReveal::KEY => $value],
+				],
+			]
+		);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Authorization key 'reveal' in property 'bsn' must be \"explicit\"");
+
+		$schema->validateAuthorization();
+	}//end testARevealValueThatIsNotExactlyExplicitIsRefused()
+
+	/**
+	 * Only the declared action leaves the deny block; an undeclared one beside it is refused.
+	 *
+	 * @return void
+	 */
+	public function testAnUndeclaredActionInTheDenyIsStillRefused(): void {
+		$schema = $this->caseDeclaring(authorization: [
+			'read' => ['behandelaars'],
+			'deny' => ['finish-request' => ['ingehuurd'], 'suspend-request' => ['ingehuurd']],
+		]);
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessageMatches('/names "suspend-request", which no app declares/');
+
+		$this->validateDeny($schema);
+	}//end testAnUndeclaredActionInTheDenyIsStillRefused()
+
+	/**
+	 * Declaring an action named `deny` does not take the deny block out of the check.
+	 *
+	 * @return void
+	 */
+	public function testDeclaringAnActionNamedDenyKeepsTheDenyBlockChecked(): void {
+		$schema = new Schema();
+		$schema->setSlug('case');
+		$schema->setConfiguration(
+			['x-openregister-action' => ['deny' => ['name' => 'Deny', 'description' => 'Refuse the request.']]]
+		);
+		$schema->setAuthorization(['read' => ['behandelaars'], 'deny' => ['raed' => ['ingehuurd']]]);
+
+		$this->assertSame([], $schema->declaredActionNames(), 'a control key was accepted as a declared action');
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessageMatches('/names "raed", which no app declares/');
+
+		$this->validateDeny($schema);
+	}//end testDeclaringAnActionNamedDenyKeepsTheDenyBlockChecked()
+
+	/**
+	 * A canonical verb declared again is not a declared action.
+	 *
+	 * @return void
+	 */
+	public function testACanonicalVerbIsNotADeclaredAction(): void {
+		$schema = new Schema();
+		$schema->setConfiguration(
+			[
+				'x-openregister-action' => [
+					'read' => ['name' => 'Read', 'description' => 'Open the record.'],
+					'finish-request' => ['name' => 'Finish', 'description' => 'Close the request.'],
+				],
+			]
+		);
+
+		$this->assertSame(['finish-request'], $schema->declaredActionNames());
+	}//end testACanonicalVerbIsNotADeclaredAction()
+
+	/**
 	 * A schema may grant the actions it declares itself.
 	 *
 	 * The save-time catalogue check knew only the canonical verbs and the ones
