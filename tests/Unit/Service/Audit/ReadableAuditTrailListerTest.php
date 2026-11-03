@@ -41,19 +41,24 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\PurposeContext;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Audit\PurposeRegistry;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
 use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Tests\Support\BuildsAuditCursors;
 use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 use OCP\IGroupManager;
 use OCP\IUser;
+use OCP\IRequest;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister
@@ -71,10 +76,14 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Rules\ConditionDialect
  * @uses \OCA\OpenRegister\Service\Search\PlaceholderResolver
  * @uses \OCA\OpenRegister\Service\PropertyRbacHandler
+ * @uses \OCA\OpenRegister\Service\Audit\ReadableAuditCursor
+ * @uses \OCA\OpenRegister\Service\Audit\PurposeGuard
+ * @uses \OCA\OpenRegister\Service\Audit\PurposeContext
  */
 class ReadableAuditTrailListerTest extends TestCase {
 
 	use BuildsStateFieldRuleResolver;
+	use BuildsAuditCursors;
 
 	/**
 	 * The uuid of the object the caller may read.
@@ -219,7 +228,8 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $objectMapper,
 			history: $this->history(located: $located, readable: $readable, groups: $groups),
-			readEvents: ($reads ?? $this->readsShown())
+			readEvents: ($reads ?? $this->readsShown()),
+			cursors: $this->auditCursors()
 		);
 	}//end lister()
 
@@ -400,7 +410,8 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $objectMapper,
 			history: $history,
-			readEvents: $this->readsShown()
+			readEvents: $this->readsShown(),
+			cursors: $this->auditCursors()
 		))->page(userId: 'alice', limit: 20);
 
 		$this->assertSame([], $page['results']);
@@ -471,7 +482,8 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $objectMapper,
 			history: $reader,
-			readEvents: $this->readsShown()
+			readEvents: $this->readsShown(),
+			cursors: $this->auditCursors()
 		))->page(userId: 'alice', limit: 20);
 
 		$this->assertSame([], $page['results'], 'Rows were shown on the strength of a read of another object.');
@@ -630,14 +642,15 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $this->createMock(MagicMapper::class),
 			history: $this->createMock(ObjectHistoryForReaders::class),
-			readEvents: $this->readsShown()
+			readEvents: $this->readsShown(),
+			cursors: $this->auditCursors()
 		);
 
 		$page = $lister->page(userId: null, limit: 20);
 
 		$this->assertSame([], $page['results']);
 		$this->assertNull($page['nextCursor']);
-		$this->assertSame(0, $page['scanned']);
+		$this->assertArrayNotHasKey('scanned', $page);
 	}//end testAnonymousCallerGetsNothingAndAsksTheMapperNothing()
 
 	/**
@@ -685,7 +698,8 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $objectMapper,
 			history: $reader,
-			readEvents: $this->readsShown()
+			readEvents: $this->readsShown(),
+			cursors: $this->auditCursors()
 		))->page(userId: 'alice', limit: 20);
 
 		$this->assertSame([], $page['results'], 'An entry whose schema did not resolve was returned anyway.');
@@ -711,7 +725,8 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $objectMapper,
 			history: $history,
-			readEvents: $this->readsShown()
+			readEvents: $this->readsShown(),
+			cursors: $this->auditCursors()
 		))->page(userId: 'alice', limit: 20);
 
 		$this->assertSame([], $page['results'], 'A throwing read path let the row through.');
@@ -739,7 +754,8 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $objectMapper,
 			history: $history,
-			readEvents: $this->readsShown()
+			readEvents: $this->readsShown(),
+			cursors: $this->auditCursors()
 		))->page(userId: 'alice', limit: 20);
 
 		$this->assertSame([], $page['results'], 'A failed lookup let the batch through.');
@@ -799,13 +815,14 @@ class ReadableAuditTrailListerTest extends TestCase {
 			auditTrailMapper: $auditMapper,
 			objectMapper: $objectMapper,
 			history: $history,
-			readEvents: $this->readsShown()
+			readEvents: $this->readsShown(),
+			cursors: $this->auditCursors()
 		);
 
 		$page = $lister->page(userId: 'alice', limit: 20);
 
 		$this->assertSame([], $page['results']);
-		$this->assertSame(ReadableAuditTrailLister::SCAN_BUDGET, $page['scanned'], 'The scan did not stop at its budget.');
+		$this->assertArrayNotHasKey('scanned', $page, 'The page counts the rows it walked, readable or not.');
 		$this->assertNotNull($page['nextCursor'], 'A budget-bounded short page must hand back a cursor to continue from.');
 		$this->assertSame(
 			intdiv(ReadableAuditTrailLister::SCAN_BUDGET, ReadableAuditTrailLister::BATCH_SIZE),
@@ -837,8 +854,11 @@ class ReadableAuditTrailListerTest extends TestCase {
 		$page = $lister->page(userId: 'alice', limit: 1);
 
 		$this->assertCount(1, $page['results']);
-		$this->assertSame(3, $page['scanned']);
-		$this->assertSame(3, $page['nextCursor'], 'The cursor did not advance past the rows that were filtered out.');
+		$this->assertArrayNotHasKey('scanned', $page);
+
+		$this->queries = [];
+		$lister->page(userId: 'alice', limit: 1, cursor: $page['nextCursor']);
+		$this->assertSame(3, $this->queries[0][1], 'The cursor did not advance past the rows that were filtered out.');
 	}//end testTheCursorAdvancesPastFilteredRows()
 
 	/**
@@ -891,4 +911,209 @@ class ReadableAuditTrailListerTest extends TestCase {
 		$visibility->method('filter')->willReturnArgument(0);
 		return $visibility;
 	}//end readsShown()
+
+	/**
+	 * Entries on one object, each with its own uuid.
+	 *
+	 * @param int    $count      How many.
+	 * @param string $objectUuid The object they belong to.
+	 *
+	 * @return array<AuditTrail> The entries.
+	 */
+	private function entriesOf(int $count, string $objectUuid): array {
+		$rows = [];
+		for ($i = 0; $i < $count; $i++) {
+			$entry = $this->entry(objectUuid: $objectUuid);
+			$entry->setUuid('audit-' . $objectUuid . '-' . $i);
+			$rows[] = $entry;
+		}
+
+		return $rows;
+	}//end entriesOf()
+
+	/**
+	 * The page carries nothing that tells another organisation's object has entries.
+	 *
+	 * Filtered on an object the caller may not read, a trail that holds its
+	 * entries and a trail that holds none must answer alike.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableObjectsEntriesLeaveNoCountInThePage(): void {
+		$withEntries = $this->lister(
+			entries: $this->entriesOf(count: 7, objectUuid: self::HIDDEN),
+			located: [$this->object(uuid: self::HIDDEN)],
+			readable: [self::HIDDEN => false]
+		)->page(userId: 'alice', limit: 20, filters: ['object_uuid' => self::HIDDEN]);
+		$withNone = $this->lister(entries: [], located: [], readable: [])
+			->page(userId: 'alice', limit: 20, filters: ['object_uuid' => self::HIDDEN]);
+
+		$this->assertSame($withNone, $withEntries);
+		$this->assertSame(['results', 'limit', 'cursor', 'nextCursor'], array_keys($withEntries));
+	}//end testAnUnreadableObjectsEntriesLeaveNoCountInThePage()
+
+	/**
+	 * The cursor of a filled page carries no offset into the raw trail.
+	 *
+	 * @return void
+	 */
+	public function testTheNextCursorIsSealed(): void {
+		$entries = $this->entriesOf(count: 150, objectUuid: self::HIDDEN);
+		$entries[] = $this->entry(objectUuid: self::READABLE);
+		$entries = array_merge($entries, $this->entriesOf(count: 10, objectUuid: self::HIDDEN . '-later'));
+
+		$page = $this->lister(
+			entries: $entries,
+			located: [$this->object(uuid: self::HIDDEN), $this->object(uuid: self::READABLE)],
+			readable: [self::READABLE => true, self::HIDDEN => false]
+		)->page(userId: 'alice', limit: 1);
+
+		$this->assertCount(1, $page['results']);
+		$this->assertIsString($page['nextCursor']);
+		$this->assertStringNotContainsString('151', $page['nextCursor']);
+		$this->assertFalse(is_numeric($page['nextCursor']));
+	}//end testTheNextCursorIsSealed()
+
+	/**
+	 * A cursor the list did not hand out starts at the top of the trail.
+	 *
+	 * @return void
+	 */
+	public function testAForgedCursorStartsAtTheTop(): void {
+		$lister = $this->lister(
+			entries: [$this->entry(objectUuid: self::READABLE)],
+			located: [$this->object(uuid: self::READABLE)],
+			readable: [self::READABLE => true]
+		);
+
+		$lister->page(userId: 'alice', limit: 1, cursor: 'sealed-forged');
+
+		$this->assertSame(0, $this->queries[0][1]);
+	}//end testAForgedCursorStartsAtTheTop()
+
+	/**
+	 * A plain offset is still read as one, so an offset-paging client keeps working.
+	 *
+	 * @return void
+	 */
+	public function testAPlainOffsetIsStillAnOffset(): void {
+		$lister = $this->lister(
+			entries: [$this->entry(objectUuid: self::READABLE)],
+			located: [$this->object(uuid: self::READABLE)],
+			readable: [self::READABLE => true]
+		);
+
+		$lister->page(userId: 'alice', limit: 1, cursor: '40');
+
+		$this->assertSame(40, $this->queries[0][1]);
+	}//end testAPlainOffsetIsStillAnOffset()
+
+	/**
+	 * A list over objects of a purpose-bound schema records one refusal, not one per object.
+	 *
+	 * @return void
+	 */
+	public function testAPurposeBoundSchemaIsRefusedOnceAPage(): void {
+		$located = [];
+		$entries = [];
+		$readable = [];
+		for ($i = 0; $i < 5; $i++) {
+			$uuid = 'obj-bound-' . $i;
+			$located[] = $this->object(uuid: $uuid, schemaId: self::PURPOSE_SCHEMA);
+			$entries[] = $this->entry(objectUuid: $uuid);
+			$readable[$uuid] = true;
+		}
+
+		$entries[] = $this->entry(objectUuid: self::READABLE);
+		$located[] = $this->object(uuid: self::READABLE);
+		$readable[self::READABLE] = true;
+
+		$trail = $this->createMock(AuditTrailMapper::class);
+		$trail->expects($this->once())->method('createPurposeRefusalEntry');
+
+		$history = $this->historyWithRealGuard(located: $located, trail: $trail);
+		$auditMapper = $this->createMock(AuditTrailMapper::class);
+		$auditMapper->method('findAll')->willReturnCallback(
+			static fn (...$args): array => (($args[1] ?? 0) > 0) ? [] : $entries
+		);
+		$objectMapper = $this->createMock(MagicMapper::class);
+		$objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn($located);
+
+		$page = (new ReadableAuditTrailLister(
+			auditTrailMapper: $auditMapper,
+			objectMapper: $objectMapper,
+			history: $history,
+			readEvents: $this->readsShown(),
+			cursors: $this->auditCursors()
+		))->page(userId: 'alice', limit: 20);
+
+		$this->assertSame([self::READABLE], array_column($page['results'], 'objectUuid'));
+	}//end testAPurposeBoundSchemaIsRefusedOnceAPage()
+
+	/**
+	 * The reader path with the real doelbinding guard, refusing the purpose-bound schema.
+	 *
+	 * @param array<ObjectEntity> $located The objects, all readable.
+	 * @param AuditTrailMapper    $trail   Where the guard records a refusal.
+	 *
+	 * @return ObjectHistoryForReaders The history reader.
+	 */
+	private function historyWithRealGuard(array $located, AuditTrailMapper $trail): ObjectHistoryForReaders {
+		$byUuid = [];
+		foreach ($located as $object) {
+			$byUuid[$object->getUuid()] = $object;
+		}
+
+		$bound = new Schema();
+		$bound->setId(self::PURPOSE_SCHEMA);
+		$bound->setProperties(['titel' => ['type' => 'string']]);
+		$bound->setConfiguration([PurposeGuard::ANNOTATION => true]);
+
+		$access = $this->createMock(ObjectReadAccess::class);
+		$access->method('readable')->willReturnCallback(
+			static fn (string $register, string $schema, string $id): ?ObjectEntity => ($byUuid[$id] ?? null)
+		);
+		$access->method('schemaOf')->willReturnCallback(
+			fn (ObjectEntity $object): Schema => ((int)$object->getSchema() === self::PURPOSE_SCHEMA) ? $bound : $this->schema(schemaId: (int)$object->getSchema())
+		);
+
+		$register = new Register();
+		$register->setId(5);
+		$register->setConfiguration([]);
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$registerMapper->method('find')->willReturn($register);
+
+		$registry = $this->createMock(PurposeRegistry::class);
+		$registry->method('hasAdministeredPurposes')->willReturn(true);
+		$registry->method('requirePurpose')->willThrowException(
+			new PurposeRefusedException(rule: PurposeRefusedException::RULE_MISSING, reason: 'no purpose', purpose: null)
+		);
+		$request = $this->createMock(IRequest::class);
+		$request->method('getHeader')->willReturn('');
+		$request->method('getParam')->willReturn(null);
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('getUserGroupIds')->willReturn(['staff']);
+
+		return new ObjectHistoryForReaders(
+			$access,
+			$this->createMock(AuditTrailMapper::class),
+			new HistoryEntryRedactor(
+				new PropertyRbacHandler(
+					$session,
+					$groupManager,
+					$this->createMock(ConditionMatcher::class),
+					$this->createMock(LoggerInterface::class),
+					self::stateFieldRuleResolver($session, $groupManager)
+				)
+			),
+			$registerMapper,
+			new PurposeGuard($registry, new PurposeContext($request), $trail, new NullLogger()),
+			$this->readsShown()
+		);
+	}//end historyWithRealGuard()
 }//end class

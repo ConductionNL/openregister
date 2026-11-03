@@ -68,6 +68,18 @@ class ObjectHistoryForReaders {
 	private const READER_BLOCKED_COLUMNS = ['changed', 'session', 'request', 'ip_address'];
 
 	/**
+	 * The doelbinding verdicts of this request, by register and schema id.
+	 *
+	 * The scoped audit list reads many objects of one schema in one request,
+	 * and the guard writes a refusal entry each time it refuses. One verdict
+	 * per register and schema keeps that to one entry per request, and a
+	 * refusal is thrown again for every further object of that schema.
+	 *
+	 * @var array<string, Throwable|null>
+	 */
+	private array $purposeVerdicts = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectReadAccess    $access           Decides readability exactly as the object GET does.
@@ -208,10 +220,36 @@ class ObjectHistoryForReaders {
 			return null;
 		}
 
-		$this->purposeGuard->enforce(register: $registerEntity, schema: $schemaEntity);
+		$this->enforcePurpose(register: $registerEntity, schema: $schemaEntity);
 
 		return $schemaEntity;
 	}//end readerSchema()
+
+	/**
+	 * Run the doelbinding guard once per register and schema in this request.
+	 *
+	 * @param Register $register The object's register.
+	 * @param Schema   $schema   The object's schema.
+	 *
+	 * @return void
+	 *
+	 * @throws PurposeRefusedException When the schema asks for a purpose and none usable was named.
+	 */
+	private function enforcePurpose(Register $register, Schema $schema): void {
+		$key = $register->getId() . ':' . $schema->getId();
+		if (array_key_exists($key, $this->purposeVerdicts) === false) {
+			try {
+				$this->purposeGuard->enforce(register: $register, schema: $schema);
+				$this->purposeVerdicts[$key] = null;
+			} catch (Throwable $refusal) {
+				$this->purposeVerdicts[$key] = $refusal;
+			}
+		}
+
+		if ($this->purposeVerdicts[$key] !== null) {
+			throw $this->purposeVerdicts[$key];
+		}
+	}//end enforcePurpose()
 
 	/**
 	 * Search and page the redacted entries.

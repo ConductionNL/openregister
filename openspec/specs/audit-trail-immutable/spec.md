@@ -243,7 +243,32 @@ nothing. An entry whose object cannot be resolved, or whose schema cannot be
 resolved, SHALL be absent rather than present, so that every failure to decide
 hides a row instead of showing it. The scoped list SHALL be cursor paginated,
 SHALL NOT count the table, and SHALL bound the number of rows it inspects per
-request.
+request. The page SHALL NOT say how many rows were inspected, and the cursor it
+hands out SHALL be sealed, because the raw-trail offset it holds counts rows the
+caller may not read. The doelbinding guard SHALL be decided once per register
+and schema within a request, so a list over many objects of a purpose-bound
+schema records one refusal, not one per object.
+
+#### Scenario: an unreadable object's entries leave no count in the page
+
+- **GIVEN** a caller filtering the scoped list on an object they may not read
+- **WHEN** that object has entries, and when it has none
+- **THEN** both pages are identical: no rows, no count of inspected rows, and the same cursor
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
+
+#### Scenario: the cursor carries no offset
+
+- **GIVEN** a page that filled before the trail was exhausted
+- **WHEN** the caller reads `nextCursor`
+- **THEN** it is a sealed token that holds no number, it resumes after the rows already walked, and a token the list did not hand out starts at the top
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php and ReadableAuditCursorTest.php}
+
+#### Scenario: a purpose-bound schema is refused once a request
+
+- **GIVEN** a list that walks several objects of a schema that asks for a purpose, and no purpose named
+- **WHEN** the caller lists the scoped audit trail
+- **THEN** one refusal entry is recorded and every object of that schema stays absent
+- @e2e exclude {asserted with the real PurposeGuard in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
 
 #### Scenario: a handler sees only the entries of objects they may read
 

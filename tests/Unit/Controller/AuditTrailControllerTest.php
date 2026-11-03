@@ -831,4 +831,66 @@ class AuditTrailControllerTest extends TestCase {
 		$this->assertSame(202, $response->getStatus());
 		$this->assertTrue($response->getData()['queued']);
 	}
+
+	/**
+	 * The scoped list's controller for a non-admin, over a lister that records its cursor.
+	 *
+	 * @param array      $params   The request parameters.
+	 * @param array|null $captured Filled with the cursor the lister was handed.
+	 *
+	 * @return AuditTrailController The controller.
+	 */
+	private function readableController(array $params, ?array &$captured): AuditTrailController {
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParams')->willReturn($params);
+		$request->method('getParam')->willReturnCallback(static fn (string $key, $default = null) => ($params[$key] ?? $default));
+
+		$lister = $this->createMock(ReadableAuditTrailLister::class);
+		$lister->method('page')->willReturnCallback(
+			static function (?string $userId, int $limit = 20, int|string|null $cursor = null) use (&$captured): array {
+				$captured = ['cursor' => $cursor];
+
+				return ['results' => [], 'limit' => $limit, 'cursor' => $cursor, 'nextCursor' => null];
+			}
+		);
+
+		$bob = $this->createMock(IUser::class);
+		$bob->method('getUID')->willReturn('bob');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($bob);
+
+		return new AuditTrailController(
+			'openregister',
+			$request,
+			$this->logService,
+			$this->auditTrailMapper,
+			$this->auditHashService,
+			$session,
+			$this->createMock(IGroupManager::class),
+			$lister,
+			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService($this->pageQuery, $this->logService, $this->jobList),
+			$this->createMock(\OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders::class)
+		);
+	}
+
+	public function testTheScopedListIsHandedTheSealedCursorAsGiven(): void {
+		$captured = null;
+		$this->readableController(params: ['cursor' => 'sealed-abc'], captured: $captured)->readable();
+
+		$this->assertSame(['cursor' => 'sealed-abc'], $captured);
+	}
+
+	public function testTheScopedListStillTakesAnOffsetAsTheStart(): void {
+		$captured = null;
+		$this->readableController(params: ['offset' => '40'], captured: $captured)->readable();
+
+		$this->assertSame(['cursor' => 40], $captured);
+	}
+
+	public function testTheScopedListStartsAtTheTopWithoutACursor(): void {
+		$captured = null;
+		$this->readableController(params: [], captured: $captured)->readable();
+
+		$this->assertSame(['cursor' => null], $captured);
+	}
 }
