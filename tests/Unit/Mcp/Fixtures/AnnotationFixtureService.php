@@ -41,6 +41,16 @@ class AnnotationFixtureService {
 		return ['id' => $id];
 	}//end reassignCase()
 
+	#[McpTool(scope: 'create', title: 'Create a task', annotations: ['citizenIntake' => true])]
+	public function createTask(string $title): array {
+		return ['title' => $title];
+	}//end createTask()
+
+	#[McpTool(scope: 'read', title: '  ')]
+	public function blankTitleTool(string $id): array {
+		return ['id' => $id];
+	}//end blankTitleTool()
+
 	#[McpTool(annotations: ['citizenIntake' => ['nested' => true]])]
 	public function badAnnotationTool(string $id): array {
 		return ['id' => $id];

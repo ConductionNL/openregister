@@ -290,7 +290,7 @@ final class AttributeToolScanner {
 	}//end buildDescriptor()
 
 	/**
-	 * The grant-matrix taxonomy (subject, action) and the declared reach, or an empty array.
+	 * The declared title, grant-matrix taxonomy (subject, action) and reach, or an empty array.
 	 *
 	 * Forwarded on the same additive terms as the annotation hints: a key is
 	 * present ONLY when the author declared it, never inferred from the method
@@ -314,6 +314,10 @@ final class AttributeToolScanner {
 	 */
 	private function taxonomyOf(McpTool $attribute): array {
 		$taxonomy = [];
+
+		if ($attribute->title !== null && trim($attribute->title) !== '') {
+			$taxonomy['title'] = $attribute->title;
+		}
 
 		if ($attribute->subject !== null && trim($attribute->subject) !== '') {
 			$taxonomy['subject'] = $attribute->subject;

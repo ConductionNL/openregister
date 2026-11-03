@@ -15,6 +15,9 @@
  * - `name` defaults to the method name.
  * - `description` defaults to the method's docblock summary line.
  *
+ * An optional `title` is the human-readable name a client shows; it becomes
+ * the descriptor's top-level `title`, never an entry of `annotations`.
+ *
  * The tool's `inputSchema`/`outputSchema` are NOT declared here — they are
  * inferred by the scanner from the method's parameter type hints + docblock
  * `@param` tags (input) and return type + `@return` (output, best-effort).
@@ -116,6 +119,8 @@ final class McpTool {
 	 *                           map under `annotations` only when non-empty. Keys MUST be non-empty
 	 *                           strings and values scalars, validated by the scanner at scan time.
 	 *                           A mark is a claim: a consumer MUST NOT treat one as a grant.
+	 * @param string|null $title A human-readable name for the tool, emitted as the descriptor's
+	 *                           top-level `title` (the MCP tool field). Omitted when null or blank.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) An attribute is a flat declaration:
 	 * every field is one named argument at the call site, and grouping them in a value
@@ -137,6 +142,7 @@ final class McpTool {
 		public readonly ?string $action = null,
 		public readonly ?string $reach = null,
 		public readonly array $annotations = [],
+		public readonly ?string $title = null,
 	) {
 	}//end __construct()
 }//end class
