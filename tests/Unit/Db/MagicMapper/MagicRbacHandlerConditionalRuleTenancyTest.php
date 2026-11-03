@@ -387,6 +387,26 @@ class MagicRbacHandlerConditionalRuleTenancyTest extends TestCase {
 	}//end testACrossingRuleHeldWithoutAGroupDoesNotLiftTheFilter()
 
 	/**
+	 * A crossing rule that names the caller as its user does not lift the
+	 * filter, also when it names a group the caller is in: the user decides
+	 * whether it is held, as on the RBAC filter.
+	 *
+	 * @return void
+	 */
+	public function testAUserHeldCrossingRuleDoesNotLiftTheFilter(): void {
+		$this->logIn(groups: ['aanbod-beheerder']);
+
+		$this->assertFalse(
+			condition: $this->rbac->hasConditionalRulesBypassingMultitenancy(
+				schema: $this->schema(
+					read: [['user' => 'femke', 'group' => 'aanbod-beheerder', 'match' => ['provider' => '$organisation']]]
+				)
+			)
+		);
+
+	}//end testAUserHeldCrossingRuleDoesNotLiftTheFilter()
+
+	/**
 	 * A user override that names another user is not held.
 	 *
 	 * @return void
