@@ -261,7 +261,7 @@ class CascadeCreateRightsTest extends TestCase {
 		self::onParent(
 			handler: $this->saveHandler(permissions: $this->permissions()),
 			method: 'cascadeObjects',
-			args: [$parentSchema, ['note' => ['text' => 'new']]]
+			args: [$parentSchema, ['note' => ['text' => 'new']], []]
 		);
 	}
 
@@ -274,7 +274,7 @@ class CascadeCreateRightsTest extends TestCase {
 		self::onParent(
 			handler: $this->saveHandler(permissions: $this->permissions()),
 			method: 'cascadeObjects',
-			args: [$parentSchema, ['notes' => [['text' => 'new']]]]
+			args: [$parentSchema, ['notes' => [['text' => 'new']]], []]
 		);
 	}
 
@@ -284,7 +284,7 @@ class CascadeCreateRightsTest extends TestCase {
 		$parentSchema->setProperties(['note' => ['type' => 'object', '$ref' => 'note', 'inversedBy' => 'incident']]);
 		$handler = $this->saveHandler(permissions: $this->permissions(groups: ['mallory' => ['editors'], 'alice' => ['clerks']]));
 
-		$data = self::onParent(handler: $handler, method: 'cascadeObjects', args: [$parentSchema, ['note' => ['text' => 'boom']]]);
+		$data = self::onParent(handler: $handler, method: 'cascadeObjects', args: [$parentSchema, ['note' => ['text' => 'boom']], []]);
 
 		$this->assertSame(expected: ['note' => ['text' => 'boom']], actual: $data);
 	}

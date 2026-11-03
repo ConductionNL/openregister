@@ -1,5 +1,5 @@
 {
-    "related ids kept and orphans deleted": {
+    "related ids kept and plain pointers stay": {
         "answer": {
             "notes": [
                 "22222222-2222-2222-2222-222222222222",
@@ -20,70 +20,14 @@
                     "text": "new"
                 },
                 null
-            ],
-            [
-                "find",
-                "old-1",
-                10,
-                2
-            ],
-            [
-                "update",
-                "old-1",
-                "orphaned-related-object"
-            ],
-            [
-                "find",
-                "old-2",
-                10,
-                2
-            ],
-            [
-                "update",
-                "old-2",
-                "orphaned-related-object"
             ]
         ]
     },
-    "related list emptied deletes every orphan": {
+    "related list emptied keeps plain pointers": {
         "answer": {
             "notes": []
         },
-        "trace": [
-            [
-                "find",
-                "old-1",
-                10,
-                2
-            ],
-            [
-                "update",
-                "old-1",
-                "orphaned-related-object"
-            ],
-            [
-                "find",
-                "22222222-2222-2222-2222-222222222222",
-                10,
-                2
-            ],
-            [
-                "update",
-                "22222222-2222-2222-2222-222222222222",
-                "orphaned-related-object"
-            ],
-            [
-                "find",
-                "old-2",
-                10,
-                2
-            ],
-            [
-                "update",
-                "old-2",
-                "orphaned-related-object"
-            ]
-        ]
+        "trace": []
     },
     "related with no stored list": {
         "answer": {
@@ -98,45 +42,11 @@
         },
         "trace": []
     },
-    "cascade list emptied deletes every orphan": {
+    "cascade list emptied keeps plain pointers": {
         "answer": {
             "notes": []
         },
-        "trace": [
-            [
-                "find",
-                "old-1",
-                10,
-                2
-            ],
-            [
-                "update",
-                "old-1",
-                "orphaned-related-object"
-            ],
-            [
-                "find",
-                "22222222-2222-2222-2222-222222222222",
-                10,
-                2
-            ],
-            [
-                "update",
-                "22222222-2222-2222-2222-222222222222",
-                "orphaned-related-object"
-            ],
-            [
-                "find",
-                "old-2",
-                10,
-                2
-            ],
-            [
-                "update",
-                "old-2",
-                "orphaned-related-object"
-            ]
-        ]
+        "trace": []
     },
     "cascade ids only": {
         "answer": {

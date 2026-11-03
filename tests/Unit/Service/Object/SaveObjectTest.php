@@ -123,6 +123,7 @@ class SaveObjectTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$permissionHandler = $this->createMock(PermissionHandler::class);
+		$permissionHandler->method('hasPermission')->willReturn(true);
 
 		$this->runContext = new \OCA\OpenRegister\Service\Flow\FlowRunContext();
 		$this->handler = new SaveObject(
@@ -2469,9 +2470,21 @@ class SaveObjectTest extends TestCase {
 	// deleteOrphanedRelatedObjects (private)
 	// =========================================================================
 
+	/**
+	 * An orphan scope whose rows name parent `p-1` through `incident`.
+	 *
+	 * @return array
+	 */
+	private function orphanScope(): array {
+		$this->objectEntityMapper->method('callerOrganisationsHold')->willReturn(true);
+
+		return ['register' => new Register(), 'schema' => new Schema(), 'inverse' => 'incident', 'parent' => 'p-1'];
+	}//end orphanScope()
+
 	public function testDeleteOrphanedRelatedObjectsSoftDeletes(): void {
 		$orphanedEntity = new ObjectEntity();
 		$orphanedEntity->setUuid('orphan-uuid');
+		$orphanedEntity->setObject(['incident' => 'p-1']);
 
 		$this->objectEntityMapper->method('find')
 			->willReturn($orphanedEntity);
@@ -2483,7 +2496,7 @@ class SaveObjectTest extends TestCase {
 		$this->objectEntityMapper->expects($this->once())
 			->method('update');
 
-		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['orphan-uuid'], null, null]);
+		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['orphan-uuid'], $this->orphanScope()]);
 
 		// Verify the entity was soft-deleted.
 		$deleted = $orphanedEntity->getDeleted();
@@ -2497,7 +2510,7 @@ class SaveObjectTest extends TestCase {
 			->willThrowException(new DoesNotExistException('Not found'));
 
 		// Should not throw.
-		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['nonexistent-uuid'], null, null]);
+		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['nonexistent-uuid'], $this->orphanScope()]);
 		$this->assertTrue(true);
 	}
 
@@ -2508,13 +2521,14 @@ class SaveObjectTest extends TestCase {
 		$this->logger->expects($this->atLeastOnce())->method('warning');
 
 		// Should not throw.
-		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['error-uuid'], null, null]);
+		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['error-uuid'], $this->orphanScope()]);
 		$this->assertTrue(true);
 	}
 
 	public function testDeleteOrphanedRelatedObjectsUsesSystemUserWhenNoUser(): void {
 		$orphanedEntity = new ObjectEntity();
 		$orphanedEntity->setUuid('orphan-uuid');
+		$orphanedEntity->setObject(['incident' => 'p-1']);
 
 		$this->objectEntityMapper->method('find')
 			->willReturn($orphanedEntity);
@@ -2524,7 +2538,7 @@ class SaveObjectTest extends TestCase {
 		$this->objectEntityMapper->expects($this->once())
 			->method('update');
 
-		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['orphan-uuid'], null, null]);
+		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['orphan-uuid'], $this->orphanScope()]);
 
 		$deleted = $orphanedEntity->getDeleted();
 		$this->assertSame('system', $deleted['deletedBy']);
@@ -2944,7 +2958,7 @@ class SaveObjectTest extends TestCase {
 		$schema->method('getSchemaObject')->willThrowException(new Exception('Schema error'));
 
 		$data = ['name' => 'Test'];
-		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data]);
+		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data, []]);
 
 		$this->assertSame($data, $result);
 	}
@@ -2964,7 +2978,7 @@ class SaveObjectTest extends TestCase {
 
 		// 'related' is NOT in data.
 		$data = ['name' => 'Test'];
-		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data]);
+		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data, []]);
 
 		$this->assertSame($data, $result);
 	}
@@ -2983,7 +2997,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 
 		$data = ['related' => []];
-		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data]);
+		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data, []]);
 
 		$this->assertSame($data, $result);
 	}
@@ -3004,7 +3018,7 @@ class SaveObjectTest extends TestCase {
 
 		// Property has writeBack=true, so it should be skipped by cascadeObjects.
 		$data = ['related' => ['name' => 'Sub']];
-		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data]);
+		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data, []]);
 
 		// Data should be unchanged because writeBack properties are skipped.
 		$this->assertSame(['name' => 'Sub'], $result['related']);
@@ -4464,7 +4478,7 @@ class SaveObjectTest extends TestCase {
 		$this->objectEntityMapper->expects($this->never())->method('find');
 
 		// Empty array of UUIDs — nothing to delete.
-		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [[], null, null]);
+		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [[], $this->orphanScope()]);
 		$this->assertTrue(true);
 	}
 
