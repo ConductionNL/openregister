@@ -88,6 +88,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTimelineEntries
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
  * @uses \OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
  */
 class ExampleSetMockRegisterImportTest extends ExampleSetTestCase {
 	/** @var array<string, string> Registers on the fake instance, slug to version. */

@@ -42,6 +42,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class ExampleSetStoreTest extends TestCase {
 	/**

@@ -34,6 +34,8 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\MatrixRowsFromApps
  * @covers \OCA\OpenRegister\Event\MatrixRowsRequestedEvent
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator
  */
 class MatrixRowsFromAppsTest extends TestCase {
 

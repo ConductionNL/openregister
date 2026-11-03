@@ -63,6 +63,9 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Search\PropertySearchProfile
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Service\Audit\HistoryEntryRedactor
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealChangeMask
  */
 class ExplicitRevealTest extends TestCase {
 	use BuildsStateFieldRuleResolver;

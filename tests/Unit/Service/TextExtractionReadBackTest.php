@@ -52,6 +52,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\TextExtraction\PdfExtractor
  * @uses \OCA\OpenRegister\Service\TextExtraction\SpreadsheetExtractor
  * @uses \OCA\OpenRegister\Service\TextExtraction\WordExtractor
+ * @uses \OCA\OpenRegister\Service\TextExtractionService
  */
 final class TextExtractionReadBackTest extends TestCase {
 

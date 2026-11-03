@@ -40,6 +40,7 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Db\AuditTrailMapper
  * @covers \OCA\OpenRegister\Db\AuditTrailPayloadHelper
  * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class AuditTrailMapperRevertQueryTest extends TestCase {
 	private const OBJECT = '11111111-1111-4111-8111-111111111111';

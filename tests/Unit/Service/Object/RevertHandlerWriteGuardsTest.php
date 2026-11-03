@@ -48,6 +48,7 @@ use Psr\Container\ContainerInterface;
  * @uses \OCA\OpenRegister\Event\ObjectRevertedEvent
  * @uses \OCA\OpenRegister\Exception\ObjectStateWriteException
  * @uses \OCA\OpenRegister\Service\Object\NotSuppliedHandler
+ * @uses \OCA\OpenRegister\Exception\ValidationException
  */
 final class RevertHandlerWriteGuardsTest extends TestCase {
 

@@ -60,6 +60,8 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTimelineEntries
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
  */
 class ExampleSetCatalogueTest extends ExampleSetTestCase {
 	public function testGathersEnabledAppsInOrderAndNamesTheAbsentOnes(): void {

@@ -59,6 +59,9 @@ use OCA\OpenRegister\Db\Task;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
  */
 class ExampleSetCasePlansTest extends ExampleSetTestCase {
 	/**

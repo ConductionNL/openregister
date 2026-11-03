@@ -67,8 +67,7 @@ use stdClass;
 /**
  * A mapper that reads its locked row from memory and writes through the real
  * `update()` — the dispatch predicate under test.
- * @uses \OCA\OpenRegister\Event\FlowRunTerminalEvent
- * @uses \OCA\OpenRegister\Service\Flow\FlowStop
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets
  */
 class InMemoryFlowRunMapper extends FlowRunMapper {
 
@@ -167,6 +166,8 @@ class LockLifecycleDispatcher implements FlowStepDispatcher {
  * @uses \OCA\OpenRegister\Service\Flow\FlowStreamPass
  * @uses \OCA\OpenRegister\Service\Flow\FlowSuspension
  * @uses \OCA\OpenRegister\Service\Flow\FlowTokenRouter
+ * @uses \OCA\OpenRegister\Event\FlowRunTerminalEvent
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStop
  */
 class RunLockReleaseTerminalityTest extends TestCase {
 	use FluentQueryBuilderTrait;

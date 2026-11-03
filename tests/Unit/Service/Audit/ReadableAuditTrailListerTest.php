@@ -62,6 +62,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker
  */
 class ReadableAuditTrailListerTest extends TestCase {
 

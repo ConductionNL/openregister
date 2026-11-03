@@ -47,6 +47,8 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\Task\TaskAuthorizationService
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Db\TaskAudit
+ * @uses \OCA\OpenRegister\Service\Task\TaskPriority
+ * @uses \OCA\OpenRegister\Service\Task\TaskService
  */
 class TaskEditTest extends TestCase {
 

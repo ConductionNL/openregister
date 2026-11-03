@@ -37,8 +37,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\AuditFlowAttribution
  * @uses \OCA\OpenRegister\Db\AuditTrailPayloadHelper
- * @uses \OCA\OpenRegister\Service\PurposeAttribution
- * @uses \OCA\OpenRegister\Service\TokenAttribution
+ * @uses \OCA\OpenRegister\Service\Audit\PurposeAttribution
+ * @uses \OCA\OpenRegister\Service\Audit\TokenAttribution
  * @uses \OCA\OpenRegister\Service\WriteCause
  *
  * @spec openspec/specs/object-lifecycle/spec.md

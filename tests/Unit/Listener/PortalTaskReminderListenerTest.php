@@ -32,8 +32,6 @@ use Psr\Log\NullLogger;
 
 /**
  * A stand-in for flow-business-timers' fired event, with its published surface.
- * @uses \OCA\OpenRegister\Db\FlowTimer
- * @uses \OCA\OpenRegister\Event\FlowTimerFiredEvent
  */
 final class FakeTimerFiredEvent extends Event {
 
@@ -85,6 +83,8 @@ final class FakeTimerFiredEvent extends Event {
  * @covers \OCA\OpenRegister\Listener\PortalTaskReminderListener
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Db\PortalTaskDelivery
+ * @uses \OCA\OpenRegister\Db\FlowTimer
+ * @uses \OCA\OpenRegister\Event\FlowTimerFiredEvent
  */
 class PortalTaskReminderListenerTest extends TestCase {
 

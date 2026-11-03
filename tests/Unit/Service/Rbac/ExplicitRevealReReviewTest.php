@@ -54,6 +54,10 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\AuditTrail
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilter
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealChangeMask
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class ExplicitRevealReReviewTest extends TestCase {
 

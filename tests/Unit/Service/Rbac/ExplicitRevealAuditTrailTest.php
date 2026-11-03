@@ -50,6 +50,10 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Controller\AuditTrailController
  * @covers \OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealChangeMask
  */
 class ExplicitRevealAuditTrailTest extends TestCase {
 
