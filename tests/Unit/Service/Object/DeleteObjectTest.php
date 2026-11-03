@@ -118,6 +118,29 @@ class DeleteObjectTest extends TestCase {
 	// =========================================================================
 
 	/**
+	 * A handler with a file service, for the folder half of a permanent delete.
+	 *
+	 * @param \OCA\OpenRegister\Service\FileService $files The file service.
+	 *
+	 * @return DeleteObject The handler.
+	 */
+	private function handlerWithFiles(\OCA\OpenRegister\Service\FileService $files): DeleteObject {
+		return new DeleteObject(
+			$this->objectMapper,
+			$this->cacheHandler,
+			$this->userSession,
+			$this->auditTrailMapper,
+			$this->settingsService,
+			$this->logger,
+			$this->integrityService,
+			$this->createMock(\OCP\IDBConnection::class),
+			$this->organisationMapper,
+			$files
+		);
+	}
+
+
+	/**
 	 * Create an ObjectEntity with common fields pre-filled.
 	 *
 	 * @param string $uuid Entity UUID.
@@ -388,16 +411,78 @@ class DeleteObjectTest extends TestCase {
 	}
 
 	/**
-	 * A permanent delete does not ask the guards a second time: the mapper's delete asks them.
+	 * A permanent delete asks the guards once, itself, and tells the mapper not to ask again.
 	 */
-	public function testAPermanentDeleteLeavesTheGuardToTheMapper(): void {
+	public function testAPermanentDeleteAsksTheGuardsOnce(): void {
 		$object = $this->createObjectEntity('uuid-permanent', '2', '5');
 
-		$this->objectMapper->expects($this->never())->method('assertDeletable');
-		$this->objectMapper->expects($this->once())->method('deleteObjectEntity')->willReturn($object);
+		$this->objectMapper->expects($this->once())->method('assertDeletable')->with($this->identicalTo($object));
+		$this->objectMapper->expects($this->once())->method('deleteObjectEntity')
+			->with($this->identicalTo($object), $this->anything(), $this->anything(), true, false)
+			->willReturn($object);
 		$this->withAuditTrailsEnabled(false);
 
 		$this->assertTrue($this->handler->delete($object, null, true, $this->createRegister(2), $this->createSchema(5)));
+	}
+
+	/**
+	 * A refused permanent delete leaves the object's folder where it is.
+	 */
+	public function testARefusedPermanentDeleteKeepsTheFolder(): void {
+		$object = $this->createObjectEntity('uuid-frozen-folder', '2', '5');
+		$object->setFolder('42');
+		$files = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
+		$files->expects($this->never())->method('getObjectFolder');
+		$handler = $this->handlerWithFiles(files: $files);
+
+		$this->objectMapper->method('assertDeletable')->willThrowException(new HookStoppedException(message: 'locked'));
+		$this->objectMapper->expects($this->never())->method('deleteObjectEntity');
+
+		$this->expectException(HookStoppedException::class);
+		$handler->delete($object, null, true, $this->createRegister(2), $this->createSchema(5));
+	}
+
+	/**
+	 * The root's guards refuse before a cascade:true child is deleted.
+	 */
+	public function testARefusedRootDeletesNoCascadeChild(): void {
+		$parent = $this->createObjectEntity('parent-locked', '1', '10', ['childRef' => 'child-1']);
+		$child = $this->createObjectEntity('child-1', '1', '10');
+		$register = $this->createRegister(1);
+		$schema = $this->createSchema(10, ['childRef' => ['cascade' => true, 'type' => 'string']]);
+		$this->objectMapper->method('findAcrossAllSources')->willReturnCallback(
+			fn (string $identifier) => $this->makeContext($identifier === 'child-1' ? $child : $parent, $register, $schema)
+		);
+		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(false);
+		$this->withNoUser();
+		$this->withAuditTrailsEnabled(false);
+		// Only the root is locked; the child on its own may go.
+		$this->objectMapper->method('assertDeletable')->willReturnCallback(
+			static function (ObjectEntity $object): void {
+				if ($object->getUuid() === 'parent-locked') {
+					throw new HookStoppedException(message: 'locked');
+				}
+			}
+		);
+		$this->objectMapper->expects($this->never())->method('update');
+
+		$this->expectException(HookStoppedException::class);
+		$this->handler->deleteObject(register: 1, schema: 10, uuid: 'parent-locked');
+	}
+
+	/**
+	 * A root delete asks its guards exactly once, before the cascade, not again when it writes.
+	 */
+	public function testARootDeleteAsksItsGuardsOnce(): void {
+		$object = $this->createObjectEntity('uuid-root', '1', '10');
+		$this->objectMapper->method('findAcrossAllSources')->willReturn($this->makeContext($object));
+		$this->objectMapper->method('update')->willReturn($object);
+		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(false);
+		$this->withNoUser();
+		$this->withAuditTrailsEnabled(false);
+		$this->objectMapper->expects($this->once())->method('assertDeletable');
+
+		$this->assertTrue($this->handler->deleteObject(register: 1, schema: 10, uuid: 'uuid-root'));
 	}
 
 	/**

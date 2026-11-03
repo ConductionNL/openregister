@@ -95,6 +95,16 @@ class DeleteObject {
 	private array $lastRetainedTargets = [];
 
 	/**
+	 * Uuids whose delete guards a root delete asked before its cascade ran.
+	 *
+	 * The delete that follows takes its answer from here instead of asking the
+	 * guards (and every other ObjectDeletingEvent listener) a second time.
+	 *
+	 * @var array<string, true>
+	 */
+	private array $guardsAsked = [];
+
+	/**
 	 * Audit trail mapper
 	 *
 	 * @var AuditTrailMapper
@@ -215,6 +225,14 @@ class DeleteObject {
 
 		$target = ($given ?? $this->lookUpDeletionTarget(object: $object, identifier: $identifier));
 
+		// Asked before the folder goes and before the row is marked deleted.
+		$uuid = (string)$target->object->getUuid();
+		if (isset($this->guardsAsked[$uuid]) === false) {
+			$this->objectEntityMapper->assertDeletable(entity: $target->object);
+		}
+
+		unset($this->guardsAsked[$uuid]);
+
 		if ($permanent === true) {
 			$this->deletePermanently(target: $target);
 			return true;
@@ -317,7 +335,9 @@ class DeleteObject {
 			entity: $objectEntity,
 			register: $target->register,
 			schema: $target->schema,
-			hardDelete: true
+			hardDelete: true,
+			// delete() asked the guards before the folder was removed.
+			dispatchEvents: false
 		);
 
 		if ($objectEntity->isDraft() === true) {
@@ -346,13 +366,10 @@ class DeleteObject {
 	 *
 	 * @return void
 	 *
-	 * @throws HookStoppedException When a delete guard refuses, as for a frozen object.
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function softDelete(DeletionTarget $target, ?array $cascadeContext): void {
 		$objectEntity = $target->object;
-		$this->objectEntityMapper->assertDeletable(entity: $objectEntity);
 		$deletionData = $this->deletionMetadata(target: $target);
 
 		// PERF: the pre-delete snapshot is the update's old entity, which skips the
@@ -630,7 +647,7 @@ class DeleteObject {
 
 		// Reset cascade count for root deletions.
 		if ($originalObjectId === null) {
-			[$this->lastCascadeCount, $this->lastRetainedTargets] = [0, []];
+			[$this->lastCascadeCount, $this->lastRetainedTargets, $this->guardsAsked] = [0, [], []];
 		}
 
 		// Resolve the lookup: when the caller has guaranteed a (register, schema)
@@ -838,6 +855,10 @@ class DeleteObject {
 		array $context,
 		string $uuid,
 	): ?bool {
+		// The root's guards answer before any child is cascaded away.
+		$this->objectEntityMapper->assertDeletable(entity: $object);
+		$this->guardsAsked[(string)$object->getUuid()] = true;
+
 		$schemaId = $object->getSchema();
 		$hasIntegrityAction = $schemaId !== null
 			&& $this->integrityService->hasIncomingOnDeleteReferences($schemaId) === true;
