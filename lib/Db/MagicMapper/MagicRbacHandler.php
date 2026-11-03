@@ -51,6 +51,7 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\RecordMetadataConditions;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
@@ -1522,7 +1523,7 @@ class MagicRbacHandler {
 	 */
 	private function propertyToColumnName(string $property): string {
 		// Convert camelCase to snake_case.
-		$columnName = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $property);
+		$columnName = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', (new RecordMetadataConditions())->columnKey(key: $property));
 		return strtolower($columnName);
 	}//end propertyToColumnName()
 

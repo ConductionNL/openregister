@@ -30,7 +30,7 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
-use OCA\OpenRegister\Service\Rbac\RecordMetadataConditions;
+use OCA\OpenRegister\Service\Rbac\MetadataConditionFindings;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -701,8 +701,7 @@ class RegisterMapper extends QBMapper {
 			return;
 		}
 
-		$metadataConditions = new RecordMetadataConditions();
-		$metadataConditions->assertNone(findings: $metadataConditions->findings(authorization: $authorization, context: $subject));
+		(new MetadataConditionFindings(db: $this->db))->assertRegisterSavable(register: $register, subject: $subject);
 
 		(new AuthorizationDenyValidator(denyResolver: new DenyResolver()))->assertStorable(
 			authorization: $authorization,

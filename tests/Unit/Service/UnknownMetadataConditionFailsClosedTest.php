@@ -60,6 +60,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
  * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @uses   \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
  * @uses   \OCA\OpenRegister\Service\OperatorEvaluator
  * @uses   \OCA\OpenRegister\Db\MagicMapper\RbacResolvers
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
@@ -351,6 +352,106 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 			)
 		);
 	}//end testTheRelationPathDeniesTheRow()
+
+	/**
+	 * The control on the relation path: a deny on a known key that selects the row denies it.
+	 *
+	 * @return void
+	 */
+	public function testTheRelationPathDeniesOnAKnownKeyThatMatches(): void {
+		$this->assertFalse(
+			$this->rbacHandler()->hasPermission(
+				schema: $this->schemaWith(['read' => ['editors']]),
+				action: 'read',
+				objectOwner: 'bob',
+				objectData: $this->record()->getMatchEnvelope(),
+				objectAuthorization: ['deny' => ['read' => [['group' => 'editors', 'match' => ['_organisation' => 'org-a']]]]],
+				objectUuid: 'rec-1'
+			)
+		);
+	}//end testTheRelationPathDeniesOnAKnownKeyThatMatches()
+
+	/**
+	 * A `@self.` key outside the envelope is refused like its underscore spelling.
+	 *
+	 * @return void
+	 */
+	public function testAnUnknownSelfKeyFailsClosed(): void {
+		$envelope = $this->record()->getMatchEnvelope();
+		$match = ['@self.published' => null];
+
+		$this->assertFalse($this->matcher->objectMatchesConditions(object: $envelope, match: $match));
+		$this->assertFalse(
+			$this->permissionHandler()->hasPermission(
+				schema: $this->schemaWith(['update' => [['group' => 'editors', 'match' => $match]]]),
+				action: 'update',
+				userId: 'alice',
+				objectOwner: 'bob',
+				object: $this->record()
+			)
+		);
+		$this->assertFalse(
+			$this->permissionHandler()->hasPermission(
+				schema: $this->schemaWith(
+					[
+						'update' => [['group' => 'editors', 'match' => ['_organisation' => 'org-a']]],
+						'deny'   => ['update' => [['group' => 'editors', 'match' => ['@self.published' => true]]]],
+					]
+				),
+				action: 'update',
+				userId: 'alice',
+				objectOwner: 'bob',
+				object: $this->record()
+			)
+		);
+	}//end testAnUnknownSelfKeyFailsClosed()
+
+	/**
+	 * A `@self.` key inside the envelope reads the record, so `{@self.owner: null}` is not met and a deny on it fires.
+	 *
+	 * @return void
+	 */
+	public function testAKnownSelfKeyReadsTheRecord(): void {
+		$envelope = $this->record()->getMatchEnvelope();
+
+		$this->assertFalse($this->matcher->objectMatchesConditions(object: $envelope, match: ['@self.owner' => null]));
+		$this->assertTrue($this->matcher->objectMatchesConditions(object: $envelope, match: ['@self.owner' => 'bob']));
+		$this->assertTrue($this->matcher->objectMatchesConditions(object: $envelope, match: ['@self.uuid' => 'rec-1']));
+		$this->assertFalse(
+			$this->permissionHandler()->hasPermission(
+				schema: $this->schemaWith(
+					[
+						'update' => [['group' => 'editors', 'match' => ['_organisation' => 'org-a']]],
+						'deny'   => ['update' => [['group' => 'editors', 'match' => ['@self.owner' => 'bob']]]],
+					]
+				),
+				action: 'update',
+				userId: 'alice',
+				objectOwner: 'bob',
+				object: $this->record()
+			)
+		);
+	}//end testAKnownSelfKeyReadsTheRecord()
+
+	/**
+	 * On the list query a known `@self.` key names its column, and `_expires` its real column.
+	 *
+	 * @return void
+	 */
+	public function testTheListNamesTheColumnOfAKnownKey(): void {
+		$sql = fn (array $match): string => implode(
+			' OR ',
+			$this->rbacHandler()->buildRbacConditionsSql(
+				$this->schemaWith(['read' => [['group' => 'editors', 'match' => $match]]]),
+				'read'
+			)['conditions']
+		);
+
+		$this->assertStringContainsString("_owner = 'bob'", $sql(['@self.owner' => 'bob']));
+		$this->assertStringContainsString("_uuid = 'rec-1'", $sql(['@self.id' => 'rec-1']));
+		$this->assertStringContainsString("_expires > '2030-01-01'", $sql(['_expires' => ['$gt' => '2030-01-01']]));
+		$this->assertStringNotContainsString('1 = 0', $sql(['_expires' => ['$gt' => '2030-01-01']]));
+	}//end testTheListNamesTheColumnOfAKnownKey()
 
 	/**
 	 * On the list query, a conditional deny on unknown metadata empties the list for the caller.

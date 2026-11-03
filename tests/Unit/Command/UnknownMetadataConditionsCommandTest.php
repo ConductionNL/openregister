@@ -32,6 +32,7 @@ use Symfony\Component\Console\Tester\CommandTester;
  * Lists every schema and register rule on unknown metadata, without writing.
  *
  * @covers \OCA\OpenRegister\Command\UnknownMetadataConditionsCommand
+ * @uses   \OCA\OpenRegister\Service\Rbac\MetadataConditionFindings
  * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
@@ -49,10 +50,22 @@ class UnknownMetadataConditionsCommandTest extends TestCase {
 	 */
 	private function report(array $schemas, array $registers): CommandTester {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
-		$schemaMapper->method('findAll')->with(_rbac: false, _multitenancy: false)->willReturn($schemas);
+		$schemaMapper->method('findAll')->willReturnCallback(
+			function (?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = [], ?array $_extend = [], bool $_rbac = true, bool $_multitenancy = true) use ($schemas): array {
+				$this->assertFalse($_rbac, 'The report reads every schema past RBAC');
+				$this->assertFalse($_multitenancy, 'The report reads every schema past the organisation filter');
+				return $schemas;
+			}
+		);
 		$schemaMapper->expects($this->never())->method('update');
 		$registerMapper = $this->createMock(RegisterMapper::class);
-		$registerMapper->method('findAll')->with(_rbac: false, _multitenancy: false)->willReturn($registers);
+		$registerMapper->method('findAll')->willReturnCallback(
+			function (?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = [], bool $_rbac = true, bool $_multitenancy = true) use ($registers): array {
+				$this->assertFalse($_rbac, 'The report reads every register past RBAC');
+				$this->assertFalse($_multitenancy, 'The report reads every register past the organisation filter');
+				return $registers;
+			}
+		);
 		$registerMapper->expects($this->never())->method('update');
 
 		$tester = new CommandTester(new UnknownMetadataConditionsCommand($schemaMapper, $registerMapper));
@@ -103,5 +116,6 @@ class UnknownMetadataConditionsCommandTest extends TestCase {
 
 		$this->assertSame(0, $tester->getStatusCode());
 		$this->assertStringContainsString('No stored rule', $tester->getDisplay());
+		$this->assertStringContainsString('Rules in an object\'s own _authorization are not scanned', $tester->getDisplay());
 	}//end testACleanInstanceExitsZero()
 }//end class

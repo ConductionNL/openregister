@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Rbac\RecordMetadataConditions;
+use OCA\OpenRegister\Service\Rbac\MetadataConditionFindings;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -66,6 +66,7 @@ class UnknownMetadataConditionsCommand extends Command {
 			->setDescription(
 				description: 'List schemas and registers whose authorization rules have a condition on record metadata'
 					.' that no record carries (such as _published). Reports only; exits 1 when any is found.'
+					.' Rules in an object\'s own _authorization are not scanned.'
 			);
 	}//end configure()
 
@@ -80,7 +81,7 @@ class UnknownMetadataConditionsCommand extends Command {
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$conditions = new RecordMetadataConditions();
+		$conditions = new MetadataConditionFindings();
 		$found = 0;
 
 		foreach ($this->schemaMapper->findAll(_rbac: false, _multitenancy: false) as $schema) {
@@ -97,6 +98,8 @@ class UnknownMetadataConditionsCommand extends Command {
 				$found++;
 			}
 		}
+
+		$output->writeln('Rules in an object\'s own _authorization are not scanned.');
 
 		if ($found === 0) {
 			$output->writeln('<info>No stored rule has a condition on unknown record metadata.</info>');

@@ -23,18 +23,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use Psr\Log\LoggerInterface;
 
 /**
  * Finds `match` keys that name record metadata a record does not carry.
  *
- * An underscore-prefixed `match` key names record metadata and is answered
- * from the record's `@self` ({@see ObjectEntity::getMatchEnvelope()}). A key
- * whose field is not in that envelope, such as `_published`, can never match a
- * record: an allow on it grants nothing and a deny on it never fires. The known
- * fields are read from the envelope itself, so they follow the entity.
+ * A `match` key with an underscore or `@self.` prefix names record metadata and
+ * is answered from the record's `@self` ({@see ObjectEntity::getMatchEnvelope()}).
+ * A key whose field is not in that envelope, such as `_published` or
+ * `@self.published`, can never match a record: an allow on it grants nothing and
+ * a deny on it never fires. The known fields are read from the envelope itself,
+ * so they follow the entity.
  *
  * @spec openspec/specs/row-field-level-security/spec.md
  */
@@ -56,6 +55,13 @@ class RecordMetadataConditions {
 	 * @var array<string, string>
 	 */
 	private const ALIASES = ['uuid' => 'id'];
+
+	/**
+	 * The prefix of a `match` key spelled as a path into `@self`.
+	 *
+	 * @var string
+	 */
+	private const SELF_PREFIX = '@self.';
 
 	/**
 	 * The schema and key pairs already logged by {@see refuses()}.
@@ -93,13 +99,12 @@ class RecordMetadataConditions {
 	/**
 	 * The value a condition on this property reads.
 	 *
-	 * An underscore-prefixed property is metadata. When the object carries a
-	 * `@self`, that is the record's metadata and the only answer: a body key of
-	 * the same name is written by whoever wrote the body. A field the `@self`
-	 * holds as empty answers null; so does a field this `@self` lacks, and a key
-	 * that names no record metadata at all, which callers refuse before asking
-	 * ({@see unknownKeys()}). Only an object without any `@self` falls back to
-	 * its body.
+	 * A metadata key reads the object's `@self`, which is the record's metadata
+	 * and the only answer: a body key of the same name is written by whoever wrote
+	 * the body. A field the `@self` holds as empty answers null; so does a field
+	 * this `@self` lacks, and a key that names no record metadata at all, which
+	 * callers refuse before asking ({@see unknownKeys()}). Only an underscore key
+	 * on an object without any `@self` falls back to its body.
 	 *
 	 * @param array<int|string, mixed> $object   The object.
 	 * @param string                   $property The condition's key.
@@ -109,21 +114,65 @@ class RecordMetadataConditions {
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function valueIn(array $object, string $property): mixed {
-		if (str_starts_with($property, '_') === false || is_array(($object['@self'] ?? null)) === false) {
+		$field = $this->metadataField(key: $property);
+		if ($field === null) {
 			return ($object[$property] ?? null);
 		}
 
-		$field = substr($property, 1);
-		$field = (self::ALIASES[$field] ?? $field);
-		if (array_key_exists($field, $object['@self']) === false) {
+		if (is_array(($object['@self'] ?? null)) === false) {
+			if (str_starts_with($property, '_') === true) {
+				return ($object[$property] ?? null);
+			}
+
 			return null;
 		}
 
-		return $object['@self'][$field];
+		return ($object['@self'][(self::ALIASES[$field] ?? $field)] ?? null);
 	}//end valueIn()
 
 	/**
-	 * The underscore-prefixed keys of a `match` clause that name no record metadata.
+	 * The field a `@self.` key names, as the underscore key of its list-query column.
+	 *
+	 * @param string $key The `match` key.
+	 *
+	 * @return string The underscore key; any other key as given.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	public function columnKey(string $key): string {
+		if (str_starts_with($key, self::SELF_PREFIX) === false) {
+			return $key;
+		}
+
+		$field = substr($key, strlen(self::SELF_PREFIX));
+		if ($field === 'id') {
+			$field = 'uuid';
+		}
+
+		return '_'.$field;
+	}//end columnKey()
+
+	/**
+	 * The metadata field a `match` key names, or null when it names a body property.
+	 *
+	 * @param string $key The `match` key.
+	 *
+	 * @return string|null The field.
+	 */
+	private function metadataField(string $key): ?string {
+		if (str_starts_with($key, self::SELF_PREFIX) === true) {
+			return substr($key, strlen(self::SELF_PREFIX));
+		}
+
+		if (str_starts_with($key, '_') === true) {
+			return substr($key, 1);
+		}
+
+		return null;
+	}//end metadataField()
+
+	/**
+	 * The metadata keys of a `match` clause that name no record metadata.
 	 *
 	 * @param array<int|string, mixed> $match The clause.
 	 *
@@ -135,7 +184,8 @@ class RecordMetadataConditions {
 		$unknown = [];
 		foreach (array_keys($match) as $key) {
 			$key = (string)$key;
-			if (str_starts_with($key, '_') === true && in_array(substr($key, 1), $this->fields(), true) === false) {
+			$field = $this->metadataField(key: $key);
+			if ($field !== null && in_array($field, $this->fields(), true) === false) {
 				$unknown[] = $key;
 			}
 		}
@@ -179,122 +229,6 @@ class RecordMetadataConditions {
 	}//end refuses()
 
 	/**
-	 * One sentence per rule of an authorization block that names unknown metadata.
-	 *
-	 * Covers the grant rules of every action and the entries of the `deny`
-	 * block. Other control keys are not rule lists and are left to their own
-	 * validators.
-	 *
-	 * @param array|null $authorization The block.
-	 * @param string     $context       What the block belongs to, for the message.
-	 *
-	 * @return array<int, string> The findings; empty when every condition can match.
-	 *
-	 * @spec openspec/specs/row-field-level-security/spec.md
-	 */
-	public function findings(?array $authorization, string $context): array {
-		$findings = [];
-		foreach ($this->ruleLists(authorization: $authorization) as $label => $rules) {
-			foreach ($rules as $rule) {
-				if (is_array($rule) === false || is_array(($rule['match'] ?? null)) === false) {
-					continue;
-				}
-
-				foreach ($this->unknownKeys(match: $rule['match']) as $key) {
-					$findings[] = sprintf(
-						'The %s rule for %s in %s has a condition on "%s", but records carry no "%s" metadata,'
-						.' so it can never match. Underscore-prefixed keys name record metadata: %s.',
-						$label,
-						$this->principalOf(rule: $rule),
-						$context,
-						$key,
-						substr($key, 1),
-						'_'.implode(', _', $this->fields())
-					);
-				}
-			}
-		}
-
-		return $findings;
-	}//end findings()
-
-	/**
-	 * The findings of a schema's own block and of every property's rules.
-	 *
-	 * @param Schema $schema The schema.
-	 *
-	 * @return array<int, string> The findings.
-	 *
-	 * @spec openspec/specs/row-field-level-security/spec.md
-	 */
-	public function schemaFindings(Schema $schema): array {
-		$name = sprintf('schema "%s"', (string)($schema->getSlug() ?? $schema->getTitle() ?? $schema->getId()));
-		$findings = $this->findings(authorization: $schema->getAuthorization(), context: $name);
-
-		foreach (($schema->getProperties() ?? []) as $property => $config) {
-			if (is_array($config) === false || is_array(($config['authorization'] ?? null)) === false) {
-				continue;
-			}
-
-			$context = sprintf('property "%s" of %s', (string)$property, $name);
-			$findings = array_merge($findings, $this->findings(authorization: $config['authorization'], context: $context));
-		}
-
-		return $findings;
-	}//end schemaFindings()
-
-	/**
-	 * Refuse a save that carries findings.
-	 *
-	 * @param array<int, string> $findings The findings.
-	 *
-	 * @return void
-	 *
-	 * @throws AuthorizationBlockException When there is at least one finding.
-	 *
-	 * @spec openspec/specs/row-field-level-security/spec.md
-	 */
-	public function assertNone(array $findings): void {
-		if ($findings === []) {
-			return;
-		}
-
-		throw new AuthorizationBlockException(message: implode(' ', $findings));
-	}//end assertNone()
-
-	/**
-	 * The rule lists of a block, keyed by how a message names them.
-	 *
-	 * @param array|null $authorization The block.
-	 *
-	 * @return array<string, array<int|string, mixed>> The lists.
-	 */
-	private function ruleLists(?array $authorization): array {
-		$lists = [];
-		foreach (($authorization ?? []) as $action => $rules) {
-			if (is_array($rules) === false) {
-				continue;
-			}
-
-			if ($action === DenyResolver::DENY_KEY) {
-				foreach ($rules as $denied => $entries) {
-					if (is_array($entries) === true) {
-						$lists['deny '.(string)$denied] = $entries;
-					}
-				}
-
-				continue;
-			}
-
-			if (array_is_list($rules) === true) {
-				$lists[(string)$action] = $rules;
-			}
-		}
-
-		return $lists;
-	}//end ruleLists()
-
-	/**
 	 * The schema id an object's `@self` names, or an empty string.
 	 *
 	 * @param array<int|string, mixed> $object The object.
@@ -313,23 +247,4 @@ class RecordMetadataConditions {
 
 		return '';
 	}//end schemaOf()
-
-	/**
-	 * Whom a rule names, for the message.
-	 *
-	 * @param array<string, mixed> $rule The rule.
-	 *
-	 * @return string The principal.
-	 */
-	private function principalOf(array $rule): string {
-		if (is_string(($rule['group'] ?? null)) === true) {
-			return sprintf('group "%s"', $rule['group']);
-		}
-
-		if (is_string(($rule['user'] ?? null)) === true) {
-			return sprintf('user "%s"', $rule['user']);
-		}
-
-		return 'an unnamed principal';
-	}//end principalOf()
 }//end class

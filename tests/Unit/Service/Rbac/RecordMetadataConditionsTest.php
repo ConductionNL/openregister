@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Rbac\MetadataConditionFindings;
 use OCA\OpenRegister\Service\Rbac\RecordMetadataConditions;
 use PHPUnit\Framework\TestCase;
 
@@ -29,6 +30,7 @@ use PHPUnit\Framework\TestCase;
  * The known metadata is the record envelope, and every rule naming other metadata is found.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @covers \OCA\OpenRegister\Service\Rbac\MetadataConditionFindings
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  */
@@ -97,7 +99,7 @@ class RecordMetadataConditionsTest extends TestCase {
 			'matrix' => ['field' => 'afdeling', 'rows' => [['where' => ['_published' => true]]]],
 		];
 
-		$findings = $this->conditions->findings(authorization: $authorization, context: 'schema "zaak"');
+		$findings = (new MetadataConditionFindings())->findings(authorization: $authorization, context: 'schema "zaak"');
 
 		$this->assertCount(2, $findings);
 		$this->assertStringContainsString('read rule for group "public" in schema "zaak"', $findings[0]);
@@ -107,15 +109,90 @@ class RecordMetadataConditionsTest extends TestCase {
 	}//end testGrantAndDenyRulesAreFoundAndNamed()
 
 	/**
+	 * A `@self.` key follows the same rule as its underscore spelling, and a dotted field is not a field.
+	 *
+	 * @return void
+	 */
+	public function testSelfKeysFollowTheSameRule(): void {
+		$match = ['@self.published' => null, '@self.owner' => 'bob', '@self.uuid' => 'x', '@self.owner.name' => 'y', 'title' => 'z'];
+
+		$this->assertSame(['@self.published', '@self.owner.name'], $this->conditions->unknownKeys(match: $match));
+	}//end testSelfKeysFollowTheSameRule()
+
+	/**
+	 * A field missing from a partial `@self` is never answered from the writable body.
+	 *
+	 * @return void
+	 */
+	public function testAFieldMissingFromAPartialSelfIsNotAnsweredFromTheBody(): void {
+		$object = ['_owner' => 'alice', '@self.owner' => 'alice', 'owner' => 'alice', '@self' => ['organisation' => 'org-a']];
+
+		$this->assertNull($this->conditions->valueIn(object: $object, property: '_owner'));
+		$this->assertNull($this->conditions->valueIn(object: $object, property: '@self.owner'));
+		$this->assertSame('org-a', $this->conditions->valueIn(object: $object, property: '@self.organisation'));
+		$this->assertSame('alice', $this->conditions->valueIn(object: $object, property: 'owner'));
+	}//end testAFieldMissingFromAPartialSelfIsNotAnsweredFromTheBody()
+
+	/**
+	 * Without any `@self`, an underscore key falls back to the body and a `@self.` key does not.
+	 *
+	 * @return void
+	 */
+	public function testOnlyAnUnderscoreKeyFallsBackToTheBody(): void {
+		$object = ['_owner' => 'alice', '@self.owner' => 'alice'];
+
+		$this->assertSame('alice', $this->conditions->valueIn(object: $object, property: '_owner'));
+		$this->assertNull($this->conditions->valueIn(object: $object, property: '@self.owner'));
+	}//end testOnlyAnUnderscoreKeyFallsBackToTheBody()
+
+	/**
+	 * A condition the stored block already holds is no finding; adding one or changing it is.
+	 *
+	 * @return void
+	 */
+	public function testOnlyAnAddedOrChangedConditionIsAFinding(): void {
+		$bad = ['group' => 'g', 'match' => ['_published' => true, 'status' => 'open']];
+		$stored = ['read' => [$bad]];
+		$find = fn (array $new): array => (new MetadataConditionFindings())->findings(authorization: $new, context: 'x', stored: $stored);
+
+		$this->assertSame([], $find(['read' => [$bad]]));
+		$this->assertSame([], $find(['read' => [['group' => 'g', 'match' => ['_published' => true, 'status' => 'closed']]]]));
+		$this->assertSame([], $find(['read' => []]));
+		$this->assertCount(1, $find(['read' => [['group' => 'g', 'match' => ['_published' => false]]]]));
+		$this->assertCount(1, $find(['read' => [['group' => 'h', 'match' => ['_published' => true]]]]));
+		$this->assertCount(1, $find(['update' => [$bad]]));
+		$this->assertCount(1, $find(['read' => [$bad, ['group' => 'g', 'match' => ['_depublished' => true]]]]));
+	}//end testOnlyAnAddedOrChangedConditionIsAFinding()
+
+	/**
+	 * A property's stored rule counts for that property only.
+	 *
+	 * @return void
+	 */
+	public function testAStoredPropertyRuleCountsForThatPropertyOnly(): void {
+		$rule = ['read' => [['group' => 'g', 'match' => ['_published' => true]]]];
+		$stored = new Schema();
+		$stored->setProperties(['secret' => ['authorization' => $rule]]);
+
+		$same = new Schema();
+		$same->setProperties(['secret' => ['authorization' => $rule]]);
+		$moved = new Schema();
+		$moved->setProperties(['other' => ['authorization' => $rule]]);
+
+		$this->assertSame([], (new MetadataConditionFindings())->schemaFindings(schema: $same, stored: $stored));
+		$this->assertCount(1, (new MetadataConditionFindings())->schemaFindings(schema: $moved, stored: $stored));
+	}//end testAStoredPropertyRuleCountsForThatPropertyOnly()
+
+	/**
 	 * A block without such conditions, or without any block, has no findings.
 	 *
 	 * @return void
 	 */
 	public function testABlockWithKnownMetadataHasNoFindings(): void {
-		$this->assertSame([], $this->conditions->findings(authorization: null, context: 'schema "x"'));
+		$this->assertSame([], (new MetadataConditionFindings())->findings(authorization: null, context: 'schema "x"'));
 		$this->assertSame(
 			[],
-			$this->conditions->findings(
+			(new MetadataConditionFindings())->findings(
 				authorization: ['read' => [['group' => 'g', 'match' => ['_owner' => '$userId']]], 'inheritFromPublic' => true],
 				context: 'schema "x"'
 			)
@@ -138,7 +215,7 @@ class RecordMetadataConditionsTest extends TestCase {
 			]
 		);
 
-		$findings = $this->conditions->schemaFindings(schema: $schema);
+		$findings = (new MetadataConditionFindings())->schemaFindings(schema: $schema);
 
 		$this->assertCount(2, $findings);
 		$this->assertStringContainsString('schema "zaak"', $findings[0]);

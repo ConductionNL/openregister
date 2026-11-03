@@ -462,9 +462,10 @@ When evaluating property-level authorization match conditions, `ConditionMatcher
 - **AND** any underscore-prefixed condition on an object that carries `@self` MUST be answered from `@self` alone; only an object without any `@self` falls back to its body
 - **AND** a field `@self` holds as empty MUST answer null, which is told apart from a key that names no record metadata at all
 - **AND** `_uuid` MUST read the record's uuid, which `@self` carries as `id`
+- **AND** `_expires` MUST read the record's `expires`, which the match envelope carries and the rendered `@self` does not
 
 ### Requirement: A condition on metadata no record carries MUST be refused at save and fail closed when stored
-An underscore-prefixed `match` key names record metadata. The metadata a record carries is the set of fields of its `@self` envelope (`ObjectEntity::getMatchEnvelope()`), read from the entity rather than from a hand-kept list. A condition on any other underscore-prefixed key (`_published`, `_depublished`, a typo) can never match a record. Saving a schema, a property rule or a register whose grant or deny rules carry such a condition MUST be refused with a message that names the key, the action, the principal and the schema, property or register. A rule stored before this check MUST fail closed when evaluated: a deny on it denies, an allow on it grants nothing, on the single-object path, the relation path and the list query alike. Each schema and key MUST be logged once per request. `occ openregister:rbac:unknown-metadata-conditions` MUST list the stored schemas and registers that carry such a condition, without changing them.
+A `match` key that starts with `_` or `@self.` names record metadata. The metadata a record carries is the set of fields of its match envelope (`ObjectEntity::getMatchEnvelope()`), read from the entity rather than from a hand-kept list; `_uuid` and `@self.uuid` name the field the envelope carries as `id`. A condition on any other such key (`_published`, `@self.published`, a typo) can never match a record. A save that ADDS or CHANGES such a condition in a schema's grant or deny rules, a property's rules or a register's rules MUST be refused with a message that names the key, the action, the principal and the schema, property or register. A save that keeps a stored condition unchanged, edits around it or removes it MUST NOT be refused for it, so that access revocation and link writes keep working on a schema or register that already holds one. A stored rule MUST fail closed when evaluated: a deny on it denies, an allow on it grants nothing, on the single-object path, the relation path and the list query alike. Each schema and key MUST be logged once per request. `occ openregister:rbac:unknown-metadata-conditions` MUST list the stored schemas and registers that carry such a condition, without changing them, and MUST say that rules in an object's own `_authorization` are not scanned.
 
 #### Scenario: A schema rule on `_published` is refused at save
 - **GIVEN** a schema whose `read` rule for group `public` matches `{ "_published": { "$lte": "$now" } }`
@@ -472,6 +473,25 @@ An underscore-prefixed `match` key names record metadata. The metadata a record 
 - **THEN** the save MUST be refused with a message naming `_published`, the `read` rule, group `public` and the schema
 - **AND** the same holds for a deny entry, for a property's rule, and for a register's rule
 - **AND** a rule matching `_organisation`, `_owner` or another `@self` field MUST save
+
+#### Scenario: A `@self.` key follows the same rule
+- **GIVEN** a rule matching `@self.published`, and a rule matching `@self.owner`
+- **WHEN** they are saved or evaluated
+- **THEN** `@self.published` MUST be refused at save and fail closed when stored, like `_published`
+- **AND** `@self.owner` MUST read the record's owner: `{ "@self.owner": null }` is not met on a record with an owner, and a deny on `{ "@self.owner": "bob" }` fires on bob's record
+- **AND** on the list query it MUST name the same column as `_owner`
+- **AND** a body key named `@self.owner` MUST NOT answer it, on an object with or without `@self`
+
+#### Scenario: A field missing from a partial `@self` is not read from the body
+- **GIVEN** an object whose `@self` holds only `organisation`, and a body key `_owner`
+- **WHEN** a rule matching `_owner` is evaluated
+- **THEN** it MUST read null, not the body key
+
+#### Scenario: A save over a stored rule is only refused for what it adds or changes
+- **GIVEN** a stored schema or register with a rule on `_published`
+- **WHEN** a save keeps that condition unchanged, changes another condition of the rule, changes another rule, or removes the rule
+- **THEN** the save MUST NOT be refused for it
+- **AND** a save that changes the condition's value, moves it to another action, principal or property, or adds another such condition MUST be refused, naming only what is new
 
 #### Scenario: A stored deny on unknown metadata denies
 - **GIVEN** a stored schema whose `deny.update` entry for group `editors` matches `_published`
@@ -492,6 +512,8 @@ An underscore-prefixed `match` key names record metadata. The metadata a record 
 - **THEN** it MUST print one line per such condition, naming the schema or register, the rule and the key, and exit 1
 - **AND** it MUST NOT change any schema or register
 - **AND** on an instance without such conditions it MUST say so and exit 0
+- **AND** it MUST read every schema and register past RBAC and the organisation filter
+- **AND** it MUST say that rules in an object's own `_authorization` are not scanned
 
 #### Scenario: Non-underscore property does not check @self
 - **GIVEN** object data `{ "status": "open" }`

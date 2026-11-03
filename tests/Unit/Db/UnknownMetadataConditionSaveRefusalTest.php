@@ -27,15 +27,22 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
+use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\IResult;
+use OCP\DB\QueryBuilder\IExpressionBuilder;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use ReflectionProperty;
 
 /**
  * The schema and register saves refuse an unknown metadata condition, naming the key and the rule.
  *
  * @covers \OCA\OpenRegister\Db\SchemaMapper
  * @covers \OCA\OpenRegister\Db\RegisterMapper
+ * @covers \OCA\OpenRegister\Service\Rbac\MetadataConditionFindings
  * @covers \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
@@ -50,25 +57,130 @@ use ReflectionClass;
 class UnknownMetadataConditionSaveRefusalTest extends TestCase {
 
 	/**
-	 * Run a mapper's save-time authorization check, without a database behind it.
+	 * Run a mapper's save-time check, without a database behind it.
 	 *
-	 * @param string          $mapperClass The mapper.
-	 * @param Schema|Register $entity      The entity being saved.
+	 * @param string              $mapperClass The mapper.
+	 * @param Schema|Register     $entity      The entity being saved.
+	 * @param array<string, string>|null $row  The stored row the query answers with, or null for none.
 	 *
 	 * @return void
 	 */
-	private function validateAsTheSaveDoes(string $mapperClass, Schema|Register $entity): void {
+	private function validateAsTheSaveDoes(string $mapperClass, Schema|Register $entity, ?array $row = null): void {
 		$reflection = new ReflectionClass($mapperClass);
 		$mapper = $reflection->newInstanceWithoutConstructor();
 
-		$property = $reflection->getProperty('eventDispatcher');
-		$property->setAccessible(true);
-		$property->setValue($mapper, $this->createMock(originalClassName: IEventDispatcher::class));
+		$dispatcher = $reflection->getProperty('eventDispatcher');
+		$dispatcher->setAccessible(true);
+		$dispatcher->setValue($mapper, $this->createMock(originalClassName: IEventDispatcher::class));
+
+		$result = $this->createMock(originalClassName: IResult::class);
+		$result->method('fetch')->willReturn($row ?? false);
+		$queryBuilder = $this->createMock(originalClassName: IQueryBuilder::class);
+		foreach (['select', 'from', 'where'] as $step) {
+			$queryBuilder->method($step)->willReturnSelf();
+		}
+
+		$queryBuilder->method('expr')->willReturn($this->createMock(originalClassName: IExpressionBuilder::class));
+		$queryBuilder->method('executeQuery')->willReturn($result);
+		$connection = $this->createMock(originalClassName: IDBConnection::class);
+		$connection->method('getQueryBuilder')->willReturn($queryBuilder);
+		$db = new ReflectionProperty(QBMapper::class, 'db');
+		$db->setAccessible(true);
+		$db->setValue($mapper, $connection);
 
 		$method = $reflection->getMethod('validateAuthorizationDeny');
 		$method->setAccessible(true);
 		$method->invoke($mapper, $entity);
 	}//end validateAsTheSaveDoes()
+
+	/**
+	 * A stored rule on unknown metadata does not block a save that keeps it, edits around it or removes it.
+	 *
+	 * @return void
+	 */
+	public function testASaveOverAStoredRuleIsNotRefused(): void {
+		$bad = ['group' => 'g', 'match' => ['_published' => true]];
+		$stored = ['authorization' => json_encode(['read' => [$bad]]), 'properties' => '{}'];
+
+		foreach ([['read' => [$bad]], ['read' => [$bad, 'editors']], ['read' => ['editors']]] as $authorization) {
+			$schema = $this->schemaWith($authorization);
+			$schema->setId(5);
+			$this->validateAsTheSaveDoes(SchemaMapper::class, $schema, $stored);
+		}
+
+		$this->addToAssertionCount(3);
+	}//end testASaveOverAStoredRuleIsNotRefused()
+
+	/**
+	 * A stored property rule does not block a save that keeps it.
+	 *
+	 * @return void
+	 */
+	public function testASaveOverAStoredPropertyRuleIsNotRefused(): void {
+		$properties = ['secret' => ['type' => 'string', 'authorization' => ['read' => [['group' => 'g', 'match' => ['_published' => true]]]]]];
+		$schema = $this->schemaWith([], $properties);
+		$schema->setId(5);
+
+		$this->validateAsTheSaveDoes(SchemaMapper::class, $schema, ['authorization' => '{}', 'properties' => json_encode($properties)]);
+
+		$this->addToAssertionCount(1);
+	}//end testASaveOverAStoredPropertyRuleIsNotRefused()
+
+	/**
+	 * A save over a stored rule that adds another one is refused, naming only the new one.
+	 *
+	 * @return void
+	 */
+	public function testASaveThatAddsARuleOverAStoredOneIsRefused(): void {
+		$bad = ['group' => 'g', 'match' => ['_published' => true]];
+		$schema = $this->schemaWith(['read' => [$bad, ['group' => 'h', 'match' => ['@self.depublished' => true]]]]);
+		$schema->setId(5);
+
+		try {
+			$this->validateAsTheSaveDoes(SchemaMapper::class, $schema, ['authorization' => json_encode(['read' => [$bad]]), 'properties' => '{}']);
+			$this->fail('The save accepted a new condition on unknown metadata');
+		} catch (AuthorizationBlockException $e) {
+			$this->assertStringContainsString('"@self.depublished"', $e->getMessage());
+			$this->assertStringNotContainsString('"_published"', $e->getMessage());
+		}
+	}//end testASaveThatAddsARuleOverAStoredOneIsRefused()
+
+	/**
+	 * A schema with an id the database does not hold is treated as new, and refused.
+	 *
+	 * @return void
+	 */
+	public function testAnIdTheDatabaseDoesNotHoldIsRefused(): void {
+		$schema = $this->schemaWith(['read' => [['group' => 'g', 'match' => ['_published' => true]]]]);
+		$schema->setId(5);
+
+		$this->expectException(AuthorizationBlockException::class);
+		$this->validateAsTheSaveDoes(SchemaMapper::class, $schema);
+	}//end testAnIdTheDatabaseDoesNotHoldIsRefused()
+
+	/**
+	 * A register save keeps a stored rule and refuses a new one.
+	 *
+	 * @return void
+	 */
+	public function testARegisterSaveComparesWithTheStoredBlock(): void {
+		$bad = ['group' => 'g', 'match' => ['_published' => true]];
+		$stored = ['authorization' => json_encode(['read' => [$bad]])];
+
+		$same = new Register();
+		$same->setId(5);
+		$same->setSlug('zaken');
+		$same->setAuthorization(['read' => [$bad, 'editors']]);
+		$this->validateAsTheSaveDoes(RegisterMapper::class, $same, $stored);
+
+		$added = new Register();
+		$added->setId(5);
+		$added->setSlug('zaken');
+		$added->setAuthorization(['read' => [$bad, ['group' => 'h', 'match' => ['_depublished' => true]]]]);
+		$this->expectException(AuthorizationBlockException::class);
+		$this->expectExceptionMessage('"_depublished"');
+		$this->validateAsTheSaveDoes(RegisterMapper::class, $added, $stored);
+	}//end testARegisterSaveComparesWithTheStoredBlock()
 
 	/**
 	 * A schema with one block and optional properties.
