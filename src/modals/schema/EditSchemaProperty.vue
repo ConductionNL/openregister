@@ -1637,7 +1637,8 @@ export default {
 						title: facetableValue.title || '',
 						description: facetableValue.description || '',
 						order:
-							(facetableValue.order !== null && facetableValue.order !== undefined)
+							facetableValue.order !== null
+							&& facetableValue.order !== undefined
 								? String(facetableValue.order)
 								: '',
 					}
@@ -1925,7 +1926,8 @@ export default {
 					|| (this.facetConfig.description
 						&& this.facetConfig.description.trim())
 					|| (this.facetConfig.order !== ''
-						&& (this.facetConfig.order !== null && this.facetConfig.order !== undefined))
+						&& this.facetConfig.order !== null
+						&& this.facetConfig.order !== undefined)
 					|| hasDateConfig
 
 				if (hasCustomConfig) {
@@ -1935,7 +1937,8 @@ export default {
 						description: this.facetConfig.description?.trim() || null,
 						order:
 							this.facetConfig.order !== ''
-							&& (this.facetConfig.order !== null && this.facetConfig.order !== undefined)
+							&& this.facetConfig.order !== null
+							&& this.facetConfig.order !== undefined
 								? parseFloat(this.facetConfig.order) || null
 								: null,
 					}

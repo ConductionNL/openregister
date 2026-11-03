@@ -103,11 +103,17 @@ export default {
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-across-registers-global-search
 		 */
 		hasSelectedRegisters() {
-			return (objectStore.searchParams.register !== null && objectStore.searchParams.register !== undefined)
+			return (
+				objectStore.searchParams.register !== null
+				&& objectStore.searchParams.register !== undefined
+			)
 		},
 
 		hasSelectedSchemas() {
-			return (objectStore.searchParams.schema !== null && objectStore.searchParams.schema !== undefined)
+			return (
+				objectStore.searchParams.schema !== null
+				&& objectStore.searchParams.schema !== undefined
+			)
 		},
 
 		/**

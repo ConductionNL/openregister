@@ -56,7 +56,8 @@ const LIST_OPTION_PARAMS = [
 function listParams(filters, options) {
 	const params = { ...filters }
 	for (const [option, param] of LIST_OPTION_PARAMS) {
-		if (options[option] !== null && options[option] !== undefined) params[param] = options[option]
+		if (options[option] !== null && options[option] !== undefined)
+			params[param] = options[option]
 	}
 	return params
 }
