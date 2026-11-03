@@ -198,6 +198,34 @@ class RelatedRetentionRecalculationJobTest extends TestCase {
 	}//end testAClientsEndDateRecalculatesItsTwoContactPersons()
 
 	/**
+	 * A long-running worker drops the table memos before it looks the source up, so a
+	 * table created after the worker started is found.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
+	 */
+	public function testTheTableMemosAreDroppedBeforeTheSourceIsLookedUp(): void {
+		$order = [];
+		$client = new ObjectEntity();
+		$client->setUuid(self::CLIENT);
+		$client->setSchema('7');
+		$this->objectMapper->expects($this->once())->method('invalidateTableMemos')
+			->willReturnCallback(function () use (&$order): void {
+				$order[] = 'memos';
+			});
+		$this->objectMapper->method('find')->willReturnCallback(function () use (&$order, $client): ObjectEntity {
+			$order[] = 'find';
+			return $client;
+		});
+		$this->registerMapper->method('getAllRegisterIdsWithSchema')->willReturn([]);
+
+		$this->job->recalculateDependantsOf(uuid: self::CLIENT);
+
+		$this->assertSame(['memos', 'find'], $order);
+	}//end testTheTableMemosAreDroppedBeforeTheSourceIsLookedUp()
+
+	/**
 	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
 	 */
 	public function testTheListenerQueuesOnceWhenTheWatchedDateChanges(): void {

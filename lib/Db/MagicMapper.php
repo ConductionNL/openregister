@@ -7965,11 +7965,15 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * Called whenever a magic table is created, so a write that follows a table
 	 * creation in the same request sees the new table rather than a cached
-	 * "does not exist" / stale enumeration.
+	 * "does not exist" / stale enumeration. A background job calls it before it
+	 * looks objects up: a long-running `background-job:worker` outlives the
+	 * request the memos were made for, and would not see tables created since.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
 	 */
-	private function invalidateTableMemos(): void {
+	public function invalidateTableMemos(): void {
 		$this->tableExistsMemo = [];
 		$this->liveMagicTablesMemo = null;
 
