@@ -98,6 +98,22 @@ final class OrganisationContext {
 	}//end isActive()
 
 	/**
+	 * The multitenancy flag a read or write runs with.
+	 *
+	 * Inside a scope the organisation filter cannot be switched off, so a
+	 * caller's `false` reads as `true`.
+	 *
+	 * @param bool $requested The flag the caller passed.
+	 *
+	 * @return bool True inside a scope, otherwise the requested flag.
+	 *
+	 * @spec openspec/changes/act-for-an-organisation/specs/rbac-scopes/spec.md
+	 */
+	public static function multitenancy(bool $requested): bool {
+		return $requested === true || self::$stack !== [];
+	}//end multitenancy()
+
+	/**
 	 * The organisation the innermost scope acts for.
 	 *
 	 * @return string|null The organisation uuid, or null outside a scope.

@@ -10,6 +10,7 @@
 - [x] 2.3 `ConditionMatcher` keys its organisation memo by the context, so `$organisation` resolves to the context's organisation.
 - [x] 2.4 `MagicRbacHandler`: inside a context a `public` rule does not lift the organisation filter and no rule crosses organisations.
 - [x] 2.5 `MagicSearchHandler`: inside a context the organisation filter applies whatever `_multitenancy`, the schema or RBAC say.
+- [x] 2.6 The bypass shortcuts in `MagicMapper` (single find, cross-table find, deleted scans) and the bulk-delete filter read `_multitenancy` through `OrganisationContext::multitenancy()`.
 
 ## 3. Writes and audit
 

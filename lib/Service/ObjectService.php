@@ -5970,7 +5970,7 @@ class ObjectService implements ObjectServiceInterface
 
         // Apply RBAC and multi-organization filtering if enabled.
         $filteredUuids = $uuids;
-        if ($_rbac === true || $_multitenancy === true) {
+        if ($_rbac === true || OrganisationContext::multitenancy(requested: $_multitenancy) === true) {
             $filteredUuids = $this->permissionHandler->filterUuidsForPermissions(
                 uuids: $uuids,
                 _rbac: $_rbac,

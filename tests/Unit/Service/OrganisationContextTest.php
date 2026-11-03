@@ -97,6 +97,14 @@ class OrganisationContextTest extends TestCase {
 		$this->assertFalse(OrganisationContext::isActive());
 	}//end testAThrowOutOfTheOuterContextLeavesNoContext()
 
+	public function testMultitenancyCannotBeSwitchedOffInsideAContext(): void {
+		$this->assertSame([false, true], [OrganisationContext::multitenancy(false), OrganisationContext::multitenancy(true)]);
+		$this->assertSame(
+			[true, true],
+			OrganisationContext::run('org-a', static fn (): array => [OrganisationContext::multitenancy(false), OrganisationContext::multitenancy(true)])
+		);
+	}//end testMultitenancyCannotBeSwitchedOffInsideAContext()
+
 	public function testTheReturnValueIsPassedThrough(): void {
 		$this->assertSame('answer', OrganisationContext::run('org-a', static fn (): string => 'answer'));
 	}//end testTheReturnValueIsPassedThrough()

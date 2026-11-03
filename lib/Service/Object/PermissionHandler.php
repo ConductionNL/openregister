@@ -43,6 +43,7 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
@@ -2025,8 +2026,11 @@ class PermissionHandler {
 				}//end if
 			}//end if
 
-			// Check multi-organization permissions if enabled.
-			if ($_multitenancy === true && $activeOrganisation !== null) {
+			// Check multi-organization permissions if enabled. Inside an
+			// organisation context an unknown organisation keeps nothing.
+			if (OrganisationContext::multitenancy(requested: $_multitenancy) === true
+				&& ($activeOrganisation !== null || OrganisationContext::isActive() === true)
+			) {
 				$objectOrganisation = $object->getOrganisation();
 
 				if ($objectOrganisation !== null && $objectOrganisation !== $activeOrganisation) {
