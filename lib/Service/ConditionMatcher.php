@@ -78,6 +78,18 @@ class ConditionMatcher {
 	];
 
 	/**
+	 * Match tokens that resolve to the caller's active organisation.
+	 *
+	 * @var string[]
+	 */
+	public const ORGANISATION_TOKENS = [
+		'$organisation',
+		'$activeOrganisation',
+		'$organisation.uuid',
+		'$activeOrganisation.uuid',
+	];
+
+	/**
 	 * Supported `$organisation.<property>` dot-path tokens.
 	 *
 	 * Currently only `uuid` is exposed so this keeps parity with the bare
