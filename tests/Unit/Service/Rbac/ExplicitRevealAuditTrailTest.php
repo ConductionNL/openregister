@@ -34,7 +34,14 @@ use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
 use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
+use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\ObjectReadAccess;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
+use OCA\OpenRegister\Db\Register;
+use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\AuditHashService;
@@ -50,8 +57,13 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Controller\AuditTrailController
  * @covers \OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker
+ * @uses \OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders
+ * @uses \OCA\OpenRegister\Service\Audit\HistoryEntryRedactor
+ * @uses \OCA\OpenRegister\Service\PropertyRbacHandler
  */
 class ExplicitRevealAuditTrailTest extends TestCase {
+
+	use BuildsStateFieldRuleResolver;
 
 	private const BSN = '123457609';
 
@@ -231,21 +243,38 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 		);
 		$object = new ObjectEntity();
 		$object->setUuid('obj-1');
+		$object->setRegister('5');
 		$object->setSchema('7');
 		$objects = $this->createMock(originalClassName: MagicMapper::class);
 		$objects->method('findMultipleAcrossAllMagicTables')->willReturn([$object]);
-		$schemas = $this->createMock(originalClassName: SchemaMapper::class);
-		$schemas->method('find')->willReturn($this->personSchema());
-		$permissions = $this->createMock(originalClassName: PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturn(true);
+		$access = $this->createMock(originalClassName: ObjectReadAccess::class);
+		$access->method('readable')->willReturn($object);
+		$access->method('schemaOf')->willReturn($this->personSchema());
+		$registers = $this->createMock(originalClassName: RegisterMapper::class);
+		$registers->method('find')->willReturn(new Register());
 		$reads = $this->createMock(originalClassName: ReadEventVisibility::class);
 		$reads->method('maySeeReadEvents')->willReturn(true);
+		$session = $this->createMock(originalClassName: IUserSession::class);
+		$groups = $this->createMock(originalClassName: IGroupManager::class);
+		$properties = new PropertyRbacHandler(
+			$session,
+			$groups,
+			$this->createMock(originalClassName: ConditionMatcher::class),
+			$this->createMock(originalClassName: LoggerInterface::class),
+			self::stateFieldRuleResolver($session, $groups)
+		);
 
 		$lister = new ReadableAuditTrailLister(
 			auditTrailMapper: $trails,
 			objectMapper: $objects,
-			schemaMapper: $schemas,
-			permissionHandler: $permissions,
+			history: new ObjectHistoryForReaders(
+				$access,
+				$trails,
+				new HistoryEntryRedactor($properties),
+				$registers,
+				$this->createMock(originalClassName: PurposeGuard::class),
+				$reads
+			),
 			readEvents: $reads
 		);
 		$encoded = (string)json_encode(value: $lister->page(userId: 'alice', limit: 20));
