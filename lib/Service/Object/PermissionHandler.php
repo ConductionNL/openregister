@@ -1563,11 +1563,7 @@ class PermissionHandler {
 			return null;
 		}
 
-		$envelope = ($object->getObject() ?? []);
-		$organisation = $object->getOrganisation();
-		if ($organisation !== null) {
-			$envelope['@self'] = array_replace(($envelope['@self'] ?? []), ['organisation' => $organisation]);
-		}
+		$envelope = $object->getMatchEnvelope();
 
 		foreach ($conditional as $denial) {
 			$rule = $denial['rule'];

@@ -1513,6 +1513,31 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end getObjectArray()
 
 	/**
+	 * The record as an access rule's `match` reads it: its data, with `@self` set from its own metadata.
+	 *
+	 * A rule on `_owner`, `_organisation`, `_schema` or another underscore-prefixed
+	 * field reads `@self` first and the body key of that name second. Both of those
+	 * can come from whoever wrote the data, so the data's own `@self` is replaced and
+	 * the body keys that name a metadata field are dropped: the record answers for
+	 * its metadata, also when a field is empty.
+	 *
+	 * @return array<int|string, mixed>
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	public function getMatchEnvelope(): array {
+		$envelope = $this->getObject();
+		$metadata = $this->getObjectArray();
+		foreach (array_keys($metadata) as $field) {
+			unset($envelope['_' . $field]);
+		}
+
+		$envelope['@self'] = $metadata;
+
+		return $envelope;
+	}//end getMatchEnvelope()
+
+	/**
 	 * Merge the transient, render-layer-populated `@self` fields: fuzzy
 	 * search relevance, the RFC 8141 URN, per-language translation
 	 * completeness, the effective archival retention decision, the
