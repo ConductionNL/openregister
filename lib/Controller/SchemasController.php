@@ -139,6 +139,13 @@ class SchemasController extends Controller {
 	private const CONFLICT_ERROR_MARKERS = ['constraint', 'duplicate', 'unique'];
 
 	/**
+	 * The `logs` statistics a caller who may not count the trail is given.
+	 *
+	 * @var array{total: int, size: int}
+	 */
+	private const NO_LOG_STATS = ['total' => 0, 'size' => 0];
+
+	/**
 	 * The shared register-scoped schema resolver.
 	 *
 	 * Built here rather than injected: it is a stateless collaborator over the
@@ -338,33 +345,53 @@ class SchemasController extends Controller {
 		// Break the reference.
 		// If '@self.stats' is requested, attach statistics to each schema.
 		if (in_array('@self.stats', $extend, true) === true) {
-			// Collect all schema IDs for batch queries.
-			$schemaIds = array_map(fn ($schema) => $schema['id'], $schemasArr);
-
-			// Batch-load all statistics in 3 queries instead of N*2 queries.
-			$registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
-			$objectStats = $this->objectEntityMapper->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
-			$logStats = $this->auditTrailMapper->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
-
-			foreach ($schemasArr as &$schema) {
-				$schema['stats'] = [
-					'objects' => $objectStats[$schema['id']] ?? [
-						'total' => 0,
-						'size' => 0,
-						'invalid' => 0,
-						'deleted' => 0,
-						'locked' => 0,
-					],
-					'logs' => $logStats[$schema['id']] ?? ['total' => 0, 'size' => 0],
-					'files' => [ 'total' => 0, 'size' => 0 ],
-					// Add the number of registers referencing this schema.
-					'registers' => $registerCounts[$schema['id']] ?? 0,
-				];
-			}
+			$schemasArr = $this->withSchemaStats(schemasArr: $schemasArr);
 		}//end if
 
 		return new JSONResponse(data: ['results' => $schemasArr]);
 	}//end index()
+
+	/**
+	 * Attach the `@self.stats` block to each serialized schema of a list.
+	 *
+	 * Batch-loads the statistics in 3 queries instead of N*2. The audit-trail
+	 * counts are given to an administrator only.
+	 *
+	 * @param array<int, array<string, mixed>> $schemasArr The serialized schemas.
+	 *
+	 * @return array<int, array<string, mixed>> The schemas with a `stats` block.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md#requirement-the-instance-wide-audit-reads-are-admin-only
+	 */
+	private function withSchemaStats(array $schemasArr): array {
+		$schemaIds = array_map(fn ($schema) => $schema['id'], $schemasArr);
+
+		$registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
+		$objectStats = $this->objectEntityMapper->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
+		$logStats = [];
+		if ($this->isCurrentUserAdmin() === true) {
+			$logStats = $this->auditTrailMapper->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
+		}
+
+		foreach ($schemasArr as &$schema) {
+			$schema['stats'] = [
+				'objects' => $objectStats[$schema['id']] ?? [
+					'total' => 0,
+					'size' => 0,
+					'invalid' => 0,
+					'deleted' => 0,
+					'locked' => 0,
+				],
+				'logs' => $logStats[$schema['id']] ?? self::NO_LOG_STATS,
+				'files' => [ 'total' => 0, 'size' => 0 ],
+				// Add the number of registers referencing this schema.
+				'registers' => $registerCounts[$schema['id']] ?? 0,
+			];
+		}
+
+		unset($schema);
+		return $schemasArr;
+	}//end withSchemaStats()
 
 	/**
 	 * Resolve the {id} route parameter to a Schema, register-scoped when the caller names one.
@@ -573,7 +600,7 @@ class SchemasController extends Controller {
 				$registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
 				$schemaArr['stats'] = [
 					'objects' => $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schemaArr['id']),
-					'logs' => $this->auditTrailMapper->getStatistics(registerId: null, schemaId: $schemaArr['id']),
+					'logs' => $this->auditLogStats(schemaId: (int)$schemaArr['id']),
 					'files' => [ 'total' => 0, 'size' => 0 ],
 					// Add the number of registers referencing this schema.
 					'registers' => $registerCounts[$schemaArr['id']] ?? 0,
@@ -2162,7 +2189,7 @@ class SchemasController extends Controller {
 					'locked' => ($objectStats['locked'] ?? 0),
 					'size' => ($objectStats['size'] ?? 0),
 				],
-				'logs' => $this->auditTrailMapper->getStatistics(registerId: null, schemaId: $id),
+				'logs' => $this->auditLogStats(schemaId: $id),
 				'files' => ['total' => 0, 'size' => 0],
 				// Placeholder for future file statistics.
 				'registers' => $this->schemaMapper->getRegisterCountPerSchema()[$id] ?? 0,
@@ -2548,6 +2575,26 @@ class SchemasController extends Controller {
 
 		return null;
 	}//end resolveDialectReference()
+
+	/**
+	 * The audit-trail statistics of one schema, for an administrator only.
+	 *
+	 * The count covers every entry of the schema, whichever organisation the
+	 * object belongs to, so a non-admin or anonymous caller is given zeros.
+	 *
+	 * @param int $schemaId The schema id.
+	 *
+	 * @return array The statistics, or zeros for a non-admin.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md#requirement-the-instance-wide-audit-reads-are-admin-only
+	 */
+	private function auditLogStats(int $schemaId): array {
+		if ($this->isCurrentUserAdmin() === false) {
+			return self::NO_LOG_STATS;
+		}
+
+		return $this->auditTrailMapper->getStatistics(registerId: null, schemaId: $schemaId);
+	}//end auditLogStats()
 
 	/**
 	 * Check if the current user is a Nextcloud administrator.

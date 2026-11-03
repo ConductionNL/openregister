@@ -50,6 +50,27 @@ An API endpoint MUST allow querying all audit trail entries related to a specifi
 - **WHEN** a GET request is made to `/api/audit-trails/subject-lookup` without an `identifier` parameter
 - **THEN** the system MUST return HTTP 400 with `{"error": "identifier parameter is required"}`
 
+### Requirement: The instance-wide audit reads are admin-only
+The audit reads that answer about the whole trail, whichever register, schema or organisation an entry belongs to, SHALL be answered to members of the Nextcloud `admin` group only: the subject lookup (`GET /api/audit-trails/subject-lookup`), the processing activity overview (`GET /api/audit-trails/processing-activities`) and the purpose report (`GET /api/avg/purposes/report`). A signed-in non-admin SHALL receive HTTP 403 and an anonymous caller HTTP 401, before the trail is read. The `logs` statistics of a schema or register (`@self.stats` on the schema and register reads, and `GET /api/schemas/{id}/stats`) count the trail the same way, so a non-admin or anonymous caller SHALL be given `{"total": 0, "size": 0}` there and the trail SHALL NOT be counted. A non-admin reads the entries of the objects they may read through the scoped audit list.
+
+#### Scenario: a non-admin cannot search the whole trail for a subject
+- **GIVEN** a signed-in user who is not in the `admin` group
+- **WHEN** they request `/api/audit-trails/subject-lookup?identifier=123456789`
+- **THEN** the response is HTTP 403 and the trail is not searched
+- @e2e exclude {access gate, asserted in tests/Unit/Controller/InstanceWideAuditReadsTest.php}
+
+#### Scenario: a non-admin cannot count the trail
+- **GIVEN** a signed-in user who is not in the `admin` group
+- **WHEN** they request the processing activity overview or the purpose report
+- **THEN** the response is HTTP 403 and the trail is not counted
+- @e2e exclude {access gate, asserted in tests/Unit/Controller/InstanceWideAuditReadsTest.php}
+
+#### Scenario: a non-admin is not given the trail count of a schema or register
+- **GIVEN** a signed-in non-admin or anonymous caller
+- **WHEN** they read a schema or register with `_extend=@self.stats`, or a schema's stats
+- **THEN** `logs` is `{"total": 0, "size": 0}` and the trail is not counted, while an administrator is given the counts
+- @e2e exclude {asserted in tests/Unit/Controller/SchemasControllerTest.php and RegistersControllerTest.php}
+
 ### Requirement: The system MUST support audit trail export
 An API endpoint MUST allow exporting audit trail entries in JSON or CSV format for external compliance auditing.
 
