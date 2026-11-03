@@ -54,6 +54,22 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Handler coordinates formatting, sharing, tagging, locking, URL generation, and session lookup.
  */
 class FileFormattingHandler {
+	/**
+	 * The file filters read from a request, and how each is taken: bool and
+	 * int are cast, trim is a trimmed string, and list is a comma-separated
+	 * string or an array.
+	 */
+	private const FILE_FILTER_PARAMETERS = [
+		'_hasLabels' => 'bool',
+		'_noLabels' => 'bool',
+		'labels' => 'list',
+		'extension' => 'trim',
+		'extensions' => 'list',
+		'minSize' => 'int',
+		'maxSize' => 'int',
+		'title' => 'trim',
+	];
+
 
 	/**
 	 * Reference to FileService for cross-handler coordination (circular dependency break).
@@ -376,60 +392,34 @@ class FileFormattingHandler {
 	 * @psalm-param   array<string, mixed> $requestParams
 	 * @phpstan-param array<string, mixed> $requestParams
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Filter extraction requires many conditional parameter checks
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Many filter types require conditional handling
 	 */
 	private function extractFilterParameters(array $requestParams): array {
 		$filters = [];
-
-		// Labels filtering (business logic filters prefixed with underscore).
-		if (($requestParams['_hasLabels'] ?? null) !== null) {
-			$filters['_hasLabels'] = (bool)$requestParams['_hasLabels'];
-		}
-
-		if (($requestParams['_noLabels'] ?? null) !== null) {
-			$filters['_noLabels'] = (bool)$requestParams['_noLabels'];
-		}
-
-		if (($requestParams['labels'] ?? null) !== null) {
-			$labels = $requestParams['labels'];
-			if (is_string($labels) === true) {
-				$filters['labels'] = array_map('trim', explode(',', $labels));
-			} elseif (is_array($labels) === true) {
-				$filters['labels'] = $labels;
+		foreach (self::FILE_FILTER_PARAMETERS as $key => $kind) {
+			$value = ($requestParams[$key] ?? null);
+			if ($value === null) {
+				continue;
 			}
-		}
 
-		// Extension filtering.
-		if (($requestParams['extension'] ?? null) !== null) {
-			$filters['extension'] = trim($requestParams['extension']);
-		}
-
-		if (($requestParams['extensions'] ?? null) !== null) {
-			$extensions = $requestParams['extensions'];
-			if (is_string($extensions) === true) {
-				$filters['extensions'] = array_map('trim', explode(',', $extensions));
-			} elseif (is_array($extensions) === true) {
-				$filters['extensions'] = $extensions;
+			if ($kind === 'list' && is_string($value) === true) {
+				$value = array_map('trim', explode(',', $value));
 			}
+
+			if ($kind === 'list' && is_array($value) === false) {
+				continue;
+			}
+
+			$filters[$key] = match ($kind) {
+				'bool' => (bool)$value,
+				'int' => (int)$value,
+				'trim' => trim($value),
+				default => $value,
+			};
 		}
 
-		// Size filtering.
-		if (($requestParams['minSize'] ?? null) !== null) {
-			$filters['minSize'] = (int)$requestParams['minSize'];
-		}
-
-		if (($requestParams['maxSize'] ?? null) !== null) {
-			$filters['maxSize'] = (int)$requestParams['maxSize'];
-		}
-
-		// Title/search filtering.
-		if (($requestParams['title'] ?? null) !== null) {
-			$filters['title'] = trim($requestParams['title']);
-		}
-
-		if (($requestParams['search'] ?? null) !== null || (($requestParams['_search'] ?? null) !== null) === true) {
-			$filters['search'] = trim($requestParams['search'] ?? $requestParams['_search']);
+		$search = ($requestParams['search'] ?? $requestParams['_search'] ?? null);
+		if ($search !== null) {
+			$filters['search'] = trim($search);
 		}
 
 		return $filters;
