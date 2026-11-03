@@ -108,12 +108,8 @@ class HistoryEntryRedactor {
 			}
 		}
 
-		// Property rules may match on the object's organisation or owner, as
-		// RenderObject provides them on the object read.
-		$probe['@self'] = [
-			'organisation' => $object->getOrganisation(),
-			'owner' => $object->getOwner(),
-		];
+		// Property rules match on the record's own metadata, as on the object read.
+		$probe['@self'] = $object->getObjectArray();
 
 		$visible = $this->properties->filterReadableProperties(schema: $schema, object: $probe);
 

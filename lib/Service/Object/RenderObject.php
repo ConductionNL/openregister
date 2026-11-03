@@ -832,13 +832,7 @@ class RenderObject {
 					if ($doGated === true) {
 						// Note filterReadableProperties strips writeOnly first, then applies
 						// the group-authorization filter, so this covers both concerns.
-						$unfiltered = $object;
-						$object = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $object);
-						$this->withholdEntityCopies(
-							entity: $row,
-							schema: $schema,
-							removed: $this->removedProperties(before: $unfiltered, after: $object)
-						);
+						$object = $this->filterAuthorizedProperties(entity: $row, schema: $schema, objectData: $object);
 					} else {
 						// The writeOnly-only path (admin / `_rbac: false` / system context, or a
 						// schema with no property authorization): strip writeOnly unconditionally.
@@ -2638,23 +2632,15 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function filterAuthorizedProperties(ObjectEntity $entity, Schema $schema, array $objectData): array {
-		$objectDataWithSelf = $objectData;
-		$objectDataWithSelf['@self'] = $entity->getObjectArray();
-
-		$filtered = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $objectDataWithSelf);
+		$filtered = $entity->filterAsRecord(
+			data: $objectData,
+			filter: fn (array $probe): array => $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $probe)
+		);
 		$this->withholdEntityCopies(
 			entity: $entity,
 			schema: $schema,
-			removed: $this->removedProperties(before: $objectDataWithSelf, after: $filtered)
+			removed: $this->removedProperties(before: $objectData, after: $filtered)
 		);
-
-		if (array_key_exists('@self', $objectData) === true) {
-			$filtered['@self'] = $objectData['@self'];
-
-			return $filtered;
-		}
-
-		unset($filtered['@self']);
 
 		return $filtered;
 	}//end filterAuthorizedProperties()
