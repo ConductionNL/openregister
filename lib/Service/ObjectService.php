@@ -100,6 +100,7 @@ use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ReadOnlyTypeException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
@@ -110,6 +111,7 @@ use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use Psr\Log\LoggerInterface;
@@ -3457,6 +3459,10 @@ class ObjectService implements ObjectServiceInterface
      */
     private function rejectRefusedDelete(ObjectDeleteRequest $request, ?Schema $sourcedSchema): void
     {
+        if ($request->rbac === true || $request->multitenancy === true) {
+            $this->rejectSharedMasterDataDelete(register: $this->currentRegister, schema: $this->currentSchema);
+        }
+
         if ($sourcedSchema === null) {
             $this->rejectIfTransferred(uuid: $request->uuid, _rbac: $request->rbac, _multitenancy: $request->multitenancy);
         }
@@ -3487,6 +3493,39 @@ class ObjectService implements ObjectServiceInterface
             );
         }
     }//end rejectRefusedDelete()
+
+    /**
+     * Refuse a delete in a register or schema the caller's organisation only consumes.
+     *
+     * The organisation boundary answers a read question and lets a consumer of shared
+     * master data see the holder's rows. A delete is a write, as for a save.
+     *
+     * @param Register|null $register The register deleted from.
+     * @param Schema|null   $schema   The schema deleted from.
+     *
+     * @return void
+     *
+     * @throws SharedMasterDataWriteException When the caller's organisation only consumes either.
+     *
+     * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md
+     */
+    private function rejectSharedMasterDataDelete(?Register $register, ?Schema $schema): void
+    {
+        try {
+            $shared = $this->container->get(SharedMasterDataService::class);
+            $organisations = $this->organisationService->getUserActiveOrganisations();
+        } catch (\Throwable $e) {
+            // No resolvable organisation means no share can be consumed, as for a save.
+            return;
+        }
+
+        if ($shared instanceof SharedMasterDataService === false) {
+            return;
+        }
+
+        $shared->assertWritable(table: SharedMasterDataService::REGISTERS, id: $register?->getId(), activeOrgUuids: $organisations);
+        $shared->assertWritable(table: SharedMasterDataService::SCHEMAS, id: $schema?->getId(), activeOrgUuids: $organisations);
+    }//end rejectSharedMasterDataDelete()
 
     /**
      * Find the object to delete (soft-deleted rows included) and check the acting user may delete it.
@@ -6346,6 +6385,14 @@ class ObjectService implements ObjectServiceInterface
                 'error'   => 'OBJECT_NOT_PERMITTED',
                 'message' => 'Object is not visible to this user, or does not exist.',
             ];
+        }
+
+        if ($run['_rbac'] === true || $run['_multitenancy'] === true) {
+            try {
+                $this->rejectSharedMasterDataDelete(register: $scope['register'], schema: $gateSchema);
+            } catch (SharedMasterDataWriteException $sharedRefusal) {
+                return ['error' => 'OBJECT_NOT_PERMITTED', 'message' => $sharedRefusal->getMessage()];
+            }
         }
 
         if ($scope['draft'] === true) {
