@@ -15,8 +15,8 @@ caller's `update` right. The audit entry and the object's history SHALL name the
 
 It SHALL run only for a caller the schema grants it by name, through its authorization block or a matrix row (declared
 or provided by an app). When neither names it, nobody may run it, administrators included, also on a schema whose
-authorization block is empty. Owning the object SHALL NOT grant it: the owner may run it only when a rule or row grants
-it to them.
+authorization block is empty. Owning the object SHALL NOT grant it, also on a private-scope object: the owner and the owning group may run it only
+when a rule or row grants it to them.
 
 #### Scenario: A reader takes an unassigned object
 - **GIVEN** a schema that declares `claim` with `"selfAssign": {"field": "assignee"}` and grants `read` and `claim` to `team`
