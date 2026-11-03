@@ -313,7 +313,7 @@ export default {
 		},
 
 		/**
-		 * @param json
+		 * @param {string} json
 		 * @spec exclude client-side JSON validation helper
 		 */
 		validateJson(json) {
