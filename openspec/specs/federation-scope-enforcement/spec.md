@@ -21,7 +21,16 @@ whose scope field says "one object" and whose stored target is empty is
 malformed, and the only safe reading of a malformed grant is the narrow one.
 
 Shares of scope `register`, `schema` and `query` are unaffected: their breadth IS
-the grant, and confidentiality filtering remains their guard.
+the grant, and the organisation and confidentiality filter remains their guard, on
+the single-object read and on `PUT` and `DELETE` alike. A `query` share reaches by
+id only an object its query selects. A share without an organisation writes
+nothing and serves only objects that carry no organisation.
+
+The organisation filter compares the share's organisation with the record's own
+organisation field. A `@self.organisation` or an `organisation` property inside the
+object's stored data is data, not the record's organisation, and never answers it.
+A `query` share's own filter, including a `uuid` filter, is kept as it is when a
+single object is addressed; the addressed record is added as a further condition.
 
 #### Scenario: An object-scope token cannot read a different object
 
@@ -43,6 +52,43 @@ the grant, and confidentiality filtering remains their guard.
 - **WHEN** `PUT` or `DELETE` is called for an id the share does not name
 - **THEN** the response status MUST be `404`
 - **AND** no save or delete MUST reach the object store
+
+#### Scenario: A write only reaches an object the share could read
+
+- **GIVEN** an accepted outgoing share with `scope: schema` and `permissions: read-write` for organisation `org-a`
+- **WHEN** `PUT` or `DELETE` is called for an object of another organisation, for a confidential object, or for an id that does not exist
+- **THEN** the response status MUST be `404`
+- **AND** no save or delete MUST reach the object store
+- **AND** a `PUT` that does reach its object MUST store the share's organisation, whatever `@self.organisation` the body names
+
+#### Scenario: A query share reaches by id only what its query selects
+
+- **GIVEN** an accepted outgoing share with `scope: query`, a query filter and `permissions: read-write`
+- **WHEN** `GET`, `PUT` or `DELETE` is called for an id the query does not select
+- **THEN** the response status MUST be `404`
+- **AND** no save or delete MUST reach the object store
+
+#### Scenario: The organisation filter reads the record, not its data
+
+- **GIVEN** an accepted outgoing share with `scope: schema` and `permissions: read-write` for organisation `org-a`
+- **AND** a record of organisation `org-b` whose stored data holds `@self.organisation: org-a`, or a record without an organisation whose data holds `organisation: org-a`
+- **WHEN** `GET`, `PUT` or `DELETE` is called for that record, or the share's collection is listed
+- **THEN** the single-object calls MUST answer `404` and no save or delete MUST reach the object store
+- **AND** the collection MUST NOT contain the record
+
+#### Scenario: A query share's own uuid filter is kept
+
+- **GIVEN** an accepted outgoing share with `scope: query` and the query filter `uuid: obj-2`
+- **WHEN** `GET`, `PUT` or `DELETE` is called for `obj-1`
+- **THEN** the response status MUST be `404`
+- **AND** the query asked MUST still carry `uuid: obj-2`, narrowed to `obj-1`
+
+#### Scenario: A share without an organisation fails closed
+
+- **GIVEN** an accepted outgoing share whose organisation is null or empty
+- **WHEN** `POST`, `PUT` or `DELETE` is called
+- **THEN** the response status MUST be `403` and nothing MUST be written
+- **AND** a `GET` of an object that carries an organisation MUST answer `404`
 
 #### Scenario: An object-scope share with no objectUri grants nothing
 

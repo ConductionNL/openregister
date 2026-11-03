@@ -130,7 +130,7 @@ class BulkSafeguardSchemaResolutionTest extends TestCase {
 
 		$passed = $method->invokeArgs(
 			$this->service,
-			[$objects, null, $schema, true, false, &$result]
+			[$objects, null, $schema, ['rbac' => true, 'validation' => false], &$result]
 		);
 
 		return [$passed, $result];

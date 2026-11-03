@@ -244,6 +244,7 @@ final class ProcessingPurposeControllerTest extends TestCase {
 
 		$body = $this->controller(
 			$this->createMock(ProcessingPurposeMapper::class),
+			admin: true,
 			audit: $audit
 		)->report()->getData();
 

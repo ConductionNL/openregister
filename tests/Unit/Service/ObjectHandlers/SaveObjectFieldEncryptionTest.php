@@ -48,7 +48,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use stdClass;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
  * Testable Schema subclass exposing a controllable getSchemaObject().
@@ -106,7 +106,7 @@ class SaveObjectFieldEncryptionTest extends TestCase {
 		$this->computedFieldHandler = $this->createMock(ComputedFieldHandler::class);
 		$this->computedFieldHandler->method('hasComputedProperties')->willReturn(false);
 
-		$arrayLoader = new ArrayLoader([]);
+		$permissionHandler = $this->createMock(PermissionHandler::class);
 
 		$this->schema = new EncryptionTestableSchema();
 		$this->schema->setId(1);
@@ -141,7 +141,7 @@ class SaveObjectFieldEncryptionTest extends TestCase {
 			logger: $logger,
 			tmloService: $this->createMock(TmloService::class),
 			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			arrayLoader: $arrayLoader,
+			permissionHandler: $permissionHandler,
 			fieldEncryptionHandler: $fieldEncryptionHandler,
 		);
 

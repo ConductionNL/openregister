@@ -1651,6 +1651,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 				$this->validateMatchOperators(match: $rule['match'], action: $action, context: $context);
 			}
 
+			$this->validateCrossOrganisationMarker(rule: $rule, where: "for action '{$action}' in {$context}");
 			return;
 		}//end if
 
@@ -1659,6 +1660,27 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			message: "Authorization rule for action '{$action}' in {$context} must be a string or conditional object"
 		);
 	}//end validateAuthorizationRule()
+
+	/**
+	 * Refuse a `crossOrganisation` value that is not a boolean.
+	 *
+	 * @param array  $rule  The conditional rule.
+	 * @param string $where The action and block, for the message.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the marker is not a boolean.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	private function validateCrossOrganisationMarker(array $rule, string $where): void {
+		if (array_key_exists('crossOrganisation', $rule) === true && is_bool($rule['crossOrganisation']) === false) {
+			throw new InvalidAuthorizationRuleException(
+				message: "Authorization 'crossOrganisation' {$where} must be true or false;"
+					. ' set it to true only on a rule that may read other organisations\' rows'
+			);
+		}
+	}//end validateCrossOrganisationMarker()
 
 	/**
 	 * Refuse a match operator or operand the evaluators cannot handle (openregister#4089).

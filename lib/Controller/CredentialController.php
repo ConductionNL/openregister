@@ -382,7 +382,9 @@ class CredentialController extends Controller {
 
 		// Raw property bag (no `@self` envelope / `id`) — the update carries only
 		// metadata, never a secret (there is none in the object).
-		$data = $existing->getObject();
+		// The write goes to the row the guard checked, by its uuid, not by the identifier as sent.
+		$uuid  = (string) ($existing->getUuid() ?? $id);
+		$data  = $existing->getObject();
 		$scope = $this->scopeOf(data: $data);
 
 		$update = new CredentialUpdateRequest(request: $this->request);
@@ -401,7 +403,7 @@ class CredentialController extends Controller {
 		$rotated = $update->rotatedSecret();
 		if ($rotated !== null) {
 			try {
-				$this->credentialStore->put($id, $rotated, $scope);
+				$this->credentialStore->put($uuid, $rotated, $scope);
 			} catch (Throwable $e) {
 				$this->logger->error('[CredentialController] could not rotate a credential secret: ' . $e::class, ['credentialId' => $id]);
 
@@ -414,7 +416,7 @@ class CredentialController extends Controller {
 				object: $data,
 				register: CredentialBrokerService::REGISTER,
 				schema: CredentialBrokerService::SCHEMA,
-				uuid: $id
+				uuid: $uuid
 			);
 		} catch (Throwable $e) {
 			$this->logger->error('[CredentialController] could not save a credential update: ' . $e::class, ['credentialId' => $id]);
@@ -514,7 +516,7 @@ class CredentialController extends Controller {
 				object: $data,
 				register: CredentialBrokerService::REGISTER,
 				schema: CredentialBrokerService::SCHEMA,
-				uuid: $id
+				uuid: (string) ($existing->getUuid() ?? $id)
 			);
 		} catch (Throwable $e) {
 			return new JSONResponse(['message' => 'Unable to update shares'], Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -623,11 +625,12 @@ class CredentialController extends Controller {
 			return $existing;
 		}
 
+		$uuid  = (string) ($existing->getUuid() ?? $id);
 		$scope = $this->scopeOf(data: $existing->getObject());
 
 		try {
 			$this->objectService->deleteObject(
-				uuid: $id,
+				uuid: $uuid,
 				register: CredentialBrokerService::REGISTER,
 				schema: CredentialBrokerService::SCHEMA
 			);
@@ -635,7 +638,7 @@ class CredentialController extends Controller {
 			return new JSONResponse(['message' => 'Unable to delete credential'], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
-		$this->credentialStore->delete($id, $scope);
+		$this->credentialStore->delete($uuid, $scope);
 
 		return new JSONResponse(['message' => 'Deleted']);
 	}//end destroy()
