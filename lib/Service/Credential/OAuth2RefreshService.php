@@ -625,7 +625,7 @@ class OAuth2RefreshService {
 				object: array_merge($data, $metadata),
 				register: CredentialBrokerService::REGISTER,
 				schema: CredentialBrokerService::SCHEMA,
-				uuid: $credentialId,
+				uuid: ($existing->getUuid() ?? $credentialId),
 				_rbac: false,
 				_multitenancy: false
 			);

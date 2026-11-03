@@ -267,7 +267,7 @@ class DsarDpiaDetectionJob extends TimedJob {
 					object: $data,
 					register: CaseObjectAccessor::REGISTER_SLUG,
 					schema: CaseObjectAccessor::SCHEMA_SLUG,
-					uuid: $uuid,
+					uuid: ($entity->getUuid() ?? $uuid),
 					_rbac: false,
 					_multitenancy: false
 				);

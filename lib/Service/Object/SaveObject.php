@@ -3576,6 +3576,13 @@ class SaveObject {
 				_multitenancy: $_multitenancy
 			);
 
+			// An explicit uuid names the row of that uuid only. The lookup also
+			// matches ids, slugs and uris; a row found that way is another row,
+			// so the write is a create under the given uuid.
+			if (strcasecmp((string) $existingObject->getUuid(), $uuid) !== 0) {
+				return null;
+			}
+
 			// Check if object is locked - prevent updates on locked objects.
 			//
 			// This guard NEVER FIRED before the run-scoped-locking change. It

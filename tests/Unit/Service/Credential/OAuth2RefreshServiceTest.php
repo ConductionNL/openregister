@@ -78,6 +78,26 @@ class OAuth2RefreshServiceTest extends TestCase {
 		$this->announcements = [];
 	}
 
+	public function testTheMetadataIsWrittenOnTheFoundRowByItsUuid(): void {
+		$existing = new ObjectEntity();
+		$existing->setUuid('cred-uuid');
+		$existing->setObject($this->credential());
+		$written = [];
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('find')->willReturn($existing);
+		$objectService->method('saveObject')->willReturnCallback(
+			function (...$args) use (&$written): ObjectEntity {
+				$written[] = ($args['uuid'] ?? $args[4] ?? null);
+				return new ObjectEntity();
+			}
+		);
+
+		$set = OAuth2TokenSet::fromStoredJson(stored: $this->tokenSetJson(expiresIn: 3600));
+		$this->makeService(objectService: $objectService)->persist(credentialId: 'cred-slug', scope: 'personal', set: $set);
+
+		$this->assertSame(['cred-uuid'], $written);
+	}
+
 	public function testATokenInsideItsMarginCausesNoTokenRequest(): void {
 		$this->vault['cred-1'] = $this->tokenSetJson(expiresIn: 3600);
 		$service = $this->makeService(response: ['access_token' => 'SHOULD_NOT_BE_USED']);

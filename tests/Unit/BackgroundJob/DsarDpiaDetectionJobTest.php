@@ -150,6 +150,39 @@ class DsarDpiaDetectionJobTest extends TestCase {
 	}//end testThresholdCrossingFlagsUnflaggedCasesWithAudit()
 
 	/**
+	 * A flag is written on the row the lookup found, by that row's uuid.
+	 *
+	 * @return void
+	 */
+	public function testTheFlagIsWrittenOnTheFoundRowByItsUuid(): void {
+		$this->wirePack(dpiaDetection: ['threshold' => 2, 'windowDays' => 30, 'groupBy' => ['type']]);
+		$this->wireCases([$this->renderedCase(uuid: 'a', flagged: false), $this->renderedCase(uuid: 'b', flagged: false)]);
+
+		$written = [];
+		$this->objectService->method('find')->willReturnCallback(
+			function ($id) {
+				$entity = new ObjectEntity();
+				$entity->setUuid('stored-'.$id);
+				$entity->setObject(['type' => 'access', 'dpiaRequired' => false]);
+				return $entity;
+			}
+		);
+		$this->objectService->method('saveObject')->willReturnCallback(
+			static function ($object, $extend = [], $register = null, $schema = null, $uuid = null) use (&$written) {
+				$written[] = $uuid;
+				$saved = new ObjectEntity();
+				$saved->setUuid((string)$uuid);
+				return $saved;
+			}
+		);
+		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturn($this->createMock(\OCA\OpenRegister\Db\AuditTrail::class));
+
+		$this->runJob();
+
+		$this->assertEqualsCanonicalizing(['stored-a', 'stored-b'], $written);
+	}//end testTheFlagIsWrittenOnTheFoundRowByItsUuid()
+
+	/**
 	 * Re-run over a fully-flagged group: no write, no audit (idempotent),
 	 * and the manual flag is never cleared (ratchet).
 	 *

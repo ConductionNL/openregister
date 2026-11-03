@@ -57,6 +57,13 @@ class ReadableDeletionAnalysisTest extends TestCase {
 	 */
 	private bool $readFails = false;
 
+	/**
+	 * Identifiers the caller's read answers with ANOTHER readable object (whose slug, id or uri equals it).
+	 *
+	 * @var array<string, string>
+	 */
+	private array $collisions = [];
+
 	private function redaction(): ReadableDeletionAnalysis {
 		$mapper = $this->createMock(MagicMapper::class);
 		$mapper->method('find')->willReturnCallback(
@@ -64,6 +71,12 @@ class ReadableDeletionAnalysisTest extends TestCase {
 				$this->reads[] = [$identifier, $register, $schema, $includeDeleted, $_rbac, $_multitenancy];
 				if ($this->readFails === true) {
 					throw new \RuntimeException('database gone');
+				}
+
+				if (isset($this->collisions[$identifier]) === true) {
+					$other = new ObjectEntity();
+					$other->setUuid($this->collisions[$identifier]);
+					return $other;
 				}
 
 				if (in_array($identifier, $this->readable, true) === false) {
@@ -200,6 +213,22 @@ class ReadableDeletionAnalysisTest extends TestCase {
 		$this->redaction()->analysisFor(analysis: $analysis);
 
 		$this->assertSame([['theirs-1', null, null, false, true, true], ['mine-1', null, null, false, true, true]], $this->reads);
+	}
+
+	public function testAReadableObjectWhoseSlugIsAnUnreadableUuidDoesNotRevealIt(): void {
+		$this->collisions['theirs-1'] = 'mine-1';
+
+		$out = $this->redaction()->analysisFor(analysis: new DeletionAnalysis(deletable: false, blockers: [self::blocker(uuid: 'theirs-1', schema: '7')]));
+
+		$this->assertSame([['objectUuid' => '', 'schema' => '7', 'action' => 'RESTRICT', 'reason' => 'not readable', 'count' => 1]], $out->blockers);
+	}
+
+	public function testAReadIsMatchedOnTheUuidWhateverItsCase(): void {
+		$this->collisions['mine-9'] = 'MINE-9';
+
+		$out = $this->redaction()->analysisFor(analysis: new DeletionAnalysis(deletable: false, blockers: [self::blocker(uuid: 'mine-9', schema: '7')]));
+
+		$this->assertSame([self::blocker(uuid: 'mine-9', schema: '7')], $out->blockers);
 	}
 
 	public function testAReadThatFailsHidesTheObject(): void {
