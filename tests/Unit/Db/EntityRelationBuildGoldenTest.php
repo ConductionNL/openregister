@@ -28,7 +28,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Db\EntityRelationMapper
  * @uses \OCA\OpenRegister\Db\EntityRelation
  *
- * @spec openspec/specs/entity-relations/spec.md
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 class EntityRelationBuildGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/entity-relation-build-golden.json';

@@ -34,6 +34,8 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunService
  * @uses \OCA\OpenRegister\Service\Flow\FlowStateBinding
  * @uses \OCA\OpenRegister\Service\Flow\FlowStateHandle
+ * @uses \OCA\OpenRegister\Service\Flow\FlowResumeState
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStepHistory
  */
 class ObjectActionSecretsTest extends TestCase {
 

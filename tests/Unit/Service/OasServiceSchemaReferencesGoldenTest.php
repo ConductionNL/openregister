@@ -27,6 +27,8 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Oas\OasValidationReport
  *
  * @spec openspec/specs/oas-validation/spec.md
+ * @uses \OCA\OpenRegister\Service\Oas\OasRbacAnnotator
+ * @uses \OCA\OpenRegister\Service\Rbac\EffectiveAuthorization
  */
 class OasServiceSchemaReferencesGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/oas-schema-references-golden.json';

@@ -54,6 +54,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealChangeMask
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class ExplicitRevealAuditTrailTest extends TestCase {
 

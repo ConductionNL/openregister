@@ -90,6 +90,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class ExampleSetMockRegisterImportTest extends ExampleSetTestCase {
 	/** @var array<string, string> Registers on the fake instance, slug to version. */

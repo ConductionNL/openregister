@@ -30,6 +30,8 @@ use stdClass;
  * @uses \OCA\OpenRegister\Service\Object\NotSuppliedHandler
  *
  * @spec openspec/specs/object-validation/spec.md
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Formats\UserFormat
  */
 class ValidateObjectPreparedSchemaTest extends TestCase {
 

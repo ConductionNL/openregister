@@ -29,6 +29,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Object\ValidateObject
  *
  * @spec openspec/specs/object-validation/spec.md
+ * @uses \OCA\OpenRegister\Formats\UserFormat
  */
 class ValidateObjectValueFilterGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/validate-object-value-filter-golden.json';

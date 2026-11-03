@@ -68,6 +68,7 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  *
  * @spec openspec/changes/bulk-writes-fire-save-events/specs/object-lifecycle/spec.md
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\BulkObjectSlugs
  */
 class BulkWriteEventsTest extends TestCase {
 

@@ -53,6 +53,29 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Schema
  *
  * @spec openspec/changes/create-over-taken-identifier-runs-update-path/specs/object-lifecycle/spec.md
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicNumberColumn
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicNumberColumnSizes
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableHandler
+ * @uses \OCA\OpenRegister\Event\ObjectCreatingEvent
+ * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
+ * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
+ * @uses \OCA\OpenRegister\Exception\HookStoppedException
+ * @uses \OCA\OpenRegister\Exception\ObjectExistsException
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Service\Object\ObjectEventGate
+ * @uses \OCA\OpenRegister\Service\Query\PropertyReadGuard
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowAccess
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\WritePhaseProbe
  */
 class MagicMapperRefusedCreateComposedTest extends TestCase {
 

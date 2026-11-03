@@ -58,6 +58,7 @@ use OCP\Lock\ILockingProvider;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter
  */
 class ExampleSetOneRunAtATimeTest extends ExampleSetTestCase {
 	protected function setUp(): void {

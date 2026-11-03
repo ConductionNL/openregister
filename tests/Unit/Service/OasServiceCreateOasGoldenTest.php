@@ -31,6 +31,11 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Oas\OasRbacAnnotator
  *
  * @spec openspec/specs/oas-generation/spec.md
+ * @uses \OCA\OpenRegister\Exception\OasValidationException
+ * @uses \OCA\OpenRegister\Service\Authorization\RbacGroupCollector
+ * @uses \OCA\OpenRegister\Service\Rbac\AggregateVisibility
+ * @uses \OCA\OpenRegister\Service\Rbac\EffectiveAuthorization
+ * @uses \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator
  */
 class OasServiceCreateOasGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/oas-create-oas-golden.json';
