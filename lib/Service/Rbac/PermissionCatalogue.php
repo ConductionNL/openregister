@@ -168,6 +168,10 @@ class PermissionCatalogue {
 		// feature could be declared nowhere. SchemaMapper::validateRevealAudit()
 		// still checks its shape (only on a property with a read rule).
 		RevealCollector::AUDIT_KEY,
+		// `reveal: explicit` on a PROPERTY's block keeps the value masked until
+		// a read asks for it (ExplicitReveal). A flag, like `audit` above;
+		// Schema::validateRevealValue() checks its value.
+		ExplicitReveal::KEY,
 	];
 
 	/**

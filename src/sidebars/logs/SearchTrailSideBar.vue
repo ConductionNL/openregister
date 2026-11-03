@@ -835,7 +835,7 @@ export default {
 			try {
 				await searchTrailStore.refreshSearchTrailList()
 				this.updateFilteredCount()
-			} catch (error) {
+			} catch {
 				// Handle error silently
 			}
 		},

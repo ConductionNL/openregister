@@ -757,7 +757,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Form-field binding — sets the webhook name.
 		 */
 		updateName(value) {
@@ -768,7 +768,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Form-field binding — sets the webhook URL.
 		 */
 		updateUrl(value) {
@@ -779,7 +779,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {object|null} value
 		 * @spec exclude Form-field binding — sets the HTTP method.
 		 */
 		updateMethod(value) {
@@ -791,7 +791,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {boolean} value
 		 * @spec exclude Form-field binding — sets the enabled flag.
 		 */
 		updateEnabled(value) {
@@ -802,7 +802,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {object|string|null} value
 		 * @spec exclude Form-field binding — sets the subscribed event and resets event property.
 		 */
 		updateEvent(value) {
@@ -826,7 +826,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {object|null} value
 		 * @spec exclude Form-field binding — sets the selected event property.
 		 */
 		updateEventProperty(value) {
@@ -841,7 +841,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {boolean} value
 		 * @spec exclude Form-field binding — sets the sendCloudEvent configuration flag.
 		 */
 		updateSendCloudEvent(value) {
@@ -856,7 +856,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {boolean} value
 		 * @spec exclude Form-field binding — sets the waitForResponse configuration flag.
 		 */
 		updateWaitForResponse(value) {
@@ -871,7 +871,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {boolean} value
 		 * @spec exclude Form-field binding — sets the allowPrivateTargets configuration flag.
 		 */
 		updateAllowPrivateTargets(value) {
@@ -948,7 +948,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {object|null} value
 		 * @spec exclude Form-field binding — sets the retry policy.
 		 */
 		updateRetryPolicy(value) {
@@ -960,7 +960,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string|number} value
 		 * @spec exclude Form-field binding — sets the max-retries count.
 		 */
 		updateMaxRetries(value) {
@@ -971,7 +971,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string|number} value
 		 * @spec exclude Form-field binding — sets the request timeout.
 		 */
 		updateTimeout(value) {
@@ -982,7 +982,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Form-field binding — sets the webhook secret.
 		 */
 		updateSecret(value) {
@@ -993,7 +993,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Form-field binding — parses header text into a headers object.
 		 */
 		updateHeaders(value) {
@@ -1013,7 +1013,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Form-field binding — parses filter text into a filters object.
 		 */
 		updateFilters(value) {
@@ -1067,7 +1067,7 @@ export default {
 		},
 
 		/**
-		 * @param _query
+		 * @param {string} _query
 		 * @spec exclude UI event handler — no-op search hook (NcSelect filters internally).
 		 */
 		searchEvents(_query) {

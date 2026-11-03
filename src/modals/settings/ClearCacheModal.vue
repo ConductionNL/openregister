@@ -124,7 +124,7 @@ export default {
 
 	watch: {
 		/**
-		 * @param newValue
+		 * @param {string} newValue
 		 * @spec exclude watcher syncing local cache-type from prop
 		 */
 		cacheType(newValue) {
@@ -132,7 +132,7 @@ export default {
 		},
 
 		/**
-		 * @param newValue
+		 * @param {string} newValue
 		 * @spec exclude watcher emitting cache-type change
 		 */
 		localCacheType(newValue) {

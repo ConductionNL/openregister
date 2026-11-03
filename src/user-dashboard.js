@@ -3,7 +3,7 @@
  *
  * Mounts a Vue app inside the NC global dashboard tile created by
  * `OCA\OpenRegister\Dashboard\IntegrationDashboardWidget` (the "umbrella"
- * widget). The mounted app delegates to {@see CnIntegrationWidgetGrid}
+ * widget). The mounted app delegates to `CnIntegrationWidgetGrid`
  * with `surface="user-dashboard"`, which iterates the pluggable
  * integration registry and mounts each leaf's `user-dashboard` widget
  * via the registry's AD-19 fallback rule.

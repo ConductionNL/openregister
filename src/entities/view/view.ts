@@ -12,6 +12,7 @@ import type { ZodSafeParseResult } from 'zod'
 import type { TView } from './view.types'
 
 import { z } from 'zod'
+import { QUOTA_SCHEMA, USAGE_SCHEMA } from '../quotaUsage.js'
 import { COPY, NO_QUOTA, NO_USAGE, withFallbacks } from '../withFallbacks.js'
 
 const FALLBACKS = {
@@ -29,6 +30,22 @@ const FALLBACKS = {
 	created: '',
 	updated: '',
 }
+
+const VIEW_SCHEMA = z.object({
+	id: z.number().optional(),
+	uuid: z.string().optional(),
+	name: z.string().min(1, 'View name is required'),
+	description: z.string().optional(),
+	owner: z.string().optional(),
+	isPublic: z.boolean().optional(),
+	isDefault: z.boolean().optional(),
+	query: z.record(z.string(), z.any()).optional(),
+	favoredBy: z.array(z.string()).optional(),
+	quota: QUOTA_SCHEMA,
+	usage: USAGE_SCHEMA,
+	created: z.string().optional(),
+	updated: z.string().optional(),
+})
 
 export class View implements TView {
 	public id?: number
@@ -54,38 +71,6 @@ export class View implements TView {
 	}
 
 	public validate(): ZodSafeParseResult<unknown> {
-		const schema = z.object({
-			id: z.number().optional(),
-			uuid: z.string().optional(),
-			name: z.string().min(1, 'View name is required'),
-			description: z.string().optional(),
-			owner: z.string().optional(),
-			isPublic: z.boolean().optional(),
-			isDefault: z.boolean().optional(),
-			query: z.record(z.string(), z.any()).optional(),
-			favoredBy: z.array(z.string()).optional(),
-			quota: z
-				.object({
-					storage: z.number().nullable().optional(),
-					bandwidth: z.number().nullable().optional(),
-					requests: z.number().nullable().optional(),
-					users: z.number().nullable().optional(),
-					groups: z.number().nullable().optional(),
-				})
-				.optional(),
-			usage: z
-				.object({
-					storage: z.number().optional(),
-					bandwidth: z.number().optional(),
-					requests: z.number().optional(),
-					users: z.number().optional(),
-					groups: z.number().optional(),
-				})
-				.optional(),
-			created: z.string().optional(),
-			updated: z.string().optional(),
-		})
-
-		return schema.safeParse(this)
+		return VIEW_SCHEMA.safeParse(this)
 	}
 }
