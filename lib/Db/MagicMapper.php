@@ -8853,7 +8853,11 @@ class MagicMapper extends AbstractObjectMapper {
 			throw $refusal;
 		}
 
+		// A write of the same uuid can run nested inside another's events: each
+		// write carries only its own refusal, and hands back the outer one after.
 		$uuid = (string)$entity->getUuid();
+		$outerRefusal = ($this->liveRowOnlyWrites[$uuid] ?? null);
+		unset($this->liveRowOnlyWrites[$uuid]);
 		if ($refusal !== null) {
 			$this->liveRowOnlyWrites[$uuid] = $refusal;
 		}
@@ -8867,6 +8871,9 @@ class MagicMapper extends AbstractObjectMapper {
 			);
 		} finally {
 			unset($this->liveRowOnlyWrites[$uuid]);
+			if ($outerRefusal !== null) {
+				$this->liveRowOnlyWrites[$uuid] = $outerRefusal;
+			}
 		}
 
 		$this->replacedByLastInsert = ($stored ?? clone $entity);
