@@ -1693,7 +1693,7 @@ class AuditTrailMapper extends QBMapper {
 	/**
 	 * Revert an object to a previous state
 	 *
-	 * @param string|int $identifier Object ID, UUID, or URI
+	 * @param ObjectEntity|string|int $identifier The object itself, or its ID, UUID or URI to look it up by
 	 * @param DateTime|string|null $until DateTime or AuditTrail ID to revert to
 	 * @param bool $overwriteVersion Whether to overwrite the version or increment it
 	 *
@@ -1705,9 +1705,12 @@ class AuditTrailMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Controls version handling strategy on revert
 	 */
 	public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity {
-		// Get the current object (lazy-resolved to avoid circular DI).
-		$objectMapper = $this->container->get(MagicMapper::class);
-		$object = $objectMapper->find($identifier);
+		// A caller that already checked the object passes it, so it is not looked up again.
+		$object = $identifier;
+		if ($object instanceof ObjectEntity === false) {
+			// Lazy-resolved to avoid circular DI.
+			$object = $this->container->get(MagicMapper::class)->find($identifier);
+		}
 
 		// Get audit trail entries until the specified point.
 		$auditTrails = $this->findByObjectUntil(

@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCA\OpenRegister\Service\ObjectService;
@@ -260,7 +261,6 @@ class FederationController extends Controller {
 			return new JSONResponse(data: ['error' => 'Could not read shared objects'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
-		$objects = $this->normalize(objects: $objects);
 		$objects = $this->applyShareVisibility(objects: $objects, share: $share);
 
 		return new JSONResponse(data: ['results' => $objects, 'total' => count($objects)]);
@@ -513,7 +513,7 @@ class FederationController extends Controller {
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function reachableObject(FederatedShare $share, string $id): ?array {
-		if ($this->scopeCoversObject(share: $share, id: $id) === false || $this->queryCoversObject(share: $share, id: $id) === false) {
+		if ($this->scopeCoversObject(share: $share, id: $id) === false) {
 			return null;
 		}
 
@@ -529,39 +529,47 @@ class FederationController extends Controller {
 			return null;
 		}
 
-		if ($entity === null) {
+		if ($entity === null || $this->queryCoversObject(share: $share, entity: $entity) === false) {
 			return null;
 		}
 
-		return ($this->applyShareVisibility(objects: [$entity->jsonSerialize()], share: $share)[0] ?? null);
+		return ($this->applyShareVisibility(objects: [$entity], share: $share)[0] ?? null);
 	}//end reachableObject()
 
 	/**
-	 * Whether a query-scope share's filter selects the single object being addressed.
+	 * Whether a query-scope share's filter selects the record being addressed.
 	 *
 	 * The collection path serves only what the share's query selects; the
-	 * single-object paths ask the same query, narrowed to this id. Other
-	 * scopes have no query and are covered.
+	 * single-object paths ask the same query, unchanged, narrowed to this
+	 * record's uuid through `ids`, and accept only a hit on that same uuid
+	 * (`ids` also matches slugs). Other scopes have no query and are covered.
 	 *
-	 * @param FederatedShare $share The share being served.
-	 * @param string         $id    The object id/uuid taken from the URL.
+	 * @param FederatedShare $share  The share being served.
+	 * @param ObjectEntity   $entity The record the URL id resolved to.
 	 *
-	 * @return boolean Whether the share's query selects this object.
+	 * @return boolean Whether the share's query selects this record.
 	 *
 	 * @throws Throwable When the lookup itself fails.
 	 */
-	private function queryCoversObject(FederatedShare $share, string $id): bool {
+	private function queryCoversObject(FederatedShare $share, ObjectEntity $entity): bool {
 		if ($share->getScope() !== 'query') {
 			return true;
 		}
 
+		$uuid = (string)$entity->getUuid();
 		$config = $this->buildScopeConfig(share: $share);
-		$config['filters']['uuid'] = $id;
-		$config['limit'] = 1;
+		$config['ids'] = [$uuid];
+		$config['limit'] = 10;
 
 		$this->setServeContext(share: $share);
 
-		return $this->objectService->findAll(config: $config, _rbac: false, _multitenancy: false) !== [];
+		foreach ($this->objectService->findAll(config: $config, _rbac: false, _multitenancy: false) as $hit) {
+			if ($uuid !== '' && $hit instanceof ObjectEntity === true && $hit->getUuid() === $uuid) {
+				return true;
+			}
+		}
+
+		return false;
 	}//end queryCoversObject()
 
 	/**
@@ -757,68 +765,44 @@ class FederationController extends Controller {
 	}//end setServeContext()
 
 	/**
-	 * Normalise a findAll result to plain arrays (entities → jsonSerialize).
+	 * The records a share may serve, rendered.
 	 *
-	 * @param array<int, mixed> $objects The raw findAll result.
+	 * Organisation guard: a record is served only when its own organisation
+	 * field equals the share's (both empty counts as equal, so a share without
+	 * an organisation serves only records without one). The rendered
+	 * `@self.organisation` is not used: `jsonSerialize()` lets a data
+	 * `@self.organisation` override the record's, and a plain data
+	 * `organisation` property is not record metadata at all. Anything that is
+	 * not a record is not served.
 	 *
-	 * @return array<int, array<string, mixed>> The rendered arrays.
-	 */
-	private function normalize(array $objects): array {
-		return array_map(
-			static function ($object) {
-				if (is_array($object) === true) {
-					return $object;
-				}
-
-				if ($object instanceof \JsonSerializable) {
-					return (array)$object->jsonSerialize();
-				}
-
-				return (array)$object;
-			},
-			$objects
-		);
-	}//end normalize()
-
-	/**
-	 * Enforce confidentiality visibility for the share scope.
+	 * Confidentiality guard: register/schema/query shares never serve an object
+	 * marked confidential; object-scope shares serve exactly the one object the
+	 * sharer chose.
 	 *
-	 * Object-scope shares serve exactly the granted object (the sharer chose it).
-	 * Register/schema/query shares never leak an object marked confidential.
+	 * @param array<int, mixed> $objects The records found.
+	 * @param FederatedShare    $share   The share being served.
 	 *
-	 * @param array<int, array<string, mixed>> $objects The rendered objects.
-	 * @param FederatedShare $share The share being served.
-	 *
-	 * @return array<int, array<string, mixed>> The visible objects.
+	 * @return array<int, array<string, mixed>> The visible records, rendered.
 	 */
 	private function applyShareVisibility(array $objects, FederatedShare $share): array {
-		$org = $share->getOrganisation();
+		$org = (string)$share->getOrganisation();
+		$visible = [];
+		foreach ($objects as $object) {
+			if ($object instanceof ObjectEntity === false || (string)$object->getOrganisation() !== $org) {
+				continue;
+			}
 
-		return array_values(
-			array_filter(
-				$objects,
-				function (array $object) use ($share, $org) {
-					// Organisation guard: never serve another org's objects. A share
-					// without an organisation serves only objects without one.
-					$self = ($object['@self'] ?? []);
-					$objOrg = (string)($self['organisation'] ?? $object['organisation'] ?? '');
-					if ($objOrg !== (string)$org) {
-						return false;
-					}
+			$rendered = $object->jsonSerialize();
+			if ($share->getScope() !== 'object'
+				&& in_array($this->readConfidentiality(object: $rendered), self::PUBLIC_CONFIDENTIALITY, true) === false
+			) {
+				continue;
+			}
 
-					// Confidentiality guard for non-object scopes (object shares
-					// serve exactly the one object the sharer chose).
-					if ($share->getScope() !== 'object') {
-						$confidentiality = $this->readConfidentiality(object: $object);
-						if (in_array($confidentiality, self::PUBLIC_CONFIDENTIALITY, true) === false) {
-							return false;
-						}
-					}
+			$visible[] = $rendered;
+		}
 
-					return true;
-				}
-			)
-		);
+		return $visible;
 	}//end applyShareVisibility()
 
 	/**

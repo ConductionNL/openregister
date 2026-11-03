@@ -95,7 +95,7 @@ An API endpoint MUST allow exporting audit trail entries in JSON or CSV format f
 
 ### Requirement: The system MUST provide a CRUD REST surface over the dedicated verwerkingsactiviteiten catalog
 
-Beyond the audit-trail-derived read views, the system MUST expose `VerwerkingsactiviteitenController` as a REST CRUD surface over the dedicated `oc_openregister_verwerkingsactiviteiten` table (distinct from the audit-trail aggregation), reachable under `/api/avg/processing-activities`. `index` MUST list activities with optional `status` and `organisation` query filters, returning `{count, results}`. `show` MUST resolve a path identifier that may be a numeric id, a uuid, or a short readable code, returning HTTP 404 when nothing matches. `create` and `update` MUST hydrate the string fields (`code`, `name`, `description`, `purpose`, `legalBasis`, `retentionPeriod`, `technicalMeasures`, `organisationalMeasures`, `organisationId`, `status`) and array fields (`dataSubjectCategories`, `personalDataCategories`, `recipients`, `internationalTransfers`, `controller`, `dpoContactDetails`) from the payload, returning HTTP 201 on create and HTTP 422 on `InvalidArgumentException`. `destroy` MUST NOT hard-delete — it MUST set `status = 'archived'` and persist, returning HTTP 204, because audit-trail rows reference activities by uuid as a soft foreign key. Create, update, and destroy MUST be restricted to members of the Nextcloud `admin` group (HTTP 403 otherwise); list and show MUST be available to any authenticated user, within the organisations they belong to; the accountability report is scoped as its own requirement states.
+Beyond the audit-trail-derived read views, the system MUST expose `VerwerkingsactiviteitenController` as a REST CRUD surface over the dedicated `oc_openregister_verwerkingsactiviteiten` table (distinct from the audit-trail aggregation), reachable under `/api/avg/processing-activities`. `index` MUST list activities with optional `status` and `organisation` query filters, returning `{count, results}`. `show` MUST resolve a path identifier that may be a numeric id, a uuid, or a short readable code, returning HTTP 404 when nothing matches. `create` and `update` MUST hydrate the string fields (`code`, `name`, `description`, `purpose`, `legalBasis`, `retentionPeriod`, `technicalMeasures`, `organisationalMeasures`, `organisationId`, `status`) and array fields (`dataSubjectCategories`, `personalDataCategories`, `recipients`, `internationalTransfers`, `controller`, `dpoContactDetails`) from the payload, returning HTTP 201 on create and HTTP 422 on `InvalidArgumentException`. `destroy` MUST NOT hard-delete — it MUST set `status = 'archived'` and persist, returning HTTP 204, because audit-trail rows reference activities by uuid as a soft foreign key. Create, update, and destroy MUST be restricted to members of the Nextcloud `admin` group (HTTP 403 otherwise); list and show MUST be available to any authenticated user, within their active organisation: a non-admin MUST be given only the activities whose `organisationId` is their active organisation, an `organisation` query parameter MUST NOT widen that, an activity without an `organisationId` MUST NOT be given to a non-admin, and a non-admin without an active organisation MUST be given an empty list and HTTP 404 on show; a member of the `admin` group MUST be given every activity. The accountability report is scoped as its own requirement states.
 
 #### Scenario: List with status filter
 - **WHEN** `GET /api/avg/processing-activities?status=published` is requested
@@ -107,6 +107,18 @@ Beyond the audit-trail-derived read views, the system MUST expose `Verwerkingsac
 - **WHEN** `show` is called with the numeric id, the uuid, or the code
 - **THEN** each form MUST resolve to the same activity
 - **AND** an unmatched identifier MUST return HTTP 404 with `{error, identifier}`
+
+#### Scenario: A non-admin sees their active organisation's activities only
+- **GIVEN** activities of organisations `A` and `B`, and a non-admin member of both whose active organisation is `A`
+- **WHEN** they list the activities, or read one of `B` by id, uuid or code
+- **THEN** the list holds only the activities of `A`, and the read of `B`'s activity is HTTP 404
+- @e2e exclude {asserted in tests/Unit/Controller/ProcessingActivitiesScopeTest.php}
+
+#### Scenario: A non-admin without an active organisation sees no activity
+- **GIVEN** a non-admin with no active organisation
+- **WHEN** they list the activities or read one
+- **THEN** the list is `{count: 0, results: []}` and the read is HTTP 404
+- @e2e exclude {asserted in tests/Unit/Controller/ProcessingActivitiesScopeTest.php}
 
 #### Scenario: Writes are admin-gated
 - **GIVEN** a non-admin authenticated user

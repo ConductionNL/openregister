@@ -10,12 +10,11 @@
  *
  * Authorization rules:
  *
- *   - List + show: any authenticated user, within the organisations they
- *     belong to. AVG Art 30 §4 requires the verwerkingsregister to be
- *     available to supervisory authorities and indirectly to data subjects
- *     via access requests, so read paths intentionally don't gate on admin.
- *   - Accountability: any authenticated user, within their active
- *     organisation; administrators see every activity.
+ *   - List, show and accountability: any authenticated user, within their
+ *     active organisation; administrators see every activity. AVG Art 30 §4
+ *     requires the verwerkingsregister to be available to supervisory
+ *     authorities and indirectly to data subjects via access requests, so
+ *     read paths intentionally don't gate on admin.
  *   - Create / update / delete: admin-only. Operators maintain the
  *     catalog; misconfigurations directly affect compliance.
  *
@@ -94,9 +93,8 @@ class VerwerkingsactiviteitenController extends Controller {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function index(): JSONResponse {
-		// SECURITY (#1825): the processing register is tenant-scoped.
-		// Non-admins only see activities bound to their own
-		// organisation(s); admins see the full catalog.
+		// The processing register is tenant-scoped: a non-admin sees the
+		// activities of their active organisation, an admin the full catalog.
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return $this->unauthorized();
@@ -105,7 +103,7 @@ class VerwerkingsactiviteitenController extends Controller {
 		$isAdmin = $this->isAdmin();
 		$accessibleOrgs = [];
 		if ($isAdmin === false) {
-			$accessibleOrgs = $this->accessibleOrganisationUuids();
+			$accessibleOrgs = $this->activeOrganisationUuids();
 			if ($accessibleOrgs === []) {
 				return new JSONResponse(data: ['count' => 0, 'results' => []]);
 			}
@@ -161,7 +159,7 @@ class VerwerkingsactiviteitenController extends Controller {
 
 		$accessibleOrgs = [];
 		if ($isAdmin === false) {
-			$accessibleOrgs = $this->accessibleOrganisationUuids();
+			$accessibleOrgs = $this->activeOrganisationUuids();
 		}
 
 		// SECURITY (#1825): hide cross-tenant activities from non-admins.
@@ -519,27 +517,6 @@ class VerwerkingsactiviteitenController extends Controller {
 		);
 
 	}//end isAdmin()
-
-	/**
-	 * Organisation UUIDs the active user is allowed to see.
-	 *
-	 * Returns the organisation UUIDs the current (non-admin) user
-	 * belongs to. Admins are not scoped (callers should branch on
-	 * `isAdmin()` first). An empty list means deny-all.
-	 *
-	 * @return array<int, string> Accessible organisation UUIDs.
-	 */
-	private function accessibleOrganisationUuids(): array {
-		$uuids = [];
-		foreach ($this->organisationService->getUserOrganisations() as $organisation) {
-			$uuid = (string)$organisation->getUuid();
-			if ($uuid !== '') {
-				$uuids[] = $uuid;
-			}
-		}
-
-		return array_values(array_unique($uuids));
-	}//end accessibleOrganisationUuids()
 
 	/**
 	 * The active organisation of the current user, as a list of at most one uuid.

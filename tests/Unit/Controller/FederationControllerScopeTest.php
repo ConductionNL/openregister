@@ -48,6 +48,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Controller\FederationController
  * @uses \OCA\OpenRegister\Db\FederatedShare
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class FederationControllerScopeTest extends TestCase {
 
@@ -146,7 +147,8 @@ class FederationControllerScopeTest extends TestCase {
 	public function testTheGrantedObjectIsStillServed(): void {
 		$entity = new ObjectEntity();
 		$entity->setUuid('granted-1');
-		$entity->setObject(['title' => 'The granted case', '@self' => ['organisation' => 'org-a']]);
+		$entity->setOrganisation('org-a');
+		$entity->setObject(['title' => 'The granted case']);
 
 		$this->shareMapper->method('findByToken')->willReturn($this->objectScopeShare());
 		$this->objectService->expects($this->once())->method('find')->willReturn($entity);
@@ -217,7 +219,8 @@ class FederationControllerScopeTest extends TestCase {
 
 		$entity = new ObjectEntity();
 		$entity->setUuid('any-object');
-		$entity->setObject(['confidentiality' => 'openbaar', '@self' => ['organisation' => 'org-a']]);
+		$entity->setOrganisation('org-a');
+		$entity->setObject(['confidentiality' => 'openbaar']);
 
 		$this->shareMapper->method('findByToken')->willReturn($share);
 		$this->objectService->expects($this->once())->method('find')->willReturn($entity);

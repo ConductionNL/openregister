@@ -192,11 +192,10 @@ class RevertHandler {
 			throw ObjectStateWriteException::frozen($object);
 		}
 
-		// Get the reverted object using AuditTrailMapper.
-		// By the uuid of the object just checked: the trail looks its identifier up
-		// again, where the URL id could name another row.
+		// Get the reverted object using AuditTrailMapper, from the object just checked:
+		// looked up again, the URL id could name another row.
 		$revertedObject = $this->auditTrailMapper->revertObject(
-			identifier: ($object->getUuid() ?? $id),
+			identifier: $object,
 			until: $until,
 			overwriteVersion: $overwriteVersion
 		);

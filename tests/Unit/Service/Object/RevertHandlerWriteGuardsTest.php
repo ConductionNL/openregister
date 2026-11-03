@@ -171,17 +171,17 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 	}//end testRevertWritesARevertAuditRow()
 
 	/**
-	 * The audit trail is asked about the object the revert checked, by its uuid, not by the URL id.
+	 * The audit trail is handed the object the revert checked, not the URL id to look up again.
 	 *
 	 * @return void
 	 */
-	public function testTheTrailIsAskedByTheUuidOfTheCheckedObject(): void {
+	public function testTheTrailIsHandedTheCheckedObject(): void {
 		$this->validator->method('validateObject')->willReturn($this->valid());
 		$this->magic->method('update')->willReturnArgument(0);
-		$this->audit->expects($this->once())->method('revertObject')->with(self::OBJ, '1.0.1', false);
+		$this->audit->expects($this->once())->method('revertObject')->with($this->identicalTo($this->current), '1.0.1', false);
 
 		$this->handler()->revert(register: '5', schema: '7', id: '11', until: '1.0.1');
-	}//end testTheTrailIsAskedByTheUuidOfTheCheckedObject()
+	}//end testTheTrailIsHandedTheCheckedObject()
 
 	/**
 	 * With audit trails switched off, the revert writes no row, as a save does not.
