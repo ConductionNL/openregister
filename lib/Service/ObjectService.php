@@ -2430,7 +2430,10 @@ class ObjectService implements ObjectServiceInterface
      * return belongs to another organisation, and the write would change it.
      * A row the read rules hide but the organisation filter returns is left to
      * the update rule, as before. Skipped when the write does not keep to the
-     * caller's organisations (an administrator, a job).
+     * caller's organisations (an administrator, a job), and on an append-only
+     * schema: guardWriteTarget() refuses every write onto a stored row there,
+     * visible or not, with one message, and a second refusal here would tell
+     * the caller which rows belong to another organisation.
      *
      * @param string $uuid          The uuid of the stored row the caller cannot read.
      * @param bool   $_multitenancy Whether the write keeps to the caller's organisations.
@@ -2443,7 +2446,7 @@ class ObjectService implements ObjectServiceInterface
      */
     private function refuseAnotherOrganisationsRow(string $uuid, bool $_multitenancy): void
     {
-        if ($_multitenancy === false) {
+        if ($_multitenancy === false || $this->currentSchema?->isAppendOnly() === true) {
             return;
         }
 
