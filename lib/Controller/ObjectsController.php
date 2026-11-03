@@ -4769,12 +4769,16 @@ class ObjectsController extends Controller {
 			$objectService->setRegister(register: $register);
 			$objectService->setSchema(schema: $schema);
 
+			// Read in the caller's own scope, as the delete itself reads it: an
+			// object the caller may not read is a 404, not an analysis of what
+			// refers to it.
+			$scoped = ($this->isCurrentUserAdmin() === false);
 			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 				id: $id,
 				register: $register,
 				schema: $schema,
-				_rbac: false,
-				_multitenancy: false
+				_rbac: $scoped,
+				_multitenancy: $scoped
 			));
 			if ($objectEntity === null) {
 				return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
