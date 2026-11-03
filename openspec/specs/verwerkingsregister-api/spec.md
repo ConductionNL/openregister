@@ -95,7 +95,7 @@ An API endpoint MUST allow exporting audit trail entries in JSON or CSV format f
 
 ### Requirement: The system MUST provide a CRUD REST surface over the dedicated verwerkingsactiviteiten catalog
 
-Beyond the audit-trail-derived read views, the system MUST expose `VerwerkingsactiviteitenController` as a REST CRUD surface over the dedicated `oc_openregister_verwerkingsactiviteiten` table (distinct from the audit-trail aggregation), reachable under `/api/avg/processing-activities`. `index` MUST list activities with optional `status` and `organisation` query filters, returning `{count, results}`. `show` MUST resolve a path identifier that may be a numeric id, a uuid, or a short readable code, returning HTTP 404 when nothing matches. `create` and `update` MUST hydrate the string fields (`code`, `name`, `description`, `purpose`, `legalBasis`, `retentionPeriod`, `technicalMeasures`, `organisationalMeasures`, `organisationId`, `status`) and array fields (`dataSubjectCategories`, `personalDataCategories`, `recipients`, `internationalTransfers`, `controller`, `dpoContactDetails`) from the payload, returning HTTP 201 on create and HTTP 422 on `InvalidArgumentException`. `destroy` MUST NOT hard-delete — it MUST set `status = 'archived'` and persist, returning HTTP 204, because audit-trail rows reference activities by uuid as a soft foreign key. Create, update, and destroy MUST be restricted to members of the Nextcloud `admin` group (HTTP 403 otherwise); list, show, and the accountability report MUST be available to any authenticated user.
+Beyond the audit-trail-derived read views, the system MUST expose `VerwerkingsactiviteitenController` as a REST CRUD surface over the dedicated `oc_openregister_verwerkingsactiviteiten` table (distinct from the audit-trail aggregation), reachable under `/api/avg/processing-activities`. `index` MUST list activities with optional `status` and `organisation` query filters, returning `{count, results}`. `show` MUST resolve a path identifier that may be a numeric id, a uuid, or a short readable code, returning HTTP 404 when nothing matches. `create` and `update` MUST hydrate the string fields (`code`, `name`, `description`, `purpose`, `legalBasis`, `retentionPeriod`, `technicalMeasures`, `organisationalMeasures`, `organisationId`, `status`) and array fields (`dataSubjectCategories`, `personalDataCategories`, `recipients`, `internationalTransfers`, `controller`, `dpoContactDetails`) from the payload, returning HTTP 201 on create and HTTP 422 on `InvalidArgumentException`. `destroy` MUST NOT hard-delete — it MUST set `status = 'archived'` and persist, returning HTTP 204, because audit-trail rows reference activities by uuid as a soft foreign key. Create, update, and destroy MUST be restricted to members of the Nextcloud `admin` group (HTTP 403 otherwise); list and show MUST be available to any authenticated user, within the organisations they belong to; the accountability report is scoped as its own requirement states.
 
 #### Scenario: List with status filter
 - **WHEN** `GET /api/avg/processing-activities?status=published` is requested
@@ -124,6 +124,26 @@ Beyond the audit-trail-derived read views, the system MUST expose `Verwerkingsac
 ### Requirement: The system MUST provide an Art 30 §4 accountability report aggregating audit events per processing activity
 
 `VerwerkingsactiviteitenController::verantwoording` MUST return an accountability report suitable for AP supervisory review, reachable under `/api/avg/accountability`: every verwerkingsactiviteit joined with the count of audit-trail rows attributed to it via `processing_activity_id`, broken down per `action`. The aggregation MUST query `openregister_audit_trails` grouped by `processing_activity_id` and `action`, scoped to the activities' uuids. The response MUST be `{count, activities}` where each activity entry is its serialized form plus an `activity` block `{totalEvents, byAction}`. Activities with no audit rows MUST report `{totalEvents: 0, byAction: []}`. A query failure during aggregation MUST degrade to empty counts rather than failing the whole report.
+
+The report MUST answer within the caller's organisation. Audit rows carry no reliable organisation, so the scope MUST be taken from the activities: a non-admin caller MUST be given only the activities whose `organisationId` is their active organisation, and audit rows MUST be counted only for those activities. An activity without an `organisationId` MUST NOT be given to a non-admin. A non-admin without an active organisation MUST be given `{count: 0, activities: []}` and no audit row MUST be counted. A member of the `admin` group MUST be given every activity and its counts. An anonymous caller MUST receive HTTP 401.
+
+#### Scenario: A non-admin gets their active organisation's activities
+- **GIVEN** activities of organisations `A` and `B`, and a non-admin member of both whose active organisation is `A`
+- **WHEN** they request the accountability report
+- **THEN** the report lists only the activities of `A`, and the audit rows are counted for those activities only
+- @e2e exclude {asserted in tests/Unit/Controller/AccountabilityReportScopeTest.php}
+
+#### Scenario: A non-admin without an active organisation gets nothing
+- **GIVEN** a non-admin with no active organisation
+- **WHEN** they request the accountability report
+- **THEN** the response is `{count: 0, activities: []}` and no audit row is counted
+- @e2e exclude {asserted in tests/Unit/Controller/AccountabilityReportScopeTest.php}
+
+#### Scenario: An administrator gets every activity
+- **GIVEN** a member of the `admin` group
+- **WHEN** they request the accountability report
+- **THEN** every activity is listed with its counts, as before
+- @e2e exclude {golden recorded on the previous code in tests/Unit/Controller/AccountabilityReportScopeTest.php}
 
 #### Scenario: Report aggregates audit counts per action
 - **GIVEN** activity `A` (uuid `u1`) has 3 `create`, 2 `update`, and 5 `read` audit rows
