@@ -1516,9 +1516,9 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * The record as an access rule's `match` reads it: its data, with `@self` set from its own metadata.
 	 *
 	 * A rule on `_owner`, `_organisation`, `_schema` or another underscore-prefixed
-	 * field reads `@self` first and the body key of that name second. Both of those
-	 * can come from whoever wrote the data, so the data's own `@self` is replaced and
-	 * the body keys that name a metadata field are dropped: the record answers for
+	 * field reads `@self`, and an object without `@self` the body key of that name.
+	 * Both can come from whoever wrote the data, so the data's own `@self` is replaced
+	 * and the body keys that name a metadata field are dropped: the record answers for
 	 * its metadata, also when a field is empty.
 	 *
 	 * @return array<int|string, mixed>
@@ -1536,6 +1536,36 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 
 		return $envelope;
 	}//end getMatchEnvelope()
+
+	/**
+	 * Run a property filter over data, with the rules reading this record's own metadata.
+	 *
+	 * The filter sees the data with `@self` set from the record, so a rule on
+	 * `_organisation` or `_owner` is not answered by a `@self` the data carries.
+	 * The result carries the data's own `@self` again, or none when it had none.
+	 *
+	 * @param array<int|string, mixed>                                       $data   The data to filter.
+	 * @param callable(array<int|string, mixed>): array<int|string, mixed> $filter The property filter.
+	 *
+	 * @return array<int|string, mixed> The filtered data.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	public function filterAsRecord(array $data, callable $filter): array {
+		$probe = $data;
+		$probe['@self'] = $this->getObjectArray();
+
+		$filtered = $filter($probe);
+		if (array_key_exists('@self', $data) === true) {
+			$filtered['@self'] = $data['@self'];
+
+			return $filtered;
+		}
+
+		unset($filtered['@self']);
+
+		return $filtered;
+	}//end filterAsRecord()
 
 	/**
 	 * Merge the transient, render-layer-populated `@self` fields: fuzzy
