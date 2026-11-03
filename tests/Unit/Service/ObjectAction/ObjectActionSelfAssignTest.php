@@ -18,12 +18,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectAction;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\MatrixRowsRequestedEvent;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
+use OCP\IDBConnection;
+use ReflectionMethod;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
@@ -76,6 +80,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 	private const GROUPS = [
 		'anna' => ['team'],
 		'bram' => ['others'],
+		'root' => ['admin'],
 	];
 
 	/**
@@ -176,7 +181,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 		$schemas = $this->createMock(SchemaMapper::class);
 		$schemas->method('find')->willReturn($schema);
 		$config = $this->createMock(IAppConfig::class);
-		$config->method('getValueBool')->willReturn(true);
+		$config->method('getValueBool')->willReturnCallback(static fn (string $app, string $key, bool $default = false): bool => $default);
 		$dispatcher = $this->createMock(IEventDispatcher::class);
 		$dispatcher->method('dispatchTyped')->willReturnCallback(
 			function (object $event): void {
@@ -370,6 +375,33 @@ class ObjectActionSelfAssignTest extends TestCase {
 	}//end testWithoutAGrantNobodyMayRunIt()
 
 	/**
+	 * An administrator is not granted an action nobody was granted, by a run or by `canRun()`.
+	 *
+	 * @return void
+	 */
+	public function testAnAdministratorIsNotGrantedAnUngrantedAction(): void {
+		$this->uid = 'root';
+		$schema = self::schema(authorization: ['read' => ['team']]);
+
+		$answer = $this->take(schema: $schema, object: self::object(assignee: null));
+
+		[$permissions, $session] = $this->permissions(schema: $schema);
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
+		$list = new ObjectActionList(
+			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
+			new ObjectActionGate($permissions, $session, $l10n),
+			new ObjectActionInputs(new OasRequestValidator()),
+			$this->createMock(TransitionEngine::class),
+			$l10n
+		);
+
+		$this->assertTrue($permissions->hasPermission(schema: $schema, action: self::ACTION, userId: 'root'), 'the control: an administrator passes the rules');
+		$this->assertSame(403, $answer['status']);
+		$this->assertSame([self::ACTION => false], $list->canRun(object: self::object(assignee: null), schema: $schema));
+	}//end testAnAdministratorIsNotGrantedAnUngrantedAction()
+
+	/**
 	 * A declared matrix row grants the action to the caller whose value matches.
 	 *
 	 * @return void
@@ -539,5 +571,33 @@ class ObjectActionSelfAssignTest extends TestCase {
 		$this->assertSame(['Row 0 names the action "grab", which is not one this engine resolves.'], $codes);
 		$this->assertCount(2, $plain, 'without the declaration, "take" is unknown too');
 	}//end testAMatrixRowMayNameOnlyDeclaredActions()
+
+	/**
+	 * The schema save accepts a matrix row naming the schema's declared action, and refuses another name.
+	 *
+	 * @return void
+	 */
+	public function testTheSchemaSaveReadsTheDeclaredActionsIntoTheMatrixCheck(): void {
+		$mapper = new SchemaMapper(
+			$this->createMock(IDBConnection::class),
+			$this->createMock(IEventDispatcher::class),
+			$this->createMock(PropertyValidatorHandler::class),
+			$this->createMock(OrganisationMapper::class),
+			$this->createMock(IUserSession::class),
+			$this->createMock(IGroupManager::class),
+			$this->createMock(IAppConfig::class),
+			new NullLogger()
+		);
+		$validate = new ReflectionMethod(SchemaMapper::class, 'validateDepartmentMatrix');
+		$matrix = static fn (string $action): array => [
+			'read' => ['team'],
+			'matrix' => ['field' => 'group', 'userSource' => ['groups' => true], 'rows' => [['group' => 'team', 'value' => '$self', 'actions' => [$action]]]],
+		];
+
+		$validate->invoke($mapper, self::schema(authorization: $matrix(self::ACTION)));
+
+		$this->expectExceptionMessageMatches('/names the action "grab"/');
+		$validate->invoke($mapper, self::schema(authorization: $matrix('grab')));
+	}//end testTheSchemaSaveReadsTheDeclaredActionsIntoTheMatrixCheck()
 
 }//end class
