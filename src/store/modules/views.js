@@ -158,8 +158,8 @@ async function presentationOf(path) {
  */
 function kanbanQuery(params) {
 	const query = new URLSearchParams()
-	if (params._limit != null) query.set('_limit', params._limit)
-	if (params._offset != null) query.set('_offset', params._offset)
+	if (params._limit !== null && params._limit !== undefined) query.set('_limit', params._limit)
+	if (params._offset !== null && params._offset !== undefined) query.set('_offset', params._offset)
 	const qs = query.toString()
 	return qs ? `?${qs}` : ''
 }

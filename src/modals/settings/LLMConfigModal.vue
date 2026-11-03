@@ -1366,7 +1366,7 @@ export default {
 					// Keep fallback list if API returns empty or fails
 					// Using fallback model list
 				}
-			} catch (error) {
+			} catch {
 				// Silently fail and keep using the hardcoded fallback list
 				// Error fetching Ollama models, using fallback
 			} finally {

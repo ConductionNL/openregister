@@ -602,7 +602,7 @@ export default {
 				)
 
 				// Debug logging removed for production
-			} catch (error) {
+			} catch {
 				// Debug logging removed for production
 				// Assume no tokens if check fails
 				this.hasGithubToken = false

@@ -745,7 +745,7 @@ export default {
 				})
 				// Clear selection when page changes
 				this.selectedItems = []
-			} catch (error) {
+			} catch {
 				// Handle error silently
 			}
 		},

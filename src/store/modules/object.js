@@ -56,7 +56,7 @@ const LIST_OPTION_PARAMS = [
 function listParams(filters, options) {
 	const params = { ...filters }
 	for (const [option, param] of LIST_OPTION_PARAMS) {
-		if (options[option] != null) params[param] = options[option]
+		if (options[option] !== null && options[option] !== undefined) params[param] = options[option]
 	}
 	return params
 }
@@ -201,7 +201,7 @@ function openregisterObjectPlugin() {
 				return listAnswer(results, this.getPagination(type))
 			},
 
-			setObjectItem(item, _skipRefresh = false) {
+			setObjectItem(item) {
 				this.objectItem = item || false
 			},
 
@@ -234,10 +234,9 @@ function openregisterObjectPlugin() {
 			// becomes available. The new schema-aware property store
 			// handles this elsewhere; a no-op keeps the call site safe.
 			/**
-			 * @param {object} _schema Unused — kept for call-site compatibility
 			 * @spec exclude Intentional no-op compatibility stub — keeps stale call sites safe; behaviour moved into the schema-aware property store.
 			 */
-			initializeProperties(_schema) {
+			initializeProperties() {
 				// Intentionally empty.
 			},
 		},

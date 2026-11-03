@@ -168,7 +168,7 @@ export default {
 						(v) => typeof v === 'string',
 					)
 					if (values.length > 0) return values[0]
-				} catch (e) {
+				} catch {
 					// not JSON — fall through to the raw value
 				}
 			}

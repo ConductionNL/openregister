@@ -2293,7 +2293,7 @@ export default {
 				this.isInternalUpdate = true
 				const parsed = JSON.parse(this.jsonData)
 				this.formData = parsed
-			} catch (e) {
+			} catch {
 				this.error = 'Invalid JSON format'
 			} finally {
 				this.$nextTick(() => {
@@ -2331,7 +2331,7 @@ export default {
 			try {
 				JSON.parse(str)
 				return true
-			} catch (e) {
+			} catch {
 				return false
 			}
 		},
@@ -2345,7 +2345,7 @@ export default {
 					const parsed = JSON.parse(this.jsonData)
 					this.jsonData = JSON.stringify(parsed, null, 2)
 				}
-			} catch (e) {
+			} catch {
 				// Keep invalid JSON as-is
 			}
 		},
@@ -2745,7 +2745,7 @@ export default {
 				// For objects and arrays, return JSON string
 				try {
 					return JSON.stringify(value)
-				} catch (e) {
+				} catch {
 					return String(value)
 				}
 			}

@@ -290,7 +290,9 @@ export default {
 				.then((data) => {
 					this.success = !!data
 					this.error = false
-					data && setTimeout(this.closeModal, 2000)
+					if (data) {
+						setTimeout(this.closeModal, 2000)
+					}
 				})
 				.catch((error) => {
 					this.success = false
@@ -318,7 +320,7 @@ export default {
 			try {
 				JSON.parse(json)
 				return true
-			} catch (error) {
+			} catch {
 				return false
 			}
 		},

@@ -100,7 +100,7 @@ export default {
 				)
 				this.activities = [...this.activities, ...(data.results || [])]
 				this.total = data.total || 0
-			} catch (e) {
+			} catch {
 				// Silently handle.
 			} finally {
 				this.loading = false

@@ -1221,7 +1221,7 @@ export default {
 				return
 			}
 
-			let confirmMessage = ''
+			let confirmMessage
 			if (hardDelete) {
 				if (activeObjects > 0 && deletedObjects > 0) {
 					confirmMessage = t(

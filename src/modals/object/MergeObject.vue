@@ -972,7 +972,7 @@ export default {
 				return 'N/A'
 			}
 
-			let displayText = ''
+			let displayText
 			if (typeof value === 'object') {
 				displayText = JSON.stringify(value, null, 2)
 			} else {

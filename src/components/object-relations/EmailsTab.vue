@@ -242,7 +242,7 @@ export default {
 				}
 
 				return d.toLocaleString()
-			} catch (e) {
+			} catch {
 				return value
 			}
 		},

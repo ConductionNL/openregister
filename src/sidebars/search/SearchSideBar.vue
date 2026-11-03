@@ -1382,7 +1382,7 @@ export default {
 					total: objectStore.pagination.total || 0,
 					time: executionTime,
 				}
-			} catch (error) {
+			} catch {
 				// Search failed - error is handled by setting lastSearchStats to defaults
 				this.lastSearchStats = {
 					total: 0,
