@@ -1,4 +1,5 @@
 import type { ZodSafeParseResult } from 'zod'
+import type { TQuota, TUsage } from '../quotaUsage.types'
 import type { TOrganisation } from './organisation.types'
 
 import { z } from 'zod'
@@ -104,21 +105,8 @@ export class Organisation implements TOrganisation {
 	public owner?: string
 	public parent?: string | null
 	public children?: string[]
-	public quota?: {
-		storage?: number | null
-		bandwidth?: number | null
-		requests?: number | null
-		users?: number | null
-		groups?: number | null
-	}
-
-	public usage?: {
-		storage?: number
-		bandwidth?: number
-		requests?: number
-		users?: number
-		groups?: number
-	}
+	public quota?: TQuota
+	public usage?: TUsage
 
 	public authorization?: TOrganisation['authorization']
 	public created?: string
