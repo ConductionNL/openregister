@@ -548,6 +548,23 @@ class SchemasControllerTest extends TestCase {
 	}//end testAnUploadWithAnExternalGrantIsRefused()
 
 	/**
+	 * An upload meets the external-grant refusal in the JSON text form too.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function testAnUploadWithAnExternalGrantAsJsonTextIsRefused(): void {
+		$schema = $this->managedSchema(read: [self::PLAIN_RULE]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn([]);
+		$this->uploadService->method('getUploadedJson')->willReturn(
+			['title' => 'Existing', 'authorization' => (string)json_encode(['read' => [['group' => 'ghost', 'external' => true]]])]
+		);
+		$this->schemaMapper->expects($this->never())->method('update');
+
+		$this->assertSame(400, $this->controller->uploadUpdate(1)->getStatus());
+	}//end testAnUploadWithAnExternalGrantAsJsonTextIsRefused()
+
+	/**
 	 * A schema whose `manage` rule names the signed-in user's group.
 	 *
 	 * @param array<int, mixed> $read The read rules.
