@@ -4466,8 +4466,9 @@ class ObjectService implements ObjectServiceInterface
      * The multitenancy flag a paginated search runs with.
      *
      * A current schema whose read rule lists `public` is visible to every
-     * organisation, so multitenancy is switched off for it, unless the caller
-     * is signed in and the schema does not inherit public rights.
+     * organisation for an anonymous caller and an admin, so multitenancy is
+     * switched off for them. A signed-in caller keeps it and reads other
+     * organisations only through rules marked `crossOrganisation: true`.
      *
      * @param bool $multitenancy The caller's multitenancy flag.
      *

@@ -48,6 +48,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Serializer\RegisterSerializer
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
  */
 class RegistersControllerIndexGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/registers-index-golden.json';
