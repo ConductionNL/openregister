@@ -484,6 +484,7 @@ class ConditionMatcher {
 	 * @return string|null The active organisation UUID or null
 	 *
 	 * @spec openspec/specs/actions/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	private function getActiveOrganisationUuid(): ?string {
 		// Keyed by the subject, because the subject can change within a request:

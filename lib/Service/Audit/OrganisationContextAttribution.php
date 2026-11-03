@@ -43,6 +43,7 @@ class OrganisationContextAttribution {
 	 * @return void
 	 *
 	 * @spec openspec/changes/act-for-an-organisation/specs/rbac-scopes/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	public function apply(AuditTrail $auditTrail): void {
 		$organisationUuid = OrganisationContext::current();

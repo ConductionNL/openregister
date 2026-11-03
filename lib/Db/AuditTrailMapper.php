@@ -179,23 +179,7 @@ class AuditTrailMapper extends QBMapper {
 		// It must happen before the row is INSERTED, not merely before it is
 		// sealed: the sweep seals whatever is in the row, so a field added
 		// after insert would be outside the hash it is later given.
-		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
-
-		// The purpose the caller declared for the read that produced this row.
-		// Applied here as well as in buildAuditTrail() for the same reason the
-		// flow attribution is, and before the INSERT for the same reason again:
-		// the sealed half of it lives in `resultSummary`, which is inside the
-		// canonical JSON.
-		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
-
-		// Which token, whose, and for which consumer. Applied here as well as
-		// in buildAuditTrail() for the same reason the two above are, and
-		// before the INSERT for the same reason again: the sealed half lives in
-		// `resultSummary`, which is inside the canonical JSON.
-		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
-
-		// The organisation an organisation context acted for, sealed for the same reason.
-		(new OrganisationContextAttribution())->apply(auditTrail: $auditTrail);
+		$this->applyAttributions(auditTrail: $auditTrail);
 
 		$inserted = $this->insert(entity: $auditTrail);
 
@@ -203,6 +187,33 @@ class AuditTrailMapper extends QBMapper {
 
 		return $inserted;
 	}//end insertHashChained()
+
+	/**
+	 * Stamp what caused a row onto it, before it is inserted.
+	 *
+	 * - Flow attribution: which run, node and step caused this write.
+	 * - Purpose (doelbinding): the purpose the caller declared for the read
+	 *   that produced this row.
+	 * - Token: which token, whose, and for which consumer.
+	 * - Organisation context: the organisation code acted for.
+	 *
+	 * The purpose, token and organisation context halves live in
+	 * `resultSummary`, which is inside the canonical JSON, so this MUST run
+	 * before the row is inserted. Re-applying to a row already stamped is
+	 * idempotent: it reads the same ambient frames and writes the same values.
+	 *
+	 * @param AuditTrail $auditTrail The row being built.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/act-for-an-organisation/specs/rbac-scopes/spec.md
+	 */
+	private function applyAttributions(AuditTrail $auditTrail): void {
+		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
+		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+		(new OrganisationContextAttribution())->apply(auditTrail: $auditTrail);
+	}//end applyAttributions()
 
 	/**
 	 * Set the request-scoped import-job UUID stamped on all
@@ -1088,27 +1099,12 @@ class AuditTrailMapper extends QBMapper {
 		$auditTrail->setCause($frame['cause']);
 		$auditTrail->setCauseRun($frame['run']);
 
-		// Flow attribution — which run, node and step caused this write.
-		// Applied HERE, in the shared builder, and not in the two insert
-		// methods: `insertAuditTrails()` (the batched path) builds its rows
-		// through this same method, and stamping the inserts instead would have
-		// left every bulk write in a flow silently unattributed.
-		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
-
-		// Doelbinding attribution, applied in the shared builder for the same
-		// reason the flow attribution is: `insertAuditTrails()` builds its rows
-		// here, and stamping only the inserts would leave every bulk write
-		// silently unattributed to the purpose it ran under.
-		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
-
-		// Token attribution, applied in the shared builder for the same reason
-		// the two above are: `insertAuditTrails()` builds its rows here, so
-		// stamping only the inserts would leave every bulk write by a koppeling
-		// unable to say which koppeling made it.
-		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
-
-		// The organisation an organisation context acted for, sealed for the same reason.
-		(new OrganisationContextAttribution())->apply(auditTrail: $auditTrail);
+		// Flow, purpose, token and organisation context attribution. Applied
+		// HERE, in the shared builder, and not only in the two insert methods:
+		// `insertAuditTrails()` (the batched path) builds its rows through this
+		// same method, and stamping the inserts instead would have left every
+		// bulk write silently unattributed.
+		$this->applyAttributions(auditTrail: $auditTrail);
 
 		// Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
 		$serializedSize = strlen(serialize($objectEntity->jsonSerialize()));

@@ -1376,6 +1376,7 @@ class MagicSearchHandler {
 	 * @return bool True when the organisation filter must be emitted.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flags are the request posture, mirrored.
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	private function multitenancyApplies(
 		Schema $schema,
@@ -2772,6 +2773,7 @@ class MagicSearchHandler {
 	 * @return bool Resolved multitenancy flag
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-when-inheritfrompublic-is-false-authenticated-users-must-not-qualify-for-public-rules
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	private function resolveMultitenancyFlag(
 		bool $_multitenancy,

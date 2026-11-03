@@ -508,6 +508,7 @@ class OrganisationService {
 	 * @return Organisation|null The active organisation or null.
 	 *
 	 * @spec openspec/specs/saas-multi-tenant/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	public function getActiveOrganisation(?array $preloadedOrgs = null): ?Organisation {
 		// Code acting for an organisation answers with that organisation,

@@ -214,6 +214,7 @@ class MagicOrganizationHandler {
 	 *   which has carried these three suppressions since it was written. The
 	 *   branches are the tenancy rule itself (system context, admin, bypass,
 	 *   SaaS, active-org set) and collapsing them would hide it.
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	public function resolveOrganizationScope(
 		bool $adminBypassEnabled = false,
@@ -243,19 +244,8 @@ class MagicOrganizationHandler {
 			$isAdmin = in_array('admin', $userGroups, true);
 		}
 
-		if ($adminBypassEnabled === true && $isAdmin === true) {
-			// In SaaS mode, never bypass the organisation boundary.
-			$saasMode = $this->isSaasModeEnabled();
-			if ($saasMode === true) {
-				$this->logger->debug(
-					message: '[MagicOrganizationHandler] SaaS mode active — admin bypass disabled for org boundary',
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-
-			if ($saasMode !== true) {
-				return ['mode' => self::SCOPE_ALL, 'uuids' => []];
-			}
+		if ($adminBypassEnabled === true && $isAdmin === true && $this->adminBypassAllowed() === true) {
+			return ['mode' => self::SCOPE_ALL, 'uuids' => []];
 		}
 
 		$activeOrgUuids = $this->getActiveOrganizationUuids();
@@ -328,6 +318,25 @@ class MagicOrganizationHandler {
 			'uuids' => array_values(array_unique(array_merge($orgUuids, $sharedHolders))),
 		];
 	}//end contextOrganizationScope()
+
+	/**
+	 * Whether an admin with the bypass enabled may read every organisation.
+	 *
+	 * In SaaS mode the organisation boundary is never bypassed.
+	 *
+	 * @return bool True outside SaaS mode.
+	 */
+	private function adminBypassAllowed(): bool {
+		if ($this->isSaasModeEnabled() === true) {
+			$this->logger->debug(
+				message: '[MagicOrganizationHandler] SaaS mode active — admin bypass disabled for org boundary',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return false;
+		}
+
+		return true;
+	}//end adminBypassAllowed()
 
 	/**
 	 * The holder organisations whose rows in ONE register+schema pair the caller may read.
