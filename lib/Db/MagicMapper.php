@@ -320,6 +320,18 @@ class MagicMapper extends AbstractObjectMapper {
 	private ?ObjectEntity $replacedByLastInsert = null;
 
 	/**
+	 * Writes that may only land on a live row, by uuid, with the refusal to throw when they cannot.
+	 *
+	 * A refused create that is carried out as an update of the stored row may not
+	 * bring a deleted object back, also when the delete lands after the check, for
+	 * instance in an ObjectUpdatingEvent listener. While a uuid is listed here, the
+	 * table write updates only a row whose `_deleted` is empty and never inserts.
+	 *
+	 * @var array<string, HookStoppedException>
+	 */
+	private array $liveRowOnlyWrites = [];
+
+	/**
 	 * Number of magic tables probed per UNION ALL query in the locate phase.
 	 *
 	 * `findAcrossAllMagicTables` used to issue one `SELECT *` per magic table,
@@ -5437,6 +5449,12 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @return int The generated `_id` of the inserted row.
 	 */
 	private function insertObjectInRegisterSchemaTable(array $data, string $tableName): int {
+		// A write that may only land on a live row never inserts: the row it was meant for is gone.
+		$refusal = ($this->liveRowOnlyWrites[(string)($data[self::METADATA_PREFIX . 'uuid'] ?? '')] ?? null);
+		if ($refusal !== null) {
+			throw $refusal;
+		}
+
 		$qb = $this->db->getQueryBuilder();
 		$qb->insert($tableName);
 
@@ -5514,6 +5532,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param string      $tableName      The table name
 	 * @param string|null $onlyFromStatus When set, the row is only changed while its stored `_status` is this (compare-and-swap).
 	 *
+	 * @throws HookStoppedException When the write may only land on a live row and the row is deleted.
 	 * @throws Exception If update fails
 	 *
 	 * @return int The number of rows changed.
@@ -5540,7 +5559,17 @@ class MagicMapper extends AbstractObjectMapper {
 			$qb->andWhere($qb->expr()->eq(self::METADATA_PREFIX . 'status', $qb->createNamedParameter($onlyFromStatus)));
 		}
 
-		return (int)$qb->executeStatement();
+		$liveOnly = ($this->liveRowOnlyWrites[$uuid] ?? null);
+		if ($liveOnly !== null) {
+			$qb->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
+		}
+
+		$changed = (int)$qb->executeStatement();
+		if ($liveOnly !== null && $changed === 0) {
+			throw $liveOnly;
+		}
+
+		return $changed;
 	}//end updateObjectInRegisterSchemaTable()
 
 	/**
@@ -8824,12 +8853,21 @@ class MagicMapper extends AbstractObjectMapper {
 			throw $refusal;
 		}
 
-		$updated = $this->updateObjectEntity(
-			entity: $entity,
-			register: $target['register'],
-			schema: $target['schema'],
-			oldEntity: $stored
-		);
+		$uuid = (string)$entity->getUuid();
+		if ($refusal !== null) {
+			$this->liveRowOnlyWrites[$uuid] = $refusal;
+		}
+
+		try {
+			$updated = $this->updateObjectEntity(
+				entity: $entity,
+				register: $target['register'],
+				schema: $target['schema'],
+				oldEntity: $stored
+			);
+		} finally {
+			unset($this->liveRowOnlyWrites[$uuid]);
+		}
 
 		$this->replacedByLastInsert = ($stored ?? clone $entity);
 		return (string)$updated->getUuid();
