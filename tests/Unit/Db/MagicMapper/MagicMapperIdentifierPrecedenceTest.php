@@ -92,6 +92,14 @@ class MagicMapperIdentifierPrecedenceTest extends TestCase {
 		$this->assertSame($byUuid, $this->pick([$byUuid, $byId], 1));
 	}
 
+	public function testTwoUuidHoldersInDifferentCaseStayAmbiguous(): void {
+		$uuid = '123e4567-e89b-12d3-a456-426614174000';
+		$lower = $this->row(3, $uuid, null);
+		$upper = $this->row(4, strtoupper($uuid), null);
+
+		$this->assertNull($this->pick([$lower, $upper], $uuid));
+	}
+
 	public function testANumericUuidAndASlugStillPickTheUuid(): void {
 		$byUuid = $this->row(9, '1', null);
 		$bySlug = $this->row(4, 'cccc', '1');
