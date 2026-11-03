@@ -74,9 +74,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers"
-    },
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/registers",
     "body": {
      "mode": "raw",
      "raw": "{\"title\": \"frozen-delete-{{run}}\", \"slug\": \"frozen-delete-{{run}}\"}"
@@ -112,9 +110,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
-    },
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
     "body": {
      "mode": "raw",
      "raw": "{\"title\": \"frozen-delete-{{run}}\", \"slug\": \"frozen-delete-{{run}}\", \"properties\": {\"title\": {\"type\": \"string\"}}}"
@@ -150,9 +146,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
-    },
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}",
     "body": {
      "mode": "raw",
      "raw": "{\"title\": \"frozen-delete-{{run}}\", \"slug\": \"frozen-delete-{{run}}\", \"schemas\": [\"{{schemaId}}\"]}"
@@ -187,9 +181,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
-    },
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
     "body": {
      "mode": "raw",
      "raw": "{\"title\": \"levering\"}"
@@ -226,9 +218,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/freeze"
-    },
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/freeze",
     "body": {
      "mode": "raw",
      "raw": "{\"reason\": \"Account manager lock\"}"
@@ -263,9 +253,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}"
-    }
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}"
    },
    "event": [
     {
@@ -298,9 +286,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}"
-    }
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}"
    },
    "event": [
     {
@@ -331,9 +317,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/freeze"
-    }
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/freeze"
    },
    "event": [
     {
@@ -364,9 +348,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}"
-    }
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}"
    },
    "event": [
     {
@@ -397,9 +379,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
-    }
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
    }
   },
   {
@@ -420,9 +400,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
-    }
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
    }
   }
  ]

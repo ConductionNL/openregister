@@ -74,9 +74,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers"
-    },
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/registers",
     "body": {
      "mode": "raw",
      "raw": "{\"title\": \"dates-follow-{{run}}\", \"slug\": \"dates-follow-{{run}}\"}"
@@ -112,9 +110,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
-    },
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
     "body": {
      "mode": "raw",
      "raw": "{\"title\": \"client-{{run}}\", \"slug\": \"client-{{run}}\", \"properties\": {\"name\": {\"type\": \"string\"}, \"relationshipEndedAt\": {\"type\": \"string\", \"format\": \"date\"}}, \"archive\": {\"enabled\": true, \"afleidingswijze\": \"ander_datumkenmerk\", \"sourceDateProperty\": \"relationshipEndedAt\", \"defaultNominatie\": \"vernietigen\", \"defaultBewaartermijn\": \"P2Y\"}}"
@@ -150,9 +146,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
-    },
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
     "body": {
      "mode": "raw",
      "raw": "{\"title\": \"contact-{{run}}\", \"slug\": \"contact-{{run}}\", \"properties\": {\"name\": {\"type\": \"string\"}, \"client\": {\"type\": \"string\", \"format\": \"uuid\"}}, \"archive\": {\"enabled\": true, \"afleidingswijze\": \"gerelateerde_zaak\", \"sourceRelation\": \"client\", \"sourceRelationProperty\": \"relationshipEndedAt\", \"defaultNominatie\": \"vernietigen\", \"defaultBewaartermijn\": \"P2Y\"}}"
@@ -188,9 +182,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
-    },
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}",
     "body": {
      "mode": "raw",
      "raw": "{\"title\": \"dates-follow-{{run}}\", \"slug\": \"dates-follow-{{run}}\", \"schemas\": [\"{{clientSchemaId}}\", \"{{contactSchemaId}}\"]}"
@@ -225,9 +217,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{clientSchemaId}}"
-    },
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{clientSchemaId}}",
     "body": {
      "mode": "raw",
      "raw": "{\"name\": \"Bakkerij Jansen\"}"
@@ -266,9 +256,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{contactSchemaId}}"
-    },
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{contactSchemaId}}",
     "body": {
      "mode": "raw",
      "raw": "{\"name\": \"Piet Jansen\", \"client\": \"{{clientId}}\"}"
@@ -305,9 +293,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{clientSchemaId}}/{{clientId}}"
-    },
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{clientSchemaId}}/{{clientId}}",
     "body": {
      "mode": "raw",
      "raw": "{\"relationshipEndedAt\": \"2026-10-01\"}"
@@ -345,9 +331,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/cron.php"
-    }
+    "url": "{{baseUrl}}/cron.php"
    },
    "event": [
     {
@@ -378,9 +362,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{contactSchemaId}}/{{contactId}}"
-    }
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{contactSchemaId}}/{{contactId}}"
    },
    "event": [
     {
@@ -414,9 +396,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{clientSchemaId}}/{{clientId}}"
-    },
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{clientSchemaId}}/{{clientId}}",
     "body": {
      "mode": "raw",
      "raw": "{\"relationshipEndedAt\": null}"
@@ -454,9 +434,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/cron.php"
-    }
+    "url": "{{baseUrl}}/cron.php"
    },
    "event": [
     {
@@ -487,9 +465,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{contactSchemaId}}/{{contactId}}"
-    }
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{contactSchemaId}}/{{contactId}}"
    },
    "event": [
     {
@@ -523,9 +499,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{contactSchemaId}}/{{contactId}}"
-    }
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{contactSchemaId}}/{{contactId}}"
    }
   },
   {
@@ -546,9 +520,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{clientSchemaId}}/{{clientId}}"
-    }
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{clientSchemaId}}/{{clientId}}"
    }
   },
   {
@@ -569,9 +541,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{contactSchemaId}}"
-    }
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{contactSchemaId}}"
    }
   },
   {
@@ -592,9 +562,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{clientSchemaId}}"
-    }
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{clientSchemaId}}"
    }
   },
   {
@@ -615,9 +583,7 @@
       "value": "true"
      }
     ],
-    "url": {
-     "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
-    }
+    "url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
    }
   }
  ]

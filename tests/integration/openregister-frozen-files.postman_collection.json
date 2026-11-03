@@ -74,9 +74,7 @@
             "value": "true"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/registers",
         "body": {
           "mode": "raw",
           "raw": "{\"title\": \"frozen-files-{{run}}\", \"slug\": \"frozen-files-{{run}}\"}"
@@ -112,9 +110,7 @@
             "value": "true"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
         "body": {
           "mode": "raw",
           "raw": "{\"title\": \"frozen-files-{{run}}\", \"slug\": \"frozen-files-{{run}}\", \"properties\": {\"title\": {\"type\": \"string\"}}}"
@@ -150,9 +146,7 @@
             "value": "true"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}",
         "body": {
           "mode": "raw",
           "raw": "{\"title\": \"frozen-files-{{run}}\", \"slug\": \"frozen-files-{{run}}\", \"schemas\": [\"{{schemaId}}\"]}"
@@ -187,9 +181,7 @@
             "value": "true"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
         "body": {
           "mode": "raw",
           "raw": "{\"title\": \"levering\"}"
@@ -226,9 +218,7 @@
             "value": "true"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/freeze"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/freeze",
         "body": {
           "mode": "raw",
           "raw": "{\"reason\": \"Woo-levering\", \"state\": \"geleverd\"}"
@@ -264,9 +254,7 @@
             "value": "true"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/files"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/files",
         "body": {
           "mode": "raw",
           "raw": "{\"name\": \"manifest.txt\", \"content\": \"x\"}"
@@ -303,9 +291,7 @@
             "value": "true"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/files"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/files"
       },
       "event": [
         {
@@ -336,9 +322,7 @@
             "value": "true"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/freeze"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/freeze"
       },
       "event": [
         {
@@ -369,9 +353,7 @@
             "value": "true"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/files"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/files",
         "body": {
           "mode": "raw",
           "raw": "{\"name\": \"manifest.txt\", \"content\": \"x\"}"
@@ -406,9 +388,7 @@
             "value": "true"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}"
       }
     },
     {
@@ -429,9 +409,7 @@
             "value": "true"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
       }
     },
     {
@@ -452,9 +430,7 @@
             "value": "true"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
       }
     }
   ]

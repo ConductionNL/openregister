@@ -76,9 +76,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/registers",
         "body": {
           "mode": "raw",
           "raw": "{\"title\": \"dedup newman register\", \"description\": \"dedup-check collection fixture\"}"
@@ -115,9 +113,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
         "body": {
           "mode": "raw",
           "raw": "{\"title\": \"dedup newman schema\", \"description\": \"dedup-check collection fixture\", \"properties\": {\"requester\": {\"type\": \"string\", \"title\": \"Requester\", \"maxLength\": 255}, \"subject\": {\"type\": \"string\", \"title\": \"Subject\", \"maxLength\": 255}}, \"authorization\": {\"read\": [\"authenticated\"], \"create\": [\"authenticated\"], \"update\": [\"authenticated\"], \"delete\": [\"authenticated\"]}, \"configuration\": {\"x-openregister-dedup\": {\"matchRules\": [{\"field\": \"requester\", \"method\": \"exact\", \"weight\": 0.5}, {\"field\": \"subject\", \"method\": \"normalized\", \"weight\": 0.5}], \"threshold\": 0.85, \"onCreate\": \"block\", \"overrideGroups\": [\"admin\"]}}}"
@@ -159,9 +155,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}",
         "body": {
           "mode": "raw",
           "raw": "{\"schemas\": [\"{{schemaId}}\"]}"
@@ -197,9 +191,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/dedup-check"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/dedup-check",
         "body": {
           "mode": "raw",
           "raw": "{\"requester\": \"bsn:123\", \"subject\": \"Kapvergunning Eikenlaan\"}"
@@ -237,9 +229,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
         "body": {
           "mode": "raw",
           "raw": "{\"requester\": \"bsn:123\", \"subject\": \"Kapvergunning Eikenlaan\"}"
@@ -277,9 +267,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/dedup-check"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/dedup-check",
         "body": {
           "mode": "raw",
           "raw": "{\"requester\": \"bsn:123\", \"subject\": \"kapvergunning  eikenlaan\"}"
@@ -323,9 +311,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
       },
       "event": [
         {
@@ -360,9 +346,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/dedup-check"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/dedup-check",
         "body": {
           "mode": "raw",
           "raw": "{\"requester\": \"bsn:999\", \"subject\": \"Iets heel anders\"}"
@@ -399,9 +383,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
         "body": {
           "mode": "raw",
           "raw": "{\"requester\": \"bsn:123\", \"subject\": \"kapvergunning eikenlaan\", \"_dedupOverride\": true}"
@@ -440,9 +422,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{secondUuid}}/audit-trails"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{secondUuid}}/audit-trails"
       },
       "event": [
         {
@@ -478,9 +458,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{secondUuid}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{secondUuid}}"
       },
       "event": [
         {
@@ -512,9 +490,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{firstUuid}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{firstUuid}}"
       },
       "event": [
         {
@@ -546,9 +522,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
       },
       "event": [
         {
@@ -580,9 +554,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
       },
       "event": [
         {

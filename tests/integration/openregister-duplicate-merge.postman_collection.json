@@ -86,9 +86,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/registers",
         "body": {
           "mode": "raw",
           "raw": "{\"title\": \"dismissal newman register\", \"description\": \"dismissed-pair collection fixture\"}"
@@ -125,9 +123,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
         "body": {
           "mode": "raw",
           "raw": "{\"title\": \"dismissal newman schema\", \"description\": \"dismissed-pair collection fixture\", \"properties\": {\"name\": {\"type\": \"string\", \"title\": \"Name\", \"maxLength\": 255}, \"email\": {\"type\": \"string\", \"title\": \"Email\", \"maxLength\": 255}, \"kvkNumber\": {\"type\": \"string\", \"title\": \"KvK Number\", \"maxLength\": 255}}, \"authorization\": {\"read\": [\"authenticated\"], \"create\": [\"authenticated\"], \"update\": [\"authenticated\"], \"delete\": [\"authenticated\"]}, \"configuration\": {\"x-openregister-dedup\": {\"matchRules\": [{\"field\": \"name\", \"method\": \"normalized\", \"weight\": 0.5}, {\"field\": \"email\", \"method\": \"exact\", \"weight\": 0.5}], \"threshold\": 0.85, \"dismissGroups\": [\"admin\"]}, \"x-openregister-unique-hint\": [\"kvkNumber\"]}}"
@@ -170,9 +166,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
         "body": {
           "mode": "raw",
           "raw": "{\"title\": \"bad hint newman schema\", \"properties\": {\"name\": {\"type\": \"string\", \"title\": \"Name\", \"maxLength\": 255}}, \"configuration\": {\"x-openregister-unique-hint\": [\"kvkNummer\"]}}"
@@ -209,9 +203,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}",
         "body": {
           "mode": "raw",
           "raw": "{\"schemas\": [\"{{schemaId}}\"]}"
@@ -247,9 +239,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
         "body": {
           "mode": "raw",
           "raw": "{\"name\": \"Jan de Vries\", \"email\": \"jan@example.test\", \"kvkNumber\": \"69599084\"}"
@@ -287,9 +277,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
         "body": {
           "mode": "raw",
           "raw": "{\"name\": \"jan de  vries\", \"email\": \"jan@example.test\", \"kvkNumber\": \"69599084\"}"
@@ -331,9 +319,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/duplicates/{{registerId}}/{{schemaId}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/duplicates/{{registerId}}/{{schemaId}}"
       },
       "event": [
         {
@@ -368,9 +354,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/duplicates/{{registerId}}/{{schemaId}}/dismiss"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/duplicates/{{registerId}}/{{schemaId}}/dismiss",
         "body": {
           "mode": "raw",
           "raw": "{\"objectA\": \"{{firstUuid}}\", \"objectB\": \"{{secondUuid}}\", \"reason\": \"two brothers at one address\"}"
@@ -413,9 +397,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/duplicates/{{registerId}}/{{schemaId}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/duplicates/{{registerId}}/{{schemaId}}"
       },
       "event": [
         {
@@ -450,9 +432,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{secondUuid}}"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{secondUuid}}",
         "body": {
           "mode": "raw",
           "raw": "{\"name\": \"Piet Jansen\", \"email\": \"piet@example.test\", \"kvkNumber\": \"69599084\"}"
@@ -488,9 +468,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/duplicates/{{registerId}}/{{schemaId}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/duplicates/{{registerId}}/{{schemaId}}"
       },
       "event": [
         {
@@ -528,9 +506,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/merge/preview"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/merge/preview",
         "body": {
           "mode": "raw",
           "raw": "{\"from\": \"{{secondUuid}}\", \"into\": \"{{firstUuid}}\"}"
@@ -575,9 +551,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/merge/execute"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/merge/execute",
         "body": {
           "mode": "raw",
           "raw": "{\"from\": \"{{secondUuid}}\", \"into\": \"{{firstUuid}}\", \"reason\": \"same person\", \"decisions\": {\"name\": \"into\"}}"
@@ -614,9 +588,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{secondUuid}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{secondUuid}}"
       },
       "event": [
         {
@@ -652,9 +624,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/duplicates/{{registerId}}/{{schemaId}}/undismiss"
-        },
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/duplicates/{{registerId}}/{{schemaId}}/undismiss",
         "body": {
           "mode": "raw",
           "raw": "{\"objectA\": \"{{firstUuid}}\", \"objectB\": \"{{secondUuid}}\"}"
@@ -690,9 +660,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{secondUuid}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{secondUuid}}"
       },
       "event": [
         {
@@ -724,9 +692,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{firstUuid}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{firstUuid}}"
       },
       "event": [
         {
@@ -758,9 +724,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
       },
       "event": [
         {
@@ -792,9 +756,7 @@
             "value": "application/json"
           }
         ],
-        "url": {
-          "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
-        }
+        "url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
       },
       "event": [
         {
