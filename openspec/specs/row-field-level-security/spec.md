@@ -464,6 +464,13 @@ When evaluating property-level authorization match conditions, `ConditionMatcher
 - **AND** `_uuid` MUST read the record's uuid, which `@self` carries as `id`
 - **AND** `_expires` MUST read the record's `expires`, which the match envelope carries and the rendered `@self` does not
 
+#### Scenario: Non-underscore property does not check @self
+- **GIVEN** object data `{ "status": "open" }`
+- **AND** match condition references `status`
+- **WHEN** `ConditionMatcher::getObjectValue($object, 'status')` is called
+- **THEN** it MUST return `open` from the direct property
+- **AND** it MUST NOT check `@self` (only underscore-prefixed properties fall back to `@self`)
+
 ### Requirement: A condition on metadata no record carries MUST be refused at save and fail closed when stored
 A `match` key that starts with `_` or `@self.` names record metadata. The metadata a record carries is the set of fields of its match envelope (`ObjectEntity::getMatchEnvelope()`), read from the entity rather than from a hand-kept list; `_uuid` and `@self.uuid` name the field the envelope carries as `id`. A condition on any other such key (`_published`, `@self.published`, a typo) can never match a record. A save that ADDS or CHANGES such a condition in a schema's grant or deny rules, a property's rules or a register's rules MUST be refused with a message that names the key, the action, the principal and the schema, property or register. A save that keeps a stored condition unchanged, edits around it or removes it MUST NOT be refused for it, so that access revocation and link writes keep working on a schema or register that already holds one. A stored rule MUST fail closed when evaluated: a deny on it denies, an allow on it grants nothing, on the single-object path, the relation path and the list query alike. Each schema and key MUST be logged once per request. `occ openregister:rbac:unknown-metadata-conditions` MUST list the stored schemas and registers that carry such a condition, without changing them, and MUST say that rules in an object's own `_authorization` are not scanned.
 
@@ -514,13 +521,6 @@ A `match` key that starts with `_` or `@self.` names record metadata. The metada
 - **AND** on an instance without such conditions it MUST say so and exit 0
 - **AND** it MUST read every schema and register past RBAC and the organisation filter
 - **AND** it MUST say that rules in an object's own `_authorization` are not scanned
-
-#### Scenario: Non-underscore property does not check @self
-- **GIVEN** object data `{ "status": "open" }`
-- **AND** match condition references `status`
-- **WHEN** `ConditionMatcher::getObjectValue($object, 'status')` is called
-- **THEN** it MUST return `open` from the direct property
-- **AND** it MUST NOT check `@self` (only underscore-prefixed properties fall back to `@self`)
 
 ### Requirement: writeOnly properties MUST never be returned on any read
 A property declared `writeOnly: true` MUST be stripped from every read response for every caller, including admin, while remaining writable. This is the field-level read mechanism for secrets and tokens (standard JSON Schema / OpenAPI keyword) and is fully backward compatible: a property without `writeOnly` is returned exactly as before. It closes openregister#380 at the platform level so ADR-063 MCP tools inherit the redaction without per-dialect field projection.
