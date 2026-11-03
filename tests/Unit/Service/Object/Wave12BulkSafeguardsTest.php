@@ -123,7 +123,7 @@ class Wave12BulkSafeguardsTest extends TestCase {
 		$reflection->setAccessible(true);
 		return $reflection->invokeArgs(
 			$this->handler,
-			[$objects, $register, $schema, $_rbac, $_validation, &$result]
+			[$objects, $register, $schema, ['rbac' => $_rbac, 'validation' => $_validation], &$result]
 		);
 	}//end callApplyBulkSafeguards()
 

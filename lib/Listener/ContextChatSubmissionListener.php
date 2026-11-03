@@ -307,7 +307,7 @@ class ContextChatSubmissionListener implements IEventListener {
 			userId: null,
 			userGroup: null,
 			objectOwner: null,
-			objectData: $object->getObject(),
+			objectData: $object->getMatchEnvelope(),
 			objectOrganisation: $object->getOrganisation()
 		);
 

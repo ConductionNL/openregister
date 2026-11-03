@@ -50,6 +50,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
@@ -60,6 +61,7 @@ use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionGraph\ReadableDeletionAnalysis;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -1894,7 +1896,12 @@ class ObjectService implements ObjectServiceInterface
         // looks its identifier up again without the caller's scope, where the
         // same identifier can name another row (an id that is another row's uuid,
         // a slug that is another row's id).
-        $checked = $this->checkSavePermissions(uuid: $uuid, _rbac: $options['_rbac'], object: $object);
+        $checked = $this->checkSavePermissions(
+            uuid: $uuid,
+            _rbac: $options['_rbac'],
+            object: $object,
+            _multitenancy: $options['_multitenancy']
+        );
         if ($checked !== null) {
             $uuid = $checked;
         } else if ($uuid !== null && $options['_rbac'] === true && $this->currentSchema !== null) {
@@ -2341,16 +2348,17 @@ class ObjectService implements ObjectServiceInterface
     /**
      * Check permissions for save operation (CREATE or UPDATE).
      *
-     * @param string|null $uuid   Object UUID (null for CREATE, set for UPDATE)
-     * @param bool        $_rbac  Whether to apply RBAC checks
-     * @param array       $object The incoming object data, which a create rule's match reads
+     * @param string|null $uuid          Object UUID (null for CREATE, set for UPDATE)
+     * @param bool        $_rbac         Whether to apply RBAC checks
+     * @param array       $object        The incoming object data, which a create rule's match reads
+     * @param bool        $_multitenancy Whether the write keeps to the caller's organisations
      *
      * @return string|null The uuid of the stored row the update check ran on, or null for a create
      *                     check or when there is no schema to check against.
      *
      * @throws Exception If permission check fails
      */
-    private function checkSavePermissions(?string $uuid, bool $_rbac, array $object=[]): ?string
+    private function checkSavePermissions(?string $uuid, bool $_rbac, array $object=[], bool $_multitenancy=true): ?string
     {
         if ($this->currentSchema === null) {
             return null;
@@ -2412,8 +2420,11 @@ class ObjectService implements ObjectServiceInterface
                 object: $incoming
             );
 
-            // Stored but hidden: the write lands on that row, so it must also pass the update rule against it.
+            // Stored but hidden: the write lands on that row, so it must keep to
+            // the caller's organisations and pass the update rule against it.
             if ($hidden !== null) {
+                $this->refuseAWriteOntoAnAppendOnlyRow();
+                $this->refuseAnotherOrganisationsRow(hidden: $hidden, _multitenancy: $_multitenancy);
                 $this->checkPermission(
                     schema: $this->currentSchema,
                     action: 'update',
@@ -2428,6 +2439,62 @@ class ObjectService implements ObjectServiceInterface
 
         return null;
     }//end checkSavePermissions()
+
+    /**
+     * Refuse a write onto a stored row the caller cannot read when the schema is append-only.
+     *
+     * Every write onto a stored row of an append-only schema gets one answer from
+     * guardWriteTarget(), visible or not. Answering a hidden row the same
+     * way before the organisation refusal and the update rule are asked keeps
+     * them from telling which rows belong to another organisation.
+     *
+     * @return void
+     *
+     * @throws AppendOnlyException When the schema is append-only.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function refuseAWriteOntoAnAppendOnlyRow(): void
+    {
+        if ($this->currentSchema?->isAppendOnly() !== true) {
+            return;
+        }
+
+        throw new AppendOnlyException(
+            schemaIdentifier: ($this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId()),
+            operation: 'update'
+        );
+    }//end refuseAWriteOntoAnAppendOnlyRow()
+
+    /**
+     * Refuse a write by uuid onto a stored row outside the caller's organisations.
+     *
+     * The caller's own lookup did not find the row, and the update rule it is
+     * judged by next does not look at organisations. So the row's organisation
+     * is compared with the caller's organisation scope directly, without the
+     * read rules: a `public` read rule that lifts the organisation filter for
+     * reading must not let a write land on another organisation's row. A row
+     * the read rules hide inside the caller's organisations is left to the
+     * update rule, as before. Skipped when the write does not keep to the
+     * caller's organisations (an administrator, a job).
+     *
+     * @param ObjectEntity $hidden        The stored row the caller cannot read.
+     * @param bool         $_multitenancy Whether the write keeps to the caller's organisations.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the row belongs to another organisation.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function refuseAnotherOrganisationsRow(ObjectEntity $hidden, bool $_multitenancy): void
+    {
+        if ($_multitenancy === false || $this->objectMapper->callerOrganisationsHold(row: $hidden) === true) {
+            return;
+        }
+
+        throw new NotAuthorizedException(message: 'You may not change this object.');
+    }//end refuseAnotherOrganisationsRow()
 
     /**
      * Refuse a write to a stored draft the caller cannot read.
@@ -4415,8 +4482,9 @@ class ObjectService implements ObjectServiceInterface
      * The multitenancy flag a paginated search runs with.
      *
      * A current schema whose read rule lists `public` is visible to every
-     * organisation, so multitenancy is switched off for it, unless the caller
-     * is signed in and the schema does not inherit public rights.
+     * organisation for an anonymous caller and an admin, so multitenancy is
+     * switched off for them. A signed-in caller keeps it and reads other
+     * organisations only through rules marked `crossOrganisation: true`.
      *
      * @param bool $multitenancy The caller's multitenancy flag.
      *
@@ -5003,6 +5071,20 @@ class ObjectService implements ObjectServiceInterface
     {
         return $this->deleteHandler;
     }//end getDeleteHandler()
+
+    /**
+     * A deletion analysis without the objects the signed-in caller cannot read.
+     *
+     * @param DeletionAnalysis $analysis The analysis of the unscoped integrity walk.
+     *
+     * @return DeletionAnalysis The analysis with unreadable objects counted per schema.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    public function readableDeletionAnalysis(DeletionAnalysis $analysis): DeletionAnalysis
+    {
+        return (new ReadableDeletionAnalysis(mapper: $this->objectMapper))->analysisFor(analysis: $analysis);
+    }//end readableDeletionAnalysis()
 
     /**
      * Get the permission handler.

@@ -21,7 +21,7 @@ silently point an app at a registry it never asked for.
 
 - **WHEN** a `store` block declares `"source": "npm"`
 - **THEN** the manifest reports `enabled: false`
-- **AND** no store entry may be rendered for that app
+- **AND** no marketplace entry may be rendered for that app
 
 ### Requirement: A GitHub source MUST discover by topic against a compile-time host
 

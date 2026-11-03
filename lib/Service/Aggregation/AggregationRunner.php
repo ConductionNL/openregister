@@ -94,11 +94,11 @@ class AggregationRunner {
 
 	/**
 	 * An organisation scope the native SQL cannot render: the boundary has a
-	 * branch for the caller's conditional `public` rules.
+	 * branch for the caller's conditional `crossOrganisation` rules.
 	 *
 	 * @var string
 	 */
-	private const SCOPE_PUBLIC_BRANCH = 'public-branch';
+	private const SCOPE_CROSS_ORGANISATION_BRANCH = 'cross-organisation-branch';
 
 	/**
 	 * Hard cap on the number of rows the PHP fallback path will hydrate
@@ -2830,10 +2830,10 @@ class AggregationRunner {
 		}
 
 		// The list widens the boundary by the rows of the caller's conditional
-		// `public` rules; this SQL cannot, so a mode it does not know sends the
+		// `crossOrganisation` rules; this SQL cannot, so a mode it does not know sends the
 		// aggregation to the PHP path, which reads through the list.
-		if ($this->magicMapper->organisationBoundaryHasPublicBranch(schema: $schema) === true) {
-			return ['mode' => self::SCOPE_PUBLIC_BRANCH, 'uuids' => []];
+		if ($this->magicMapper->organisationBoundaryHasCrossOrganisationBranch(schema: $schema) === true) {
+			return ['mode' => self::SCOPE_CROSS_ORGANISATION_BRANCH, 'uuids' => []];
 		}
 
 		if ($this->magicMapper->organisationBoundaryWaivedByRbac(schema: $schema) === true) {

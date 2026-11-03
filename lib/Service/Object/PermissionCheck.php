@@ -112,7 +112,7 @@ final class PermissionCheck {
 			return;
 		}
 
-		$this->objectData         = $object->getObject();
+		$this->objectData         = $object->getMatchEnvelope();
 		$this->objectOrganisation = $object->getOrganisation();
 	}//end setObject()
 }//end class

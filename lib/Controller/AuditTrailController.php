@@ -1046,7 +1046,11 @@ class AuditTrailController extends Controller {
 	 *
 	 * Renamed from `verwerkingsregister()` by the `verwerkingsregister-i18n` change.
 	 *
-	 * @NoAdminRequired
+	 * Admin-only at the framework level (no @NoAdminRequired), with the body
+	 * `requireAdmin()` as defence-in-depth: the counts cover every entry of
+	 * the trail, whichever organisation it belongs to, and `organisationId`
+	 * names any organisation.
+	 *
 	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse List of processing activities
@@ -1056,9 +1060,14 @@ class AuditTrailController extends Controller {
 	 *   count; the actual executable body is 12 lines.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md#requirement-the-instance-wide-audit-reads-are-admin-only
 	 */
 	public function processingActivities(): JSONResponse {
+		$denial = $this->requireAdmin();
+		if ($denial !== null) {
+			return $denial;
+		}
+
 		$organisationId = $this->request->getParam('organisationId');
 
 		try {
@@ -1081,15 +1090,25 @@ class AuditTrailController extends Controller {
 	 *
 	 * Renamed from `inzageverzoek()` by the `verwerkingsregister-i18n` change.
 	 *
-	 * @NoAdminRequired
+	 * Admin-only at the framework level (no @NoAdminRequired), with the body
+	 * `requireAdmin()` as defence-in-depth: the search runs over every entry of
+	 * the trail and answers whole rows, so it is the admin index by another
+	 * door. A non-admin reads the entries of the objects they may read through
+	 * `GET /api/audit-trails/readable?search=`.
+	 *
 	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse Matching audit trail entries grouped by schema
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md#requirement-the-instance-wide-audit-reads-are-admin-only
 	 */
 	public function subjectAuditTrail(): JSONResponse {
+		$denial = $this->requireAdmin();
+		if ($denial !== null) {
+			return $denial;
+		}
+
 		$identifier = $this->request->getParam('identifier');
 
 		if ($identifier === null || $identifier === '') {
@@ -1102,7 +1121,6 @@ class AuditTrailController extends Controller {
 		try {
 			$results = $this->auditTrailMapper->findByIdentifier($identifier);
 			// Explicit-reveal values leave masked here as on every trail route.
-			// Who may call this and the search it runs are issue #5148.
 			// The mapper answers raw rows grouped by schema id, `changed` as JSON text.
 			foreach ($results as $schemaId => $rows) {
 				if (is_array($rows) === true) {
