@@ -44,6 +44,8 @@ use OCA\OpenRegister\Tool\ObjectsTool;
 use OCA\OpenRegister\Tool\RegisterTool;
 use OCA\OpenRegister\Tool\SchemaTool;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IL10N;
+use Psr\Container\ContainerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -351,4 +353,36 @@ class AttributeToolDualSurfaceTest extends TestCase {
 		}
 
 	}//end testDeclaredAnnotationsArriveOnBothSurfaces()
+
+	public function testATitleIsTranslatedThroughTheDeclaringAppOnBothSurfaces(): void {
+		$instance = new AnnotationFixtureService();
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(static fn (string $text): string => ['Create a task' => 'Taak aanmaken'][$text] ?? $text);
+		$entries = (new AttributeToolScanner())->scanClass(appId: 'dossiq', className: get_class($instance), logger: $this->logger);
+		foreach ($entries as &$entry) {
+			$entry['instance'] = $instance;
+		}
+
+		unset($entry);
+		$appContainer = $this->createMock(ContainerInterface::class);
+		$appContainer->method('has')->willReturnCallback(static fn (string $id): bool => $id === IL10N::class);
+		$appContainer->method('get')->willReturn($l10n);
+		$provider = (new AttributeToolProvider(appId: 'dossiq', entries: $entries, auditTrailMapper: $this->auditTrailMapper, logger: $this->logger))
+			->translatedBy(appContainer: $appContainer);
+
+		$jsonRpc = [];
+		foreach ((new McpToolsService(providers: [$provider], logger: $this->logger))->listTools()['tools'] as $tool) {
+			$jsonRpc[$tool['id']] = $tool;
+		}
+
+		$facade = [];
+		foreach ($this->buildFacade($provider)->listTools() as $descriptor) {
+			$facade[$descriptor['mcpId']] = $descriptor;
+		}
+
+		foreach ([$jsonRpc, $facade] as $surface) {
+			$this->assertSame('Taak aanmaken', $surface['dossiq.createTask']['title'] ?? null);
+		}
+
+	}//end testATitleIsTranslatedThroughTheDeclaringAppOnBothSurfaces()
 }//end class
