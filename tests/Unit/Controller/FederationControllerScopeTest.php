@@ -48,6 +48,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Controller\FederationController
  * @uses \OCA\OpenRegister\Db\FederatedShare
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class FederationControllerScopeTest extends TestCase {
 
