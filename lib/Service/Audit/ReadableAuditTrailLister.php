@@ -172,14 +172,7 @@ class ReadableAuditTrailLister {
 		// hidden property ever held the term.
 		$this->withReads = $this->history->readEvents()->maySeeReadEvents(userId: $userId);
 		$this->search = trim((string)$search);
-		// Only the columns the trail query applies: a key it drops would make
-		// two walks over the same rows look like different scopes, and a
-		// cursor parameter echoed into the filters would make every page a
-		// new one.
-		$filters = array_intersect_key(
-			$this->history->readerColumns(columns: $filters),
-			array_flip(AuditTrailMapper::QUERY_COLUMNS)
-		);
+		$filters = $this->appliedFilters(filters: $filters);
 
 		$results = [];
 		$found = 0;
@@ -235,6 +228,24 @@ class ReadableAuditTrailLister {
 			'nextCursor' => $nextCursor,
 		];
 	}//end page()
+
+	/**
+	 * The filters the trail query applies and a reader may use.
+	 *
+	 * A key the query drops would make two walks over the same rows look like
+	 * different scopes, and a cursor parameter echoed into the filters would
+	 * make every page a new one.
+	 *
+	 * @param array $filters Column filters from the request.
+	 *
+	 * @return array The filters that reach the query and the cursor's scope.
+	 */
+	private function appliedFilters(array $filters): array {
+		return array_intersect_key(
+			$this->history->readerColumns(columns: $filters),
+			array_flip(AuditTrailMapper::QUERY_COLUMNS)
+		);
+	}//end appliedFilters()
 
 	/**
 	 * The cursor to resume at an offset, or none when the walk has no scope to seal it to.
