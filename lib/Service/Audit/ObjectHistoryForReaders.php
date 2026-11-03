@@ -103,11 +103,12 @@ class ObjectHistoryForReaders {
 	 *     The page, with whether read entries are shown to this caller, or null when the object is not readable for this caller.
 	 *
 	 * @throws PurposeRefusedException When the schema asks for a purpose and none usable was named.
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException When the identifier is a slug two objects of the register and schema hold.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
 	 */
 	public function page(string $register, string $schema, string $id, array $params): ?array {
-		$object = $this->access->readable(register: $register, schema: $schema, id: $id);
+		$object = $this->access->readableOrAmbiguous(register: $register, schema: $schema, id: $id);
 		if ($object === null) {
 			return null;
 		}

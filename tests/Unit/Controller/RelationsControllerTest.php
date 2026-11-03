@@ -14,6 +14,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TalkLinkService;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
+use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -136,6 +137,24 @@ class RelationsControllerTest extends TestCase {
 		$response = $this->controller->index('1', '2', 'nonexistent');
 
 		$this->assertSame(404, $response->getStatus());
+	}
+
+	/**
+	 * A slug two objects of the register and schema hold answers 409 like the other
+	 * identifier routes (#4037), not a 500 with the exception text, and gathers nothing.
+	 */
+	public function testIndexReturns409ForAnAmbiguousIdentifier(): void {
+		$this->objectService->method('getObject')->willThrowException(
+			new MultipleObjectsReturnedException('Identifier "dubbel" matches more than one object')
+		);
+		$this->request->method('getParams')->willReturn([]);
+		$this->noteService->expects($this->never())->method('getNotesForObject');
+
+		$response = $this->controller->index('28', '68', 'dubbel');
+
+		$this->assertSame(409, $response->getStatus());
+		$this->assertSame('ambiguous-identifier', $response->getData()['error']);
+		$this->assertSame('Identifier "dubbel" matches more than one object in this register and schema', $response->getData()['message'], 'the body names no uuid');
 	}
 
 	/**

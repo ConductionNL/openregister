@@ -22,7 +22,9 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -42,6 +44,8 @@ use Psr\Log\LoggerInterface;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One collaborator per migration step, plus the slug re-check (#4037).
  */
 class MigrationHandler {
 	/**
@@ -189,6 +193,7 @@ class MigrationHandler {
 			$sourceObject->setRegister($run->target->registerEntity->getId());
 			$sourceObject->setSchema($run->target->schemaEntity->getId());
 			$sourceObject->setObject($mappedData);
+			$this->keepSlugFreeAtTarget(sourceObject: $sourceObject, run: $run);
 			$savedObject = $this->objectMapper->update($sourceObject);
 
 			$objectDetail['success'] = true;
@@ -201,6 +206,26 @@ class MigrationHandler {
 
 		$run->addDetail(detail: $objectDetail);
 	}//end migrateOne()
+
+	/**
+	 * Re-check the slug an object carries against the target's live holders (#4037).
+	 *
+	 * The slug was decided in the source; the target may already have a live holder of it.
+	 *
+	 * @param ObjectEntity $sourceObject The object, already pointing at the target.
+	 * @param MigrationRun $run          The migration.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 */
+	private function keepSlugFreeAtTarget(ObjectEntity $sourceObject, MigrationRun $run): void {
+		$register = $run->target->registerEntity;
+		$schema = $run->target->schemaEntity;
+		if ($register instanceof Register && $schema instanceof Schema) {
+			$sourceObject->setSlug($this->objectMapper->slugForMove(entity: $sourceObject, register: $register, schema: $schema));
+		}
+	}//end keepSlugFreeAtTarget()
 
 	/**
 	 * Refuse an object that does not live in the requested source register and schema.
