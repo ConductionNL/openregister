@@ -240,7 +240,7 @@ Objects should follow the standard OpenRegister object format with `@self` secti
 
 | Flag | Default | Meaning |
 | --- | --- | --- |
-| `stream` | `false` | Write row-at-a-time through the standard save path instead of the bulk mapper. Slower on flat payloads, faster on heavily cross-referenced ones. |
+| `stream` | `false` | Write row-at-a-time through the standard save path instead of the bulk mapper. Slower on flat payloads, faster on heavily cross-referenced ones. For administrators only: the rows skip the per-row permission and organisation checks of the default path, so anyone else gets a 403. |
 | `partial` | `false` | Opt into best-effort semantics: a batch with rejected objects answers `200` instead of `422`. It does **not** make `success` true — see below. |
 
 ### Example Request
