@@ -393,7 +393,7 @@ The system MUST cache frequently evaluated permission data to avoid repeated dat
 - **AND** each schema's RBAC groups MUST be reused when generating path operations without re-extraction
 
 ### Requirement: Multi-Tenancy Integration with Scopes
-RBAC scopes MUST integrate with the multi-tenancy system so that organisation-based data isolation works alongside group-based access control. A conditional rule keeps the organisation filter unless it crosses organisations. A rule whose match pins `_organisation` to the caller's organisation (a token or `{"$eq": token}`) admits only that organisation's rows by itself, so it neither lifts nor keeps the filter. A rule crosses organisations when it binds a field other than `_organisation` to the caller's organisation (the bare `$organisation`, `$activeOrganisation` or `.uuid` token, or `{"$eq": <token>}`) or to the caller's membership (`$memberOf`), or when it declares `"crossOrganisation": true`. Any other match, such as a case type, a status or the caller's uid, selects rows inside the caller's organisation. The filter is lifted only when the caller holds at least one crossing rule and no conditional or `authenticated` rule that stays inside the organisation, because the RBAC predicate ORs every rule the caller holds. A simple group rule the caller holds still reads every row. Every read path (list, union search, facets, count, aggregation, export and the single-object read) takes this decision from `MagicRbacHandler::hasConditionalRulesBypassingMultitenancy()`.
+RBAC scopes MUST integrate with the multi-tenancy system so that organisation-based data isolation works alongside group-based access control. A conditional rule keeps the organisation filter unless it crosses organisations. A rule whose match pins `_organisation` to the caller's organisation (a token or `{"$eq": token}`) admits only that organisation's rows by itself, so it neither lifts nor keeps the filter. A rule crosses organisations when it binds a field other than `_organisation` to the caller's organisation (the bare `$organisation`, `$activeOrganisation` or `.uuid` token, or `{"$eq": <token>}`) or to the caller's membership (`$memberOf`), or when it declares `"crossOrganisation": true`. Any other match, such as a case type, a status or the caller's uid, selects rows inside the caller's organisation. The filter is lifted only when the caller holds at least one crossing rule and no conditional or `authenticated` rule that stays inside the organisation, because the RBAC predicate ORs every rule the caller holds. A simple group rule the caller holds still reads every row. A conditional `public` read rule (`{"group": "public", "match": {...}}`) that a signed-in, non-admin caller qualifies for (public inheritance on) widens the organisation filter by the rows it admits instead of lifting the filter: the caller reads those rows in every organisation and the rows of their other rules only in their own. An unconditional `public` rule, an anonymous caller and an admin read as before. The aggregation fast path cannot render that branch and falls back to the list. Every read path (list, union search, facets, count, aggregation, export and the single-object read) takes this decision from `MagicRbacHandler::hasConditionalRulesBypassingMultitenancy()`.
 
 #### Scenario: Organisation filtering combined with RBAC
 - **GIVEN** user `jan` has active organisation `org-uuid-1` and is in group `behandelaars`
@@ -429,6 +429,14 @@ RBAC scopes MUST integrate with the multi-tenancy system so that organisation-ba
 - **WHEN** a member of `aanbod-beheerder` in `org-1` lists usages
 - **THEN** usages of other organisations whose `provider` is `org-1` MUST be returned, besides `org-1`'s own
 - @e2e exclude {covered by PHPUnit on the SQL list}
+
+#### Scenario: A conditional public rule does not take the caller's other rules across organisations
+- **GIVEN** schema `case` has RBAC: `{ "read": [{ "group": "public", "match": { "status": "open" } }, { "group": "team-toezicht", "match": { "caseType": { "$in": ["ct-permit"] } } }], "inheritFromPublic": true }`
+- **AND** user `femke` is in `team-toezicht` with active organisation `org-1`
+- **WHEN** `femke` lists cases, counts them, or reads one by id
+- **THEN** open cases of every organisation MUST be returned
+- **AND** `ct-permit` cases of other organisations that are not open MUST NOT be returned
+- @e2e exclude {enforcement is a query boundary; covered by PHPUnit on the SQL list, the QueryBuilder single-object read and the aggregation decision}
 
 #### Scenario: A rule may declare that it crosses organisations
 - **GIVEN** a read rule `{ "group": "landelijk-team", "match": { "caseType": "ct-national" }, "crossOrganisation": true }`

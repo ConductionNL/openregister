@@ -833,6 +833,111 @@ class MagicRbacHandler {
 	}//end publicReadLiftsOrganisationFilter()
 
 	/**
+	 * Whether the caller's `public` read rules must widen the organisation
+	 * filter by their own rows rather than lift it.
+	 *
+	 * A signed-in, non-admin caller who qualifies for `public` on a schema whose
+	 * public read rules are all conditional reads the rows those rules admit in
+	 * every organisation, and the rows of their other rules only in their own.
+	 * Lifting the filter would let those other rules read every organisation
+	 * too, because the RBAC predicate ORs every rule the caller holds. An
+	 * unconditional `public` rule reads every row anyway, so it still lifts.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return bool True when the filter stays and gets a public branch.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-multi-tenancy-integration-with-scopes
+	 */
+	public function hasPublicReadBranch(Schema $schema): bool {
+		if ($this->getCurrentUserId() === null || $this->isAdmin() === true) {
+			return false;
+		}
+
+		$matches = $this->publicReadMatches(schema: $schema);
+		return $matches !== null && $matches !== []
+			&& $this->publicReadLiftsOrganisationFilter(schema: $schema) === true;
+	}//end hasPublicReadBranch()
+
+	/**
+	 * The rows the schema's conditional `public` read rules admit, as a
+	 * QueryBuilder expression to OR into the organisation filter.
+	 *
+	 * @param IQueryBuilder $qb     The query builder.
+	 * @param Schema        $schema The schema being read.
+	 *
+	 * @return mixed The expression, or null when no rule renders.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-multi-tenancy-integration-with-scopes
+	 */
+	public function getPublicReadBranch(IQueryBuilder $qb, Schema $schema): mixed {
+		$branches = [];
+		foreach (($this->publicReadMatches(schema: $schema) ?? []) as $match) {
+			$condition = $this->buildMatchConditions(qb: $qb, match: $match);
+			if ($condition !== null) {
+				$branches[] = $condition;
+			}
+		}
+
+		if ($branches === []) {
+			return null;
+		}
+
+		return $qb->expr()->orX(...$branches);
+	}//end getPublicReadBranch()
+
+	/**
+	 * The same rows as {@see getPublicReadBranch()}, as SQL for the string-built paths.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return string|null The predicate, or null when no rule renders.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-multi-tenancy-integration-with-scopes
+	 */
+	public function getPublicReadBranchSql(Schema $schema): ?string {
+		$branches = [];
+		foreach (($this->publicReadMatches(schema: $schema) ?? []) as $match) {
+			$condition = $this->buildMatchConditionsSql(match: $match);
+			if ($condition !== null) {
+				$branches[] = $condition;
+			}
+		}
+
+		if ($branches === []) {
+			return null;
+		}
+
+		return '(' . implode(' OR ', $branches) . ')';
+	}//end getPublicReadBranchSql()
+
+	/**
+	 * The match clauses of the schema's own `public` read rules.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return array<int, array>|null The clauses, or null when a `public` rule is unconditional.
+	 */
+	private function publicReadMatches(Schema $schema): ?array {
+		$matches = [];
+		foreach ((array)(($schema->getAuthorization() ?? [])['read'] ?? []) as $rule) {
+			if ($rule === 'public') {
+				return null;
+			}
+
+			if (is_array($rule) === true && ($rule['group'] ?? null) === 'public') {
+				if (is_array($rule['match'] ?? null) === false || $rule['match'] === []) {
+					return null;
+				}
+
+				$matches[] = $rule['match'];
+			}
+		}
+
+		return $matches;
+	}//end publicReadMatches()
+
+	/**
 	 * Process a single authorization rule
 	 *
 	 * @param IQueryBuilder $qb Query builder
