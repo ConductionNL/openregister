@@ -209,6 +209,13 @@ class ImportHandler {
 	private array $schemasMap = [];
 
 	/**
+	 * The schema parts the shipped-baseline guard kept local in the running app import.
+	 *
+	 * @var array<int, array{slug: string, paths: array<int, string>}>
+	 */
+	private array $keptLocal = [];
+
+	/**
 	 * Mapping mapper instance for handling mapping operations.
 	 *
 	 * @var MappingMapper The mapping mapper instance.
@@ -1542,6 +1549,7 @@ class ImportHandler {
 		}
 
 		if ($result['conflicts'] !== []) {
+			$this->keptLocal[] = ['slug' => $slug, 'paths' => array_column($result['conflicts'], 'path')];
 			$this->logger->warning(
 				message: '[ImportHandler] schema kept its local definition for parts the app also changed',
 				context: [
@@ -4445,6 +4453,7 @@ class ImportHandler {
 
 			// Run under its own import job id so the objects it creates can be
 			// removed by job later (a setup wizard's "remove this example set").
+			$this->keptLocal = [];
 			$result = $this->importFromJsonAsJob(
 				data: $import->data,
 				configuration: $configuration,
@@ -4452,6 +4461,7 @@ class ImportHandler {
 				version: $version,
 				force: $force
 			);
+			$result['keptLocal'] = ['schemas' => $this->keptLocal];
 
 			$update = new ImportedConfigurationUpdate(configuration: $configuration, result: $result);
 			if (count($result['registers']) > 0 || count($result['schemas']) > 0 || count($result['objects']) > 0) {
