@@ -290,7 +290,9 @@ export default {
 				.then((data) => {
 					this.success = !!data
 					this.error = false
-					data && setTimeout(this.closeModal, 2000)
+					if (data) {
+						setTimeout(this.closeModal, 2000)
+					}
 				})
 				.catch((error) => {
 					this.success = false
@@ -311,14 +313,14 @@ export default {
 		},
 
 		/**
-		 * @param json
+		 * @param {string} json
 		 * @spec exclude client-side JSON validation helper
 		 */
 		validateJson(json) {
 			try {
 				JSON.parse(json)
 				return true
-			} catch (error) {
+			} catch {
 				return false
 			}
 		},

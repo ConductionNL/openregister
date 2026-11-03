@@ -54,7 +54,7 @@ async function countFromObjectsApi(schemaId) {
 		}
 		const countData = await countResponse.json()
 		return countData.count || countData.total || 0
-	} catch (countError) {
+	} catch {
 		return null
 	}
 }
@@ -593,7 +593,7 @@ export const useSchemaStore = defineStore('schema', {
 					(await countFromObjectsApi(schemaId))
 					?? (await countFromSchemaStats(schemaId))
 				)
-			} catch (error) {
+			} catch {
 				return 0
 			}
 		},

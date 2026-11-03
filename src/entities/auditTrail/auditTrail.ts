@@ -32,6 +32,34 @@ const FALLBACKS = {
 	size: 0,
 }
 
+const AUDIT_TRAIL_SCHEMA = z.object({
+	id: z.number(),
+	uuid: z.string().uuid(),
+	schema: z.number(),
+	register: z.number(),
+	object: z.number(),
+	objectUuid: z.string().nullable(),
+	registerUuid: z.string().nullable(),
+	schemaUuid: z.string().nullable(),
+	action: z.string(),
+	changed: z.union([z.object({}), z.array(z.any())]),
+	user: z.string(),
+	userName: z.string(),
+	session: z.string(),
+	request: z.string(),
+	ipAddress: z.string(),
+	version: z.string().nullable(),
+	created: z.string(),
+	organisationId: z.string().nullable(),
+	organisationIdType: z.string().nullable(),
+	processingActivityId: z.string().nullable(),
+	processingActivityUrl: z.string().nullable(),
+	processingId: z.string().nullable(),
+	confidentiality: z.string().nullable(),
+	retentionPeriod: z.string().nullable(),
+	size: z.number(),
+})
+
 export class AuditTrail implements TAuditTrail {
 	public id!: number
 	public uuid!: string
@@ -68,34 +96,6 @@ export class AuditTrail implements TAuditTrail {
 	}
 
 	public validate(): ZodSafeParseResult<unknown> {
-		const schema = z.object({
-			id: z.number(),
-			uuid: z.string().uuid(),
-			schema: z.number(),
-			register: z.number(),
-			object: z.number(),
-			objectUuid: z.string().nullable(),
-			registerUuid: z.string().nullable(),
-			schemaUuid: z.string().nullable(),
-			action: z.string(),
-			changed: z.union([z.object({}), z.array(z.any())]),
-			user: z.string(),
-			userName: z.string(),
-			session: z.string(),
-			request: z.string(),
-			ipAddress: z.string(),
-			version: z.string().nullable(),
-			created: z.string(),
-			organisationId: z.string().nullable(),
-			organisationIdType: z.string().nullable(),
-			processingActivityId: z.string().nullable(),
-			processingActivityUrl: z.string().nullable(),
-			processingId: z.string().nullable(),
-			confidentiality: z.string().nullable(),
-			retentionPeriod: z.string().nullable(),
-			size: z.number(),
-		})
-
-		return schema.safeParse(this)
+		return AUDIT_TRAIL_SCHEMA.safeParse(this)
 	}
 }

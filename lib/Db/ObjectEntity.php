@@ -774,10 +774,10 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?string $viewedAt = null;
 
 	/**
-	 * What the reader may do with this object, as `{"update": bool}`.
+	 * What the reader may do with this object, as `{"update": bool, "<declared action>": bool}`.
 	 *
 	 * Transient, populated by the render layer only when the request asks for
-	 * it (`_extend[]=@self.can`), from PermissionHandler's own verdict. Exposed
+	 * it (`_extend[]=@self.can`), for the reader of that request. Exposed
 	 * in @self as `can`. The records list reads it to decide where a cell may
 	 * be edited in place (REQ-RFCE-002).
 	 *

@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectAction;
 
+use OCA\OpenRegister\Service\Rbac\MatrixRowsFromApps;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -65,7 +66,7 @@ class ObjectActionListTest extends TestCase {
 
 		return new ObjectActionList(
 			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-			new ObjectActionGate($permissions, $session, $l10n),
+			new ObjectActionGate($permissions, $session, $l10n, $this->createMock(MatrixRowsFromApps::class)),
 			new ObjectActionInputs(new OasRequestValidator()),
 			$this->transitions,
 			$l10n
