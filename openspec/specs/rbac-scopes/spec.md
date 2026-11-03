@@ -393,7 +393,7 @@ The system MUST cache frequently evaluated permission data to avoid repeated dat
 - **AND** each schema's RBAC groups MUST be reused when generating path operations without re-extraction
 
 ### Requirement: Multi-Tenancy Integration with Scopes
-RBAC scopes MUST integrate with the multi-tenancy system so that organisation-based data isolation works alongside group-based access control. When RBAC conditional rules match on non-`_organisation` fields, they MUST be able to bypass the default multi-tenancy filter, as determined by `MagicRbacHandler::hasConditionalRulesBypassingMultitenancy()`.
+RBAC scopes MUST integrate with the multi-tenancy system so that organisation-based data isolation works alongside group-based access control. A conditional rule keeps the organisation filter unless it crosses organisations. A rule crosses organisations when it binds a field other than `_organisation` to the caller's organisation (the bare `$organisation`, `$activeOrganisation` or `.uuid` token, or `{"$eq": <token>}`) or to the caller's membership (`$memberOf`), or when it declares `"crossOrganisation": true`. Any other match, such as a case type, a status or the caller's uid, selects rows inside the caller's organisation. The filter is lifted only when the caller holds at least one crossing rule and no conditional or `authenticated` rule that stays inside the organisation, because the RBAC predicate ORs every rule the caller holds. A simple group rule the caller holds still reads every row. Every read path (list, union search, facets, count, aggregation, export and the single-object read) takes this decision from `MagicRbacHandler::hasConditionalRulesBypassingMultitenancy()`.
 
 #### Scenario: Organisation filtering combined with RBAC
 - **GIVEN** user `jan` has active organisation `org-uuid-1` and is in group `behandelaars`
@@ -408,6 +408,28 @@ RBAC scopes MUST integrate with the multi-tenancy system so that organisation-ba
 - **WHEN** `MagicRbacHandler::hasConditionalRulesBypassingMultitenancy()` evaluates the rules
 - **THEN** it MUST detect `aanbieder` as a non-`_organisation` match field
 - **AND** multi-tenancy filtering MUST be bypassed, allowing RBAC's `aanbieder = 'org-1'` condition to handle filtering instead
+
+#### Scenario: A conditional rule on a static value keeps the organisation filter
+- **GIVEN** schema `case` has RBAC: `{ "read": [{ "group": "team-toezicht", "match": { "caseType": { "$in": ["ct-permit"] } } }] }`
+- **AND** user `femke` is in `team-toezicht` with active organisation `org-1`
+- **AND** a `ct-permit` case belongs to `org-2`
+- **WHEN** `femke` lists cases, counts them, or reads that case by id
+- **THEN** the organisation filter MUST apply and the `org-2` case MUST NOT be returned
+- @e2e exclude {enforcement is a query boundary; covered by PHPUnit on the SQL list, the aggregation decision and the single-object query}
+
+#### Scenario: Holding a crossing rule and a rule inside the organisation keeps the filter
+- **GIVEN** schema `catalogi` has the `aanbieder` rule above and a `team-toezicht` rule on `caseType`
+- **AND** user `jan` is in both groups
+- **WHEN** `jan` lists catalogi
+- **THEN** the organisation filter MUST apply, so the `caseType` rule cannot reach other organisations' rows
+- @e2e exclude {covered by PHPUnit on the SQL list}
+
+#### Scenario: A rule may declare that it crosses organisations
+- **GIVEN** a read rule `{ "group": "landelijk-team", "match": { "caseType": "ct-national" }, "crossOrganisation": true }`
+- **WHEN** a member of `landelijk-team` lists the schema
+- **THEN** the organisation filter MUST be lifted for that member
+- **AND** a `crossOrganisation` value other than the boolean `true` MUST be ignored
+- @e2e exclude {covered by PHPUnit on the SQL list}
 
 #### Scenario: Admin users see all organisations
 - **GIVEN** a user in the `admin` group
@@ -1012,7 +1034,7 @@ after expansion SHALL be evaluated as written.
 
 ### Requirement: A matrix row may add conditions and an end
 
-A department matrix row SHALL accept `where`, extra conditions in the scope vocabulary joined with AND to the row's field condition, and `until`, after which the row grants nothing. The compiled scope SHALL be an ordinary conditional scope, evaluated identically on the PHP and SQL paths. A row whose `where` holds an empty `$in` SHALL be dropped whole.
+A department matrix row SHALL accept `where`, extra conditions in the scope vocabulary joined with AND to the row's field condition, and `until`, after which the row grants nothing. A `where` key SHALL be a property of the schema or one of the metadata fields `_organisation` and `_owner`, which the system sets and every enforcement path reads from the row's own column; any other key is refused with `matrix.where-unknown-field`. The compiled scope SHALL be an ordinary conditional scope, evaluated identically on the PHP and SQL paths. A row whose `where` holds an empty `$in` SHALL be dropped whole.
 
 #### Scenario: an edit right limited to statuses
 
@@ -1022,6 +1044,14 @@ A department matrix row SHALL accept `where`, extra conditions in the scope voca
 - **THEN** the first update is allowed and the second refused
 - **AND** A still reads the case in `s2`
 - @e2e exclude {enforcement is a service boundary; covered by PHPUnit on both the PHP and the SQL path}
+
+#### Scenario: a row limited to the caller's organisation
+
+- **GIVEN** a matrix row for group `team-toezicht` with `where` `{_organisation: "$organisation"}`
+- **WHEN** the schema is saved, or an app adds the row at check time
+- **THEN** the row is accepted and its compiled scope carries `_organisation: "$organisation"` beside the field condition
+- **AND** a `where` on `_uuid`, `_created` or another metadata field is refused
+- @e2e exclude {covered by unit tests on the validator and compiler}
 
 #### Scenario: a row past its end
 

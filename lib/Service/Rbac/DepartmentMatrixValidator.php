@@ -49,6 +49,18 @@ class DepartmentMatrixValidator {
 	public const ROWS_FROM_KEY = 'rowsFrom';
 
 	/**
+	 * Metadata fields a row's `where` may name besides the schema's properties.
+	 *
+	 * Each is a column of every magic table that the system sets (a writer
+	 * cannot put it in the object body) and that every enforcement path reads
+	 * the same way: `t._organisation` on the list, `@self.organisation` on a
+	 * single object.
+	 *
+	 * @var string[]
+	 */
+	public const WHERE_METADATA_FIELDS = ['_organisation', '_owner'];
+
+	/**
 	 * Findings for one row, as the compiler will read it.
 	 *
 	 * Used for rows an app adds at check time, which never pass a schema save.
@@ -326,10 +338,11 @@ class DepartmentMatrixValidator {
 			];
 		}
 
-		if (array_key_exists($key, $properties) === false) {
+		if (array_key_exists($key, $properties) === false && in_array($key, self::WHERE_METADATA_FIELDS, true) === false) {
 			return [
 				'code' => 'matrix.where-unknown-field',
-				'message' => $name . ': where names "' . $key . '", which is not a property of this schema.',
+				'message' => $name . ': where names "' . $key . '", which is neither a property of this schema nor '
+					. implode(' or ', self::WHERE_METADATA_FIELDS) . '.',
 			];
 		}
 
