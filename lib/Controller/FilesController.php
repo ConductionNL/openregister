@@ -336,15 +336,15 @@ class FilesController extends Controller {
 
 		// Legacy wiring without the guard: the object read check alone.
 		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: true));
-		if ($change === true && $object instanceof ObjectEntity) {
+		if ($object instanceof ObjectEntity === false) {
+			return null;
+		}
+
+		if ($change === true) {
 			$this->fileWriteGuard?->assertWritable(object: $object);
 		}
 
-		if ($object instanceof ObjectEntity) {
-			return $object;
-		}
-
-		return null;
+		return $object;
 	}//end ensureObjectAccess()
 
 	/**

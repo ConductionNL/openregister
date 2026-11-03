@@ -1,4 +1,9 @@
-import { getListPage, listPageQuery, listPagination } from './listPage.js'
+import {
+	copiedResults,
+	getListPage,
+	listPageQuery,
+	listPagination,
+} from './listPage.js'
 
 describe('listPage', () => {
 	describe('listPageQuery', () => {
@@ -84,5 +89,20 @@ describe('listPage', () => {
 			fetch.mockResolvedValueOnce({ ok: false, json: async () => ({}) })
 			await expect(getListPage('/x', 'fallback')).rejects.toThrow('fallback')
 		})
+	})
+})
+
+describe('copiedResults', () => {
+	it('copies the results deeply, so the store does not share them with the answer', () => {
+		const data = { results: [{ id: 1, tags: ['a'] }] }
+		const copied = copiedResults(data)
+		expect(copied).toEqual(data.results)
+		expect(copied).not.toBe(data.results)
+		expect(copied[0].tags).not.toBe(data.results[0].tags)
+	})
+
+	it('gives an empty list when the answer has no results', () => {
+		expect(copiedResults({})).toEqual([])
+		expect(copiedResults({ results: null })).toEqual([])
 	})
 })

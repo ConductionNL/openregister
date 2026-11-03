@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use OCA\OpenRegister\Db\Schema;
+use OCP\AppFramework\Utility\ITimeFactory;
 
 /**
  * The value an object's slug is built from, before any uniqueness check.
@@ -41,6 +42,16 @@ use OCA\OpenRegister\Db\Schema;
 class ObjectSlugSource {
 
 	/**
+	 * Width of the column that stores a slug.
+	 */
+	public const MAX_LENGTH = 255;
+
+	/**
+	 * Length of `-YYYYMMDDHHMMSS`.
+	 */
+	private const SUFFIX_LENGTH = 15;
+
+	/**
 	 * Reads a client-sent slug.
 	 *
 	 * @var ObjectSlugClientValue
@@ -50,13 +61,66 @@ class ObjectSlugSource {
 	/**
 	 * Constructor.
 	 *
-	 * @param MetadataHydrationHandler $hydrator Field extraction and the slugify routine.
+	 * @param MetadataHydrationHandler $hydrator    Field extraction and the slugify routine.
+	 * @param ITimeFactory|null        $timeFactory Clock for the suffix (null = system clock).
 	 */
 	public function __construct(
 		private readonly MetadataHydrationHandler $hydrator,
+		private readonly ?ITimeFactory $timeFactory=null,
 	) {
 		$this->clientValue = new ObjectSlugClientValue(hydrator: $hydrator);
 	}//end __construct()
+
+	/**
+	 * Append `-YYYYMMDDHHMMSS` (UTC), cutting the base so the result fits the column.
+	 *
+	 * @param string      $slug  The taken slug.
+	 * @param string|null $stamp A `YmdHis` stamp to use instead of now.
+	 *
+	 * @return string The suffixed slug.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
+	 */
+	public function withSuffix(string $slug, ?string $stamp=null): string {
+		return $this->suffixBase(slug: $slug) . '-' . ($stamp ?? $this->currentStamp());
+	}//end withSuffix()
+
+	/**
+	 * Whether a slug is a suffixed variant of a candidate (`<base>-<14 digits>`).
+	 *
+	 * @param string $slug      The stored slug.
+	 * @param string $candidate The unsuffixed candidate.
+	 *
+	 * @return bool True when $slug is $candidate with a date-time suffix.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
+	 */
+	public function isSuffixOf(string $slug, string $candidate): bool {
+		return preg_match('/^' . preg_quote($this->suffixBase(slug: $candidate), '/') . '-\d{14}$/', $slug) === 1;
+	}//end isSuffixOf()
+
+	/**
+	 * The current UTC time as a `YmdHis` stamp.
+	 *
+	 * @return string The stamp.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
+	 */
+	public function currentStamp(): string {
+		$timestamp = ($this->timeFactory?->now()->getTimestamp() ?? time());
+		return gmdate('YmdHis', $timestamp);
+	}//end currentStamp()
+
+	/**
+	 * The part of a slug a suffix is appended to, cut so the result fits the column.
+	 *
+	 * @param string $slug The slug.
+	 *
+	 * @return string The base.
+	 */
+	private function suffixBase(string $slug): string {
+		return rtrim(substr($slug, 0, self::MAX_LENGTH - self::SUFFIX_LENGTH), '-');
+	}//end suffixBase()
 
 	/**
 	 * A client-sent slug, normalised like a generated one (BC5), or null when none was sent.

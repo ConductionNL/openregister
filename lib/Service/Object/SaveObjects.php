@@ -72,6 +72,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Service\Object\SaveObject\BulkObjectSlugs;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -174,6 +175,13 @@ class SaveObjects {
 	private static array $registerCache = [];
 
 	/**
+	 * The bulk slug pass (#4037), built on first use.
+	 *
+	 * @var BulkObjectSlugs|null
+	 */
+	private ?BulkObjectSlugs $bulkSlugs = null;
+
+	/**
 	 * Constructor for SaveObjects handler
 	 *
 	 * @param MagicMapper $objectEntityMapper Mapper for object entity database operations
@@ -238,218 +246,24 @@ class SaveObjects {
 	}//end loadSchemaWithCache()
 
 	/**
-	 * Key that carries a top-level client `slug` past extractBusinessData().
+	 * The slug rules for a prepared batch (#4037), built once.
 	 *
-	 * The fast path strips an undeclared top-level `slug` from the business data;
-	 * prepareSingleSchemaObject() parks it here so the slug decision still sees
-	 * it, and applyObjectSlugs() removes it again before anything is written.
+	 * @return BulkObjectSlugs The bulk slug pass.
 	 */
-	private const CLIENT_SLUG_KEY = '__clientSlug';
+	private function bulkSlugs(): BulkObjectSlugs {
+		$this->bulkSlugs ??= new BulkObjectSlugs(
+			slugHandler: $this->saveHandler->getSlugHandler(),
+			registerMapper: $this->registerMapper,
+			logger: $this->logger,
+			schemaOf: fn (string $schemaId): Schema => $this->loadSchemaWithCache(schemaId: $schemaId)
+		);
 
-	/**
-	 * Decide the object slugs of a prepared batch, one register+schema group at a time.
-	 *
-	 * Prepared rows come in two shapes: the flat selfData shape of the single-
-	 * schema fast path (metadata at the top, business data under `object`) and
-	 * the `@self` shape of the mixed-schema path. Both are normalised for
-	 * ObjectSlugHandler::decideBatch() and the decision is written back as
-	 * `slug`, explicitly null when there is none. Schemas without
-	 * `objectSlugField` are left exactly as they are (BC1).
-	 *
-	 * The group is the table the rows are WRITTEN to: with a caller schema (the
-	 * fast path) persistChunk() writes every row into the caller's register and
-	 * schema, whatever a row's advisory `@self.register` says, so the decision
-	 * is made against that table too. Only the mixed path groups per row,
-	 * falling back to the caller's register as ultraFastBulkSave() does. A
-	 * managed group whose register cannot be resolved gets no slug rather than
-	 * an unchecked client value.
-	 *
-	 * @param array                    $objects  The prepared rows, by reference.
-	 * @param Register|string|int|null $register The caller's register, if given.
-	 * @param Schema|string|int|null   $schema   The caller's schema, if given.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
-	 */
-	private function applyObjectSlugs(
-		array &$objects,
-		Register|string|int|null $register=null,
-		Schema|string|int|null $schema=null,
-	): void {
-		$callerRegisterId = $register;
-		if ($register instanceof Register) {
-			$callerRegisterId = $register->getId();
-		}
+		return $this->bulkSlugs;
+	}//end bulkSlugs()
 
-		$callerSchemaId = $schema;
-		if ($schema instanceof Schema) {
-			$callerSchemaId = $schema->getId();
-		}
 
-		$groups = [];
-		foreach ($objects as $index => $object) {
-			$self = $object['@self'] ?? $object;
-			$registerId = $self['register'] ?? $callerRegisterId;
-			$schemaId = $self['schema'] ?? null;
-			if ($callerSchemaId !== null) {
-				$registerId = $callerRegisterId ?? $registerId;
-				$schemaId = $callerSchemaId;
-			}
 
-			if ($registerId === null || $schemaId === null) {
-				continue;
-			}
 
-			$groups[$registerId . '|' . $schemaId][] = $index;
-		}
-
-		foreach ($groups as $key => $indexes) {
-			[$registerId, $schemaId] = explode('|', (string)$key, 2);
-			$groupRegister = null;
-			if ($register instanceof Register && (string)$register->getId() === $registerId) {
-				$groupRegister = $register;
-			}
-
-			$groupSchema = null;
-			if ($schema instanceof Schema && (string)$schema->getId() === $schemaId) {
-				$groupSchema = $schema;
-			}
-
-			$this->decideSlugGroup(
-				objects: $objects,
-				indexes: $indexes,
-				registerId: $registerId,
-				schemaId: $schemaId,
-				register: $groupRegister,
-				schema: $groupSchema
-			);
-		}
-
-		foreach (array_keys($objects) as $index) {
-			unset($objects[$index][self::CLIENT_SLUG_KEY]);
-			if (isset($objects[$index]['@self']) === true && is_array($objects[$index]['@self']) === true) {
-				unset($objects[$index]['@self'][self::CLIENT_SLUG_KEY]);
-			}
-		}
-	}//end applyObjectSlugs()
-
-	/**
-	 * Decide the slugs of one register+schema group and write them back.
-	 *
-	 * @param array         $objects    The prepared rows, by reference.
-	 * @param list<int>     $indexes    The rows of this group.
-	 * @param string        $registerId The group's register id.
-	 * @param string        $schemaId   The group's schema id.
-	 * @param Register|null $register   The register entity when the caller passed it.
-	 * @param Schema|null   $schema     The schema entity when the caller passed it.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
-	 */
-	private function decideSlugGroup(
-		array &$objects,
-		array $indexes,
-		string $registerId,
-		string $schemaId,
-		?Register $register,
-		?Schema $schema,
-	): void {
-		$slugHandler = $this->saveHandler->getSlugHandler();
-		try {
-			$schema ??= $this->loadSchemaWithCache(schemaId: $schemaId);
-		} catch (Exception $e) {
-			$this->logger->warning(
-				'[ObjectSlug] Could not resolve schema ' . $schemaId . ' for the bulk slug check: ' . $e->getMessage(),
-				['app' => 'openregister']
-			);
-			return;
-		}
-
-		if ($slugHandler->isManaged(schema: $schema) === false) {
-			return;
-		}
-
-		try {
-			$register ??= $this->registerMapper->find(id: $registerId, _rbac: false, _multitenancy: false);
-		} catch (Exception $e) {
-			// Fail closed: without the table there is no uniqueness check, so no
-			// client slug is written unchecked.
-			$this->logger->warning(
-				'[ObjectSlug] Could not resolve register ' . $registerId . ' for the bulk slug check; '
-				. 'the rows of schema ' . $schemaId . ' are saved without a slug: ' . $e->getMessage(),
-				['app' => 'openregister']
-			);
-			foreach ($indexes as $index) {
-				$this->writeSlugDecision(objects: $objects, index: $index, slug: null);
-			}
-
-			return;
-		}
-
-		$rows = [];
-		foreach ($indexes as $index) {
-			$object = $objects[$index];
-			$isSelfShape = isset($object['@self']) === true && is_array($object['@self']) === true;
-			$self = $object;
-			if ($isSelfShape === true) {
-				$self = $object['@self'];
-			}
-
-			$data = $object['object'] ?? [];
-			if ($isSelfShape === true) {
-				$data = $object;
-				unset($data['@self']);
-			}
-
-			$clientSlug = $self['slug'] ?? $self[self::CLIENT_SLUG_KEY] ?? $data['slug'] ?? null;
-			$uuid = $self['uuid'] ?? $self['id'] ?? null;
-			$rowUuid = null;
-			if (is_string($uuid) === true) {
-				$rowUuid = $uuid;
-			}
-
-			$rowClientSlug = null;
-			if (is_string($clientSlug) === true && $clientSlug !== '') {
-				$rowClientSlug = $clientSlug;
-			}
-
-			$rowData = [];
-			if (is_array($data) === true) {
-				$rowData = $data;
-			}
-
-			$rows[$index] = [
-				'uuid' => $rowUuid,
-				'clientSlug' => $rowClientSlug,
-				'data' => $rowData,
-			];
-		}
-
-		$decisions = $slugHandler->decideBatch(rows: $rows, register: $register, schema: $schema);
-		foreach ($decisions as $index => $slug) {
-			$this->writeSlugDecision(objects: $objects, index: $index, slug: $slug);
-		}
-	}//end decideSlugGroup()
-
-	/**
-	 * Write one slug decision into a prepared row of either shape.
-	 *
-	 * @param array       $objects The prepared rows, by reference.
-	 * @param int|string  $index   The row.
-	 * @param string|null $slug    The decided slug, or null for none.
-	 *
-	 * @return void
-	 */
-	private function writeSlugDecision(array &$objects, int|string $index, ?string $slug): void {
-		if (isset($objects[$index]['@self']) === true && is_array($objects[$index]['@self']) === true) {
-			$objects[$index]['@self']['slug'] = $slug;
-			return;
-		}
-
-		$objects[$index]['slug'] = $slug;
-	}//end writeSlugDecision()
 
 	/**
 	 * Get comprehensive schema analysis from cache or generate new analysis
@@ -670,16 +484,14 @@ class SaveObjects {
 			return $result;
 		}
 
-		// Decide object slugs per register+schema group, in batch order, before
-		// anything is written: the same rules as a single save (#4037).
-		$this->applyObjectSlugs(objects: $processedObjects, register: $register, schema: $schema);
-
 		// Update statistics to reflect actual processed objects.
 		$result['statistics']['totalProcessed'] = count($processedObjects);
 
 		// Process objects in chunks for optimal performance.
 		$chunkSize = $this->calculateOptimalChunkSize(totalObjects: count($processedObjects));
-		$chunks = array_chunk($processedObjects, $chunkSize);
+		// Decide object slugs per register+schema group, in batch order, before
+		// anything is written: the same rules as a single save (#4037).
+		$chunks = array_chunk($this->bulkSlugs()->apply(objects: $processedObjects, register: $register, schema: $schema), $chunkSize);
 
 		// SINGLE PATH PROCESSING - Process all chunks the same way regardless of size.
 		foreach ($chunks as $chunkIndex => $objectsChunk) {
@@ -2006,9 +1818,7 @@ class SaveObjects {
 
 		// The call to extractBusinessData() below drops an undeclared top-level
 		// `slug`. Keep it for the slug decision, which removes this key again (#4037).
-		if (isset($selfData['slug']) === false && is_string($object['slug'] ?? null) === true && $object['slug'] !== '') {
-			$selfData[self::CLIENT_SLUG_KEY] = $object['slug'];
-		}
+		$selfData[BulkObjectSlugs::CLIENT_SLUG_KEY] = $this->bulkSlugs()->clientSlugToCarry(selfData: $selfData, object: $object);
 
 		// PERFORMANCE: Use pre-loaded values instead of per-object lookups.
 		$selfData['register'] = $selfData['register'] ?? $registerId;

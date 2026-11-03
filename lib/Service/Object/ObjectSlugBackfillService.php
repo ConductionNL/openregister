@@ -26,12 +26,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
-use OCP\IDBConnection;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugScope;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugWant;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -55,37 +55,19 @@ class ObjectSlugBackfillService {
 	private const PAGE_SIZE = 500;
 
 	/**
-	 * Writes a plan, evicts the cache and records the audit entry.
-	 *
-	 * @var ObjectSlugBackfillWriter
-	 */
-	private ObjectSlugBackfillWriter $writer;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper       $magicMapper  Reads and writes the magic table.
-	 * @param ObjectSlugHandler $slugHandler  Candidate, suffix and collision rules.
-	 * @param CacheHandler      $cacheHandler Object cache, evicted after writing.
-	 * @param IDBConnection     $db           Wraps each chunk of a write in a transaction.
-	 * @param AuditTrailMapper  $auditTrail   Records the audit entry of a run that changed slugs.
-	 * @param LoggerInterface   $logger       Receives the duplicate warnings.
+	 * @param MagicMapper              $magicMapper Reads the magic table.
+	 * @param ObjectSlugHandler        $slugHandler Candidate, suffix and collision rules.
+	 * @param ObjectSlugBackfillWriter $writer      Writes a plan, evicts the cache and records the audit entry.
+	 * @param LoggerInterface          $logger      Receives the duplicate warnings.
 	 */
 	public function __construct(
 		private readonly MagicMapper $magicMapper,
 		private readonly ObjectSlugHandler $slugHandler,
-		CacheHandler $cacheHandler,
-		IDBConnection $db,
-		AuditTrailMapper $auditTrail,
+		private readonly ObjectSlugBackfillWriter $writer,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->writer = new ObjectSlugBackfillWriter(
-			magicMapper: $magicMapper,
-			cacheHandler: $cacheHandler,
-			db: $db,
-			auditTrail: $auditTrail,
-			logger: $logger
-		);
 	}//end __construct()
 
 	/**
@@ -148,7 +130,7 @@ class ObjectSlugBackfillService {
 			'skipped' => 0,
 		];
 
-		$plan = $this->planFill(rows: $rows, register: $register, schema: $schema, summary: $summary, log: ($dryRun === false));
+		$plan = $this->planFill(rows: $rows, scope: new ObjectSlugScope(register: $register, schema: $schema), summary: $summary, log: ($dryRun === false));
 
 		if ($dryRun === false) {
 			$summary['skipped'] = $this->writer->write(plan: $plan, register: $register, schema: $schema, summary: $summary);
@@ -207,25 +189,43 @@ class ObjectSlugBackfillService {
 	}//end loadRows()
 
 	/**
-	 * Give objects without a slug their candidate when it is free.
+	 * The slugs the table holds now, with their holders.
 	 *
-	 * @param list<array{id: int, uuid: string, slug: string|null, created: string|null, candidate: string|null}> $rows Rows without a slug.
+	 * Keyed case-folded, as bulk save does: on a case-insensitive collation
+	 * `Hello-World` and `hello-world` are one slug (ObjectSlugHandler::foldKey()).
+	 *
 	 * @param Register $register The register.
 	 * @param Schema   $schema   The schema.
-	 * @param array    $summary  Counters, by reference.
-	 * @param bool     $log      Log collisions (false on a dry run).
 	 *
-	 * @return list<array{uuid: string, old: ?string, new: ?string}>
+	 * @return array<string, list<string>> Folded slug => holder uuids.
 	 */
-	private function planFill(array $rows, Register $register, Schema $schema, array &$summary, bool $log): array {
-		// Keyed case-folded, as bulk save does: on a case-insensitive collation
-		// `Hello-World` and `hello-world` are one slug (ObjectSlugHandler::foldKey()).
+	private function takenSlugs(Register $register, Schema $schema): array {
 		$taken = [];
 		foreach ($this->magicMapper->findAllSlugs(register: $register, schema: $schema) as $held => $holders) {
 			$key = $this->slugHandler->foldKey(slug: (string)$held);
 			$taken[$key] = array_merge($taken[$key] ?? [], $holders);
 		}
 
+		return $taken;
+	}//end takenSlugs()
+
+	/**
+	 * Give objects without a slug their candidate when it is free.
+	 *
+	 * @param list<array{id: int, uuid: string, slug: string|null, created: string|null, candidate: string|null}> $rows Rows without a slug.
+	 * @param ObjectSlugScope $scope   The register and schema.
+	 * @param array           $summary Counters, by reference.
+	 * @param bool            $log     Log collisions (false on a dry run).
+	 *
+	 * @return list<array{uuid: string, old: ?string, new: ?string}>
+	 */
+	private function planFill(array $rows, ObjectSlugScope $scope, array &$summary, bool $log): array {
+		$register = $scope->register;
+		if ($register === null) {
+			return [];
+		}
+
+		$taken = $this->takenSlugs(register: $register, schema: $scope->schema);
 		$plan = [];
 		foreach ($rows as $row) {
 			$candidate = $row['candidate'];
@@ -236,10 +236,7 @@ class ObjectSlugBackfillService {
 
 			$uuid = $row['uuid'];
 			$slug = $this->slugHandler->decide(
-				candidate: $candidate,
-				register: $register,
-				schema: $schema,
-				objectUuid: $uuid,
+				want: new ObjectSlugWant(slug: $candidate, scope: $scope, objectUuid: $uuid, path: 'backfill'),
 				holderOf: function (string $wanted) use (&$taken, $uuid): ?string {
 					foreach ($taken[$this->slugHandler->foldKey(slug: $wanted)] ?? [] as $holder) {
 						if ($holder !== $uuid) {
@@ -249,7 +246,6 @@ class ObjectSlugBackfillService {
 
 					return null;
 				},
-				path: 'backfill',
 				log: $log
 			);
 			if ($slug === null) {

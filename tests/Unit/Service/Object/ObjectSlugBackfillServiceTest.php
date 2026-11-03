@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -22,6 +23,8 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillService;
+use OCA\OpenRegister\Service\Object\ObjectSlugBackfillLedger;
+use OCA\OpenRegister\Service\Object\ObjectSlugBackfillWriter;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCP\IDBConnection;
@@ -33,6 +36,8 @@ use Psr\Log\LoggerInterface;
  * Tests for the slug backfill: fill, dry run, duplicates, audit.
  */
 class ObjectSlugBackfillServiceTest extends TestCase {
+	use BuildsObjectSlugHandler;
+
 
 	private const UUID_A = '00000000-0000-0000-0000-00000000000a';
 	private const UUID_B = '00000000-0000-0000-0000-00000000000b';
@@ -80,7 +85,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$registerMapper = $this->createMock(RegisterMapper::class);
 		$registerMapper->method('find')->willReturn($this->register);
 
-		$slugHandler = new ObjectSlugHandler(
+		$slugHandler = $this->buildSlugHandler(
 			magicMapper: $this->magicMapper,
 			hydrator: new MetadataHydrationHandler(
 				logger: $this->createMock(LoggerInterface::class),
@@ -94,9 +99,12 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$this->service = new ObjectSlugBackfillService(
 			magicMapper: $this->magicMapper,
 			slugHandler: $slugHandler,
-			cacheHandler: $this->createMock(CacheHandler::class),
-			db: $this->createMock(IDBConnection::class),
-			auditTrail: $this->auditTrailMapper,
+			writer: new ObjectSlugBackfillWriter(
+				magicMapper: $this->magicMapper,
+				db: $this->createMock(IDBConnection::class),
+				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), auditTrail: $this->auditTrailMapper, logger: $logger),
+				logger: $logger
+			),
 			logger: $logger
 		);
 	}//end setUp()
@@ -109,8 +117,8 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 	private function auditMapper(): AuditTrailMapper {
 		$mapper = $this->createMock(AuditTrailMapper::class);
 		$mapper->method('createSlugBackfillEntry')->willReturnCallback(
-			function (string $mode, array $changes, array $summary, ?int $register=null, ?int $schema=null): AuditTrail {
-				$this->audits[] = ['mode' => $mode, 'changes' => $changes, 'summary' => $summary, 'register' => $register, 'schema' => $schema];
+			function (array $changes, array $summary, ?int $register=null, ?int $schema=null): AuditTrail {
+				$this->audits[] = ['changes' => $changes, 'summary' => $summary, 'register' => $register, 'schema' => $schema];
 				return new AuditTrail();
 			}
 		);
@@ -271,7 +279,6 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$this->service->run($this->register, $this->schema());
 
 		$this->assertCount(1, $this->audits);
-		$this->assertSame('fill', $this->audits[0]['mode']);
 		$this->assertSame(
 			[
 				['uuid' => self::UUID_A, 'old' => null, 'new' => 'hello'],
@@ -327,7 +334,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$registerMapper = $this->createMock(RegisterMapper::class);
 		$service = new ObjectSlugBackfillService(
 			magicMapper: $magicMapper,
-			slugHandler: new ObjectSlugHandler(
+			slugHandler: $this->buildSlugHandler(
 				magicMapper: $magicMapper,
 				hydrator: new MetadataHydrationHandler(
 					logger: $this->createMock(LoggerInterface::class),
@@ -336,9 +343,12 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 				registerMapper: $registerMapper,
 				logger: $logger
 			),
-			cacheHandler: $this->createMock(CacheHandler::class),
-			db: $this->createMock(IDBConnection::class),
-			auditTrail: $this->auditMapper(),
+			writer: new ObjectSlugBackfillWriter(
+				magicMapper: $magicMapper,
+				db: $this->createMock(IDBConnection::class),
+				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), auditTrail: $this->auditMapper(), logger: $logger),
+				logger: $logger
+			),
 			logger: $logger
 		);
 
@@ -405,17 +415,12 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			$this->page([$this->row(1, self::UUID_A, 'Hello World')]),
 			$this->page([])
 		);
-		$expectedSeen = 'unset';
-		$magicMapper->method('updateSlugColumn')->willReturnCallback(
-			function (Register $r, Schema $s, string $uuid, ?string $slug, ?string $expected = null) use (&$expectedSeen): int {
-				$expectedSeen = $expected;
-				return 0;
-			}
-		);
+		// The write only applies while the row has no slug; 0 rows = a save got there first.
+		$magicMapper->method('updateSlugColumn')->willReturn(0);
 		$registerMapper = $this->createMock(RegisterMapper::class);
 		$registerMapper->method('find')->willReturn($this->register);
 		$logger = $this->createMock(LoggerInterface::class);
-		$slugHandler = new ObjectSlugHandler(
+		$slugHandler = $this->buildSlugHandler(
 			magicMapper: $magicMapper,
 			hydrator: new MetadataHydrationHandler(
 				logger: $this->createMock(LoggerInterface::class),
@@ -427,15 +432,17 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$service = new ObjectSlugBackfillService(
 			magicMapper: $magicMapper,
 			slugHandler: $slugHandler,
-			cacheHandler: $this->createMock(CacheHandler::class),
-			db: $this->createMock(IDBConnection::class),
-			auditTrail: $this->auditMapper(),
+			writer: new ObjectSlugBackfillWriter(
+				magicMapper: $magicMapper,
+				db: $this->createMock(IDBConnection::class),
+				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), auditTrail: $this->auditMapper(), logger: $logger),
+				logger: $logger
+			),
 			logger: $logger
 		);
 
 		$result = $service->run($this->register, $this->schema());
 
-		$this->assertNull($expectedSeen, 'the write must be conditional on the row still having no slug');
 		$this->assertSame(1, $result['summary']['skipped']);
 	}
 

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -49,6 +50,8 @@ use Twig\Loader\ArrayLoader;
  * default value processing, slug generation, and cache management.
  */
 class SaveObjectTest extends TestCase {
+	use BuildsObjectSlugHandler;
+
 	/** @var SaveObject */
 	/**
 	 * The ambient flow-run stack the guard reads.
@@ -4503,7 +4506,7 @@ class SaveObjectTest extends TestCase {
 		);
 		$this->setPrivateProperty(
 			'slugHandler',
-			new ObjectSlugHandler(
+			$this->buildSlugHandler(
 				magicMapper: $this->objectEntityMapper,
 				hydrator: new MetadataHydrationHandler(
 					logger: $this->createMock(LoggerInterface::class),
@@ -4544,17 +4547,19 @@ class SaveObjectTest extends TestCase {
 	public function testUpdatingAnObjectKeepsItsSlugWhenTheSourceFieldChanges(): void {
 		$this->useRealSlugHandler();
 		[$entity, $schema] = $this->slugEntity('hello-world');
+		$data = ['title' => 'A Completely New Title'];
 
-		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, ['title' => 'A Completely New Title'], [], null]);
+		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, $data, [], null]);
+		$this->invokePrivateMethod('decideSlug', [$entity, $schema, 'hello-world', [[], $data]]);
 
-		$this->assertSame('hello-world', $entity->getSlug(), 'the stored slug is the freeze reference, read before @self is applied');
+		$this->assertSame('hello-world', $entity->getSlug(), 'the stored slug is the freeze reference');
 	}
 
 	public function testAClientSlugOnAFrozenObjectIsIgnored(): void {
 		$this->useRealSlugHandler();
 		[$entity, $schema] = $this->slugEntity('hello-world');
 
-		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, ['title' => 'Hello World'], ['slug' => 'something-else'], null]);
+		$this->invokePrivateMethod('decideSlug', [$entity, $schema, 'hello-world', [['slug' => 'something-else'], ['title' => 'Hello World']]]);
 
 		$this->assertSame('hello-world', $entity->getSlug());
 	}
@@ -4563,65 +4568,39 @@ class SaveObjectTest extends TestCase {
 		$this->useRealSlugHandler();
 		[$entity, $schema] = $this->slugEntity('hello-world');
 
-		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, ['title' => 'Hello World'], ['slug' => ''], null]);
+		$this->invokePrivateMethod('decideSlug', [$entity, $schema, 'hello-world', [['slug' => ''], ['title' => 'Hello World']]]);
 
 		$this->assertSame('hello-world', $entity->getSlug());
 	}
 
-	public function testASecondPrepareOfTheSameSaveDoesNotDecideTheSlugAgain(): void {
-		// The client asked for a taken slug, so the first decision is "no slug". The
-		// second prepare has no @self any more; deciding again would hand the object
-		// the slug of its title instead.
+	public function testAnUpdateDecidesTheSlugOnce(): void {
+		$this->useRealSlugHandler();
+		[$entity, $schema] = $this->slugEntity(null);
+		$register = $this->createMockRegister(id: 7);
+
+		$prepared = $this->invokePrivateMethod(
+			'handleObjectUpdate',
+			[$entity, $register, $schema, ['title' => 'Free Title'], [], null, false, true]
+		);
+
+		$this->assertSame('free-title', $prepared->getSlug(), 'the update path decides the slug of an object without one');
+	}
+
+	public function testUpdateObjectDoesNotDecideTheSlugAgain(): void {
+		// The client asked for a taken slug, so the decision is "no slug". updateObject()
+		// has no @self any more; deciding again would hand the object the slug of its title.
 		$this->useRealSlugHandler(['taken' => ['22222222-2222-2222-2222-222222222222']]);
 		[$entity, $schema] = $this->slugEntity(null);
 		$data = ['title' => 'Free Title'];
-
-		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, $data, ['slug' => 'taken'], null]);
-		$this->assertNull($entity->getSlug(), 'precondition: the first decision is no slug');
-
-		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, $data, [], null, null, false]);
-
-		$this->assertNull($entity->getSlug(), 'a prepare that must not decide leaves the first decision alone');
-
-		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, $data, [], null, null, true]);
-		$this->assertSame('free-title', $entity->getSlug(), 'control: a prepare that decides does give the title slug');
-	}
-
-	public function testUpdateObjectWithSlugDecidedKeepsTheDecisionOfTheFirstPrepare(): void {
-		// updateObject() maps its slugDecided flag onto the prepare: true must not decide again.
-		$this->useRealSlugHandler();
-		[$entity, $schema] = $this->slugEntity(null);
 		$register = $this->createMockRegister(id: 7);
 		$this->objectEntityMapper->method('update')->willReturnArgument(0);
 		$this->unifiedObjectMapper->method('update')->willReturnArgument(0);
 
-		$updated = $this->handler->updateObject(
-			register: $register,
-			schema: $schema,
-			data: ['title' => 'Free Title'],
-			existingObject: $entity,
-			silent: true,
-			slugDecided: true
-		);
+		$this->invokePrivateMethod('decideSlug', [$entity, $schema, null, [['slug' => 'taken'], $data]]);
+		$this->assertNull($entity->getSlug(), 'precondition: the decision is no slug');
 
-		$this->assertNull($updated->getSlug(), 'the caller decided the slug already; the update must not decide it again');
-	}
+		$updated = $this->handler->updateObject(register: $register, schema: $schema, data: $data, existingObject: $entity, silent: true);
 
-	public function testUpdateObjectWithoutSlugDecidedDecidesTheSlug(): void {
-		$this->useRealSlugHandler();
-		[$entity, $schema] = $this->slugEntity(null);
-		$register = $this->createMockRegister(id: 7);
-		$this->objectEntityMapper->method('update')->willReturnArgument(0);
-		$this->unifiedObjectMapper->method('update')->willReturnArgument(0);
-
-		$updated = $this->handler->updateObject(
-			register: $register,
-			schema: $schema,
-			data: ['title' => 'Free Title'],
-			existingObject: $entity,
-			silent: true
-		);
-
-		$this->assertSame('free-title', $updated->getSlug());
+		$this->assertNull($updated->getSlug(), 'updateObject() leaves the decision alone');
 	}
 }

@@ -2897,9 +2897,8 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 		// `draftsListed` (decision 216) is read by DraftListLens: false keeps the
 		// caller's own drafts out of the schema's lists by default.
 		// `autoShare` is the schema-level default FilePropertyHandler reads for
-		// every file property.
-		// `objectSlugSuffix` (#4037) is read by ObjectSlugHandler: true appends a
-		// UTC date-time suffix to a colliding slug.
+		// every file property. `objectSlugSuffix` (#4037) is read by
+		// ObjectSlugHandler: true appends a UTC date-time suffix to a colliding slug.
 		// `fireEventsOnBulkWrites` is read by BulkWriteEvents: whether a bulk write
 		// runs the save events per row.
 		$boolFields = [
@@ -2911,8 +2910,8 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			'additionalProperties',
 			'draftsVisible',
 			'draftsListed',
-			'objectSlugSuffix',
 			'fireEventsOnBulkWrites',
+			'objectSlugSuffix',
 		];
 		// `implements` + `x-schema-org` carry the cross-app semantic-type
 		// markers (ADR-048); they must round-trip through the configuration

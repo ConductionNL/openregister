@@ -117,14 +117,15 @@ class MagicBulkHandlerObjectSlugTest extends TestCase {
 			dateTimeNormalizer: $this->createMock(DateTimeNormalizer::class),
 			config: $this->createMock(IConfig::class)
 		);
+		// bulkUpsert() records this per table before its chunks run.
+		(new \ReflectionProperty(MagicBulkHandler::class, 'managedSlugTables'))->setValue($handler, ['openregister_table_1_2' => $freezeSlug]);
 		$method = new ReflectionMethod(MagicBulkHandler::class, 'executeUpsertChunk');
 		$method->invoke(
 			$handler,
 			[['_uuid' => 'u-1', '_slug' => 'hello', '_name' => 'Hello']],
 			'openregister_table_1_2',
 			1,
-			false,
-			$freezeSlug
+			false
 		);
 
 		$inserts = array_values(array_filter($prepared, static fn (string $sql): bool => str_starts_with($sql, 'INSERT INTO')));

@@ -80,6 +80,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\DB\Exception as DbException;
+use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -6829,15 +6830,7 @@ class MagicMapper extends AbstractObjectMapper {
 			)
 		);
 
-		// The row matched by its id or uuid sorts first, so the precedence pick below
-		// sees it whatever the cap cuts off; the rest is in id order, so the same data
-		// always gives the same answer.
-		$qb->addOrderBy(
-			$qb->createFunction(sprintf('CASE WHEN %s = %s OR %s = %s THEN 0 ELSE 1 END', $idCol, $idNamed, $uuidCol, $uuidNamed)),
-			'ASC'
-		);
-		$qb->addOrderBy($idCol, 'ASC');
-		$qb->setMaxResults(self::IDENTIFIER_MATCH_LIMIT);
+		$this->orderKeyMatchesFirst(qb: $qb, keys: [$idCol => $idNamed, $uuidCol => $uuidNamed]);
 
 		// Exclude deleted objects by default (unless includeDeleted is true).
 		if ($includeDeleted === false) {
@@ -6867,57 +6860,13 @@ class MagicMapper extends AbstractObjectMapper {
 		}
 
 		try {
-			$result = $qb->executeQuery();
-			$rows = [];
-			while (($candidate = $result->fetch()) !== false) {
-				$rows[] = $candidate;
-			}
-
-			$result->closeCursor();
-
+			$rows = $this->fetchRows(result: $qb->executeQuery());
 			if ($rows === []) {
 				throw new DoesNotExistException('Object not found in magic table');
 			}
 
-			// At most IDENTIFIER_MATCH_LIMIT rows come back, key matches first. More than
-			// one row, whatever is cut off, is still ambiguous unless a key match singles
-			// one out: a cut never turns several rows into a single pick.
-			//
-			// Several rows can match one identifier only through a slug, because the
-			// id and uuid are unique. A row matched by its id or uuid wins over rows
-			// matched by a slug that happens to look the same (a numeric slug "2024"
-			// next to the object with id 2024); only when that does not single out
-			// one row is the identifier ambiguous. Log both holders for the
-			// administrator, keep them out of the message, which can reach an API
-			// caller (#4037).
-			$row = $this->rowForIdentifier(rows: $rows, identifier: $identifier);
-			if ($row === null) {
-				$second = $rows[1];
-				$row = $rows[0];
-				$this->logger->warning(
-					message: sprintf(
-						'[ObjectSlug] Identifier "%s" is ambiguous in register %s (%s) / schema %s (%s): matches objects %s, %s',
-						(string)$identifier,
-						(string)$register->getSlug(),
-						(string)$register->getId(),
-						(string)$schema->getSlug(),
-						(string)$schema->getId(),
-						(string)($row[self::METADATA_PREFIX . 'uuid'] ?? '?'),
-						(string)($second[self::METADATA_PREFIX . 'uuid'] ?? '?')
-					),
-					context: [
-						'app' => 'openregister',
-						'path' => 'lookup',
-						'registerId' => $register->getId(),
-						'schemaId' => $schema->getId(),
-						'slug' => (string)$identifier,
-						'uuids' => array_map(static fn (array $match) => ($match[self::METADATA_PREFIX . 'uuid'] ?? null), $rows),
-					]
-				);
-				throw new MultipleObjectsReturnedException(
-					sprintf('Identifier "%s" matches more than one object in this register and schema', (string)$identifier)
-				);
-			}
+			// Several rows: a key match wins, otherwise the identifier is ambiguous (#4037).
+			$row = $this->singleRow(rows: $rows, identifier: $identifier, register: $register, schema: $schema);
 
 			$objectEntity = $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
 
@@ -7004,6 +6953,103 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end rowForIdentifier()
 
 	/**
+	 * The one row an identifier means, or an ambiguity refusal.
+	 *
+	 * At most IDENTIFIER_MATCH_LIMIT rows come back, key matches first. More than
+	 * one row, whatever is cut off, is still ambiguous unless a key match singles
+	 * one out: a cut never turns several rows into a single pick.
+	 *
+	 * Several rows can match one identifier only through a slug, because the
+	 * id and uuid are unique. A row matched by its id or uuid wins over rows
+	 * matched by a slug that happens to look the same (a numeric slug "2024"
+	 * next to the object with id 2024); only when that does not single out
+	 * one row is the identifier ambiguous. Both holders are logged for the
+	 * administrator and kept out of the message, which can reach an API caller.
+	 *
+	 * @param list<array<string, mixed>> $rows       The matched rows, at least one.
+	 * @param string|int                 $identifier The identifier the caller sent.
+	 * @param Register                   $register   The register (log context).
+	 * @param Schema                     $schema     The schema (log context).
+	 *
+	 * @return array<string, mixed> The row.
+	 *
+	 * @throws MultipleObjectsReturnedException When the identifier is ambiguous.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 */
+	private function singleRow(array $rows, string|int $identifier, Register $register, Schema $schema): array {
+		$row = $this->rowForIdentifier(rows: $rows, identifier: $identifier);
+		if ($row !== null) {
+			return $row;
+		}
+
+		$this->logger->warning(
+			message: sprintf(
+				'[ObjectSlug] Identifier "%s" is ambiguous in register %s (%s) / schema %s (%s): matches objects %s, %s',
+				(string)$identifier,
+				(string)$register->getSlug(),
+				(string)$register->getId(),
+				(string)$schema->getSlug(),
+				(string)$schema->getId(),
+				(string)($rows[0][self::METADATA_PREFIX . 'uuid'] ?? '?'),
+				(string)($rows[1][self::METADATA_PREFIX . 'uuid'] ?? '?')
+			),
+			context: [
+				'app' => 'openregister',
+				'path' => 'lookup',
+				'registerId' => $register->getId(),
+				'schemaId' => $schema->getId(),
+				'slug' => (string)$identifier,
+				'uuids' => array_map(static fn (array $match) => ($match[self::METADATA_PREFIX . 'uuid'] ?? null), $rows),
+			]
+		);
+		throw new MultipleObjectsReturnedException(
+			sprintf('Identifier "%s" matches more than one object in this register and schema', (string)$identifier)
+		);
+	}//end singleRow()
+
+	/**
+	 * Sort the rows an identifier matched by its id or uuid first, then by id, and cap them.
+	 *
+	 * So the precedence pick in singleRow() sees a key match whatever the cap cuts off,
+	 * and the same data always gives the same answer.
+	 *
+	 * @param IQueryBuilder                                          $qb   The identifier query.
+	 * @param array<string, \OCP\DB\QueryBuilder\IParameter|string> $keys Key column => its named parameter (id first, then uuid).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 */
+	private function orderKeyMatchesFirst(IQueryBuilder $qb, array $keys): void {
+		$matches = [];
+		foreach ($keys as $column => $named) {
+			$matches[] = $column . ' = ' . $named;
+		}
+
+		$qb->addOrderBy($qb->createFunction('CASE WHEN ' . implode(' OR ', $matches) . ' THEN 0 ELSE 1 END'), 'ASC');
+		$qb->addOrderBy((string)array_key_first($keys), 'ASC');
+		$qb->setMaxResults(self::IDENTIFIER_MATCH_LIMIT);
+	}//end orderKeyMatchesFirst()
+
+	/**
+	 * Every row of a result, with the cursor closed.
+	 *
+	 * @param IResult $result The executed query.
+	 *
+	 * @return list<array<string, mixed>> The rows.
+	 */
+	private function fetchRows(IResult $result): array {
+		$rows = [];
+		while (($row = $result->fetch()) !== false) {
+			$rows[] = $row;
+		}
+
+		$result->closeCursor();
+		return $rows;
+	}//end fetchRows()
+
+	/**
 	 * The live objects whose slug starts with a prefix, as slug => uuid pairs.
 	 *
 	 * For the seed import to find an object stored under a suffixed slug (`<slug>-<14 digits>`);
@@ -7041,6 +7087,23 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end findSlugsByPrefix()
 
 	/**
+	 * The slug an object keeps when a move or migration takes it to another register or schema (#4037).
+	 *
+	 * Resolved lazily, as on restore: the slug handler needs this mapper.
+	 *
+	 * @param ObjectEntity $entity   The object being moved (still carrying its uuid).
+	 * @param Register     $register The target register.
+	 * @param Schema       $schema   The target schema.
+	 *
+	 * @return string|null The slug to store at the target.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 */
+	public function slugForMove(ObjectEntity $entity, Register $register, Schema $schema): ?string {
+		return $this->container->get(ObjectSlugHandler::class)->slugForMove(entity: $entity, register: $register, schema: $schema);
+	}//end slugForMove()
+
+	/**
 	 * Return the uuids of live objects that hold a slug in one register+schema table.
 	 *
 	 * No RBAC or multitenancy filter: uniqueness is a property of the data, so a
@@ -7051,9 +7114,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param Schema      $schema      The schema.
 	 * @param string      $slug        The slug to look for.
 	 * @param string|null $excludeUuid The object being saved, which never collides with itself.
-	 * @param int         $limit       How many holders to return.
 	 *
-	 * @return list<string> The holders' uuids, at most $limit.
+	 * @return list<string> The holders' uuids (at most one: enough to know the slug is taken).
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
@@ -7062,7 +7124,6 @@ class MagicMapper extends AbstractObjectMapper {
 		Schema $schema,
 		string $slug,
 		?string $excludeUuid=null,
-		int $limit=1,
 	): array {
 		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
 			return [];
@@ -7073,7 +7134,7 @@ class MagicMapper extends AbstractObjectMapper {
 			->from($this->getTableNameForRegisterSchema(register: $register, schema: $schema))
 			->where($qb->expr()->eq(self::METADATA_PREFIX . 'slug', $qb->createNamedParameter($slug)))
 			->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'))
-			->setMaxResults($limit);
+			->setMaxResults(1);
 		if ($excludeUuid !== null) {
 			$qb->andWhere($qb->expr()->neq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($excludeUuid)));
 		}
@@ -7281,62 +7342,17 @@ class MagicMapper extends AbstractObjectMapper {
 		}
 
 		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-		$idCol = self::METADATA_PREFIX . 'id';
-		$slugCol = self::METADATA_PREFIX . 'slug';
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($tableName, 't')
-			->where($qb->expr()->gt('t.' . $idCol, $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->isNull('t.' . self::METADATA_PREFIX . 'deleted'))
-			->orderBy('t.' . $idCol, 'ASC')
-			->setMaxResults($pageSize);
-		// Only rows without a slug: a set slug is never rewritten by the backfill.
-		$qb->andWhere(
-			$qb->expr()->orX(
-				$qb->expr()->isNull('t.' . $slugCol),
-				$qb->expr()->eq('t.' . $slugCol, $qb->createNamedParameter(''))
-			)
-		);
-
-		$result = $qb->executeQuery();
+		$result = $this->slugBackfillQuery(tableName: $tableName, afterId: $afterId, pageSize: $pageSize)->executeQuery();
 		$page = [];
 		$fetched = 0;
 		$lastId = $afterId;
 		while (($row = $result->fetch()) !== false) {
 			$fetched++;
-			$lastId = (int)$row[$idCol];
-			$entity = $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
-			if ($entity === null) {
-				$this->logger->warning(
-					sprintf(
-						'[ObjectSlug] Backfill skipped object %s in table %s: the row could not be converted into an object',
-						(string)($row[self::METADATA_PREFIX . 'uuid'] ?? '?'),
-						$tableName
-					),
-					['app' => 'openregister', 'path' => 'backfill']
-				);
-				continue;
+			$lastId = (int)$row[self::METADATA_PREFIX . 'id'];
+			$entry = $this->slugBackfillEntry(row: $row, register: $register, schema: $schema, tableName: $tableName);
+			if ($entry !== null) {
+				$page[] = $entry;
 			}
-
-			$slug = $row[$slugCol] ?? null;
-			$rowSlug = null;
-			if ($slug !== null && $slug !== '') {
-				$rowSlug = (string)$slug;
-			}
-
-			$created = $row[self::METADATA_PREFIX . 'created'] ?? null;
-			$rowCreated = null;
-			if ($created !== null) {
-				$rowCreated = (string)$created;
-			}
-
-			$page[] = [
-				'id' => (int)$row[$idCol],
-				'uuid' => (string)$row[self::METADATA_PREFIX . 'uuid'],
-				'slug' => $rowSlug,
-				'created' => $rowCreated,
-				'object' => $entity->getObject() ?? [],
-			];
 		}
 
 		$result->closeCursor();
@@ -7344,19 +7360,87 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end findSlugBackfillPage()
 
 	/**
+	 * The next page of live rows without a slug, in `_id` order.
+	 *
+	 * @param string $tableName The magic table.
+	 * @param int    $afterId   Last `_id` of the previous page.
+	 * @param int    $pageSize  Rows per page.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function slugBackfillQuery(string $tableName, int $afterId, int $pageSize): IQueryBuilder {
+		$idCol = 't.' . self::METADATA_PREFIX . 'id';
+		$slugCol = 't.' . self::METADATA_PREFIX . 'slug';
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($tableName, 't')
+			->where($qb->expr()->gt($idCol, $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->isNull('t.' . self::METADATA_PREFIX . 'deleted'))
+			// Only rows without a slug: a set slug is never rewritten by the backfill.
+			->andWhere($qb->expr()->orX($qb->expr()->isNull($slugCol), $qb->expr()->eq($slugCol, $qb->createNamedParameter(''))))
+			->orderBy($idCol, 'ASC')
+			->setMaxResults($pageSize);
+
+		return $qb;
+	}//end slugBackfillQuery()
+
+	/**
+	 * One backfill row as the planner reads it, or null (logged) when it cannot be converted.
+	 *
+	 * @param array<string, mixed> $row       The table row.
+	 * @param Register             $register  The register.
+	 * @param Schema               $schema    The schema.
+	 * @param string               $tableName The magic table (log context).
+	 *
+	 * @return array{id: int, uuid: string, slug: string|null, created: string|null, object: array}|null
+	 */
+	private function slugBackfillEntry(array $row, Register $register, Schema $schema, string $tableName): ?array {
+		$entity = $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
+		if ($entity === null) {
+			$this->logger->warning(
+				sprintf(
+					'[ObjectSlug] Backfill skipped object %s in table %s: the row could not be converted into an object',
+					(string)($row[self::METADATA_PREFIX . 'uuid'] ?? '?'),
+					$tableName
+				),
+				['app' => 'openregister', 'path' => 'backfill']
+			);
+			return null;
+		}
+
+		$entry = [
+			'id' => (int)$row[self::METADATA_PREFIX . 'id'],
+			'uuid' => (string)$row[self::METADATA_PREFIX . 'uuid'],
+			'slug' => null,
+			'created' => null,
+			'object' => $entity->getObject() ?? [],
+		];
+		$slug = ($row[self::METADATA_PREFIX . 'slug'] ?? null);
+		if ($slug !== null && $slug !== '') {
+			$entry['slug'] = (string)$slug;
+		}
+
+		$created = ($row[self::METADATA_PREFIX . 'created'] ?? null);
+		if ($created !== null) {
+			$entry['created'] = (string)$created;
+		}
+
+		return $entry;
+	}//end slugBackfillEntry()
+
+	/**
 	 * Write one object's slug column directly, for the slug backfill.
 	 *
 	 * No version bump, audit-trail entry or object event: the slug is derived
 	 * metadata, the same as openregister:backfill-system-owner (design D11).
 	 *
-	 * Only when the row still holds $expected (null/empty when it had no slug), so
-	 * a save that changed the slug while the backfill was planning is not undone.
+	 * Only when the row still has no slug (null or empty), so a save that set
+	 * the slug while the backfill was planning is not undone.
 	 *
-	 * @param Register    $register The register.
-	 * @param Schema      $schema   The schema.
-	 * @param string      $uuid     The object.
-	 * @param string|null $slug     The new slug, null to clear.
-	 * @param string|null $expected The slug the plan was made against.
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 * @param string   $uuid     The object.
+	 * @param string   $slug     The new slug.
 	 *
 	 * @return int Rows updated: 0 when the row changed in the meantime.
 	 *
@@ -7366,24 +7450,19 @@ class MagicMapper extends AbstractObjectMapper {
 		Register $register,
 		Schema $schema,
 		string $uuid,
-		?string $slug,
-		?string $expected=null,
+		string $slug,
 	): int {
 		$slugCol = self::METADATA_PREFIX . 'slug';
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableNameForRegisterSchema(register: $register, schema: $schema))
 			->set($slugCol, $qb->createNamedParameter($slug))
-			->where($qb->expr()->eq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($uuid)));
-		if ($expected === null || $expected === '') {
-			$qb->andWhere(
+			->where($qb->expr()->eq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($uuid)))
+			->andWhere(
 				$qb->expr()->orX(
 					$qb->expr()->isNull($slugCol),
 					$qb->expr()->eq($slugCol, $qb->createNamedParameter(''))
 				)
 			);
-		} else {
-			$qb->andWhere($qb->expr()->eq($slugCol, $qb->createNamedParameter($expected)));
-		}
 
 		return $qb->executeStatement();
 	}//end updateSlugColumn()

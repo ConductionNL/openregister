@@ -82,6 +82,11 @@ class AuditTrailMapper extends QBMapper {
 	public const SLUG_BACKFILL_MAX_CHANGES = 1000;
 
 	/**
+	 * The only slug backfill mode: fill slugs that are missing (a set slug is never rewritten).
+	 */
+	public const SLUG_BACKFILL_MODE = 'fill';
+
+	/**
 	 * Request-scoped import-job tag.
 	 *
 	 * Set by `ImportService` at the start of a bulk import via
@@ -3488,7 +3493,8 @@ class AuditTrailMapper extends QBMapper {
 	 * the new value (bounded, see slugBackfillResultSummary()). Hangs on the register and schema, not on an object, like
 	 * {@see createExportEntry()}.
 	 *
-	 * @param string $mode The run mode, `fill` (the only one: a set slug is never rewritten).
+	 * The run mode is always `fill`: a set slug is never rewritten.
+	 *
 	 * @param list<array{uuid: string, old: ?string, new: ?string}> $changes Every slug the run wrote (the entry keeps the first 1,000).
 	 * @param array<string, mixed> $summary The run's counters.
 	 * @param int|null $register Register id.
@@ -3501,7 +3507,6 @@ class AuditTrailMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createExportEntry.
 	 */
 	public function createSlugBackfillEntry(
-		string $mode,
 		array $changes,
 		array $summary,
 		?int $register = null,
@@ -3517,12 +3522,12 @@ class AuditTrailMapper extends QBMapper {
 
 		$auditTrail = new AuditTrail();
 		$auditTrail->setUuid((string)Uuid::v4());
-		$auditTrail->setAction('slug.backfill.' . $mode);
+		$auditTrail->setAction('slug.backfill.' . self::SLUG_BACKFILL_MODE);
 		// `changed` is NOT NULL and QBMapper writes only the fields a setter touched.
 		$auditTrail->setChanged([]);
 		$auditTrail->setRegister($register);
 		$auditTrail->setSchema($schema);
-		$auditTrail->setResultSummary($this->slugBackfillResultSummary(mode: $mode, changes: $changes, summary: $summary));
+		$auditTrail->setResultSummary($this->slugBackfillResultSummary(mode: self::SLUG_BACKFILL_MODE, changes: $changes, summary: $summary));
 		$auditTrail->setUser($userId);
 		$auditTrail->setUserName($userName);
 		$auditTrail->setCreated(new DateTime());
