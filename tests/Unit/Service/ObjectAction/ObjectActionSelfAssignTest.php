@@ -50,7 +50,6 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Flow\MacroActionValidator;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
-use OCA\OpenRegister\Service\Rbac\MatrixRowsFromApps;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -107,6 +106,13 @@ class ObjectActionSelfAssignTest extends TestCase {
 	 * @var string
 	 */
 	private string $uid = 'anna';
+
+	/**
+	 * How often the app matrix rows were asked for.
+	 *
+	 * @var int
+	 */
+	private int $rowRequests = 0;
 
 	/**
 	 * The stored row's values, as the conditional write sees them.
@@ -178,7 +184,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 	 *
 	 * @param Schema $schema The schema the handler resolves.
 	 *
-	 * @return array{0: PermissionHandler, 1: IUserSession, 2: MatrixRowsFromApps}
+	 * @return array{0: PermissionHandler, 1: IUserSession}
 	 */
 	private function permissions(Schema $schema): array {
 		$user = $this->createMock(IUser::class);
@@ -196,6 +202,10 @@ class ObjectActionSelfAssignTest extends TestCase {
 		$dispatcher = $this->createMock(IEventDispatcher::class);
 		$dispatcher->method('dispatchTyped')->willReturnCallback(
 			function (object $event): void {
+				if ($event instanceof MatrixRowsRequestedEvent) {
+					$this->rowRequests++;
+				}
+
 				if ($event instanceof MatrixRowsRequestedEvent && $this->appRows !== []) {
 					$event->addRows(rows: $this->appRows, appId: 'caseapp');
 				}
@@ -215,7 +225,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 			$dispatcher
 		);
 
-		return [$handler, $session, new MatrixRowsFromApps($dispatcher, new DepartmentMatrixValidator(), new NullLogger())];
+		return [$handler, $session];
 	}//end permissions()
 
 	/**
@@ -226,7 +236,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 	 * @return ObjectActionRunner
 	 */
 	private function runner(Schema $schema): ObjectActionRunner {
-		[$permissions, $session, $appRows] = $this->permissions(schema: $schema);
+		[$permissions, $session] = $this->permissions(schema: $schema);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
@@ -256,7 +266,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 
 		return new ObjectActionRunner(
 			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-			new ObjectActionGate($permissions, $session, $l10n, $appRows),
+			new ObjectActionGate($permissions, $session, $l10n),
 			new ObjectActionInputs(new OasRequestValidator()),
 			$this->createMock(ObjectActionStepsFlow::class),
 			$audit,
@@ -444,12 +454,12 @@ class ObjectActionSelfAssignTest extends TestCase {
 
 		$answer = $this->take(schema: $schema, object: self::object(assignee: null));
 
-		[$permissions, $session, $appRows] = $this->permissions(schema: $schema);
+		[$permissions, $session] = $this->permissions(schema: $schema);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 		$list = new ObjectActionList(
 			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-			new ObjectActionGate($permissions, $session, $l10n, $appRows),
+			new ObjectActionGate($permissions, $session, $l10n),
 			new ObjectActionInputs(new OasRequestValidator()),
 			$this->createMock(TransitionEngine::class),
 			$l10n
@@ -559,12 +569,12 @@ class ObjectActionSelfAssignTest extends TestCase {
 		$answers = [];
 		foreach (['anna' => null, 'bram' => null, 'anna-assigned' => 'bram'] as $case => $assignee) {
 			$this->uid = explode('-', $case)[0];
-			[$permissions, $session, $appRows] = $this->permissions(schema: $schema);
+			[$permissions, $session] = $this->permissions(schema: $schema);
 			$l10n = $this->createMock(IL10N::class);
 			$l10n->method('t')->willReturnArgument(0);
 			$list = new ObjectActionList(
 				new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-				new ObjectActionGate($permissions, $session, $l10n, $appRows),
+				new ObjectActionGate($permissions, $session, $l10n),
 				new ObjectActionInputs(new OasRequestValidator()),
 				$this->createMock(TransitionEngine::class),
 				$l10n
@@ -734,5 +744,110 @@ class ObjectActionSelfAssignTest extends TestCase {
 
 		$this->assertNull(EmptyPropertyClaim::consume(uuid: '5b0c1f0e-0000-4000-8000-000000000001'));
 	}//end testAFailedWriteLeavesNoClaimBehind()
+
+	/**
+	 * On a private object, neither its owner nor its owning group is granted the action by owning it.
+	 *
+	 * @return void
+	 */
+	public function testOnAPrivateObjectOwnershipGrantsNothing(): void {
+		$schema = self::schema(authorization: self::readOnlyTeam() + ['scope' => 'private']);
+		$object = self::object(assignee: null);
+		$object->setAuthorization(['ownerGroup' => 'others']);
+
+		$answers = [];
+		foreach (['olga', 'bram', 'root'] as $uid) {
+			$this->uid = $uid;
+			$answers[$uid] = $this->take(schema: $schema, object: clone $object)['status'];
+		}
+
+		$this->assertSame(['olga' => 403, 'bram' => 403, 'root' => 200], $answers, 'the owner and the owning group are refused; an administrator holds every right');
+		$this->assertSame('olga', $object->getOwner(), 'the object itself keeps its owner');
+	}//end testOnAPrivateObjectOwnershipGrantsNothing()
+
+	/**
+	 * A row naming the action with surrounding spaces grants it, as the validator and compiler read it.
+	 *
+	 * @return void
+	 */
+	public function testARowNameIsReadTrimmed(): void {
+		$schema = self::schema(
+			authorization: [
+				'read' => ['team'],
+				'matrix' => ['field' => 'group', 'userSource' => ['groups' => true], 'rows' => [['group' => 'team', 'value' => '$self', 'actions' => [' ' . self::ACTION . ' ']]]],
+			]
+		);
+
+		$answer = $this->take(schema: $schema, object: self::object(assignee: null));
+
+		$this->assertSame(200, $answer['status'], json_encode($answer['body']));
+	}//end testARowNameIsReadTrimmed()
+
+	/**
+	 * A run with app rows asks the provider once.
+	 *
+	 * @return void
+	 */
+	public function testTheAppRowsAreAskedForOnce(): void {
+		$schema = self::schema(
+			authorization: ['read' => ['team'], 'matrix' => ['field' => 'group', 'userSource' => ['groups' => true], 'rowsFrom' => 'caseapp.rows']]
+		);
+		$this->appRows = [['group' => 'team', 'value' => '$self', 'actions' => [self::ACTION]]];
+
+		$answer = $this->take(schema: $schema, object: self::object(assignee: null));
+
+		$this->assertSame(200, $answer['status'], json_encode($answer['body']));
+		$this->assertSame(1, $this->rowRequests);
+	}//end testTheAppRowsAreAskedForOnce()
+
+	/**
+	 * A selection offers a bulk self-assign to the granted caller only.
+	 *
+	 * @return void
+	 */
+	public function testASelectionOffersTheActionToTheGrantedCallerOnly(): void {
+		$schema = self::schema(authorization: self::readOnlyTeam());
+		$schema->setConfiguration(
+			[
+				'x-openregister-action' => [
+					self::ACTION => ['name' => 'Take', 'description' => 'Take them.', 'surfaces' => ['bulk'], 'selfAssign' => ['field' => 'assignee']],
+				],
+			]
+		);
+
+		$ungranted = clone $schema;
+		$ungranted->setAuthorization(['read' => ['team']]);
+
+		$offered = [];
+		foreach (['anna', 'bram', 'olga', 'root'] as $uid) {
+			$this->uid = $uid;
+			[$permissions, $session] = $this->permissions(schema: $schema);
+			$l10n = $this->createMock(IL10N::class);
+			$l10n->method('t')->willReturnArgument(0);
+			$list = new ObjectActionList(
+				new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
+				new ObjectActionGate($permissions, $session, $l10n),
+				new ObjectActionInputs(new OasRequestValidator()),
+				$this->createMock(TransitionEngine::class),
+				$l10n
+			);
+			$offered[$uid] = array_column($list->forSelection(schema: $schema, register: '3'), 'key');
+			$offered[$uid . '-ungranted'] = array_column($list->forSelection(schema: $ungranted, register: '3'), 'key');
+		}
+
+		$this->assertSame(
+			[
+				'anna' => [self::ACTION],
+				'anna-ungranted' => [],
+				'bram' => [],
+				'bram-ungranted' => [],
+				'olga' => [],
+				'olga-ungranted' => [],
+				'root' => [self::ACTION],
+				'root-ungranted' => [],
+			],
+			$offered
+		);
+	}//end testASelectionOffersTheActionToTheGrantedCallerOnly()
 
 }//end class

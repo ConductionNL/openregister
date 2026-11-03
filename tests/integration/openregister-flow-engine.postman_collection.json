@@ -50,6 +50,10 @@
       "value": ""
     },
     {
+      "key": "agentId",
+      "value": ""
+    },
+    {
       "key": "mappingId",
       "value": ""
     },
@@ -697,11 +701,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "// hermiq.agent-step runs an OpenRegister agent (the agents table), so the",
+                  "// fixture is created through the agents API, not as a register object.",
                   "const b = pm.response.json()",
-                  "pm.collectionVariables.set('agent', (b['@self'] && b['@self'].id) || b.id || '')",
-                  "// Not a failure when hermiq is absent: only case 3 needs it, and that",
-                  "// case guards on the variable being set.",
-                  "pm.test('agent fixture resolved (or hermiq absent)', () => pm.expect(true).to.be.true)"
+                  "pm.test('agent fixture created', () => pm.expect(b.uuid, pm.response.text()).to.be.a('string'))",
+                  "pm.collectionVariables.set('agent', b.uuid || '')",
+                  "pm.collectionVariables.set('agentId', b.id || '')"
                 ]
               }
             }
@@ -727,7 +732,7 @@
               "raw": "{\n  \"name\": \"flow-engine-summariser-{{stamp}}\",\n  \"description\": \"Summarises a mailbox for the flow engine coverage\",\n  \"provider\": \"ollama\",\n  \"model\": \"{{agentModel}}\",\n  \"prompt\": \"You summarise messages in one short sentence.\",\n  \"active\": true\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/apps/openregister/api/objects/hermiq/agent",
+              "raw": "{{baseUrl}}/apps/openregister/api/agents",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -735,9 +740,7 @@
                 "apps",
                 "openregister",
                 "api",
-                "objects",
-                "hermiq",
-                "agent"
+                "agents"
               ]
             }
           }
@@ -1402,7 +1405,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"flow-engine-data-quality-sweep-{{stamp}}\",\n  \"description\": \"Walk the register on a schedule and flag every record that fails a rule.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"t1\",\n      \"type\": \"openregister.trigger-schedule\",\n      \"config\": {\n        \"cron\": \"0 3 * * *\"\n      }\n    },\n    {\n      \"id\": \"r1\",\n      \"type\": \"openregister.object-read\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"limit\": 100,\n        \"fanOut\": true\n      }\n    },\n    {\n      \"id\": \"f1\",\n      \"type\": \"openregister.filter\",\n      \"config\": {\n        \"condition\": {\n          \"==\": [\n            {\n              \"var\": \"json.status\"\n            },\n            \"synced\"\n          ]\n        }\n      }\n    },\n    {\n      \"id\": \"w1\",\n      \"type\": \"openregister.object-write\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"operation\": \"create\",\n        \"fields\": {\n          \"name\": \"quality-finding\",\n          \"status\": \"flagged\",\n          \"sourceId\": \"{{ sourceId }}\"\n        }\n      }\n    },\n    {\n      \"id\": \"e1\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"t1\",\n      \"to\": \"r1\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"r1\",\n      \"to\": \"f1\"\n    },\n    {\n      \"id\": \"c\",\n      \"from\": \"f1\",\n      \"to\": \"w1\"\n    },\n    {\n      \"id\": \"d\",\n      \"from\": \"w1\",\n      \"to\": \"e1\"\n    }\n  ]\n}"
+              "raw": "{\n  \"name\": \"flow-engine-data-quality-sweep-{{stamp}}\",\n  \"description\": \"Walk the register on a schedule and flag every record that fails a rule.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"t1\",\n      \"type\": \"openregister.trigger-schedule\",\n      \"config\": {\n        \"cron\": \"0 3 * * *\",\n        \"runAs\": \"{{username}}\"\n      }\n    },\n    {\n      \"id\": \"r1\",\n      \"type\": \"openregister.object-read\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"limit\": 100,\n        \"fanOut\": true\n      }\n    },\n    {\n      \"id\": \"f1\",\n      \"type\": \"openregister.filter\",\n      \"config\": {\n        \"condition\": {\n          \"==\": [\n            {\n              \"var\": \"json.status\"\n            },\n            \"synced\"\n          ]\n        }\n      }\n    },\n    {\n      \"id\": \"w1\",\n      \"type\": \"openregister.object-write\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"operation\": \"create\",\n        \"fields\": {\n          \"name\": \"quality-finding\",\n          \"status\": \"flagged\",\n          \"sourceId\": \"{{ sourceId }}\"\n        }\n      }\n    },\n    {\n      \"id\": \"e1\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"t1\",\n      \"to\": \"r1\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"r1\",\n      \"to\": \"f1\"\n    },\n    {\n      \"id\": \"c\",\n      \"from\": \"f1\",\n      \"to\": \"w1\"\n    },\n    {\n      \"id\": \"d\",\n      \"from\": \"w1\",\n      \"to\": \"e1\"\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/apps/openregister/api/flows",
@@ -3174,7 +3177,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"flow-engine-trigger-object-{{stamp}}\",\n  \"description\": \"A flow whose entry point is an object event still runs when triggered manually.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"to1\",\n      \"type\": \"openregister.trigger-object\",\n      \"config\": {\n        \"event\": \"created\",\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\"\n      }\n    },\n    {\n      \"id\": \"w1\",\n      \"type\": \"openregister.object-write\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"operation\": \"create\",\n        \"fields\": {\n          \"name\": \"event-triggered\",\n          \"status\": \"evented\"\n        }\n      }\n    },\n    {\n      \"id\": \"e1\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"to1\",\n      \"to\": \"w1\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"w1\",\n      \"to\": \"e1\"\n    }\n  ]\n}"
+              "raw": "{\n  \"name\": \"flow-engine-trigger-object-{{stamp}}\",\n  \"description\": \"A flow whose entry point is an object event still runs when triggered manually.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"to1\",\n      \"type\": \"openregister.trigger-object\",\n      \"config\": {\n        \"event\": \"object.created\",\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\"\n      }\n    },\n    {\n      \"id\": \"w1\",\n      \"type\": \"openregister.object-write\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"operation\": \"create\",\n        \"fields\": {\n          \"name\": \"event-triggered\",\n          \"status\": \"evented\"\n        }\n      }\n    },\n    {\n      \"id\": \"e1\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"to1\",\n      \"to\": \"w1\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"w1\",\n      \"to\": \"e1\"\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/apps/openregister/api/flows",
@@ -4394,7 +4397,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/apps/openregister/api/objects/hermiq/agent/{{agent}}",
+              "raw": "{{baseUrl}}/apps/openregister/api/agents/{{agentId}}",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -4402,10 +4405,8 @@
                 "apps",
                 "openregister",
                 "api",
-                "objects",
-                "hermiq",
-                "agent",
-                "{{agent}}"
+                "agents",
+                "{{agentId}}"
               ]
             }
           }

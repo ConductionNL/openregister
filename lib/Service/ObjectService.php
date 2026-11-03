@@ -1890,7 +1890,12 @@ class ObjectService implements ObjectServiceInterface
         [$object, $uuid] = $this->extractUuidAndNormalizeObject(object: $object, uuid: $options['uuid']);
 
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:context+uuid');
-        $this->checkSavePermissions(uuid: $uuid, _rbac: $options['_rbac'], object: $object);
+        $this->checkSavePermissions(
+            uuid: $uuid,
+            _rbac: $options['_rbac'],
+            object: $object,
+            _multitenancy: $options['_multitenancy']
+        );
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:permissions.check');
 
         $options['failIfExists'] = $this->guardWriteTarget(uuid: $uuid, failIfExists: $options['failIfExists']);
@@ -2330,15 +2335,16 @@ class ObjectService implements ObjectServiceInterface
     /**
      * Check permissions for save operation (CREATE or UPDATE).
      *
-     * @param string|null $uuid   Object UUID (null for CREATE, set for UPDATE)
-     * @param bool        $_rbac  Whether to apply RBAC checks
-     * @param array       $object The incoming object data, which a create rule's match reads
+     * @param string|null $uuid          Object UUID (null for CREATE, set for UPDATE)
+     * @param bool        $_rbac         Whether to apply RBAC checks
+     * @param array       $object        The incoming object data, which a create rule's match reads
+     * @param bool        $_multitenancy Whether the write keeps to the caller's organisations
      *
      * @return void
      *
      * @throws Exception If permission check fails
      */
-    private function checkSavePermissions(?string $uuid, bool $_rbac, array $object=[]): void
+    private function checkSavePermissions(?string $uuid, bool $_rbac, array $object=[], bool $_multitenancy=true): void
     {
         if ($this->currentSchema === null) {
             return;
@@ -2399,8 +2405,10 @@ class ObjectService implements ObjectServiceInterface
                 object: $incoming
             );
 
-            // Stored but hidden: the write lands on that row, so it must also pass the update rule against it.
+            // Stored but hidden: the write lands on that row, so it must keep to
+            // the caller's organisations and pass the update rule against it.
             if ($hidden !== null) {
+                $this->refuseAnotherOrganisationsRow(uuid: $uuid, _multitenancy: $_multitenancy);
                 $this->checkPermission(
                     schema: $this->currentSchema,
                     action: 'update',
@@ -2412,6 +2420,49 @@ class ObjectService implements ObjectServiceInterface
             }
         }//end try
     }//end checkSavePermissions()
+
+    /**
+     * Refuse a write by uuid onto a stored row outside the caller's organisations.
+     *
+     * The caller's own lookup did not find the row, and the update rule it is
+     * judged by next does not look at organisations. So the row is looked up
+     * once more with the organisation filter alone: a row that filter does not
+     * return belongs to another organisation, and the write would change it.
+     * A row the read rules hide but the organisation filter returns is left to
+     * the update rule, as before. Skipped when the write does not keep to the
+     * caller's organisations (an administrator, a job), and on an append-only
+     * schema: guardWriteTarget() refuses every write onto a stored row there,
+     * visible or not, with one message, and a second refusal here would tell
+     * the caller which rows belong to another organisation.
+     *
+     * @param string $uuid          The uuid of the stored row the caller cannot read.
+     * @param bool   $_multitenancy Whether the write keeps to the caller's organisations.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the row belongs to another organisation.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function refuseAnotherOrganisationsRow(string $uuid, bool $_multitenancy): void
+    {
+        if ($_multitenancy === false || $this->currentSchema?->isAppendOnly() === true) {
+            return;
+        }
+
+        try {
+            $this->objectMapper->find(
+                identifier: $uuid,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                includeDeleted: true,
+                _rbac: false,
+                _multitenancy: true
+            );
+        } catch (\OCP\AppFramework\Db\DoesNotExistException) {
+            throw new NotAuthorizedException(message: 'You may not change this object.');
+        }
+    }//end refuseAnotherOrganisationsRow()
 
     /**
      * Refuse a write to a stored draft the caller cannot read.
