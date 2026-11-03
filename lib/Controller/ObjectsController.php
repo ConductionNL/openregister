@@ -4117,14 +4117,16 @@ class ObjectsController extends Controller {
 
 		// Update the object.
 		try {
-			// Use the object service to validate and update the object.
+			// The write targets the object the caller's own read resolved, by its
+			// uuid: the save looks the identifier up again without the caller's
+			// scope, and the URL id alone can name another row there.
 			$objectEntity = $objectService->saveObject(
 				register: $resolved['register'],
 				schema: $resolved['schema'],
 				object: $object,
 				_rbac: $rbac,
 				_multitenancy: $multi,
-				uuid: $id,
+				uuid: ($existingObject->getUuid() ?? $id),
 				uploadedFiles: $uploadedFilesValue
 			);
 
@@ -4318,7 +4320,7 @@ class ObjectsController extends Controller {
 				object: $mergedData,
 				_rbac: $rbac,
 				_multitenancy: $multi,
-				uuid: $id
+				uuid: ($existingObject->getUuid() ?? $id)
 			);
 
 			$this->logger->debug(
@@ -4505,7 +4507,7 @@ class ObjectsController extends Controller {
 				object: $mergedData,
 				_rbac: $rbac,
 				_multitenancy: $multi,
-				uuid: $id,
+				uuid: ($existingObject->getUuid() ?? $id),
 				uploadedFiles: $uploadedFilesValue
 			);
 
