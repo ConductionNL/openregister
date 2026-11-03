@@ -160,6 +160,85 @@ class DepartmentMatrixRowConditionsTest extends TestCase {
 	}//end testTheValidatorReadsWhereAndUntil()
 
 	/**
+	 * A row's `where` may name the organisation and owner metadata fields, on a
+	 * schema save and on a row an app adds at check time, and no other metadata.
+	 *
+	 * @return void
+	 */
+	public function testWhereMayNameTheOrganisationAndOwnerMetadata(): void {
+		$validator = new DepartmentMatrixValidator();
+		$properties = ['assignedGroup' => [], 'status' => []];
+		$codes = fn (array $row): array => array_column(
+			$validator->validate(properties: $properties, authorization: ['matrix' => $this->matrix(rows: [$row])]),
+			'code'
+		);
+		$appRowCodes = fn (array $row): array => array_column(
+			$validator->findingsForRow(row: $row, properties: $properties, field: 'assignedGroup'),
+			'code'
+		);
+		$base = ['value' => 'team-a', 'group' => 'g', 'actions' => ['read']];
+
+		$this->assertSame(expected: [], actual: $codes(row: $base + ['where' => ['_organisation' => '$organisation']]));
+		$this->assertSame(expected: [], actual: $codes(row: $base + ['where' => ['_owner' => '$userId', 'status' => 's1']]));
+		$this->assertSame(expected: [], actual: $appRowCodes(row: $base + ['where' => ['_organisation' => '$organisation']]));
+		foreach (['_uuid', '_created', '_published', '_schema', 'organisation'] as $field) {
+			$this->assertSame(expected: ['matrix.where-unknown-field'], actual: $codes(row: $base + ['where' => [$field => 'x']]), message: $field);
+			$this->assertSame(expected: ['matrix.where-unknown-field'], actual: $appRowCodes(row: $base + ['where' => [$field => 'x']]), message: $field);
+		}
+	}//end testWhereMayNameTheOrganisationAndOwnerMetadata()
+
+	/**
+	 * A `where` that binds a field to the caller's organisation reads other
+	 * organisations' rows, so a row needs `crossOrganisation: true` for it.
+	 *
+	 * @return void
+	 */
+	public function testAWhereThatCrossesOrganisationsNeedsTheRowToSaySo(): void {
+		$validator = new DepartmentMatrixValidator();
+		$properties = ['assignedGroup' => [], 'provider' => []];
+		$codes = fn (array $row): array => array_column(
+			$validator->findingsForRow(row: $row, properties: $properties, field: 'assignedGroup'),
+			'code'
+		);
+		$compile = fn (array $row): array => (new DepartmentMatrixCompiler())->compile(matrix: $this->matrix(rows: [$row]), ownValues: []);
+		$base = ['value' => 'team-a', 'group' => 'g', 'actions' => ['read']];
+
+		foreach (['$organisation', '$activeOrganisation', '$organisation.uuid', '$activeOrganisation.uuid'] as $token) {
+			$row = $base + ['where' => ['provider' => $token]];
+			$this->assertSame(expected: ['matrix.where-crosses-organisations'], actual: $codes(row: $row), message: $token);
+			$this->assertSame(expected: [], actual: $compile(row: $row), message: $token);
+		}
+
+		$declared = $base + ['where' => ['provider' => '$organisation'], 'crossOrganisation' => true];
+		$this->assertSame(expected: [], actual: $codes(row: $declared));
+		$this->assertSame(
+			expected: ['read' => [['group' => 'g', 'match' => ['assignedGroup' => ['$in' => ['team-a']], 'provider' => '$organisation']]]],
+			actual: $compile(row: $declared)
+		);
+		$this->assertSame(expected: ['matrix.where-crosses-organisations'], actual: $codes(row: array_replace($declared, ['crossOrganisation' => 'true'])));
+		$this->assertSame(expected: [], actual: $codes(row: $base + ['where' => ['provider' => 'org-x']]));
+	}//end testAWhereThatCrossesOrganisationsNeedsTheRowToSaySo()
+
+	/**
+	 * An `_organisation` condition reaches the compiled rule beside the field.
+	 *
+	 * @return void
+	 */
+	public function testAnOrganisationWhereCompilesIntoTheRule(): void {
+		$compiled = (new DepartmentMatrixCompiler())->compile(
+			matrix: $this->matrix(
+				rows: [['value' => 'team-a', 'group' => 'g', 'actions' => ['read'], 'where' => ['_organisation' => '$organisation']]]
+			),
+			ownValues: []
+		);
+
+		$this->assertSame(
+			expected: ['read' => [['group' => 'g', 'match' => ['assignedGroup' => ['$in' => ['team-a']], '_organisation' => '$organisation']]]],
+			actual: $compiled
+		);
+	}//end testAnOrganisationWhereCompilesIntoTheRule()
+
+	/**
 	 * A matrix naming a provider may declare no rows; an empty provider is refused.
 	 *
 	 * @return void
