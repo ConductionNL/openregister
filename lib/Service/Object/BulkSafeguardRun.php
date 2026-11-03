@@ -128,6 +128,16 @@ final class BulkSafeguardRun {
 	public ?ObjectEntity $rowExisting = null;
 
 	/**
+	 * The soft-deleted stored object the current row's uuid names.
+	 *
+	 * The writer upserts on the uuid whether or not the stored row is deleted,
+	 * so such a row is written onto even though the row counts as a create.
+	 *
+	 * @var ObjectEntity|null
+	 */
+	public ?ObjectEntity $rowDeleted = null;
+
+	/**
 	 * Start a pass for a caller.
 	 *
 	 * @param IUser|null $currentUser The caller, or null without a session
