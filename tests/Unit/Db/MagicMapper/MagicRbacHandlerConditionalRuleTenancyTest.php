@@ -77,6 +77,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator
  * @uses   \OCA\OpenRegister\Service\Rbac\MatrixRowWhere
  * @uses   \OCA\OpenRegister\Service\Rbac\MatrixRowsFromApps
+ * @uses   \OCA\OpenRegister\Service\OrganisationContext
  */
 class MagicRbacHandlerConditionalRuleTenancyTest extends TestCase {
 

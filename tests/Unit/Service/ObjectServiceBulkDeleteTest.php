@@ -243,6 +243,29 @@ class ObjectServiceBulkDeleteTest extends TestCase {
 	}//end testUuidRefusedByThePermissionFilterIsReportedAsSkipped()
 
 	/**
+	 * Inside an organisation context switching both flags off still runs the permission filter.
+	 *
+	 * @return void
+	 */
+	public function testInsideAnOrganisationContextTheFilterRunsWithBothFlagsOff(): void {
+		$own = $this->givenObject(uuid: 'uuid-own', schemaId: 11);
+		$this->givenObject(uuid: 'uuid-foreign', schemaId: 11);
+		// The permission filter keeps only the resolvable (own) row; the scopes know both.
+		$this->buildService([$own]);
+		$this->deleteHandler->method('deleteObject')->willReturn(true);
+
+		$outside = $this->service->deleteObjects(uuids: ['uuid-own', 'uuid-foreign'], _rbac: false, _multitenancy: false);
+		$inside = \OCA\OpenRegister\Service\OrganisationContext::run(
+			'org-a',
+			fn (): array => $this->service->deleteObjects(uuids: ['uuid-own', 'uuid-foreign'], _rbac: false, _multitenancy: false)
+		);
+
+		$this->assertNotSame('OBJECT_NOT_PERMITTED', $outside['skipped_reasons']['uuid-foreign']['error'] ?? null, 'outside a context both flags off skip the filter');
+		$this->assertSame('OBJECT_NOT_PERMITTED', $inside['skipped_reasons']['uuid-foreign']['error'] ?? null);
+		$this->assertSame(['uuid-own'], $inside['deleted_uuids']);
+	}//end testInsideAnOrganisationContextTheFilterRunsWithBothFlagsOff()
+
+	/**
 	 * A row on an archival schema is refused, named, and left intact —
 	 * while the rest of the batch is still processed.
 	 *
