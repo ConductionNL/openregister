@@ -12,6 +12,7 @@ use OCA\OpenRegister\Controller\RegistersController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
@@ -1413,6 +1414,112 @@ class RegistersControllerTest extends TestCase {
 
 		$this->assertSame(200, $result->getStatus());
 	}
+
+	// ── Import: a bundle is bound to the register it was uploaded to ──
+
+	/**
+	 * A register whose manage rule holds the signed-in user, an upload, and the given params.
+	 *
+	 * @param array<int, array<int, mixed>> $params The request parameter map.
+	 *
+	 * @return Register
+	 */
+	private function registerForBundleUpload(array $params = []): Register {
+		$register = $this->createRealRegister(1, 'Reg');
+		$register->setSlug('reg');
+		$register->setApplication('shipping-app');
+		$register->setAuthorization(['manage' => ['admin']]);
+		$this->setRegisterSchemas($register, [4]);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->registerService->method('find')->willReturn($register);
+
+		$own = new Schema();
+		$own->setSlug('own');
+		$this->schemaMapper->method('findMultiple')->willReturn([$own]);
+
+		$this->request->method('getUploadedFile')->willReturn(['name' => 'config.yaml', 'tmp_name' => '/tmp/config.yaml', 'size' => 1]);
+		$this->request->method('getParam')->willReturnMap($params);
+		$this->request->method('getParams')->willReturn([]);
+
+		return $register;
+	}//end registerForBundleUpload()
+
+	/**
+	 * A manager's bundle that names a schema outside the register reaches no importer.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-a-bundle-uploaded-by-a-register-manager-stays-inside-that-register
+	 */
+	public function testAManagersBundleWithAForeignSchemaIsRefused(): void {
+		$this->currentUserIsAdmin = false;
+		$this->registerForBundleUpload();
+		$this->configurationService->method('getUploadedJson')->willReturn(['components' => ['schemas' => ['foreign' => ['title' => 'F']]]]);
+		$this->configurationService->expects($this->never())->method('importFromJson');
+
+		$this->assertSame(403, $this->controller->import(1)->getStatus());
+	}//end testAManagersBundleWithAForeignSchemaIsRefused()
+
+	/**
+	 * A manager's bundle with a new marker reaches no importer.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-a-bundle-uploaded-by-a-register-manager-stays-inside-that-register
+	 */
+	public function testAManagersBundleWithANewMarkerIsRefused(): void {
+		$this->currentUserIsAdmin = false;
+		$this->registerForBundleUpload();
+		$this->configurationService->method('getUploadedJson')->willReturn(
+			['components' => ['schemas' => ['own' => ['authorization' => ['read' => [['group' => 'public', 'crossOrganisation' => true]]]]]]]
+		);
+		$this->configurationService->expects($this->never())->method('importFromJson');
+
+		$this->assertSame(403, $this->controller->import(1)->getStatus());
+	}//end testAManagersBundleWithANewMarkerIsRefused()
+
+	/**
+	 * The importer gets the register's application and the session's user, whatever was sent.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-a-bundle-uploaded-by-a-register-manager-stays-inside-that-register
+	 */
+	public function testABundleImportTakesAppIdAndOwnerFromTheServer(): void {
+		$this->currentUserIsAdmin = false;
+		$this->currentUser = $this->createMock(\OCP\IUser::class);
+		$this->currentUser->method('getUID')->willReturn('alice');
+		$this->registerForBundleUpload(
+			params: [
+				['type', null, null],
+				['appId', null, 'victim-app'],
+				['owner', null, 'mallory'],
+				['version', null, '1.2.3'],
+			]
+		);
+		$bundle = ['appId' => 'victim-app', 'components' => ['schemas' => ['own' => ['title' => 'Own']]]];
+		$this->configurationService->method('getUploadedJson')->willReturn($bundle);
+		$this->configurationService->expects($this->once())
+			->method('importFromJson')
+			->with(
+				data: ['components' => ['schemas' => ['own' => ['title' => 'Own']]]],
+				configuration: null,
+				owner: 'alice',
+				appId: 'shipping-app',
+				version: '1.2.3',
+				force: false
+			)
+			->willReturn(['registers' => ['r'], 'schemas' => [], 'objects' => []]);
+
+		$this->assertSame(200, $this->controller->import(1)->getStatus());
+	}//end testABundleImportTakesAppIdAndOwnerFromTheServer()
+
+	/**
+	 * An administrator's bundle is not bound to the register.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-a-bundle-uploaded-by-a-register-manager-stays-inside-that-register
+	 */
+	public function testAnAdministratorsBundleIsNotBound(): void {
+		$this->registerForBundleUpload();
+		$this->configurationService->method('getUploadedJson')->willReturn(['components' => ['schemas' => ['foreign' => ['title' => 'F']]]]);
+		$this->configurationService->expects($this->once())->method('importFromJson')->willReturn(['registers' => ['r'], 'schemas' => [], 'objects' => []]);
+
+		$this->assertSame(200, $this->controller->import(1)->getStatus());
+	}//end testAnAdministratorsBundleIsNotBound()
 
 	// ── Import: register-bundle auto-create (register-import-auto-create, #1487) ──
 

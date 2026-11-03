@@ -39,6 +39,7 @@ use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\Configuration\RegisterBundleBinding;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Service\OasService;
@@ -1803,12 +1804,20 @@ class RegistersController extends Controller {
 			return $jsonData;
 		}
 
+		$refusal = $this->bundleRefusal(register: $options['register'], bundle: $jsonData);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		// The importer falls back to the app id a bundle names; here the register decides.
+		unset($jsonData['appId']);
+
 		// ImportFromJson takes a Configuration entity; this endpoint has none to pass.
 		$result = $this->configurationService->importFromJson(
 			data: $jsonData,
 			configuration: null,
-			owner: $this->request->getParam('owner'),
-			appId: $this->request->getParam('appId'),
+			owner: $this->userSession->getUser()?->getUID(),
+			appId: $options['register']->getApplication(),
 			version: $this->request->getParam('version'),
 			force: $options['force']
 		);
@@ -1821,6 +1830,29 @@ class RegistersController extends Controller {
 
 		return $summary;
 	}//end importConfigurationBundle()
+
+	/**
+	 * Refuse a bundle that reaches outside the register for a caller who is not an administrator.
+	 *
+	 * @param Register             $register The register the bundle was uploaded to
+	 * @param array<string, mixed> $bundle   The bundle
+	 *
+	 * @return JSONResponse|null A 403, or null when the import may go ahead
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-a-bundle-uploaded-by-a-register-manager-stays-inside-that-register
+	 */
+	private function bundleRefusal(Register $register, array $bundle): ?JSONResponse {
+		if ($this->isCurrentUserAdmin() === true) {
+			return null;
+		}
+
+		$reason = (new RegisterBundleBinding(schemaMapper: $this->schemaMapper))->refusalFor(register: $register, bundle: $bundle);
+		if ($reason === null) {
+			return null;
+		}
+
+		return new JSONResponse(data: ['error' => $reason], statusCode: 403);
+	}//end bundleRefusal()
 
 	/**
 	 * Build the sheet-based summary of a configuration import.
