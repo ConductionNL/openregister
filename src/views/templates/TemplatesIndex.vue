@@ -262,7 +262,7 @@ export default {
 				//     this.templatesList = response.data.data
 				//     this.totalTemplates = response.data.count || this.templatesList.length
 				// }
-			} catch (error) {
+			} catch {
 				// TODO: Uncomment when API is implemented
 				// console.error('Failed to load templates:', error)
 				// showError(t('openregister', 'Failed to load templates'))

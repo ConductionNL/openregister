@@ -90,6 +90,10 @@ final class ObjectActionShape {
 			return self::stepsRefusals(key: $key, steps: $definition[$kind]);
 		}
 
+		if ($kind === ObjectActionDefinition::KIND_SELF_ASSIGN) {
+			return ObjectActionSelfAssignShape::refusals(key: $key, definition: $definition);
+		}
+
 		return [];
 	}//end bodyRefusals()
 

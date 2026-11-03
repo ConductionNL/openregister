@@ -613,70 +613,7 @@ class SaveObjectDeepTest extends TestCase {
 		$this->assertNull($result);
 	}
 
-	// ── createSlug tests ────────────────────────────────────────────────
-
-	public function testCreateSlugSimple(): void {
-		$this->assertSame('hello-world', $this->invokePrivateMethod('createSlug', ['Hello World']));
-	}
-
-	public function testCreateSlugSpecialChars(): void {
-		$this->assertSame('hello-world-2024', $this->invokePrivateMethod('createSlug', ['Hello! @World# $2024']));
-	}
-
-	public function testCreateSlugLongTextTruncation(): void {
-		$longText = str_repeat('a', 60);
-		$result = $this->invokePrivateMethod('createSlug', [$longText]);
-		$this->assertLessThanOrEqual(50, strlen($result));
-	}
-
-	public function testCreateSlugTrimsTrailingHyphens(): void {
-		$text = str_repeat('a', 49) . ' b';
-		$result = $this->invokePrivateMethod('createSlug', [$text]);
-		$this->assertStringEndsNotWith('-', $result);
-	}
-
-	// ── generateSlug tests ──────────────────────────────────────────────
-
-	public function testGenerateSlugNoConfig(): void {
-		$schema = $this->createMockSchema(1, 'test', []);
-		$this->assertNull($this->invokePrivateMethod('generateSlug', [['name' => 'test'], $schema]));
-	}
-
-	public function testGenerateSlugWithConfig(): void {
-		$schema = $this->createMockSchema(1, 'test', ['objectSlugField' => 'name']);
-		$result = $this->invokePrivateMethod('generateSlug', [['name' => 'Test Object'], $schema]);
-		$this->assertNotNull($result);
-		$this->assertStringStartsWith('test-object-', $result);
-	}
-
-	public function testGenerateSlugMissingFieldValue(): void {
-		$schema = $this->createMockSchema(1, 'test', ['objectSlugField' => 'title']);
-		$this->assertNull($this->invokePrivateMethod('generateSlug', [['name' => 'test'], $schema]));
-	}
-
-	public function testGenerateSlugException(): void {
-		$schema = $this->getMockBuilder(Schema::class)
-			->onlyMethods(['getConfiguration', 'getProperties', 'getSchemaObject', 'hasPropertyAuthorization'])
-			->getMock();
-		$schema->method('getConfiguration')->willThrowException(new Exception('Config error'));
-
-		$this->assertNull($this->invokePrivateMethod('generateSlug', [['name' => 'test'], $schema]));
-	}
-
-	// ── getValueFromPath tests ──────────────────────────────────────────
-
-	public function testGetValueFromPathNested(): void {
-		$data = ['contact' => ['email' => 'test@test.nl']];
-		$this->assertSame('test@test.nl', $this->invokePrivateMethod('getValueFromPath', [$data, 'contact.email']));
-	}
-
-	public function testGetValueFromPathMissing(): void {
-		$this->assertNull($this->invokePrivateMethod('getValueFromPath', [['name' => 'test'], 'missing.path']));
-	}
-
-	public function testGetValueFromPathConvertsToString(): void {
-		$this->assertSame('42', $this->invokePrivateMethod('getValueFromPath', [['count' => 42], 'count']));
-	}
+	// createSlug() / generateSlug() were removed (#4037); see ObjectSlugHandlerTest.
 
 	// ── isEffectivelyEmptyObject tests ──────────────────────────────────
 
@@ -978,10 +915,15 @@ class SaveObjectDeepTest extends TestCase {
 
 	// ── setSelfMetadata tests ───────────────────────────────────────────
 
-	public function testSetSelfMetadataSlug(): void {
+	public function testSetSelfMetadataNoLongerSetsTheSlug(): void {
+		// ObjectSlugHandler decides the slug after hydration (#4037).
 		$entity = $this->createObjectEntity(1, 'uuid-1');
 		$this->invokePrivateMethod('setSelfMetadata', [$entity, ['slug' => 'my-slug'], []]);
-		$this->assertSame('my-slug', $entity->getSlug());
+		$this->assertNull($entity->getSlug());
+	}
+
+	public function testClientSlugReadsSelfFirst(): void {
+		$this->assertSame('my-slug', $this->invokePrivateMethod('clientSlug', [['slug' => 'my-slug'], ['slug' => 'data-slug']]));
 	}
 
 	public function testSetSelfMetadataPublishedDate(): void {
@@ -1065,10 +1007,9 @@ class SaveObjectDeepTest extends TestCase {
 		$this->assertSame('org-uuid', $entity->getOrganisation());
 	}
 
-	public function testSetSelfMetadataSlugFromData(): void {
-		$entity = $this->createObjectEntity(1, 'uuid-1');
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, [], ['slug' => 'data-slug']]);
-		$this->assertSame('data-slug', $entity->getSlug());
+	public function testClientSlugFallsBackToTheData(): void {
+		$this->assertSame('data-slug', $this->invokePrivateMethod('clientSlug', [[], ['slug' => 'data-slug']]));
+		$this->assertNull($this->invokePrivateMethod('clientSlug', [['slug' => ''], []]));
 	}
 
 	public function testSetSelfMetadataDepublishedNotPresent(): void {

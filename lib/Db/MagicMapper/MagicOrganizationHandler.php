@@ -145,41 +145,7 @@ class MagicOrganizationHandler {
 			$scope = self::admitOrganisationless(scope: $scope);
 		}
 
-		if ($scope['mode'] === self::SCOPE_ALL) {
-			return;
-		}
-
-		if ($scope['mode'] === self::SCOPE_NONE) {
-			$qb->andWhere('1 = 0');
-			return;
-		}
-
-		if ($scope['mode'] === self::SCOPE_NULL_ONLY) {
-			$qb->andWhere($qb->expr()->isNull('t._organisation'));
-			return;
-		}
-
-		// Condition 1: objects belonging to the caller's active organisation(s).
-		$conditions = [];
-		$conditions[] = $qb->expr()->in(
-			't._organisation',
-			$qb->createNamedParameter($scope['uuids'], IQueryBuilder::PARAM_STR_ARRAY)
-		);
-		if (count($scope['uuids']) === 1) {
-			array_pop($conditions);
-			$conditions[] = $qb->expr()->eq(
-				't._organisation',
-				$qb->createNamedParameter($scope['uuids'][0])
-			);
-		}
-
-		// Condition 2: objects with no organisation, for admins and for a
-		// register-cascade grant (admitOrganisationless()).
-		if ($scope['mode'] === self::SCOPE_IN_OR_NULL) {
-			$conditions[] = $qb->expr()->isNull('t._organisation');
-		}
-
-		$qb->andWhere($qb->expr()->orX(...$conditions));
+		(new OrganisationScopeCondition())->apply(qb: $qb, scope: $scope);
 
 	}//end applyOrganizationFilter()
 

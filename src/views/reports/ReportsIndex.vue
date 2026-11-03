@@ -173,7 +173,7 @@ export default {
 		async refresh() {
 			try {
 				await reportsStore.fetchDashboards()
-			} catch (e) {
+			} catch {
 				// surfaced via store error
 			}
 		},

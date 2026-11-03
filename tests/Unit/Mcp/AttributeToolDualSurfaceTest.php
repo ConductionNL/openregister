@@ -346,6 +346,8 @@ class AttributeToolDualSurfaceTest extends TestCase {
 			$this->assertSame('create', $surface['dossiq.fileCase']['scope']);
 			$this->assertSame('create', $surface['dossiq.fileCase']['action']);
 			$this->assertArrayNotHasKey('annotations', $surface['dossiq.reassignCase']);
+			$this->assertSame('Create a task', $surface['dossiq.createTask']['title'] ?? null);
+			$this->assertArrayNotHasKey('title', $surface['dossiq.reassignCase']);
 		}
 
 	}//end testDeclaredAnnotationsArriveOnBothSurfaces()

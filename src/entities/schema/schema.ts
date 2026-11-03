@@ -37,6 +37,47 @@ const FALLBACKS = {
 	draft: null,
 }
 
+/**
+ * The validation shape of a schema's identity and text fields. Built on each
+ * call, so its version pattern is a fresh RegExp every time.
+ *
+ * @return The shape.
+ */
+function schemaTextShape() {
+	return {
+		id: z.string().min(1),
+		title: z.string().min(1),
+		version: z.string().regex(/^(?:\d+\.){2}\d+$/g, 'Invalid version format'),
+		description: z.string(),
+		summary: z.string(),
+		required: z.array(z.string()),
+		properties: z.object({}),
+		archive: z.object({}),
+		updated: z.string(),
+		created: z.string(),
+		slug: z.string().min(1),
+	}
+}
+
+/**
+ * The validation shape of a schema's configuration and rules.
+ *
+ * @return The shape.
+ */
+function schemaRulesShape() {
+	return {
+		configuration: z
+			.object({
+				objectNameField: z.string().optional(),
+				objectDescriptionField: z.string().optional(),
+			})
+			.optional(),
+		hardValidation: z.boolean(),
+		maxDepth: z.number().int().min(0),
+		authorization: z.record(z.string(), z.array(z.string())).optional(),
+	}
+}
+
 export class Schema implements TSchema {
 	public id!: string
 	public title!: string
@@ -83,31 +124,7 @@ export class Schema implements TSchema {
 	}
 
 	public validate(): ZodSafeParseResult<unknown> {
-		const schema = z.object({
-			id: z.string().min(1),
-			title: z.string().min(1),
-			version: z
-				.string()
-				.regex(/^(?:\d+\.){2}\d+$/g, 'Invalid version format'),
-			description: z.string(),
-			summary: z.string(),
-			required: z.array(z.string()),
-			properties: z.object({}),
-			archive: z.object({}),
-			updated: z.string(),
-			created: z.string(),
-			slug: z.string().min(1),
-			configuration: z
-				.object({
-					objectNameField: z.string().optional(),
-					objectDescriptionField: z.string().optional(),
-				})
-				.optional(),
-			hardValidation: z.boolean(),
-			maxDepth: z.number().int().min(0),
-			authorization: z.record(z.string(), z.array(z.string())).optional(),
-		})
-
+		const schema = z.object({ ...schemaTextShape(), ...schemaRulesShape() })
 		return schema.safeParse(this)
 	}
 }

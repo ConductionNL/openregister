@@ -311,6 +311,12 @@ final class ConfigurationServiceRegistrar {
 				\OCA\OpenRegister\Service\Archival\SelectionListSeeder::class,
 				'SelectionListSeeder',
 			],
+			// Decides the slug of a seed object, so a seed cannot take a slug another
+			// live object holds (#4037); without it a seed slug is set as before.
+			'setSlugHandler' => [
+				\OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler::class,
+				'ObjectSlugHandler',
+			],
 		];
 
 		foreach ($optional as $setter => $service) {

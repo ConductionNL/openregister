@@ -267,7 +267,7 @@ export default {
 		view: {
 			immediate: true,
 			/**
-			 * @param newView
+			 * @param {object|null} newView
 			 * @spec exclude Watcher hydrating the local form model from the view prop; UI reactivity plumbing.
 			 */
 			handler(newView) {
