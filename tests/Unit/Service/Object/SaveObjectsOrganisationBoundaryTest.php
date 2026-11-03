@@ -76,9 +76,26 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 	private bool $held = false;
 
 	/**
-	 * Whether the caller's own read finds the stored row: true, false, or 'throws'.
+	 * What the caller's own read finds: true (the stored row), false (nothing), 'throws', or
+	 * 'other' (an own-organisation row whose slug or id equals the stored row's uuid).
 	 */
 	private bool|string $readable = false;
+
+	/**
+	 * Whether the batch prefetch fails, so each row is looked up on its own.
+	 */
+	private bool $prefetchFails = false;
+
+	/**
+	 * What the per-row lookup past the read filters answers after a failed prefetch:
+	 * 'stored', 'missing', 'ambiguous' or 'fails'.
+	 */
+	private string $fallback = 'stored';
+
+	/**
+	 * The stored row's status.
+	 */
+	private ?string $storedStatus = null;
 
 	/**
 	 * Whether the caller is an administrator.
@@ -138,8 +155,17 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 		$stored->setOrganisation('org-b');
 		$stored->setOwner('bob');
 		$stored->setObject(['title' => 'B']);
+		$stored->setStatus($this->storedStatus);
 		$mapper = $this->createMock(MagicMapper::class);
-		$mapper->method('findObjectsByUuidsInRegisterSchema')->willReturn([self::FOREIGN => $stored]);
+		$mapper->method('findObjectsByUuidsInRegisterSchema')->willReturnCallback(
+			function () use ($stored): array {
+				if ($this->prefetchFails === true) {
+					throw new \RuntimeException('prefetch failed');
+				}
+
+				return [self::FOREIGN => $stored];
+			}
+		);
 		$mapper->method('callerOrganisationsHold')->willReturnCallback(
 			function (ObjectEntity $row): bool {
 				$this->calls[] = 'hold '.$row->getUuid().' '.$row->getOrganisation();
@@ -149,8 +175,25 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 		$mapper->method('find')->willReturnCallback(
 			function (string|int $identifier, $register = null, $schema = null, bool $includeDeleted = false, bool $_rbac = true, bool $_multitenancy = true) use ($stored): ObjectEntity {
 				$this->calls[] = 'find '.json_encode([$identifier, $register?->getId(), $schema?->getId(), $_rbac, $_multitenancy]);
+				if ($_rbac === false) {
+					return match ($this->fallback) {
+						'stored' => $stored,
+						'missing' => throw new DoesNotExistException('missing'),
+						'ambiguous' => throw new \OCP\AppFramework\Db\MultipleObjectsReturnedException('two rows'),
+						default => throw new \RuntimeException('lookup failed'),
+					};
+				}
+
 				if ($this->readable === 'throws') {
 					throw new \RuntimeException('database gone');
+				}
+
+				if ($this->readable === 'other') {
+					$own = new ObjectEntity();
+					$own->setUuid('own-4');
+					$own->setSlug(self::FOREIGN);
+					$own->setOrganisation('org-a');
+					return $own;
 				}
 
 				if ($this->readable === true) {
@@ -269,6 +312,71 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 		$out = $this->safeguard(row: ['@self' => ['uuid' => self::FOREIGN], 'title' => 'changed']);
 
 		$this->assertCount(1, $out['passed']);
+	}
+
+	public function testAReadableOwnRowWhoseSlugIsTheStoredUuidDoesNotCountAsReadingIt(): void {
+		$this->readable = 'other';
+
+		$out = $this->safeguard(row: ['@self' => ['uuid' => self::FOREIGN], 'title' => 'overwritten']);
+
+		$this->assertSame([], $out['passed']);
+		$this->assertSame(['Permission denied for action create on schema planned'], self::reasons($out['invalid']));
+	}
+
+	public function testAReadableOwnRowWhoseIdIsTheStoredNumericUuidDoesNotCountAsReadingIt(): void {
+		$this->readable = 'other';
+		$this->prefetchFails = true;
+
+		$out = $this->safeguard(row: ['id' => '9', 'title' => 'overwritten']);
+
+		$this->assertSame([], $out['passed']);
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: int}>
+	 */
+	public static function fallbacks(): array {
+		return [
+			'an ambiguous lookup' => ['ambiguous', 0],
+			'a failed lookup' => ['fails', 0],
+			'a missing row is a create' => ['missing', 1],
+		];
+	}//end fallbacks()
+
+	/**
+	 * @dataProvider fallbacks
+	 */
+	public function testAfterAFailedPrefetchOnlyAMissingRowIsACreate(string $fallback, int $passed): void {
+		$this->prefetchFails = true;
+		$this->fallback = $fallback;
+
+		$out = $this->safeguard(row: ['@self' => ['uuid' => self::FOREIGN], 'title' => 'x']);
+
+		$this->assertCount($passed, $out['passed']);
+		if ($passed === 0) {
+			$this->assertSame(['Permission denied for action create on schema planned'], self::reasons($out['invalid']));
+		}
+	}
+
+	public function testAnUnresolvedRowIsRefusedAlsoForAnAdministratorWithRbacOff(): void {
+		$this->admin = true;
+		$this->prefetchFails = true;
+		$this->fallback = 'ambiguous';
+
+		$out = $this->safeguard(
+			row: ['@self' => ['uuid' => self::FOREIGN], 'title' => 'x'],
+			flags: ['rbac' => false, 'validation' => false, 'multitenancy' => false]
+		);
+
+		$this->assertSame([], $out['passed']);
+	}
+
+	public function testAnotherOrganisationsDraftGetsTheSameAnswerAsItsOtherRows(): void {
+		$this->storedStatus = 'draft';
+
+		$out = $this->safeguard(row: ['@self' => ['uuid' => self::FOREIGN], 'title' => 'overwritten']);
+
+		$this->assertSame(['Permission denied for action create on schema planned'], self::reasons($out['invalid']));
 	}
 
 	public function testAReadThatFailsRefusesTheRow(): void {
