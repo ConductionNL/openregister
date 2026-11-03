@@ -55,6 +55,22 @@ class CrossOrganisationMarkerChangeTest extends TestCase {
 			'a marker is set to false'                    => [['read' => [$plain]], ['read' => [['crossOrganisation' => false] + $plain]], false],
 			'a truthy value that is not true'             => [['read' => [$plain]], ['read' => [['crossOrganisation' => 'yes'] + $plain]], false],
 			'no authorization at all'                     => [null, null, false],
+			'a marked rule moves from update to read'     => [['update' => [$marked]], ['read' => [$marked]], true],
+			'a marked rule moves from read to update'     => [['read' => [$marked]], ['update' => [$marked]], true],
+			'rules in a list change places'               => [['read' => ['hr', $marked]], ['read' => [$marked, 'hr']], false],
+			'keys in another order deeper in the rule'    => [
+				['read' => [['group' => 'team', 'match' => ['a' => 1, 'b' => ['c' => 2, 'd' => 3]], 'crossOrganisation' => true]]],
+				['read' => [['group' => 'team', 'crossOrganisation' => true, 'match' => ['b' => ['d' => 3, 'c' => 2], 'a' => 1]]]],
+				false,
+			],
+			'a different value deeper in the rule'        => [
+				['read' => [['group' => 'team', 'match' => ['b' => ['c' => 2]], 'crossOrganisation' => true]]],
+				['read' => [['group' => 'team', 'match' => ['b' => ['c' => 3]], 'crossOrganisation' => true]]],
+				true,
+			],
+			'a marker sent as JSON text'                  => [['read' => [$plain]], json_encode(['read' => [$marked]]), true],
+			'a stored block read back as JSON text'       => [json_encode(['read' => [$marked]]), ['read' => [$marked]], false],
+			'a text that is not JSON'                     => [['read' => [$plain]], 'not json', false],
 		];
 	}//end changes()
 
@@ -62,4 +78,13 @@ class CrossOrganisationMarkerChangeTest extends TestCase {
 	public function testWidensOnlyWhenACrossingIsAdded(mixed $old, mixed $new, bool $widens): void {
 		self::assertSame($widens, (new CrossOrganisationMarkerChange())->widens(old: $old, new: $new));
 	}//end testWidensOnlyWhenACrossingIsAdded()
+
+	public function testAsStoredDecodesAJsonTextAndKeepsEverythingElse(): void {
+		$change = new CrossOrganisationMarkerChange();
+
+		self::assertSame(['read' => ['hr']], $change->asStored(authorization: '{"read":["hr"]}'));
+		self::assertSame(['read' => ['hr']], $change->asStored(authorization: ['read' => ['hr']]));
+		self::assertNull($change->asStored(authorization: 'not json'));
+		self::assertSame(5, $change->asStored(authorization: 5));
+	}//end testAsStoredDecodesAJsonTextAndKeepsEverythingElse()
 }//end class

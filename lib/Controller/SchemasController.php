@@ -1250,6 +1250,8 @@ class SchemasController extends Controller {
 			);
 		}
 
+		$data = $this->withAuthorizationAsStored(document: $data);
+
 		// Validated after the permission check, so an unauthorized caller cannot probe it.
 		$invalid = ($this->validateSchemaBody(data: $data) ?? $this->crossOrganisationRefusal(old: $existingSchema->getAuthorization(), document: $data));
 		if ($invalid !== null) {
@@ -1942,10 +1944,15 @@ class SchemasController extends Controller {
 			return $dialectResult;
 		}
 
-		$phpArray = $dialectResult;
-		$crossing = $this->crossOrganisationRefusal(old: $schema->getAuthorization(), document: $phpArray);
-		if ($crossing !== null) {
-			return $crossing;
+		$phpArray = $this->withAuthorizationAsStored(document: $dialectResult);
+		$old      = $schema->getAuthorization();
+		$refusal  = ($this->crossOrganisationRefusal(old: $old, document: $phpArray) ?? $this->externalGrantRefusal(data: $phpArray));
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		if ($id !== null) {
+			unset($phpArray['id'], $phpArray['organisation'], $phpArray['owner'], $phpArray['created']);
 		}
 
 		if (empty($phpArray['title']) === true) {
@@ -1961,6 +1968,22 @@ class SchemasController extends Controller {
 			);
 		}
 	}//end upload()
+
+	/**
+	 * The body with its authorization in the form the schema will store, so
+	 * every check on it judges that form.
+	 *
+	 * @param array<string, mixed> $document The schema body being written.
+	 *
+	 * @return array<string, mixed> The body with a JSON text authorization decoded.
+	 */
+	private function withAuthorizationAsStored(array $document): array {
+		if (array_key_exists('authorization', $document) === true) {
+			$document['authorization'] = (new CrossOrganisationMarkerChange())->asStored(authorization: $document['authorization']);
+		}
+
+		return $document;
+	}//end withAuthorizationAsStored()
 
 	/**
 	 * Refuse a write by a non-administrator that lets a rule cross

@@ -38,9 +38,10 @@ final class CrossOrganisationMarkerChange {
 	/**
 	 * Whether the new block holds a marked rule the old one did not.
 	 *
-	 * Rules are compared whole, with their keys in a fixed order, so a marked
-	 * rule whose group, match or action changed counts as new. Each marked
-	 * rule counts as often as it occurs.
+	 * Rules are compared whole and by where they stand, with their keys in a
+	 * fixed order, so a marked rule whose group or match changed, or that moved
+	 * to another action, counts as new. Each marked rule counts as often as it
+	 * occurs.
 	 *
 	 * @param mixed $old The authorization block before the change.
 	 * @param mixed $new The authorization block after the change.
@@ -50,8 +51,8 @@ final class CrossOrganisationMarkerChange {
 	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
 	 */
 	public function widens(mixed $old, mixed $new): bool {
-		$before = array_count_values($this->markedRules(block: $old));
-		foreach (array_count_values($this->markedRules(block: $new)) as $rule => $count) {
+		$before = array_count_values($this->markedRules(block: $this->asStored(authorization: $old)));
+		foreach (array_count_values($this->markedRules(block: $this->asStored(authorization: $new))) as $rule => $count) {
 			if ($count > ($before[$rule] ?? 0)) {
 				return true;
 			}
@@ -61,25 +62,48 @@ final class CrossOrganisationMarkerChange {
 	}//end widens()
 
 	/**
-	 * Every array in the block that carries `crossOrganisation: true`, as a
-	 * canonical JSON text, at any depth (action rules and matrix rows alike).
+	 * The authorization block a schema stores for a value as it was sent: the
+	 * entity setter decodes a JSON text, so that text is judged as its decoded form.
 	 *
-	 * @param mixed $block An authorization block or a part of one.
+	 * @param mixed $authorization The authorization value as sent.
+	 *
+	 * @return mixed The decoded block, or the value itself when it is no text.
+	 */
+	public function asStored(mixed $authorization): mixed {
+		if (is_string($authorization) === true) {
+			return json_decode($authorization, true);
+		}
+
+		return $authorization;
+	}//end asStored()
+
+	/**
+	 * Every array in the block that carries `crossOrganisation: true`, as a
+	 * canonical JSON text with the keys above it, at any depth (action rules
+	 * and matrix rows alike). List positions are left out: reordering moves nothing.
+	 *
+	 * @param mixed  $block An authorization block or a part of one.
+	 * @param string $path  The associative keys above the block.
 	 *
 	 * @return array<int, string>
 	 */
-	private function markedRules(mixed $block): array {
+	private function markedRules(mixed $block, string $path=''): array {
 		if (is_array($block) === false) {
 			return [];
 		}
 
 		$found = [];
 		if (($block[MatrixRowWhere::CROSS_ORGANISATION_KEY] ?? null) === true) {
-			$found[] = (string)json_encode($this->canonical(value: $block));
+			$found[] = $path.(string)json_encode($this->canonical(value: $block));
 		}
 
-		foreach ($block as $value) {
-			array_push($found, ...$this->markedRules(block: $value));
+		foreach ($block as $key => $value) {
+			$below = $path;
+			if (is_string($key) === true) {
+				$below = $path.json_encode($key).'/';
+			}
+
+			array_push($found, ...$this->markedRules(block: $value, path: $below));
 		}
 
 		return $found;
