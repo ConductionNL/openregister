@@ -78,6 +78,19 @@ class SchemaManageGate {
 	}//end mayManageRegister()
 
 	/**
+	 * Whether the caller is an administrator.
+	 *
+	 * @return bool False without a session.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function callerIsAdministrator(): bool {
+		$user = $this->userSession->getUser();
+
+		return $user !== null && $this->groupManager->isAdmin($user->getUID()) === true;
+	}//end callerIsAdministrator()
+
+	/**
 	 * Whether an authorization block's `manage` rule admits the caller; administrators always pass.
 	 *
 	 * @param array<string, mixed>|null $authorization The block.
