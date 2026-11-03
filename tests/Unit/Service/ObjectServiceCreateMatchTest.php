@@ -231,6 +231,40 @@ class ObjectServiceCreateMatchTest extends TestCase {
 		$this->checkCreate(['hours' => 4, '@self' => ['user' => 'alice']]);
 	}//end testAForgedSelfBlockDoesNotSatisfyTheMatch()
 	/**
+	 * A metadata key in the request body cannot supply what a create rule's
+	 * match reads: `_owner` and `_organisation` are set by the system.
+	 *
+	 * @return void
+	 */
+	public function testABodyMetadataKeyDoesNotSatisfyTheMatch(): void {
+		foreach (['_owner' => 'alice', '_organisation' => 'org-target'] as $field => $value) {
+			$schema = new Schema();
+			$schema->setId(683);
+			$schema->setTitle('Guarded');
+			$schema->setAuthorization(['create' => [['group' => 'planners', 'match' => [$field => $value]]], 'read' => ['planners']]);
+			$this->objectService->setSchema(schema: $schema);
+
+			try {
+				$this->checkCreate(object: ['title' => 'x', $field => $value]);
+				$this->fail(message: 'a body ' . $field . ' satisfied the create rule');
+			} catch (NotAuthorizedException $e) {
+				$this->addToAssertionCount(count: 1);
+			}
+		}
+	}//end testABodyMetadataKeyDoesNotSatisfyTheMatch()
+
+	/**
+	 * Ordinary properties still answer a create rule after the metadata keys are dropped.
+	 *
+	 * @return void
+	 */
+	public function testOrdinaryPropertiesBesideAMetadataKeyStillCount(): void {
+		$this->checkCreate(object: ['user' => 'alice', '_owner' => 'bob', 'hours' => 4]);
+
+		$this->addToAssertionCount(count: 1);
+	}//end testOrdinaryPropertiesBesideAMetadataKeyStillCount()
+
+	/**
 	 * A schema whose default scope is private still takes creates.
 	 *
 	 * The incoming data is not an object yet, so the private scope does not
