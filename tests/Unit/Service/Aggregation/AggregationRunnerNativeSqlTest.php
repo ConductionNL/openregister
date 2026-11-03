@@ -94,6 +94,7 @@ class AggregationRunnerNativeSqlTest extends TestCase {
 			],
 			'org unknown mode refused'         => ['platform' => 'postgres', 'org' => ['mode' => 'mystery', 'uuids' => []]],
 			'org waived by rbac'               => ['platform' => 'postgres', 'org' => $in, 'waived' => true, 'rows' => [['agg' => 9]]],
+			'org with a public branch refused' => ['platform' => 'postgres', 'org' => $in, 'waived' => true, 'publicBranch' => true],
 			'org widened by rbac'              => ['platform' => 'postgres', 'org' => $in, 'admitted' => true, 'rows' => [['agg' => 9]]],
 			'rbac off ignores rbac answers'    => [
 				'platform'     => 'postgres',
@@ -259,6 +260,7 @@ class AggregationRunnerNativeSqlTest extends TestCase {
 		$magicMapper->method('getTableNameForRegisterSchema')->willReturn($case['table'] ?? 'register_1_schema_case');
 		$magicMapper->method('getMetadataColumnHealer')->willReturn($healer);
 		$magicMapper->method('organisationBoundaryWaivedByRbac')->willReturn($case['waived'] ?? false);
+		$magicMapper->method('organisationBoundaryHasPublicBranch')->willReturn($case['publicBranch'] ?? false);
 		$magicMapper->method('organisationlessRowsAdmittedByRbac')->willReturn($case['admitted'] ?? false);
 		$magicMapper->method('rbacRowPredicateSql')->willReturn($case['rowPredicate'] ?? null);
 
