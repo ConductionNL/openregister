@@ -38,6 +38,32 @@ function shown(value) {
 	return value instanceof Date ? `Date(${value.toISOString()})` : value
 }
 
+/**
+ * A parsed date as snapshot text that does not depend on the time zone the
+ * test runs in. A value read as an instant (a Date passed in, or a date-time
+ * with `Z` or with no time part, which JavaScript reads as UTC) is shown by
+ * its ISO time; a local date or time by its local fields.
+ *
+ * @param {Date|null} parsed The parsed value.
+ * @param {{input: (Date|string|null), format: (string|undefined)}} read What was parsed, and as which format.
+ * @return {string|null} The shown value.
+ */
+function shownParsed(parsed, read) {
+	if (!(parsed instanceof Date)) {
+		return parsed
+	}
+	const text = String(read.input)
+	const instant =
+		read.input instanceof Date
+		|| (read.format === 'date-time'
+			&& (text.endsWith('Z') || /^\d{4}(-\d{2}){0,2}$/.test(text)))
+	if (instant) {
+		return shown(parsed)
+	}
+	const two = (n) => String(n).padStart(2, '0')
+	return `Local(${parsed.getFullYear()}-${two(parsed.getMonth() + 1)}-${two(parsed.getDate())} ${two(parsed.getHours())}:${two(parsed.getMinutes())}:${two(parsed.getSeconds())})`
+}
+
 describe('branchy helpers golden', () => {
 	beforeEach(() => {
 		jest.useFakeTimers()
@@ -94,7 +120,10 @@ describe('branchy helpers golden', () => {
 				cases.push([
 					format,
 					shown(value),
-					shown(stringToDate(value, format)),
+					shownParsed(stringToDate(value, format), {
+						input: value,
+						format,
+					}),
 				])
 			}
 		}

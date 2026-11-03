@@ -71,7 +71,7 @@ class LogServiceTest extends TestCase {
 		$register = $this->createRegister(1);
 		$schema = $this->createSchema(2);
 
-		$this->objectEntityMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
+		$this->objectEntityMapper->method('findInRegisterSchemaTable')->willReturn($object);
 		$this->registerMapper->method('find')->willReturn($register);
 		$this->schemaMapper->method('find')->willReturn($schema);
 		$this->auditTrailMapper->method('findAll')->willReturn(['log1', 'log2']);
@@ -86,7 +86,7 @@ class LogServiceTest extends TestCase {
 		$register = $this->createRegister(1);
 		$schema = $this->createSchema(2);
 
-		$this->objectEntityMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
+		$this->objectEntityMapper->method('findInRegisterSchemaTable')->willReturn($object);
 		$this->registerMapper->method('find')->willReturn($register);
 		$this->schemaMapper->method('find')->willReturn($schema);
 
@@ -108,7 +108,7 @@ class LogServiceTest extends TestCase {
 		$object = $this->createObjectEntity(42, '1', '2');
 
 		$this->objectEntityMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
-		$this->registerMapper->method('find')->willThrowException(new \Exception('Not found'));
+		$this->registerMapper->method('find')->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
 		$this->auditTrailMapper->expects($this->once())
 			->method('findAll')
@@ -119,12 +119,102 @@ class LogServiceTest extends TestCase {
 		$this->assertSame(['log1'], $result);
 	}
 
+	public function testGetLogsKeepsTheScopeWhenTheRegisterLookupFailsOtherwise(): void {
+		// Only a register or schema that is gone drops the scope; another failure must
+		// not fall back to the cross-table lookup, where another schema's slug could win.
+		$this->registerMapper->method('find')->willThrowException(new \RuntimeException('database gone'));
+		$this->objectEntityMapper->expects($this->never())->method('findAcrossAllSources');
+
+		$this->expectException(\RuntimeException::class);
+		$this->service->getLogs('1', '2', 'hello-world');
+	}
+
+	public function testGetLogsLooksTheObjectUpWithinTheRegisterAndSchema(): void {
+		// #4037: a slug is only unique within register + schema, so the history must be
+		// looked up there and not across every table (the first hit could be another schema's).
+		$object = $this->createObjectEntity(42, '1', '2');
+		$register = $this->createRegister(1);
+		$schema = $this->createSchema(2);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->objectEntityMapper->expects($this->never())->method('findAcrossAllSources');
+		$this->objectEntityMapper->expects($this->once())
+			->method('findInRegisterSchemaTable')
+			->with('hello-world', $register, $schema, false, false, true)
+			->willReturn($object);
+		$this->auditTrailMapper->method('findAll')->willReturn(['log1']);
+
+		$this->assertSame(['log1'], $this->service->getLogs('1', '2', 'hello-world'));
+	}
+
+	public function testGetLogsRefusesAnObjectOfAnotherSchemaAsNotFound(): void {
+		$this->registerMapper->method('find')->willReturn($this->createRegister(1));
+		$this->schemaMapper->method('find')->willReturn($this->createSchema(2));
+		$this->objectEntityMapper->method('findInRegisterSchemaTable')
+			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not in this register and schema'));
+		$this->auditTrailMapper->expects($this->never())->method('findAll');
+
+		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+		$this->service->getLogs('1', '2', 'hello-world');
+	}
+
+	public function testGetLogsPropagatesAnAmbiguousSlug(): void {
+		$this->registerMapper->method('find')->willReturn($this->createRegister(1));
+		$this->schemaMapper->method('find')->willReturn($this->createSchema(2));
+		$this->objectEntityMapper->method('findInRegisterSchemaTable')
+			->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('two objects hold "dubbel"'));
+		$this->auditTrailMapper->expects($this->never())->method('findAll');
+
+		$this->expectException(\OCP\AppFramework\Db\MultipleObjectsReturnedException::class);
+		$this->service->count('1', '2', 'dubbel');
+	}
+
+	public function testGetLogsPrefersTheLiveHolderOverADeletedOneWithTheSameSlug(): void {
+		// Review finding (Robert, 30-10): a slug freed by a delete goes to the next
+		// object, so a deleted and a live object can share it; the live one is meant.
+		$live = $this->createObjectEntity(43, '1', '2');
+		$register = $this->createRegister(1);
+		$schema = $this->createSchema(2);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->objectEntityMapper->method('findInRegisterSchemaTable')->willReturnCallback(
+			function (string $id, $reg, $sch, bool $rbac, bool $multi, bool $includeDeleted) use ($live) {
+				if ($includeDeleted === true) {
+					throw new \OCP\AppFramework\Db\MultipleObjectsReturnedException('a deleted and a live object hold "dubbel"');
+				}
+
+				return $live;
+			}
+		);
+		$this->auditTrailMapper->method('findAll')->willReturn(['log-live']);
+
+		$this->assertSame(['log-live'], $this->service->getLogs('1', '2', 'dubbel'));
+	}
+
+	public function testGetLogsStaysAmbiguousWhenNoHolderIsLive(): void {
+		$this->registerMapper->method('find')->willReturn($this->createRegister(1));
+		$this->schemaMapper->method('find')->willReturn($this->createSchema(2));
+		$this->objectEntityMapper->method('findInRegisterSchemaTable')->willReturnCallback(
+			function (string $id, $reg, $sch, bool $rbac, bool $multi, bool $includeDeleted) {
+				if ($includeDeleted === true) {
+					throw new \OCP\AppFramework\Db\MultipleObjectsReturnedException('two deleted objects hold "dubbel"');
+				}
+
+				throw new \OCP\AppFramework\Db\DoesNotExistException('no live holder');
+			}
+		);
+		$this->auditTrailMapper->expects($this->never())->method('findAll');
+
+		$this->expectException(\OCP\AppFramework\Db\MultipleObjectsReturnedException::class);
+		$this->service->getLogs('1', '2', 'dubbel');
+	}
+
 	public function testCountReturnsLogCount(): void {
 		$object = $this->createObjectEntity(42, '1', '2');
 		$register = $this->createRegister(1);
 		$schema = $this->createSchema(2);
 
-		$this->objectEntityMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
+		$this->objectEntityMapper->method('findInRegisterSchemaTable')->willReturn($object);
 		$this->registerMapper->method('find')->willReturn($register);
 		$this->schemaMapper->method('find')->willReturn($schema);
 		$this->auditTrailMapper->method('findAll')->willReturn(['a', 'b', 'c']);
@@ -139,7 +229,7 @@ class LogServiceTest extends TestCase {
 		$register = $this->createRegister(1);
 		$schema = $this->createSchema(2);
 
-		$this->objectEntityMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
+		$this->objectEntityMapper->method('findInRegisterSchemaTable')->willReturn($object);
 		$this->registerMapper->method('find')->willReturn($register);
 		$this->schemaMapper->method('find')->willReturn($schema);
 		$this->auditTrailMapper->method('findAll')->willReturn([]);
@@ -163,7 +253,7 @@ class LogServiceTest extends TestCase {
 		$register = $this->createRegister(1);
 		$schema = $this->createSchema(2);
 
-		$this->objectEntityMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
+		$this->objectEntityMapper->method('findInRegisterSchemaTable')->willReturn($object);
 		$this->registerMapper->method('find')->willReturn($register);
 		$this->schemaMapper->method('find')->willReturn($schema);
 
