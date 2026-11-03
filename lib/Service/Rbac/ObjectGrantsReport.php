@@ -406,7 +406,7 @@ class ObjectGrantsReport {
 		$envelope = ($object->getObject() ?? []);
 		$organisation = $object->getOrganisation();
 		if ($organisation !== null) {
-			$envelope['@self'] = (['organisation' => $organisation] + ($envelope['@self'] ?? []));
+			$envelope['@self'] = array_replace(($envelope['@self'] ?? []), ['organisation' => $organisation]);
 		}
 
 		return $envelope;

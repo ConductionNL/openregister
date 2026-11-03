@@ -1566,7 +1566,7 @@ class PermissionHandler {
 		$envelope = ($object->getObject() ?? []);
 		$organisation = $object->getOrganisation();
 		if ($organisation !== null) {
-			$envelope['@self'] = (['organisation' => $organisation] + ($envelope['@self'] ?? []));
+			$envelope['@self'] = array_replace(($envelope['@self'] ?? []), ['organisation' => $organisation]);
 		}
 
 		foreach ($conditional as $denial) {
@@ -2267,7 +2267,7 @@ class PermissionHandler {
 				// `@self.organisation` inside $objectData, which a request body can carry.
 				$envelope = ($objectData ?? []);
 				if ($objectOrganisation !== null) {
-					$envelope['@self'] = (['organisation' => $objectOrganisation] + ($envelope['@self'] ?? []));
+					$envelope['@self'] = array_replace(($envelope['@self'] ?? []), ['organisation' => $objectOrganisation]);
 				}
 
 				if ($this->conditionMatcher->objectMatchesConditions(
@@ -2371,7 +2371,7 @@ class PermissionHandler {
 		// same envelope construction as the group path so _organisation resolves.
 		$envelope = ($objectData ?? []);
 		if ($objectOrganisation !== null) {
-			$envelope['@self'] = (['organisation' => $objectOrganisation] + ($envelope['@self'] ?? []));
+			$envelope['@self'] = array_replace(($envelope['@self'] ?? []), ['organisation' => $objectOrganisation]);
 		}
 
 		return $this->conditionMatcher->objectMatchesConditions(
