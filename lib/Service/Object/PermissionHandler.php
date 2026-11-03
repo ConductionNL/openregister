@@ -2936,7 +2936,7 @@ class PermissionHandler {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function matrixRowsFromApps(): MatrixRowsFromApps {
+	public function matrixRowsFromApps(): MatrixRowsFromApps {
 		$this->matrixRowsFromApps ??= new MatrixRowsFromApps(
 			dispatcher: $this->eventDispatcher,
 			validator: new DepartmentMatrixValidator(),
