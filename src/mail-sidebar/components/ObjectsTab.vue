@@ -157,7 +157,7 @@ export default {
 		 * OR sometimes derives object names as a JSON-encoded locale map
 		 * (e.g. `{"nl":"…"}`); unwrap it so the card shows the readable name.
 		 *
-		 * @param obj
+		 * @param {object} obj
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		displayName(obj) {
@@ -181,7 +181,7 @@ export default {
 		 * deep-link registry); otherwise fall back to OpenRegister's own
 		 * object page.
 		 *
-		 * @param obj
+		 * @param {object} obj
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		objectUrl(obj) {
@@ -226,7 +226,7 @@ export default {
 		/**
 		 * Open the confirmation dialog for removing a connection.
 		 *
-		 * @param obj
+		 * @param {object} obj
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		promptUnlink(obj) {
@@ -275,7 +275,7 @@ export default {
 		},
 
 		/**
-		 * @param event
+		 * @param {DragEvent} event
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		onAttachmentDragOver(event) {
@@ -285,8 +285,8 @@ export default {
 		},
 
 		/**
-		 * @param event
-		 * @param obj
+		 * @param {DragEvent} event
+		 * @param {object} obj
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async onAttachmentDrop(event, obj) {
@@ -325,8 +325,8 @@ export default {
 		},
 
 		/**
-		 * @param attachment
-		 * @param target
+		 * @param {object} attachment
+		 * @param {object} target
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async uploadAttachmentToObject(attachment, target) {

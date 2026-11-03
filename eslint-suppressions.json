@@ -113,9 +113,6 @@
   "src/dialogs/mail/CreateConnectedObjectDialog.vue": {
     "@nextcloud/no-deprecated-library-props": {
       "count": 1
-    },
-    "jsdoc/require-param-type": {
-      "count": 3
     }
   },
   "src/dialogs/mail/RemoveConnectionDialog.vue": {
@@ -258,11 +255,6 @@
       "count": 1
     }
   },
-  "src/mail-sidebar/MailSidebar.vue": {
-    "jsdoc/require-param-type": {
-      "count": 2
-    }
-  },
   "src/mail-sidebar/components/ActionsTab.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 3
@@ -278,9 +270,6 @@
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 1
     },
-    "jsdoc/require-param-type": {
-      "count": 2
-    },
     "no-console": {
       "count": 1
     }
@@ -293,9 +282,6 @@
   "src/mail-sidebar/components/ObjectsTab.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 1
-    },
-    "jsdoc/require-param-type": {
-      "count": 8
     },
     "no-console": {
       "count": 3
@@ -1051,9 +1037,6 @@
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 2
     },
-    "jsdoc/require-param-type": {
-      "count": 1
-    },
     "vue/prefer-define-options": {
       "count": 1
     }
@@ -1084,9 +1067,6 @@
   },
   "src/sidebars/register/RegisterSideBar.vue": {
     "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
-    "jsdoc/require-param-type": {
       "count": 1
     },
     "no-console": {
