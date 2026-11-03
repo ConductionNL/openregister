@@ -41,6 +41,7 @@ use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
+use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
@@ -1250,7 +1251,7 @@ class SchemasController extends Controller {
 		}
 
 		// Validated after the permission check, so an unauthorized caller cannot probe it.
-		$invalid = $this->validateSchemaBody(data: $data);
+		$invalid = ($this->validateSchemaBody(data: $data) ?? $this->crossOrganisationRefusal(old: $existingSchema->getAuthorization(), document: $data));
 		if ($invalid !== null) {
 			return $invalid;
 		}
@@ -1942,6 +1943,11 @@ class SchemasController extends Controller {
 		}
 
 		$phpArray = $dialectResult;
+		$crossing = $this->crossOrganisationRefusal(old: $schema->getAuthorization(), document: $phpArray);
+		if ($crossing !== null) {
+			return $crossing;
+		}
+
 		if (empty($phpArray['title']) === true) {
 			$phpArray['title'] = 'New Schema';
 		}
@@ -1955,6 +1961,34 @@ class SchemasController extends Controller {
 			);
 		}
 	}//end upload()
+
+	/**
+	 * Refuse a write by a non-administrator that lets a rule cross
+	 * organisations it did not cross before. A schema manager may change the
+	 * rest of the authorization, and remove a marker, but adding or widening
+	 * `crossOrganisation: true` gives every holder of that rule other
+	 * organisations' rows, so it is for administrators only.
+	 *
+	 * @param mixed                $old      The authorization before the write.
+	 * @param array<string, mixed> $document The schema body being written.
+	 *
+	 * @return JSONResponse|null A 403, or null when the write may go ahead.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	private function crossOrganisationRefusal(mixed $old, array $document): ?JSONResponse {
+		if (array_key_exists('authorization', $document) === false
+			|| (new CrossOrganisationMarkerChange())->widens(old: $old, new: $document['authorization']) === false
+			|| $this->isCurrentUserAdmin() === true
+		) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: ['error' => 'Only an administrator may let a rule read across organisations (crossOrganisation: true)'],
+			statusCode: Http::STATUS_FORBIDDEN
+		);
+	}//end crossOrganisationRefusal()
 
 	/**
 	 * Refuse an upload the caller may not make (H3).

@@ -92,3 +92,25 @@ Saving a schema whose authorization rule carries a `crossOrganisation` value tha
 - **AND** `"hr"` MUST be left as it is and logged as narrowed
 - **AND** a second run MUST change nothing
 - @e2e exclude {repair step unit test}
+
+### Requirement: Only an administrator may add a crossing
+
+A write to a schema's authorization by a caller who is not an administrator MUST be refused with 403 when the new block holds a rule or matrix row with `"crossOrganisation": true` that the old block did not hold in that form. Such a caller MAY change the other rules, keep a marked rule as it is, and remove a marker. The rule applies to update, patch and upload.
+
+#### Scenario: A schema manager adds the marker
+- **GIVEN** a schema whose `manage` rule names a group the caller is in, and the caller is not an administrator
+- **WHEN** the caller writes a read rule with `"crossOrganisation": true` that was not there
+- **THEN** the write MUST be refused with 403 and nothing MUST be stored
+- @e2e exclude {controller unit test}
+
+#### Scenario: A schema manager edits around a marker
+- **GIVEN** the same caller and a schema whose read rule an administrator marked
+- **WHEN** the caller adds another read rule and keeps the marked rule as it is
+- **THEN** the write MUST succeed
+- @e2e exclude {controller unit test}
+
+#### Scenario: A repair step keeps an explicit choice
+- **GIVEN** a stored read rule with `"crossOrganisation": false`
+- **WHEN** the repair step runs
+- **THEN** the rule MUST be left as written
+- @e2e exclude {repair step unit test}

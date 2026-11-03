@@ -39,6 +39,8 @@ use Psr\Log\LoggerInterface;
 
 class SchemasControllerTest extends TestCase {
 
+	private const PLAIN_RULE = ['group' => 'aanbod-beheerder', 'match' => ['provider' => '$organisation']];
+
 	private SchemasController $controller;
 
 	private IRequest&MockObject $request;
@@ -338,6 +340,86 @@ class SchemasControllerTest extends TestCase {
 		$schema->setTitle($title);
 		return $schema;
 	}//end createRealSchema()
+
+	/**
+	 * A schema manager who is not an administrator may not let a rule cross organisations.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function testAManagerWhoIsNotAnAdminCannotAddACrossOrganisationMarker(): void {
+		$this->currentUserIsAdmin = false;
+		$schema = $this->managedSchema(read: [self::PLAIN_RULE]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin'], 'read' => [self::PLAIN_RULE + ['crossOrganisation' => true]]]]);
+		$this->schemaMapper->expects($this->never())->method('updateFromArray');
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(403, $result->getStatus());
+		$this->assertStringContainsString('crossOrganisation', (string)json_encode($result->getData()));
+	}//end testAManagerWhoIsNotAnAdminCannotAddACrossOrganisationMarker()
+
+	/**
+	 * A schema manager may change the other rules and keep a marker an administrator set.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function testAManagerMayChangeOtherRulesAndKeepAMarker(): void {
+		$this->currentUserIsAdmin = false;
+		$marked = self::PLAIN_RULE + ['crossOrganisation' => true];
+		$schema = $this->managedSchema(read: [$marked]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin'], 'read' => ['hr', $marked]]]);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+
+		$this->assertSame(200, $this->controller->update(1)->getStatus());
+	}//end testAManagerMayChangeOtherRulesAndKeepAMarker()
+
+	/**
+	 * An administrator may add the marker.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function testAnAdministratorMayAddACrossOrganisationMarker(): void {
+		$schema = $this->managedSchema(read: [self::PLAIN_RULE]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin'], 'read' => [self::PLAIN_RULE + ['crossOrganisation' => true]]]]);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+
+		$this->assertSame(200, $this->controller->update(1)->getStatus());
+	}//end testAnAdministratorMayAddACrossOrganisationMarker()
+
+	/**
+	 * An upload over an existing schema is held to the same rule.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function testAnUploadByAManagerWhoIsNotAnAdminCannotAddTheMarker(): void {
+		$this->currentUserIsAdmin = false;
+		$schema = $this->managedSchema(read: [self::PLAIN_RULE]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn([]);
+		$this->uploadService->method('getUploadedJson')->willReturn(
+			['title' => 'Existing', 'authorization' => ['manage' => ['admin'], 'read' => [['group' => 'public', 'crossOrganisation' => true]]]]
+		);
+		$this->schemaMapper->expects($this->never())->method('update');
+
+		$this->assertSame(403, $this->controller->uploadUpdate(1)->getStatus());
+	}//end testAnUploadByAManagerWhoIsNotAnAdminCannotAddTheMarker()
+
+	/**
+	 * A schema whose `manage` rule names the signed-in user's group.
+	 *
+	 * @param array<int, mixed> $read The read rules.
+	 *
+	 * @return Schema
+	 */
+	private function managedSchema(array $read): Schema {
+		$schema = $this->createRealSchema(1, 'Existing');
+		$schema->setAuthorization(['manage' => ['admin'], 'read' => $read]);
+
+		return $schema;
+	}//end managedSchema()
 
 	public function testUpdateReturnsUpdatedSchema(): void {
 		$schema = $this->createRealSchema(1, 'Updated');
