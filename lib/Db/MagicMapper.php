@@ -52,6 +52,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
 use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumn;
 use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumnSizes;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
+use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeMembership;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
@@ -9171,6 +9172,49 @@ class MagicMapper extends AbstractObjectMapper {
 	public function organisationlessRowsAdmittedByRbac(Schema $schema): bool {
 		return $this->searchHandler->organisationlessRowsAdmittedByRbac(schema: $schema);
 	}//end organisationlessRowsAdmittedByRbac()
+
+	/**
+	 * Whether a stored row lies inside the caller's organisations.
+	 *
+	 * Decided on the row's own organisation through the same scope the read
+	 * filter renders, but without the read rules: a `public` read rule that
+	 * lifts the organisation filter for reading does not widen this answer.
+	 * The row's register and schema name the table, for shared master data.
+	 *
+	 * @param ObjectEntity $row The stored row.
+	 *
+	 * @return bool True when the caller's organisation scope holds the row.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function callerOrganisationsHold(ObjectEntity $row): bool {
+		if ($this->organizationHandler === null) {
+			return false;
+		}
+
+		$scope = $this->organizationHandler->resolveOrganizationScope(
+			adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
+			registerId: $this->numericIdOrNull(value: $row->getRegister()),
+			schemaId: $this->numericIdOrNull(value: $row->getSchema())
+		);
+
+		return OrganisationScopeMembership::holds(scope: $scope, organisation: $row->getOrganisation());
+	}//end callerOrganisationsHold()
+
+	/**
+	 * A stored numeric id as an integer, or null when it is not one.
+	 *
+	 * @param string|null $value The stored id.
+	 *
+	 * @return int|null
+	 */
+	private function numericIdOrNull(?string $value): ?int {
+		if ($value === null || ctype_digit($value) === false) {
+			return null;
+		}
+
+		return (int) $value;
+	}//end numericIdOrNull()
 
 	/**
 	 * Insert ObjectEntity into register+schema table.

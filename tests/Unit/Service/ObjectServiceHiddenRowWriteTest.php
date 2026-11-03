@@ -283,6 +283,8 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 	 * @return void
 	 */
 	private function hiddenFromTheCaller(?string $status, bool $exists = true): void {
+		// The stored row lies inside the caller's organisations; only the read rules hide it.
+		$this->objectMapper->method('callerOrganisationsHold')->willReturn(true);
 		$this->objectMapper->method('find')->willReturnCallback(
 			function (
 				string|int $identifier,
@@ -411,6 +413,8 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 	}//end testSomebodyElsesDraftIsStillRefused()
 	public function testASoftDeletedRowIsJudgedAgainstTheStoredObject(): void {
 		$this->signedIn('mallory');
+		// The stored row lies inside the caller's organisations; only the read rules hide it.
+		$this->objectMapper->method('callerOrganisationsHold')->willReturn(true);
 		$this->objectMapper->method('find')->willReturnCallback(
 			function (
 				string|int $identifier,

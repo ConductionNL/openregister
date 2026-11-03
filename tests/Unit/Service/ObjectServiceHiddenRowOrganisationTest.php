@@ -238,7 +238,16 @@ class ObjectServiceHiddenRowOrganisationTest extends TestCase {
 	private array $lookups = [];
 
 	/**
-	 * Where the stored row is visible: 'caller' (the caller's own lookup), 'organisation' (the organisation filter alone) or 'none'.
+	 * The rows whose organisation was compared with the caller's scope.
+	 *
+	 * @var array<int, string|null>
+	 */
+	private array $organisationChecks = [];
+
+	/**
+	 * Where the stored row is visible: 'caller' (the caller's own lookup), 'organisation' (inside the caller's
+	 * organisations, hidden by the read rules), 'lifted' (another organisation's row that a lookup with the
+	 * organisation filter alone returns, because a `public` read rule lifts that filter) or 'none'.
 	 */
 	private string $visibleTo = 'none';
 
@@ -264,7 +273,7 @@ class ObjectServiceHiddenRowOrganisationTest extends TestCase {
 				$this->lookups[] = [$_rbac, $_multitenancy];
 				$found = match (true) {
 					$_rbac === false && $_multitenancy === false => true,
-					$_rbac === false && $_multitenancy === true => in_array($this->visibleTo, ['caller', 'organisation'], true),
+					$_rbac === false && $_multitenancy === true => in_array($this->visibleTo, ['caller', 'organisation', 'lifted'], true),
 					default => $this->visibleTo === 'caller',
 				};
 				if ($found === true) {
@@ -272,6 +281,12 @@ class ObjectServiceHiddenRowOrganisationTest extends TestCase {
 				}
 
 				throw new \OCP\AppFramework\Db\DoesNotExistException('not in scope');
+			}
+		);
+		$mapper->method('callerOrganisationsHold')->willReturnCallback(
+			function (ObjectEntity $row): bool {
+				$this->organisationChecks[] = $row->getUuid();
+				return in_array($this->visibleTo, ['caller', 'organisation'], true);
 			}
 		);
 		return $mapper;
@@ -295,13 +310,13 @@ class ObjectServiceHiddenRowOrganisationTest extends TestCase {
 		$this->checkSave();
 	}
 
-	public function testTheOrganisationLookupAppliesTheOrganisationFilterAlone(): void {
+	public function testTheHiddenRowsOwnOrganisationIsCompared(): void {
 		try {
 			$this->checkSave();
 		} catch (NotAuthorizedException) {
 		}
 
-		$this->assertContains([false, true], $this->lookups);
+		$this->assertSame(['uuid-b'], $this->organisationChecks);
 	}
 
 	public function testARowTheReadRulesHideInsideTheOrganisationIsLeftToTheUpdateRule(): void {
@@ -309,13 +324,21 @@ class ObjectServiceHiddenRowOrganisationTest extends TestCase {
 
 		$this->checkSave();
 
-		$this->assertContains([false, true], $this->lookups);
+		$this->assertSame(['uuid-b'], $this->organisationChecks);
+	}
+
+	public function testARowAPublicReadRuleLiftsTheOrganisationFilterForIsStillRefused(): void {
+		$this->visibleTo = 'lifted';
+
+		$this->expectException(NotAuthorizedException::class);
+		$this->expectExceptionMessage('You may not change this object.');
+		$this->checkSave();
 	}
 
 	public function testAWriteThatDoesNotKeepToOrganisationsIsNotRefusedForIt(): void {
 		$this->checkSave(multitenancy: false);
 
-		$this->assertNotContains([false, true], $this->lookups);
+		$this->assertSame([], $this->organisationChecks);
 	}
 
 	public function testARowTheCallerCanReadIsAnOrdinaryUpdate(): void {
@@ -323,7 +346,7 @@ class ObjectServiceHiddenRowOrganisationTest extends TestCase {
 
 		$this->checkSave();
 
-		$this->assertNotContains([false, true], $this->lookups);
+		$this->assertSame([], $this->organisationChecks);
 	}
 
 	/**

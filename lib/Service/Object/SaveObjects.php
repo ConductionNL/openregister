@@ -406,8 +406,7 @@ class SaveObjects {
 			objects: $objects,
 			register: $register,
 			schema: $schema,
-			_rbac: $_rbac,
-			_validation: $_validation,
+			flags: ['rbac' => $_rbac, 'validation' => $_validation, 'multitenancy' => $_multitenancy],
 			result: $result
 		);
 		$safeguardMs = round((microtime(true) - $safeguardStart) * 1000, 2);
@@ -662,8 +661,8 @@ class SaveObjects {
 	 * @param array<int, array<string, mixed>> $objects Raw input objects.
 	 * @param Register|string|int|null $register Default register context.
 	 * @param Schema|string|int|null $schema Default schema context (null = mixed-schema).
-	 * @param bool $_rbac Caller-requested RBAC flag (admin may set false).
-	 * @param bool $_validation Caller-requested validation flag.
+	 * @param array{rbac: bool, validation: bool, multitenancy?: bool} $flags The caller-requested
+	 *                                   RBAC, validation and multitenancy flags (admin may set rbac and multitenancy false).
 	 * @param array $result Result accumulator (mutated in place: `invalid` + `statistics`).
 	 *
 	 * @return array<int, array<string, mixed>> Objects that passed every gate.
@@ -672,8 +671,7 @@ class SaveObjects {
 		array $objects,
 		Register|string|int|null $register,
 		Schema|string|int|null $schema,
-		bool $_rbac,
-		bool $_validation,
+		array $flags,
 		array &$result,
 	): array {
 		// No-op when dependencies are not wired (legacy constructor signature).
@@ -683,7 +681,7 @@ class SaveObjects {
 
 		$run = $this->startBulkSafeguardRun(
 			batch: ['objects' => $objects, 'register' => $register, 'schema' => $schema],
-			flags: ['rbac' => $_rbac, 'validation' => $_validation]
+			flags: $flags
 		);
 
 		$passed = [];
@@ -719,7 +717,7 @@ class SaveObjects {
 	 * its own query: an empty map means "not prefetched", never "nothing exists".
 	 *
 	 * @param array{objects: array, register: Register|string|int|null, schema: Schema|string|int|null} $batch The batch
-	 * @param array{rbac: bool, validation: bool}                                                     $flags The caller's flags
+	 * @param array{rbac: bool, validation: bool, multitenancy?: bool}                                 $flags The caller's flags
 	 *
 	 * @return BulkSafeguardRun
 	 */
@@ -728,6 +726,7 @@ class SaveObjects {
 		$run->isAdmin    = $this->safeguardCallerIsAdmin(run: $run);
 		$run->rbac       = ($flags['rbac'] === true || $run->isAdmin === false);
 		$run->validation = $flags['validation'];
+		$run->multitenancy = (($flags['multitenancy'] ?? true) === true || $run->isAdmin === false);
 		$this->resolveSafeguardDefaults(run: $run, defaults: ['register' => $batch['register'], 'schema' => $batch['schema']]);
 		$run->existingByUuid = $this->prefetchExistingRows(
 			objects: $batch['objects'],
@@ -868,6 +867,7 @@ class SaveObjects {
 	 */
 	private function screenResolvedRow(array $row, BulkSafeguardRun $run): array {
 		$refusal = ($this->draftRefusal(run: $run)
+			?? $this->organisationRefusal(run: $run)
 			?? $this->appendOnlyRefusal(run: $run)
 			?? $this->permissionRefusal(run: $run));
 		if ($refusal !== null) {
@@ -927,6 +927,58 @@ class SaveObjects {
 
 		return 'Permission denied for action ' . $run->rowAction . ' on schema ' . $run->rowSchema->getSlug();
 	}//end draftRefusal()
+
+	/**
+	 * The refusal for a row that would overwrite another organisation's row, or null.
+	 *
+	 * The stored row was found past the read filters, and the update rule it is
+	 * judged by next does not look at organisations, while the writer upserts the
+	 * row and stamps the caller as its owner and organisation. So a row outside the
+	 * caller's organisation scope is refused unless the caller can read it, the
+	 * same boundary ObjectService::checkSavePermissions keeps for a single write. A
+	 * row the caller reads (a rule that reaches across organisations) is left to the
+	 * update rule. Asked before the appendOnly gate, and answered as a refused
+	 * create, so the row's existence stays unannounced. Skipped when the write does
+	 * not keep to the caller's organisations (an administrator).
+	 *
+	 * @param BulkSafeguardRun $run The safeguard pass
+	 *
+	 * @return string|null
+	 */
+	private function organisationRefusal(BulkSafeguardRun $run): ?string {
+		if ($run->rbac === false || $run->multitenancy === false || $run->rowExisting === null) {
+			return null;
+		}
+
+		if ($this->objectEntityMapper->callerOrganisationsHold(row: $run->rowExisting) === true
+			|| $this->callerReadsStoredRow(run: $run) === true
+		) {
+			return null;
+		}
+
+		return 'Permission denied for action create on schema ' . $run->rowSchema->getSlug();
+	}//end organisationRefusal()
+
+	/**
+	 * Whether the caller's own read finds the row the current bulk row updates.
+	 *
+	 * @param BulkSafeguardRun $run The safeguard pass
+	 *
+	 * @return bool False when the read does not find it or fails.
+	 */
+	private function callerReadsStoredRow(BulkSafeguardRun $run): bool {
+		try {
+			$this->objectEntityMapper->find(
+				identifier: (string) $run->rowExisting->getUuid(),
+				register: $run->rowRegister,
+				schema: $run->rowSchema
+			);
+		} catch (\Throwable $e) {
+			return false;
+		}
+
+		return true;
+	}//end callerReadsStoredRow()
 
 	/**
 	 * The refusal for an update to an appendOnly schema, or null.

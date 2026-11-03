@@ -2408,7 +2408,7 @@ class ObjectService implements ObjectServiceInterface
             // Stored but hidden: the write lands on that row, so it must keep to
             // the caller's organisations and pass the update rule against it.
             if ($hidden !== null) {
-                $this->refuseAnotherOrganisationsRow(uuid: $uuid, _multitenancy: $_multitenancy);
+                $this->refuseAnotherOrganisationsRow(hidden: $hidden, _multitenancy: $_multitenancy);
                 $this->checkPermission(
                     schema: $this->currentSchema,
                     action: 'update',
@@ -2425,15 +2425,16 @@ class ObjectService implements ObjectServiceInterface
      * Refuse a write by uuid onto a stored row outside the caller's organisations.
      *
      * The caller's own lookup did not find the row, and the update rule it is
-     * judged by next does not look at organisations. So the row is looked up
-     * once more with the organisation filter alone: a row that filter does not
-     * return belongs to another organisation, and the write would change it.
-     * A row the read rules hide but the organisation filter returns is left to
-     * the update rule, as before. Skipped when the write does not keep to the
+     * judged by next does not look at organisations. So the row's organisation
+     * is compared with the caller's organisation scope directly, without the
+     * read rules: a `public` read rule that lifts the organisation filter for
+     * reading must not let a write land on another organisation's row. A row
+     * the read rules hide inside the caller's organisations is left to the
+     * update rule, as before. Skipped when the write does not keep to the
      * caller's organisations (an administrator, a job).
      *
-     * @param string $uuid          The uuid of the stored row the caller cannot read.
-     * @param bool   $_multitenancy Whether the write keeps to the caller's organisations.
+     * @param ObjectEntity $hidden        The stored row the caller cannot read.
+     * @param bool         $_multitenancy Whether the write keeps to the caller's organisations.
      *
      * @return void
      *
@@ -2441,24 +2442,13 @@ class ObjectService implements ObjectServiceInterface
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
-    private function refuseAnotherOrganisationsRow(string $uuid, bool $_multitenancy): void
+    private function refuseAnotherOrganisationsRow(ObjectEntity $hidden, bool $_multitenancy): void
     {
-        if ($_multitenancy === false) {
+        if ($_multitenancy === false || $this->objectMapper->callerOrganisationsHold(row: $hidden) === true) {
             return;
         }
 
-        try {
-            $this->objectMapper->find(
-                identifier: $uuid,
-                register: $this->currentRegister,
-                schema: $this->currentSchema,
-                includeDeleted: true,
-                _rbac: false,
-                _multitenancy: true
-            );
-        } catch (\OCP\AppFramework\Db\DoesNotExistException) {
-            throw new NotAuthorizedException(message: 'You may not change this object.');
-        }
+        throw new NotAuthorizedException(message: 'You may not change this object.');
     }//end refuseAnotherOrganisationsRow()
 
     /**

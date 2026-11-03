@@ -150,7 +150,7 @@ class BulkSavePropertyAuthorizationTest extends TestCase {
 		$method = new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards');
 		$method->setAccessible(true);
 
-		return $method->invokeArgs($this->handler, [$rows, $this->register, $this->schema, true, false, &$result]);
+		return $method->invokeArgs($this->handler, [$rows, $this->register, $this->schema, ['rbac' => true, 'validation' => false], &$result]);
 	}//end safeguard()
 
 	public function testAnExplicitWriteOfAProtectedPropertyIsRefused(): void {

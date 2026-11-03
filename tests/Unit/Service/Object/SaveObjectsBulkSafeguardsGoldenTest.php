@@ -230,8 +230,7 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 				$case['rows'],
 				$this->defaultRegister(register: ($case['register'] ?? 'object')),
 				$this->defaultSchema(case: $case),
-				($case['rbac'] ?? true),
-				($case['validation'] ?? false),
+				['rbac' => ($case['rbac'] ?? true), 'validation' => ($case['validation'] ?? false)],
 				&$result,
 			]
 		);
@@ -386,6 +385,8 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 				return $stored[$args[0]];
 			}
 		);
+		// The stored rows lie inside the caller's organisations.
+		$mapper->method('callerOrganisationsHold')->willReturn(true);
 
 		return $mapper;
 	}//end objectMapper()
