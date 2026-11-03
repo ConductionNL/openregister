@@ -240,8 +240,8 @@ export default {
 
 	methods: {
 		/**
-		 * @param app
-		 * @param text
+		 * @param {string} app
+		 * @param {string} text
 		 * @spec exclude translation function placeholder, no observable behaviour
 		 */
 		t(app, text) {

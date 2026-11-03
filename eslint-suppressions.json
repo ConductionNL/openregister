@@ -3,25 +3,12 @@
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 2
     },
-    "jsdoc/require-param-type": {
-      "count": 2
-    },
     "vue/custom-event-name-casing": {
       "count": 1
     }
   },
-  "src/components/EntitiesSidebar.vue": {
-    "jsdoc/require-param-type": {
-      "count": 5
-    }
-  },
   "src/components/FacetComponent.vue": {
     "@nextcloud/no-deprecated-library-props": {
-      "count": 3
-    }
-  },
-  "src/components/FilesSidebar.vue": {
-    "jsdoc/require-param-type": {
       "count": 3
     }
   },
@@ -33,11 +20,6 @@
   "src/components/SchemaStatsBlock.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 1
-    }
-  },
-  "src/components/WebhooksSidebar.vue": {
-    "jsdoc/require-param-type": {
-      "count": 2
     }
   },
   "src/components/cards/ConfigurationCard.vue": {
@@ -63,71 +45,33 @@
     }
   },
   "src/components/files-sidebar/ExtractionTab.vue": {
-    "jsdoc/require-param-type": {
-      "count": 1
-    },
     "no-console": {
       "count": 2
     }
   },
   "src/components/files-sidebar/RegisterObjectsTab.vue": {
-    "jsdoc/require-param-type": {
-      "count": 1
-    },
     "no-console": {
       "count": 1
     }
   },
-  "src/components/i18n/RegisterLanguagesEditor.vue": {
-    "jsdoc/require-param-type": {
-      "count": 5
-    }
-  },
-  "src/components/i18n/TranslationCompletenessBadge.vue": {
-    "jsdoc/require-param-type": {
-      "count": 2
-    }
-  },
-  "src/components/i18n/TranslationFieldEditor.vue": {
-    "jsdoc/require-param-type": {
-      "count": 5
-    }
-  },
   "src/components/object-relations/ContactsTab.vue": {
-    "jsdoc/require-param-type": {
-      "count": 2
-    },
     "vue/custom-event-name-casing": {
       "count": 2
     }
   },
   "src/components/object-relations/DeckTab.vue": {
-    "jsdoc/require-param-type": {
-      "count": 3
-    },
     "vue/custom-event-name-casing": {
       "count": 2
     }
   },
   "src/components/object-relations/EmailsTab.vue": {
-    "jsdoc/require-param-type": {
-      "count": 3
-    },
     "vue/custom-event-name-casing": {
       "count": 1
     }
   },
   "src/components/object-relations/EventsTab.vue": {
-    "jsdoc/require-param-type": {
-      "count": 3
-    },
     "vue/custom-event-name-casing": {
       "count": 3
-    }
-  },
-  "src/components/object-relations/RelationsTab.vue": {
-    "jsdoc/require-param-type": {
-      "count": 5
     }
   },
   "src/components/shared/VersionInfoCard.vue": {

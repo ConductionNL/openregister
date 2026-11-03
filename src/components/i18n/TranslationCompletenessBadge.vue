@@ -84,7 +84,7 @@ export default {
 
 	methods: {
 		/**
-		 * @param lang
+		 * @param {string} lang
 		 * @spec exclude computed percent display helper; completeness contract owned by register-i18n capability
 		 */
 		ratioPercent(lang) {
@@ -94,7 +94,7 @@ export default {
 		},
 
 		/**
-		 * @param lang
+		 * @param {string} lang
 		 * @spec exclude computed pill CSS-class display helper, UI plumbing
 		 */
 		completenessClassFor(lang) {

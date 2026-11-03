@@ -201,7 +201,7 @@ export default {
 		objectId: {
 			immediate: true,
 			/**
-			 * @param newId
+			 * @param {string} newId
 			 * @spec exclude watcher refetching deck cards on objectId change, UI plumbing
 			 */
 			handler(newId) {
@@ -233,7 +233,7 @@ export default {
 		},
 
 		/**
-		 * @param card
+		 * @param {object} card
 		 * @spec exclude store passthrough unlinking card + change emit; deck-relations contract owned by integration-deck capability
 		 */
 		async unlinkCard(card) {
@@ -260,7 +260,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude computed date-format display helper, UI plumbing
 		 */
 		formatDate(value) {
