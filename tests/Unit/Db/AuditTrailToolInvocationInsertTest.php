@@ -40,6 +40,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\AuditTrail
  * @uses \OCA\OpenRegister\Service\Audit\PurposeAttribution
  * @uses \OCA\OpenRegister\Service\Audit\TokenAttribution
+ * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
  */
 class AuditTrailToolInvocationInsertTest extends TestCase {
 
