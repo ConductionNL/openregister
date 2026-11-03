@@ -345,36 +345,53 @@ class SchemasController extends Controller {
 		// Break the reference.
 		// If '@self.stats' is requested, attach statistics to each schema.
 		if (in_array('@self.stats', $extend, true) === true) {
-			// Collect all schema IDs for batch queries.
-			$schemaIds = array_map(fn ($schema) => $schema['id'], $schemasArr);
-
-			// Batch-load all statistics in 3 queries instead of N*2 queries.
-			$registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
-			$objectStats = $this->objectEntityMapper->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
-			$logStats = [];
-			if ($this->isCurrentUserAdmin() === true) {
-				$logStats = $this->auditTrailMapper->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
-			}
-
-			foreach ($schemasArr as &$schema) {
-				$schema['stats'] = [
-					'objects' => $objectStats[$schema['id']] ?? [
-						'total' => 0,
-						'size' => 0,
-						'invalid' => 0,
-						'deleted' => 0,
-						'locked' => 0,
-					],
-					'logs' => $logStats[$schema['id']] ?? self::NO_LOG_STATS,
-					'files' => [ 'total' => 0, 'size' => 0 ],
-					// Add the number of registers referencing this schema.
-					'registers' => $registerCounts[$schema['id']] ?? 0,
-				];
-			}
+			$schemasArr = $this->withSchemaStats(schemasArr: $schemasArr);
 		}//end if
 
 		return new JSONResponse(data: ['results' => $schemasArr]);
 	}//end index()
+
+	/**
+	 * Attach the `@self.stats` block to each serialized schema of a list.
+	 *
+	 * Batch-loads the statistics in 3 queries instead of N*2. The audit-trail
+	 * counts are given to an administrator only.
+	 *
+	 * @param array<int, array<string, mixed>> $schemasArr The serialized schemas.
+	 *
+	 * @return array<int, array<string, mixed>> The schemas with a `stats` block.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md#requirement-the-instance-wide-audit-reads-are-admin-only
+	 */
+	private function withSchemaStats(array $schemasArr): array {
+		$schemaIds = array_map(fn ($schema) => $schema['id'], $schemasArr);
+
+		$registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
+		$objectStats = $this->objectEntityMapper->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
+		$logStats = [];
+		if ($this->isCurrentUserAdmin() === true) {
+			$logStats = $this->auditTrailMapper->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
+		}
+
+		foreach ($schemasArr as &$schema) {
+			$schema['stats'] = [
+				'objects' => $objectStats[$schema['id']] ?? [
+					'total' => 0,
+					'size' => 0,
+					'invalid' => 0,
+					'deleted' => 0,
+					'locked' => 0,
+				],
+				'logs' => $logStats[$schema['id']] ?? self::NO_LOG_STATS,
+				'files' => [ 'total' => 0, 'size' => 0 ],
+				// Add the number of registers referencing this schema.
+				'registers' => $registerCounts[$schema['id']] ?? 0,
+			];
+		}
+
+		unset($schema);
+		return $schemasArr;
+	}//end withSchemaStats()
 
 	/**
 	 * Resolve the {id} route parameter to a Schema, register-scoped when the caller names one.
