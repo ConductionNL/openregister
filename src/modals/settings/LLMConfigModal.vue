@@ -967,7 +967,7 @@ export default {
 	watch: {
 		// Fetch Ollama models when Ollama is selected
 		/**
-		 * @param newVal
+		 * @param {object|null} newVal
 		 * @spec exclude UI watcher — fetches Ollama models when the embedding provider is Ollama.
 		 */
 		selectedEmbeddingProvider(newVal) {
@@ -977,7 +977,7 @@ export default {
 		},
 
 		/**
-		 * @param newVal
+		 * @param {object|null} newVal
 		 * @spec exclude UI watcher — fetches Ollama models when the chat provider is Ollama.
 		 */
 		selectedChatProvider(newVal) {
@@ -1366,7 +1366,7 @@ export default {
 					// Keep fallback list if API returns empty or fails
 					// Using fallback model list
 				}
-			} catch (error) {
+			} catch {
 				// Silently fail and keep using the hardcoded fallback list
 				// Error fetching Ollama models, using fallback
 			} finally {

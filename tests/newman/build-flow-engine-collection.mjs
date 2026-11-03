@@ -906,7 +906,7 @@ const collection = {
 	item: [setup, ...CASES.map(caseFolder), coverage, teardown],
 }
 
-const out = join(here, 'openregister-flow-engine.postman_collection.json')
+const out = join(here, '..', 'integration', 'openregister-flow-engine.postman_collection.json')
 writeFileSync(out, JSON.stringify(collection, null, 2) + '\n')
 console.log(
 	`wrote ${out} — ${CASES.length} cases, ${collection.item.length} folders`,

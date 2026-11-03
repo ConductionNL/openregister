@@ -1413,8 +1413,8 @@ export default {
 		schemaProperty: {
 			deep: true,
 			/**
-			 * @param newVal
-			 * @param oldVal
+			 * @param {object} newVal
+			 * @param {object} oldVal
 			 * @spec exclude UI watcher — resets type-specific form fields when the property type changes.
 			 */
 			handler(newVal, oldVal) {
@@ -1569,7 +1569,7 @@ export default {
 		},
 
 		/**
-		 * @param index
+		 * @param {number} index
 		 * @spec exclude Form-field binding — removes a oneOf entry by index.
 		 */
 		removeOneOfEntry(index) {
@@ -1578,7 +1578,7 @@ export default {
 		},
 
 		/**
-		 * @param option
+		 * @param {object} option
 		 * @spec exclude Form-field binding — sets the active facet type.
 		 */
 		updateFacetType(option) {
@@ -1593,7 +1593,7 @@ export default {
 		},
 
 		/**
-		 * @param index
+		 * @param {number} index
 		 * @spec exclude Form-field binding — removes a custom facet range by index.
 		 */
 		removeCustomRange(index) {
@@ -1637,7 +1637,8 @@ export default {
 						title: facetableValue.title || '',
 						description: facetableValue.description || '',
 						order:
-							facetableValue.order != null
+							facetableValue.order !== null
+							&& facetableValue.order !== undefined
 								? String(facetableValue.order)
 								: '',
 					}
@@ -1925,7 +1926,8 @@ export default {
 					|| (this.facetConfig.description
 						&& this.facetConfig.description.trim())
 					|| (this.facetConfig.order !== ''
-						&& this.facetConfig.order != null)
+						&& this.facetConfig.order !== null
+						&& this.facetConfig.order !== undefined)
 					|| hasDateConfig
 
 				if (hasCustomConfig) {
@@ -1935,7 +1937,8 @@ export default {
 						description: this.facetConfig.description?.trim() || null,
 						order:
 							this.facetConfig.order !== ''
-							&& this.facetConfig.order != null
+							&& this.facetConfig.order !== null
+							&& this.facetConfig.order !== undefined
 								? parseFloat(this.facetConfig.order) || null
 								: null,
 					}
@@ -2042,7 +2045,7 @@ export default {
 		},
 
 		/**
-		 * @param jsonInput
+		 * @param {string} jsonInput
 		 * @spec exclude UI validation helper — reports whether a string parses as JSON.
 		 */
 		verifyJsonValidity(jsonInput) {
@@ -2050,7 +2053,7 @@ export default {
 			try {
 				JSON.parse(jsonInput)
 				return true
-			} catch (e) {
+			} catch {
 				return false
 			}
 		},
@@ -2081,7 +2084,7 @@ export default {
 		},
 
 		/**
-		 * @param ref
+		 * @param {string|undefined} ref
 		 * @spec exclude UI lookup helper — resolves a schema object from a $ref string.
 		 */
 		getSchemaFromRef(ref) {
@@ -2100,7 +2103,7 @@ export default {
 		},
 
 		/**
-		 * @param register
+		 * @param {object|string|number} register
 		 * @spec exclude Form-field binding — sets register ref and clears dependent fields.
 		 */
 		handleRegisterChange(register) {
@@ -2123,7 +2126,7 @@ export default {
 		},
 
 		/**
-		 * @param schema
+		 * @param {object|string|number} schema
 		 * @spec exclude Form-field binding — sets schema ref and clears dependent fields.
 		 */
 		handleSchemaChange(schema) {
@@ -2144,7 +2147,7 @@ export default {
 		},
 
 		/**
-		 * @param property
+		 * @param {object|string} property
 		 * @spec exclude Form-field binding — sets inversedBy and clears query params.
 		 */
 		handleInversedByChange(property) {

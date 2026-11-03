@@ -1,7 +1,9 @@
 import type { ZodSafeParseResult } from 'zod'
+import type { TQuota, TUsage } from '../quotaUsage.types'
 import type { TApplication } from './application.types'
 
 import { z } from 'zod'
+import { QUOTA_SCHEMA, USAGE_SCHEMA } from '../quotaUsage.js'
 import { COPY, NO_QUOTA, NO_USAGE, withFallbacks } from '../withFallbacks.js'
 
 const FALLBACKS = {
@@ -29,6 +31,33 @@ const FALLBACKS = {
 	updated: '',
 }
 
+const APPLICATION_SCHEMA = z.object({
+	id: z.number().optional(),
+	uuid: z.string().optional(),
+	name: z.string().min(1, 'Application name is required'),
+	description: z.string().optional(),
+	version: z.string().optional(),
+	organisation: z.number().optional(),
+	configurations: z.array(z.number()).optional(),
+	registers: z.array(z.number()).optional(),
+	schemas: z.array(z.number()).optional(),
+	groups: z.array(z.string()).optional(),
+	quota: QUOTA_SCHEMA,
+	usage: USAGE_SCHEMA,
+	authorization: z
+		.object({
+			create: z.array(z.string()).optional(),
+			read: z.array(z.string()).optional(),
+			update: z.array(z.string()).optional(),
+			delete: z.array(z.string()).optional(),
+		})
+		.optional(),
+	owner: z.string().optional(),
+	active: z.boolean().optional(),
+	created: z.string().optional(),
+	updated: z.string().optional(),
+})
+
 export class Application implements TApplication {
 	public id?: number
 	public uuid?: string
@@ -40,21 +69,8 @@ export class Application implements TApplication {
 	public registers?: number[]
 	public schemas?: number[]
 	public groups?: string[]
-	public quota?: {
-		storage?: number | null
-		bandwidth?: number | null
-		requests?: number | null
-		users?: number | null
-		groups?: number | null
-	}
-
-	public usage?: {
-		storage?: number
-		bandwidth?: number
-		requests?: number
-		users?: number
-		groups?: number
-	}
+	public quota?: TQuota
+	public usage?: TUsage
 
 	public authorization?: TApplication['authorization']
 	public owner?: string
@@ -72,49 +88,6 @@ export class Application implements TApplication {
 	}
 
 	public validate(): ZodSafeParseResult<unknown> {
-		const schema = z.object({
-			id: z.number().optional(),
-			uuid: z.string().optional(),
-			name: z.string().min(1, 'Application name is required'),
-			description: z.string().optional(),
-			version: z.string().optional(),
-			organisation: z.number().optional(),
-			configurations: z.array(z.number()).optional(),
-			registers: z.array(z.number()).optional(),
-			schemas: z.array(z.number()).optional(),
-			groups: z.array(z.string()).optional(),
-			quota: z
-				.object({
-					storage: z.number().nullable().optional(),
-					bandwidth: z.number().nullable().optional(),
-					requests: z.number().nullable().optional(),
-					users: z.number().nullable().optional(),
-					groups: z.number().nullable().optional(),
-				})
-				.optional(),
-			usage: z
-				.object({
-					storage: z.number().optional(),
-					bandwidth: z.number().optional(),
-					requests: z.number().optional(),
-					users: z.number().optional(),
-					groups: z.number().optional(),
-				})
-				.optional(),
-			authorization: z
-				.object({
-					create: z.array(z.string()).optional(),
-					read: z.array(z.string()).optional(),
-					update: z.array(z.string()).optional(),
-					delete: z.array(z.string()).optional(),
-				})
-				.optional(),
-			owner: z.string().optional(),
-			active: z.boolean().optional(),
-			created: z.string().optional(),
-			updated: z.string().optional(),
-		})
-
-		return schema.safeParse(this)
+		return APPLICATION_SCHEMA.safeParse(this)
 	}
 }
