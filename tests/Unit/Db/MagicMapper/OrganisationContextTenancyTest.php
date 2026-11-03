@@ -366,6 +366,45 @@ class OrganisationContextTenancyTest extends TestCase {
 	}//end testTheAggregationDecisionKeepsTheBoundary()
 
 	/**
+	 * Each decision keeps the boundary on its own, not only through the next one.
+	 *
+	 * @param array         $read      The read rules.
+	 * @param string[]      $expected  The rows RBAC admits when it is on.
+	 * @param array         $query     The flags.
+	 * @param string[]|null $groups    The session user's groups, null for no user.
+	 * @param bool          $anonymous Whether the context runs as anonymous.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Same provider as the row paths.
+	 */
+	#[DataProvider('cases')]
+	public function testEveryDecisionKeepsTheBoundary(array $read, array $expected, array $query, ?array $groups, bool $anonymous): void {
+		$decisions = $this->inContext(
+			groups: $groups,
+			anonymous: $anonymous,
+			read: function () use ($read, $query): array {
+				$schema = $this->schema(read: $read);
+				$handler = $this->searchHandler();
+				$resolve = new \ReflectionMethod($handler, 'resolveMultitenancyFlag');
+				$applies = new \ReflectionMethod($handler, 'multitenancyApplies');
+				return [
+					'public lifts' => $this->rbac->publicReadLiftsOrganisationFilter(schema: $schema),
+					'rules bypass' => $this->rbac->hasConditionalRulesBypassingMultitenancy(schema: $schema),
+					'cross branch' => $this->rbac->hasCrossOrganisationBranch(schema: $schema),
+					'flag' => $resolve->invoke($handler, ($query['_multitenancy'] ?? true), false, $schema),
+					'applies' => $applies->invoke($handler, $schema, ($query['_rbac'] ?? true), ($query['_multitenancy'] ?? true), false),
+				];
+			}
+		);
+
+		$this->assertSame(
+			['public lifts' => false, 'rules bypass' => false, 'cross branch' => false, 'flag' => true, 'applies' => true],
+			$decisions
+		);
+	}//end testEveryDecisionKeepsTheBoundary()
+
+	/**
 	 * Without a context the same plain public rule reads every organisation, so the probe can see a leak.
 	 *
 	 * @return void

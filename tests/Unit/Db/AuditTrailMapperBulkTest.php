@@ -126,6 +126,16 @@ class AuditTrailMapperBulkTest extends TestCase {
 	// buildAuditTrail()
 	// -------------------------------------------------------------------------
 
+	public function testBuildAuditTrailInsideAnOrganisationContextNamesTheOrganisation(): void {
+		$trail = \OCA\OpenRegister\Service\OrganisationContext::run(
+			'org-a',
+			fn (): AuditTrail => $this->mapper->buildAuditTrail(old: $this->makeObject('obj-1'), new: null, action: 'delete')
+		);
+
+		$this->assertSame('org-a', ($trail->getResultSummary() ?? [])['organisationContext'] ?? null);
+		$this->assertSame('System', $trail->getUser());
+	}//end testBuildAuditTrailInsideAnOrganisationContextNamesTheOrganisation()
+
 	public function testBuildAuditTrailForDeleteProducesEmptyChangeSet(): void {
 		$trail = $this->mapper->buildAuditTrail(old: $this->makeObject('obj-1'), new: null, action: 'delete');
 
