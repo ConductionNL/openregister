@@ -290,6 +290,20 @@ class SaveObject {
 	private array $cascadeScopes = [];
 
 	/**
+	 * Orphans found while a parent is prepared, per parent uuid, settled after its write.
+	 *
+	 * @var array<string, list<array{0: string[], 1: array}>>
+	 */
+	private array $pendingOrphans = [];
+
+	/**
+	 * Decides whether orphan cleanup may delete a row; built on first use.
+	 *
+	 * @var OrphanDeletionGuard|null
+	 */
+	private ?OrphanDeletionGuard $orphanGuard = null;
+
+	/**
 	 * Stack of `(targetSchemaSlug, uuid)` entries currently being saved.
 	 *
 	 * Pushed when `saveObject()` enters, popped when it exits. Each
@@ -2140,10 +2154,10 @@ class SaveObject {
 			$propIsEmpty = empty($data[$property]) === true;
 			if ($propIsEmpty === true) {
 				if (($isRelatedObject === true || $isCascade === true) && empty($oldUuids) === false) {
-					$this->deleteOrphanedRelatedObjects(
-						orphanedUuids: $oldUuids,
-						scope: $this->orphanScope(objectEntity: $objectEntity, definition: $definition)
-					);
+					$this->pendingOrphans[(string)$objectEntity->getUuid()][] = [
+						$oldUuids,
+						$this->orphanScope(objectEntity: $objectEntity, definition: $definition),
+					];
 				}//end if
 
 				$data[$property] = [];
@@ -2180,12 +2194,12 @@ class SaveObject {
 
 					// Delete orphaned related objects (present in old data but not in new).
 					if (empty($oldUuids) === false) {
-						$orphanedUuids = array_diff($oldUuids, $data[$property]);
+						$orphanedUuids = self::removedReferences(old: $oldUuids, kept: $data[$property]);
 						if (empty($orphanedUuids) === false) {
-							$this->deleteOrphanedRelatedObjects(
-								orphanedUuids: array_values($orphanedUuids),
-								scope: $this->orphanScope(objectEntity: $objectEntity, definition: $definition)
-							);
+							$this->pendingOrphans[(string)$objectEntity->getUuid()][] = [
+								$orphanedUuids,
+								$this->orphanScope(objectEntity: $objectEntity, definition: $definition),
+							];
 						}//end if
 					}//end if
 				}//end if
@@ -2596,12 +2610,61 @@ class SaveObject {
 	}//end deleteOrphanedRelatedObjects()
 
 	/**
-	 * Whether a row the parent stopped referencing is its own and the caller may delete it.
+	 * Soft-delete what a parent's save left orphaned, once the parent is saved.
+	 *
+	 * @param string $parent The parent's uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function settleOrphans(string $parent): void {
+		foreach (($this->pendingOrphans[$parent] ?? []) as [$orphanedUuids, $scope]) {
+			$this->deleteOrphanedRelatedObjects(orphanedUuids: $orphanedUuids, scope: $scope);
+		}
+
+		unset($this->pendingOrphans[$parent]);
+	}//end settleOrphans()
+
+	/**
+	 * The stored references a save no longer keeps, compared in one normal form.
+	 *
+	 * @param string[] $old  The stored references.
+	 * @param array    $kept The references the save keeps.
+	 *
+	 * @return string[] The removed references.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private static function removedReferences(array $old, array $kept): array {
+		$keptKeys = array_map(self::referenceKey(...), array_filter($kept, 'is_string'));
+
+		return array_values(
+			array_filter($old, static fn (string $uuid): bool => in_array(self::referenceKey(reference: $uuid), $keptKeys, true) === false)
+		);
+	}//end removedReferences()
+
+	/**
+	 * One normal form of a uuid reference: lower case, no dashes, no `id-` style prefix.
+	 *
+	 * @param string $reference The reference.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private static function referenceKey(string $reference): string {
+		$pattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/';
+
+		return str_replace('-', '', preg_replace($pattern, '$1', strtolower($reference)));
+	}//end referenceKey()
+
+	/**
+	 * Whether a row the parent stopped referencing is its own and may be deleted.
 	 *
 	 * The row must be the referenced uuid itself (the lookup also matches slugs and
 	 * uris) and must name the parent through the inverse property, otherwise the
-	 * reference was a plain pointer to a row with a life of its own. The caller's
-	 * delete rights and organisation boundary hold in every save, RBAC off included.
+	 * reference was a plain pointer to a row with a life of its own.
 	 *
 	 * @param ObjectEntity $orphan The row that was found.
 	 * @param array        $scope  The orphan scope, plus the referenced `uuid`.
@@ -2616,16 +2679,14 @@ class SaveObject {
 			return false;
 		}
 
-		if ($this->objectEntityMapper->callerOrganisationsHold(row: $orphan) === false) {
-			return false;
-		}
-
-		return $this->permissionHandler->hasPermission(
-			schema: $scope['schema'],
-			action: 'delete',
-			objectOwner: $orphan->getOwner(),
-			object: $orphan
+		$this->orphanGuard ??= new OrphanDeletionGuard(
+			objectMapper: $this->objectEntityMapper,
+			permissionHandler: $this->permissionHandler,
+			userSession: $this->userSession,
+			container: $this->container
 		);
+
+		return $this->orphanGuard->allows(row: $orphan, register: $scope['register'], schema: $scope['schema']);
 	}//end orphanMayBeDeleted()
 
 	/**
@@ -3799,6 +3860,7 @@ class SaveObject {
 		$oldObject->setObject($oldObjectData);
 
 		// Prepare the object for update.
+		unset($this->pendingOrphans[(string)$existingObject->getUuid()]);
 		$preparedObject = $this->prepareObjectForUpdate(
 			existingObject: $existingObject,
 			schema: $schema,
@@ -3843,6 +3905,8 @@ class SaveObject {
 			oldObject: $oldObject
 		);
 
+		$this->settleOrphans(parent: (string)$preparedObject->getUuid());
+
 		// Record the verdict AFTER the write, so a cascade descendant saved
 		// inside updateObject() cannot leave its own outcome behind as this
 		// frame's answer.
@@ -3853,13 +3917,26 @@ class SaveObject {
 		// toward `unchanged` — the bucket a caller acts on by SKIPPING work.
 		// Over-reporting a change costs a redundant downstream refresh;
 		// under-reporting one would let a real edit be silently ignored.
-		$this->lastSaveOutcome = 'updated';
-		if ($updatedObject->getObject() === $oldObject->getObject()) {
-			$this->lastSaveOutcome = 'unchanged';
-		}
+		$this->lastSaveOutcome = self::updateOutcome(updated: $updatedObject, old: $oldObject);
 
 		return $updatedObject;
 	}//end handleObjectUpdate()
+
+	/**
+	 * The verdict of a persisted update.
+	 *
+	 * @param ObjectEntity $updated The object after the write.
+	 * @param ObjectEntity $old     The object before the write.
+	 *
+	 * @return string `unchanged` or `updated`.
+	 */
+	private static function updateOutcome(ObjectEntity $updated, ObjectEntity $old): string {
+		if ($updated->getObject() === $old->getObject()) {
+			return 'unchanged';
+		}
+
+		return 'updated';
+	}//end updateOutcome()
 
 	/**
 	 * Handle creation of new object.

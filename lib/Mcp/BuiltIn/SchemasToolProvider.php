@@ -28,7 +28,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Rbac\OrphanCleanupFlag;
+use OCA\OpenRegister\Service\Rbac\SchemaManageGate;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 
 /**
@@ -53,9 +56,11 @@ class SchemasToolProvider implements IMcpToolProvider {
 	 * Constructor
 	 *
 	 * @param SchemaMapper $schemaMapper Schema database mapper
+	 * @param SchemaManageGate $manageGate Whether the caller is an administrator
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaManageGate $manageGate,
 	) {
 	}//end __construct()
 
@@ -191,6 +196,7 @@ class SchemasToolProvider implements IMcpToolProvider {
 	 */
 	private function createSchema(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'data');
+		$this->refuseOrphanCleanupChange(schema: new Schema(), document: $arguments['data']);
 		$schema = $this->schemaMapper->createFromArray(object: $arguments['data']);
 		return $schema->jsonSerialize();
 	}//end createSchema()
@@ -205,12 +211,34 @@ class SchemasToolProvider implements IMcpToolProvider {
 	private function updateSchema(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
 		$this->requireParam(arguments: $arguments, param: 'data');
+		$this->refuseOrphanCleanupChange(
+			schema: $this->schemaMapper->find(id: $arguments['id'], _multitenancy: false),
+			document: $arguments['data']
+		);
 		$schema = $this->schemaMapper->updateFromArray(
 			id: $arguments['id'],
 			object: $arguments['data']
 		);
 		return $schema->jsonSerialize();
 	}//end updateSchema()
+
+	/**
+	 * Refuse a non-administrator's change of `orphanCleanup`, as the schema routes do.
+	 *
+	 * @param Schema               $schema   The schema as stored, or a new one.
+	 * @param array<string, mixed> $document The incoming fields.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the caller may not change the flag.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function refuseOrphanCleanupChange(Schema $schema, array $document): void {
+		if ((new OrphanCleanupFlag())->changedBy(schema: $schema, document: $document) === true && $this->manageGate->callerIsAdministrator() === false) {
+			throw new InvalidArgumentException('Only an administrator can change orphanCleanup on a schema');
+		}
+	}//end refuseOrphanCleanupChange()
 
 	/**
 	 * Delete a schema.

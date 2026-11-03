@@ -38,7 +38,7 @@ class SchemasToolProviderTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
-		$this->provider = new SchemasToolProvider($this->schemaMapper);
+		$this->provider = new SchemasToolProvider($this->schemaMapper, $this->createMock(\OCA\OpenRegister\Service\Rbac\SchemaManageGate::class));
 
 	}//end setUp()
 
@@ -193,4 +193,19 @@ class SchemasToolProviderTest extends TestCase {
 		$this->provider->invokeTool(SchemasToolProvider::TOOL_ID, []);
 
 	}//end testMissingActionThrows()
+
+	public function testAnMcpUpdateByANonAdministratorMayNotSetOrphanCleanup(): void {
+		$this->schemaMapper->method('find')->willReturn(new \OCA\OpenRegister\Db\Schema());
+		$this->schemaMapper->expects($this->never())->method('updateFromArray');
+
+		$this->expectException(\InvalidArgumentException::class);
+		$this->provider->invokeTool('schemas', ['action' => 'update', 'id' => 1, 'data' => ['configuration' => ['orphanCleanup' => true]]]);
+	}
+
+	public function testAnMcpCreateByANonAdministratorMayNotSetOrphanCleanup(): void {
+		$this->schemaMapper->expects($this->never())->method('createFromArray');
+
+		$this->expectException(\InvalidArgumentException::class);
+		$this->provider->invokeTool('schemas', ['action' => 'create', 'data' => ['configuration' => ['orphanCleanup' => true]]]);
+	}
 }//end class

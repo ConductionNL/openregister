@@ -1492,7 +1492,7 @@ class ImportHandler {
 	 *
 	 * @var array<int, string>
 	 */
-	private const COMPARED_CONFIGURATION_KEYS = ['partyKinds', 'linkRoles'];
+	private const COMPARED_CONFIGURATION_KEYS = ['partyKinds', 'linkRoles', 'orphanCleanup'];
 
 	/**
 	 * Resolve an incoming shipped schema against what the instance changed.

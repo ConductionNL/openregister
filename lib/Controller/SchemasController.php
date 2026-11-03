@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Rbac\OrphanCleanupFlag;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
@@ -1250,7 +1251,7 @@ class SchemasController extends Controller {
 		}
 
 		// Validated after the permission check, so an unauthorized caller cannot probe it.
-		$invalid = $this->validateSchemaBody(data: $data);
+		$invalid = ($this->orphanCleanupRefusal(schema: $existingSchema, document: $data) ?? $this->validateSchemaBody(data: $data));
 		if ($invalid !== null) {
 			return $invalid;
 		}
@@ -1942,6 +1943,11 @@ class SchemasController extends Controller {
 		}
 
 		$phpArray = $dialectResult;
+		$denied = $this->orphanCleanupRefusal(schema: $schema, document: $phpArray);
+		if ($denied !== null) {
+			return $denied;
+		}
+
 		if (empty($phpArray['title']) === true) {
 			$phpArray['title'] = 'New Schema';
 		}
@@ -1955,6 +1961,29 @@ class SchemasController extends Controller {
 			);
 		}
 	}//end upload()
+
+	/**
+	 * Refuse a schema write by a non-administrator that sets or changes `orphanCleanup`.
+	 *
+	 * The flag makes saves soft-delete rows, so a schema's `manage` rule does not cover it.
+	 *
+	 * @param Schema               $schema   The schema as stored.
+	 * @param array<string, mixed> $document The incoming schema.
+	 *
+	 * @return JSONResponse|null A 403, or null when the write may go on.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function orphanCleanupRefusal(Schema $schema, array $document): ?JSONResponse {
+		if ((new OrphanCleanupFlag())->changedBy(schema: $schema, document: $document) === false || $this->isCurrentUserAdmin() === true) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: ['error' => 'Only an administrator can change orphanCleanup on a schema'],
+			statusCode: Http::STATUS_FORBIDDEN
+		);
+	}//end orphanCleanupRefusal()
 
 	/**
 	 * Refuse an upload the caller may not make (H3).

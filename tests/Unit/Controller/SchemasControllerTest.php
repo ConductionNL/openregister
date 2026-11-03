@@ -419,6 +419,97 @@ class SchemasControllerTest extends TestCase {
 		$this->assertArrayNotHasKey('affectedForms', $result->getData() instanceof Schema ? [] : (array)$result->getData());
 	}//end testAFailingDependentFormCheckIsLogged()
 
+	/**
+	 * Sign in a schema manager who is no administrator, for a schema with the given flag.
+	 *
+	 * @param array<string, mixed> $configuration The stored configuration.
+	 *
+	 * @return Schema
+	 */
+	private function asNonAdminManager(array $configuration = []): Schema {
+		$schema = $this->createRealSchema(1, 'Ticket');
+		$schema->setAuthorization(['manage' => ['admin']]);
+		$schema->setConfiguration($configuration);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+		$this->schemaMapper->method('update')->willReturn($schema);
+		$this->currentUserIsAdmin = false;
+
+		return $schema;
+	}//end asNonAdminManager()
+
+	/**
+	 * The ways a body can set the flag.
+	 *
+	 * @return array<string, array{0: mixed}>
+	 */
+	public static function orphanCleanupBodies(): array {
+		return [
+			'array' => [['orphanCleanup' => true]],
+			'json text' => ['{"orphanCleanup":true}'],
+		];
+	}//end orphanCleanupBodies()
+
+	/**
+	 * @dataProvider orphanCleanupBodies
+	 *
+	 * @param mixed $configuration The body's configuration.
+	 */
+	public function testANonAdminManagerMayNotSetOrphanCleanupOnUpdate(mixed $configuration): void {
+		$this->asNonAdminManager();
+		$this->request->method('getParams')->willReturn(['configuration' => $configuration]);
+		$this->schemaMapper->expects($this->never())->method('updateFromArray');
+
+		$this->assertSame(403, $this->controller->update(1)->getStatus());
+	}
+
+	public function testANonAdminManagerMayNotSetOrphanCleanupOnPatch(): void {
+		$this->asNonAdminManager();
+		$this->request->method('getParams')->willReturn(['configuration' => ['orphanCleanup' => true]]);
+		$this->schemaMapper->expects($this->never())->method('updateFromArray');
+
+		$this->assertSame(403, $this->controller->patch(1)->getStatus());
+	}
+
+	public function testANonAdminManagerMayNotSetOrphanCleanupOnUpload(): void {
+		$this->asNonAdminManager();
+		$this->uploadService->method('getUploadedJson')->willReturn(['title' => 'Ticket', 'configuration' => ['orphanCleanup' => true]]);
+		$this->request->method('getParams')->willReturn([]);
+		$this->schemaMapper->expects($this->never())->method('update');
+
+		$this->assertSame(403, $this->controller->uploadUpdate(1)->getStatus());
+	}
+
+	public function testANonAdminManagerMayNotClearOrphanCleanupExplicitly(): void {
+		$this->asNonAdminManager(configuration: ['orphanCleanup' => true]);
+		$this->request->method('getParams')->willReturn(['configuration' => ['orphanCleanup' => false]]);
+
+		$this->assertSame(403, $this->controller->update(1)->getStatus());
+	}
+
+	public function testANonAdminManagerMaySendTheStoredValueBack(): void {
+		$this->asNonAdminManager(configuration: ['orphanCleanup' => true]);
+		$this->request->method('getParams')->willReturn(['configuration' => ['orphanCleanup' => true, 'allowFiles' => true]]);
+
+		$this->assertSame(200, $this->controller->update(1)->getStatus());
+	}
+
+	public function testANonAdminManagerMayUpdateWithoutTheFlag(): void {
+		$this->asNonAdminManager();
+		$this->request->method('getParams')->willReturn(['configuration' => ['allowFiles' => true]]);
+
+		$this->assertSame(200, $this->controller->update(1)->getStatus());
+	}
+
+	public function testAnAdministratorMaySetOrphanCleanup(): void {
+		$schema = $this->createRealSchema(1, 'Ticket');
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['configuration' => ['orphanCleanup' => true]]);
+
+		$this->assertSame(200, $this->controller->update(1)->getStatus());
+	}
+
 	public function testPatchDelegatesToUpdate(): void {
 		$schema = $this->createRealSchema(1, 'Patched');
 

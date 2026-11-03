@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\OrphanDeletionGuard;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
@@ -43,6 +44,14 @@ use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
+use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Exception\HookStoppedException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
+use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\SharedMasterDataService;
+use OCP\IUser;
+use Psr\Container\ContainerInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
@@ -52,7 +61,12 @@ use ReflectionClass;
  * the real one does, and the test reads which rows were soft-deleted.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @covers \OCA\OpenRegister\Service\Object\OrphanDeletionGuard
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Dto\DeletionAnalysis
+ * @uses   \OCA\OpenRegister\Exception\HookStoppedException
+ * @uses   \OCA\OpenRegister\Exception\NotAuthorizedException
+ * @uses   \OCA\OpenRegister\Exception\SharedMasterDataWriteException
  * @uses   \OCA\OpenRegister\Db\ObjectHandling
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
@@ -107,6 +121,68 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 	 */
 	private array $finds = [];
 
+	/**
+	 * What the child schema's rule set declares, applied to the `note` schema.
+	 */
+	private array $noteConfig = [];
+
+	/**
+	 * Whether the `note` schema is append-only.
+	 */
+	private bool $appendOnly = false;
+
+	/**
+	 * Whether a delete listener stops the delete.
+	 */
+	private bool $listenerStops = false;
+
+	/**
+	 * Whether the caller's organisation only consumes the child schema.
+	 */
+	private bool $onlyConsumes = false;
+
+	/**
+	 * The integrity analysis of a delete.
+	 */
+	private ?DeletionAnalysis $analysis = null;
+
+	/**
+	 * Whether a user is signed in.
+	 */
+	private bool $signedIn = true;
+
+	/**
+	 * Whether the parent write reached the mapper when the row was deleted.
+	 *
+	 * @var list<string>
+	 */
+	private array $writes = [];
+
+	/**
+	 * Properties and data beside `notes`.
+	 */
+	private array $extra = ['properties' => [], 'data' => []];
+
+	/**
+	 * Whether the save was refused.
+	 */
+	private bool $refused = false;
+
+	/**
+	 * Whether the permission handler refuses a nested create.
+	 */
+	private bool $refuseCreate = false;
+
+	/**
+	 * Whether the save persists.
+	 */
+	private bool $persist = true;
+
+	/**
+	 * Whether the inverse relation sits on the property, not on its items.
+	 */
+	private bool $inverseOnProperty = false;
+
 	protected function setUp(): void {
 		$this->row = new ObjectEntity();
 		$this->row->setUuid(self::ROW);
@@ -134,7 +210,7 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 					return $parent;
 				}
 
-				if ((string)$identifier === self::ROW || (string)$identifier === 'row-slug') {
+				if ((string)$identifier === $this->row->getUuid() || (string)$identifier === 'row-slug') {
 					return $this->row;
 				}
 
@@ -142,8 +218,61 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 			}
 		);
 		$mapper->method('callerOrganisationsHold')->willReturnCallback(fn (): bool => $this->held);
+		$mapper->method('assertDeletable')->willReturnCallback(
+			function (): void {
+				if ($this->listenerStops === true) {
+					throw new HookStoppedException(message: 'frozen');
+				}
+			}
+		);
+		$mapper->method('insert')->willReturnArgument(0);
+		$mapper->method('update')->willReturnCallback(
+			function (...$args): ObjectEntity {
+				$entity = ($args['entity'] ?? $args[0]);
+				$this->writes[] = (string)$entity->getUuid();
+				return $entity;
+			}
+		);
+
+		$shared = $this->createMock(SharedMasterDataService::class);
+		$shared->method('assertWritable')->willReturnCallback(
+			function (string $table, ?int $id): void {
+				if ($this->onlyConsumes === true && $table === SharedMasterDataService::SCHEMAS && $id === 2) {
+					throw new SharedMasterDataWriteException(holderUuid: 'org-holder', holderName: null, resourceType: 'schema', resourceTitle: 'note');
+				}
+			}
+		);
+		$organisations = $this->createMock(OrganisationService::class);
+		$organisations->method('getUserActiveOrganisations')->willReturn(['org-a']);
+		$deletes = $this->createMock(DeleteObject::class);
+		$deletes->method('canDelete')->willReturnCallback(
+			fn (): DeletionAnalysis => $this->analysis ?? new DeletionAnalysis(deletable: true)
+		);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnMap(
+			[
+				[SharedMasterDataService::class, $shared],
+				[OrganisationService::class, $organisations],
+				[DeleteObject::class, $deletes],
+			]
+		);
+		$session = $this->createMock(IUserSession::class);
+		$user = null;
+		if ($this->signedIn === true) {
+			$user = $this->createMock(IUser::class);
+			$user->method('getUID')->willReturn('alice');
+		}
+
+		$session->method('getUser')->willReturn($user);
 
 		$permissions = $this->createMock(PermissionHandler::class);
+		$permissions->method('checkPermission')->willReturnCallback(
+			function (): void {
+				if ($this->refuseCreate === true) {
+					throw new NotAuthorizedException(message: 'no');
+				}
+			}
+		);
 		$permissions->method('hasPermission')->willReturnCallback(
 			function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true, ?ObjectEntity $object = null): bool {
 				$this->asked[] = [$schema->getSlug(), $action, $userId, $objectOwner, $_rbac, $object?->getUuid()];
@@ -160,12 +289,12 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 			$this->createMock(MetadataHydrationHandler::class),
 			$this->createMock(FilePropertyHandler::class),
 			$this->createMock(LinkedEntityPropertyHandler::class),
-			$this->createMock(IUserSession::class),
+			$session,
 			$this->createMock(AuditTrailMapper::class),
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(RegisterMapper::class),
 			$this->createMock(IURLGenerator::class),
-			$this->createMock(OrganisationService::class),
+			$organisations,
 			$this->createMock(CacheHandler::class),
 			$this->createMock(SettingsService::class),
 			$this->createMock(PropertyRbacHandler::class),
@@ -176,7 +305,14 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 			new NullLogger(),
 			$this->createMock(TmloService::class),
 			$this->createMock(FolderManagementHandler::class),
-			$permissions
+			$permissions,
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			$container
 		);
 
 		return $handler;
@@ -190,6 +326,7 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 	 * @param string|null $uuid       The incident to update, null to create one.
 	 * @param bool        $rbac       The RBAC mode of the save.
 	 * @param array       $config     The incident schema's configuration.
+	 * @param SaveObject|null $handler A handler that already has state.
 	 *
 	 * @return bool
 	 */
@@ -198,18 +335,21 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 		array $items = ['inversedBy' => 'incident'],
 		?string $uuid = self::PARENT,
 		bool $rbac = true,
-		array $config = ['orphanCleanup' => true]
+		array $config = ['orphanCleanup' => true],
+		?SaveObject $handler = null
 	): bool {
-		$handler = $this->handler();
+		$handler ??= $this->handler();
 		$note = new Schema();
 		$note->setId(2);
 		$note->setSlug('note');
+		$note->setConfiguration($this->noteConfig);
+		$note->setAppendOnly($this->appendOnly);
 		$incident = new Schema();
 		$incident->setId(1);
 		$incident->setSlug('incident');
 		$incident->setConfiguration($config);
 		$incident->setProperties(
-			['notes' => ['type' => 'array', 'items' => ['$ref' => 'note'] + $items, 'objectConfiguration' => ['handling' => 'related-object']]]
+			['notes' => ['type' => 'array', 'items' => ['$ref' => 'note'] + $items, 'objectConfiguration' => ['handling' => 'related-object']] + ($this->inverseOnProperty === true ? ['inversedBy' => 'incident'] : [])] + $this->extra['properties']
 		);
 		$register = new Register();
 		$register->setId(10);
@@ -220,10 +360,9 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 		$reflection->getProperty('registerCache')->setValue($handler, ['10' => $register]);
 
 		try {
-			$handler->saveObject(register: $register, schema: $incident, data: ['notes' => $notes], uuid: $uuid, _rbac: $rbac);
-		} catch (\TypeError $e) {
-			// The doubles return no persisted entity after the cascade, which runs before that.
-			$this->addToAssertionCount(1);
+			$handler->saveObject(register: $register, schema: $incident, data: ['notes' => $notes] + $this->extra['data'], uuid: $uuid, _rbac: $rbac, persist: $this->persist);
+		} catch (NotAuthorizedException $e) {
+			$this->refused = true;
 		}
 
 		return $this->row->isSoftDeleted();
@@ -378,6 +517,200 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 	public function testWithoutTheOptInASlugNamedInASaveTouchesNothing(array $config): void {
 		$this->assertFalse($this->saveRemovesRow(notes: ['row-slug'], config: $config));
 		$this->assertNotContains('row-slug', $this->finds);
+	}
+
+	public function testAConsumerOfASharedChildSchemaDeletesNothing(): void {
+		$this->stored = ['notes' => [self::ROW]];
+		$this->onlyConsumes = true;
+
+		$this->assertFalse($this->saveRemovesRow(notes: []));
+	}
+
+	public function testAnAppendOnlyChildIsNotDeleted(): void {
+		$this->stored = ['notes' => [self::ROW]];
+		$this->appendOnly = true;
+
+		$this->assertFalse($this->saveRemovesRow(notes: []));
+	}
+
+	public function testAViewBackedChildIsNotDeleted(): void {
+		$this->stored = ['notes' => [self::ROW]];
+		$this->noteConfig = ['x-openregister-view' => ['view' => 7]];
+
+		$this->assertFalse($this->saveRemovesRow(notes: []));
+	}
+
+	public function testAnArchivalChildIsNotDeleted(): void {
+		$this->stored = ['notes' => [self::ROW]];
+		$this->noteConfig = ['x-openregister-archival' => ['bewaartermijn' => 'P1Y']];
+
+		$this->assertFalse($this->saveRemovesRow(notes: []));
+	}
+
+	public function testATransferredRowIsNotDeleted(): void {
+		$this->stored = ['notes' => [self::ROW]];
+		$this->row->setRetention(['archiefstatus' => 'overgebracht']);
+
+		$this->assertFalse($this->saveRemovesRow(notes: []));
+	}
+
+	public function testADeleteListenerKeepsTheRow(): void {
+		$this->stored = ['notes' => [self::ROW]];
+		$this->listenerStops = true;
+
+		$this->assertFalse($this->saveRemovesRow(notes: []));
+	}
+
+	public function testARestrictedRowIsNotDeleted(): void {
+		$this->stored = ['notes' => [self::ROW]];
+		$this->analysis = new DeletionAnalysis(deletable: false);
+
+		$this->assertFalse($this->saveRemovesRow(notes: []));
+	}
+
+	public function testARowOthersDependOnIsNotDeleted(): void {
+		$this->stored = ['notes' => [self::ROW]];
+		$this->analysis = new DeletionAnalysis(deletable: true, nullifyTargets: [['objectUuid' => 'x']]);
+
+		$this->assertFalse($this->saveRemovesRow(notes: []));
+	}
+
+	public function testASaveWithoutASignedInUserDeletesNothing(): void {
+		$this->stored = ['notes' => [self::ROW]];
+		$this->signedIn = false;
+
+		$this->assertFalse($this->saveRemovesRow(notes: []));
+		$this->assertSame([], $this->asked);
+	}
+
+	public function testARefusalOnALaterPropertyLeavesTheRowAlone(): void {
+		$this->stored = ['notes' => [self::ROW]];
+		$this->extra = [
+			'properties' => ['secrets' => ['type' => 'array', 'items' => ['$ref' => 'note'], 'objectConfiguration' => ['handling' => 'cascade']]],
+			'data' => ['secrets' => [['name' => 'x']]],
+		];
+		$this->refuseCreate = true;
+
+		$this->assertFalse($this->saveRemovesRow(notes: []));
+		$this->assertTrue($this->refused);
+	}
+
+	public function testTheRowIsDeletedAfterTheParentIsWritten(): void {
+		$this->stored = ['notes' => [self::ROW]];
+
+		$this->assertTrue($this->saveRemovesRow(notes: []));
+		$this->assertSame([self::PARENT, self::ROW], array_slice($this->writes, 0, 2));
+	}
+
+	public function testAPendingOrphanIsDroppedWhenTheSaveDoesNotPersist(): void {
+		$this->stored = ['notes' => [self::ROW]];
+		$this->persist = false;
+
+		$this->assertFalse($this->saveRemovesRow(notes: []));
+	}
+
+	/**
+	 * Other spellings of the kept uuid.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function sameRow(): array {
+		return [
+			'no dashes' => [str_replace('-', '', self::ROW)],
+			'prefixed' => ['id-' . self::ROW],
+			'upper case' => [strtoupper('ABCDEF12-1234-1234-1234-123456789ABC')],
+		];
+	}//end sameRow()
+
+	/**
+	 * @dataProvider sameRow
+	 *
+	 * @param string $spelling The kept reference.
+	 */
+	public function testAnotherSpellingOfAKeptReferenceIsKept(string $spelling): void {
+		$lower = strtolower($spelling);
+		$stored = str_contains($lower, 'abcdef12') === true ? $lower : self::ROW;
+		$this->stored = ['notes' => [$stored]];
+		$this->row->setUuid($stored);
+
+		$this->assertFalse($this->saveRemovesRow(notes: [$spelling]));
+	}
+
+	public function testAStaleOrphanOfARefusedSaveIsNotDeletedByTheNextSave(): void {
+		$handler = $this->handler();
+		$this->stored = ['notes' => [self::ROW]];
+		(new ReflectionClass(SaveObject::class))->getProperty('pendingOrphans')->setValue(
+			$handler,
+			[self::PARENT => [[[self::ROW], ['register' => new Register(), 'schema' => new Schema(), 'inverse' => 'incident', 'parent' => self::PARENT]]]]
+		);
+
+		$this->assertFalse($this->saveRemovesRow(notes: [self::ROW], handler: $handler));
+	}
+
+	public function testASettledOrphanIsNotDeletedAgain(): void {
+		$handler = $this->handler();
+		$settle = (new ReflectionClass(SaveObject::class))->getMethod('settleOrphans');
+		$pending = (new ReflectionClass(SaveObject::class))->getProperty('pendingOrphans');
+		$pending->setValue(
+			$handler,
+			[self::PARENT => [[[self::ROW], ['register' => new Register(), 'schema' => new Schema(), 'inverse' => 'incident', 'parent' => self::PARENT]]]]
+		);
+
+		$settle->invoke($handler, self::PARENT);
+
+		$this->assertSame([], $pending->getValue($handler));
+	}
+
+	public function testAConsumerOfASharedRegisterDeletesNothing(): void {
+		$shared = $this->createMock(SharedMasterDataService::class);
+		$shared->method('assertWritable')->willReturnCallback(
+			static function (string $table): void {
+				if ($table === SharedMasterDataService::REGISTERS) {
+					throw new SharedMasterDataWriteException(holderUuid: 'org-holder');
+				}
+			}
+		);
+		$organisations = $this->createMock(OrganisationService::class);
+		$organisations->method('getUserActiveOrganisations')->willReturn(['org-a']);
+		$container = $this->createMock(ContainerInterface::class);
+		$deletes = $this->createMock(DeleteObject::class);
+		$deletes->method('canDelete')->willReturn(new DeletionAnalysis(deletable: true));
+		$container->method('get')->willReturnMap([[SharedMasterDataService::class, $shared], [OrganisationService::class, $organisations], [DeleteObject::class, $deletes]]);
+		$permissions = $this->createMock(PermissionHandler::class);
+		$permissions->method('hasPermission')->willReturn(true);
+		$mapper = $this->createMock(MagicMapper::class);
+		$mapper->method('callerOrganisationsHold')->willReturn(true);
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($this->createMock(IUser::class));
+		$guard = new OrphanDeletionGuard(objectMapper: $mapper, permissionHandler: $permissions, userSession: $session, container: $container);
+
+		$this->assertFalse($guard->allows(row: $this->row, register: new Register(), schema: new Schema()));
+	}
+
+	public function testAnInverseRelationOnThePropertyCounts(): void {
+		$this->stored = ['notes' => [self::ROW]];
+		$this->inverseOnProperty = true;
+
+		$this->assertTrue($this->saveRemovesRow(notes: [], items: []));
+	}
+
+	public function testTheFlagSurvivesAnExportAndImport(): void {
+		$schema = new Schema();
+		$schema->setConfiguration(['orphanCleanup' => true, 'allowFiles' => true]);
+		$exported = json_decode((string)json_encode($schema->jsonSerialize()), true);
+
+		$imported = new Schema();
+		$imported->hydrate(['configuration' => $exported['configuration']]);
+
+		$this->assertTrue($imported->getConfiguration()['orphanCleanup']);
+		$this->assertTrue($imported->getConfiguration()['allowFiles']);
+	}
+
+	public function testANonBooleanFlagIsNotStored(): void {
+		$schema = new Schema();
+		$schema->setConfiguration(['orphanCleanup' => 'true', 'allowFiles' => true]);
+
+		$this->assertArrayNotHasKey('orphanCleanup', $schema->getConfiguration());
 	}
 
 	public function testTheOptInSurvivesTheSchemasConfigurationCheck(): void {
