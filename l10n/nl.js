@@ -2924,7 +2924,7 @@ OC.L10N.register(
         "Complete: {outcome}": "Afronden: {outcome}",
         "Could not load the task": "Kon de taak niet laden",
         "The task refused that action": "De taak weigerde die actie",
-        "Store": "Store",
+        "Marketplace": "Marktplaats",
         "Install registers, schemas and flows that other organisations have published.": "Installeer registers, schema's en flows die andere organisaties hebben gepubliceerd.",
         "No such run": "Geen uitvoering gevonden",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "De uitvoering bestaat niet, of u mag deze niet zien. Verwijdert u een flow, dan verdwijnen ook de uitvoeringen.",

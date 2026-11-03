@@ -283,6 +283,8 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 	 * @return void
 	 */
 	private function hiddenFromTheCaller(?string $status, bool $exists = true): void {
+		// The stored row lies inside the caller's organisations; only the read rules hide it.
+		$this->objectMapper->method('callerOrganisationsHold')->willReturn(true);
 		$this->objectMapper->method('find')->willReturnCallback(
 			function (
 				string|int $identifier,
@@ -365,9 +367,11 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 		$this->saveOver(rbac: true);
 
 		$this->assertSame([['create', null, null, true, null], ['update', null, 'agent', true, 'draft-1']], $this->checks);
-		// The caller's own lookup, the one past the read rule (unscoped, so a
-		// row of any organisation is found), then the organisation filter alone.
-		$this->assertSame([[true, true], [false, false], [false, true]], array_slice($this->lookups, 0, 3));
+		// The caller's own lookup, then the one past the read rule (unscoped, so a
+		// row of any organisation is found). The organisation is compared on that
+		// row, not looked up through the read filter.
+		$this->assertSame([[true, true], [false, false]], array_slice($this->lookups, 0, 2));
+		$this->assertNotContains([false, true], $this->lookups);
 	}//end testAStoredRowTheCallerCannotSeeMustPassCreateAndUpdate()
 
 	public function testAStoredRowTheCallerMayNotUpdateIsNotWritten(): void {
@@ -384,6 +388,100 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 
 		$this->assertSame([], $this->saves);
 	}//end testAStoredRowTheCallerMayNotUpdateIsNotWritten()
+
+	/**
+	 * One argument of the last SaveObject::saveObject() call, by parameter name.
+	 *
+	 * @param string $name The parameter name.
+	 *
+	 * @return mixed The value it was given.
+	 */
+	private function savedArgument(string $name): mixed {
+		$this->assertNotSame([], $this->saves, 'nothing was saved');
+		$arguments = $this->saves[count($this->saves) - 1];
+		if (array_key_exists($name, $arguments) === true) {
+			return $arguments[$name];
+		}
+
+		foreach ((new \ReflectionMethod(SaveObject::class, 'saveObject'))->getParameters() as $index => $parameter) {
+			if ($parameter->getName() === $name) {
+				return ($arguments[$index] ?? $parameter->getDefaultValue());
+			}
+		}
+
+		$this->fail('SaveObject::saveObject() has no parameter ' . $name);
+	}//end savedArgument()
+
+	public function testTheWriteContinuesWithTheUuidOfTheRowTheCheckRanOn(): void {
+		// "1" is the id of the row the caller may see, whose uuid is uuid-b.
+		$this->signedIn('mallory');
+		$visible = new ObjectEntity();
+		$visible->setUuid('uuid-b');
+		$visible->setOwner('mallory');
+		$this->objectMapper->method('find')->willReturn($visible);
+		$this->saveHandler->method('saveObject')->willReturnCallback(
+			function (mixed ...$arguments) use ($visible): ObjectEntity {
+				$this->saves[] = $arguments;
+				return $visible;
+			}
+		);
+		[$register, $schema] = $this->scope();
+
+		$this->service->saveObject(object: ['subject' => 'x'], register: $register, schema: $schema, uuid: '1');
+
+		$this->assertSame('uuid-b', $this->savedArgument(name: 'uuid'));
+		$this->assertFalse($this->savedArgument(name: 'failIfExists'));
+	}//end testTheWriteContinuesWithTheUuidOfTheRowTheCheckRanOn()
+
+	public function testAHiddenRowsWriteContinuesWithItsUuid(): void {
+		// The identifier "7" names the hidden row by its id; its uuid is hidden-7.
+		$this->signedIn('mallory');
+		// The hidden row lies inside the caller's organisations; only the read rules hide it.
+		$this->objectMapper->method('callerOrganisationsHold')->willReturn(true);
+		$this->objectMapper->method('find')->willReturnCallback(
+			function (string|int $identifier, ?Register $register = null, ?Schema $schema = null, bool $includeDeleted = false, bool $_rbac = true): ObjectEntity {
+				if ($_rbac === true) {
+					throw new DoesNotExistException('Object not found in magic table');
+				}
+
+				$hidden = new ObjectEntity();
+				$hidden->setUuid('hidden-7');
+				$hidden->setOwner('agent');
+				return $hidden;
+			}
+		);
+		$this->saveHandler->method('saveObject')->willReturnCallback(
+			function (mixed ...$arguments): ObjectEntity {
+				$this->saves[] = $arguments;
+				return new ObjectEntity();
+			}
+		);
+		[$register, $schema] = $this->scope();
+
+		$this->service->saveObject(object: ['subject' => 'x'], register: $register, schema: $schema, uuid: '7');
+
+		$this->assertSame('hidden-7', $this->savedArgument(name: 'uuid'));
+	}//end testAHiddenRowsWriteContinuesWithItsUuid()
+
+	public function testAChosenIdNothingVisibleAnswersToMayOnlyInsert(): void {
+		$this->signedIn('mallory');
+		$this->hiddenFromTheCaller(status: null, exists: false);
+
+		$this->saveOver(rbac: true);
+
+		$this->assertSame('draft-1', $this->savedArgument(name: 'uuid'));
+		$this->assertTrue($this->savedArgument(name: 'failIfExists'), 'an unfiltered match of the id must be refused, not updated');
+	}//end testAChosenIdNothingVisibleAnswersToMayOnlyInsert()
+
+	public function testWithRbacOffTheIdentifierAndTheUpsertStay(): void {
+		$this->signedIn('mallory');
+		$this->hiddenFromTheCaller(status: null, exists: false);
+
+		$this->saveOver(rbac: false);
+
+		$this->assertSame('draft-1', $this->savedArgument(name: 'uuid'));
+		$this->assertFalse($this->savedArgument(name: 'failIfExists'));
+	}//end testWithRbacOffTheIdentifierAndTheUpsertStay()
 
 	public function testANewUuidIsJudgedAsACreate(): void {
 		$this->signedIn('mallory');
@@ -412,6 +510,8 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 	}//end testSomebodyElsesDraftIsStillRefused()
 	public function testASoftDeletedRowIsJudgedAgainstTheStoredObject(): void {
 		$this->signedIn('mallory');
+		// The stored row lies inside the caller's organisations; only the read rules hide it.
+		$this->objectMapper->method('callerOrganisationsHold')->willReturn(true);
 		$this->objectMapper->method('find')->willReturnCallback(
 			function (
 				string|int $identifier,

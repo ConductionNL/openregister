@@ -604,6 +604,32 @@ class MagicMapperFindAcrossAllMagicTablesAccessControlTest extends TestCase {
 	}//end testExplicitBypassSkipsAccessControlEntirely()
 
 	/**
+	 * Inside an organisation context the bypass does not skip access control:
+	 * the organisation filter cannot be switched off.
+	 *
+	 * @return void
+	 */
+	public function testExplicitBypassInsideAnOrganisationContextIsStillChecked(): void {
+		$table = $this->givenLiveTable(
+			registerId: 9,
+			schemaId: 10,
+			rows: [$this->row(id: 3, uuid: 'uuid-bypass')]
+		);
+		$this->deniedTables = [$table];
+
+		$this->expectException(DoesNotExistException::class);
+
+		\OCA\OpenRegister\Service\OrganisationContext::run(
+			'org-a',
+			fn () => $this->makeMapper()->findAcrossAllMagicTables(
+				identifier: 'uuid-bypass',
+				_rbac: false,
+				_multitenancy: false
+			)
+		);
+	}//end testExplicitBypassInsideAnOrganisationContextIsStillChecked()
+
+	/**
 	 * Fail CLOSED: if the row's register/schema cannot be resolved (the
 	 * pre-existing race this method already logs and tolerates for
 	 * register/schema hydration), the read must be denied rather than

@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
 use RuntimeException;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
  * Regression guard for the 2026-09-08 memory blow-up.
@@ -113,7 +113,7 @@ class SaveObjectRetentionResolutionTest extends TestCase {
 			$this->logger,
 			$this->createMock(TmloService::class),
 			$this->createMock(FolderManagementHandler::class),
-			new ArrayLoader(),
+			$this->createMock(PermissionHandler::class),
 			container: $container,
 		);
 	}//end buildHandler()

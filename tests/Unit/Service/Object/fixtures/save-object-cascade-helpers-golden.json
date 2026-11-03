@@ -1,0 +1,338 @@
+{
+    "related ids kept and orphans deleted": {
+        "answer": {
+            "notes": [
+                "22222222-2222-2222-2222-222222222222",
+                "22222222222222222222222222222222",
+                "abcdefabcdefabcdefabcdefabcdefab",
+                "id-22222222-2222-2222-2222-222222222223",
+                "id-22222222222222222222222222222224",
+                "42",
+                "33333333-3333-3333-3333-333333333333"
+            ]
+        },
+        "trace": [
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "text": "new"
+                },
+                null
+            ],
+            [
+                "find",
+                "old-1",
+                10,
+                2
+            ],
+            [
+                "update",
+                "old-1",
+                "orphaned-related-object"
+            ],
+            [
+                "find",
+                "old-2",
+                10,
+                2
+            ],
+            [
+                "update",
+                "old-2",
+                "orphaned-related-object"
+            ]
+        ]
+    },
+    "related list emptied deletes every orphan": {
+        "answer": {
+            "notes": []
+        },
+        "trace": [
+            [
+                "find",
+                "old-1",
+                10,
+                2
+            ],
+            [
+                "update",
+                "old-1",
+                "orphaned-related-object"
+            ],
+            [
+                "find",
+                "22222222-2222-2222-2222-222222222222",
+                10,
+                2
+            ],
+            [
+                "update",
+                "22222222-2222-2222-2222-222222222222",
+                "orphaned-related-object"
+            ],
+            [
+                "find",
+                "old-2",
+                10,
+                2
+            ],
+            [
+                "update",
+                "old-2",
+                "orphaned-related-object"
+            ]
+        ]
+    },
+    "related with no stored list": {
+        "answer": {
+            "notes": [
+                "22222222-2222-2222-2222-222222222222",
+                "22222222222222222222222222222222",
+                "abcdefabcdefabcdefabcdefabcdefab",
+                "id-22222222-2222-2222-2222-222222222223",
+                "id-22222222222222222222222222222224",
+                "42"
+            ]
+        },
+        "trace": []
+    },
+    "cascade list emptied deletes every orphan": {
+        "answer": {
+            "notes": []
+        },
+        "trace": [
+            [
+                "find",
+                "old-1",
+                10,
+                2
+            ],
+            [
+                "update",
+                "old-1",
+                "orphaned-related-object"
+            ],
+            [
+                "find",
+                "22222222-2222-2222-2222-222222222222",
+                10,
+                2
+            ],
+            [
+                "update",
+                "22222222-2222-2222-2222-222222222222",
+                "orphaned-related-object"
+            ],
+            [
+                "find",
+                "old-2",
+                10,
+                2
+            ],
+            [
+                "update",
+                "old-2",
+                "orphaned-related-object"
+            ]
+        ]
+    },
+    "cascade ids only": {
+        "answer": {
+            "notes": []
+        },
+        "trace": []
+    },
+    "cascade objects created": {
+        "answer": {
+            "notes": [
+                "33333333-3333-3333-3333-333333333333"
+            ]
+        },
+        "trace": [
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "text": "new"
+                },
+                null
+            ]
+        ]
+    },
+    "write-back to valid ids": {
+        "answer": {
+            "tags": [
+                "22222222-2222-2222-2222-222222222222",
+                "22222222222222222222222222222222",
+                "abcdefabcdefabcdefabcdefabcdefab",
+                "id-22222222-2222-2222-2222-222222222223",
+                "id-22222222222222222222222222222224",
+                "42",
+                "not-an-id",
+                "2222222-2222-2222-2222-222222222222",
+                "",
+                " ",
+                "4.2",
+                {
+                    "text": "new"
+                },
+                {
+                    "id": ""
+                },
+                [],
+                7
+            ]
+        },
+        "trace": [
+            [
+                "find",
+                "22222222-2222-2222-2222-222222222222",
+                null,
+                null
+            ],
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "id": "22222222-2222-2222-2222-222222222222",
+                    "incidents": [
+                        "p-0",
+                        "p-1"
+                    ]
+                },
+                "22222222-2222-2222-2222-222222222222"
+            ],
+            [
+                "find",
+                "22222222222222222222222222222222",
+                null,
+                null
+            ],
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "id": "22222222222222222222222222222222",
+                    "incidents": [
+                        "p-0",
+                        "p-1"
+                    ]
+                },
+                "22222222222222222222222222222222"
+            ],
+            [
+                "find",
+                "abcdefabcdefabcdefabcdefabcdefab",
+                null,
+                null
+            ],
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "id": "abcdefabcdefabcdefabcdefabcdefab",
+                    "incidents": [
+                        "p-0",
+                        "p-1"
+                    ]
+                },
+                "abcdefabcdefabcdefabcdefabcdefab"
+            ],
+            [
+                "find",
+                "id-22222222-2222-2222-2222-222222222223",
+                null,
+                null
+            ],
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "id": "id-22222222-2222-2222-2222-222222222223",
+                    "incidents": [
+                        "p-0",
+                        "p-1"
+                    ]
+                },
+                "id-22222222-2222-2222-2222-222222222223"
+            ],
+            [
+                "find",
+                "id-22222222222222222222222222222224",
+                null,
+                null
+            ],
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "id": "id-22222222222222222222222222222224",
+                    "incidents": [
+                        "p-0",
+                        "p-1"
+                    ]
+                },
+                "id-22222222222222222222222222222224"
+            ],
+            [
+                "find",
+                "42",
+                null,
+                null
+            ],
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "id": "42",
+                    "incidents": [
+                        "p-0",
+                        "p-1"
+                    ]
+                },
+                "42"
+            ]
+        ]
+    },
+    "write-back single id": {
+        "answer": {
+            "note": "42"
+        },
+        "trace": [
+            [
+                "find",
+                "42",
+                null,
+                null
+            ],
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "id": "42",
+                    "incidents": [
+                        "p-0",
+                        "p-1"
+                    ]
+                },
+                "42"
+            ]
+        ]
+    },
+    "write-back single non-id": {
+        "answer": {
+            "note": "not-an-id"
+        },
+        "trace": []
+    }
+}

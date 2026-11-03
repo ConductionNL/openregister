@@ -52,6 +52,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
 use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumn;
 use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumnSizes;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
+use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeMembership;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
@@ -72,6 +73,7 @@ use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
+use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
@@ -6891,7 +6893,7 @@ class MagicMapper extends AbstractObjectMapper {
 		// in-org / owner reads through,
 		// - filters out other-org rows → no row → DoesNotExistException → 404
 		// (existence is not leaked).
-		if ($_rbac === true || $_multitenancy === true) {
+		if ($_rbac === true || OrganisationContext::multitenancy(requested: $_multitenancy) === true) {
 			$this->searchHandler->applyAccessControlToQuery(
 				qb: $qb,
 				schema: $schema,
@@ -6960,8 +6962,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * Pick the row an identifier means among the rows it matched.
 	 *
 	 * One row is the answer. Several rows: the one whose `_id` or `_uuid` is the
-	 * identifier, when exactly one is; otherwise none (the identifier is
-	 * ambiguous).
+	 * identifier, when exactly one is; when one row has it as `_id` and another as
+	 * `_uuid`, the `_uuid` row; otherwise none (the identifier is ambiguous).
 	 *
 	 * @param list<array<string, mixed>> $rows       The matched rows, at least one.
 	 * @param string|int                 $identifier The identifier the caller sent.
@@ -6976,15 +6978,15 @@ class MagicMapper extends AbstractObjectMapper {
 		}
 
 		$byKey = [];
+		$byUuid = [];
 		foreach ($rows as $row) {
-			// The same reading of the identifier as the query's id condition.
-			$idParam = $this->identifierAsId(identifier: $identifier);
-			$isId = $idParam !== null
-				&& isset($row[self::METADATA_PREFIX . 'id']) === true
-				&& (int)$row[self::METADATA_PREFIX . 'id'] === $idParam;
 			$isUuid = strcasecmp((string)($row[self::METADATA_PREFIX . 'uuid'] ?? ''), (string)$identifier) === 0;
-			if ($isId === true || $isUuid === true) {
+			if ($isUuid === true || $this->rowHasId(row: $row, identifier: $identifier) === true) {
 				$byKey[] = $row;
+			}
+
+			if ($isUuid === true) {
+				$byUuid[] = $row;
 			}
 		}
 
@@ -6992,8 +6994,31 @@ class MagicMapper extends AbstractObjectMapper {
 			return $byKey[0];
 		}
 
+		// "1" can be one object's id and another object's uuid; the uuid is the public identity.
+		if (count($byUuid) === 1) {
+			return $byUuid[0];
+		}
+
 		return null;
 	}//end rowForIdentifier()
+
+	/**
+	 * Whether a row's `_id` is the identifier, read as the query's id condition reads it.
+	 *
+	 * @param array<string, mixed> $row        A matched row.
+	 * @param string|int           $identifier The identifier the caller sent.
+	 *
+	 * @return bool True when the identifier is a canonical integer equal to the row's id.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 */
+	private function rowHasId(array $row, string|int $identifier): bool {
+		$idParam = $this->identifierAsId(identifier: $identifier);
+
+		return $idParam !== null
+			&& isset($row[self::METADATA_PREFIX . 'id']) === true
+			&& (int)$row[self::METADATA_PREFIX . 'id'] === $idParam;
+	}//end rowHasId()
 
 	/**
 	 * The one row an identifier means, or an ambiguity refusal.
@@ -7788,7 +7813,7 @@ class MagicMapper extends AbstractObjectMapper {
 			// filters, the caller may not read it — treat it exactly like "not found
 			// in this table" (no distinct error, no existence leak) and keep scanning
 			// the remaining candidates instead of trusting this hit.
-			if ($_rbac === true || $_multitenancy === true) {
+			if ($_rbac === true || OrganisationContext::multitenancy(requested: $_multitenancy) === true) {
 				if ($schema === null) {
 					// Can't resolve the schema that would tell us whether this read
 					// is authorized (register/schema deleted mid-scan, or load
@@ -8818,7 +8843,7 @@ class MagicMapper extends AbstractObjectMapper {
 		bool $_rbac,
 		bool $_multitenancy,
 	): bool {
-		if ($_rbac === false && $_multitenancy === false) {
+		if ($_rbac === false && OrganisationContext::multitenancy(requested: $_multitenancy) === false) {
 			return true;
 		}
 
@@ -9141,19 +9166,19 @@ class MagicMapper extends AbstractObjectMapper {
 
 	/**
 	 * Whether a default read's organisation boundary carries a branch for the
-	 * caller's conditional `public` rules.
+	 * caller's conditional `crossOrganisation` rules.
 	 *
 	 * @param Schema $schema The schema being read.
 	 *
 	 * @return bool True when it does.
 	 *
-	 * @see MagicSearchHandler::organisationBoundaryHasPublicBranch()
+	 * @see MagicSearchHandler::organisationBoundaryHasCrossOrganisationBranch()
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-multi-tenancy-integration-with-scopes
 	 */
-	public function organisationBoundaryHasPublicBranch(Schema $schema): bool {
-		return $this->searchHandler->organisationBoundaryHasPublicBranch(schema: $schema);
-	}//end organisationBoundaryHasPublicBranch()
+	public function organisationBoundaryHasCrossOrganisationBranch(Schema $schema): bool {
+		return $this->searchHandler->organisationBoundaryHasCrossOrganisationBranch(schema: $schema);
+	}//end organisationBoundaryHasCrossOrganisationBranch()
 
 	/**
 	 * Whether a default list read waives the organisation boundary for this
@@ -9187,6 +9212,49 @@ class MagicMapper extends AbstractObjectMapper {
 	public function organisationlessRowsAdmittedByRbac(Schema $schema): bool {
 		return $this->searchHandler->organisationlessRowsAdmittedByRbac(schema: $schema);
 	}//end organisationlessRowsAdmittedByRbac()
+
+	/**
+	 * Whether a stored row lies inside the caller's organisations.
+	 *
+	 * Decided on the row's own organisation through the same scope the read
+	 * filter renders, but without the read rules: a `public` read rule that
+	 * lifts the organisation filter for reading does not widen this answer.
+	 * The row's register and schema name the table, for shared master data.
+	 *
+	 * @param ObjectEntity $row The stored row.
+	 *
+	 * @return bool True when the caller's organisation scope holds the row.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function callerOrganisationsHold(ObjectEntity $row): bool {
+		if ($this->organizationHandler === null) {
+			return false;
+		}
+
+		$scope = $this->organizationHandler->resolveOrganizationScope(
+			adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
+			registerId: $this->numericIdOrNull(value: $row->getRegister()),
+			schemaId: $this->numericIdOrNull(value: $row->getSchema())
+		);
+
+		return OrganisationScopeMembership::holds(scope: $scope, organisation: $row->getOrganisation());
+	}//end callerOrganisationsHold()
+
+	/**
+	 * A stored numeric id as an integer, or null when it is not one.
+	 *
+	 * @param string|null $value The stored id.
+	 *
+	 * @return int|null
+	 */
+	private function numericIdOrNull(?string $value): ?int {
+		if ($value === null || ctype_digit($value) === false) {
+			return null;
+		}
+
+		return (int) $value;
+	}//end numericIdOrNull()
 
 	/**
 	 * Insert ObjectEntity into register+schema table.

@@ -212,7 +212,11 @@ class DepartmentMatrixRowConditionsTest extends TestCase {
 		$declared = $base + ['where' => ['provider' => '$organisation'], 'crossOrganisation' => true];
 		$this->assertSame(expected: [], actual: $codes(row: $declared));
 		$this->assertSame(
-			expected: ['read' => [['group' => 'g', 'match' => ['assignedGroup' => ['$in' => ['team-a']], 'provider' => '$organisation']]]],
+			expected: ['read' => [[
+				'group' => 'g',
+				'match' => ['assignedGroup' => ['$in' => ['team-a']], 'provider' => '$organisation'],
+				'crossOrganisation' => true,
+			]]],
 			actual: $compile(row: $declared)
 		);
 		$this->assertSame(expected: ['matrix.where-crosses-organisations'], actual: $codes(row: array_replace($declared, ['crossOrganisation' => 'true'])));

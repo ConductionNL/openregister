@@ -226,13 +226,20 @@ class ObjectsToolProvider implements IMcpToolProvider {
 	 * @param array<string, mixed> $arguments Must contain id and data
 	 *
 	 * @return array<string, mixed> Serialized updated object
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function updateObject(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
 		$this->requireParam(arguments: $arguments, param: 'data');
+		// Read in the caller's scope first: the save then checks and writes that
+		// object, in its own register and schema, by its uuid.
+		$existing = WriteCause::asLookup(fn () => $this->objectService->find($arguments['id']));
 		$object = $this->objectService->saveObject(
 			object: $arguments['data'],
-			uuid: $arguments['id']
+			register: $existing->getRegister(),
+			schema: $existing->getSchema(),
+			uuid: ($existing->getUuid() ?? (string)$arguments['id'])
 		);
 		return $object->jsonSerialize();
 	}//end updateObject()

@@ -224,7 +224,7 @@ class FederationControllerCreateIdentityTest extends TestCase {
 	/**
 	 * A stored object of the given organisation and confidentiality.
 	 *
-	 * @param string $organisation    The organisation in its rendered `@self`.
+	 * @param string $organisation    The record's organisation.
 	 * @param string $confidentiality Its confidentiality.
 	 *
 	 * @return ObjectEntity The object.
@@ -232,7 +232,8 @@ class FederationControllerCreateIdentityTest extends TestCase {
 	private function stored(string $organisation, string $confidentiality = 'openbaar'): ObjectEntity {
 		$entity = new ObjectEntity();
 		$entity->setUuid('obj-1');
-		$entity->setObject(['title' => 'Stored', 'confidentiality' => $confidentiality, '@self' => ['organisation' => $organisation]]);
+		$entity->setOrganisation($organisation);
+		$entity->setObject(['title' => 'Stored', 'confidentiality' => $confidentiality]);
 
 		return $entity;
 	}//end stored()
@@ -260,10 +261,12 @@ class FederationControllerCreateIdentityTest extends TestCase {
 	public static function unreachableTargets(): array {
 		$other = new ObjectEntity();
 		$other->setUuid('obj-1');
-		$other->setObject(['title' => 'Theirs', 'confidentiality' => 'openbaar', '@self' => ['organisation' => 'org-b']]);
+		$other->setOrganisation('org-b');
+		$other->setObject(['title' => 'Theirs', 'confidentiality' => 'openbaar']);
 		$secret = new ObjectEntity();
 		$secret->setUuid('obj-1');
-		$secret->setObject(['title' => 'Secret', 'confidentiality' => 'geheim', '@self' => ['organisation' => 'org-a']]);
+		$secret->setOrganisation('org-a');
+		$secret->setObject(['title' => 'Secret', 'confidentiality' => 'geheim']);
 
 		return [
 			'another organisation' => [$other],
@@ -361,7 +364,7 @@ class FederationControllerCreateIdentityTest extends TestCase {
 		$asked = [];
 		$this->objectService->method('findAll')->willReturnCallback(
 			static function (...$args) use (&$asked): array {
-				$asked[] = ($args['config'] ?? $args[0])['filters'];
+				$asked[] = ($args['config'] ?? $args[0]);
 				return [];
 			}
 		);
@@ -371,7 +374,8 @@ class FederationControllerCreateIdentityTest extends TestCase {
 		$this->assertSame(404, $controller->deleteObject(shareToken: 'tok', id: 'obj-1')->getStatus());
 		$this->assertNull($this->written);
 		$this->assertNull($this->deleted);
-		$this->assertSame(['status' => 'open', 'uuid' => 'obj-1'], $asked[0]);
+		$this->assertSame(['status' => 'open'], $asked[0]['filters']);
+		$this->assertSame(['obj-1'], $asked[0]['ids']);
 	}//end testAQueryShareReachesOnlyWhatItsQuerySelects()
 
 	/**
@@ -413,6 +417,124 @@ class FederationControllerCreateIdentityTest extends TestCase {
 		$this->share->setOrganisation('');
 		$this->assertSame(200, $controller->object(shareToken: 'tok', id: 'obj-1')->getStatus(), 'an object without an organisation');
 	}//end testAShareWithoutAnOrganisationFailsClosed()
+
+	/**
+	 * A record whose stored data claims an organisation is judged by its own organisation field.
+	 *
+	 * `jsonSerialize()` lets a data `@self.organisation` override the record's
+	 * organisation, so a guard reading the rendered object would serve an org-b
+	 * record to an org-a share. Single-object paths and the collection alike.
+	 *
+	 * @return void
+	 */
+	public function testAStoredSelfOrganisationDoesNotAnswerTheGuard(): void {
+		$forged = $this->recordOf(organisation: 'org-b');
+		$forged->setObject(['title' => 'Theirs', '@self' => ['organisation' => 'org-a']]);
+		$controller = $this->controller(['title' => 'x'], $forged);
+		$this->objectService->method('findAll')->willReturn([$forged, $this->recordOf(organisation: 'org-a')]);
+
+		$this->assertSame(404, $controller->object(shareToken: 'tok', id: 'obj-1')->getStatus());
+		$this->assertSame(404, $controller->updateObject(shareToken: 'tok', id: 'obj-1')->getStatus());
+		$this->assertSame(404, $controller->deleteObject(shareToken: 'tok', id: 'obj-1')->getStatus());
+		$this->assertNull($this->written);
+		$this->assertNull($this->deleted);
+
+		$served = $controller->objects(shareToken: 'tok')->getData();
+		$this->assertSame(1, $served['total']);
+		$this->assertSame('Stored', $served['results'][0]['title'] ?? null);
+	}//end testAStoredSelfOrganisationDoesNotAnswerTheGuard()
+
+	/**
+	 * A record without an organisation is not given one by a plain data `organisation` property.
+	 *
+	 * @return void
+	 */
+	public function testAnOrganisationLessRecordIsNotAnsweredByItsData(): void {
+		$record = $this->recordOf(organisation: null);
+		$record->setObject(['title' => 'Stored', 'organisation' => 'org-a']);
+		$controller = $this->controller(['title' => 'x'], $record);
+		$this->objectService->method('findAll')->willReturn([$record]);
+
+		$this->assertSame(404, $controller->object(shareToken: 'tok', id: 'obj-1')->getStatus());
+		$this->assertSame(404, $controller->updateObject(shareToken: 'tok', id: 'obj-1')->getStatus());
+		$this->assertSame(404, $controller->deleteObject(shareToken: 'tok', id: 'obj-1')->getStatus());
+		$this->assertNull($this->written);
+		$this->assertNull($this->deleted);
+		$this->assertSame(0, $controller->objects(shareToken: 'tok')->getData()['total']);
+	}//end testAnOrganisationLessRecordIsNotAnsweredByItsData()
+
+	/**
+	 * A query share's own `uuid` filter is kept and the addressed record is added to it, not swapped in for it.
+	 *
+	 * @return void
+	 */
+	public function testAQueryShareKeepsItsOwnUuidFilter(): void {
+		$controller = $this->controller(['title' => 'x'], $this->recordOf(organisation: 'org-a'));
+		$this->share->setScope('query');
+		$this->share->setQueryFilter(['uuid' => 'obj-2']);
+		$asked = [];
+		$this->objectService->method('findAll')->willReturnCallback(
+			static function (...$args) use (&$asked): array {
+				$asked[] = ($args['config'] ?? $args[0]);
+				return [];
+			}
+		);
+
+		$this->assertSame(404, $controller->updateObject(shareToken: 'tok', id: 'obj-1')->getStatus());
+		$this->assertSame(404, $controller->deleteObject(shareToken: 'tok', id: 'obj-1')->getStatus());
+		$this->assertSame(404, $controller->object(shareToken: 'tok', id: 'obj-1')->getStatus());
+		$this->assertNull($this->written);
+		$this->assertNull($this->deleted);
+		$this->assertSame('obj-2', $asked[0]['filters']['uuid'] ?? null);
+		$this->assertSame(['obj-1'], $asked[0]['ids'] ?? null);
+	}//end testAQueryShareKeepsItsOwnUuidFilter()
+
+	/**
+	 * A query hit on another row (a slug equal to the addressed uuid) does not cover the addressed record.
+	 *
+	 * @return void
+	 */
+	public function testAQueryHitOnAnotherRecordDoesNotCoverTheAddressedOne(): void {
+		$controller = $this->controller(['title' => 'x'], $this->recordOf(organisation: 'org-a'));
+		$this->share->setScope('query');
+		$this->share->setQueryFilter(['status' => 'open']);
+		$other = $this->recordOf(organisation: 'org-a');
+		$other->setUuid('obj-9');
+		$other->setSlug('obj-1');
+		$this->objectService->method('findAll')->willReturn([$other]);
+
+		$this->assertSame(404, $controller->updateObject(shareToken: 'tok', id: 'obj-1')->getStatus());
+		$this->assertNull($this->written);
+	}//end testAQueryHitOnAnotherRecordDoesNotCoverTheAddressedOne()
+
+	/**
+	 * A record without a uuid is never covered by a query share, even by a hit without one.
+	 *
+	 * @return void
+	 */
+	public function testARecordWithoutAUuidIsNotCoveredByAQueryShare(): void {
+		$record = $this->recordOf(organisation: 'org-a');
+		$record->setUuid('');
+		$controller = $this->controller(['title' => 'x'], $record);
+		$this->share->setScope('query');
+		$this->share->setQueryFilter(['status' => 'open']);
+		$this->objectService->method('findAll')->willReturn([$record]);
+
+		$this->assertSame(404, $controller->updateObject(shareToken: 'tok', id: 'obj-1')->getStatus());
+		$this->assertNull($this->written);
+	}//end testARecordWithoutAUuidIsNotCoveredByAQueryShare()
+
+	/**
+	 * A row that is not a record carries no organisation field of its own, so the collection does not serve it.
+	 *
+	 * @return void
+	 */
+	public function testACollectionRowThatIsNotARecordIsNotServed(): void {
+		$controller = $this->controller([]);
+		$this->objectService->method('findAll')->willReturn([['title' => 'Raw', '@self' => ['organisation' => 'org-a']]]);
+
+		$this->assertSame(0, $controller->objects(shareToken: 'tok')->getData()['total']);
+	}//end testACollectionRowThatIsNotARecordIsNotServed()
 
 	/**
 	 * A stored record whose own organisation field is set, with an empty data body.
