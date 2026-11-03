@@ -192,7 +192,7 @@ posture and per-object authorization (ADR-005, ADR-016, ADR-029).
 
 #### Scenario: Execute endpoint on an object whose schema declares no handoffs
 
-@e2e exclude API error-shape case — covered by the Newman collection tests/newman/openregister-handoff.postman_collection.json + PHPUnit HandoffServiceTest::testExecuteNotDeclared
+@e2e exclude API error-shape case — covered by the Newman collection tests/integration/openregister-handoff.postman_collection.json + PHPUnit HandoffServiceTest::testExecuteNotDeclared
 
 - **WHEN** the execute endpoint is called with a handoff id on an object whose schema declares no `x-openregister-handoff` entries
 - **THEN** the endpoint returns a `handoff-not-declared` client error and performs no writes

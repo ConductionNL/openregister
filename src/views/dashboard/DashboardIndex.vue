@@ -960,7 +960,7 @@ export default {
 						preset: stored.preset,
 					}
 				}
-			} catch (e) {
+			} catch {
 				// Non-fatal (private window / quota / corrupt value) — keep default.
 			}
 		},
@@ -981,7 +981,7 @@ export default {
 					RANGE_PERSIST_KEY,
 					JSON.stringify({ preset: presetId }),
 				)
-			} catch (e) {
+			} catch {
 				// Non-fatal — in-memory range still applied.
 			}
 			// Events: refetch the range-scoped audit-trail-action chart.

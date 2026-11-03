@@ -222,6 +222,9 @@ Vrij en open source onder de EUPL-licentie.
 				post-migration only. On a fresh install there are no old rows,
 				and the step is idempotent either way.
 			-->
+			<!-- Before reconciliation, so a moved job's old row is re-added under
+			     its new name rather than left beside a second, reconciled row. -->
+			<step>OCA\OpenRegister\Repair\RepointMovedBackgroundJobs</step>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
 			<step>OCA\OpenRegister\Repair\RemoveRetiredCronJobs</step>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>

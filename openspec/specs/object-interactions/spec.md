@@ -688,7 +688,7 @@ The object query SHALL accept `_watching=true` returning the current user's foll
 - **GIVEN** a case followed by two users, one of them with notifications off, and a team lead with `update`
 - **WHEN** the team lead lists the watchers
 - **THEN** both users are returned with the time they subscribed and no notification setting
-- `@e2e tests/e2e/ci/object-watchers.spec.ts` and tests/newman/openregister-object-watchers.postman_collection.json
+- `@e2e tests/e2e/ci/object-watchers.spec.ts` and tests/integration/openregister-object-watchers.postman_collection.json
 
 #### Scenario: the lens is resolved in the query
 

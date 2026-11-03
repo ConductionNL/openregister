@@ -95,11 +95,9 @@ export default {
 				.then(({ response }) => {
 					this.success = response.ok
 					this.error = false
-					response.ok
-						&& (this.closeModalTimeout = setTimeout(
-							this.closeDialog,
-							2000,
-						))
+					if (response.ok) {
+						this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
+					}
 				})
 				.catch((error) => {
 					this.success = false

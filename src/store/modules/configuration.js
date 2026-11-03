@@ -84,13 +84,12 @@ export const useConfigurationStore = defineStore('configuration', {
 		 * Refresh the configuration list from the API
 		 *
 		 * @param {string|null} search - Optional search term
-		 * @param {boolean} _soft - If true, don't show loading state (default: false)
 		 * @return {Promise} Promise with response and data
 		 *
 		 * @spec exclude Thin API passthrough — GET /api/configurations list; observable contract owned by data-import-export.
 		 */
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
-		async refreshConfigurationList(search = null, _soft = false) {
+		async refreshConfigurationList(search = null) {
 			let endpoint = '/index.php/apps/openregister/api/configurations'
 			if (search !== null && search !== '') {
 				endpoint = endpoint + '?_search=' + search

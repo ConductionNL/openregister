@@ -78,6 +78,18 @@ class ConditionMatcher {
 	];
 
 	/**
+	 * Match tokens that resolve to the caller's active organisation.
+	 *
+	 * @var string[]
+	 */
+	public const ORGANISATION_TOKENS = [
+		'$organisation',
+		'$activeOrganisation',
+		'$organisation.uuid',
+		'$activeOrganisation.uuid',
+	];
+
+	/**
 	 * Supported `$organisation.<property>` dot-path tokens.
 	 *
 	 * Currently only `uuid` is exposed so this keeps parity with the bare
@@ -237,7 +249,7 @@ class ConditionMatcher {
 	}//end unwrapResolvedRelation()
 
 	/**
-	 * Get a value from the object, checking both direct property and @self
+	 * Get a value from the object: `@self` first for an underscore-prefixed property, then the body
 	 *
 	 * @param array $object Object data
 	 * @param string $property Property name
@@ -245,17 +257,17 @@ class ConditionMatcher {
 	 * @return mixed Property value or null
 	 */
 	private function getObjectValue(array $object, string $property): mixed {
-		// Check direct property first.
-		if (isset($object[$property]) === true) {
-			return $object[$property];
-		}
-
-		// For underscore-prefixed properties, also check @self.
+		// An underscore-prefixed property is metadata: `@self` answers it before
+		// a body key of the same name, which the writer of the body controls.
 		if (str_starts_with($property, '_') === true) {
 			$selfProperty = substr($property, 1);
 			if (isset($object['@self'][$selfProperty]) === true) {
 				return $object['@self'][$selfProperty];
 			}
+		}
+
+		if (isset($object[$property]) === true) {
+			return $object[$property];
 		}
 
 		return null;

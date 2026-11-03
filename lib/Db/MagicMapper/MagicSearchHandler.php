@@ -1307,6 +1307,15 @@ class MagicSearchHandler {
 					multitenancyExplicit: $multitenancyExplicit
 				)
 			);
+			$publicBranch = null;
+			if ($multitenancyExplicit === false && $this->rbacHandler->hasPublicReadBranch(schema: $schema) === true) {
+				$publicBranch = $this->rbacHandler->getPublicReadBranchSql(schema: $schema);
+			}
+
+			if ($orgCondition !== null && $publicBranch !== null) {
+				$orgCondition = '(' . $orgCondition . ' OR ' . $publicBranch . ')';
+			}
+
 			if ($orgCondition !== null) {
 				$conditions[] = $orgCondition;
 			}
@@ -1409,6 +1418,21 @@ class MagicSearchHandler {
 		// it and let RBAC handle access control.
 		return $multitenancyExplicit;
 	}//end multitenancyApplies()
+
+	/**
+	 * Whether the organisation boundary of a default read carries a branch for
+	 * the rows the caller's conditional `public` rules admit, which a renderer
+	 * of its own (the aggregation fast path) cannot express.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return bool True when the boundary has a public branch.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-multi-tenancy-integration-with-scopes
+	 */
+	public function organisationBoundaryHasPublicBranch(Schema $schema): bool {
+		return $this->rbacHandler->hasPublicReadBranch(schema: $schema);
+	}//end organisationBoundaryHasPublicBranch()
 
 	/**
 	 * Whether a default read (no `_multi` asked for) waives the organisation
@@ -1518,14 +1542,9 @@ class MagicSearchHandler {
 		IDBConnection $connection,
 		bool $withOrgless = false,
 	): ?string {
-		$scope = $this->organizationHandler->resolveOrganizationScope(
-			adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
-			registerId: $registerId,
-			schemaId: $schema->getId()
+		$scope = $this->organisationScopeFor(
+			table: ['registerId' => $registerId, 'schemaId' => $schema->getId(), 'withOrgless' => $withOrgless]
 		);
-		if ($withOrgless === true) {
-			$scope = MagicOrganizationHandler::admitOrganisationless(scope: $scope);
-		}
 
 		$column = '_organisation';
 
@@ -2762,6 +2781,7 @@ class MagicSearchHandler {
 			if ($hasPublic === true
 				&& $multitenancyExplicit === false
 				&& $this->rbacHandler->publicReadLiftsOrganisationFilter(schema: $schema) === true
+				&& $this->rbacHandler->hasPublicReadBranch(schema: $schema) === false
 			) {
 				return false;
 			}
@@ -2798,6 +2818,76 @@ class MagicSearchHandler {
 
 		return null;
 	}//end registerIdFromQuery()
+
+	/**
+	 * Add the organisation boundary, widened by a public branch when there is one.
+	 *
+	 * @param IQueryBuilder $qb           The query builder.
+	 * @param array         $table        The table: `registerId`, `schemaId` and `withOrgless`.
+	 * @param mixed         $publicBranch The rows of the caller's conditional `public` rules, or null.
+	 *
+	 * @return void
+	 */
+	private function applyOrganisationBoundary(IQueryBuilder $qb, array $table, mixed $publicBranch): void {
+		if ($publicBranch === null) {
+			$this->organizationHandler->applyOrganizationFilter(
+				qb: $qb,
+				adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
+				registerId: $table['registerId'],
+				schemaId: $table['schemaId'],
+				withOrgless: $table['withOrgless']
+			);
+			return;
+		}
+
+		(new OrganisationScopeCondition())->apply(
+			qb: $qb,
+			scope: $this->organisationScopeFor(table: $table),
+			orAlso: $publicBranch
+		);
+	}//end applyOrganisationBoundary()
+
+	/**
+	 * The organisation scope of one table, widened by the org-less rows when asked.
+	 *
+	 * @param array $table The table: `registerId`, `schemaId` and `withOrgless`.
+	 *
+	 * @return array{mode: string, uuids: array<int, string>} The scope.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) admitOrganisationless() is a pure transform of the decided scope.
+	 */
+	private function organisationScopeFor(array $table): array {
+		$scope = $this->organizationHandler->resolveOrganizationScope(
+			adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
+			registerId: $table['registerId'],
+			schemaId: $table['schemaId']
+		);
+		if ($table['withOrgless'] === true) {
+			$scope = MagicOrganizationHandler::admitOrganisationless(scope: $scope);
+		}
+
+		return $scope;
+	}//end organisationScopeFor()
+
+	/**
+	 * The rows the caller's conditional `public` rules admit, to OR into the
+	 * organisation filter, or null when the filter takes no such branch.
+	 *
+	 * @param IQueryBuilder $qb                   The query builder.
+	 * @param Schema        $schema               The schema being read.
+	 * @param bool          $multitenancyExplicit Whether the caller asked for the strict filter.
+	 *
+	 * @return mixed The branch, or null.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the request posture, mirrored.
+	 */
+	private function publicBranch(IQueryBuilder $qb, Schema $schema, bool $multitenancyExplicit): mixed {
+		if ($multitenancyExplicit === true || $this->rbacHandler->hasPublicReadBranch(schema: $schema) === false) {
+			return null;
+		}
+
+		return $this->rbacHandler->getPublicReadBranch(qb: $qb, schema: $schema);
+	}//end publicBranch()
 
 	/**
 	 * Apply access control filters (multitenancy and RBAC) to the query
@@ -2850,16 +2940,18 @@ class MagicSearchHandler {
 			// (REQ-SLE-001). Each magic table is exactly one such pair, so
 			// the widening reaches this table and nothing else the holder
 			// owns. A pair that cannot be resolved widens by nothing.
-			$this->organizationHandler->applyOrganizationFilter(
+			$this->applyOrganisationBoundary(
 				qb: $qb,
-				adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
-				registerId: $registerId,
-				schemaId: $schema->getId(),
-				withOrgless: $this->organisationlessRowsAdmitted(
-					schema: $schema,
-					_rbac: $_rbac,
-					multitenancyExplicit: $multitenancyExplicit
-				)
+				table: [
+					'registerId'  => $registerId,
+					'schemaId'    => $schema->getId(),
+					'withOrgless' => $this->organisationlessRowsAdmitted(
+						schema: $schema,
+						_rbac: $_rbac,
+						multitenancyExplicit: $multitenancyExplicit
+					),
+				],
+				publicBranch: $this->publicBranch(qb: $qb, schema: $schema, multitenancyExplicit: $multitenancyExplicit)
 			);
 		}
 

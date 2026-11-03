@@ -65,6 +65,7 @@ use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
+use OCA\OpenRegister\Exception\PropertyAlreadySetException;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -5514,6 +5515,12 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @throws Exception If the update fails.
 	 */
 	private function updateExistingObject(string $uuid, array $data, string $tableName): void {
+		$claimed = EmptyPropertyClaim::consume(uuid: $uuid);
+		if ($claimed !== null) {
+			$this->updateClaimedObject(uuid: $uuid, write: ['data' => $data, 'table' => $tableName, 'property' => $claimed]);
+			return;
+		}
+
 		$leavingDraft = DraftStatusPolicy::consumeLeaving(uuid: $uuid);
 		$onlyFromStatus = null;
 		if ($leavingDraft === true) {
@@ -5530,6 +5537,42 @@ class MagicMapper extends AbstractObjectMapper {
 			throw new DraftAlreadyLeftException(message: 'This draft has already left draft.');
 		}
 	}//end updateExistingObject()
+
+	/**
+	 * Update a stored object only while the claimed property's column is still empty.
+	 *
+	 * @param string                                                     $uuid  The object UUID.
+	 * @param array{data: array<string, mixed>, table: string, property: string} $write The column values, the table and the claimed property.
+	 *
+	 * @return void
+	 *
+	 * @throws PropertyAlreadySetException When the property was filled after it was read as empty.
+	 *
+	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 */
+	private function updateClaimedObject(string $uuid, array $write): void {
+		$column = $this->sanitizeColumnName(name: $write['property']);
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($write['table']);
+		foreach ($write['data'] as $name => $value) {
+			if ($name === self::METADATA_PREFIX . 'uuid') {
+				continue;
+			}
+
+			if ($value === '') {
+				$value = null;
+			}
+
+			$qb->set($name, $qb->createNamedParameter($value));
+		}
+
+		$qb->where($qb->expr()->eq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($uuid)));
+		$qb->andWhere($qb->expr()->orX($qb->expr()->isNull($column), $qb->expr()->eq($column, $qb->createNamedParameter(''))));
+
+		if ((int)$qb->executeStatement() === 0) {
+			throw new PropertyAlreadySetException(message: 'This object is already assigned.');
+		}
+	}//end updateClaimedObject()
 
 	/**
 	 * Update object in register+schema table
@@ -9124,6 +9167,22 @@ class MagicMapper extends AbstractObjectMapper {
 	public function publicReadLiftsOrganisationFilter(Schema $schema): bool {
 		return $this->rbacHandler->publicReadLiftsOrganisationFilter(schema: $schema);
 	}//end publicReadLiftsOrganisationFilter()
+
+	/**
+	 * Whether a default read's organisation boundary carries a branch for the
+	 * caller's conditional `public` rules.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return bool True when it does.
+	 *
+	 * @see MagicSearchHandler::organisationBoundaryHasPublicBranch()
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-multi-tenancy-integration-with-scopes
+	 */
+	public function organisationBoundaryHasPublicBranch(Schema $schema): bool {
+		return $this->searchHandler->organisationBoundaryHasPublicBranch(schema: $schema);
+	}//end organisationBoundaryHasPublicBranch()
 
 	/**
 	 * Whether a default list read waives the organisation boundary for this
