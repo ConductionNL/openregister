@@ -48,10 +48,11 @@ class MagicOrganizationHandlerContextScopeTest extends TestCase {
 	 * @param IUser|null         $user     The session user.
 	 * @param array<int, string> $orgUuids What the organisation service answers.
 	 * @param array<int, string> $holders  The shared master data holders.
+	 * @param string             $multitenancy The stored multitenancy config.
 	 *
 	 * @return MagicOrganizationHandler
 	 */
-	private function handler(?IUser $user, array $orgUuids, array $holders = []): MagicOrganizationHandler {
+	private function handler(?IUser $user, array $orgUuids, array $holders = [], string $multitenancy = ''): MagicOrganizationHandler {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
@@ -59,7 +60,7 @@ class MagicOrganizationHandlerContextScopeTest extends TestCase {
 		$groups->method('getUserGroupIds')->willReturn(['admin']);
 
 		$appConfig = $this->createMock(IAppConfig::class);
-		$appConfig->method('getValueString')->willReturn('');
+		$appConfig->method('getValueString')->willReturn($multitenancy);
 
 		$shared = $this->createMock(SharedMasterDataService::class);
 		$shared->method('holdersForResource')->willReturn($holders);
@@ -126,6 +127,12 @@ class MagicOrganizationHandlerContextScopeTest extends TestCase {
 
 		$this->assertSame(['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['org-a', 'org-holder']], $scope);
 	}//end testSharedMasterDataHoldersJoinTheContextsScope()
+
+	public function testInSaasModeAnAdminWithTheBypassStaysInsideTheirOrganisation(): void {
+		$scope = $this->handler($this->admin(), ['org-a'], [], '{"saasMode":true}')->resolveOrganizationScope(adminBypassEnabled: true);
+
+		$this->assertSame(['mode' => MagicOrganizationHandler::SCOPE_IN_OR_NULL, 'uuids' => ['org-a']], $scope);
+	}//end testInSaasModeAnAdminWithTheBypassStaysInsideTheirOrganisation()
 
 	public function testOutsideAContextAnAdminWithTheBypassReadsEverything(): void {
 		$scope = $this->handler($this->admin(), ['org-a'])->resolveOrganizationScope(adminBypassEnabled: true);
