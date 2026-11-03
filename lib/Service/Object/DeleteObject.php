@@ -43,6 +43,7 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\FileService;
@@ -345,10 +346,13 @@ class DeleteObject {
 	 *
 	 * @return void
 	 *
+	 * @throws HookStoppedException When a delete guard refuses, as for a frozen object.
+	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function softDelete(DeletionTarget $target, ?array $cascadeContext): void {
 		$objectEntity = $target->object;
+		$this->objectEntityMapper->assertDeletable(entity: $objectEntity);
 		$deletionData = $this->deletionMetadata(target: $target);
 
 		// PERF: the pre-delete snapshot is the update's old entity, which skips the
@@ -580,6 +584,7 @@ class DeleteObject {
 	 * @throws ReferentialIntegrityException If deletion is blocked by RESTRICT constraints.
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException If `$scoped` is true and the UUID is not present
 	 *                                                    in the given (register, schema) magic table.
+	 * @throws HookStoppedException When a delete guard refuses.
 	 * @throws Exception If there is an error during deletion.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
@@ -670,6 +675,9 @@ class DeleteObject {
 				register: $this->contextRegisterEntity(context: $context),
 				schema: $this->contextSchemaEntity(context: $context)
 			);
+		} catch (HookStoppedException $e) {
+			// A guard's refusal carries its own message and status for the caller.
+			throw $e;
 		} catch (Exception $e) {
 			$this->logger->warning(
 				message: '[DeleteObject] Delete failed',

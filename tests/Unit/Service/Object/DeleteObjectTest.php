@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
@@ -332,6 +333,71 @@ class DeleteObjectTest extends TestCase {
 		$result = $this->handler->delete($object);
 
 		$this->assertTrue($result);
+	}
+
+	/**
+	 * A soft delete asks the delete guards about the object it is deleting, before it writes.
+	 */
+	public function testSoftDeleteAsksTheDeleteGuardsFirst(): void {
+		$object = $this->createObjectEntity('uuid-guarded', '2', '5');
+		$order = [];
+
+		$this->objectMapper
+			->expects($this->once())
+			->method('assertDeletable')
+			->with($this->identicalTo($object))
+			->willReturnCallback(function () use (&$order, $object): void {
+				$order[] = 'guard';
+				$this->assertEmpty($object->getDeleted(), 'the guards see the object before it is marked deleted');
+			});
+		$this->objectMapper
+			->expects($this->once())
+			->method('update')
+			->willReturnCallback(function () use (&$order, $object): ObjectEntity {
+				$order[] = 'write';
+				return $object;
+			});
+
+		$this->withNoUser();
+		$this->withAuditTrailsEnabled(false);
+
+		$this->assertTrue($this->handler->delete($object, null, false, $this->createRegister(2), $this->createSchema(5)));
+		$this->assertSame(['guard', 'write'], $order);
+	}
+
+	/**
+	 * A guard that refuses (a frozen object) stops the soft delete: nothing is written or audited.
+	 */
+	public function testARefusingGuardStopsTheSoftDelete(): void {
+		$object = $this->createObjectEntity('uuid-frozen', '2', '5');
+		$refusal = new HookStoppedException(message: 'This record is locked', errors: ['status' => 409]);
+
+		$this->objectMapper->method('assertDeletable')->willThrowException($refusal);
+		$this->objectMapper->expects($this->never())->method('update');
+		$this->auditTrailMapper->expects($this->never())->method('createAuditTrail');
+		$this->withAuditTrailsEnabled(true);
+
+		try {
+			$this->handler->delete($object, null, false, $this->createRegister(2), $this->createSchema(5));
+			$this->fail('a refused soft delete must throw');
+		} catch (HookStoppedException $exception) {
+			$this->assertSame($refusal, $exception);
+		}
+
+		$this->assertEmpty($object->getDeleted());
+	}
+
+	/**
+	 * A permanent delete does not ask the guards a second time: the mapper's delete asks them.
+	 */
+	public function testAPermanentDeleteLeavesTheGuardToTheMapper(): void {
+		$object = $this->createObjectEntity('uuid-permanent', '2', '5');
+
+		$this->objectMapper->expects($this->never())->method('assertDeletable');
+		$this->objectMapper->expects($this->once())->method('deleteObjectEntity')->willReturn($object);
+		$this->withAuditTrailsEnabled(false);
+
+		$this->assertTrue($this->handler->delete($object, null, true, $this->createRegister(2), $this->createSchema(5)));
 	}
 
 	/**
@@ -894,6 +960,24 @@ class DeleteObjectTest extends TestCase {
 		$result = $this->handler->deleteObject(register: 1, schema: 10, uuid: 'uuid-err-1');
 
 		$this->assertFalse($result);
+	}
+
+	/**
+	 * deleteObject() hands a guard's refusal to its caller instead of reporting a failed delete.
+	 */
+	public function testDeleteObjectPassesAGuardRefusalOn(): void {
+		$object = $this->createObjectEntity('uuid-locked', '1', '10');
+		$refusal = new HookStoppedException(message: 'This record is locked', errors: ['status' => 409]);
+
+		$this->objectMapper->method('findAcrossAllSources')->willReturn($this->makeContext($object));
+		$this->objectMapper->method('assertDeletable')->willThrowException($refusal);
+		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(false);
+		$this->withNoUser();
+		$this->withAuditTrailsEnabled(false);
+
+		$this->expectExceptionObject($refusal);
+
+		$this->handler->deleteObject(register: 1, schema: 10, uuid: 'uuid-locked');
 	}
 
 	// =========================================================================
