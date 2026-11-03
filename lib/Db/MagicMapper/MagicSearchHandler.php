@@ -55,6 +55,7 @@ use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\DraftListLens;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -1382,6 +1383,11 @@ class MagicSearchHandler {
 		bool $_multitenancy,
 		bool $multitenancyExplicit,
 	): bool {
+		// Code acting for an organisation always reads inside it.
+		if (OrganisationContext::isActive() === true) {
+			return true;
+		}
+
 		if ($_multitenancy === false) {
 			return false;
 		}
@@ -2772,6 +2778,10 @@ class MagicSearchHandler {
 		bool $multitenancyExplicit,
 		Schema $schema,
 	): bool {
+		if (OrganisationContext::isActive() === true) {
+			return true;
+		}
+
 		if ($_multitenancy === true) {
 			$schemaAuth = $schema->getAuthorization();
 			$readGroups = $schemaAuth['read'] ?? [];
