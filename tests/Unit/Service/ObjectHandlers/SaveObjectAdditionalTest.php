@@ -1225,6 +1225,55 @@ class SaveObjectAdditionalTest extends TestCase {
 	}
 
 	/**
+	 * The property update check reads the stored record with `@self` from its own metadata.
+	 */
+	public function testSaveObjectWithRbacChecksPropertiesOnTheRecordsMetadata(): void {
+		$schema = new AdditionalTestableSchema();
+		$schema->setId(1);
+		$schema->setSlug('rbac-schema');
+		$schema->setTestHasPropertyAuth(true);
+		$schema->testSchemaObject = (object)['properties' => new stdClass()];
+		$schema->testProperties = ['name' => ['type' => 'string']];
+
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$uuid = 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4';
+		$existingObject = $this->createEntity(1, $uuid);
+		$existingObject->setOrganisation('org-b');
+		$existingObject->setOwner('bob');
+		$existingObject->setObject(['name' => 'Original', '_organisation' => 'org-a', '@self' => ['organisation' => 'org-a']]);
+
+		$this->unifiedObjectMapper->method('find')->willReturn($existingObject);
+
+		$seen = null;
+		$this->propertyRbacHandler->method('getUnauthorizedProperties')->willReturnCallback(
+			static function (Schema $schema, array $object, array $incomingData, bool $isCreate = false) use (&$seen): array {
+				$seen = $object;
+
+				return ['name'];
+			}
+		);
+
+		try {
+			$this->saveObject->saveObject(
+				register: $this->mockRegister,
+				schema: $schema,
+				data: ['name' => 'Updated'],
+				uuid: $uuid,
+				_rbac: true
+			);
+			$this->fail('the refused property was written');
+		} catch (Exception $e) {
+			$this->assertStringContainsString('not authorized to modify', $e->getMessage());
+		}
+
+		$this->assertSame('org-b', $seen['@self']['organisation']);
+		$this->assertSame('bob', $seen['@self']['owner']);
+		$this->assertSame('Original', $seen['name']);
+		$this->assertArrayNotHasKey('_organisation', $seen);
+	}
+
+	/**
 	 * Note: testSaveObjectWithRbacNoUnauthorizedProperties was removed because
 	 * the full saveObject -> handleObjectUpdate -> updateObject chain requires
 	 * MagicMapper->update() to return a proper ObjectEntity (not a mock).

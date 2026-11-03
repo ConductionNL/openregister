@@ -1038,7 +1038,7 @@ class SaveObjects {
 
 		$unauthorized = $propertyRbac->getUnauthorizedProperties(
 			schema: $schema,
-			object: $stored,
+			object: ($existing?->getMatchEnvelope() ?? []),
 			incomingData: $incoming,
 			isCreate: $isCreate
 		);

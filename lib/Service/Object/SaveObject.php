@@ -3122,7 +3122,7 @@ class SaveObject {
 					);
 					// The find() call throws DoesNotExistException rather than returning
 					// null — that catch below is the real "missing" path.
-					$existingObjectData = $tempExistingObject->getObject();
+					$existingObjectData = $tempExistingObject->getMatchEnvelope();
 				} catch (DoesNotExistException $e) {
 					// Object doesn't exist, treat as create.
 					$isCreate = true;
