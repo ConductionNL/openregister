@@ -49,6 +49,27 @@ class DepartmentMatrixValidator {
 	public const ROWS_FROM_KEY = 'rowsFrom';
 
 	/**
+	 * Constructor.
+	 *
+	 * @param array<int, string> $declaredActions The actions the schema declares itself, which a row may grant too.
+	 */
+	public function __construct(private readonly array $declaredActions = []) {
+	}//end __construct()
+
+	/**
+	 * This validator for a schema that declares these actions.
+	 *
+	 * @param array<int, string> $declaredActions The schema's declared action keys.
+	 *
+	 * @return self The validator.
+	 *
+	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 */
+	public function withDeclaredActions(array $declaredActions): self {
+		return new self(declaredActions: $declaredActions);
+	}//end withDeclaredActions()
+
+	/**
 	 * Findings for one row, as the compiler will read it.
 	 *
 	 * Used for rows an app adds at check time, which never pass a schema save.
@@ -255,7 +276,7 @@ class DepartmentMatrixValidator {
 		}
 
 		foreach ($actions as $action) {
-			if (in_array(trim((string)$action), DepartmentMatrixCompiler::ACTIONS, true) === false) {
+			if (in_array(trim((string)$action), [...DepartmentMatrixCompiler::ACTIONS, ...$this->declaredActions], true) === false) {
 				$findings[] = [
 					'code' => 'matrix.unknown-action',
 					'message' => 'Row ' . (string)$index . ' names the action "'

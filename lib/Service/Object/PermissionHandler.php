@@ -2890,7 +2890,7 @@ class PermissionHandler {
 
 		try {
 			$matrix = $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix);
-			$compiler = new DepartmentMatrixCompiler();
+			$compiler = new DepartmentMatrixCompiler(declaredActions: $schema->declaredActionNames());
 
 			$userId = $this->userSession->getUser()?->getUID();
 			$userGroups = [];

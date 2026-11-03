@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
@@ -3140,7 +3141,7 @@ class RenderObject {
 	}//end applyReadStateMarkers()
 
 	/**
-	 * Attach `@self.can.update`: whether the reader may update this object.
+	 * Attach `@self.can`: whether the reader may update this object, and run each declared action on it.
 	 *
 	 * Opt-in through `_extend[]=@self.can`, because it costs one permission
 	 * evaluation per row and only the records list's in-place editor asks for
@@ -3178,16 +3179,14 @@ class RenderObject {
 				$owner = null;
 			}
 
-			$entity->setCan(
-				[
-					'update' => $permissions->hasPermission(
-						schema: $schema,
-						action: 'update',
-						objectOwner: $owner,
-						object: $entity
-					),
-				]
+			$can = $this->container->get(ObjectActionList::class)->canRun(object: $entity, schema: $schema);
+			$can['update'] = $permissions->hasPermission(
+				schema: $schema,
+				action: 'update',
+				objectOwner: $owner,
+				object: $entity
 			);
+			$entity->setCan($can);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				sprintf('[RenderObject] update right marker skipped for %s: %s', (string)$entity->getUuid(), $e->getMessage())
