@@ -46,6 +46,8 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
 use RuntimeException;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicCrossTableHit;
+use OCA\OpenRegister\Db\MagicMapper\MagicCrossTableScan;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
@@ -7811,23 +7813,15 @@ class MagicMapper extends AbstractObjectMapper {
 		$candidates = $this->getLiveMagicTables();
 
 		// A caller that named a register gets its tables ONLY. Scanning every
-		// register to answer "is this uuid one of mine?" is both wrong (another
-		// register's object is not an answer to that question) and ruinous: the
-		// union carries one branch per magic table, and on an instance with
-		// 2,728 of them that is 690 KB of SQL costing ~3.4s to PLAN before a
-		// single row is read. Measured 2026-07-29: this fallback, reached once
-		// per object create through the flow-resolver registry, was ~1.9s of a
-		// ~3.0s create — every resolver that does NOT own a flow paid a full
-		// instance-wide scan to say so.
+		// register is both wrong (another register's object does not answer
+		// "is this one of mine?") and ruinous: one union branch per magic table
+		// cost ~3.4s to plan on an instance with 2,728 of them (measured
+		// 2026-07-29, ~1.9s of a ~3.0s object create).
 		if ($registerIdScope !== null) {
-			$scoped = [];
-			foreach ($candidates as $tableName => $meta) {
-				if ((int)$meta['registerId'] === $registerIdScope) {
-					$scoped[$tableName] = $meta;
-				}
-			}
-
-			$candidates = $scoped;
+			$candidates = array_filter(
+				$candidates,
+				static fn (array $meta): bool => (int)$meta['registerId'] === $registerIdScope
+			);
 		}
 
 		$this->logger->debug(
@@ -7839,205 +7833,210 @@ class MagicMapper extends AbstractObjectMapper {
 			]
 		);
 
-		// The mappers are constructor-injected; alias them for the lookups below.
-		$registerMapper = $this->registerMapper;
-		$schemaMapper = $this->schemaMapper;
-
 		// `_id` is a bigint column, so a non-numeric identifier (a UUID, slug or URI)
-		// must never be bound against it — it would type-error on PostgreSQL. -1 is a
+		// must never be bound against it: it would type-error on PostgreSQL. -1 is a
 		// sentinel that can never match a real row, leaving the string columns to match.
 		$idParam = -1;
 		if (is_numeric($identifier) === true) {
 			$idParam = (int)$identifier;
 		}
 
-		// PERF (N+1): this used to run one `SELECT *` PER magic table — ~1,000 queries
-		// for a single bare-identifier lookup on a live instance. It is now two phases.
-		// Phase 1 LOCATE: probe the tables in chunks of MAGIC_TABLE_SCAN_CHUNK_SIZE with
-		// one UNION ALL query per chunk that selects ONLY (table name, _id).
-		// Phase 2 FETCH: one `SELECT *` from the single table that actually holds the row.
-		// Every magic table shares the `_id`/`_uuid`/`_slug`/`_uri`/`_deleted` metadata
-		// columns, which is what makes the union across heterogeneous tables well-typed.
-		$chunks = array_chunk($candidates, self::MAGIC_TABLE_SCAN_CHUNK_SIZE, true);
-
-		foreach ($chunks as $chunk) {
-			$hit = $this->locateIdentifierInMagicTables(
+		// Two phases instead of one `SELECT *` per magic table (an N+1 of ~1,000
+		// queries on a live instance). LOCATE: one UNION ALL per chunk of
+		// MAGIC_TABLE_SCAN_CHUNK_SIZE tables selecting only (table, _id). FETCH:
+		// one `SELECT *` from the table that holds the row. The shared metadata
+		// columns are what make the union across heterogeneous tables well-typed.
+		foreach (array_chunk($candidates, self::MAGIC_TABLE_SCAN_CHUNK_SIZE, true) as $chunk) {
+			$located = $this->locateIdentifierInMagicTables(
 				tables: array_keys($chunk),
 				identifier: (string)$identifier,
 				idParam: $idParam,
 				includeDeleted: $includeDeleted
 			);
-
-			if ($hit === null) {
+			if ($located === null) {
 				continue;
 			}
 
-			$tableName = $hit['table'];
-
-			// PHASE 2: fetch the full row from the one matching table.
 			$row = $this->fetchMagicRowById(
-				tableName: $tableName,
-				id: $hit['id'],
+				tableName: $located['table'],
+				id: $located['id'],
 				includeDeleted: $includeDeleted
 			);
-
 			if ($row === null) {
-				// The row vanished between locate and fetch (concurrent hard delete), or
-				// the table turned out to be unreadable. Keep scanning the other chunks.
+				// Gone between locate and fetch (concurrent hard delete), or the
+				// table is unreadable. Keep scanning the other chunks.
 				continue;
 			}
 
-			$registerId = $chunk[$tableName]['registerId'];
-			$schemaId = $chunk[$tableName]['schemaId'];
+			$hit = new MagicCrossTableHit(identifier: $identifier);
+			$hit->tableName = $located['table'];
+			$hit->id = (int)$located['id'];
+			$hit->row = $row;
+			$hit->registerId = $chunk[$located['table']]['registerId'];
+			$hit->schemaId = $chunk[$located['table']]['schemaId'];
+			$hit->includeDeleted = $includeDeleted;
+			$hit->rbac = $_rbac;
+			$hit->multitenancy = $_multitenancy;
 
-			// Found the object! Get register and schema entities.
-			$register = null;
-			$schema = null;
-
-			try {
-				$register = $registerMapper->find(id: $registerId, _multitenancy: false);
-				$schema = $schemaMapper->find(id: $schemaId, _multitenancy: false);
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					message: '[MagicMapper] findAcrossAllMagicTables: Could not load register/schema',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'registerId' => $registerId,
-						'schemaId' => $schemaId,
-						'error' => $e->getMessage(),
-					]
-				);
+			$found = $this->resolveCrossTableHit(hit: $hit);
+			if ($found !== null) {
+				return $found;
 			}
-
-			// SECURITY (cross-org IDOR fix, openregister#2137): this UUID/slug/uri
-			// fallback used to accept `_rbac`/`_multitenancy` and never apply them —
-			// a non-admin in org B could read an org-A object by UUID even though the
-			// register/schema-scoped primary path (findInRegisterSchemaTable, above)
-			// correctly enforces both. Mirror that path exactly: re-run the access
-			// control filters used by the list/search path against the ONE row we
-			// matched, scoped to this table. If the row disappears under those
-			// filters, the caller may not read it — treat it exactly like "not found
-			// in this table" (no distinct error, no existence leak) and keep scanning
-			// the remaining candidates instead of trusting this hit.
-			if ($_rbac === true || OrganisationContext::multitenancy(requested: $_multitenancy) === true) {
-				if ($schema === null) {
-					// Can't resolve the schema that would tell us whether this read
-					// is authorized (register/schema deleted mid-scan, or load
-					// failed above) — fail closed rather than trust an unverifiable
-					// row.
-					$this->logger->warning(
-						message: '[MagicMapper] findAcrossAllMagicTables: Denying unverifiable cross-table hit (schema unresolved)',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'tableName' => $tableName,
-							'registerId' => $registerId,
-							'schemaId' => $schemaId,
-						]
-					);
-					continue;
-				}
-
-				$accessQb = $this->db->getQueryBuilder();
-				$accessQb->select('t.' . self::METADATA_PREFIX . 'id')->from($tableName, 't');
-				$accessQb->where(
-					$accessQb->expr()->eq(
-						't.' . self::METADATA_PREFIX . 'id',
-						$accessQb->createNamedParameter($hit['id'], IQueryBuilder::PARAM_INT)
-					)
-				);
-				if ($includeDeleted === false) {
-					$accessQb->andWhere($accessQb->expr()->isNull('t.' . self::METADATA_PREFIX . 'deleted'));
-				}
-
-				$this->searchHandler->applyAccessControlToQuery(
-					qb: $accessQb,
-					schema: $schema,
-					_rbac: $_rbac,
-					_multitenancy: $_multitenancy,
-					registerId: $register?->getId(),
-					tableName: $tableName
-				);
-
-				$accessResult = $accessQb->executeQuery();
-				$accessRow = $accessResult->fetch();
-				$accessResult->closeCursor();
-
-				if ($accessRow === false) {
-					$this->logger->debug(
-						message: '[MagicMapper] findAcrossAllMagicTables: Denying cross-org/unauthorized hit',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'tableName' => $tableName,
-							'registerId' => $registerId,
-							'schemaId' => $schemaId,
-						]
-					);
-					continue;
-				}
-			}//end if
-
-			// Convert row to ObjectEntity.
-			$object = $this->convertRowToObjectEntity(
-				row: $row,
-				_register: $register,
-				_schema: $schema
-			);
-
-			// The converter is declared `?ObjectEntity` and does return null
-			// for a row it cannot hydrate. Every other call site
-			// checks (see the DoesNotExistException at the union-search path and
-			// the warning in the statistics path); this one did not, and the
-			// first thing it did with the result was dereference it — inside a
-			// DEBUG LOG.
-			//
-			// So an unconvertible row did not degrade the search, it killed the
-			// request with "Call to a member function getUuid() on null", from a
-			// line whose only job was to say what had been found. Live effect:
-			// 11 Shillinq RetentionRule objects failed to rematerialise on every
-			// repair, because a DocuDesk enrichment listener reached this lookup
-			// and one row would not hydrate.
-			//
-			// Skip the row and keep searching. A row we cannot read is not a
-			// reason to stop looking in the remaining tables — and if nothing
-			// matches, the DoesNotExistException below is the honest answer.
-			if ($object === null) {
-				$this->logger->warning(
-					message: '[MagicMapper] findAcrossAllMagicTables: row matched but could not be hydrated; skipping it',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'identifier' => $identifier,
-						'registerId' => $registerId,
-						'schemaId' => $schemaId,
-					]
-				);
-				continue;
-			}
-
-			$this->logger->debug(
-				message: '[MagicMapper] findAcrossAllMagicTables: Found object',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $object->getUuid(),
-					'registerId' => $registerId,
-					'schemaId' => $schemaId,
-				]
-			);
-
-			return [
-				'object' => $object,
-				'register' => $register,
-				'schema' => $schema,
-			];
 		}//end foreach
 
 		// Not found in any magic table.
 		throw new DoesNotExistException("Object with identifier '$identifier' not found in any magic table");
 	}//end findAcrossAllMagicTables()
+
+	/**
+	 * Turn a located row into the lookup's answer: load its register and
+	 * schema, check the caller may read it, and convert it.
+	 *
+	 * @param MagicCrossTableHit $hit The located row.
+	 *
+	 * @return array{object: ObjectEntity, register: Register|null, schema: Schema|null}|null The answer, or null to keep scanning.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	private function resolveCrossTableHit(MagicCrossTableHit $hit): ?array {
+		try {
+			$hit->register = $this->registerMapper->find(id: $hit->registerId, _multitenancy: false);
+			$hit->schema = $this->schemaMapper->find(id: $hit->schemaId, _multitenancy: false);
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[MagicMapper] findAcrossAllMagicTables: Could not load register/schema',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'registerId' => $hit->registerId,
+					'schemaId' => $hit->schemaId,
+					'error' => $e->getMessage(),
+				]
+			);
+		}
+
+		if ($this->crossTableHitIsReadable(hit: $hit) === false) {
+			return null;
+		}
+
+		$object = $this->convertRowToObjectEntity(
+			row: $hit->row,
+			_register: $hit->register,
+			_schema: $hit->schema
+		);
+
+		// The converter returns null for a row it cannot hydrate. Skip that row
+		// and keep searching: one unreadable row must not fail the lookup.
+		if ($object === null) {
+			$this->logger->warning(
+				message: '[MagicMapper] findAcrossAllMagicTables: row matched but could not be hydrated; skipping it',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'identifier' => $hit->identifier,
+					'registerId' => $hit->registerId,
+					'schemaId' => $hit->schemaId,
+				]
+			);
+			return null;
+		}
+
+		$this->logger->debug(
+			message: '[MagicMapper] findAcrossAllMagicTables: Found object',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $object->getUuid(),
+				'registerId' => $hit->registerId,
+				'schemaId' => $hit->schemaId,
+			]
+		);
+
+		return [
+			'object' => $object,
+			'register' => $hit->register,
+			'schema' => $hit->schema,
+		];
+	}//end resolveCrossTableHit()
+
+	/**
+	 * Whether the caller may read a located row.
+	 *
+	 * SECURITY (cross-org IDOR, openregister#2137): the row is re-read under
+	 * the same access control filters the list/search path uses, scoped to
+	 * this table. A row those filters remove is treated exactly like "not
+	 * found in this table": no distinct error, no existence leak. A row whose
+	 * schema could not be resolved fails closed. With RBAC off and
+	 * multitenancy not in force the row is readable as is.
+	 *
+	 * @param MagicCrossTableHit $hit The located row, with its register and schema loaded.
+	 *
+	 * @return bool
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext::multitenancy() is a pure request-state read
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	private function crossTableHitIsReadable(MagicCrossTableHit $hit): bool {
+		if ($hit->rbac === false && OrganisationContext::multitenancy(requested: $hit->multitenancy) === false) {
+			return true;
+		}
+
+		if ($hit->schema === null) {
+			$this->logger->warning(
+				message: '[MagicMapper] findAcrossAllMagicTables: Denying unverifiable cross-table hit (schema unresolved)',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'tableName' => $hit->tableName,
+					'registerId' => $hit->registerId,
+					'schemaId' => $hit->schemaId,
+				]
+			);
+			return false;
+		}
+
+		$accessQb = $this->db->getQueryBuilder();
+		$accessQb->select('t.' . self::METADATA_PREFIX . 'id')->from($hit->tableName, 't');
+		$accessQb->where(
+			$accessQb->expr()->eq(
+				't.' . self::METADATA_PREFIX . 'id',
+				$accessQb->createNamedParameter($hit->id, IQueryBuilder::PARAM_INT)
+			)
+		);
+		if ($hit->includeDeleted === false) {
+			$accessQb->andWhere($accessQb->expr()->isNull('t.' . self::METADATA_PREFIX . 'deleted'));
+		}
+
+		$this->searchHandler->applyAccessControlToQuery(
+			qb: $accessQb,
+			schema: $hit->schema,
+			_rbac: $hit->rbac,
+			_multitenancy: $hit->multitenancy,
+			registerId: $hit->register?->getId(),
+			tableName: $hit->tableName
+		);
+
+		$accessResult = $accessQb->executeQuery();
+		$accessRow = $accessResult->fetch();
+		$accessResult->closeCursor();
+
+		if ($accessRow === false) {
+			$this->logger->debug(
+				message: '[MagicMapper] findAcrossAllMagicTables: Denying cross-org/unauthorized hit',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'tableName' => $hit->tableName,
+					'registerId' => $hit->registerId,
+					'schemaId' => $hit->schemaId,
+				]
+			);
+			return false;
+		}
+
+		return true;
+	}//end crossTableHitIsReadable()
 
 	/**
 	 * List the live (non-orphaned) magic tables on this instance.
@@ -8452,169 +8451,18 @@ class MagicMapper extends AbstractObjectMapper {
 		}
 
 		$uuids = array_unique($uuids);
-		$foundObjects = [];
+		$scan = new MagicCrossTableScan(label: 'findMultipleAcrossAllMagicTables');
+		$scan->includeDeleted = $includeDeleted;
+		$scan->registerIdScope = $registerIdScope;
+		$scan->predicate = '_uuid IN (' . implode(',', array_fill(0, count($uuids), '?')) . ')';
+		$scan->parameters = $uuids;
 
-		// Get all magic tables from information_schema.
-		$prefix = $this->getTablePrefix();
-		$tablePattern = $prefix . 'openregister_table_%';
-
-		$sql = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?';
-		$stmt = $this->db->prepare($sql);
-		$result = $stmt->execute([$tablePattern]);
-		$tables = $result->fetchAll();
-
-		// PERFORMANCE OPTIMIZATION: Use a single UNION query to find ALL UUIDs across ALL tables.
-		// This reduces ~60 queries (COUNT + SELECT per table) to just 1 query.
-		$unionParts = [];
-		$tableInfoMap = [];
-		// Maps table name to register/schema IDs.
-		$uuidCol = self::METADATA_PREFIX . 'uuid';
-		$deletedCol = self::METADATA_PREFIX . 'deleted';
-
-		// Prepare UUID placeholders for raw SQL.
-		$uuidPlaceholders = implode(',', array_fill(0, count($uuids), '?'));
-
-		foreach ($tables as $tableRow) {
-			$fullTableName = $tableRow['table_name'] ?? $tableRow['TABLE_NAME'] ?? null;
-			if ($fullTableName === null) {
-				continue;
-			}
-
-			// Extract register and schema IDs from table name.
-			$tableName = str_replace($prefix, '', $fullTableName);
-			if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName, $matches) !== 1) {
-				continue;
-			}
-
-			$registerId = (int)$matches[1];
-			$schemaId = (int)$matches[2];
-			if ($registerIdScope !== null && $registerId !== $registerIdScope) {
-				continue;
-			}
-
-			$tableInfoMap[$fullTableName] = ['registerId' => $registerId, 'schemaId' => $schemaId];
-
-			// Build UNION part for this table - select only metadata columns for efficiency.
-			$deletedCondition = " AND {$deletedCol} IS NULL";
-			if ($includeDeleted === true) {
-				$deletedCondition = '';
-			}
-
-			$unionParts[] = sprintf(
-				"SELECT '%s' AS _source_table, %s AS found_uuid FROM %s WHERE %s IN (%s)%s",
-				$fullTableName,
-				$uuidCol,
-				$fullTableName,
-				$uuidCol,
-				$uuidPlaceholders,
-				$deletedCondition
-			);
-		}//end foreach
-
-		if (empty($unionParts) === true) {
+		$uuidsByTable = $this->locateCrossTableMatches(scan: $scan);
+		if ($uuidsByTable === null) {
 			return [];
 		}
 
-		// Execute single UNION query to find which tables contain which UUIDs.
-		$unionSql = implode(' UNION ALL ', $unionParts);
-		$unionParams = array_merge(...array_fill(0, count($unionParts), $uuids));
-
-		try {
-			$stmt = $this->db->prepare($unionSql);
-			$unionResult = $stmt->execute($unionParams);
-			$matches = $unionResult->fetchAll();
-		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[MagicMapper] findMultipleAcrossAllMagicTables: UNION query failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
-			// Fallback to old per-table approach would go here, but for now return empty.
-			return [];
-		}
-
-		// Group found UUIDs by table for efficient batch fetching.
-		$uuidsByTable = [];
-		foreach ($matches as $match) {
-			$table = $match['_source_table'];
-			$uuid = $match['found_uuid'];
-			if (isset($uuidsByTable[$table]) === false) {
-				$uuidsByTable[$table] = [];
-			}
-
-			$uuidsByTable[$table][] = $uuid;
-		}
-
-		// The mappers are constructor-injected; alias them for the lookups below.
-		$registerMapper = $this->registerMapper;
-		$schemaMapper = $this->schemaMapper;
-
-		// Cache for register/schema lookups.
-		static $registerCache = [];
-		static $schemaCache = [];
-
-		// Now fetch full rows only from tables that have matches.
-		foreach ($uuidsByTable as $fullTableName => $tableUuids) {
-			$tableInfo = $tableInfoMap[$fullTableName] ?? null;
-			if ($tableInfo === null) {
-				continue;
-			}
-
-			$registerId = $tableInfo['registerId'];
-			$schemaId = $tableInfo['schemaId'];
-			$bareTableName = str_replace($prefix, '', $fullTableName);
-
-			try {
-				// Load register and schema (with caching).
-				if (isset($registerCache[$registerId]) === false) {
-					$registerCache[$registerId] = $registerMapper->find(id: $registerId, _multitenancy: false);
-				}
-
-				if (isset($schemaCache[$schemaId]) === false) {
-					$schemaCache[$schemaId] = $schemaMapper->find(id: $schemaId, _multitenancy: false);
-				}
-
-				// Fetch full rows for found UUIDs.
-				$searchQb = $this->db->getQueryBuilder();
-				$searchQb->select('*')->from($bareTableName);
-				$searchQb->where(
-					$searchQb->expr()->in(
-						$uuidCol,
-						$searchQb->createNamedParameter($tableUuids, IQueryBuilder::PARAM_STR_ARRAY)
-					)
-				);
-
-				if ($includeDeleted === false) {
-					$searchQb->andWhere($searchQb->expr()->isNull($deletedCol));
-				}
-
-				$searchResult = $searchQb->executeQuery();
-				$rows = $searchResult->fetchAll();
-				$searchResult->closeCursor();
-
-				// Convert found rows to ObjectEntity objects.
-				// Add register and schema IDs to row since they're derived from table name, not stored in columns.
-				foreach ($rows as $row) {
-					$row['_register'] = (string)$registerId;
-					$row['_schema'] = (string)$schemaId;
-					$foundObjects[] = $this->rowToObjectEntity(row: $row);
-				}
-			} catch (\Exception $e) {
-				$this->logger->debug(
-					message: '[MagicMapper] findMultipleAcrossAllMagicTables: Error fetching from table',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'table' => $fullTableName,
-						'error' => $e->getMessage(),
-					]
-				);
-				continue;
-			}//end try
-		}//end foreach
+		$foundObjects = $this->fetchCrossTableMatches(scan: $scan, uuidsByTable: $uuidsByTable);
 
 		$this->logger->debug(
 			message: '[MagicMapper] findMultipleAcrossAllMagicTables: Batch search complete',
@@ -8995,169 +8843,24 @@ class MagicMapper extends AbstractObjectMapper {
 			return [];
 		}
 
-		$foundObjects = [];
+		$relations = 'CAST(_relations AS CHAR)';
+		if (stripos($this->db->getDatabasePlatform()::class, 'PostgreSQL') !== false) {
+			$relations = '_relations::text';
+		}
 
-		$isPostgres = stripos($this->db->getDatabasePlatform()::class, 'PostgreSQL') !== false;
+		// Relations are stored as JSON like {"fieldName": "uuid"}, so the quoted
+		// uuid anywhere in the text is a reference to it.
+		$scan = new MagicCrossTableScan(label: 'findByRelationAcrossAllMagicTables');
+		$scan->includeDeleted = $includeDeleted;
+		$scan->predicate = "{$relations} LIKE ?";
+		$scan->parameters = ['%"' . $uuid . '"%'];
 
-		// Get all magic tables from information_schema.
-		$prefix = $this->getTablePrefix();
-		$tablePattern = $prefix . 'openregister_table_%';
-
-		$sql = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?';
-		$stmt = $this->db->prepare($sql);
-		$result = $stmt->execute([$tablePattern]);
-		$tables = $result->fetchAll();
-
-		// PERFORMANCE OPTIMIZATION: Use a single UNION query to find objects across ALL tables.
-		$unionParts = [];
-		$tableInfoMap = [];
-		// Maps table name to register/schema IDs.
-		$uuidCol = self::METADATA_PREFIX . 'uuid';
-		$deletedCol = self::METADATA_PREFIX . 'deleted';
-		$relationsCol = self::METADATA_PREFIX . 'relations';
-
-		foreach ($tables as $tableRow) {
-			$fullTableName = $tableRow['table_name'] ?? $tableRow['TABLE_NAME'] ?? null;
-			if ($fullTableName === null) {
-				continue;
-			}
-
-			// Extract register and schema IDs from table name.
-			$tableName = str_replace($prefix, '', $fullTableName);
-			if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName, $matches) !== 1) {
-				continue;
-			}
-
-			$registerId = (int)$matches[1];
-			$schemaId = (int)$matches[2];
-			$tableInfoMap[$fullTableName] = ['registerId' => $registerId, 'schemaId' => $schemaId];
-
-			// Build UNION part - search for UUID in relation VALUES using text search.
-			// This is more reliable than jsonb_each_text as it handles various JSON formats.
-			$deletedCondition = " AND {$deletedCol} IS NULL";
-			if ($includeDeleted === true) {
-				$deletedCondition = '';
-			}
-
-			$colCast = "CAST({$relationsCol} AS CHAR)";
-			if ($isPostgres === true) {
-				$colCast = "{$relationsCol}::text";
-			}
-
-			$unionParts[] = sprintf(
-				"SELECT '%s' AS _source_table, %s AS found_uuid FROM %s WHERE %s LIKE ?%s",
-				$fullTableName,
-				$uuidCol,
-				$fullTableName,
-				$colCast,
-				$deletedCondition
-			);
-		}//end foreach
-
-		if (empty($unionParts) === true) {
+		$uuidsByTable = $this->locateCrossTableMatches(scan: $scan);
+		if ($uuidsByTable === null) {
 			return [];
 		}
 
-		// Execute single UNION query.
-		$unionSql = implode(' UNION ALL ', $unionParts);
-		// Use LIKE pattern to match UUID anywhere in the JSON text.
-		$likePattern = '%"' . $uuid . '"%';
-		$unionParams = array_fill(0, count($unionParts), $likePattern);
-
-		try {
-			$stmt = $this->db->prepare($unionSql);
-			$unionResult = $stmt->execute($unionParams);
-			$matches = $unionResult->fetchAll();
-		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[MagicMapper] findByRelationAcrossAllMagicTables: UNION query failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
-			return [];
-		}
-
-		// Group found UUIDs by table for efficient batch fetching.
-		$uuidsByTable = [];
-		foreach ($matches as $match) {
-			$table = $match['_source_table'];
-			$foundUuid = $match['found_uuid'];
-			if (isset($uuidsByTable[$table]) === false) {
-				$uuidsByTable[$table] = [];
-			}
-
-			$uuidsByTable[$table][] = $foundUuid;
-		}
-
-		// The mappers are constructor-injected; alias them for the lookups below.
-		$registerMapper = $this->registerMapper;
-		$schemaMapper = $this->schemaMapper;
-
-		// Cache for register/schema lookups.
-		static $registerCache = [];
-		static $schemaCache = [];
-
-		// Fetch full rows only from tables that have matches.
-		foreach ($uuidsByTable as $fullTableName => $tableUuids) {
-			$tableInfo = $tableInfoMap[$fullTableName] ?? null;
-			if ($tableInfo === null) {
-				continue;
-			}
-
-			$registerId = $tableInfo['registerId'];
-			$schemaId = $tableInfo['schemaId'];
-			$bareTableName = str_replace($prefix, '', $fullTableName);
-
-			try {
-				// Load register and schema (with caching).
-				if (isset($registerCache[$registerId]) === false) {
-					$registerCache[$registerId] = $registerMapper->find(id: $registerId, _multitenancy: false);
-				}
-
-				if (isset($schemaCache[$schemaId]) === false) {
-					$schemaCache[$schemaId] = $schemaMapper->find(id: $schemaId, _multitenancy: false);
-				}
-
-				// Fetch full rows for found UUIDs.
-				$searchQb = $this->db->getQueryBuilder();
-				$searchQb->select('*')->from($bareTableName);
-				$searchQb->where(
-					$searchQb->expr()->in(
-						$uuidCol,
-						$searchQb->createNamedParameter($tableUuids, IQueryBuilder::PARAM_STR_ARRAY)
-					)
-				);
-
-				if ($includeDeleted === false) {
-					$searchQb->andWhere($searchQb->expr()->isNull($deletedCol));
-				}
-
-				$searchResult = $searchQb->executeQuery();
-				$rows = $searchResult->fetchAll();
-				$searchResult->closeCursor();
-
-				// Convert found rows to ObjectEntity objects.
-				foreach ($rows as $row) {
-					$row['_register'] = (string)$registerId;
-					$row['_schema'] = (string)$schemaId;
-					$foundObjects[] = $this->rowToObjectEntity(row: $row);
-				}
-			} catch (\Exception $e) {
-				$this->logger->debug(
-					message: '[MagicMapper] findByRelationAcrossAllMagicTables: Error fetching from table',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'table' => $fullTableName,
-						'error' => $e->getMessage(),
-					]
-				);
-				continue;
-			}//end try
-		}//end foreach
+		$foundObjects = $this->fetchCrossTableMatches(scan: $scan, uuidsByTable: $uuidsByTable);
 
 		$this->logger->debug(
 			message: '[MagicMapper] findByRelationAcrossAllMagicTables: Search complete',
@@ -9172,6 +8875,143 @@ class MagicMapper extends AbstractObjectMapper {
 
 		return $foundObjects;
 	}//end findByRelationAcrossAllMagicTables()
+
+	/**
+	 * List the magic tables a cross-table scan reads, from information_schema,
+	 * limited to the scan's register when it has one.
+	 *
+	 * @param MagicCrossTableScan $scan The scan; its tables are filled.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	private function listCrossTableScanTables(MagicCrossTableScan $scan): void {
+		$prefix = $this->getTablePrefix();
+		$stmt = $this->db->prepare('SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?');
+		$tables = $stmt->execute([$prefix . 'openregister_table_%'])->fetchAll();
+
+		$scan->tables = [];
+		foreach ($tables as $tableRow) {
+			$fullTableName = $tableRow['table_name'] ?? $tableRow['TABLE_NAME'] ?? null;
+			if ($fullTableName === null
+				|| preg_match('/^openregister_table_(\d+)_(\d+)$/', str_replace($prefix, '', $fullTableName), $matches) !== 1
+			) {
+				continue;
+			}
+
+			$registerId = (int)$matches[1];
+			if ($scan->registerIdScope !== null && $registerId !== $scan->registerIdScope) {
+				continue;
+			}
+
+			$scan->tables[$fullTableName] = ['registerId' => $registerId, 'schemaId' => (int)$matches[2]];
+		}
+	}//end listCrossTableScanTables()
+
+	/**
+	 * Find which uuids match the scan's predicate, per table, with one
+	 * UNION ALL over every scanned table.
+	 *
+	 * @param MagicCrossTableScan $scan The scan.
+	 *
+	 * @return array<string, array<int, string>>|null The matching uuids by full table name, or null when no table is scanned or the query failed.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	private function locateCrossTableMatches(MagicCrossTableScan $scan): ?array {
+		$this->listCrossTableScanTables(scan: $scan);
+		if (empty($scan->tables) === true) {
+			return null;
+		}
+
+		[$unionSql, $unionParams] = $scan->unionStatement();
+		try {
+			$matches = $this->db->prepare($unionSql)->execute($unionParams)->fetchAll();
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: "[MagicMapper] {$scan->label}: UNION query failed",
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'error' => $e->getMessage(),
+				]
+			);
+			return null;
+		}
+
+		$uuidsByTable = [];
+		foreach ($matches as $match) {
+			$uuidsByTable[$match['_source_table']][] = $match['found_uuid'];
+		}
+
+		return $uuidsByTable;
+	}//end locateCrossTableMatches()
+
+	/**
+	 * Fetch the full rows of the matched uuids, one query per table, as objects.
+	 *
+	 * A table whose register or schema cannot be loaded is skipped. The
+	 * register and schema lookups are cached for the process, per scan kind.
+	 *
+	 * @param MagicCrossTableScan               $scan         The scan.
+	 * @param array<string, array<int, string>> $uuidsByTable The matching uuids by full table name.
+	 *
+	 * @return ObjectEntity[] The found objects.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	private function fetchCrossTableMatches(MagicCrossTableScan $scan, array $uuidsByTable): array {
+		static $registerCache = [];
+		static $schemaCache = [];
+
+		$prefix = $this->getTablePrefix();
+		$foundObjects = [];
+		foreach ($uuidsByTable as $fullTableName => $tableUuids) {
+			$tableInfo = $scan->tables[$fullTableName] ?? null;
+			if ($tableInfo === null) {
+				continue;
+			}
+
+			$registerId = $tableInfo['registerId'];
+			$schemaId = $tableInfo['schemaId'];
+			try {
+				$registerCache[$scan->label][$registerId] ??= $this->registerMapper->find(id: $registerId, _multitenancy: false);
+				$schemaCache[$scan->label][$schemaId] ??= $this->schemaMapper->find(id: $schemaId, _multitenancy: false);
+
+				$searchQb = $this->db->getQueryBuilder();
+				$searchQb->select('*')->from(str_replace($prefix, '', $fullTableName));
+				$searchQb->where(
+					$searchQb->expr()->in('_uuid', $searchQb->createNamedParameter($tableUuids, IQueryBuilder::PARAM_STR_ARRAY))
+				);
+				if ($scan->includeDeleted === false) {
+					$searchQb->andWhere($searchQb->expr()->isNull('_deleted'));
+				}
+
+				$searchResult = $searchQb->executeQuery();
+				$rows = $searchResult->fetchAll();
+				$searchResult->closeCursor();
+
+				foreach ($rows as $row) {
+					$row['_register'] = (string)$registerId;
+					$row['_schema'] = (string)$schemaId;
+					$foundObjects[] = $this->rowToObjectEntity(row: $row);
+				}
+			} catch (\Exception $e) {
+				$this->logger->debug(
+					message: "[MagicMapper] {$scan->label}: Error fetching from table",
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'table' => $fullTableName,
+						'error' => $e->getMessage(),
+					]
+				);
+			}//end try
+		}//end foreach
+
+		return $foundObjects;
+	}//end fetchCrossTableMatches()
 
 	/**
 	 * Find all objects in register+schema table with filtering and pagination.
