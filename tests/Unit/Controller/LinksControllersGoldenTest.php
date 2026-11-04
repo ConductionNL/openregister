@@ -154,7 +154,7 @@ class LinksControllersGoldenTest extends TestCase {
 
 			$returns = $method->getReturnType();
 			if ($returns instanceof ReflectionNamedType && $returns->getName() === 'array') {
-				$mock->method($name)->willReturn(['results' => [], 'total' => 0]);
+				$mock->method($name)->willReturn(['results' => [], 'total' => 0, 'limit' => 20, 'offset' => 0]);
 			}
 		}
 
