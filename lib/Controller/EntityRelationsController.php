@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
@@ -65,6 +66,8 @@ use Psr\Log\LoggerInterface;
  * Handles the PATCH endpoint for entity-relation decision metadata.
  */
 class EntityRelationsController extends Controller {
+	use RequiresJsonBodyTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -157,17 +160,9 @@ class EntityRelationsController extends Controller {
 		// form-encoded array values inconsistently. Decision-time
 		// mutations on legal grondslagen must not depend on content-type
 		// heuristics; clients send JSON or get 415.
-		$contentType = (string)$this->request->getHeader('Content-Type');
-		// Strip any trailing parameters (charset, boundary, etc.).
-		$mediaType = strtolower(trim(explode(';', $contentType, 2)[0]));
-		if ($mediaType !== 'application/json' && $mediaType !== '') {
-			return new JSONResponse(
-				data: [
-					'error' => 'unsupported_media_type',
-					'reason' => 'PATCH /api/entity-relations/{id} requires Content-Type: application/json',
-				],
-				statusCode: Http::STATUS_UNSUPPORTED_MEDIA_TYPE
-			);
+		$mediaRefusal = $this->refuseNonJsonBody(route: 'PATCH /api/entity-relations/{id}');
+		if ($mediaRefusal !== null) {
+			return $mediaRefusal;
 		}
 
 		$body = $this->request->getParams();
