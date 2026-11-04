@@ -56,12 +56,7 @@ interface ExternalIntegrationRouterInterface {
 	 *
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-4
 	 */
-	public function call(
-		IntegrationProvider $provider,
-		string $method,
-		string $path,
-		array $options = [],
-	): array;
+	public function call(IntegrationProvider $provider, string $method, string $path, array $options = []): array;
 
 	/**
 	 * Dispatch a call like {@see call()} but additionally surface the
@@ -100,12 +95,7 @@ interface ExternalIntegrationRouterInterface {
 	 *
 	 * @spec openspec/changes/integration-brp-audit-metadata/tasks.md
 	 */
-	public function callWithMeta(
-		IntegrationProvider $provider,
-		string $method,
-		string $path,
-		array $options = [],
-	): array;
+	public function callWithMeta(IntegrationProvider $provider, string $method, string $path, array $options = []): array;
 
 	/**
 	 * The `configuration` array of the provider's connector source, so a

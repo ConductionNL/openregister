@@ -24,7 +24,6 @@ namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Exception\ValidationException;
 use OCP\AppFramework\Db\Entity;
-use OCP\AppFramework\Db\QBMapper;
 
 /**
  * Every public method of SchemaMapper. Callers depend on this interface, not on the class.
@@ -54,12 +53,7 @@ interface SchemaMapperInterface {
 	 *
 	 * @spec openspec/specs/register-slug-resolution/spec.md
 	 */
-	public function find(
-		string|int $id,
-		?array $_extend = [],
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-	): Schema;
+	public function find(string|int $id, ?array $_extend = [], bool $_rbac = true, bool $_multitenancy = true): Schema;
 
 	/**
 	 * Resolve a schema by slug, scoped to a single owning application.
@@ -231,13 +225,7 @@ interface SchemaMapperInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
 	 */
-	public function findBySlug(
-		string $slug,
-		int $limit = 10,
-		int $offset = 0,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-	): array;
+	public function findBySlug(string $slug, int $limit = 10, int $offset = 0, bool $_rbac = true, bool $_multitenancy = true): array;
 
 	/**
 	 * Finds all schemas, files: with optional extension for statistics
@@ -260,14 +248,8 @@ interface SchemaMapperInterface {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
 	 */
 	public function findAll(
-		?int $limit = null,
-		?int $offset = null,
-		?array $filters = [],
-		?array $searchConditions = [],
-		?array $searchParams = [],
-		?array $_extend = [],
-		bool $_rbac = true,
-		bool $_multitenancy = true,
+		?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = [],
+		?array $_extend = [], bool $_rbac = true, bool $_multitenancy = true
 	): array;
 
 	/**
@@ -467,12 +449,7 @@ interface SchemaMapperInterface {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Recursive reference checking requires many conditions
 	 */
-	public function hasReferenceToSchema(
-		array $properties,
-		string $targetSchemaId,
-		string $targetSchemaUuid,
-		string $targetSchemaSlug,
-	): bool;
+	public function hasReferenceToSchema(array $properties, string $targetSchemaId, string $targetSchemaUuid, string $targetSchemaSlug): bool;
 
 	/**
 	 * Get property source metadata for a schema

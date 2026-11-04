@@ -391,12 +391,7 @@ interface SettingsServiceInterface {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
 	 */
-	public function massValidateObjects(
-		int $maxObjects = 0,
-		int $batchSize = 1000,
-		string $mode = 'serial',
-		bool $collectErrors = false,
-	): array;
+	public function massValidateObjects(int $maxObjects = 0, int $batchSize = 1000, string $mode = 'serial', bool $collectErrors = false): array;
 
 	/**
 	 * Format bytes into human readable format

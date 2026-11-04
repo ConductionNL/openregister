@@ -23,10 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
-use OCP\AppFramework\Db\QBMapper;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * Every public method of AuditTrailMapper. Callers depend on this interface, not on the class.
@@ -168,11 +165,7 @@ interface AuditTrailMapperInterface {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function findAll(
-		?int $limit = null,
-		?int $offset = null,
-		?array $filters = [],
-		?array $sort = ['created' => 'DESC'],
-		?string $search = null,
+		?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $sort = ['created' => 'DESC'], ?string $search = null
 	): array;
 
 	/**
@@ -199,10 +192,7 @@ interface AuditTrailMapperInterface {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
 	public function createAuditTrail(
-		?ObjectEntity $old = null,
-		?ObjectEntity $new = null,
-		?string $action = null,
-		?array $cascadeContext = null,
+		?ObjectEntity $old = null, ?ObjectEntity $new = null, ?string $action = null, ?array $cascadeContext = null
 	): AuditTrail;
 
 	/**
@@ -230,10 +220,7 @@ interface AuditTrailMapperInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function buildAuditTrail(
-		?ObjectEntity $old = null,
-		?ObjectEntity $new = null,
-		?string $action = null,
-		?array $cascadeContext = null,
+		?ObjectEntity $old = null, ?ObjectEntity $new = null, ?string $action = null, ?array $cascadeContext = null
 	): AuditTrail;
 
 	/**
@@ -321,7 +308,7 @@ interface AuditTrailMapperInterface {
 	 * @param DateTime|string|null $until DateTime or AuditTrail ID to revert to
 	 * @param bool $overwriteVersion Whether to overwrite the version or increment it
 	 *
-	 * @throws DoesNotExistException If object not found
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
 	 * @throws \Exception If revert fails
 	 *
 	 * @return ObjectEntity The reverted object (unsaved)
@@ -373,12 +360,7 @@ interface AuditTrailMapperInterface {
 	 * @psalm-return array{labels: list<array-key>,
 	 *     series: list<array{data: list<int>, name: string}>}
 	 */
-	public function getActionChartData(
-		?\DateTime $from = null,
-		?\DateTime $till = null,
-		?int $registerId = null,
-		?int $schemaId = null,
-	): array;
+	public function getActionChartData(?\DateTime $from = null, ?\DateTime $till = null, ?int $registerId = null, ?int $schemaId = null): array;
 
 	/**
 	 * Get detailed statistics for audit trails including action counts within timeframe
@@ -485,11 +467,7 @@ interface AuditTrailMapperInterface {
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function countForObject(
-		string $objectUuid,
-		?array $onlyActions = null,
-		array $excludeActions = [],
-	): int;
+	public function countForObject(string $objectUuid, ?array $onlyActions = null, array $excludeActions = []): int;
 
 	/**
 	 * Read the audit rows of one object, by action, newest first.
@@ -531,11 +509,7 @@ interface AuditTrailMapperInterface {
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function tombstoneForObject(
-		string $objectUuid,
-		?array $onlyActions = null,
-		array $excludeActions = [],
-	): int;
+	public function tombstoneForObject(string $objectUuid, ?array $onlyActions = null, array $excludeActions = []): int;
 
 	/**
 	 * Clear all audit trail logs (not just expired ones)
@@ -607,12 +581,8 @@ interface AuditTrailMapperInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 */
 	public function createAuditTrailEntry(
-		ObjectEntity $object,
-		string $action,
-		array $context = [],
-		?string $actorId = null,
-		?string $actorName = null,
-		?string $ipAddress = null,
+		ObjectEntity $object, string $action, array $context = [], ?string $actorId = null, ?string $actorName = null,
+		?string $ipAddress = null
 	): AuditTrail;
 
 	/**
@@ -646,13 +616,8 @@ interface AuditTrailMapperInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
 	 */
 	public function createToolInvocationEntry(
-		string $toolId,
-		string $paramsDigest,
-		array $resultSummary,
-		?int $register = null,
-		?int $schema = null,
-		?int $object = null,
-		?string $objectUuid = null,
+		string $toolId, string $paramsDigest, array $resultSummary, ?int $register = null, ?int $schema = null, ?int $object = null,
+		?string $objectUuid = null
 	): AuditTrail;
 
 	/**
@@ -698,12 +663,7 @@ interface AuditTrailMapperInterface {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	public function findByActor(
-		string $userId,
-		int $limit = 25,
-		int $offset = 0,
-		?string $action = null,
-		?string $from = null,
-		?string $to = null,
+		string $userId, int $limit = 25, int $offset = 0, ?string $action = null, ?string $from = null, ?string $to = null
 	): array;
 
 	/**
@@ -747,15 +707,8 @@ interface AuditTrailMapperInterface {
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
 	 */
 	public function createSharedMasterDataRefusalEntry(
-		string $holderOrganisation,
-		string $sourceOrganisation,
-		string $resourceType,
-		array $context = [],
-		?int $register = null,
-		?int $schema = null,
-		?string $objectUuid = null,
-		?string $actorId = null,
-		?string $actorReference = null,
+		string $holderOrganisation, string $sourceOrganisation, string $resourceType, array $context = [], ?int $register = null,
+		?int $schema = null, ?string $objectUuid = null, ?string $actorId = null, ?string $actorReference = null
 	): AuditTrail;
 
 	/**
@@ -808,12 +761,7 @@ interface AuditTrailMapperInterface {
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
-	public function createPurposeRefusalEntry(
-		string $rule,
-		?string $purpose = null,
-		?int $register = null,
-		?int $schema = null,
-	): AuditTrail;
+	public function createPurposeRefusalEntry(string $rule, ?string $purpose = null, ?int $register = null, ?int $schema = null): AuditTrail;
 
 	/**
 	 * Count audit rows per purpose over a period.
@@ -863,11 +811,7 @@ interface AuditTrailMapperInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
 	 */
 	public function createHardeningChangeEntry(
-		string $control,
-		int|string|array $before,
-		int|string|array $after,
-		bool $accepted,
-		string $refusal = '',
+		string $control, int|string|array $before, int|string|array $after, bool $accepted, string $refusal = ''
 	): AuditTrail;
 
 	/**
@@ -899,11 +843,7 @@ interface AuditTrailMapperInterface {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function createExportEntry(
-		string $outcome,
-		array $summary,
-		?int $register = null,
-		?int $schema = null,
-		?string $actorId = null,
+		string $outcome, array $summary, ?int $register = null, ?int $schema = null, ?string $actorId = null
 	): AuditTrail;
 
 	/**
@@ -928,12 +868,7 @@ interface AuditTrailMapperInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createExportEntry.
 	 */
-	public function createSlugBackfillEntry(
-		array $changes,
-		array $summary,
-		?int $register = null,
-		?int $schema = null,
-	): AuditTrail;
+	public function createSlugBackfillEntry(array $changes, array $summary, ?int $register = null, ?int $schema = null): AuditTrail;
 
 	/**
 	 * What a slug backfill entry stores: the counters and a bounded change list.
