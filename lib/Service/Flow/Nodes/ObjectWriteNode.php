@@ -873,11 +873,13 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
 	 */
 	private function writePlan(array $config, array $context): ObjectWritePlan {
-		$plan = new ObjectWritePlan(config: $config, context: $context);
-		$plan->operation = $this->operationFrom(config: $config);
-		$plan->owner = $this->resolveOwner(context: $context);
-		$plan->register = $this->resolveRegister(config: $config);
-		$plan->schema = $this->resolveSchema(config: $config, register: $plan->register);
+		$operation = $this->operationFrom(config: $config);
+		$owner = $this->resolveOwner(context: $context);
+		$register = $this->resolveRegister(config: $config);
+		$schema = $this->resolveSchema(config: $config, register: $register);
+		$plan = new ObjectWritePlan(config: $config, owner: $owner, register: $register, schema: $schema);
+		$plan->context = $context;
+		$plan->operation = $operation;
 		$plan->pairs = $this->matchPairs(config: $config);
 		$plan->fields = (array)($config['fields'] ?? []);
 		$plan->onMissing = $this->optionFrom(config: $config, key: 'onMissing', allowed: self::ON_MISSING, default: self::ON_MISSING_OMIT);

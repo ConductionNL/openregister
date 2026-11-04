@@ -43,26 +43,8 @@ final class ObjectWritePlan
 	 */
 	public string $operation = '';
 
-	/**
-	 * The run owner, as the acting user.
-	 *
-	 * @var IUser
-	 */
-	public IUser $owner;
 
-	/**
-	 * The resolved register.
-	 *
-	 * @var Register
-	 */
-	public Register $register;
 
-	/**
-	 * The resolved schema.
-	 *
-	 * @var Schema
-	 */
-	public Schema $schema;
 
 	/**
 	 * The match pairs.
@@ -135,14 +117,25 @@ final class ObjectWritePlan
 	public array $counts = ['created' => 0, 'updated' => 0, 'deleted' => 0];
 
 	/**
+	 * The run context.
+	 *
+	 * @var array
+	 */
+	public array $context = [];
+
+	/**
 	 * Constructor.
 	 *
-	 * @param array $config  The step configuration.
-	 * @param array $context The run context.
+	 * @param array    $config   The step configuration.
+	 * @param IUser    $owner    The run owner, as the acting user.
+	 * @param Register $register The resolved register.
+	 * @param Schema   $schema   The resolved schema.
 	 */
 	public function __construct(
 		public readonly array $config,
-		public readonly array $context,
+		public readonly IUser $owner,
+		public readonly Register $register,
+		public readonly Schema $schema,
 	) {
 	}//end __construct()
 }//end class
