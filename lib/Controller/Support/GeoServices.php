@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Geo\GeoFeatureCollectionBuilder;
-use OCA\OpenRegister\Service\Geo\GeoFilterApplier;
-use OCA\OpenRegister\Service\Geo\GeoFilterParser;
+use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
 use OCA\OpenRegister\Service\Geo\PdokGeocoder;
 
 /**
