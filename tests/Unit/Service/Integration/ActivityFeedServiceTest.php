@@ -43,10 +43,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Integration\ActivityFeedMerge;
 use OCA\OpenRegister\Service\Integration\ActivityFeedService;
 use OCA\OpenRegister\Service\Integration\Providers\ActivityProvider;
+use OCA\OpenRegister\Tests\Support\BuildsReaderHistory;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -57,6 +58,7 @@ use RuntimeException;
  * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md
  */
 class ActivityFeedServiceTest extends TestCase {
+	use BuildsReaderHistory;
 
 	/**
 	 * One audit entry.
@@ -86,24 +88,40 @@ class ActivityFeedServiceTest extends TestCase {
 	 * a feed that passed against an imagined `findAllForObject()` would 500
 	 * the first time it ran.
 	 *
-	 * @param array                 $entries What the trail answers.
+	 * @param array                 $entries What the object's history answers.
 	 * @param array                 $rows    What the Activity provider answers.
-	 * @param array|null            $capture Filled with the filters the trail was asked for.
+	 * @param array|null            $capture Filled with what the history was asked for.
 	 *
 	 * @return ActivityFeedService The service.
 	 */
 	private function service(array $entries, array $rows = [], ?array &$capture = null): ActivityFeedService {
-		$audit = $this->getMockBuilder(AuditTrailMapper::class)
+		$history = $this->getMockBuilder(ObjectHistoryForReaders::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['findAll'])
+			->onlyMethods(['page'])
 			->getMock();
-		$audit->method('findAll')->willReturnCallback(
-			static function (?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $sort = null, ?string $search = null) use ($entries, &$capture): array {
-				$capture = ['limit' => $limit, 'filters' => $filters, 'sort' => $sort];
+		$history->method('page')->willReturnCallback(
+			static function (string $register, string $schema, string $id, array $params) use ($entries, &$capture): array {
+				$capture = ['register' => $register, 'schema' => $schema, 'id' => $id, 'params' => $params];
 
-				return $entries;
+				return [
+					'results' => array_map(static fn (AuditTrail $entry): array => $entry->jsonSerialize(), $entries),
+					'total' => count($entries),
+				];
 			}
 		);
+
+		return $this->serviceOver(history: $history, rows: $rows);
+	}//end service()
+
+	/**
+	 * The service over a given history and the Activity rows.
+	 *
+	 * @param ObjectHistoryForReaders $history The object's history.
+	 * @param array                   $rows    What the Activity provider answers.
+	 *
+	 * @return ActivityFeedService The service.
+	 */
+	private function serviceOver(ObjectHistoryForReaders $history, array $rows = []): ActivityFeedService {
 
 		$provider = $this->getMockBuilder(ActivityProvider::class)
 			->disableOriginalConstructor()
@@ -113,11 +131,11 @@ class ActivityFeedServiceTest extends TestCase {
 
 		return new ActivityFeedService(
 			new ActivityFeedMerge(),
-			$audit,
+			$history,
 			$provider,
 			$this->createMock(LoggerInterface::class),
 		);
-	}//end service()
+	}//end serviceOver()
 
 	public function testTheTrailAndTheActivityRowsMergeIntoOneOrder(): void {
 		$service = $this->service(
@@ -143,24 +161,13 @@ class ActivityFeedServiceTest extends TestCase {
 	}//end testRowsHandedInByTheCallerAreMergedBeside()
 
 	public function testAnUnreadableSourceIsNamedRatherThanMergedAsNothing(): void {
-		$audit = $this->getMockBuilder(AuditTrailMapper::class)
+		$history = $this->getMockBuilder(ObjectHistoryForReaders::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['findAll'])
+			->onlyMethods(['page'])
 			->getMock();
-		$audit->method('findAll')->willThrowException(new RuntimeException('the trail is unavailable'));
+		$history->method('page')->willThrowException(new RuntimeException('the trail is unavailable'));
 
-		$provider = $this->getMockBuilder(ActivityProvider::class)
-			->disableOriginalConstructor()
-			->onlyMethods(['list'])
-			->getMock();
-		$provider->method('list')->willReturn([]);
-
-		$service = new ActivityFeedService(
-			new ActivityFeedMerge(),
-			$audit,
-			$provider,
-			$this->createMock(LoggerInterface::class),
-		);
+		$service = $this->serviceOver(history: $history);
 
 		$page = $service->page('dossiq', 'case', 'obj-1');
 
@@ -176,12 +183,10 @@ class ActivityFeedServiceTest extends TestCase {
 
 		$service->page('dossiq', 'case', 'obj-1', ['pageSize' => 10]);
 
-		$this->assertSame(10, $capture['limit']);
-		$this->assertSame(['objectUuid' => 'obj-1'], $capture['filters']);
-		$this->assertSame(['created' => 'DESC'], $capture['sort']);
+		$this->assertSame(['register' => 'dossiq', 'schema' => 'case', 'id' => 'obj-1', 'params' => ['limit' => 10]], $capture);
 		// NOT narrowed on the action: the reads toggle has to be able to bring
 		// them back without a second, differently shaped query.
-		$this->assertArrayNotHasKey('action', $capture['filters']);
+		$this->assertArrayNotHasKey('filters', $capture['params']);
 	}//end testTheTrailIsAskedForThisObjectBoundedAndNewestFirst()
 
 	public function testReadsAreStillHiddenByDefaultOnceMerged(): void {
@@ -210,6 +215,46 @@ class ActivityFeedServiceTest extends TestCase {
 		$this->assertStringNotContainsString('123456782', $summary);
 		$this->assertStringNotContainsString('987654321', $summary);
 	}//end testTheSummaryNamesTheFieldsAndNeverTheirValues()
+
+	public function testTheSummaryNamesOnlyThePropertiesTheCallerMaySee(): void {
+		$service = $this->serviceOver(
+			history: $this->readerHistory(rows: [$this->readerEntry(objectUuid: self::$readableUuid)])
+		);
+
+		$rows = $service->page('5', '7', self::$readableUuid)['rows'];
+
+		$this->assertSame('update: titel', $rows[0]['summary']);
+		$this->assertSame('Alice', $rows[0]['actor']);
+		$this->assertSame((new DateTime('2026-11-03T10:00:00+00:00'))->getTimestamp(), $rows[0]['timestamp']);
+	}//end testTheSummaryNamesOnlyThePropertiesTheCallerMaySee()
+
+	public function testACallerWhoMayNotReadTheObjectGetsNoAuditRows(): void {
+		$service = $this->serviceOver(
+			history: $this->readerHistory(
+				rows: [$this->readerEntry(objectUuid: self::$readableUuid)],
+				world: ['readable' => false]
+			)
+		);
+
+		$page = $service->page('5', '7', self::$readableUuid);
+
+		$this->assertSame([], $page['rows']);
+		$this->assertSame([], $page['degraded']);
+	}//end testACallerWhoMayNotReadTheObjectGetsNoAuditRows()
+
+	public function testARefusedPurposeNamesTheTrailAsUnreadable(): void {
+		$service = $this->serviceOver(
+			history: $this->readerHistory(
+				rows: [$this->readerEntry(objectUuid: self::$readableUuid)],
+				world: ['purposeRefused' => true]
+			)
+		);
+
+		$page = $service->page('5', '7', self::$readableUuid);
+
+		$this->assertSame([], $page['rows']);
+		$this->assertSame(['audit'], $page['degraded']);
+	}//end testARefusedPurposeNamesTheTrailAsUnreadable()
 
 	public function testAnEntryWithNoChangesStillSaysWhatItDid(): void {
 		$service = $this->service([$this->entry('a1', 'create', 100)]);

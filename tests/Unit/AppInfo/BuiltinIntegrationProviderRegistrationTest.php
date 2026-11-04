@@ -61,7 +61,7 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IL10N',
 		],
 		'OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider' => [
-			'OCA\OpenRegister\Db\AuditTrailMapper',
+			'OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders',
 			'OCP\IL10N',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\XwikiProvider' => [

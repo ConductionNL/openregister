@@ -191,17 +191,6 @@
       <code><![CDATA[$config]]></code>
     </UnusedParam>
   </file>
-  <file src="lib/Service/OrganisationService.php">
-    <InvalidThrow>
-      <code><![CDATA[throw $e;]]></code>
-      <code><![CDATA[throw $e;]]></code>
-    </InvalidThrow>
-    <UndefinedClass>
-      <code><![CDATA[$e]]></code>
-      <code><![CDATA[$e]]></code>
-      <code><![CDATA[\OC\DB\Exceptions\DbalException]]></code>
-    </UndefinedClass>
-  </file>
   <file src="lib/Service/RegisterResolverService.php">
     <UnusedParam>
       <code><![CDATA[$organisationUuid]]></code>

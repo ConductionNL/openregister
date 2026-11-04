@@ -3123,6 +3123,180 @@ class SaveObjectTest extends TestCase {
 		$this->assertArrayNotHasKey('deelnemers', $result);
 	}
 
+	/**
+	 * Run a write-back from `parent-uuid` to a stored target named by its numeric id.
+	 *
+	 * @param array<string, mixed> $stored The target's stored data.
+	 *
+	 * @return array{lookups: array<int, string>, saved: array<int, array<string, mixed>>}
+	 */
+	private function writeBackToStoredTarget(array $stored): array {
+		$schemaObject = new \stdClass();
+		$schemaObject->properties = [
+			'deelnemers' => [
+				'type' => 'array',
+				'inversedBy' => 'deelnames',
+				'writeBack' => true,
+				'$ref' => '#/components/schemas/deelnemer',
+			],
+		];
+		$schema = $this->createSchemaWithSchemaObject($schemaObject);
+
+		$entity = new ObjectEntity();
+		$entity->setUuid('parent-uuid');
+		$entity->setRegister('1');
+
+		$targetSchemaObject = new \stdClass();
+		$targetSchemaObject->properties = ['deelnames' => ['type' => 'array'], 'title' => ['type' => 'string']];
+		$targetSchema = $this->getMockBuilder(Schema::class)
+			->onlyMethods(['getConfiguration', 'getProperties', 'getSchemaObject', 'hasPropertyAuthorization'])
+			->getMock();
+		$targetSchema->setId(2);
+		$targetSchema->setSlug('deelnemer');
+		$targetSchema->method('getSchemaObject')->willReturn($targetSchemaObject);
+		$targetSchema->method('getConfiguration')->willReturn([]);
+		$targetSchema->method('getProperties')->willReturn($targetSchemaObject->properties);
+		$targetSchema->method('hasPropertyAuthorization')->willReturn(false);
+		$this->setPrivateProperty('schemaReferenceCache', ['#/components/schemas/deelnemer' => '2']);
+		$this->setPrivateProperty('schemaCache', ['2' => $targetSchema]);
+		$register = $this->createMockRegister(1, 'test');
+		$this->setPrivateProperty('registerCache', ['1' => $register]);
+		$this->registerMapper->method('find')->willReturn($register);
+
+		$targetObject = new ObjectEntity();
+		$targetObject->setId(12);
+		$targetObject->setUuid('dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4');
+		$targetObject->setRegister('1');
+		$targetObject->setSchema('2');
+		$targetObject->setObject($stored);
+		$lookups = [];
+		$this->objectEntityMapper->method('find')->willReturnCallback(
+			function (string|int $identifier) use ($targetObject, &$lookups): ObjectEntity {
+				$lookups[] = (string) $identifier;
+				return clone $targetObject;
+			}
+		);
+		$saved = [];
+		$this->unifiedObjectMapper->method('update')->willReturnCallback(
+			function (ObjectEntity $updated) use (&$saved): ObjectEntity {
+				$saved[] = $updated->getObject();
+				return $updated;
+			}
+		);
+		$this->urlGenerator->method('getAbsoluteURL')->willReturn('http://localhost/test');
+		$this->urlGenerator->method('linkToRoute')->willReturn('/test');
+		$this->settingsService->method('getRetentionSettingsOnly')->willReturn(['auditTrailsEnabled' => false]);
+
+		$this->invokePrivateMethod('handleInverseRelationsWriteBack', [$entity, $schema, ['deelnemers' => ['12']]]);
+
+		return ['lookups' => $lookups, 'saved' => $saved];
+	}//end writeBackToStoredTarget()
+
+	/**
+	 * A write-back to a target named by its numeric id saves the target by its own uuid.
+	 *
+	 * @return void
+	 */
+	public function testHandleInverseRelationsWriteBackSavesTheTargetByItsUuid(): void {
+		$lookups = $this->writeBackToStoredTarget(stored: ['deelnames' => []])['lookups'];
+
+		$this->assertSame('12', ($lookups[0] ?? null));
+		$this->assertNotContains('12', array_slice($lookups, 1), 'the save looked the target up again by its id');
+		$this->assertContains('dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4', array_slice($lookups, 1));
+	}
+
+	/**
+	 * @return array<string, array{0: array<string, mixed>, 1: array<int, string>}>
+	 */
+	public static function inverseValues(): array {
+		return [
+			'no inverse yet' => [['title' => 'kept'], ['parent-uuid']],
+			'a list' => [['title' => 'kept', 'deelnames' => ['other']], ['other', 'parent-uuid']],
+			'a single value' => [['title' => 'kept', 'deelnames' => 'other'], ['other', 'parent-uuid']],
+			'already listed' => [['title' => 'kept', 'deelnames' => ['parent-uuid']], ['parent-uuid']],
+		];
+	}//end inverseValues()
+
+	/**
+	 * The saved target keeps its data and lists the source once in its inverse property.
+	 *
+	 * @dataProvider inverseValues
+	 *
+	 * @param array<string, mixed> $stored   The target's stored data.
+	 * @param array<int, string>   $expected The inverse property as saved.
+	 *
+	 * @return void
+	 */
+	public function testWriteBackToTargetAddsTheSourceOnce(array $stored, array $expected): void {
+		$target = new ObjectEntity();
+		$target->setUuid('dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4');
+		$target->setObject($stored);
+		$mapper = $this->createMock(MagicMapper::class);
+		$mapper->method('find')->willReturn($target);
+
+		$handler = $this->getMockBuilder(SaveObject::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['saveObject'])
+			->getMock();
+		$saved = [];
+		$handler->method('saveObject')->willReturnCallback(
+			function (mixed ...$args) use (&$saved, $target): ObjectEntity {
+				$saved[] = $args;
+				return $target;
+			}
+		);
+		\Closure::bind(function () use ($mapper): void {
+			$this->objectEntityMapper = $mapper;
+		}, $handler, SaveObject::class)();
+
+		$method = new \ReflectionMethod(SaveObject::class, 'writeBackToTarget');
+		$method->invoke($handler, '12', ['inverseProperty' => 'deelnames', 'register' => '1', 'schema' => '2', 'source' => 'parent-uuid']);
+
+		$this->assertCount(1, $saved);
+		[$register, $schema, $data, $uuid] = $saved[0];
+		$this->assertSame(['1', '2', 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4'], [$register, $schema, $uuid]);
+		$this->assertSame('kept', $data['title']);
+		$this->assertSame($expected, $data['deelnames']);
+	}
+
+	/**
+	 * A write-back target without a uuid is not saved: there is nothing to name it by.
+	 *
+	 * @return void
+	 */
+	public function testHandleInverseRelationsWriteBackSkipsATargetWithoutUuid(): void {
+		$schemaObject = new \stdClass();
+		$schemaObject->properties = [
+			'deelnemers' => ['type' => 'array', 'inversedBy' => 'deelnames', 'writeBack' => true, '$ref' => '#/components/schemas/deelnemer'],
+		];
+		$schema = $this->createSchemaWithSchemaObject($schemaObject);
+		$entity = new ObjectEntity();
+		$entity->setUuid('parent-uuid');
+		$entity->setRegister('1');
+		$targetSchema = $this->getMockBuilder(Schema::class)
+			->onlyMethods(['getConfiguration', 'getProperties', 'getSchemaObject', 'hasPropertyAuthorization'])
+			->getMock();
+		$targetSchema->setId(2);
+		$targetSchema->method('getConfiguration')->willReturn([]);
+		$this->setPrivateProperty('schemaReferenceCache', ['#/components/schemas/deelnemer' => '2']);
+		$this->setPrivateProperty('schemaCache', ['2' => $targetSchema]);
+		$this->setPrivateProperty('registerCache', ['1' => $this->createMockRegister(1, 'test')]);
+
+		$targetObject = new ObjectEntity();
+		$targetObject->setObject(['deelnames' => []]);
+		$lookups = 0;
+		$this->objectEntityMapper->method('find')->willReturnCallback(
+			function () use ($targetObject, &$lookups): ObjectEntity {
+				$lookups++;
+				return $targetObject;
+			}
+		);
+
+		$this->invokePrivateMethod('handleInverseRelationsWriteBack', [$entity, $schema, ['deelnemers' => ['12']]]);
+
+		$this->assertSame(1, $lookups, 'only the target lookup ran; no save followed');
+	}
+
 	// =========================================================================
 	// findAndValidateExistingObject — additional edge cases
 	// =========================================================================
