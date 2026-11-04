@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use Throwable;
 
 /**
@@ -88,12 +88,12 @@ final class ExpressionDefaultResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param CalculationEvaluator $evaluator The JSON-AST evaluator, the same one calculations use.
+	 * @param CalculationEvaluatorInterface $evaluator The JSON-AST evaluator, the same one calculations use.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly CalculationEvaluator $evaluator,
+		private readonly CalculationEvaluatorInterface $evaluator,
 	) {
 	}//end __construct()
 

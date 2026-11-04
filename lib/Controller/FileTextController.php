@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\FileTextControllerServices;
 use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Exception\ManualEntityException;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Service\File\ManualEntityResult;
@@ -80,9 +80,9 @@ class FileTextController extends Controller {
 	/**
 	 * Entity relation mapper
 	 *
-	 * @var EntityRelationMapper
+	 * @var EntityRelationMapperInterface
 	 */
-	private readonly EntityRelationMapper $entityRelationMapper;
+	private readonly EntityRelationMapperInterface $entityRelationMapper;
 
 	/**
 	 * Logger

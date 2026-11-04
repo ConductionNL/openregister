@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 
 /**
  * The mappers and repositories of the object relations API.
@@ -33,12 +33,12 @@ final class ObjectRelationsMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param RegisterMapper $registerMapper Resolves an object's register for that guard.
+	 * @param RegisterMapperInterface $registerMapper Resolves an object's register for that guard.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function __construct(
-		public readonly RegisterMapper $registerMapper,
+		public readonly RegisterMapperInterface $registerMapper,
 	) {
 	}//end __construct()
 }//end class

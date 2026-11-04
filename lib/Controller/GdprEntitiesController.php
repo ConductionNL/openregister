@@ -28,10 +28,10 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Controller\Support\GdprEntitiesControllerServices;
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -73,9 +73,9 @@ class GdprEntitiesController extends Controller {
 	/**
 	 * Entity relation mapper
 	 *
-	 * @var EntityRelationMapper
+	 * @var EntityRelationMapperInterface
 	 */
-	private readonly EntityRelationMapper $entityRelationMapper;
+	private readonly EntityRelationMapperInterface $entityRelationMapper;
 
 	/**
 	 * Database connection
@@ -108,9 +108,9 @@ class GdprEntitiesController extends Controller {
 	/**
 	 * Org-scoping helper
 	 *
-	 * @var OrganisationService
+	 * @var OrganisationServiceInterface
 	 */
-	private readonly OrganisationService $organisationService;
+	private readonly OrganisationServiceInterface $organisationService;
 
 	/**
 	 * Masks another reviewer's hidden decision

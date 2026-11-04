@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 
 /**
  * The domain services of the gdpr entities API.
@@ -34,13 +34,13 @@ final class GdprEntitiesDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param OrganisationService $organisationService Org-scoping helper
+	 * @param OrganisationServiceInterface $organisationService Org-scoping helper
 	 * @param DecisionVisibility  $decisionVisibility  Masks another reviewer's hidden decision
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	public function __construct(
-		public readonly OrganisationService $organisationService,
+		public readonly OrganisationServiceInterface $organisationService,
 		public readonly DecisionVisibility $decisionVisibility,
 	) {
 	}//end __construct()

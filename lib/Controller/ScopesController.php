@@ -30,9 +30,9 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -75,8 +75,8 @@ class ScopesController extends Controller {
 	 * @param string $appName Application identifier.
 	 * @param IRequest $request Active HTTP request.
 	 * @param ControllerSession $session Session, group manager and logger.
-	 * @param RegisterMapper $registerMapper Register lookup.
-	 * @param SchemaMapper $schemaMapper Schema lookup.
+	 * @param RegisterMapperInterface $registerMapper Register lookup.
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
 	 * @param PermissionHandler $permissionHandler RBAC evaluator that
 	 *                                             owns the rule chain.
 	 */
@@ -84,8 +84,8 @@ class ScopesController extends Controller {
 		string $appName,
 		IRequest $request,
 		ControllerSession $session,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PermissionHandler $permissionHandler,
 	) {
 		parent::__construct(appName: $appName, request: $request);

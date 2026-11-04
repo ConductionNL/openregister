@@ -85,9 +85,9 @@ class MappingMapper extends QBMapper {
 	 * Not `readonly`/`private`: MultiTenancyTrait reads it, and the trait's
 	 * contract says the using class must supply it.
 	 *
-	 * @var OrganisationMapper Organisation mapper instance
+	 * @var OrganisationMapperInterface Organisation mapper instance
 	 */
-	protected OrganisationMapper $organisationMapper;
+	protected OrganisationMapperInterface $organisationMapper;
 
 	/**
 	 * Group manager for RBAC
@@ -119,7 +119,7 @@ class MappingMapper extends QBMapper {
 	 * Calls parent constructor to set up base mapper functionality.
 	 *
 	 * @param IDBConnection $db Database connection
-	 * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy and RBAC
+	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy and RBAC
 	 * @param IUserSession $userSession User session
 	 * @param IGroupManager $groupManager Group manager
 	 * @param ICacheFactory $cacheFactory Cache factory for distributed caching
@@ -133,7 +133,7 @@ class MappingMapper extends QBMapper {
 		// active organisation's membership through this; without it the check can
 		// only fail closed and would deny every non-admin write to mappings.
 		// openregister#2833.
-		OrganisationMapper $organisationMapper,
+		OrganisationMapperInterface $organisationMapper,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 		ICacheFactory $cacheFactory,

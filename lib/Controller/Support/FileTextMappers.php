@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
 
 /**
  * The mappers and repositories of the file text API.
@@ -33,12 +33,12 @@ final class FileTextMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param EntityRelationMapper $entityRelationMapper Entity relation mapper
+	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper
 	 *
 	 * @spec openspec/specs/api-test-coverage/spec.md
 	 */
 	public function __construct(
-		public readonly EntityRelationMapper $entityRelationMapper,
+		public readonly EntityRelationMapperInterface $entityRelationMapper,
 	) {
 	}//end __construct()
 }//end class

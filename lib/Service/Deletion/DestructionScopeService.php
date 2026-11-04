@@ -35,7 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Deletion;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
@@ -66,7 +66,7 @@ class DestructionScopeService {
 	 * source is missing is reported unavailable and refuses, never silently
 	 * counted as zero.
 	 *
-	 * @param AuditTrailMapper                  $auditTrailMapper Versions and content-bearing audit rows.
+	 * @param AuditTrailMapperInterface                  $auditTrailMapper Versions and content-bearing audit rows.
 	 * @param LoggerInterface                   $logger           PSR logger.
 	 * @param DestructionScopeReader            $reader           Reads the scope a schema declares.
 	 * @param NoteService|null                  $noteService      Notes on the object.
@@ -77,7 +77,7 @@ class DestructionScopeService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 		private readonly DestructionScopeReader $reader,
 		private readonly ?NoteService $noteService = null,

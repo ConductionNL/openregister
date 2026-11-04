@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Support\FileExtractionControllerServices;
 use OCA\OpenRegister\Controller\Support\FileExtractionListing;
 use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Service\RiskLevelService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
@@ -84,9 +84,9 @@ class FileExtractionController extends Controller {
 	/**
 	 * Entity relation mapper
 	 *
-	 * @var EntityRelationMapper
+	 * @var EntityRelationMapperInterface
 	 */
-	private readonly EntityRelationMapper $entityRelationMapper;
+	private readonly EntityRelationMapperInterface $entityRelationMapper;
 
 	/**
 	 * Risk level computation service

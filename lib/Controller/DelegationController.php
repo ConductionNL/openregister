@@ -52,7 +52,7 @@ use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\DelegationGrantMapper;
 use OCA\OpenRegister\Service\Delegation\DelegationConsentService;
 use OCA\OpenRegister\Service\Delegation\DelegationNotifier;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -126,9 +126,9 @@ class DelegationController extends Controller {
 	/**
 	 * Bounds who a caller may ask.
 	 *
-	 * @var OrganisationService
+	 * @var OrganisationServiceInterface
 	 */
-	private readonly OrganisationService $organisations;
+	private readonly OrganisationServiceInterface $organisations;
 
 	/**
 	 * Records a tenancy that cannot be read.

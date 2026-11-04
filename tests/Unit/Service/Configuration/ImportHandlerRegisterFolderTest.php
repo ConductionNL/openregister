@@ -45,6 +45,7 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Service\Configuration\ImportHandler
  * @uses \OCA\OpenRegister\Service\Configuration\ImportRun
+ * @uses \OCA\OpenRegister\Service\Configuration\SchemaImportOptions
  * @uses \OCA\OpenRegister\Service\Configuration\ImportComponent
  * @uses \OCA\OpenRegister\Service\Configuration\ListedSeed
  * @uses \OCA\OpenRegister\Service\Configuration\SeedReferenceIndex

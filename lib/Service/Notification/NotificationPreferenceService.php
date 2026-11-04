@@ -47,7 +47,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Notification;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
 use OCP\IConfig;
 use OCP\IGroupManager;
@@ -174,14 +174,14 @@ class NotificationPreferenceService implements NotificationPreferencesInterface 
 	 * Constructor.
 	 *
 	 * @param IConfig $config Nextcloud config for per-user values.
-	 * @param SchemaMapper $schemaMapper Mapper used to enumerate accessible schemas.
+	 * @param SchemaMapperInterface $schemaMapper Mapper used to enumerate accessible schemas.
 	 * @param LoggerInterface $logger Logger for diagnostics.
 	 * @param IGroupManager|null $groupManager Group resolver; null leaves the group layer empty.
 	 * @param IUserManager|null $userManager User resolver, needed to read a user's groups.
 	 */
 	public function __construct(
 		private readonly IConfig $config,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 		private readonly ?IGroupManager $groupManager = null,
 		private readonly ?IUserManager $userManager = null,

@@ -177,74 +177,79 @@ class TaskService implements ObjectCalendarTasksInterface {
 		$calendars = $this->calDavBackend->getCalendarsForUser($principal);
 
 		$allTasks = [];
-
 		foreach ($calendars as $calendar) {
-			// Check if this calendar supports VTODO.
 			$components = $calendar['{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set'];
-			if ($this->calendarSupportsVtodo(components: $components) === false) {
-				continue;
+			if ($this->calendarSupportsVtodo(components: $components) === true) {
+				array_push($allTasks, ...$this->calendarTasks(calendarId: $calendar['id'], status: $status));
 			}
-
-			$calendarId = $calendar['id'];
-			$calendarObjects = $this->calDavBackend->getCalendarObjects($calendarId);
-
-			foreach ($calendarObjects as $calendarObject) {
-				$fullObject = $this->calDavBackend->getCalendarObject($calendarId, $calendarObject['uri']);
-				if ($fullObject === null || empty($fullObject['calendardata']) === true) {
-					continue;
-				}
-
-				$calendarData = $fullObject['calendardata'];
-
-				// Quick check: skip if this is not a VTODO.
-				if (strpos($calendarData, 'VTODO') === false) {
-					continue;
-				}
-
-				try {
-					$taskArray = $this->vtodoToArray(
-						calendarData: $calendarData,
-						calendarId: (string)$calendarId,
-						uri: $calendarObject['uri']
-					);
-
-					if ($taskArray === null) {
-						continue;
-					}
-
-					// Apply status filter.
-					if ($status !== null && $taskArray['status'] !== strtolower($status)) {
-						continue;
-					}
-
-					$allTasks[] = $taskArray;
-				} catch (Exception $e) {
-					$this->logger->warning(
-						'Failed to parse calendar object: ' . $e->getMessage(),
-						['uri' => $calendarObject['uri']]
-					);
-				}//end try
-			}//end foreach
-		}//end foreach
+		}
 
 		// Sort by due date (soonest first, nulls last).
 		usort(
 			array: $allTasks,
 			callback: function ($a, $b) {
-				$dueA = $a['due'] ?? '9999-12-31';
-				$dueB = $b['due'] ?? '9999-12-31';
-				return strcmp($dueA, $dueB);
+				return strcmp($a['due'] ?? '9999-12-31', $b['due'] ?? '9999-12-31');
 			}
 		);
 
-		$total = count($allTasks);
-		$results = array_slice($allTasks, $offset, $limit);
-
 		return [
-			'results' => $results,
-			'total' => $total,
+			'results' => array_slice($allTasks, $offset, $limit),
+			'total' => count($allTasks),
 		];
 	}//end getAllUserTasks()
+
+	/**
+	 * The tasks of one calendar, optionally only those with a status.
+	 *
+	 * @param mixed       $calendarId The calendar id.
+	 * @param string|null $status     Status filter, compared case-insensitively.
+	 *
+	 * @return list<array> The tasks.
+	 */
+	private function calendarTasks(mixed $calendarId, ?string $status): array {
+		$tasks = [];
+		foreach ($this->calDavBackend->getCalendarObjects($calendarId) as $calendarObject) {
+			$task = $this->readTask(calendarId: $calendarId, uri: $calendarObject['uri']);
+			if ($task === null || ($status !== null && $task['status'] !== strtolower($status))) {
+				continue;
+			}
+
+			$tasks[] = $task;
+		}
+
+		return $tasks;
+	}//end calendarTasks()
+
+	/**
+	 * One calendar object as a task, or null when it is gone, empty, not a VTODO or unreadable.
+	 *
+	 * @param mixed  $calendarId The calendar id.
+	 * @param string $uri        The calendar object URI.
+	 *
+	 * @return array|null The task.
+	 */
+	private function readTask(mixed $calendarId, string $uri): ?array {
+		$fullObject = $this->calDavBackend->getCalendarObject($calendarId, $uri);
+		if ($fullObject === null || empty($fullObject['calendardata']) === true) {
+			return null;
+		}
+
+		// Quick check: skip if this is not a VTODO.
+		$calendarData = $fullObject['calendardata'];
+		if (strpos($calendarData, 'VTODO') === false) {
+			return null;
+		}
+
+		try {
+			return $this->vtodoToArray(calendarData: $calendarData, calendarId: (string)$calendarId, uri: $uri);
+		} catch (Exception $e) {
+			$this->logger->warning(
+				'Failed to parse calendar object: ' . $e->getMessage(),
+				['uri' => $uri]
+			);
+			return null;
+		}
+	}//end readTask()
 
 	/**
 	 * Check whether a calendar supports VTODO components.

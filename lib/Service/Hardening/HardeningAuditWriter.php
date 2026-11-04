@@ -33,7 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hardening;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -48,13 +48,13 @@ class HardeningAuditWriter {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapper $auditTrailMapper The hash-chained trail.
+	 * @param AuditTrailMapperInterface $auditTrailMapper The hash-chained trail.
 	 * @param LoggerInterface  $logger           Records a row that could not be written.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 	) {
 

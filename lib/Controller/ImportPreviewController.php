@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapper;
 use OCA\OpenRegister\Db\ImportPreviewRowMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Import\ConflictPolicy;
 use OCA\OpenRegister\Service\Import\ImportPreviewRefusedException;
 use OCA\OpenRegister\Service\Import\ImportPreviewService;
@@ -109,9 +109,9 @@ class ImportPreviewController extends Controller {
 	/**
 	 * Register lookup.
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * The background queue.
