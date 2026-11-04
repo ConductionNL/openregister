@@ -29,6 +29,7 @@ use Exception;
 use OCA\OpenRegister\Event\OrganisationCreatedEvent;
 use OCA\OpenRegister\Event\OrganisationDeletedEvent;
 use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
+use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -150,7 +151,7 @@ class OrganisationMapper extends QBMapper {
 		 */
 
 		// Find old entity by database ID (not UUID) so this works even when the UUID
-		// is being changed (e.g. slug collision path sets a new UUID before saving).
+		// is being changed.
 		$oldEntity = null;
 		if ($entity->getId() !== null) {
 			try {
@@ -318,6 +319,9 @@ class OrganisationMapper extends QBMapper {
 	 * @return Organisation The saved organisation
 	 *
 	 * @throws \Exception If UUID is invalid or already exists
+	 * @throws OrganisationSlugConflictException If a new organisation's slug is taken
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-organisationservice-must-resolve-per-user-organisation-membership-and-active-context
 	 */
 	public function save(Organisation $organisation): Organisation {
 		// Validate UUID if provided.
@@ -338,32 +342,49 @@ class OrganisationMapper extends QBMapper {
 		$organisation->setUpdated($now);
 
 		if ($organisation->getId() === null) {
+			// A new organisation is only ever inserted, never written over the one holding its slug.
+			$this->refuseTakenSlug(organisation: $organisation);
 			try {
-				$result = $this->insert(entity: $organisation);
-				return $result;
+				return $this->insert(entity: $organisation);
 			} catch (Exception $e) {
-				// Handle duplicate slug: find the existing org and update it instead.
-				$isSlugConflict = str_contains(haystack: $e->getMessage(), needle: 'organisations_slug_unique') === true;
-				if ($organisation->getSlug() !== null && $isSlugConflict === true) {
-					$this->logger->info(
-						message: '[OrganisationMapper] Duplicate slug, updating existing organisation',
-						context: ['slug' => $organisation->getSlug()]
-					);
-					$existing = $this->findBySlug(slug: $organisation->getSlug());
-					$organisation->setId($existing->getId());
-					$organisation->setCreated($existing->getCreated());
-					return $this->update(entity: $organisation);
-				}
-
+				// The unique index catches a slug taken after the check above.
+				$this->refuseTakenSlug(organisation: $organisation, previous: $e);
 				$this->logger->error(
 					message: '[OrganisationMapper] insert() failed: ' . $e->getMessage(),
 				);
 				throw $e;
-			}//end try
-		}//end if
+			}
+		}
 
 		return $this->update(entity: $organisation);
 	}//end save()
+
+	/**
+	 * Throw a conflict when another organisation holds this organisation's slug.
+	 *
+	 * @param Organisation   $organisation The new organisation.
+	 * @param Exception|null $previous     The insert failure, when checking after one.
+	 *
+	 * @return void
+	 *
+	 * @throws OrganisationSlugConflictException When the slug is taken.
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-organisationservice-must-resolve-per-user-organisation-membership-and-active-context
+	 */
+	private function refuseTakenSlug(Organisation $organisation, ?Exception $previous = null): void {
+		$slug = $organisation->getSlug();
+		if ($slug === null || $slug === '') {
+			return;
+		}
+
+		try {
+			$this->findBySlug(slug: $slug);
+		} catch (DoesNotExistException) {
+			return;
+		}
+
+		throw new OrganisationSlugConflictException(slug: $slug, previous: $previous);
+	}//end refuseTakenSlug()
 
 	/**
 	 * Generate a unique UUID for organisations

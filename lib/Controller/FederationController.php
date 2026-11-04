@@ -384,10 +384,12 @@ class FederationController extends Controller {
 	#[AnonRateLimit(limit: 20, period: 60)]
 	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function updateObject(string $shareToken, string $id): JSONResponse {
-		$share = $this->writableTarget(shareToken: $shareToken, id: $id);
-		if ($share instanceof JSONResponse) {
-			return $share;
+		$target = $this->writableTarget(shareToken: $shareToken, id: $id);
+		if ($target instanceof JSONResponse) {
+			return $target;
 		}
+
+		$share = $target['share'];
 
 		$data = (array)$this->request->getParams();
 		unset($data['shareToken'], $data['id'], $data['_route']);
@@ -401,7 +403,7 @@ class FederationController extends Controller {
 				object: $data,
 				register: $share->getRegister(),
 				schema: $share->getSchema(),
-				uuid: $id,
+				uuid: $target['uuid'],
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -428,14 +430,15 @@ class FederationController extends Controller {
 	#[AnonRateLimit(limit: 20, period: 60)]
 	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function deleteObject(string $shareToken, string $id): JSONResponse {
-		$share = $this->writableTarget(shareToken: $shareToken, id: $id);
-		if ($share instanceof JSONResponse) {
-			return $share;
+		$target = $this->writableTarget(shareToken: $shareToken, id: $id);
+		if ($target instanceof JSONResponse) {
+			return $target;
 		}
 
+		$share = $target['share'];
 		try {
 			$ok = $this->objectService->deleteObject(
-				uuid: $id,
+				uuid: $target['uuid'],
 				register: $share->getRegister(),
 				schema: $share->getSchema(),
 				_rbac: false,
@@ -471,26 +474,29 @@ class FederationController extends Controller {
 	 * @param string $shareToken The scoped bearer share token.
 	 * @param string $id         The object id/uuid taken from the URL.
 	 *
-	 * @return FederatedShare|JSONResponse The share, or a 403, 404 or 500 response.
+	 * @return array{share: FederatedShare, uuid: string}|JSONResponse The share and the uuid of the
+	 *                                                                 object it may write, or a 403, 404 or 500 response.
 	 */
-	private function writableTarget(string $shareToken, string $id): FederatedShare|JSONResponse {
+	private function writableTarget(string $shareToken, string $id): array|JSONResponse {
 		$share = $this->resolveWritableShare(shareToken: $shareToken);
 		if ($share === null) {
 			return new JSONResponse(data: ['error' => 'Invalid share or read-only'], statusCode: Http::STATUS_FORBIDDEN);
 		}
 
 		try {
-			$target = $this->reachableObject(share: $share, id: $id);
+			$target = $this->reachableEntity(share: $share, id: $id);
 		} catch (Throwable $e) {
 			$this->logger->error('[Federation] write target lookup failed: ' . $e->getMessage());
 			return new JSONResponse(data: ['error' => 'Could not read shared object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
-		if ($target === null) {
+		// The write names the object the guard checked by its uuid; one without a uuid is not written.
+		$uuid = (string) ($target?->getUuid() ?? '');
+		if ($uuid === '') {
 			return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
 		}
 
-		return $share;
+		return ['share' => $share, 'uuid' => $uuid];
 	}//end writableTarget()
 
 	/**
@@ -513,6 +519,30 @@ class FederationController extends Controller {
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function reachableObject(FederatedShare $share, string $id): ?array {
+		$entity = $this->reachableEntity(share: $share, id: $id);
+		if ($entity === null) {
+			return null;
+		}
+
+		return ($this->applyShareVisibility(objects: [$entity], share: $share)[0] ?? null);
+	}//end reachableObject()
+
+	/**
+	 * The object a single-object call addresses, when the share reaches it.
+	 *
+	 * The same guard as {@see reachableObject()}, answering with the stored
+	 * object rather than its rendering, so a write can name it by its uuid.
+	 *
+	 * @param FederatedShare $share The share being served.
+	 * @param string         $id    The object id/uuid taken from the URL.
+	 *
+	 * @return ObjectEntity|null The object, or null.
+	 *
+	 * @throws Throwable When the lookup itself fails.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
+	 */
+	private function reachableEntity(FederatedShare $share, string $id): ?ObjectEntity {
 		if ($this->scopeCoversObject(share: $share, id: $id) === false) {
 			return null;
 		}
@@ -529,12 +559,15 @@ class FederationController extends Controller {
 			return null;
 		}
 
-		if ($entity === null || $this->queryCoversObject(share: $share, entity: $entity) === false) {
+		if ($entity === null
+			|| $this->queryCoversObject(share: $share, entity: $entity) === false
+			|| $this->applyShareVisibility(objects: [$entity], share: $share) === []
+		) {
 			return null;
 		}
 
-		return ($this->applyShareVisibility(objects: [$entity], share: $share)[0] ?? null);
-	}//end reachableObject()
+		return $entity;
+	}//end reachableEntity()
 
 	/**
 	 * Whether a query-scope share's filter selects the record being addressed.
