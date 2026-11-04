@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\FileService;
 use OCP\Files\File;
 use OCP\Files\Node;
 use OCP\Files\NotFoundException;
@@ -49,12 +48,12 @@ final class ObjectFileFinder
 	/**
 	 * Constructor.
 	 *
-	 * @param LoggerInterface $logger      The logger.
-	 * @param FileService     $fileService The file service.
+	 * @param LoggerInterface                        $logger      The logger.
+	 * @param \OCA\OpenRegister\Service\FileService $fileService The file service.
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly FileService $fileService,
+		private readonly \OCA\OpenRegister\Service\FileService $fileService,
 	) {
 	}//end __construct()
 
