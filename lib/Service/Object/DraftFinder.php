@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Service\Object;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Throwable;
 
 /**
@@ -52,10 +52,10 @@ class DraftFinder {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects Reads objects.
+	 * @param ObjectOperationsInterface $objects Reads objects.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 	) {
 
 	}//end __construct()

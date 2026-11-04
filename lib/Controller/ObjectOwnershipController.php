@@ -44,7 +44,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCP\AppFramework\Controller;
@@ -67,9 +67,9 @@ class ObjectOwnershipController extends Controller {
 	/**
 	 * Resolves a record through the RBAC boundary.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Resolves the register entity.

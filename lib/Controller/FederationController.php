@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\FederatedShareMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
@@ -125,9 +125,9 @@ class FederationController extends Controller {
 	/**
 	 * Object read service.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Share management (list/create/revoke).

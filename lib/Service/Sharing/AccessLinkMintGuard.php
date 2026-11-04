@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Throwable;
 
 /**
@@ -55,14 +55,14 @@ class AccessLinkMintGuard {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects The object read path, asked with the rules on.
+	 * @param ObjectOperationsInterface $objects The object read path, asked with the rules on.
 	 * @param AccessLinkSubject $subjects Reads which object a subject names.
 	 * @param ViewMapperInterface        $views    Resolves a view under the caller's own rules.
 	 * @param RegisterMapperInterface $registers Resolves the registers a view names, same rules.
 	 * @param SchemaMapperInterface $schemas Resolves the schemas a view names, same rules.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly AccessLinkSubject $subjects,
 		private readonly ViewMapperInterface $views,
 		private readonly RegisterMapperInterface $registers,

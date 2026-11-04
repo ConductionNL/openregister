@@ -28,7 +28,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Support\NotesControllerServices;
 use OCA\OpenRegister\Exception\NoteWriteRefusedException;
 use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
 use OCA\OpenRegister\Service\Timeline\TimelineWriteService;
 use OCA\OpenRegister\Service\TimelineVisibilityService;
@@ -58,9 +58,9 @@ class NotesController extends Controller {
 	/**
 	 * Object service for object validation.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Visibility guard, filter and audit

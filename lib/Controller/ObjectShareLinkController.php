@@ -48,7 +48,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ObjectShareLinkControllerServices;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -101,9 +101,9 @@ class ObjectShareLinkController extends Controller {
 	/**
 	 * Loads the addressed object.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Projects the object onto what an anonymous caller may read.
