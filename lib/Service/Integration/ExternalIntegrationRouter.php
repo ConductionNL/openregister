@@ -39,6 +39,7 @@ use LogicException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -459,7 +460,7 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 *
 	 * @return ObjectEntity|null The source, or null when no register holds it.
 	 *
-	 * @throws \Throwable When ObjectService cannot be resolved or fails for a
+	 * @throws \Throwable When ObjectOperationsInterface cannot be resolved or fails for a
 	 *                    reason other than a missing register or object.
 	 *
 	 * @spec openspec/specs/integration-registry/spec.md#requirement-external-strategy-providers-must-route-through-openconnector
@@ -469,7 +470,7 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 			return null;
 		}
 
-		$objectService = $this->container->get(ObjectService::class);
+		$objectService = $this->container->get(ObjectOperationsInterface::class);
 		if ($objectService instanceof ObjectService === false) {
 			throw new RuntimeException('The container did not return an ObjectService.');
 		}

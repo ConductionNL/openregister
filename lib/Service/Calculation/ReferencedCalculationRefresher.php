@@ -43,7 +43,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -322,7 +322,7 @@ class ReferencedCalculationRefresher {
 			);
 		}
 
-		$service = $this->container->get(ObjectService::class);
+		$service = $this->container->get(ObjectOperationsInterface::class);
 		$saved   = 0;
 		foreach ($rows as $row) {
 			try {

@@ -62,7 +62,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
@@ -117,9 +117,9 @@ class ArchivalRetentionTask extends TimedJob {
 	/**
 	 * Object service used to perform the sweep deletes.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Retention service, asked whether a row is under an active legal hold.
@@ -161,7 +161,7 @@ class ArchivalRetentionTask extends TimedJob {
 	 * @param RegisterMapperInterface $registerMapper Register repository.
 	 * @param SchemaMapperInterface $schemaMapper Schema repository.
 	 * @param MagicMapper $magicMapper Magic-table resolver.
-	 * @param ObjectService $objectService Service used to perform the sweep deletes.
+	 * @param ObjectOperationsInterface $objectService Service used to perform the sweep deletes.
 	 * @param RetentionServiceInterface $retentionService Answers whether a row is under an active legal hold.
 	 * @param ContainerInterface $container App container the notification collaborators come from.
 	 * @param LoggerInterface $logger Logger for per-schema summaries.
@@ -172,7 +172,7 @@ class ArchivalRetentionTask extends TimedJob {
 		RegisterMapperInterface $registerMapper,
 		SchemaMapperInterface $schemaMapper,
 		MagicMapper $magicMapper,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		RetentionServiceInterface $retentionService,
 		ContainerInterface $container,
 		LoggerInterface $logger,

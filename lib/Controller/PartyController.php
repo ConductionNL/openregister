@@ -30,7 +30,7 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartySearchService;
@@ -57,7 +57,7 @@ class PartyController extends Controller {
 	 *
 	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
-	 * @param ObjectService $objects Object service, to resolve the object a party sits on.
+	 * @param ObjectOperationsInterface $objects Object service, to resolve the object a party sits on.
 	 * @param PartyRoleService $roles The parties on an object.
 	 * @param PartyService $parties The party records.
 	 * @param PartyIndicatorGuard $indicators The declared effects.
@@ -67,7 +67,7 @@ class PartyController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly PartyRoleService $roles,
 		private readonly PartyService $parties,
 		private readonly PartyIndicatorGuard $indicators,

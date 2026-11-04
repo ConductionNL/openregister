@@ -45,7 +45,7 @@ use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
 use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteService;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -66,7 +66,7 @@ class DsarCaseController extends Controller {
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param ObjectService $objectService RBAC + tenant scoped object store (case creation).
+	 * @param ObjectOperationsInterface $objectService RBAC + tenant scoped object store (case creation).
 	 * @param CaseObjectAccessor $accessor RBAC-scoped case load helper.
 	 * @param CaseAccessControl $accessControl Case-level access-control check (fail closed).
 	 * @param TransitionEngine $transitionEngine Lifecycle transition driver (runs the guard on save).
@@ -81,7 +81,7 @@ class DsarCaseController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly CaseObjectAccessor $accessor,
 		private readonly CaseAccessControl $accessControl,
 		private readonly TransitionEngine $transitionEngine,
