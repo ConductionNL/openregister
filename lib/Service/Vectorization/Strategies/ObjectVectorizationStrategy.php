@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\Vectorization\Strategies;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 
 /**
  * ObjectVectorizationStrategy

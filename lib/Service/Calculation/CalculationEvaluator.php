@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Service\Calculation;
 use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use Throwable;
 
 /**

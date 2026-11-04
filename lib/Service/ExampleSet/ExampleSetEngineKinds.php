@@ -29,6 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
+
 /**
  * Tasks and saved views of an example set, together.
  *

@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Service\Timeline\ReferenceService;
 use OCA\OpenRegister\Service\Timeline\TextBlockService;
 use OCA\OpenRegister\Service\Timeline\TimelineKindService;
@@ -61,6 +62,27 @@ use Throwable;
 class TimelineAdminController extends Controller {
 
 	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * The group manager.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * The logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string              $appName      App name.
@@ -68,9 +90,7 @@ class TimelineAdminController extends Controller {
 	 * @param TimelineKindService $kinds        The entry kinds.
 	 * @param ReferenceService    $references   The reference patterns.
 	 * @param TextBlockService    $blocks       The canned text blocks.
-	 * @param IUserSession        $userSession  The caller.
-	 * @param IGroupManager       $groupManager Decides the administrative posture.
-	 * @param LoggerInterface     $logger       Logger.
+	 * @param ControllerSession $session Session, group manager and logger.
 	 *
 	 * @return void
 	 */
@@ -80,11 +100,13 @@ class TimelineAdminController extends Controller {
 		private readonly TimelineKindService $kinds,
 		private readonly ReferenceService $references,
 		private readonly TextBlockService $blocks,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly LoggerInterface $logger,
+		ControllerSession $session,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+
+		$this->userSession = $session->userSession;
+		$this->groupManager = $session->groupManager;
+		$this->logger = $session->logger;
 	}//end __construct()
 
 	/**

@@ -86,10 +86,6 @@ class BulkTranslationService {
 	 * @return array{translated: array<string, string>, skipped: array<string, string>}
 	 *
 	 * @spec openspec/specs/register-i18n/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
 	public function translateObject(
 		ObjectEntity $object,
@@ -97,9 +93,6 @@ class BulkTranslationService {
 		string $toLong,
 		?array $properties = null,
 	): array {
-		$translated = [];
-		$skipped = [];
-
 		if ($fromLong === $toLong) {
 			return ['translated' => [], 'skipped' => ['_global' => 'fromLang === toLang']];
 		}
@@ -114,93 +107,138 @@ class BulkTranslationService {
 			return ['translated' => [], 'skipped' => ['_global' => 'no-translatable-properties']];
 		}
 
-		$data = (array)($object->getObject() ?? []);
-		$translator = 'provider:' . $this->provider->getIdentifier();
-
+		$request = new ObjectTranslationRequest(object: $object, fromLong: $fromLong, toLong: $toLong);
+		$result = ['translated' => [], 'skipped' => []];
 		foreach ($translatableProps as $property) {
 			if (is_array($properties) === true && in_array($property, $properties, true) === false) {
 				continue;
 			}
 
-			$existing = $data[$property] ?? null;
-
-			// Source value lookup.
-			$sourceValue = null;
-			if (is_array($existing) === true && isset($existing[$fromLong]) === true) {
-				$sourceValue = $existing[$fromLong];
-			} elseif (is_string($existing) === true && $fromLong === 'nl') {
-				// Legacy single-language fallback — treat plain string as NL.
-				$sourceValue = $existing;
-			}
-
-			if (is_string($sourceValue) === false || $sourceValue === '') {
-				$skipped[$property] = 'no-source-value';
+			$value = $this->translateProperty(request: $request, property: $property);
+			if ($value['translated'] === true) {
+				$result['translated'][$property] = $value['text'];
 				continue;
 			}
 
-			// Don't overwrite an existing target translation. Skip if
-			// the slot is already filled (any non-empty value, regardless
-			// of status — promotion is the operator's job).
-			if (is_array($existing) === true
-				&& isset($existing[$toLong]) === true
-				&& is_string($existing[$toLong]) === true
-				&& $existing[$toLong] !== ''
-			) {
-				$skipped[$property] = 'target-slot-already-filled';
-				continue;
-			}
+			$result['skipped'][$property] = $value['text'];
+		}
 
-			try {
-				$translatedValue = $this->provider->translate($sourceValue, $fromLong, $toLong);
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					sprintf(
-						'[BulkTranslationService] provider %s failed for %s/%s -> %s: %s',
-						$this->provider->getIdentifier(),
-						$object->getUuid(),
-						$property,
-						$toLong,
-						$e->getMessage()
-					)
-				);
-				$skipped[$property] = 'provider-error: ' . $e->getMessage();
-				continue;
-			}
-
-			if (is_string($translatedValue) === false || $translatedValue === '') {
-				$skipped[$property] = 'provider-returned-empty';
-				continue;
-			}
-
-			$translated[$property] = $translatedValue;
-
-			// Mirror into the sidecar immediately so search/completeness
-			// queries see the new translation without waiting for the
-			// caller to persist the object.
-			try {
-				$this->translationMapper->upsert(
-					objectUuid: (string)$object->getUuid(),
-					property: $property,
-					language: $toLong,
-					value: $translatedValue,
-					status: Translation::STATUS_MACHINE_TRANSLATED,
-					translator: $translator
-				);
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					sprintf(
-						'[BulkTranslationService] sidecar upsert failed for %s/%s/%s: %s',
-						$object->getUuid(),
-						$property,
-						$toLong,
-						$e->getMessage()
-					)
-				);
-			}
-		}//end foreach
-
-		return ['translated' => $translated, 'skipped' => $skipped];
+		return $result;
 	}//end translateObject()
+
+	/**
+	 * Translate one property into its target-language slot and mirror it into the sidecar.
+	 *
+	 * A missing source value, a filled target slot (whatever its status: promotion is the
+	 * operator's job), a provider failure or an empty answer skips the property.
+	 *
+	 * @param ObjectTranslationRequest $request  The object and languages.
+	 * @param string                   $property The property name.
+	 *
+	 * @return array{translated: bool, text: string} The translation, or the reason it was skipped.
+	 */
+	private function translateProperty(ObjectTranslationRequest $request, string $property): array {
+		$existing = $request->data[$property] ?? null;
+		$sourceValue = $this->sourceValue(existing: $existing, fromLong: $request->fromLong);
+		if (is_string($sourceValue) === false || $sourceValue === '') {
+			return ['translated' => false, 'text' => 'no-source-value'];
+		}
+
+		if ($this->targetSlotFilled(existing: $existing, toLong: $request->toLong) === true) {
+			return ['translated' => false, 'text' => 'target-slot-already-filled'];
+		}
+
+		try {
+			$translatedValue = $this->provider->translate($sourceValue, $request->fromLong, $request->toLong);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf(
+					'[BulkTranslationService] provider %s failed for %s/%s -> %s: %s',
+					$this->provider->getIdentifier(),
+					$request->object->getUuid(),
+					$property,
+					$request->toLong,
+					$e->getMessage()
+				)
+			);
+			return ['translated' => false, 'text' => 'provider-error: ' . $e->getMessage()];
+		}
+
+		if (is_string($translatedValue) === false || $translatedValue === '') {
+			return ['translated' => false, 'text' => 'provider-returned-empty'];
+		}
+
+		$this->mirrorTranslation(request: $request, translation: ['property' => $property, 'value' => $translatedValue]);
+		return ['translated' => true, 'text' => $translatedValue];
+	}//end translateProperty()
+
+	/**
+	 * The source-language value of a property: its `fromLong` slot, or a plain string as legacy
+	 * single-language Dutch.
+	 *
+	 * @param mixed  $existing The property's stored value.
+	 * @param string $fromLong Source language code.
+	 *
+	 * @return mixed The source value, null when there is none.
+	 */
+	private function sourceValue(mixed $existing, string $fromLong): mixed {
+		if (is_array($existing) === true && isset($existing[$fromLong]) === true) {
+			return $existing[$fromLong];
+		}
+
+		if (is_string($existing) === true && $fromLong === 'nl') {
+			return $existing;
+		}
+
+		return null;
+	}//end sourceValue()
+
+	/**
+	 * Whether a property already holds a non-empty target-language value.
+	 *
+	 * @param mixed  $existing The property's stored value.
+	 * @param string $toLong   Target language code.
+	 *
+	 * @return bool True when the target slot is filled.
+	 */
+	private function targetSlotFilled(mixed $existing, string $toLong): bool {
+		return is_array($existing) === true
+			&& isset($existing[$toLong]) === true
+			&& is_string($existing[$toLong]) === true
+			&& $existing[$toLong] !== '';
+	}//end targetSlotFilled()
+
+	/**
+	 * Write a machine translation into the sidecar, so search and completeness queries see it
+	 * before the caller persists the object. A failure is logged, not thrown.
+	 *
+	 * @param ObjectTranslationRequest $request     The object and languages.
+	 * @param array                    $translation The property and its translated value.
+	 *
+	 * @return void
+	 */
+	private function mirrorTranslation(ObjectTranslationRequest $request, array $translation): void {
+		try {
+			$this->translationMapper->upsert(
+				objectUuid: (string)$request->object->getUuid(),
+				property: $translation['property'],
+				language: $request->toLong,
+				value: $translation['value'],
+				status: Translation::STATUS_MACHINE_TRANSLATED,
+				translator: 'provider:' . $this->provider->getIdentifier()
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf(
+					'[BulkTranslationService] sidecar upsert failed for %s/%s/%s: %s',
+					$request->object->getUuid(),
+					$translation['property'],
+					$request->toLong,
+					$e->getMessage()
+				)
+			);
+		}
+	}//end mirrorTranslation()
 
 	/**
 	 * Resolve a schema entity from an object's schema reference.

@@ -52,6 +52,9 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Controller\CaseController
  * @uses \OCA\OpenRegister\Db\CaseItem
  * @uses \OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHop
+ * @uses \OCA\OpenRegister\Service\Flow\FlowWalkHop
+ * @uses \OCA\OpenRegister\Service\Flow\FlowWalkPass
  */
 class CaseControllerTest extends TestCase {
 

@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\AuthenticationException;
 use OCA\OpenRegister\Service\AuthenticationService;
 use OCA\OpenRegister\Service\AuthorizationService;
-use OCA\OpenRegister\Service\DashboardService;
+use OCA\OpenRegister\Search\Service\DashboardService;
 use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Service\OrganisationService;

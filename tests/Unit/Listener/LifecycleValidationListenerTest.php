@@ -71,7 +71,7 @@ class LifecycleValidationListenerTest extends TestCase {
 	private function realConditionDialect(): \OCA\OpenRegister\Service\Rules\ConditionDialect {
 		return new \OCA\OpenRegister\Service\Rules\ConditionDialect(
 			ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
-				placeholders: new \OCA\OpenRegister\Service\Search\PlaceholderResolver(
+				placeholders: new \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver(
 					userSession: $this->createMock(originalClassName: \OCP\IUserSession::class)
 				)
 			)
@@ -148,7 +148,7 @@ class LifecycleValidationListenerTest extends TestCase {
 			new \OCA\OpenRegister\Service\Rules\ConditionTracer(
 				dialect: new \OCA\OpenRegister\Service\Rules\ConditionDialect(
 					ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
-						placeholders: new \OCA\OpenRegister\Service\Search\PlaceholderResolver(
+						placeholders: new \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver(
 							userSession: $this->createMock(originalClassName: \OCP\IUserSession::class)
 						)
 					)

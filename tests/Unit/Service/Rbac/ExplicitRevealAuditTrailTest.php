@@ -63,7 +63,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealChangeMask
  * @uses \OCA\OpenRegister\Db\ObjectEntity
- * @uses \OCA\OpenRegister\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
  * @uses \OCA\OpenRegister\Service\Rules\ConditionDialect
  * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRules
  * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver

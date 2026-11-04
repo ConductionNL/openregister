@@ -26,8 +26,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
