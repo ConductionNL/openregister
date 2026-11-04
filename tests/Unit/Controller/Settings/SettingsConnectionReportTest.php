@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\LlmSettingsControllerFactory;
 use OCA\OpenRegister\Controller\Settings\ApiTokenSettingsController;
 use OCA\OpenRegister\Controller\Settings\EdepotSettingsController;
 use OCA\OpenRegister\Controller\Settings\LlmSettingsController;
@@ -132,7 +133,7 @@ class SettingsConnectionReportTest extends TestCase {
 
 		$this->request->method('getParams')->willReturn([]);
 
-		return new LlmSettingsController(
+		return LlmSettingsControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			db: $this->createMock(originalClassName: IDBConnection::class),

@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\RegistrySubscriptionControllerServices;
 use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -52,28 +53,66 @@ class RegistrySubscriptionController extends Controller {
 	use HandlesExceptionsTrait;
 
 	/**
+	 * Resolves the target object.
+	 *
+	 * @var ObjectService
+	 */
+	private readonly ObjectService $objectService;
+
+	/**
+	 * Resolves the object's schema.
+	 *
+	 * @var SchemaMapper
+	 */
+	private readonly SchemaMapper $schemaMapper;
+
+	/**
+	 * The per-object `update` guard.
+	 *
+	 * @var PermissionHandler
+	 */
+	private readonly PermissionHandler $permissionHandler;
+
+	/**
+	 * The session user.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Owns the subscription lifecycle.
+	 *
+	 * @var RegistrySubscriptionService
+	 */
+	private readonly RegistrySubscriptionService $subscriptions;
+
+	/**
+	 * Consumed by HandlesExceptionsTrait for server-side 500 logging.
+	 *
+	 * @var ?LoggerInterface
+	 */
+	private readonly ?LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param ObjectService $objectService Resolves the target object.
-	 * @param SchemaMapper $schemaMapper Resolves the object's schema.
-	 * @param PermissionHandler $permissionHandler The per-object `update` guard.
-	 * @param IUserSession $userSession The session user.
-	 * @param RegistrySubscriptionService $subscriptions Owns the subscription lifecycle.
-	 * @param LoggerInterface|null $logger Consumed by HandlesExceptionsTrait for server-side 500 logging.
+	 * @param RegistrySubscriptionControllerServices $services The registry subscription controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objectService,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly PermissionHandler $permissionHandler,
-		private readonly IUserSession $userSession,
-		private readonly RegistrySubscriptionService $subscriptions,
-		private readonly ?LoggerInterface $logger = null,
+		RegistrySubscriptionControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->objectService = $services->domain->objectService;
+		$this->schemaMapper = $services->domain->schemaMapper;
+		$this->permissionHandler = $services->domain->permissionHandler;
+		$this->userSession = $services->platform->userSession;
+		$this->subscriptions = $services->domain->subscriptions;
+		$this->logger = $services->platform->logger;
 	}//end __construct()
 
 	/**

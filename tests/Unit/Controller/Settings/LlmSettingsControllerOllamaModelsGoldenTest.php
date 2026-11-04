@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\LlmSettingsControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\Settings\LlmSettingsController;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
@@ -112,7 +113,7 @@ class LlmSettingsControllerOllamaModelsGoldenTest extends TestCase {
 			return $bytes . ' bytes';
 		});
 
-		$controller = new LlmSettingsController(
+		$controller = LlmSettingsControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(IDBConnection::class),
