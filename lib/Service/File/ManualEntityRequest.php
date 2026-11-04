@@ -29,6 +29,8 @@ use OCP\IUser;
 
 /**
  * Input of `ManualEntityService::addManualEntity`.
+ *
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 final class ManualEntityRequest {
 	/**
