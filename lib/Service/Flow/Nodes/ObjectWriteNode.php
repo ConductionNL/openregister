@@ -841,94 +841,55 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
 	 */
 	public function execute(array $items, array $config, array $context): array {
-		// Re-run the save-time validation. A flow document can be written into
-		// the store by something other than the editor, and the delete guards
-		// must not depend on which door the document came through.
 		$this->validateConfig(config: $config);
 
 		if ($items === []) {
 			return [];
 		}
 
-		$operation = $this->operationFrom(config: $config);
-		$owner = $this->resolveOwner(context: $context);
-		$register = $this->resolveRegister(config: $config);
-		$schema = $this->resolveSchema(config: $config, register: $register);
-
-		// `onNoMatch` is deliberately absent here: it is read inside
-		// executeDelete(), the only path that acts on it, rather than resolved
-		// here and passed down as an eleventh parameter.
-		$pairs = $this->matchPairs(config: $config);
-		$fields = (array)($config['fields'] ?? []);
-		$onMissing = $this->optionFrom(config: $config, key: 'onMissing', allowed: self::ON_MISSING, default: self::ON_MISSING_OMIT);
-		$onConflict = $this->optionFrom(config: $config, key: 'onConflict', allowed: self::ON_CONFLICT, default: self::ON_CONFLICT_OVERWRITE);
-		$replace = (($config['replace'] ?? false) === true);
-		$cap = $this->writeCap(config: $config);
-
-		// The whole loop runs as the owner, not merely attributed to them.
-		// See "The writes run as the owner" in the class docblock.
+		$plan = $this->writePlan(config: $config, context: $context);
+		$write = fn (): array => $this->writeItems(items: $items, plan: $plan);
 		if (($config['bulk'] ?? false) === true) {
-			$written = $this->objects->runAs(
-				$owner,
-				fn (): array => $this->writeBulk(
-					items: $items,
-					config: $config,
-					operation: $operation,
-					register: $register,
-					schema: $schema,
-					pairs: $pairs,
-					fields: $fields,
-					onMissing: $onMissing,
-					cap: $cap,
-					context: $context
-				)
-			);
-
-			$this->recordSubject(
-				written: $written,
-				config: $config,
-				context: $context,
-				operation: $operation,
-				register: $register,
-				schema: $schema
-			);
-
-			return $written;
+			$write = fn (): array => $this->writeBulk(items: $items, plan: $plan);
 		}
 
-		$written = $this->objects->runAs(
-			$owner,
-			fn (): array => $this->writeItems(
-				items: $items,
-				config: $config,
-				operation: $operation,
-				owner: $owner,
-				register: $register,
-				schema: $schema,
-				pairs: $pairs,
-				fields: $fields,
-				onMissing: $onMissing,
-				onConflict: $onConflict,
-				replace: $replace,
-				cap: $cap,
-				context: $context
-			)
-		);
-
-		// AFTER the write, and never in a position to undo it. See
-		// recordSubject(): a failure to record is logged, not raised.
-		$this->recordSubject(
-			written: $written,
-			config: $config,
-			context: $context,
-			operation: $operation,
-			register: $register,
-			schema: $schema
-		);
+		$written = $this->objects->runAs($plan->owner, $write);
+		$this->recordSubject(written: $written, plan: $plan);
 
 		return $written;
 
 	}//end execute()
+
+	/**
+	 * Resolve what a write step needs before its first write, in the order the checks fail.
+	 *
+	 * @param array $config  The step configuration.
+	 * @param array $context The run context.
+	 *
+	 * @return ObjectWritePlan The resolved plan.
+	 *
+	 * @throws RuntimeException When the owner, register, schema or match pairs cannot be resolved.
+	 *
+	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
+	 */
+	private function writePlan(array $config, array $context): ObjectWritePlan {
+		$operation = $this->operationFrom(config: $config);
+		$owner = $this->resolveOwner(context: $context);
+		$register = $this->resolveRegister(config: $config);
+		$schema = $this->resolveSchema(config: $config, register: $register);
+		$plan = new ObjectWritePlan(config: $config, owner: $owner, register: $register, schema: $schema);
+		$plan->context = $context;
+		$plan->operation = $operation;
+		$plan->pairs = $this->matchPairs(config: $config);
+		$plan->fields = (array)($config['fields'] ?? []);
+		$plan->onMissing = $this->optionFrom(config: $config, key: 'onMissing', allowed: self::ON_MISSING, default: self::ON_MISSING_OMIT);
+		$plan->onConflict = $this->optionFrom(config: $config, key: 'onConflict', allowed: self::ON_CONFLICT, default: self::ON_CONFLICT_OVERWRITE);
+		$plan->replace = (($config['replace'] ?? false) === true);
+		$plan->cap = $this->writeCap(config: $config);
+		$plan->skipWhen = trim((string)($config['skipWhen'] ?? ''));
+		$plan->payloadFrom = trim((string)($config['payloadFrom'] ?? ''));
+		return $plan;
+	}//end writePlan()
 
 	/**
 	 * Record what this step wrote under the role its author named.
@@ -950,37 +911,26 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * would attach a task to a record that no longer exists, which is precisely
 	 * the "attached to nothing" state `attachTo` refuses to create.
 	 *
-	 * @param array<int, array<string, mixed>> $written   The step's output items.
-	 * @param array<string, mixed>             $config    The step configuration.
-	 * @param array<string, mixed>             $context   The run context.
-	 * @param string                           $operation The resolved operation.
-	 * @param Register                         $register  The resolved register.
-	 * @param Schema                           $schema    The resolved schema.
+	 * @param array<int, array<string, mixed>> $written The step's output items.
+	 * @param ObjectWritePlan                  $plan    The step's resolved plan.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
-	private function recordSubject(
-		array $written,
-		array $config,
-		array $context,
-		string $operation,
-		Register $register,
-		Schema $schema
-	): void {
-		$role = trim((string)($config['subjectRole'] ?? ''));
-		if ($role === '' || $operation === self::OP_DELETE) {
+	private function recordSubject(array $written, ObjectWritePlan $plan): void {
+		$role = trim((string)($plan->config['subjectRole'] ?? ''));
+		if ($role === '' || $plan->operation === self::OP_DELETE) {
 			// Recording is opt-in, and a deleted object is not a subject.
 			return;
 		}
 
 		$this->subjects?->recordOne(
-			context: $context,
+			context: $plan->context,
 			role: $role,
-			uuids: $this->writtenUuids(written: $written, config: $config),
-			register: (string)$register->getId(),
-			schema: (string)$schema->getId()
+			uuids: $this->writtenUuids(written: $written, config: $plan->config),
+			register: (string)$plan->register->getId(),
+			schema: (string)$plan->schema->getId()
 		);
 
 	}//end recordSubject()
@@ -1024,129 +974,97 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * `ObjectService::runAs()` as one callable — the match and the write it
 	 * feeds must share a subject.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param string $operation The resolved operation.
-	 * @param IUser $owner The run owner, as the acting user.
-	 * @param Register $register The resolved register.
-	 * @param Schema $schema The resolved schema.
-	 * @param array $pairs The match pairs.
-	 * @param array $fields The configured fields.
-	 * @param string $onMissing The missing-field policy.
-	 * @param string $onConflict The conflict policy.
-	 * @param bool $replace Whether the write replaces.
-	 * @param int|null $cap The write cap.
-	 * @param array $context The run context.
+	 * @param array           $items The input items.
+	 * @param ObjectWritePlan $plan  The step's resolved plan.
 	 *
 	 * @return array One output item per input item.
 	 *
 	 * @throws RuntimeException When a match is ambiguous or absent, or the cap is exceeded.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)   One branch per operation.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)        Same.
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The parameters execute() already resolved.
+	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
+	 */
+	private function writeItems(array $items, ObjectWritePlan $plan): array {
+		$out = [];
+		foreach ($items as $index => $item) {
+			$out[] = $this->writeItem(plan: $plan, item: new ObjectWriteItem(item: $item, index: (int)$index));
+		}
+
+		$counts = $plan->counts;
+		$this->reportItemCounts(context: $plan->context, created: $counts['created'], updated: $counts['updated'], deleted: $counts['deleted']);
+		return $out;
+	}//end writeItems()
+
+	/**
+	 * Write one item: skipped items pass through, a delete deletes, any other operation saves.
+	 *
+	 * A skipped item is still emitted, its json untouched: dropping it is what
+	 * would make a later sweep delete it.
+	 *
+	 * @param ObjectWritePlan $plan The step's resolved plan.
+	 * @param ObjectWriteItem $item The item.
+	 *
+	 * @return array The output item.
+	 *
+	 * @throws RuntimeException When a match is ambiguous or absent, or the cap is exceeded.
 	 *
 	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
 	 */
-	private function writeItems(
-		array $items,
-		array $config,
-		string $operation,
-		IUser $owner,
-		Register $register,
-		Schema $schema,
-		array $pairs,
-		array $fields,
-		string $onMissing,
-		string $onConflict,
-		bool $replace,
-		?int $cap,
-		array $context,
-	): array {
-		$writes = 0;
-		$created = 0;
-		$updated = 0;
-		$deleted = 0;
-		$out = [];
-		$skipWhen = trim((string)($config['skipWhen'] ?? ''));
-		$payloadFrom = trim((string)($config['payloadFrom'] ?? ''));
+	private function writeItem(ObjectWritePlan $plan, ObjectWriteItem $item): array {
+		if ($plan->skipWhen !== '' && $this->isSkipped(path: $plan->skipWhen, json: $item->json) === true) {
+			return FlowItems::item(json: $item->json, binary: $item->binary, fromItemIndex: $item->index);
+		}
 
-		foreach ($items as $index => $item) {
-			$json = (array)($item[FlowItems::JSON] ?? []);
-			$binary = (array)($item[FlowItems::BINARY] ?? []);
+		if ($plan->operation === self::OP_DELETE) {
+			$out = $this->executeDelete(item: $item, plan: $plan);
+			$plan->counts['deleted'] += $this->confirmedDelete(item: $out, config: $plan->config);
+			return $out;
+		}
 
-			// PASS THROUGH, DO NOT DROP: an already-current item costs no write
-			// but must still be EMITTED, or a sync's sweep deletes the object it names.
-			if ($skipWhen !== '' && $this->isSkipped(path: $skipWhen, json: $json) === true) {
-				$out[] = FlowItems::item(json: $json, binary: $binary, fromItemIndex: (int)$index);
-				continue;
-			}
+		return $this->saveItem(plan: $plan, item: $item);
+	}//end writeItem()
 
-			if ($operation === self::OP_DELETE) {
-				$out[] = $this->executeDelete(
-					item: [FlowItems::JSON => $json, FlowItems::BINARY => $binary],
-					index: (int)$index,
-					pairs: $pairs,
-					register: $register,
-					schema: $schema,
-					owner: $owner,
-					cap: $cap,
-					config: $config,
-					writes: $writes
-				);
-				$deleted += $this->confirmedDelete(item: $out[array_key_last($out)], config: $config);
-				continue;
-			}
+	/**
+	 * Create, update or upsert one item's object.
+	 *
+	 * An update that matches nothing fails: it never silently inserts one.
+	 *
+	 * @param ObjectWritePlan $plan The step's resolved plan.
+	 * @param ObjectWriteItem $item The item.
+	 *
+	 * @return array The output item.
+	 *
+	 * @throws RuntimeException When an update matches nothing, a match is ambiguous, or the cap is exceeded.
+	 *
+	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
+	 */
+	private function saveItem(ObjectWritePlan $plan, ObjectWriteItem $item): array {
+		$item->payload = $this->buildPayload(plan: $plan, json: $item->json);
+		if ($plan->operation !== self::OP_CREATE) {
+			$item->matched = $this->findMatch(plan: $plan, json: $item->json);
+		}
 
-			$payload = $this->buildPayload(
-				fields: $fields,
-				json: $json,
-				onMissing: $onMissing,
-				payloadFrom: $payloadFrom
+		if ($plan->operation === self::OP_UPDATE && $item->matched === null) {
+			throw new RuntimeException(
+				$this->l10n->t('An update matched no object; an update never silently inserts one.')
 			);
-			$matched = null;
-			if ($operation !== self::OP_CREATE) {
-				$matched = $this->findMatch(pairs: $pairs, json: $json, register: $register, schema: $schema, owner: $owner);
-			}
+		}
 
-			if ($operation === self::OP_UPDATE && $matched === null) {
-				throw new RuntimeException(
-					$this->l10n->t('An update matched no object; an update never silently inserts one.')
-				);
-			}
+		$this->guardCap(writes: $plan->writes, cap: $plan->cap);
+		$saved = $this->persist(plan: $plan, item: $item);
+		$plan->writes++;
+		$plan->counts['created'] += (int)($item->matched === null);
+		$plan->counts['updated'] += (int)($item->matched !== null);
 
-			$this->guardCap(writes: $writes, cap: $cap);
-			$saved = $this->persist(
-				payload: $payload,
-				matched: $matched,
-				register: $register,
-				schema: $schema,
-				owner: $owner,
-				replace: $replace,
-				onConflict: $onConflict
-			);
-			$writes++;
-			if ($matched === null) {
-				$created++;
-			}
-			if ($matched !== null) {
-				$updated++;
-			}
-
-			$out[] = FlowItems::item(
-				json: $this->outputJson(
-					incoming: (array)($item[FlowItems::JSON] ?? []),
-					written: $this->writtenJson(saved: $saved, register: $register, schema: $schema),
-					config: $config
-				),
-				binary: $binary,
-				fromItemIndex: (int)$index
-			);
-		}//end foreach
-
-		$this->reportItemCounts(context: $context, created: $created, updated: $updated, deleted: $deleted);
-		return $out;
-	}//end writeItems()
+		return FlowItems::item(
+			json: $this->outputJson(
+				incoming: $item->json,
+				written: $this->writtenJson(saved: $saved, register: $plan->register, schema: $plan->schema),
+				config: $plan->config
+			),
+			binary: $item->binary,
+			fromItemIndex: $item->index
+		);
+	}//end saveItem()
 
 	/**
 	 * Write the whole page of items through ONE `saveObjects()` call.
@@ -1163,57 +1081,29 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * because each write already happened or did not; one bulk call has no
 	 * such midpoint, so the only honest cap is a refusal up front.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param string $operation The resolved operation (create or upsert).
-	 * @param Register $register The resolved register.
-	 * @param Schema $schema The resolved schema.
-	 * @param array $pairs The match pairs (one uuid pair for an upsert).
-	 * @param array $fields The configured fields.
-	 * @param string $onMissing The missing-field policy.
-	 * @param int $cap The write cap.
-	 * @param array $context The run context.
+	 * @param array           $items The input items.
+	 * @param ObjectWritePlan $plan  The step's resolved plan (create or upsert, one uuid pair for an upsert).
 	 *
 	 * @return array One output item per input item.
 	 *
 	 * @throws RuntimeException When the page exceeds the cap, a match value cannot
 	 *                          be resolved, or the bulk save rejected rows.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The parameters execute() already resolved, same as writeItems().
-	 *
 	 * @spec openspec/specs/flow-object-write-bulk/spec.md
 	 */
-	private function writeBulk(
-		array $items,
-		array $config,
-		string $operation,
-		Register $register,
-		Schema $schema,
-		array $pairs,
-		array $fields,
-		string $onMissing,
-		int $cap,
-		array $context,
-	): array {
-		if (count($items) > $cap) {
+	private function writeBulk(array $items, ObjectWritePlan $plan): array {
+		if (count($items) > $plan->cap) {
 			throw new RuntimeException(
 				$this->l10n->t(
 					'This bulk write of %1$s items exceeds the step\'s write cap of %2$s; nothing was written.',
-					[(string)count($items), (string)$cap]
+					[(string)count($items), (string)$plan->cap]
 				)
 			);
 		}
-		$plan = $this->planBulkRows(
-			items: $items,
-			config: $config,
-			operation: $operation,
-			pairs: $pairs,
-			fields: $fields,
-			onMissing: $onMissing
-		);
-		$rows = $plan['rows'];
-		$ids = $plan['ids'];
-		$skipped = $plan['skipped'];
+		$rowPlan = $this->planBulkRows(items: $items, plan: $plan);
+		$rows = $rowPlan['rows'];
+		$ids = $rowPlan['ids'];
+		$skipped = $rowPlan['skipped'];
 
 		// Nothing to write once the skips are removed: return the items as
 		// they arrived rather than calling saveObjects() with an empty payload.
@@ -1227,8 +1117,8 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		// palette help says so in as many words.
 		$result = $this->objects->saveObjects(
 			objects: $rows,
-			register: $register,
-			schema: $schema,
+			register: $plan->register,
+			schema: $plan->schema,
 			validation: true,
 			events: false
 		);
@@ -1264,14 +1154,14 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			$position++;
 			unset($json['@self'], $json['id']);
 			$json['uuid'] = $id;
-			$json['register'] = $this->identifierOf(register: $register);
-			$json['schema'] = $this->labelOf(schema: $schema);
+			$json['register'] = $this->identifierOf(register: $plan->register);
+			$json['schema'] = $this->labelOf(schema: $plan->schema);
 
 			$out[] = FlowItems::item(
 				json: $this->outputJson(
 					incoming: (array)($item[FlowItems::JSON] ?? []),
 					written: $json,
-					config: $config
+					config: $plan->config
 				),
 				binary: (array)($item[FlowItems::BINARY] ?? []),
 				fromItemIndex: (int)$index
@@ -1279,7 +1169,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		}//end foreach
 
 		// Placed after output processing — see the SEMANTICS note on writeReport().
-		$this->reportBulkCounts(context: $context, result: $result);
+		$this->reportBulkCounts(context: $plan->context, result: $result);
 		return $out;
 	}//end writeBulk()
 
@@ -1548,46 +1438,26 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * `deleted: true` on the output item and counted in the `deleted` tally;
 	 * a failed one stays in the run marked `deleted: false`, like a skip.
 	 *
-	 * @param array $item The input item (`json` and `binary`).
-	 * @param int $index The input item's index, for provenance.
-	 * @param array $pairs The composite match pairs.
-	 * @param Register $register The resolved register.
-	 * @param Schema $schema The resolved schema.
-	 * @param IUser $owner The run owner, as the acting user.
-	 * @param int $cap The step's write cap.
-	 * @param array $config The step configuration; `onNoMatch` and `output` are read from it.
-	 * @param int $writes Writes performed so far; incremented by reference.
+	 * @param ObjectWriteItem $item The item.
+	 * @param ObjectWritePlan $plan The step's resolved plan; its write count is incremented.
 	 *
 	 * @return array The output item.
 	 *
 	 * @throws RuntimeException When the match is absent under `error`, or ambiguous, or the cap is hit.
 	 */
-	private function executeDelete(
-		array $item,
-		int $index,
-		array $pairs,
-		Register $register,
-		Schema $schema,
-		IUser $owner,
-		int $cap,
-		array $config,
-		int &$writes,
-	): array {
-		// Read from the config rather than taken as an eleventh parameter. The
-		// caller resolves it exactly this way; passing both it and the config
-		// would be two spellings of one fact, and the parameter list is already
-		// at its limit.
+	private function executeDelete(ObjectWriteItem $item, ObjectWritePlan $plan): array {
+		// Read from the config: passing both it and the config would be two
+		// spellings of one fact.
 		$onNoMatch = $this->optionFrom(
-			config: $config,
+			config: $plan->config,
 			key: 'onNoMatch',
 			allowed: self::ON_NO_MATCH,
 			default: self::ON_NO_MATCH_ERROR
 		);
 
-		$json = (array)($item[FlowItems::JSON] ?? []);
-		$binary = (array)($item[FlowItems::BINARY] ?? []);
+		$json = $item->json;
 
-		$matched = $this->findMatch(pairs: $pairs, json: $json, register: $register, schema: $schema, owner: $owner);
+		$matched = $this->findMatch(plan: $plan, json: $json);
 
 		if ($matched === null) {
 			if ($onNoMatch !== self::ON_NO_MATCH_SKIP) {
@@ -1608,31 +1478,31 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			// NOT via outputJson() here: on this branch the record IS the
 			// output, so an empty key must leave `$json` alone rather than
 			// replace it with the two-field written record.
-			$outputKey = trim((string)($config['output'] ?? ''));
+			$outputKey = trim((string)($plan->config['output'] ?? ''));
 			if ($outputKey !== '') {
 				$json[$outputKey] = ['deleted' => false];
 			}
 
-			return FlowItems::item(json: $json, binary: $binary, fromItemIndex: $index);
+			return FlowItems::item(json: $json, binary: $item->binary, fromItemIndex: $item->index);
 		}//end if
 
 		$uuid = (string)$matched->getUuid();
 
-		$this->guardCap(writes: $writes, cap: $cap);
+		$this->guardCap(writes: $plan->writes, cap: $plan->cap);
 
 		// Guard 4: the ordinary delete path, with the run owner as the explicit
 		// acting user and the register / schema scope confining the lookup to
 		// one magic table. No `_retentionSweep`; see `permanenceOf()` for why
 		// the soft delete is the default and what opts out of it. Its result
-		// decides `deleted`, not `$writes`; see the method docblock.
+		// decides `deleted`, not the write count; see the method docblock.
 		$deleted = $this->objects->deleteObject(
 			uuid: $uuid,
-			register: $register,
-			schema: $schema,
-			currentUser: $owner,
-			permanent: $this->permanenceOf(config: $config)
+			register: $plan->register,
+			schema: $plan->schema,
+			currentUser: $plan->owner,
+			permanent: $this->permanenceOf(config: $plan->config)
 		);
-		$writes++;
+		$plan->writes++;
 
 		// Through `outputJson()`, exactly like every non-delete write. Without
 		// it a delete was the one operation that could not carry its incoming
@@ -1647,14 +1517,14 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				incoming: $json,
 				written: [
 					'uuid' => $uuid,
-					'register' => $this->identifierOf(register: $register),
-					'schema' => $this->labelOf(schema: $schema),
+					'register' => $this->identifierOf(register: $plan->register),
+					'schema' => $this->labelOf(schema: $plan->schema),
 					'deleted' => $deleted,
 				],
-				config: $config
+				config: $plan->config
 			),
-			binary: $binary,
-			fromItemIndex: $index
+			binary: $item->binary,
+			fromItemIndex: $item->index
 		);
 
 	}//end executeDelete()
@@ -1666,57 +1536,44 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * update-side write goes through `patchObject()` unless the author asked for
 	 * `replace: true`, which is the only way to reach PUT semantics from a flow.
 	 *
-	 * @param array $payload The templated field payload.
-	 * @param ObjectEntity|null $matched The matched object, when there is one.
-	 * @param Register $register The resolved register.
-	 * @param Schema $schema The resolved schema.
-	 * @param IUser $owner The run owner, as the acting user.
-	 * @param bool $replace Whether to replace rather than patch.
-	 * @param string $onConflict What to do when a create's identifier is already taken.
+	 * @param ObjectWritePlan $plan The step's resolved plan: register, schema, owner, `replace` and `onConflict`.
+	 * @param ObjectWriteItem $item The item, its payload built and its match, when there is one, found.
 	 *
 	 * @return ObjectEntity The written object.
 	 */
-	private function persist(
-		array $payload,
-		?ObjectEntity $matched,
-		Register $register,
-		Schema $schema,
-		IUser $owner,
-		bool $replace,
-		string $onConflict = self::ON_CONFLICT_OVERWRITE,
-	): ObjectEntity {
-		if ($matched === null) {
+	private function persist(ObjectWritePlan $plan, ObjectWriteItem $item): ObjectEntity {
+		if ($item->matched === null) {
 			// `matched === null` means the node's own lookup found nothing —
 			// but that lookup and this write are two separate calls, so another
 			// flow run can land in between. Passing failIfExists through is what
 			// closes that window: the database, not the node, arbitrates.
 			return $this->objects->saveObject(
-				object: $payload,
-				register: $register,
-				schema: $schema,
-				currentUser: $owner,
-				failIfExists: ($onConflict === self::ON_CONFLICT_FAIL)
+				object: $item->payload,
+				register: $plan->register,
+				schema: $plan->schema,
+				currentUser: $plan->owner,
+				failIfExists: ($plan->onConflict === self::ON_CONFLICT_FAIL)
 			);
 		}
 
-		$uuid = (string)$matched->getUuid();
+		$uuid = (string)$item->matched->getUuid();
 
-		if ($replace === true) {
+		if ($plan->replace === true) {
 			return $this->objects->saveObject(
-				object: $payload,
-				register: $register,
-				schema: $schema,
+				object: $item->payload,
+				register: $plan->register,
+				schema: $plan->schema,
 				uuid: $uuid,
-				currentUser: $owner
+				currentUser: $plan->owner
 			);
 		}
 
 		return $this->objects->patchObject(
 			objectId: $uuid,
-			data: $payload,
-			register: $register,
-			schema: $schema,
-			currentUser: $owner
+			data: $item->payload,
+			register: $plan->register,
+			schema: $plan->schema,
+			currentUser: $plan->owner
 		);
 
 	}//end persist()
@@ -1962,23 +1819,16 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * could resolve a row outside the owner's visibility, and `upsert` could
 	 * find one the owner could not see and therefore insert a duplicate.
 	 *
-	 * @param array $pairs The match pairs.
-	 * @param array $json The current item's record.
-	 * @param Register $register The resolved register.
-	 * @param Schema $schema The resolved schema.
-	 * @param IUser $owner The run owner, whose RBAC applies to the lookup.
+	 * @param ObjectWritePlan $plan The step's resolved plan: match pairs, register, schema, and the run owner whose RBAC applies to the lookup.
+	 * @param array           $json The current item's record.
 	 *
 	 * @return ObjectEntity|null The single match, or null when nothing matched.
 	 *
 	 * @throws RuntimeException When a match value cannot be templated, or the match is ambiguous.
 	 */
-	private function findMatch(
-		array $pairs,
-		array $json,
-		Register $register,
-		Schema $schema,
-		IUser $owner,
-	): ?ObjectEntity {
+	private function findMatch(ObjectWritePlan $plan, array $json): ?ObjectEntity {
+		$register = $plan->register;
+		$schema = $plan->schema;
 		$filters = [
 			'register' => $register->getId(),
 			'schema' => $schema->getId(),
@@ -1986,7 +1836,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 
 		$properties = ($schema->getProperties() ?? []);
 
-		foreach ($pairs as $pair) {
+		foreach ($plan->pairs as $pair) {
 			$property = (string)$pair['property'];
 			$resolved = $this->resolveTemplate(value: $pair['value'], json: $json);
 
@@ -2008,7 +1858,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		}
 
 		$rows = $this->objects->runAs(
-			$owner,
+			$plan->owner,
 			fn (): array => $this->objects->findAll(
 				config: [
 					'filters' => $filters,
@@ -2133,22 +1983,17 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	/**
 	 * Template the configured field mapping against one item.
 	 *
-	 * @param array $fields The configured mapping.
-	 * @param array $json The item's record.
-	 * @param string $onMissing What an unresolvable value means.
-	 * @param string|null $payloadFrom Path whose resolved object IS the payload, when the
-	 *                                 properties are not known up front. Alternative to `$fields`.
+	 * @param ObjectWritePlan $plan The step's resolved plan: fields, missing-field policy and `payloadFrom`.
+	 * @param array           $json The item's record.
 	 *
 	 * @return array The payload to write.
 	 *
 	 * @throws RuntimeException When a value is unresolvable and `onMissing` is `fail`.
 	 */
-	private function buildPayload(
-		array $fields,
-		array $json,
-		string $onMissing,
-		?string $payloadFrom = null
-	): array {
+	private function buildPayload(ObjectWritePlan $plan, array $json): array {
+		$fields = $plan->fields;
+		$onMissing = $plan->onMissing;
+		$payloadFrom = $plan->payloadFrom;
 		// WRITING AN ITEM WHOLE. `fields` enumerates the properties to write, which
 		// requires knowing them up front — a synchronization with no mapping has no
 		// such list, and that single gap refused 98 of 99 unmigratable
@@ -2160,7 +2005,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		// the rest. There is no "rest" here: omitting a whole payload would write a
 		// BLANK object, which is the same hazard the field loop's own comment warns
 		// about, one level up.
-		if ($payloadFrom !== null && trim($payloadFrom) !== '') {
+		if (trim($payloadFrom) !== '') {
 			$found = $this->lookupPath(path: trim($payloadFrom), json: $json);
 
 			if ($found['found'] === false || is_array($found['value']) === false) {
@@ -2262,51 +2107,30 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * Split out of {@see writeBulk()} to keep that method inside phpmd's
 	 * length and complexity thresholds once `skipWhen` added a branch to it.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param string $operation The resolved operation.
-	 * @param array $pairs The match pairs.
-	 * @param array $fields The configured fields.
-	 * @param string $onMissing The missing-field policy.
+	 * @param array           $items The input items.
+	 * @param ObjectWritePlan $plan  The step's resolved plan.
 	 *
 	 * @return array{rows: array, ids: array, skipped: array} The plan.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The parameters writeBulk() already resolved.
-	 *
 	 * @spec openspec/specs/flow-object-write-skip-when/spec.md
 	 */
-	private function planBulkRows(
-		array $items,
-		array $config,
-		string $operation,
-		array $pairs,
-		array $fields,
-		string $onMissing,
-	): array {
+	private function planBulkRows(array $items, ObjectWritePlan $plan): array {
 		// A skipped item contributes NO row, so it is not written — but it is
 		// still emitted by the caller, with its own json untouched. See the
 		// note in writeItems(): dropping it is what makes a later sweep
 		// delete it.
-		$skipWhen = trim((string)($config['skipWhen'] ?? ''));
-		$payloadFrom = trim((string)($config['payloadFrom'] ?? ''));
-
 		$rows = [];
 		$ids = [];
 		$skipped = [];
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
-			if ($skipWhen !== '' && $this->isSkipped(path: $skipWhen, json: $json) === true) {
+			if ($plan->skipWhen !== '' && $this->isSkipped(path: $plan->skipWhen, json: $json) === true) {
 				$skipped[$index] = true;
 				continue;
 			}
 
-			$payload = $this->buildPayload(
-				fields: $fields,
-				json: $json,
-				onMissing: $onMissing,
-				payloadFrom: $payloadFrom
-			);
-			$id = $this->bulkRowId(operation: $operation, pairs: $pairs, json: $json);
+			$payload = $this->buildPayload(plan: $plan, json: $json);
+			$id = $this->bulkRowId(operation: $plan->operation, pairs: $plan->pairs, json: $json);
 			$payload['id'] = $id;
 			$rows[] = $payload;
 			$ids[$index] = $id;

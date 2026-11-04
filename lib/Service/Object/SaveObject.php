@@ -2956,9 +2956,7 @@ class SaveObject {
 		}
 
 		$settings = self::writeBackSettings(run: $run);
-		$noInverseProperty = $settings->inverseProperty === false || $settings->inverseProperty === null;
-		$noTargetSchema = $settings->targetSchema === false || $settings->targetSchema === null;
-		if ($noInverseProperty === true || $noTargetSchema === true) {
+		if (self::writeBackSettingsComplete(settings: $settings) === false) {
 			return;
 		}
 
@@ -3032,6 +3030,22 @@ class SaveObject {
 
 		return $settings;
 	}//end writeBackSettings()
+
+	/**
+	 * Whether write-back settings name both an inverse property and a target schema.
+	 *
+	 * @param WriteBackSettings $settings The settings.
+	 *
+	 * @return bool True when both are set.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function writeBackSettingsComplete(WriteBackSettings $settings): bool {
+		$noInverseProperty = $settings->inverseProperty === false || $settings->inverseProperty === null;
+		$noTargetSchema = $settings->targetSchema === false || $settings->targetSchema === null;
+
+		return $noInverseProperty === false && $noTargetSchema === false;
+	}//end writeBackSettingsComplete()
 
 	/**
 	 * The target identifiers of a write-back value that are object identifiers.

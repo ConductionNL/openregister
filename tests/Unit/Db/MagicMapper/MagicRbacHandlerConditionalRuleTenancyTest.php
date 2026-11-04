@@ -61,6 +61,7 @@ use RuntimeException;
  * Tests that only a rule marked `crossOrganisation: true` reads other organisations' rows.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\RbacFilterCall
  * @uses   \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
  * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler

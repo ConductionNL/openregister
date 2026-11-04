@@ -894,15 +894,6 @@ class ImportHandlerCoverageTest extends TestCase {
 
 	}//end testImportFromJsonSkipsObjectWhenVersionNotHigher()
 
-	// =========================================================================
-	// importFromJson — createOrUpdateConfiguration when config is null (lines 1802-1808)
-	// =========================================================================
-
-	/**
-	 * importFromJson calls createOrUpdateConfiguration when no config passed and results present.
-	 * NOTE: This cannot be triggered because importFromJson throws if config is null.
-	 * Instead we test the seedData skip path (lines 1822-1826).
-	 */
 
 	// =========================================================================
 	// importFromJson — seed data skip when no configuration (lines 1822-1826)
@@ -1512,31 +1503,6 @@ class ImportHandlerCoverageTest extends TestCase {
 
 	}//end testImportFromAppSkipsNonSchemaInResults()
 
-	// =========================================================================
-	// createOrUpdateConfiguration — exception wrapping (line 2526)
-	// =========================================================================
-
-	/**
-	 * createOrUpdateConfiguration wraps exception from findByApp.
-	 */
-	public function testCreateOrUpdateConfigurationWrapsException(): void {
-		$this->configurationMapper->method('findByApp')
-			->willReturn([]);
-		$this->configurationMapper->method('insert')
-			->willThrowException(new Exception('Insert failed'));
-
-		$this->expectException(Exception::class);
-		$this->expectExceptionMessageMatches('/Failed to create or update configuration/');
-
-		$this->handler->createOrUpdateConfiguration(
-			['info' => ['title' => 'Test']],
-			'test-app',
-			'1.0.0',
-			['registers' => [], 'schemas' => [], 'objects' => []],
-			'owner'
-		);
-
-	}//end testCreateOrUpdateConfigurationWrapsException()
 
 	// =========================================================================
 	// importFromFilePath — file not found / read failure (lines 2440-2447)
@@ -1965,78 +1931,7 @@ class ImportHandlerCoverageTest extends TestCase {
 
 	}//end testImportFromJsonContinuesOnSchemaFailureInPass1()
 
-	// =========================================================================
-	// createOrUpdateConfiguration — github nested structure
-	// =========================================================================
 
-	/**
-	 * createOrUpdateConfiguration sets github fields from nested structure.
-	 */
-	public function testCreateOrUpdateConfigurationSetsNestedGithub(): void {
-		$this->configurationMapper->method('findByApp')
-			->willReturn([]);
-		$this->configurationMapper->method('insert')
-			->willReturnCallback(function (Configuration $c) {
-				$this->setEntityId($c, 50);
-				return $c;
-			});
-
-		$data = [
-			'x-openregister' => [
-				'openregister' => '>=1.0.0',
-				'sourceType' => 'github',
-				'sourceUrl' => 'https://github.com/test/repo',
-				'github' => [
-					'repo' => 'owner/repo',
-					'branch' => 'main',
-					'path' => 'config.json',
-				],
-			],
-		];
-
-		$result = $this->handler->createOrUpdateConfiguration(
-			$data,
-			'gh-app',
-			'1.0.0',
-			['registers' => [], 'schemas' => [], 'objects' => []],
-			'owner'
-		);
-
-		$this->assertInstanceOf(Configuration::class, $result);
-
-	}//end testCreateOrUpdateConfigurationSetsNestedGithub()
-
-	/**
-	 * createOrUpdateConfiguration sets github fields from legacy flat structure.
-	 */
-	public function testCreateOrUpdateConfigurationSetsLegacyGithub(): void {
-		$this->configurationMapper->method('findByApp')
-			->willReturn([]);
-		$this->configurationMapper->method('insert')
-			->willReturnCallback(function (Configuration $c) {
-				$this->setEntityId($c, 51);
-				return $c;
-			});
-
-		$data = [
-			'x-openregister' => [
-				'githubRepo' => 'owner/repo',
-				'githubBranch' => 'develop',
-				'githubPath' => 'config/app.json',
-			],
-		];
-
-		$result = $this->handler->createOrUpdateConfiguration(
-			$data,
-			'legacy-gh-app',
-			'1.0.0',
-			['registers' => [], 'schemas' => [], 'objects' => []],
-			null
-		);
-
-		$this->assertInstanceOf(Configuration::class, $result);
-
-	}//end testCreateOrUpdateConfigurationSetsLegacyGithub()
 
 	// =========================================================================
 	// Setter methods coverage

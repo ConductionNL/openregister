@@ -66,6 +66,8 @@ class WebhookServiceDeliverGoldenTest extends TestCase {
 			'request-error-json-without-keys' => [['answer' => ['request', 400, '{"detail":"x"}']]],
 			'request-error-last-attempt' => [['attempt' => 3, 'answer' => ['request', 503, '']]],
 			'unexpected-error' => [['answer' => ['throw', 'kaput']]],
+			'request-error-private-target' => [['url' => 'http://10.0.0.5/hook', 'answer' => ['request', 500, '{"message":"inside"}']]],
+			'request-error-long-body' => [['answer' => ['request', 500, str_repeat('x', 1500)]]],
 		];
 	}//end cases()
 
@@ -76,7 +78,10 @@ class WebhookServiceDeliverGoldenTest extends TestCase {
 		$webhook->setId(7);
 		$webhook->setUuid('webhook-uuid-7');
 		$webhook->setName('Golden hook');
-		$webhook->setUrl('https://93.184.216.34/hook');
+		$webhook->setUrl($case['url'] ?? 'https://93.184.216.34/hook');
+		if (isset($case['url']) === true) {
+			$webhook->setConfigurationArray(['allowPrivateTargets' => true]);
+		}
 		$webhook->setMethod('POST');
 		$webhook->setEnabled($case['enabled'] ?? true);
 		$webhook->setMaxRetries($case['maxRetries'] ?? 3);

@@ -2323,148 +2323,172 @@ class MagicFacetHandler {
 			return [];
 		}
 
-		$startTime = microtime(true);
+		$lookup = new FacetLabelLookup(uuids: $uuids, field: $field);
+		$lookup->cacheKey = 'facet_labels_' . $register->getId() . '_' . $schema->getId() . '_' . $field;
 
-		// Generate field-level cache key.
-		$fieldCacheKey = 'facet_labels_' . $register->getId() . '_' . $schema->getId() . '_' . $field;
+		if ($this->labelsFromFieldCache(lookup: $lookup) === true
+			|| $this->labelsFromDistributedCache(lookup: $lookup) === true
+		) {
+			return $lookup->result;
+		}
 
-		// STEP 1: Check in-memory field-level cache (fastest).
-		if (isset($this->fieldLabelCache[$fieldCacheKey]) === true) {
-			$cachedLabels = $this->fieldLabelCache[$fieldCacheKey];
-			$result = [];
-			$uncachedUuids = [];
+		$this->resolveLabelsViaObjectNames(lookup: $lookup);
 
-			foreach ($uuids as $uuid) {
-				if (isset($cachedLabels[$uuid]) === false) {
-					$uncachedUuids[] = $uuid;
-					continue;
-				}
+		return $lookup->result;
+	}//end batchResolveUuidLabels()
 
-				$result[$uuid] = $cachedLabels[$uuid];
+	/**
+	 * Answer a label lookup from the in-memory field cache, when it holds
+	 * every uuid; a partial hit leaves the rest for the next source.
+	 *
+	 * @param FacetLabelLookup $lookup The lookup.
+	 *
+	 * @return bool Whether every uuid was answered.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	private function labelsFromFieldCache(FacetLabelLookup $lookup): bool {
+		if (isset($this->fieldLabelCache[$lookup->cacheKey]) === false
+			|| $lookup->take(labels: $this->fieldLabelCache[$lookup->cacheKey]) === false
+		) {
+			return false;
+		}
+
+		$this->cacheStats['field_cache_hits']++;
+		$this->cacheStats['total_uuids_resolved'] += count($lookup->result);
+		$this->logger->debug(
+			message: '[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'field' => $lookup->field,
+				'count' => count($lookup->result),
+				'time_ms' => $lookup->elapsedMs(),
+			]
+		);
+		return true;
+	}//end labelsFromFieldCache()
+
+	/**
+	 * Warm the field cache from the distributed cache, once per field, and
+	 * answer the lookup from it when it holds every uuid.
+	 *
+	 * @param FacetLabelLookup $lookup The lookup.
+	 *
+	 * @return bool Whether every uuid was answered.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	private function labelsFromDistributedCache(FacetLabelLookup $lookup): bool {
+		if ($this->distLabelCache === null || isset($this->warmedFields[$lookup->cacheKey]) === true) {
+			return false;
+		}
+
+		try {
+			$distributedLabels = $this->distLabelCache->get($lookup->cacheKey);
+			if (is_array($distributedLabels) === false) {
+				return false;
 			}
 
-			// If all UUIDs found in cache, return immediately.
-			if (empty($uncachedUuids) === true) {
-				$this->cacheStats['field_cache_hits']++;
-				$this->cacheStats['total_uuids_resolved'] += count($result);
-				$this->logger->debug(
-					message: '[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'field' => $field,
-						'count' => count($result),
-						'time_ms' => round((microtime(true) - $startTime) * 1000, 2),
-					]
-				);
-				return $result;
-			}
-		}//end if
-
-		// STEP 2: Check distributed cache for field-level labels.
-		if ($this->distLabelCache !== null && isset($this->warmedFields[$fieldCacheKey]) === false) {
-			try {
-				$distributedLabels = $this->distLabelCache->get($fieldCacheKey);
-				if ($distributedLabels !== null && is_array($distributedLabels) === true) {
-					// Store in in-memory cache for this request.
-					$this->fieldLabelCache[$fieldCacheKey] = $distributedLabels;
-					$this->warmedFields[$fieldCacheKey] = true;
-
-					// Try again with the loaded cache.
-					$result = [];
-					$uncachedUuids = [];
-					foreach ($uuids as $uuid) {
-						if (isset($distributedLabels[$uuid]) === false) {
-							$uncachedUuids[] = $uuid;
-							continue;
-						}
-
-						$result[$uuid] = $distributedLabels[$uuid];
-					}
-
-					if (empty($uncachedUuids) === true) {
-						$this->cacheStats['distributed_cache_hits']++;
-						$this->cacheStats['total_uuids_resolved'] += count($result);
-						$this->logger->debug(
-							message: '[MagicFacetHandler] batchResolveUuidLabels: All labels from distributed cache',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'field' => $field,
-								'count' => count($result),
-								'time_ms' => round((microtime(true) - $startTime) * 1000, 2),
-							]
-						);
-						return $result;
-					}
-				}//end if
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					message: '[MagicFacetHandler] Failed to get facet labels from distributed cache: ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}//end try
-		}//end if
-
-		// STEP 3: Resolve remaining UUIDs via CacheHandler.
-		$result = $result ?? [];
-		$uncachedUuids = $uncachedUuids ?? $uuids;
-
-		$this->resolveLazyDependencies();
-		if ($this->cacheHandler !== null && empty($uncachedUuids) === false) {
-			$this->cacheStats['cache_handler_calls']++;
-			$batchedLabels = $this->cacheHandler->getMultipleObjectNames($uncachedUuids);
-			$this->cacheStats['total_uuids_resolved'] += count($batchedLabels);
-
-			// Merge results.
-			foreach ($batchedLabels as $uuid => $label) {
-				$this->uuidLabelCache[$uuid] = $label;
-				$result[$uuid] = $label;
+			$this->fieldLabelCache[$lookup->cacheKey] = $distributedLabels;
+			$this->warmedFields[$lookup->cacheKey] = true;
+			if ($lookup->take(labels: $distributedLabels) === false) {
+				return false;
 			}
 
-			// Update field-level cache with new labels.
-			if (isset($this->fieldLabelCache[$fieldCacheKey]) === false) {
-				$this->fieldLabelCache[$fieldCacheKey] = [];
-			}
-
-			$this->fieldLabelCache[$fieldCacheKey] = array_merge(
-				$this->fieldLabelCache[$fieldCacheKey],
-				$batchedLabels
-			);
-
-			// Persist to distributed cache for future requests.
-			if ($this->distLabelCache !== null) {
-				try {
-					$this->distLabelCache->set(
-						$fieldCacheKey,
-						$this->fieldLabelCache[$fieldCacheKey],
-						self::FACET_LABEL_CACHE_TTL
-					);
-					$this->warmedFields[$fieldCacheKey] = true;
-				} catch (\Exception $e) {
-					$eMsg = $e->getMessage();
-					$this->logger->warning(
-						message: "[MagicFacetHandler] Failed to persist facet labels to distributed cache: {$eMsg}",
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-				}
-			}
-
+			$this->cacheStats['distributed_cache_hits']++;
+			$this->cacheStats['total_uuids_resolved'] += count($lookup->result);
 			$this->logger->debug(
-				message: '[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached',
+				message: '[MagicFacetHandler] batchResolveUuidLabels: All labels from distributed cache',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'field' => $field,
-					'requested' => count($uuids),
-					'resolved' => count($batchedLabels),
-					'time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+					'field' => $lookup->field,
+					'count' => count($lookup->result),
+					'time_ms' => $lookup->elapsedMs(),
 				]
 			);
-		}//end if
+			return true;
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[MagicFacetHandler] Failed to get facet labels from distributed cache: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return false;
+		}//end try
+	}//end labelsFromDistributedCache()
 
-		return $result;
-	}//end batchResolveUuidLabels()
+	/**
+	 * Resolve the uuids no cache answered through the object name cache, and
+	 * keep the result in the field cache and the distributed cache (24h TTL:
+	 * labels rarely change).
+	 *
+	 * @param FacetLabelLookup $lookup The lookup.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	private function resolveLabelsViaObjectNames(FacetLabelLookup $lookup): void {
+		$this->resolveLazyDependencies();
+		if ($this->cacheHandler === null || empty($lookup->uncached) === true) {
+			return;
+		}
+
+		$this->cacheStats['cache_handler_calls']++;
+		$batchedLabels = $this->cacheHandler->getMultipleObjectNames($lookup->uncached);
+		$this->cacheStats['total_uuids_resolved'] += count($batchedLabels);
+
+		foreach ($batchedLabels as $uuid => $label) {
+			$this->uuidLabelCache[$uuid] = $label;
+			$lookup->result[$uuid] = $label;
+		}
+
+		$this->fieldLabelCache[$lookup->cacheKey] = array_merge(
+			($this->fieldLabelCache[$lookup->cacheKey] ?? []),
+			$batchedLabels
+		);
+
+		$this->persistFieldLabels(cacheKey: $lookup->cacheKey);
+
+		$this->logger->debug(
+			message: '[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'field' => $lookup->field,
+				'requested' => count($lookup->uuids),
+				'resolved' => count($batchedLabels),
+				'time_ms' => $lookup->elapsedMs(),
+			]
+		);
+	}//end resolveLabelsViaObjectNames()
+
+	/**
+	 * Store a field's labels in the distributed cache; a failure is logged.
+	 *
+	 * @param string $cacheKey The field's cache key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	private function persistFieldLabels(string $cacheKey): void {
+		if ($this->distLabelCache === null) {
+			return;
+		}
+
+		try {
+			$this->distLabelCache->set($cacheKey, $this->fieldLabelCache[$cacheKey], self::FACET_LABEL_CACHE_TTL);
+			$this->warmedFields[$cacheKey] = true;
+		} catch (\Exception $e) {
+			$eMsg = $e->getMessage();
+			$this->logger->warning(
+				message: "[MagicFacetHandler] Failed to persist facet labels to distributed cache: {$eMsg}",
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+	}//end persistFieldLabels()
 
 	/**
 	 * Get human-readable label for a field value.
