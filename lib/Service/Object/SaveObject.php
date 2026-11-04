@@ -63,6 +63,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceCheck;
+use OCA\OpenRegister\Service\Object\SaveObject\WriteBackSettings;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource;
@@ -2878,10 +2879,6 @@ class SaveObject {
 	 * @return array The data with write-back properties optionally removed
 	 * @throws Exception
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex write-back logic with multiple configurations
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple property and item level configurations
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive write-back handling for all relation types
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function handleInverseRelationsWriteBack(ObjectEntity $objectEntity, Schema $schema, array $data): array {
@@ -2893,135 +2890,163 @@ class SaveObject {
 			return $data;
 		}
 
-		// Find properties that have inversedBy configuration with writeBack enabled.
-		// TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items to config.
-		$writeBackProperties = array_filter(
-			$properties,
-			function (array $property) {
-				// Check for inversedBy with writeBack at property level.
-				$hasInversedBy = ($property['inversedBy'] ?? null) !== null;
-				$hasWriteBack = (($property['writeBack'] ?? null) !== null)
-					&& $property['writeBack'] === true;
-				if ($hasInversedBy === true && $hasWriteBack === true) {
-					return true;
-				}
-
-				// Check for inversedBy with writeBack in array items.
-				if ($property['type'] === 'array'
-					&& (($property['items']['inversedBy'] ?? null) !== null)
-					&& (($property['items']['writeBack'] ?? null) !== null)
-					&& $property['items']['writeBack'] === true
-				) {
-					return true;
-				}
-
-				// Check for inversedBy with writeBack at array property level (for array of objects).
-				if ($property['type'] === 'array'
-					&& (($property['items']['inversedBy'] ?? null) !== null)
-					&& (($property['writeBack'] ?? null) !== null)
-					&& $property['writeBack'] === true
-				) {
-					return true;
-				}
-
-				return false;
-			}
-		);
-
+		$run = new CascadeRun();
+		$run->parent = $objectEntity;
+		$run->data = $data;
+		$writeBackProperties = array_filter($properties, fn (array $property) => self::isWriteBackProperty(property: $property));
 		foreach ($writeBackProperties as $propertyName => $definition) {
-			// Skip if property not present in data or is empty.
-			if (($data[$propertyName] ?? null) === null || empty($data[$propertyName]) === true) {
-				continue;
-			}
+			$run->property = $propertyName;
+			$run->definition = $definition;
+			$this->writeBackProperty(run: $run);
+		}
 
-			$targetUuids = $data[$propertyName];
-			$inverseProperty = null;
-			$targetSchema = null;
-			$targetRegister = null;
-			$removeFromSource = false;
-
-			// Extract configuration from property or array items.
-			$hasDefInversedBy = ($definition['inversedBy'] ?? null) !== null;
-			$hasDefWriteBack = (($definition['writeBack'] ?? null) !== null)
-				&& $definition['writeBack'] === true;
-			$hasItemsInversedBy = ($definition['items']['inversedBy'] ?? null) !== null;
-			$hasItemsWriteBack = (($definition['items']['writeBack'] ?? null) !== null)
-				&& $definition['items']['writeBack'] === true;
-
-			if ($hasDefInversedBy === true && $hasDefWriteBack === true) {
-				$inverseProperty = $definition['inversedBy'];
-				$targetSchema = $definition['$ref'] ?? null;
-				$targetRegister = $definition['register'] ?? $objectEntity->getRegister();
-				$removeFromSource = $definition['removeAfterWriteBack'] ?? false;
-			} elseif ($hasItemsInversedBy === true && $hasItemsWriteBack === true) {
-				$inverseProperty = $definition['items']['inversedBy'];
-				$targetSchema = $definition['items']['$ref'] ?? null;
-				$targetRegister = $definition['items']['register'] ?? $objectEntity->getRegister();
-				$removeFromSource = $definition['items']['removeAfterWriteBack'] ?? false;
-			} elseif ($hasItemsInversedBy === true && $hasDefWriteBack === true) {
-				// Handle array of objects with writeBack at array level.
-				$inverseProperty = $definition['items']['inversedBy'];
-				$targetSchema = $definition['items']['$ref'] ?? null;
-				$targetRegister = $definition['register'] ?? $objectEntity->getRegister();
-				$removeFromSource = $definition['removeAfterWriteBack'] ?? false;
-			}//end if
-
-			// Skip if we don't have the necessary configuration.
-			$noInverseProperty = $inverseProperty === false || $inverseProperty === null;
-			$noTargetSchema = $targetSchema === false || $targetSchema === null;
-			if ($noInverseProperty === true || $noTargetSchema === true) {
-				continue;
-			}
-
-			// Resolve schema reference to actual schema ID.
-			$resolvedSchemaId = $this->resolveSchemaReference(reference: $targetSchema);
-			if ($resolvedSchemaId === null) {
-				continue;
-			}
-
-			// Ensure targetUuids is an array.
-			if (is_array($targetUuids) === false) {
-				$targetUuids = [$targetUuids];
-			}
-
-			// Filter out empty or invalid IDs.
-			// Supports: standard UUIDs, UUIDs without dashes, prefixed UUIDs, and numeric IDs.
-			$validUuids = array_filter(
-				$targetUuids,
-				function ($uuid) {
-					if (empty($uuid) === true || is_string($uuid) === false || trim($uuid) === '') {
-						return false;
-					}
-
-					return self::isObjectIdentifier(value: $uuid);
-				}
-			);
-
-			if (empty($validUuids) === true) {
-				continue;
-			}
-
-			// Update each target object.
-			foreach ($validUuids as $targetUuid) {
-				$this->writeBackToTarget(
-					reference: (string)$targetUuid,
-					link: [
-						'inverseProperty' => $inverseProperty,
-						'register' => $targetRegister,
-						'schema' => $resolvedSchemaId,
-						'source' => $objectEntity->getUuid(),
-					]
-				);
-			}
-
-			// Remove the property from source object if configured to do so.
-			if ($removeFromSource === true) {
-				unset($data[$propertyName]);
-			}
-		}//end foreach
-
-		return $data;
+		return $run->data;
 	}//end handleInverseRelationsWriteBack()
+
+	/**
+	 * Whether a property writes back: inversedBy with writeBack on the property, on its items, or on an array of objects.
+	 *
+	 * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items to config.
+	 *
+	 * @param array $property The property definition.
+	 *
+	 * @return bool True when the property writes back.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function isWriteBackProperty(array $property): bool {
+		$hasInversedBy = ($property['inversedBy'] ?? null) !== null;
+		$hasWriteBack = (($property['writeBack'] ?? null) !== null)
+			&& $property['writeBack'] === true;
+		if ($hasInversedBy === true && $hasWriteBack === true) {
+			return true;
+		}
+
+		if ($property['type'] !== 'array' || (($property['items']['inversedBy'] ?? null) !== null) === false) {
+			return false;
+		}
+
+		$itemsWriteBack = (($property['items']['writeBack'] ?? null) !== null)
+			&& $property['items']['writeBack'] === true;
+
+		return $itemsWriteBack === true || $hasWriteBack === true;
+	}//end isWriteBackProperty()
+
+	/**
+	 * Write the source back into every target the run's property names, and drop the property when configured.
+	 *
+	 * @param CascadeRun $run The write-back pass, on one property.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function writeBackProperty(CascadeRun $run): void {
+		$targetUuids = ($run->data[$run->property] ?? null);
+		if ($targetUuids === null || empty($targetUuids) === true) {
+			return;
+		}
+
+		$settings = self::writeBackSettings(run: $run);
+		$noInverseProperty = $settings->inverseProperty === false || $settings->inverseProperty === null;
+		$noTargetSchema = $settings->targetSchema === false || $settings->targetSchema === null;
+		if ($noInverseProperty === true || $noTargetSchema === true) {
+			return;
+		}
+
+		$resolvedSchemaId = $this->resolveSchemaReference(reference: $settings->targetSchema);
+		if ($resolvedSchemaId === null) {
+			return;
+		}
+
+		$validUuids = self::writeBackTargetIds(targetUuids: $targetUuids);
+		if (empty($validUuids) === true) {
+			return;
+		}
+
+		foreach ($validUuids as $targetUuid) {
+			$this->writeBackToTarget(
+				reference: (string)$targetUuid,
+				link: [
+					'inverseProperty' => $settings->inverseProperty,
+					'register' => $settings->targetRegister,
+					'schema' => $resolvedSchemaId,
+					'source' => $run->parent->getUuid(),
+				]
+			);
+		}
+
+		if ($settings->removeFromSource === true) {
+			unset($run->data[$run->property]);
+		}
+	}//end writeBackProperty()
+
+	/**
+	 * The write-back settings of the run's property, from the property, its items, or an array of objects.
+	 *
+	 * The target register defaults to the source object's register.
+	 *
+	 * @param CascadeRun $run The write-back pass, on one property.
+	 *
+	 * @return WriteBackSettings The settings; empty when the property declares none.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function writeBackSettings(CascadeRun $run): WriteBackSettings {
+		$definition = $run->definition;
+		$settings = new WriteBackSettings();
+		$hasDefWriteBack = (($definition['writeBack'] ?? null) !== null)
+			&& $definition['writeBack'] === true;
+		$hasItemsInversedBy = ($definition['items']['inversedBy'] ?? null) !== null;
+		$hasItemsWriteBack = (($definition['items']['writeBack'] ?? null) !== null)
+			&& $definition['items']['writeBack'] === true;
+
+		// Where the inverse property and target schema come from, and where the register and removal flag come from.
+		$source = null;
+		$flags = $definition;
+		if (($definition['inversedBy'] ?? null) !== null && $hasDefWriteBack === true) {
+			$source = $definition;
+		} elseif ($hasItemsInversedBy === true && $hasItemsWriteBack === true) {
+			$source = $definition['items'];
+			$flags = $definition['items'];
+		} elseif ($hasItemsInversedBy === true && $hasDefWriteBack === true) {
+			$source = $definition['items'];
+		}
+
+		if ($source === null) {
+			return $settings;
+		}
+
+		$settings->inverseProperty = $source['inversedBy'];
+		$settings->targetSchema = $source['$ref'] ?? null;
+		$settings->targetRegister = $flags['register'] ?? $run->parent->getRegister();
+		$settings->removeFromSource = $flags['removeAfterWriteBack'] ?? false;
+
+		return $settings;
+	}//end writeBackSettings()
+
+	/**
+	 * The target identifiers of a write-back value that are object identifiers.
+	 *
+	 * Supports standard UUIDs, UUIDs without dashes, prefixed UUIDs, and numeric IDs.
+	 *
+	 * @param mixed $targetUuids One identifier or a list of them.
+	 *
+	 * @return array The valid identifiers, keys kept.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function writeBackTargetIds(mixed $targetUuids): array {
+		if (is_array($targetUuids) === false) {
+			$targetUuids = [$targetUuids];
+		}
+
+		return array_filter(
+			$targetUuids,
+			fn ($uuid) => empty($uuid) === false && is_string($uuid) === true && trim($uuid) !== ''
+				&& self::isObjectIdentifier(value: $uuid) === true
+		);
+	}//end writeBackTargetIds()
 
 	/**
 	 * Add the source object to one target's inverse property and save the target.
