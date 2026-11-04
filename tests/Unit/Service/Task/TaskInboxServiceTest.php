@@ -45,6 +45,9 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Db\TaskInboxCriteria
  * @covers \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Task\TaskSubjectLocator
  */
 class TaskInboxServiceTest extends TestCase {
 

@@ -30,6 +30,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Service\Object\ObjectReadAccess::schemaById
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\ObjectReadAccess
  */
 class ObjectReadAccessSchemaByIdTest extends TestCase {
 

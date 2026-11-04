@@ -41,6 +41,7 @@ use Psr\Log\LoggerInterface;
  *
  * @coversDefaultClass \OCA\OpenRegister\Service\LinkedEntityService
  * @uses \OCA\OpenRegister\Service\LinkedEntityService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class LinkedEntityServiceTest extends TestCase {
 

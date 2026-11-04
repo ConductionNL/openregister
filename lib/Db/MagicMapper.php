@@ -7990,11 +7990,15 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * Called whenever a magic table is created, so a write that follows a table
 	 * creation in the same request sees the new table rather than a cached
-	 * "does not exist" / stale enumeration.
+	 * "does not exist" / stale enumeration. A background job calls it before it
+	 * looks objects up: a long-running `background-job:worker` outlives the
+	 * request the memos were made for, and would not see tables created since.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
 	 */
-	private function invalidateTableMemos(): void {
+	public function invalidateTableMemos(): void {
 		$this->tableExistsMemo = [];
 		$this->liveMagicTablesMemo = null;
 
@@ -9557,7 +9561,11 @@ class MagicMapper extends AbstractObjectMapper {
 			throw $refusal;
 		}
 
+		// A write of the same uuid can run nested inside another's events: each
+		// write carries only its own refusal, and hands back the outer one after.
 		$uuid = (string)$entity->getUuid();
+		$outerRefusal = ($this->liveRowOnlyWrites[$uuid] ?? null);
+		unset($this->liveRowOnlyWrites[$uuid]);
 		if ($refusal !== null) {
 			$this->liveRowOnlyWrites[$uuid] = $refusal;
 		}
@@ -9571,6 +9579,9 @@ class MagicMapper extends AbstractObjectMapper {
 			);
 		} finally {
 			unset($this->liveRowOnlyWrites[$uuid]);
+			if ($outerRefusal !== null) {
+				$this->liveRowOnlyWrites[$uuid] = $outerRefusal;
+			}
 		}
 
 		$this->replacedByLastInsert = ($stored ?? clone $entity);

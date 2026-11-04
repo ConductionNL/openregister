@@ -28,6 +28,7 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Listener\Registrar\McpListenerRegistrar
  * @uses   \OCA\OpenRegister\Listener\Registrar\NotificationsListenerRegistrar
  * @uses   \OCA\OpenRegister\Listener\Registrar\WorkListenerRegistrar
+ * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
  */
 class ListenerOrderTest extends TestCase {
 

@@ -50,6 +50,16 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Service\Aggregation\AggregationRunner
  * @covers \OCA\OpenRegister\Service\Rbac\AggregateVisibility
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
+ * @uses \OCA\OpenRegister\Service\Aggregation\AggregationQuery
+ * @uses \OCA\OpenRegister\Service\Aggregation\MetricExpressionEvaluator
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
+ * @uses \OCA\OpenRegister\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class AggregationRunnerExplicitRevealTest extends TestCase {
 

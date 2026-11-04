@@ -38,6 +38,7 @@ use UnexpectedValueException;
  * @covers \OCA\OpenRegister\Listener\FlowNodePreflightListener
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Event\ObjectCreatingEvent
+ * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
  */
 class FlowNodePreflightListenerTest extends TestCase {
 

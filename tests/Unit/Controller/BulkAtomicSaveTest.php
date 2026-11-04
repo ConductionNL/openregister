@@ -43,6 +43,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Controller\BulkController
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Dto\BulkSaveOutcome
+ * @uses \OCA\OpenRegister\Service\Rbac\SchemaManageGate
  */
 class BulkAtomicSaveTest extends TestCase {
 

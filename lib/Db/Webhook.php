@@ -74,6 +74,27 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Webhook extends Entity implements JsonSerializable {
+	/**
+	 * The fields hydrate() sets, in order: [setter, setter for an array value or null, cast].
+	 */
+	private const HYDRATED_FIELDS = [
+		'id' => ['setId', null, 'plain'],
+		'uuid' => ['setUuid', null, 'plain'],
+		'name' => ['setName', null, 'plain'],
+		'url' => ['setUrl', null, 'plain'],
+		'method' => ['setMethod', null, 'plain'],
+		'events' => ['setEvents', 'setEventsArray', 'plain'],
+		'headers' => ['setHeaders', 'setHeadersArray', 'plain'],
+		'secret' => ['setSecret', null, 'plain'],
+		'enabled' => ['setEnabled', null, 'bool'],
+		'organisation' => ['setOrganisation', null, 'plain'],
+		'filters' => ['setFilters', 'setFiltersArray', 'plain'],
+		'retryPolicy' => ['setRetryPolicy', null, 'plain'],
+		'maxRetries' => ['setMaxRetries', null, 'int'],
+		'timeout' => ['setTimeout', null, 'int'],
+		'configuration' => ['setConfiguration', 'setConfigurationArray', 'plain'],
+	];
+
 
 	/**
 	 * UUID
@@ -462,108 +483,57 @@ class Webhook extends Entity implements JsonSerializable {
 	/**
 	 * Hydrate entity from array
 	 *
+	 * Every field in HYDRATED_FIELDS is set when present and not null: a field
+	 * with an array setter takes an array through it and a string as is, and
+	 * `bool` and `int` fields are cast. A `mapping` sent as null or empty clears
+	 * it; a body that leaves the key out keeps it.
+	 *
 	 * @param array $object Object data
 	 *
 	 * @return static The hydrated entity
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Hydration requires handling many optional fields
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	public function hydrate(array $object): static {
 		// phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
-		if (($object['id'] ?? null) !== null) {
-			$this->setId($object['id']);
-		}
-
-		if (($object['uuid'] ?? null) !== null) {
-			$this->setUuid($object['uuid']);
-		}
-
-		if (($object['name'] ?? null) !== null) {
-			$this->setName($object['name']);
-		}
-
-		if (($object['url'] ?? null) !== null) {
-			$this->setUrl($object['url']);
-		}
-
-		if (($object['method'] ?? null) !== null) {
-			$this->setMethod($object['method']);
-		}
-
-		if (($object['events'] ?? null) !== null) {
-			if (is_array($object['events']) === true) {
-				$this->setEventsArray($object['events']);
+		foreach (self::HYDRATED_FIELDS as $field => [$setter, $arraySetter, $kind]) {
+			$value = ($object[$field] ?? null);
+			if ($value === null) {
+				continue;
 			}
 
-			if (is_array($object['events']) === false) {
-				$this->setEvents($object['events']);
-			}
-		}
-
-		if (($object['headers'] ?? null) !== null) {
-			if (is_array($object['headers']) === true) {
-				$this->setHeadersArray($object['headers']);
+			if ($arraySetter !== null && is_array($value) === true) {
+				$setter = $arraySetter;
 			}
 
-			if (is_array($object['headers']) === false) {
-				$this->setHeaders($object['headers']);
-			}
-		}
-
-		if (($object['secret'] ?? null) !== null) {
-			$this->setSecret($object['secret']);
-		}
-
-		if (($object['enabled'] ?? null) !== null) {
-			$this->setEnabled((bool)$object['enabled']);
-		}
-
-		if (($object['organisation'] ?? null) !== null) {
-			$this->setOrganisation($object['organisation']);
-		}
-
-		if (($object['filters'] ?? null) !== null) {
-			if (is_array($object['filters']) === true) {
-				$this->setFiltersArray($object['filters']);
-			}
-
-			if (is_array($object['filters']) === false) {
-				$this->setFilters($object['filters']);
-			}
-		}
-
-		if (($object['retryPolicy'] ?? null) !== null) {
-			$this->setRetryPolicy($object['retryPolicy']);
-		}
-
-		if (($object['maxRetries'] ?? null) !== null) {
-			$this->setMaxRetries((int)$object['maxRetries']);
-		}
-
-		if (($object['timeout'] ?? null) !== null) {
-			$this->setTimeout((int)$object['timeout']);
-		}
-
-		if (($object['configuration'] ?? null) !== null) {
-			if (is_array($object['configuration']) === true) {
-				$this->setConfigurationArray($object['configuration']);
-			}
-
-			if (is_array($object['configuration']) === false) {
-				$this->setConfiguration($object['configuration']);
-			}
+			$this->$setter($this->castHydrated(value: $value, kind: $kind));
 		}
 
 		if (($object['mapping'] ?? null) !== null && $object['mapping'] !== '') {
 			$this->setMapping((int)$object['mapping']);
 		} elseif (array_key_exists('mapping', $object) === true) {
-			// Sent as null or empty: the administrator cleared the mapping. A body
-			// that leaves the key out keeps it.
 			$this->setMapping(null);
 		}
 
 		return $this;
 		// phpcs:enable
 	}//end hydrate()
+
+	/**
+	 * A hydrated value cast to its field's kind.
+	 *
+	 * @param mixed  $value The value.
+	 * @param string $kind  One of plain, bool or int.
+	 *
+	 * @return mixed
+	 *
+	 * @spec openspec/specs/webhook-payload-mapping/spec.md
+	 */
+	private function castHydrated(mixed $value, string $kind): mixed {
+		return match ($kind) {
+			'bool' => (bool)$value,
+			'int' => (int)$value,
+			default => $value,
+		};
+	}//end castHydrated()
 }//end class

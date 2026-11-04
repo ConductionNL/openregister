@@ -45,3 +45,10 @@ and write nothing. Data a refusing hook set SHALL NOT be written.
 - **THEN** the write changes only a row whose `_deleted` is empty and never inserts, so nothing is written and the creating refusal is thrown; a lost claim without a refusal is written as before
 - @e2e exclude {covered by `MagicMapperInsertRaceGuardTest::testARefusedCreateIsNotWrittenWhenAnUpdatingListenerSoftDeletesItsRow`, `...HardDeletesItsRow`, `testALostClaimIsWrittenEvenWhenAnUpdatingListenerDeletesItsRow` and `MagicMapperLiveRowWriteTest`}
 
+#### Scenario: a write of the same object runs inside the update's listener
+
+- **GIVEN** a refused create carried out as an update of a live row, and an `ObjectUpdatingEvent` listener that writes the same object again
+- **WHEN** the nested write finishes and the row is then soft-deleted before the outer update is written
+- **THEN** the outer update still changes only a live row, so nothing is written and the creating refusal is thrown; the nested write is conditional only when it is itself a refused create
+- @e2e exclude {covered by `MagicMapperRefusedCreateComposedTest::testNestedRefusedCreateSameUuidThenSoftDelete` and `testNestedPlainWriteSameUuidIsUnconditional`}
+
