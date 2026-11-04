@@ -294,10 +294,7 @@ class MetadataConditionFindings {
 		}
 
 		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($table)
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-
+		$qb->select('*')->from($table)->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 		$result = $qb->executeQuery();
 		$row = $result->fetch();
 		$result->closeCursor();
