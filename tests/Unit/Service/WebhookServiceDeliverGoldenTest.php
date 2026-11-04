@@ -40,6 +40,11 @@ use RuntimeException;
 class WebhookServiceDeliverGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/webhook-deliver-golden.json';
 
+	/**
+	 * The recorded collaborator calls of the current case.
+	 *
+	 * @var array<int, array<int, mixed>>
+	 */
 	private array $calls = [];
 
 	public static function cases(): array {
