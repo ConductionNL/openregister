@@ -15,14 +15,20 @@ file are moved. The script:
 3. rewrites every fully qualified old name (one, two or four backslashes, as in
    PHP, strings, JSON and NEON) in lib/, tests/, appinfo/ and the root config and
    baseline files, and every `lib/<old path>` to `lib/<new path>`;
-4. adds an entry per moved class to appinfo/class-aliases.json: `eager` when
+4. keeps `__DIR__`-relative paths and `dirname(__DIR__, n)` in moved files
+   pointing at the same file, and refuses frozen classes (events, Workflow
+   Engine operations, migrations, the classes kept at their name);
+5. adds an entry per moved class to appinfo/class-aliases.json: `eager` when
    other apps reference the class (column `fleet_refs`), `service` when other apps
    reference it or it is a controller or a background job.
 
+The approved map is scripts/component-map.csv. A class added after the map was
+made gets a row with the target of the class it was split from.
+
 Run it from the repository root on a clean tree, then review `git diff`:
 
-    python3 scripts/component-move.py --classmap map.csv --component Mcp --dry-run
-    python3 scripts/component-move.py --classmap map.csv --component Mcp
+    python3 scripts/component-move.py --classmap scripts/component-map.csv --component Search --dry-run
+    python3 scripts/component-move.py --classmap scripts/component-map.csv --component Search
 
 Baselines after a move. The script rewrites paths and names in
 phpstan-baseline*.neon, psalm-baseline.xml and phpmd.baseline.xml, which keeps the
@@ -51,6 +57,18 @@ ROOT_FILES = re.compile(r'^(phpstan[\w.-]*\.neon|psalm[\w.-]*\.xml|phpmd[\w.-]*\
 TEXT_EXT = ('.php', '.xml', '.neon', '.json', '.yml', '.yaml', '.txt')
 FQCN_TOKEN = re.compile(r'OCA((?:\\+[A-Za-z_][A-Za-z0-9_]*)+)')
 ALIAS_FILE = 'appinfo/class-aliases.json'
+# Never moved: event classes (listeners and dispatchTyped match the class name,
+# and WebhookService builds event names from strings), Workflow Engine operations
+# (Nextcloud stores their class in oc_flow_operations), migrations (recorded by
+# version), and the classes kept at their name for other apps (move plan D3).
+FROZEN_DIRS = ('Event/', 'WorkflowEngine/', 'Migration/', 'AppInfo/', 'Contract/', 'Kernel/')
+FROZEN_FILES = {
+    'Service/ObjectService.php', 'Db/SchemaMapper.php', 'Db/RegisterMapper.php',
+    'Db/ObjectEntity.php', 'Db/Schema.php', 'Db/Register.php',
+}
+EVENT_CLASS = re.compile(r'\bextends\s+\\?(?:OCP\\EventDispatcher\\)?\w*Event\b')
+DIR_PATH = re.compile(r"__DIR__\s*\.\s*(['\"])(/[^'\"]*)\1")
+DIRNAME_DIR = re.compile(r'dirname\(\s*__DIR__\s*(?:,\s*(\d+)\s*)?\)')
 
 
 def fqcn_of(path):
@@ -144,6 +162,40 @@ def qualify_relative_names(src, old_ns, new_of, imported):
     return ''.join(out)
 
 
+def frozen_reason(rel, src):
+    """Why a class may not move, or None."""
+    if rel.startswith(FROZEN_DIRS) or rel in FROZEN_FILES:
+        return 'frozen by the move plan'
+    if EVENT_CLASS.search(src):
+        return 'an event class'
+    return None
+
+
+def rebase_dir_paths(src, old_rel, new_rel, warnings):
+    """Keep `__DIR__ . '/..'` and `dirname(__DIR__, n)` pointing at the same place after a move."""
+    old_dir = os.path.dirname(os.path.join('lib', old_rel))
+    new_dir = os.path.dirname(os.path.join('lib', new_rel))
+
+    def path(match):
+        target = os.path.normpath(os.path.join(old_dir, match.group(2).lstrip('/')))
+        rel = os.path.relpath(target, new_dir)
+        return f'__DIR__ . {match.group(1)}/{rel}{match.group(1)}'
+
+    def dirname(match):
+        levels = int(match.group(1) or 1)
+        base = old_dir
+        for _ in range(levels):
+            base = os.path.dirname(base)
+        rel = os.path.relpath(new_dir, base or '.')
+        if rel.startswith('..'):
+            warnings.append(f'lib/{new_rel}: dirname(__DIR__, {levels}) has no equivalent after the move')
+            return match.group(0)
+        depth = len(rel.split(os.sep)) if rel != '.' else 0
+        return 'dirname(__DIR__)' if depth == 1 else f'dirname(__DIR__, {depth})'
+
+    return DIRNAME_DIR.sub(dirname, DIR_PATH.sub(path, src))
+
+
 def load_rows(classmap, component, lib):
     rows = []
     with open(classmap, newline='') as handle:
@@ -152,6 +204,9 @@ def load_rows(classmap, component, lib):
                 continue
             if not os.path.isfile(os.path.join(lib, row['file'])):
                 sys.exit(f'not in lib/: {row["file"]}')
+            reason = frozen_reason(row['file'], open(os.path.join(lib, row['file']), encoding='utf-8').read())
+            if reason:
+                sys.exit(f'refusing to move lib/{row["file"]}: {reason}')
             rows.append(row)
     return rows
 
@@ -231,6 +286,7 @@ def main():
         src = add_uses(src, needed)
         if fqcn in new_of:
             src = re.sub(r'^namespace\s+[^;]+;', lambda _m: f'namespace {own_new_ns};', src, count=1, flags=re.M)
+            src = rebase_dir_paths(src, rel, moves[rel], warnings)
         open(path, 'w', encoding='utf-8').write(src)
 
     for old, new in sorted(moves.items()):
