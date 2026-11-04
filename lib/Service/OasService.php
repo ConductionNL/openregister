@@ -1196,7 +1196,7 @@ class OasService {
 	 *
 	 * @return array<string, mixed> OpenAPI parameter object
 	 */
-	private function propertyFilterParameter(string $propertyName, mixed $propertyDefinition): array {
+	private function propertyFilterParameter(string $propertyName, $propertyDefinition): array {
 		$propertyType = $this->getPropertyType(propertyDefinition: $propertyDefinition);
 		$paramSchema = ['type' => $propertyType];
 
