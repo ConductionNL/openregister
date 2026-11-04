@@ -3370,53 +3370,64 @@ class ObjectService implements ObjectServiceInterface
 
             $this->applyDeleteScope(register: $register, schema: $schema);
 
-            // A schema served by an object source keeps no rows in a magic table,
-            // so the MagicMapper lookups below can only miss, and a scoped miss
-            // would be rethrown as "not found" before the delete handler's
-            // provider dispatch runs.
-            $sourcedSchema = null;
-            if ($this->currentSchema !== null && $this->currentSchema->getObjectSource() !== null) {
-                $sourcedSchema = $this->currentSchema;
-            }
-
-            $this->rejectRefusedDelete(request: $request, sourcedSchema: $sourcedSchema);
-
-            if ($sourcedSchema !== null) {
-                return $this->deleteFromObjectSource(
-                    schema: $sourcedSchema,
-                    uuid: $uuid,
-                    actingUserId: $request->actingUserId(),
-                    _rbac: $_rbac,
-                    _multitenancy: $_multitenancy,
-                    hasScope: $request->scoped
-                );
-            }
-
-            $objectToDelete = $this->resolvePermittedDeleteTarget(request: $request);
-
-            // A draft is removed for good, with its files: a tombstone of
-            // unsent input serves nobody, and on an archival schema the
-            // purge would refuse it for ever (decisions 180 and 216).
-            if ($objectToDelete !== null && $objectToDelete->isDraft() === true) {
-                $permanent = true;
-            }
-
-            $this->refuseDeletingSomebodyElsesDraft(request: $request, object: $objectToDelete);
-
-            return $this->deleteHandler->deleteObject(
-                register: $this->currentRegister,
-                schema: $this->currentSchema,
-                uuid: $uuid,
-                originalObjectId: null,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy,
-                scoped: $request->scoped,
-                permanent: $permanent
-            );
+            return $this->deleteWithinScope(request: $request, permanent: $permanent);
         } finally {
             $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
         }
     }//end deleteObject()
+
+    /**
+     * Run one delete inside the scope deleteObject() opened: refuse, dispatch to an object
+     * source, or resolve the permitted target and delete it.
+     *
+     * @param ObjectDeleteRequest $request   The delete and its policy flags.
+     * @param bool                $permanent Whether to remove the row for good; a draft always is.
+     *
+     * @return bool Whether the deletion was successful.
+     *
+     * @throws \Exception If the delete is refused or fails.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors deleteObject()'s own permanent flag.
+     */
+    private function deleteWithinScope(ObjectDeleteRequest $request, bool $permanent): bool
+    {
+        // A schema served by an object source keeps no rows in a magic table,
+        // so the MagicMapper lookups below can only miss, and a scoped miss
+        // would be rethrown as "not found" before the delete handler's
+        // provider dispatch runs.
+        $sourcedSchema = null;
+        if ($this->currentSchema !== null && $this->currentSchema->getObjectSource() !== null) {
+            $sourcedSchema = $this->currentSchema;
+        }
+
+        $this->rejectRefusedDelete(request: $request, sourcedSchema: $sourcedSchema);
+
+        if ($sourcedSchema !== null) {
+            return $this->deleteFromObjectSource(schema: $sourcedSchema, request: $request);
+        }
+
+        $objectToDelete = $this->resolvePermittedDeleteTarget(request: $request);
+
+        // A draft is removed for good, with its files: a tombstone of
+        // unsent input serves nobody, and on an archival schema the
+        // purge would refuse it for ever (decisions 180 and 216).
+        if ($objectToDelete !== null && $objectToDelete->isDraft() === true) {
+            $permanent = true;
+        }
+
+        $this->refuseDeletingSomebodyElsesDraft(request: $request, object: $objectToDelete);
+
+        return $this->deleteHandler->deleteObject(
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            uuid: $request->uuid,
+            originalObjectId: null,
+            _rbac: $request->rbac,
+            _multitenancy: $request->multitenancy,
+            scoped: $request->scoped,
+            permanent: $permanent
+        );
+    }//end deleteWithinScope()
 
     /**
      * Resolve a delete call's register and schema onto the current context.
@@ -3714,45 +3725,33 @@ class ObjectService implements ObjectServiceInterface
      * OpenRegister. The handler then delegates to the writable provider, or
      * refuses the delete as a read-only projection.
      *
-     * @param Schema      $schema        The schema served by the object source.
-     * @param string      $uuid          The object id in the source.
-     * @param string|null $actingUserId  Explicit acting user, or null for the session user.
-     * @param bool        $_rbac         Whether to apply RBAC checks.
-     * @param bool        $_multitenancy Whether to apply multitenancy filtering.
-     * @param bool        $hasScope      Whether the caller supplied register and schema.
+     * @param Schema              $schema  The schema served by the object source.
+     * @param ObjectDeleteRequest $request The delete: id, acting user, policy flags and scope.
      *
      * @return bool Whether the deletion was successful.
      *
      * @throws \Exception If the caller may not delete on this schema, or the source refuses.
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors deleteObject()'s own flags.
-     *
      * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
-    private function deleteFromObjectSource(
-        Schema $schema,
-        string $uuid,
-        ?string $actingUserId,
-        bool $_rbac,
-        bool $_multitenancy,
-        bool $hasScope
-    ): bool {
+    private function deleteFromObjectSource(Schema $schema, ObjectDeleteRequest $request): bool
+    {
         $this->checkPermission(
             schema: $schema,
             action: 'delete',
-            userId: $actingUserId,
+            userId: $request->actingUserId(),
             objectOwner: null,
-            _rbac: $_rbac
+            _rbac: $request->rbac
         );
 
         return $this->deleteHandler->deleteObject(
             register: $this->currentRegister,
             schema: $schema,
-            uuid: $uuid,
+            uuid: $request->uuid,
             originalObjectId: null,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy,
-            scoped: $hasScope
+            _rbac: $request->rbac,
+            _multitenancy: $request->multitenancy,
+            scoped: $request->scoped
         );
     }//end deleteFromObjectSource()
 
@@ -4783,32 +4782,50 @@ class ObjectService implements ObjectServiceInterface
         // contract reads `filters`, `limit` and `offset`. Normalise additively
         // (existing keys are never overwritten) so providers written against
         // either shape keep working.
-        $query = $this->normaliseObjectSourceQuery(query: $query);
+        $read = new ObjectSourceRead(
+            schema: $schema,
+            query: $this->normaliseObjectSourceQuery(query: $query),
+            config: ($source['config'] ?? []),
+            provider: $this->objectSourceRegistry->get($source['provider'])
+        );
 
-        $results  = [];
-        $config   = ($source['config'] ?? []);
-        $provider = $this->objectSourceRegistry->get($source['provider']);
+        return $this->readObjectSourcePage(read: $read, providerId: $source['provider']);
+    }//end paginateObjectSource()
+
+    /**
+     * Read one page from an object-source provider and shape it like a native search result.
+     *
+     * A missing or disabled provider, or a missing register context, yields an empty list.
+     *
+     * @param ObjectSourceRead $read       The provider, schema, query and config.
+     * @param string           $providerId The provider id the schema declares.
+     *
+     * @return array{results: array, total: int, '@self': array} The paginated result.
+     */
+    private function readObjectSourcePage(ObjectSourceRead $read, string $providerId): array
+    {
+        $provider = $read->provider;
         $active   = ($provider !== null && $provider->isEnabled() === true && $this->currentRegister !== null);
+        $results  = [];
         if ($active === false) {
             $this->logger->warning(
                 sprintf(
                     '[ObjectSource] schema "%s" declares provider "%s" but it is missing/disabled or has no register context — returning empty list',
-                    (string) $schema->getSlug(),
-                    $source['provider']
+                    (string) $read->schema->getSlug(),
+                    $providerId
                 )
             );
         } else {
             $results = $provider->findAll(
                 register: $this->currentRegister,
-                schema: $schema,
-                query: $query,
-                config: $config
+                schema: $read->schema,
+                query: $read->query,
+                config: $read->config
             );
         }
 
-        $resultCount = count($results);
-        $limit       = (int) ($query['limit'] ?? 0);
-        $offset      = max(0, (int) ($query['offset'] ?? 0));
+        $limit  = (int) ($read->query['limit'] ?? 0);
+        $offset = max(0, (int) ($read->query['offset'] ?? 0));
 
         // D4b: consult the provider's count() for the TRUE total and compute
         // page metadata, passing limit/offset through (findAll already received
@@ -4818,30 +4835,21 @@ class ObjectService implements ObjectServiceInterface
         // unaffected.
         $trueTotal = null;
         if ($active === true) {
-            $trueTotal = $this->objectSourceTrueTotal(
-                provider: $provider,
-                schema: $schema,
-                query: $query,
-                config: $config,
-                offset: $offset,
-                resultCount: $resultCount
-            );
+            $trueTotal = $this->objectSourceTrueTotal(read: $read, windowEnd: ($offset + count($results)));
         }
 
-        $total = ($trueTotal ?? $resultCount);
-        $self  = $this->objectSourcePageMetadata(
-            total: $total,
-            limit: $limit,
-            offset: $offset,
-            realCount: ($trueTotal !== null)
-        );
-
+        $total = ($trueTotal ?? count($results));
         return [
             'results' => $results,
             'total'   => $total,
-            '@self'   => $self,
+            '@self'   => $this->objectSourcePageMetadata(
+                total: $total,
+                limit: $limit,
+                offset: $offset,
+                realCount: ($trueTotal !== null)
+            ),
         ];
-    }//end paginateObjectSource()
+    }//end readObjectSourcePage()
 
     /**
      * Adapt a canonical search query to the object-source provider contract.
@@ -4916,40 +4924,30 @@ class ObjectService implements ObjectServiceInterface
      * offset + returned results), so providers without real count support keep
      * their pre-existing single-page behaviour.
      *
-     * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider $provider    The resolved provider.
-     * @param Schema                                                      $schema      The sourced schema.
-     * @param array                                                       $query       The search query.
-     * @param array                                                       $config      The object-source config block.
-     * @param int                                                         $offset      The requested offset.
-     * @param int                                                         $resultCount The returned window size.
+     * @param ObjectSourceRead $read      The provider (enabled), schema, query and config.
+     * @param int              $windowEnd The requested offset plus the returned window size.
      *
      * @return int|null The true total, or null when the provider has no real count.
      *
      * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
-    private function objectSourceTrueTotal(
-        $provider,
-        Schema $schema,
-        array $query,
-        array $config,
-        int $offset,
-        int $resultCount
-    ): ?int {
+    private function objectSourceTrueTotal(ObjectSourceRead $read, int $windowEnd): ?int
+    {
         try {
-            $counted = $provider->count(
+            $counted = $read->provider->count(
                 register: $this->currentRegister,
-                schema: $schema,
-                query: $query,
-                config: $config
+                schema: $read->schema,
+                query: $read->query,
+                config: $read->config
             );
         } catch (\Throwable $e) {
             $this->logger->warning(
-                '[ObjectSource] provider "'.$provider->getId().'" count() unavailable — falling back to in-memory total: '.$e->getMessage()
+                '[ObjectSource] provider "'.$read->provider->getId().'" count() unavailable — falling back to in-memory total: '.$e->getMessage()
             );
             return null;
         }
 
-        if ($counted >= ($offset + $resultCount)) {
+        if ($counted >= $windowEnd) {
             return $counted;
         }
 
@@ -5695,38 +5693,50 @@ class ObjectService implements ObjectServiceInterface
                 _audit: $_audit
             );
 
-            // Invalidate collection caches after successful bulk operations.
-            $createdCount  = (int) ($bulkResult['statistics']['objectsCreated'] ?? 0);
-            $updatedCount  = (int) ($bulkResult['statistics']['objectsUpdated'] ?? 0);
-            $totalAffected = $createdCount + $updatedCount;
-
-            if ($totalAffected > 0) {
-                try {
-                    $this->cacheHandler->invalidateForObjectChange(
-                        object: null,
-                        operation: 'bulk_save',
-                        registerId: $this->currentRegister?->getId(),
-                        schemaId: $this->currentSchema?->getId()
-                    );
-                } catch (\Exception $e) {
-                    // BUG-OBJ-14: include register/schema context in the warning.
-                    $this->logger->warning(
-                        message: '[ObjectService] Bulk save cache invalidation failed',
-                        context: [
-                            'error'         => $e->getMessage(),
-                            'totalAffected' => $totalAffected,
-                            'registerId'    => $this->currentRegister?->getId(),
-                            'schemaId'      => $this->currentSchema?->getId(),
-                        ]
-                    );
-                }
-            }//end if
-
+            $this->invalidateAfterBulkSave(bulkResult: $bulkResult);
             return $bulkResult;
         } finally {
             $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
         }
     }//end saveObjects()
+
+    /**
+     * Invalidate the collection caches of the current register and schema after a bulk save
+     * that created or updated objects. A failing invalidation is logged, not thrown.
+     *
+     * @param array $bulkResult The bulk save result with its statistics.
+     *
+     * @return void
+     */
+    private function invalidateAfterBulkSave(array $bulkResult): void
+    {
+        $createdCount  = (int) ($bulkResult['statistics']['objectsCreated'] ?? 0);
+        $updatedCount  = (int) ($bulkResult['statistics']['objectsUpdated'] ?? 0);
+        $totalAffected = $createdCount + $updatedCount;
+        if ($totalAffected <= 0) {
+            return;
+        }
+
+        try {
+            $this->cacheHandler->invalidateForObjectChange(
+                object: null,
+                operation: 'bulk_save',
+                registerId: $this->currentRegister?->getId(),
+                schemaId: $this->currentSchema?->getId()
+            );
+        } catch (\Exception $e) {
+            // BUG-OBJ-14: include register/schema context in the warning.
+            $this->logger->warning(
+                message: '[ObjectService] Bulk save cache invalidation failed',
+                context: [
+                    'error'         => $e->getMessage(),
+                    'totalAffected' => $totalAffected,
+                    'registerId'    => $this->currentRegister?->getId(),
+                    'schemaId'      => $this->currentSchema?->getId(),
+                ]
+            );
+        }
+    }//end invalidateAfterBulkSave()
 
     /**
      * Save many objects one row at a time, keeping reference checks O(1).
