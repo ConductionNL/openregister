@@ -40,9 +40,6 @@ use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
-use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategy;
-use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategy;
-use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Service\WebPush\HexIconService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
@@ -249,8 +246,6 @@ final class ServiceRegistrar {
 		// FolderManagementHandler without FileService to break circular dependency.
 		$context->registerService(FolderManagementHandler::class, self::buildFolderManagementHandler(...));
 
-		$context->registerService(VectorizationService::class, self::buildVectorizationService(...));
-
 		$context->registerService(TaskService::class, self::buildTaskService(...));
 
 		$context->registerService(NoteService::class, self::buildNoteService(...));
@@ -400,27 +395,6 @@ final class ServiceRegistrar {
 				fileService: null
 			);
 	}//end buildFolderManagementHandler()
-
-	/**
-	 * Build the VectorizationService service.
-	 *
-	 * @param ContainerInterface $container The container.
-	 *
-	 * @return VectorizationService
-	 */
-	private static function buildVectorizationService(ContainerInterface $container): VectorizationService {
-			$service = new VectorizationService(
-				vectorService: $container->get(VectorEmbeddings::class),
-				logger: $container->get('Psr\Log\LoggerInterface')
-			);
-
-			$fileStrategy = $container->get(FileVectorizationStrategy::class);
-			$objectStrategy = $container->get(ObjectVectorizationStrategy::class);
-			$service->registerStrategy('file', $fileStrategy);
-			$service->registerStrategy('object', $objectStrategy);
-
-			return $service;
-	}//end buildVectorizationService()
 
 	/**
 	 * Build the TaskService service.

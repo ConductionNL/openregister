@@ -73,6 +73,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Object\SaveObject\BulkObjectSlugs;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -364,7 +365,6 @@ class SaveObjects {
 	 * @psalm-param    array<int, array<string, mixed>> $objects
 	 * @phpstan-return array<string, mixed>
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Orchestrator at threshold after extracting initializeSaveResult
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every argument after $schema is a per-call
 	 *   policy switch that the single-object saveObject() also takes, and the two paths have to
 	 *   offer the same switches or a caller cannot move between them — which is exactly what the
@@ -385,210 +385,279 @@ class SaveObjects {
 		bool $enrich = false,
 		bool $_audit = true,
 	): array {
-
-		$startTime = microtime(true);
-		$totalObjects = count($objects);
-
-		// Initialize result structure.
-		$result = $this->initializeSaveResult(totalObjects: $totalObjects);
-
-		// Validate input early.
+		$run = new BulkSaveRun();
+		$run->startTime = microtime(true);
+		$run->totalObjects = count($objects);
+		$run->result = $this->initializeSaveResult(totalObjects: $run->totalObjects);
 		if (empty($objects) === true) {
-			return $result;
+			return $run->result;
 		}
 
-		// Wave-12 Fix 3: bulk-path safeguards. Applied per-object BEFORE
-		// delegating to the transform/upsert pipeline. Covers:
-		// - PermissionHandler::hasPermission per row (RBAC default-secure)
-		// - @self stripping of `owner`/`organisation`/`authorization` for
-		// non-admin callers (extends the wave-9 single-object strip)
-		// - appendOnly enforcement on UPDATE rows
-		// - Reserved keys `_rbac:false` / `_validation:false` honoured only
-		// when the caller is admin
-		// Validation under `_validation: true` runs Opis per-row when
-		// requested. See `/tmp/wave11-or-engine-primitives.md` Section D.
-		$safeguardStart = microtime(true);
-		$objects = $this->refuseInvalidDecisionTables(objects: $objects, register: $register, schema: $schema, result: $result);
-		$objects = $this->applyBulkSafeguards(
-			objects: $objects,
-			register: $register,
-			schema: $schema,
-			flags: ['rbac' => $_rbac, 'validation' => $_validation, 'multitenancy' => $_multitenancy],
-			result: $result
-		);
-		$safeguardMs = round((microtime(true) - $safeguardStart) * 1000, 2);
+		$run->register = $register;
+		$run->schema = $schema;
+		$run->rbac = $_rbac;
+		$run->multitenancy = $_multitenancy;
+		$run->validation = $_validation;
+		$run->events = $_events;
+		$run->audit = $_audit;
 
+		$objects = $this->safeguardBulkObjects(run: $run, objects: $objects);
 		if (empty($objects) === true) {
-			// All input rows rejected — short-circuit to avoid the empty
-			// "no objects prepared" error response below.
-			$totalTime = microtime(true) - $startTime;
-			$result['performance'] = [
-				'totalTime' => round($totalTime, 3),
-				'totalTimeMs' => round($totalTime * 1000, 2),
-				'objectsPerSecond' => 0.0,
-				'totalProcessed' => 0,
-				'totalRequested' => $totalObjects,
-				'efficiency' => 0,
-			];
-			return $result;
+			return $this->allRejectedResult(run: $run);
 		}
 
-		$isMixedSchema = ($schema === null);
-
-		// PERFORMANCE OPTIMIZATION: Reduce logging overhead during bulk operations.
-		if (count($objects) > 10000 || ($isMixedSchema === true && count($objects) > 1000)) {
-			$onLabel = 'Starting single-schema bulk save operation';
-			$onType = 'single-schema';
-			if ($isMixedSchema === true) {
-				$onLabel = 'Starting mixed-schema bulk save operation';
-				$onType = 'mixed-schema';
-			}
-
-			$this->logger->debug(
-				$onLabel,
-				[
-					'totalObjects' => count($objects),
-					'operation' => $onType,
-				]
-			);
-		}//end if
-
-		// PERFORMANCE OPTIMIZATION: Use fast path for single-schema operations.
-		// PERFORMANCE OPTIMIZATION: Use fast path for single-schema operations.
-		$useFastPath = ($isMixedSchema === false && $schema !== null);
-
-		$prepareStart = microtime(true);
-		if ($useFastPath === true) {
-			// FAST PATH: Single-schema operation - avoid complex mixed-schema logic.
-			[$processedObjects, $globalSchemaCache, $prepInvalidObjs] = $this->prepareSingleSchemaObjectsOptimized(
-				objects: $objects,
-				register: $register,
-				schema: $schema
-			);
-		}
-
-		if ($useFastPath === false) {
-			// STANDARD PATH: Mixed-schema operation - use full preparation logic.
-			[$processedObjects, $globalSchemaCache, $prepInvalidObjs] = $this->prepareObjectsForBulkSave(objects: $objects);
-		}
-
-		$prepareMs = round((microtime(true) - $prepareStart) * 1000, 2);
-
-		// CRITICAL FIX: Include objects that failed during preparation in result.
-		foreach ($prepInvalidObjs as $invalidObj) {
-			$result['invalid'][] = $invalidObj;
-			$result['statistics']['invalid']++;
-			$result['statistics']['errors']++;
-		}
-
-		// Check if we have any processed objects.
+		$this->logBulkSaveStart(run: $run, count: count($objects));
+		$processedObjects = $this->prepareBulkObjects(run: $run, objects: $objects);
 		if (empty($processedObjects) === true) {
-			$result['errors'][] = [
+			$run->result['errors'][] = [
 				'error' => 'No objects were successfully prepared for bulk save',
 				'type' => 'NoObjectsPreparedException',
 			];
-			return $result;
+			return $run->result;
 		}
 
 		// Update statistics to reflect actual processed objects.
-		$result['statistics']['totalProcessed'] = count($processedObjects);
+		$run->result['statistics']['totalProcessed'] = count($processedObjects);
 
-		// Process objects in chunks for optimal performance.
-		$chunkSize = $this->calculateOptimalChunkSize(totalObjects: count($processedObjects));
 		// Decide object slugs per register+schema group, in batch order, before
 		// anything is written: the same rules as a single save (#4037).
-		$chunks = array_chunk($this->bulkSlugs()->apply(objects: $processedObjects, register: $register, schema: $schema), $chunkSize);
-
-		// SINGLE PATH PROCESSING - Process all chunks the same way regardless of size.
+		$chunks = array_chunk(
+			$this->bulkSlugs()->apply(objects: $processedObjects, register: $register, schema: $schema),
+			$this->calculateOptimalChunkSize(totalObjects: count($processedObjects))
+		);
 		foreach ($chunks as $chunkIndex => $objectsChunk) {
-			$chunkStart = microtime(true);
-
-			// Process the current chunk and get the result.
-			// Forward the caller-supplied register/schema so the bulk-save path
-			// does not have to fall back to per-row @self.register/@self.schema
-			// — those values are advisory and may carry stale IDs from the
-			// source instance when re-importing exported data.
-			$chunkResult = $this->processObjectsChunk(
-				objects: $objectsChunk,
-				schemaCache: $globalSchemaCache,
-				_rbac: $_rbac,
-				_multitenancy: $_multitenancy,
-				_validation: $_validation,
-				_events: $_events,
-				register: $register,
-				schema: $schema,
-				_audit: $_audit
-			);
-
-			// Merge chunk results for saved, updated, invalid, errors, and unchanged.
-			$result['saved'] = array_merge($result['saved'], $chunkResult['saved']);
-			$result['updated'] = array_merge($result['updated'], $chunkResult['updated']);
-			$result['invalid'] = array_merge($result['invalid'], $chunkResult['invalid']);
-			$result['errors'] = array_merge($result['errors'], $chunkResult['errors']);
-			$result['unchanged'] = array_merge($result['unchanged'], $chunkResult['unchanged']);
-
-			// Update total statistics.
-			$result['statistics']['saved'] += $chunkResult['statistics']['saved'] ?? 0;
-			$result['statistics']['updated'] += $chunkResult['statistics']['updated'] ?? 0;
-			$result['statistics']['invalid'] += $chunkResult['statistics']['invalid'] ?? 0;
-			$result['statistics']['errors'] += $chunkResult['statistics']['errors'] ?? 0;
-			$result['statistics']['unchanged'] += $chunkResult['statistics']['unchanged'] ?? 0;
-
-			// Calculate chunk processing time and speed.
-			$chunkTime = microtime(true) - $chunkStart;
-			$chunkSpeed = count($objectsChunk) / max($chunkTime, 0.001);
-
-			// Store per-chunk statistics for transparency and debugging.
-			if (isset($result['chunkStatistics']) === false) {
-				$result['chunkStatistics'] = [];
-			}
-
-			$result['chunkStatistics'][] = [
-				'chunkIndex' => $chunkIndex,
-				'count' => count($objectsChunk),
-				'saved' => $chunkResult['statistics']['saved'] ?? 0,
-				'updated' => $chunkResult['statistics']['updated'] ?? 0,
-				'unchanged' => $chunkResult['statistics']['unchanged'] ?? 0,
-				'invalid' => $chunkResult['statistics']['invalid'] ?? 0,
-				// Milliseconds.
-				'processingTime' => round($chunkTime * 1000, 2),
-				// Objects per second.
-				'speed' => round($chunkSpeed, 2),
-				// Per-phase breakdown of the chunk pipeline, in milliseconds.
-				'phaseMs' => ($chunkResult['statistics']['phaseMs'] ?? []),
-			];
-		}//end foreach
-
-		$totalTime = microtime(true) - $startTime;
-		$overallSpeed = count($processedObjects) / max($totalTime, 0.001);
-
-		// ADD PERFORMANCE METRICS: Include timing and speed metrics like ImportService does.
-		$efficiency = 0;
-		if (count($processedObjects) > 0) {
-			$efficiency = round((count($processedObjects) / $totalObjects) * 100, 1);
+			$run->chunkIndex = $chunkIndex;
+			$this->saveBulkChunk(run: $run, chunk: $objectsChunk);
 		}
 
-		$result['performance'] = [
+		return $this->finishBulkResult(run: $run, processedCount: count($processedObjects));
+	}//end saveObjects()
+
+	/**
+	 * Apply the bulk-path safeguards to every row before the transform/upsert pipeline.
+	 *
+	 * Wave-12 Fix 3: per row, RBAC (default-secure), the `@self` strip of
+	 * `owner`/`organisation`/`authorization` for non-admin callers, appendOnly
+	 * on UPDATE rows, and the reserved `_rbac:false` / `_validation:false` keys
+	 * honoured only for an admin. Rows with an invalid decision table are
+	 * refused first. Refused rows land in the run's result.
+	 *
+	 * @param BulkSaveRun $run     The bulk save call.
+	 * @param array       $objects The rows the caller passed.
+	 *
+	 * @return array The rows that passed.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function safeguardBulkObjects(BulkSaveRun $run, array $objects): array {
+		$safeguardStart = microtime(true);
+		$objects = $this->refuseInvalidDecisionTables(
+			objects: $objects,
+			register: $run->register,
+			schema: $run->schema,
+			result: $run->result
+		);
+		$objects = $this->applyBulkSafeguards(
+			objects: $objects,
+			register: $run->register,
+			schema: $run->schema,
+			flags: ['rbac' => $run->rbac, 'validation' => $run->validation, 'multitenancy' => $run->multitenancy],
+			result: $run->result
+		);
+		$run->safeguardMs = round((microtime(true) - $safeguardStart) * 1000, 2);
+
+		return $objects;
+	}//end safeguardBulkObjects()
+
+	/**
+	 * The result of a run whose every input row was rejected by the safeguards.
+	 *
+	 * @param BulkSaveRun $run The bulk save call.
+	 *
+	 * @return array The result with its performance block.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function allRejectedResult(BulkSaveRun $run): array {
+		$totalTime = microtime(true) - $run->startTime;
+		$run->result['performance'] = [
 			'totalTime' => round($totalTime, 3),
 			'totalTimeMs' => round($totalTime * 1000, 2),
-			'objectsPerSecond' => round($overallSpeed, 2),
-			'totalProcessed' => count($processedObjects),
-			'totalRequested' => $totalObjects,
+			'objectsPerSecond' => 0.0,
+			'totalProcessed' => 0,
+			'totalRequested' => $run->totalObjects,
+			'efficiency' => 0,
+		];
+
+		return $run->result;
+	}//end allRejectedResult()
+
+	/**
+	 * Log the start of a large bulk save; small ones are not logged, to keep bulk overhead down.
+	 *
+	 * @param BulkSaveRun $run   The bulk save call.
+	 * @param int         $count The number of rows that passed the safeguards.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function logBulkSaveStart(BulkSaveRun $run, int $count): void {
+		$isMixedSchema = ($run->schema === null);
+		if ($count <= 10000 && ($isMixedSchema === false || $count <= 1000)) {
+			return;
+		}
+
+		$onLabel = 'Starting single-schema bulk save operation';
+		$onType = 'single-schema';
+		if ($isMixedSchema === true) {
+			$onLabel = 'Starting mixed-schema bulk save operation';
+			$onType = 'mixed-schema';
+		}
+
+		$this->logger->debug($onLabel, ['totalObjects' => $count, 'operation' => $onType]);
+	}//end logBulkSaveStart()
+
+	/**
+	 * Prepare the rows for the bulk save, by the single-schema fast path or the mixed-schema path.
+	 *
+	 * Rows that fail preparation are recorded as invalid in the run's result.
+	 *
+	 * @param BulkSaveRun $run     The bulk save call.
+	 * @param array       $objects The rows that passed the safeguards.
+	 *
+	 * @return array The prepared rows.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function prepareBulkObjects(BulkSaveRun $run, array $objects): array {
+		$prepareStart = microtime(true);
+		[$processedObjects, $run->schemaCache, $prepInvalidObjs] = $this->prepareByPath(run: $run, objects: $objects);
+
+		$run->prepareMs = round((microtime(true) - $prepareStart) * 1000, 2);
+
+		foreach ($prepInvalidObjs as $invalidObj) {
+			$run->result['invalid'][] = $invalidObj;
+			$run->result['statistics']['invalid']++;
+			$run->result['statistics']['errors']++;
+		}
+
+		return $processedObjects;
+	}//end prepareBulkObjects()
+
+	/**
+	 * Prepare rows by the single-schema fast path when the call names a schema, else by the mixed-schema path.
+	 *
+	 * @param BulkSaveRun $run     The bulk save call.
+	 * @param array       $objects The rows that passed the safeguards.
+	 *
+	 * @return array The prepared rows, the schema cache and the rows that failed preparation.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function prepareByPath(BulkSaveRun $run, array $objects): array {
+		if ($run->schema === null) {
+			return $this->prepareObjectsForBulkSave(objects: $objects);
+		}
+
+		return $this->prepareSingleSchemaObjectsOptimized(
+			objects: $objects,
+			register: $run->register,
+			schema: $run->schema
+		);
+	}//end prepareByPath()
+
+	/**
+	 * Save one chunk and merge its outcome, counts and timings into the run's result.
+	 *
+	 * The caller-supplied register and schema are forwarded so the chunk does
+	 * not fall back to per-row `@self.register`/`@self.schema`, which may carry
+	 * stale ids from the source instance when re-importing exported data.
+	 *
+	 * @param BulkSaveRun $run   The bulk save call.
+	 * @param array       $chunk The chunk's objects.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function saveBulkChunk(BulkSaveRun $run, array $chunk): void {
+		$chunkStart = microtime(true);
+		$chunkResult = $this->processObjectsChunk(
+			objects: $chunk,
+			schemaCache: $run->schemaCache,
+			_rbac: $run->rbac,
+			_multitenancy: $run->multitenancy,
+			_validation: $run->validation,
+			_events: $run->events,
+			register: $run->register,
+			schema: $run->schema,
+			_audit: $run->audit
+		);
+
+		foreach (['saved', 'updated', 'invalid', 'errors', 'unchanged'] as $category) {
+			$run->result[$category] = array_merge($run->result[$category], $chunkResult[$category]);
+		}
+
+		foreach (['saved', 'updated', 'invalid', 'errors', 'unchanged'] as $counter) {
+			$run->result['statistics'][$counter] += $chunkResult['statistics'][$counter] ?? 0;
+		}
+
+		$chunkTime = microtime(true) - $chunkStart;
+		$run->result['chunkStatistics'][] = [
+			'chunkIndex' => $run->chunkIndex,
+			'count' => count($chunk),
+			'saved' => $chunkResult['statistics']['saved'] ?? 0,
+			'updated' => $chunkResult['statistics']['updated'] ?? 0,
+			'unchanged' => $chunkResult['statistics']['unchanged'] ?? 0,
+			'invalid' => $chunkResult['statistics']['invalid'] ?? 0,
+			// Milliseconds.
+			'processingTime' => round($chunkTime * 1000, 2),
+			// Objects per second.
+			'speed' => round(count($chunk) / max($chunkTime, 0.001), 2),
+			// Per-phase breakdown of the chunk pipeline, in milliseconds.
+			'phaseMs' => ($chunkResult['statistics']['phaseMs'] ?? []),
+		];
+	}//end saveBulkChunk()
+
+	/**
+	 * Add the run's timing, speed and deduplication metrics to its result.
+	 *
+	 * @param BulkSaveRun $run            The bulk save call.
+	 * @param int         $processedCount The number of prepared rows.
+	 *
+	 * @return array The finished result.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function finishBulkResult(BulkSaveRun $run, int $processedCount): array {
+		$totalTime = microtime(true) - $run->startTime;
+		$efficiency = 0;
+		if ($processedCount > 0) {
+			$efficiency = round(($processedCount / $run->totalObjects) * 100, 1);
+		}
+
+		$run->result['performance'] = [
+			'totalTime' => round($totalTime, 3),
+			'totalTimeMs' => round($totalTime * 1000, 2),
+			'objectsPerSecond' => round($processedCount / max($totalTime, 0.001), 2),
+			'totalProcessed' => $processedCount,
+			'totalRequested' => $run->totalObjects,
 			'efficiency' => $efficiency,
-			'safeguardsMs' => $safeguardMs,
-			'prepareMs' => $prepareMs,
+			'safeguardsMs' => $run->safeguardMs,
+			'prepareMs' => $run->prepareMs,
 		];
 
 		// Add deduplication efficiency if we have unchanged objects.
-		$unchangedCount = count($result['unchanged']);
+		$unchangedCount = count($run->result['unchanged']);
 		if ($unchangedCount > 0) {
-			$totalProcessed = count($result['saved']) + count($result['updated']) + $unchangedCount;
+			$totalProcessed = count($run->result['saved']) + count($run->result['updated']) + $unchangedCount;
 			$pct = round(($unchangedCount / $totalProcessed) * 100, 1);
-			$result['performance']['deduplicationEfficiency'] = $pct . '% operations avoided';
+			$run->result['performance']['deduplicationEfficiency'] = $pct . '% operations avoided';
 		}
 
-		return $result;
-	}//end saveObjects()
+		return $run->result;
+	}//end finishBulkResult()
 
 	/**
 	 * Initialize the result structure for a bulk save operation

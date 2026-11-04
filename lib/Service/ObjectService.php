@@ -49,7 +49,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
@@ -116,6 +116,7 @@ use OCP\AppFramework\IAppContainer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 
 /**
  * Primary Object Management Service for OpenRegister
@@ -302,7 +303,7 @@ class ObjectService implements ObjectServiceInterface
      * @param MigrationHandler               $migrationHandler     Handler for migration operations.
      * @param RegisterMapperInterface                 $registerMapper       Mapper for register operations.
      * @param SchemaMapperInterface                   $schemaMapper         Mapper for schema operations.
-     * @param ViewMapper                     $viewMapper           Mapper for view operations.
+     * @param ViewMapperInterface                     $viewMapper           Mapper for view operations.
      * @param MagicMapper                    $objectMapper         Unified mapper for object
      *                                                             operations (routes to
      *                                                             magic tables).
@@ -359,7 +360,7 @@ class ObjectService implements ObjectServiceInterface
         private readonly MigrationHandler $migrationHandler,
         private readonly RegisterMapperInterface $registerMapper,
         private readonly SchemaMapperInterface $schemaMapper,
-        private readonly ViewMapper $viewMapper,
+        private readonly ViewMapperInterface $viewMapper,
         private readonly MagicMapper $objectMapper,
         private readonly FileService $fileService,
         private readonly IUserSession $userSession,

@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -58,7 +58,7 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param ViewMapper      $viewMapper     Reads the backing view.
+	 * @param ViewMapperInterface      $viewMapper     Reads the backing view.
 	 * @param RegisterMapperInterface  $registerMapper Resolves the source register.
 	 * @param SchemaMapperInterface    $schemaMapper   Resolves the source schema.
 	 * @param MagicMapper     $magicMapper    Searches the source table.
@@ -67,7 +67,7 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ViewMapper $viewMapper,
+		private readonly ViewMapperInterface $viewMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapper $magicMapper,

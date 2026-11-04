@@ -164,11 +164,11 @@ class ObjectsController extends Controller {
 	 * @param ObjectImporterInterface $importService The import service
 	 * @param WebhookService $webhookService The webhook service (optional)
 	 * @param LoggerInterface $logger The logger (optional)
-	 * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterParser $geoFilterParser Optional geo wire-format adapter (null-safe)
-	 * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier Optional geo post-filter (null-safe)
+	 * @param ?\OCA\OpenRegister\Search\Service\Geo\GeoFilterParser $geoFilterParser Optional geo wire-format adapter (null-safe)
+	 * @param ?\OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier $geoFilterApplier Optional geo post-filter (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdSerializer $jsonLdSerializer Optional JSON-LD serializer (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService Optional JSON-LD context service (null-safe)
-	 * @param ?\OCA\OpenRegister\Service\Geo\GeoFeatureCollectionBuilder $geoFeatureBuilder Optional GeoJSON/WFS feature builder (null-safe)
+	 * @param ?\OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder $geoFeatureBuilder Optional GeoJSON/WFS feature builder (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\Geo\PdokGeocoder $pdokGeocoder Optional PDOK geocoder (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry Relation resourceUrl resolver (null-safe)
 	 * @param ?\OCP\IURLGenerator $relationUrlGenerator Relation fallback URL generator (null-safe)
@@ -198,11 +198,11 @@ class ObjectsController extends Controller {
 		ObjectImporterInterface $importService,
 		private readonly ?WebhookService $webhookService = null,
 		private readonly ?LoggerInterface $logger = null,
-		private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterParser $geoFilterParser = null,
-		private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier = null,
+		private readonly ?\OCA\OpenRegister\Search\Service\Geo\GeoFilterParser $geoFilterParser = null,
+		private readonly ?\OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier $geoFilterApplier = null,
 		private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdSerializer $jsonLdSerializer = null,
 		private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService = null,
-		private readonly ?\OCA\OpenRegister\Service\Geo\GeoFeatureCollectionBuilder $geoFeatureBuilder = null,
+		private readonly ?\OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder $geoFeatureBuilder = null,
 		private readonly ?\OCA\OpenRegister\Service\Geo\PdokGeocoder $pdokGeocoder = null,
 		private readonly ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry = null,
 		private readonly ?\OCP\IURLGenerator $relationUrlGenerator = null,

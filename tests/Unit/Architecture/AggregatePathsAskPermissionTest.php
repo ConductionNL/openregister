@@ -77,8 +77,8 @@ class AggregatePathsAskPermissionTest extends TestCase {
 		// Validate or persist a CONFIGURATION that names a property. They never
 		// read a value. `ViewService` checks a kanban groupByField exists;
 		// `TimeseriesRequestValidator` checks a request's shape.
-		'lib/Service/ViewService.php' => 'validates config naming a property, reads no value',
-		'lib/Service/Aggregation/TimeseriesRequestValidator.php' => 'validates request shape, reads no value',
+		'lib/Search/Service/ViewService.php' => 'validates config naming a property, reads no value',
+		'lib/Search/Service/Aggregation/TimeseriesRequestValidator.php' => 'validates request shape, reads no value',
 
 		// The entity and its persistence. They hold property definitions; they
 		// never summarise a value.
