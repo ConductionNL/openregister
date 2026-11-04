@@ -207,12 +207,12 @@ class DeleteObject
                 ]
             );
 
-            $this->objectEntityMapper->deleteObjectEntity(
-                entity: $objectEntity,
-                register: $registerEntity,
-                schema: $schemaEntity,
-                hardDelete: true
-            );
+            // Route through MagicMapper::delete() (not the lower-level deleteObjectEntity()
+            // directly) so ObjectDeletedEvent actually fires - deleteObjectEntity() deliberately
+            // does not dispatch it itself (see its own docblock), relying on this wrapper to do
+            // so. Without this, listeners like the Elastic-sync delete trigger never run for a
+            // permanent delete, leaving a stale document behind indefinitely.
+            $this->objectEntityMapper->delete($objectEntity);
             $result = true;
 
             // Cache invalidation for permanent delete.
