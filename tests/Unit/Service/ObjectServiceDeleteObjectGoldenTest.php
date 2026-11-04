@@ -72,6 +72,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses   \OCA\OpenRegister\Service\OrganisationContext
  * @uses   \OCA\OpenRegister\Service\Object\DraftCallerRule
  * @uses   \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses   \OCA\OpenRegister\Exception\AppendOnlyException
