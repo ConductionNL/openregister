@@ -28,7 +28,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateTime;
-use Throwable;
 
 /**
  * Checks an example set task's dates.
@@ -104,10 +103,11 @@ final class ExampleSetTaskDates {
 			return null;
 		}
 
-		try {
-			return new DateTime($value);
-		} catch (Throwable) {
+		$moment = date_create($value);
+		if ($moment === false) {
 			return null;
 		}
+
+		return $moment;
 	}//end moment()
 }//end class
