@@ -64,7 +64,7 @@ use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -192,10 +192,10 @@ class SaveObjects {
 	/**
 	 * Constructor for SaveObjects handler
 	 *
-	 * @param MagicMapper $objectEntityMapper Mapper for object entity database operations
+	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entity database operations
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schema operations
 	 * @param RegisterMapperInterface $registerMapper Mapper for register operations
-	 * @param SaveObject $saveHandler Handler for individual object operations
+	 * @param SaveObjectInterface $saveHandler Handler for individual object operations
 	 * @param IUserSession $userSession User session for getting current user
 	 * @param OrganisationServiceInterface $organisationService Service for organisation operations
 	 * @param LoggerInterface $logger Logger for error and debug logging
@@ -203,7 +203,7 @@ class SaveObjects {
 	 *                                         wave-12 `_rbac` / `_validation` reserved-keys policy
 	 * @param PermissionHandler|null $permissionHandler Permission handler for per-object RBAC enforcement;
 	 *                                                  wave-12 Fix 3 per-row RBAC + appendOnly gate
-	 * @param ValidateObject|null $validateHandler Validation handler for per-object schema validation;
+	 * @param ValidateObjectInterface|null $validateHandler Validation handler for per-object schema validation;
 	 *                                             wave-12 Fix 3 per-row JSON-Schema validation
 	 * @param IEventDispatcher|null $eventDispatcher Event dispatcher for object lifecycle events
 	 * @param AuditTrailMapperInterface|null $auditTrailMapper Audit trail mapper for logging bulk changes
@@ -213,16 +213,16 @@ class SaveObjects {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SaveObject $saveHandler,
+		private readonly SaveObjectInterface $saveHandler,
 		private readonly IUserSession $userSession,
 		private readonly OrganisationServiceInterface $organisationService,
 		private readonly LoggerInterface $logger,
 		private readonly ?IGroupManager $groupManager = null,
 		private readonly ?PermissionHandler $permissionHandler = null,
-		private readonly ?ValidateObject $validateHandler = null,
+		private readonly ?ValidateObjectInterface $validateHandler = null,
 		private readonly ?IEventDispatcher $eventDispatcher = null,
 		private readonly ?AuditTrailMapperInterface $auditTrailMapper = null,
 		private readonly ?BulkRowRules $rowRules = null,

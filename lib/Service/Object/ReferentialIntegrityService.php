@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\Object;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -149,7 +149,7 @@ class ReferentialIntegrityService {
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Schema data mapper.
 	 * @param RegisterMapperInterface $registerMapper Register data mapper.
-	 * @param MagicMapper $objectEntityMapper Object entity data mapper.
+	 * @param MagicMapperInterface $objectEntityMapper Object entity data mapper.
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for integrity action logging.
 	 * @param LoggerInterface $logger Logger for debugging.
 	 * @param IDBConnection $db Database connection for raw SQL queries.
@@ -161,7 +161,7 @@ class ReferentialIntegrityService {
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 		private readonly IDBConnection $db,

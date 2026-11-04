@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -66,9 +66,9 @@ class SchemaService implements SchemaExplorationInterface {
 	/**
 	 * Object entity mapper for object queries
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface
 	 */
-	private MagicMapper $objectEntityMapper;
+	private MagicMapperInterface $objectEntityMapper;
 
 	/**
 	 * Logger for debugging and monitoring
@@ -81,12 +81,12 @@ class SchemaService implements SchemaExplorationInterface {
 	 * SchemaService constructor
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations.
-	 * @param MagicMapper $objectEntityMapper Object entity mapper for object queries.
+	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper for object queries.
 	 * @param LoggerInterface $logger Logger for debugging and monitoring.
 	 */
 	public function __construct(
 		SchemaMapperInterface $schemaMapper,
-		MagicMapper $objectEntityMapper,
+		MagicMapperInterface $objectEntityMapper,
 		LoggerInterface $logger,
 	) {
 		$this->schemaMapper = $schemaMapper;

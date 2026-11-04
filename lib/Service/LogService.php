@@ -26,7 +26,7 @@ use Exception;
 use InvalidArgumentException;
 use JsonSerializable;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -74,9 +74,9 @@ class LogService {
 	 *
 	 * Used to find objects across all magic tables.
 	 *
-	 * @var MagicMapper Unified object mapper instance
+	 * @var MagicMapperInterface Unified object mapper instance
 	 */
-	private readonly MagicMapper $unifiedObjectMapper;
+	private readonly MagicMapperInterface $unifiedObjectMapper;
 
 	/**
 	 * Register mapper
@@ -110,7 +110,7 @@ class LogService {
 	 * audit trail logs and related entities.
 	 *
 	 * @param AuditTrailMapperInterface $auditTrailMapper Mapper for audit trail database operations.
-	 * @param MagicMapper $unifiedObjectMapper Mapper for unified object database operations.
+	 * @param MagicMapperInterface $unifiedObjectMapper Mapper for unified object database operations.
 	 * @param RegisterMapperInterface $registerMapper Mapper for register database operations.
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schema database operations.
 	 *
@@ -118,7 +118,7 @@ class LogService {
 	 */
 	public function __construct(
 		AuditTrailMapperInterface $auditTrailMapper,
-		MagicMapper $unifiedObjectMapper,
+		MagicMapperInterface $unifiedObjectMapper,
 		RegisterMapperInterface $registerMapper,
 		SchemaMapperInterface $schemaMapper,
 	) {

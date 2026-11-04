@@ -22,7 +22,7 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObjectInterface;
 use OCP\IUserSession;
 
 /**
@@ -55,7 +55,7 @@ class PreparationHandler {
 	/**
 	 * Constructor for PreparationHandler.
 	 *
-	 * @param SaveObject $saveHandler Handler for save operations.
+	 * @param SaveObjectInterface $saveHandler Handler for save operations.
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schema operations.
 	 * @param BulkValidationHandler $bulkValidHandler Handler for schema analysis.
 	 * @param IUserSession $userSession User session for owner assignment.
@@ -63,7 +63,7 @@ class PreparationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly SaveObject $saveHandler,
+		private readonly SaveObjectInterface $saveHandler,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly BulkValidationHandler $bulkValidHandler,
 		// REMOVED: private readonly.

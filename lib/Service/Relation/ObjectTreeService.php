@@ -32,7 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Relation;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -105,7 +105,7 @@ class ObjectTreeService {
 	 *
 	 * @param HierarchyDescender     $descender      Reads one level of children from a magic table.
 	 * @param HierarchyGrantExpander $hierarchies    Reads a schema's hierarchy declaration.
-	 * @param MagicMapper            $objectMapper   Loads objects and filters them by read access.
+	 * @param MagicMapperInterface            $objectMapper   Loads objects and filters them by read access.
 	 * @param RegisterMapperInterface         $registerMapper Resolves the root's register.
 	 * @param SchemaMapperInterface           $schemaMapper   Resolves the root's schema.
 	 * @param RelationGraphService   $graphs         Holds the instance's node cap.
@@ -115,7 +115,7 @@ class ObjectTreeService {
 	public function __construct(
 		private readonly HierarchyDescender $descender,
 		private readonly HierarchyGrantExpander $hierarchies,
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RelationGraphService $graphs,
@@ -295,7 +295,7 @@ class ObjectTreeService {
 	 * @return array{nodes: array<int, array<string, mixed>>, truncatedBy: string|null} The nodes.
 	 */
 	private function descendants(string $rootUuid, array $walk): array {
-		$table = MagicMapper::TABLE_PREFIX . (int)$walk['register']->getId() . '_' . (int)$walk['schema']->getId();
+		$table = MagicMapperInterface::TABLE_PREFIX . (int)$walk['register']->getId() . '_' . (int)$walk['schema']->getId();
 		$column = $this->descender->columnFor(property: $walk['property']);
 		$cap = $this->graphs->maximumNodes();
 

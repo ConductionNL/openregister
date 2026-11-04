@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\Object;
 use Adbar\Dot;
 use Exception;
 use OCA\OpenRegister\Db\FileMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -209,13 +209,13 @@ class RenderObject {
 	 * Constructor for RenderObject handler.
 	 *
 	 * @param FileMapperInterface $fileMapper File mapper for database operations.
-	 * @param MagicMapper $objectEntityMapper Object entity mapper for database operations.
+	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper for database operations.
 	 * @param RegisterMapperInterface $registerMapper Register mapper for database operations.
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for database operations.
 	 * @param ISystemTagManager $systemTagManager System tag manager for file tags.
 	 * @param ISystemTagObjectMapper $systemTagMapper System tag object mapper for file tags.
-	 * @param CacheHandler $cacheHandler Cache service for performance optimization.
-	 * @param CacheHandler $objectCacheService Object cache service for optimized loading.
+	 * @param CacheHandlerInterface $cacheHandler Cache service for performance optimization.
+	 * @param CacheHandlerInterface $objectCacheService Object cache service for optimized loading.
 	 * @param PropertyRbacHandler $propertyRbacHandler Property-level RBAC handler.
 	 * @param LoggerInterface $logger Logger for performance monitoring.
 	 * @param FileService $fileService File service for file operations.
@@ -248,13 +248,13 @@ class RenderObject {
 	 */
 	public function __construct(
 		private readonly FileMapperInterface $fileMapper,
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ISystemTagManager $systemTagManager,
 		private readonly ISystemTagObjectMapper $systemTagMapper,
-		private readonly CacheHandler $cacheHandler,
-		private readonly CacheHandler $objectCacheService,
+		private readonly CacheHandlerInterface $cacheHandler,
+		private readonly CacheHandlerInterface $objectCacheService,
 		private readonly PropertyRbacHandler $propertyRbacHandler,
 		private readonly LoggerInterface $logger,
 		private readonly FileService $fileService,

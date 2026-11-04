@@ -1718,7 +1718,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$object = $identifier;
 		if ($object instanceof ObjectEntity === false) {
 			// Lazy-resolved to avoid circular DI.
-			$object = $this->container->get(MagicMapper::class)->find($identifier);
+			$object = $this->container->get(MagicMapperInterface::class)->find($identifier);
 		}
 
 		// Get audit trail entries until the specified point.

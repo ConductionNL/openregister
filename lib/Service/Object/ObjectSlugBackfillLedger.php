@@ -42,12 +42,12 @@ class ObjectSlugBackfillLedger {
 	/**
 	 * Constructor.
 	 *
-	 * @param CacheHandler     $cacheHandler Object cache, evicted after writing.
+	 * @param CacheHandlerInterface     $cacheHandler Object cache, evicted after writing.
 	 * @param AuditTrailMapperInterface $auditTrail   Records the audit entry of a run that changed slugs.
 	 * @param LoggerInterface  $logger       Receives the overflow lines and the failures.
 	 */
 	public function __construct(
-		private readonly CacheHandler $cacheHandler,
+		private readonly CacheHandlerInterface $cacheHandler,
 		private readonly AuditTrailMapperInterface $auditTrail,
 		private readonly LoggerInterface $logger,
 	) {

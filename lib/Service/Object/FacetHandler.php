@@ -34,7 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -72,7 +72,7 @@ class FacetHandler {
 	/**
 	 * Constructor for FacetHandler.
 	 *
-	 * @param MagicMapper $unifiedObjectMapper Unified object mapper with storage routing.
+	 * @param MagicMapperInterface $unifiedObjectMapper Unified object mapper with storage routing.
 	 * @param SchemaMapperInterface $schemaMapper Schema database mapper.
 	 * @param FacetResponseCache $responseCache The response cache in front of facet computation.
 	 * @param LoggerInterface $logger Logger for debugging and monitoring.
@@ -85,7 +85,7 @@ class FacetHandler {
 	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $unifiedObjectMapper,
+		private readonly MagicMapperInterface $unifiedObjectMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly FacetResponseCache $responseCache,
 		private readonly LoggerInterface $logger,

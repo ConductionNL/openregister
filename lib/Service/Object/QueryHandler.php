@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use ArrayObject;
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\Search\HistoryNarrowing;
 use OCA\OpenRegister\Service\Search\HistoryPredicate;
 use OCA\OpenRegister\Service\Search\SearchDictionaryProvider;
@@ -81,7 +81,7 @@ class QueryHandler {
 	/**
 	 * Constructor for QueryHandler.
 	 *
-	 * @param MagicMapper $objectMapper Unified mapper for objects.
+	 * @param MagicMapperInterface $objectMapper Unified mapper for objects.
 	 * @param GetObject $getHandler Get handler.
 	 * @param RenderObject $renderHandler Render handler.
 	 * @param SearchQueryHandler $searchQueryHandler Search handler.
@@ -100,7 +100,7 @@ class QueryHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly GetObject $getHandler,
 		private readonly RenderObject $renderHandler,
 		private readonly SearchQueryHandler $searchQueryHandler,
