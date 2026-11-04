@@ -55,7 +55,7 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Service\Object\ValidateObject;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use Psr\Log\LoggerInterface;
@@ -108,7 +108,7 @@ class ImportPreviewService {
 	 * @param MappingEngine $mappingEngine The saved column mapping.
 	 * @param MigrationPackService $packService Saved mappings.
 	 * @param ImportService $importService The row transform the write path uses.
-	 * @param ObjectService $objectService The write path.
+	 * @param ObjectOperationsInterface $objectService The write path.
 	 * @param ValidateObject $validateObject Schema validation.
 	 * @param RegisterMapperInterface $registerMapper Register lookup.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
@@ -122,7 +122,7 @@ class ImportPreviewService {
 		private readonly MappingEngine $mappingEngine,
 		private readonly MigrationPackService $packService,
 		private readonly ImportService $importService,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly ValidateObject $validateObject,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,

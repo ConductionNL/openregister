@@ -46,7 +46,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -81,13 +81,13 @@ class LinkObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService  $objects  The object write path.
+	 * @param ObjectOperationsInterface  $objects  The object write path.
 	 * @param HandoffService $handoffs The handoff engine.
 	 * @param IL10N          $l10n     Translations.
 	 * @param IURLGenerator  $urls     For the palette icon.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly HandoffService $handoffs,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urls,

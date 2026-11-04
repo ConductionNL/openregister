@@ -55,6 +55,7 @@ class ContractIsALeafTest extends TestCase {
 	 */
 	private const KERNEL_NAMING_DB = [
 		'ObjectNotificationDispatcherInterface.php',
+		'ObjectOperationsInterface.php',
 		'ObjectSaverInterface.php',
 		'ObjectTransitionInterface.php',
 		'WebhookDeliveryInterface.php',
