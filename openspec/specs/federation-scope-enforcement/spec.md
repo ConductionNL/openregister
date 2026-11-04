@@ -76,6 +76,14 @@ single object is addressed; the addressed record is added as a further condition
 - **THEN** the single-object calls MUST answer `404` and no save or delete MUST reach the object store
 - **AND** the collection MUST NOT contain the record
 
+#### Scenario: A query share's own id list is kept
+
+- **GIVEN** an accepted outgoing share with `scope: query` whose filter is `_ids: [obj-a]`
+- **WHEN** `GET`, `PUT` or `DELETE` is called for a record that list does not name by uuid or slug
+- **THEN** the response status MUST be `404`
+- **AND** no save or delete MUST reach the object store
+- **AND** a record the list names MUST still be reached
+
 #### Scenario: A query share's own uuid filter is kept
 
 - **GIVEN** an accepted outgoing share with `scope: query` and the query filter `uuid: obj-2`
