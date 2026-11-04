@@ -354,6 +354,7 @@ class ObjectTreeServiceTest extends TestCase {
 		$this->assertSame(1, $tree['depth']);
 		$this->assertSame(0, $tree['requestedDepth']);
 		$this->assertSame(4, $tree['maxDepth']);
+		$this->assertSame(4, $tree['maxDepth']);
 		$this->assertSame(['l0' => 0, 'l1' => 1], self::levels(tree: $tree));
 		$this->assertSame(
 			['root', 'register', 'schema', 'parentProperty', 'direction', 'depth', 'requestedDepth', 'maxDepth', 'nodes', 'truncated', 'truncatedBy'],
