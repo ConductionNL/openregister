@@ -44,7 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
@@ -71,7 +71,7 @@ class ObjectIntegrationsController extends Controller {
 	 * @param IntegrationRegistry $registry Integration registry.
 	 * @param LoggerInterface $logger Logger.
 	 * @param ObjectService $objectService OpenRegister object service (RBAC boundary).
-	 * @param SchemaMapper $schemaMapper Schema loader (external-source detection).
+	 * @param SchemaMapperInterface $schemaMapper Schema loader (external-source detection).
 	 * @param TimelineVisibilityService $visibility Internal/public filter for the timeline leaves.
 	 *
 	 * @return void
@@ -82,7 +82,7 @@ class ObjectIntegrationsController extends Controller {
 		private IntegrationRegistry $registry,
 		private LoggerInterface $logger,
 		private ObjectService $objectService,
-		private SchemaMapper $schemaMapper,
+		private SchemaMapperInterface $schemaMapper,
 		private TimelineVisibilityService $visibility,
 	) {
 		parent::__construct(appName: $appName, request: $request);

@@ -42,7 +42,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Exception\CodedValueException;
@@ -79,13 +79,13 @@ class CodedValueValidationListener implements IEventListener {
 	 *
 	 * @param CodedValueGuard $guard Answers which coded values are refused.
 	 * @param ConceptShapeGuard $shapeGuard Validates a concept against its scheme's shape.
-	 * @param SchemaMapper $schemas Resolves the schema an object belongs to.
+	 * @param SchemaMapperInterface $schemas Resolves the schema an object belongs to.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		private readonly CodedValueGuard $guard,
 		private readonly ConceptShapeGuard $shapeGuard,
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly LoggerInterface $logger,
 	) {
 

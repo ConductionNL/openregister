@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\QueuedNotification;
 use OCA\OpenRegister\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Party\PartyNotificationService;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Activity\IManager as IActivityManager;
@@ -136,7 +136,7 @@ class AnnotationNotificationDispatcher {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Mapper used to resolve the object's schema.
+	 * @param SchemaMapperInterface $schemaMapper Mapper used to resolve the object's schema.
 	 * @param INotificationManager $notificationManager Nextcloud notification API.
 	 * @param LoggerInterface $logger Logger for dispatch diagnostics.
 	 * @param IGroupManager $groupManager Group resolver for `groups` recipient kinds.
@@ -172,7 +172,7 @@ class AnnotationNotificationDispatcher {
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly INotificationManager $notificationManager,
 		private readonly LoggerInterface $logger,
 		private readonly IGroupManager $groupManager,

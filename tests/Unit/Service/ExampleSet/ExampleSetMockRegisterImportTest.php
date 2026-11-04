@@ -69,7 +69,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
  * @uses \OCA\OpenRegister\Service\Configuration\DescriptorConfigIds
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival

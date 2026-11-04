@@ -25,7 +25,7 @@ namespace Unit\Service\Calculation;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
 use OCA\OpenRegister\Service\Calculation\SequenceContext;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\SequenceService;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;

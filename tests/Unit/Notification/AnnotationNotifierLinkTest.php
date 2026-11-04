@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Notification;
 
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -99,7 +100,7 @@ class AnnotationNotifierLinkTest extends TestCase {
 		$container->method('get')->willReturnMap(
 			[
 				[RegisterMapper::class, $registerMapper],
-				[SchemaMapper::class, $schemaMapper],
+				[SchemaMapperInterface::class, $schemaMapper],
 			]
 		);
 

@@ -75,7 +75,7 @@ use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
  * @uses \OCA\OpenRegister\Service\Object\TranslationHandler
  * @uses \OCA\OpenRegister\Service\PropertyRbacHandler
  * @uses \OCA\OpenRegister\Service\Rules\ConditionDialect
- * @uses \OCA\OpenRegister\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses \OCA\OpenRegister\Support\FilterParams
  * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext

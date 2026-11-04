@@ -86,7 +86,7 @@ class DuplicateBlockedException extends Exception {
 	 * The matches that caused the refusal.
 	 *
 	 * @return array<int, array<string, mixed>> Each entry as
-	 *         {@see \OCA\OpenRegister\Service\Quality\DuplicateDetectionService::checkCandidate()} returns it.
+	 *         {@see \OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService::checkCandidate()} returns it.
 	 */
 	public function getMatches(): array {
 		return $this->matches;

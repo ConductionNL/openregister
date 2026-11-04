@@ -25,13 +25,13 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use InvalidArgumentException;
 use JsonSerializable;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -65,9 +65,9 @@ class LogService {
 	 *
 	 * Handles database operations for audit trail entries.
 	 *
-	 * @var AuditTrailMapper Audit trail mapper instance
+	 * @var AuditTrailMapperInterface Audit trail mapper instance
 	 */
-	private readonly AuditTrailMapper $auditTrailMapper;
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * Unified object mapper for magic tables
@@ -92,9 +92,9 @@ class LogService {
 	 *
 	 * Reserved for future use in log filtering and validation.
 	 *
-	 * @var SchemaMapper Schema mapper instance
+	 * @var SchemaMapperInterface Schema mapper instance
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Masks explicit-reveal values in the change sets this service hands out.
@@ -109,18 +109,18 @@ class LogService {
 	 * Initializes the LogService with required mapper dependencies for handling
 	 * audit trail logs and related entities.
 	 *
-	 * @param AuditTrailMapper $auditTrailMapper Mapper for audit trail database operations.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Mapper for audit trail database operations.
 	 * @param MagicMapper $unifiedObjectMapper Mapper for unified object database operations.
 	 * @param RegisterMapper $registerMapper Mapper for register database operations.
-	 * @param SchemaMapper $schemaMapper Mapper for schema database operations.
+	 * @param SchemaMapperInterface $schemaMapper Mapper for schema database operations.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		AuditTrailMapper $auditTrailMapper,
+		AuditTrailMapperInterface $auditTrailMapper,
 		MagicMapper $unifiedObjectMapper,
 		RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 	) {
 		$this->auditTrailMapper = $auditTrailMapper;
 		$this->unifiedObjectMapper = $unifiedObjectMapper;

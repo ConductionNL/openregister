@@ -40,7 +40,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -96,14 +96,14 @@ class RetentionRowScanner {
 	 *
 	 * @param IDBConnection   $db             Database connection for the row scans.
 	 * @param RegisterMapper  $registerMapper Register repository, used to enumerate pairs.
-	 * @param SchemaMapper    $schemaMapper   Schema repository, used to enumerate pairs.
+	 * @param SchemaMapperInterface    $schemaMapper   Schema repository, used to enumerate pairs.
 	 * @param MagicMapper     $objectMapper   Magic-table resolver and row hydrator.
 	 * @param LoggerInterface $logger         Logger for skipped sources and truncated runs.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapper $objectMapper,
 		private readonly LoggerInterface $logger,
 	) {

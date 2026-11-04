@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Reference;
 
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\MdiIconRenderer;
 use OCA\OpenRegister\Service\ObjectService;
@@ -154,9 +154,9 @@ final class ObjectPreviewFormatter {
 	/**
 	 * Schema mapper for resolving schema names
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Register mapper for resolving register names
@@ -179,7 +179,7 @@ final class ObjectPreviewFormatter {
 	 * @param IL10N $l10n The localization service
 	 * @param ObjectService $objectService The object service
 	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry
-	 * @param SchemaMapper $schemaMapper Schema mapper
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper
 	 * @param RegisterMapper $registerMapper Register mapper
 	 * @param LoggerInterface $logger Logger
 	 *
@@ -192,7 +192,7 @@ final class ObjectPreviewFormatter {
 		IL10N $l10n,
 		ObjectService $objectService,
 		DeepLinkRegistryService $deepLinkRegistry,
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 		RegisterMapper $registerMapper,
 		LoggerInterface $logger,
 	) {

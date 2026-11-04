@@ -20,11 +20,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Mcp;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\FlowMcpToolProvider;
@@ -152,7 +152,7 @@ class McpProviderDiscovery {
 		array &$providers,
 	): void {
 		try {
-			$schemaMapper = $container->get(SchemaMapper::class);
+			$schemaMapper = $container->get(SchemaMapperInterface::class);
 			$registerMapper = $container->get(RegisterMapper::class);
 
 			// Catalog enumeration, not data access: every enabled schema
@@ -176,7 +176,7 @@ class McpProviderDiscovery {
 					schemaEntries: $schemaEntries,
 					suppressedIds: $suppressedIds,
 					objectService: $container->get(ObjectService::class),
-					auditTrailMapper: $container->get(AuditTrailMapper::class),
+					auditTrailMapper: $container->get(AuditTrailMapperInterface::class),
 					logger: $logger
 				);
 			}
@@ -407,7 +407,7 @@ class McpProviderDiscovery {
 				$providers[] = (new AttributeToolProvider(
 					appId: $appId,
 					entries: $entries,
-					auditTrailMapper: $container->get(AuditTrailMapper::class),
+					auditTrailMapper: $container->get(AuditTrailMapperInterface::class),
 					logger: $logger
 				))->translatedBy(appContainer: $appContainer);
 			}//end foreach
