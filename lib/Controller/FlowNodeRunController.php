@@ -51,6 +51,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\FlowNodeRunControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
@@ -97,19 +98,74 @@ use Throwable;
  */
 class FlowNodeRunController extends Controller {
 	/**
+	 * Resolves the calling user.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Org-scoped flow lookup — the same non-oracle
+	 *
+	 * @var FlowService
+	 */
+	private readonly FlowService $flows;
+
+	/**
+	 * Resolves the flow's PUBLISHED
+	 *
+	 * @var FlowPublishedGraph
+	 */
+	private readonly FlowPublishedGraph $publishedGraphs;
+
+	/**
+	 * Resolves the live flow document (for
+	 *
+	 * @var FlowLocator
+	 */
+	private readonly FlowLocator $subjects;
+
+	/**
+	 * Resolves a
+	 *
+	 * @var FlowNodeRegistry
+	 */
+	private readonly FlowNodeRegistry $nodes;
+
+	/**
+	 * Queues and executes the one node.
+	 *
+	 * @var FlowRunService
+	 */
+	private readonly FlowRunService $runner;
+
+	/**
+	 * Loads the subject, scoped to the CALLER's
+	 *
+	 * @var ObjectService
+	 */
+	private readonly ObjectService $objects;
+
+	/**
+	 * Resolves the subject's
+	 *
+	 * @var SchemaMapper
+	 */
+	private readonly SchemaMapper $schemas;
+
+	/**
+	 * The SAME object-RBAC evaluator the
+	 *
+	 * @var PermissionHandler
+	 */
+	private readonly PermissionHandler $permissions;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param IUserSession $userSession Resolves the calling user.
-	 * @param FlowService $flows Org-scoped flow lookup — the same non-oracle
-	 *                           404 every other flow-by-id endpoint gives.
-	 * @param FlowPublishedGraph $publishedGraphs Resolves the flow's PUBLISHED
-	 *                                            graph (RN-3): a directly-invoked
-	 *                                            node's config and eligibility are
-	 *                                            properties of a real, inspectable
-	 *                                            graph position, never the draft.
-	 * @param FlowLocator $subjects Resolves the live flow document (for
+	 * @param FlowNodeRunControllerServices $services The flow node run controller services.
 	 *                              {@see FlowRunService::executeNode()}'s
 	 *                              version pin) — NOT used for its
 	 *                              `resolveSubject()`, which loads with RBAC
@@ -117,41 +173,22 @@ class FlowNodeRunController extends Controller {
 	 *                              subject here is loaded via `$objects`
 	 *                              instead, under this caller's own RBAC and
 	 *                              multitenancy.
-	 * @param FlowNodeRegistry $nodes Resolves a
-	 *                              step's `type` to its node, and its
-	 *                              `IFlowDirectlyInvokable` / `IFlowNodeConfigForm`
-	 *                              opt-ins.
-	 * @param FlowRunService $runner Queues and executes the one node.
-	 * @param ObjectService $objects Loads the subject, scoped to the CALLER's
-	 *                               own organisation (`_multitenancy: true`) —
-	 *                               RBAC is deliberately OFF here
-	 *                               (`_rbac: false`); this endpoint evaluates
-	 *                               subject permission itself, explicitly,
-	 *                               via `$permissions`, so the 403 that
-	 *                               follows names a permission refusal rather
-	 *                               than reading as a generic 404.
-	 * @param SchemaMapper $schemas Resolves the subject's
-	 *                              schema entity, which the permission check
-	 *                              is evaluated against.
-	 * @param PermissionHandler $permissions The SAME object-RBAC evaluator the
-	 *                              `object-op` patch/create path already goes
-	 *                              through (ADR-022/023) — reused, not
-	 *                              reinvented, per RN-1(c).
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly IUserSession $userSession,
-		private readonly FlowService $flows,
-		private readonly FlowPublishedGraph $publishedGraphs,
-		private readonly FlowLocator $subjects,
-		private readonly FlowNodeRegistry $nodes,
-		private readonly FlowRunService $runner,
-		private readonly ObjectService $objects,
-		private readonly SchemaMapper $schemas,
-		private readonly PermissionHandler $permissions,
+		FlowNodeRunControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->userSession = $services->platform->userSession;
+		$this->flows = $services->graph->flows;
+		$this->publishedGraphs = $services->graph->publishedGraphs;
+		$this->subjects = $services->graph->subjects;
+		$this->nodes = $services->graph->nodes;
+		$this->runner = $services->execution->runner;
+		$this->objects = $services->execution->objects;
+		$this->schemas = $services->mappers->schemas;
+		$this->permissions = $services->execution->permissions;
 
 	}//end __construct()
 

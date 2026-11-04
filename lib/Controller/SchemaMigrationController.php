@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\SchemaMigrationControllerServices;
 use OCA\OpenRegister\Db\SchemaChangelogMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
@@ -53,38 +54,106 @@ use Psr\Log\LoggerInterface;
 class SchemaMigrationController extends Controller {
 
 	/**
+	 * Schema lookup.
+	 *
+	 * @var SchemaMapper
+	 */
+	private readonly SchemaMapper $schemaMapper;
+
+	/**
+	 * Changelog read.
+	 *
+	 * @var SchemaChangelogMapper
+	 */
+	private readonly SchemaChangelogMapper $changelogMapper;
+
+	/**
+	 * Run read.
+	 *
+	 * @var SchemaRunMapper
+	 */
+	private readonly SchemaRunMapper $runMapper;
+
+	/**
+	 * Run entry read.
+	 *
+	 * @var SchemaRunEntryMapper
+	 */
+	private readonly SchemaRunEntryMapper $runEntryMapper;
+
+	/**
+	 * Revalidation engine.
+	 *
+	 * @var SchemaRevalidationService
+	 */
+	private readonly SchemaRevalidationService $revalidationService;
+
+	/**
+	 * Migration engine.
+	 *
+	 * @var SchemaMigrationService
+	 */
+	private readonly SchemaMigrationService $migrationService;
+
+	/**
+	 * Locates a schema's register and reads its stored values.
+	 *
+	 * @var SchemaObjectReader
+	 */
+	private readonly SchemaObjectReader $objectReader;
+
+	/**
+	 * Job list (enqueue runs).
+	 *
+	 * @var IJobList
+	 */
+	private readonly IJobList $jobList;
+
+	/**
+	 * Current user.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Publishes and previews a property type change.
+	 *
+	 * @var ?PropertyConversionService
+	 */
+	private readonly ?PropertyConversionService $conversions;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
-	 * @param SchemaMapper $schemaMapper Schema lookup.
-	 * @param SchemaChangelogMapper $changelogMapper Changelog read.
-	 * @param SchemaRunMapper $runMapper Run read.
-	 * @param SchemaRunEntryMapper $runEntryMapper Run entry read.
-	 * @param SchemaRevalidationService $revalidationService Revalidation engine.
-	 * @param SchemaMigrationService $migrationService Migration engine.
-	 * @param SchemaObjectReader $objectReader Locates a schema's register and reads its stored values.
-	 * @param IJobList $jobList Job list (enqueue runs).
-	 * @param IUserSession $userSession Current user.
-	 * @param LoggerInterface $logger Logger.
-	 * @param PropertyConversionService|null $conversions Publishes and previews a property type change.
+	 * @param SchemaMigrationControllerServices $services The schema migration controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly SchemaChangelogMapper $changelogMapper,
-		private readonly SchemaRunMapper $runMapper,
-		private readonly SchemaRunEntryMapper $runEntryMapper,
-		private readonly SchemaRevalidationService $revalidationService,
-		private readonly SchemaMigrationService $migrationService,
-		private readonly SchemaObjectReader $objectReader,
-		private readonly IJobList $jobList,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
-		private readonly ?PropertyConversionService $conversions = null,
+		SchemaMigrationControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->schemaMapper = $services->mappers->schemaMapper;
+		$this->changelogMapper = $services->mappers->changelogMapper;
+		$this->runMapper = $services->mappers->runMapper;
+		$this->runEntryMapper = $services->mappers->runEntryMapper;
+		$this->revalidationService = $services->domain->revalidationService;
+		$this->migrationService = $services->domain->migrationService;
+		$this->objectReader = $services->domain->objectReader;
+		$this->jobList = $services->platform->jobList;
+		$this->userSession = $services->platform->userSession;
+		$this->logger = $services->platform->logger;
+		$this->conversions = $services->domain->conversions;
 
 	}//end __construct()
 

@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\EntityRelationsControllerFactory;
 use DateTime;
 use OCA\OpenRegister\Controller\EntityRelationsController;
 use OCA\OpenRegister\Db\Decision;
@@ -50,6 +51,11 @@ use Psr\Log\LoggerInterface;
  * DecisionService and ReviewPolicyResolver; the stores are in-memory.
  *
  * @covers \OCA\OpenRegister\Controller\EntityRelationsController
+ * @uses \OCA\OpenRegister\Controller\Support\EntityRelationsMappers
+ * @uses \OCA\OpenRegister\Controller\Support\EntityRelationsLinks
+ * @uses \OCA\OpenRegister\Controller\Support\EntityRelationsDomain
+ * @uses \OCA\OpenRegister\Controller\Support\EntityRelationsPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\EntityRelationsControllerServices
  * @covers \OCA\OpenRegister\Service\Decision\RelationDecisionService
  * @covers \OCA\OpenRegister\Service\Decision\DecisionOwnedException
  * @uses   \OCA\OpenRegister\Service\Decision\DecisionOwnership
@@ -202,7 +208,7 @@ class DecisionOwnershipTest extends TestCase {
 			db: $this->createMock(IDBConnection::class)
 		);
 
-		return new EntityRelationsController(
+		return EntityRelationsControllerFactory::create(
 			'openregister',
 			$request,
 			$relations,

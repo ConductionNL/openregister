@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\EntityRelationsControllerServices;
 use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
@@ -69,38 +70,106 @@ class EntityRelationsController extends Controller {
 	use RequiresJsonBodyTrait;
 
 	/**
+	 * Relation mapper.
+	 *
+	 * @var EntityRelationMapper
+	 */
+	private readonly EntityRelationMapper $entityRelationMapper;
+
+	/**
+	 * Session user accessor.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Nextcloud root folder (for file lookups).
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * RBAC verdict for object-bound relations.
+	 *
+	 * @var PermissionHandler
+	 */
+	private readonly PermissionHandler $permissionHandler;
+
+	/**
+	 * ObjectEntity loader (for object-bound authz).
+	 *
+	 * @var MagicMapper
+	 */
+	private readonly MagicMapper $magicMapper;
+
+	/**
+	 * Schema loader (for hasPermission inputs).
+	 *
+	 * @var SchemaMapper
+	 */
+	private readonly SchemaMapper $schemaMapper;
+
+	/**
+	 * Register loader (for object lookup disambiguation).
+	 *
+	 * @var RegisterMapper
+	 */
+	private readonly RegisterMapper $registerMapper;
+
+	/**
+	 * EmailLink loader (for email-bound authz indirection).
+	 *
+	 * @var EmailLinkMapper
+	 */
+	private readonly EmailLinkMapper $emailLinkMapper;
+
+	/**
+	 * Structured log sink.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Takes the decision as its own object, under the ownership rule.
+	 *
+	 * @var RelationDecisionService
+	 */
+	private readonly RelationDecisionService $relationDecisions;
+
+	/**
+	 * Masks a decision the caller may not see (REQ-ROD-002).
+	 *
+	 * @var DecisionVisibility
+	 */
+	private readonly DecisionVisibility $decisionVisibility;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Nextcloud app name.
 	 * @param IRequest $request Current request.
-	 * @param EntityRelationMapper $entityRelationMapper Relation mapper.
-	 * @param IUserSession $userSession Session user accessor.
-	 * @param IRootFolder $rootFolder Nextcloud root folder (for file lookups).
-	 * @param PermissionHandler $permissionHandler RBAC verdict for object-bound relations.
-	 * @param MagicMapper $magicMapper ObjectEntity loader (for object-bound authz).
-	 * @param SchemaMapper $schemaMapper Schema loader (for hasPermission inputs).
-	 * @param RegisterMapper $registerMapper Register loader (for object lookup disambiguation).
-	 * @param EmailLinkMapper $emailLinkMapper EmailLink loader (for email-bound authz indirection).
-	 * @param LoggerInterface $logger Structured log sink.
-	 * @param RelationDecisionService $relationDecisions Takes the decision as its own object, under the ownership rule.
-	 * @param DecisionVisibility $decisionVisibility Masks a decision the caller may not see (REQ-ROD-002).
+	 * @param EntityRelationsControllerServices $services The entity relations controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly EntityRelationMapper $entityRelationMapper,
-		private readonly IUserSession $userSession,
-		private readonly IRootFolder $rootFolder,
-		private readonly PermissionHandler $permissionHandler,
-		private readonly MagicMapper $magicMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly EmailLinkMapper $emailLinkMapper,
-		private readonly LoggerInterface $logger,
-		private readonly RelationDecisionService $relationDecisions,
-		private readonly DecisionVisibility $decisionVisibility,
+		EntityRelationsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->entityRelationMapper = $services->mappers->entityRelationMapper;
+		$this->userSession = $services->platform->userSession;
+		$this->rootFolder = $services->platform->rootFolder;
+		$this->permissionHandler = $services->domain->permissionHandler;
+		$this->magicMapper = $services->mappers->magicMapper;
+		$this->schemaMapper = $services->mappers->schemaMapper;
+		$this->registerMapper = $services->mappers->registerMapper;
+		$this->emailLinkMapper = $services->links->emailLinkMapper;
+		$this->logger = $services->platform->logger;
+		$this->relationDecisions = $services->domain->relationDecisions;
+		$this->decisionVisibility = $services->domain->decisionVisibility;
 	}//end __construct()
 
 	/**

@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Controller\Support\RulesControllerServices;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -67,39 +68,84 @@ use Throwable;
 class RulesController extends Controller {
 
 	/**
+	 * Resolves the schema a rule is declared on.
+	 *
+	 * @var SchemaMapper
+	 */
+	private readonly SchemaMapper $schemaMapper;
+
+	/**
+	 * Derives the rule list.
+	 *
+	 * @var RuleInventoryService
+	 */
+	private readonly RuleInventoryService $inventory;
+
+	/**
+	 * Reads the run log.
+	 *
+	 * @var RuleRunMapper
+	 */
+	private readonly RuleRunMapper $runs;
+
+	/**
+	 * Evaluates a rule without committing.
+	 *
+	 * @var RuleTrialService
+	 */
+	private readonly RuleTrialService $trials;
+
+	/**
+	 * Switches a rule off and on.
+	 *
+	 * @var RuleEnablementService
+	 */
+	private readonly RuleEnablementService $enablement;
+
+	/**
+	 * The published kinds, verdicts and actions.
+	 *
+	 * @var RuleVocabulary
+	 */
+	private readonly RuleVocabulary $vocabulary;
+
+	/**
+	 * Previews a replay over existing objects.
+	 *
+	 * @var RuleReplayService
+	 */
+	private readonly RuleReplayService $replays;
+
+	/**
+	 * Names the actor a replay runs as.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
-	 * @param SchemaMapper $schemaMapper Resolves the schema a rule is declared on.
-	 * @param RuleInventoryService $inventory Derives the rule list.
-	 * @param RuleRunMapper $runs Reads the run log.
-	 * @param RuleTrialService $trials Evaluates a rule without committing.
-	 * @param RuleEnablementService $enablement Switches a rule off and on.
-	 * @param RuleVocabulary $vocabulary The published kinds, verdicts and actions.
-	 * @param RuleReplayService $replays Previews a replay over existing objects.
-	 * @param IUserSession $userSession Names the actor a replay runs as.
+	 * @param RulesControllerServices $services The rules controller services.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Ten, and each one is a surface this
-	 *   controller publishes or the session the replay is an act of. Bundling them behind
-	 *   a locator would hide the dependencies rather than remove them, and splitting the
-	 *   controller would split one REST resource across two classes.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RuleInventoryService $inventory,
-		private readonly RuleRunMapper $runs,
-		private readonly RuleTrialService $trials,
-		private readonly RuleEnablementService $enablement,
-		private readonly RuleVocabulary $vocabulary,
-		private readonly RuleReplayService $replays,
-		private readonly IUserSession $userSession,
+		RulesControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->schemaMapper = $services->mappers->schemaMapper;
+		$this->inventory = $services->domain->inventory;
+		$this->runs = $services->mappers->runs;
+		$this->trials = $services->domain->trials;
+		$this->enablement = $services->domain->enablement;
+		$this->vocabulary = $services->domain->vocabulary;
+		$this->replays = $services->replay->replays;
+		$this->userSession = $services->platform->userSession;
 
 	}//end __construct()
 
