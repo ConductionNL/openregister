@@ -37,7 +37,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ControllerSession;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -67,7 +67,7 @@ class NotificationGroupPreferencesController extends Controller {
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param NotificationPreferencesInterface $preferenceService The three-layer preference resolver.
-	 * @param SchemaMapper $schemaMapper Mapper used to enumerate the notifications a group may hold defaults for.
+	 * @param SchemaMapperInterface $schemaMapper Mapper used to enumerate the notifications a group may hold defaults for.
 	 * @param ControllerSession $session Session, group manager and logger.
 	 * @param ISubAdmin $subAdmin The authority on who administers one particular group.
 	 *
@@ -77,7 +77,7 @@ class NotificationGroupPreferencesController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly NotificationPreferencesInterface $preferenceService,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		ControllerSession $session,
 		private readonly ISubAdmin $subAdmin,
 	) {

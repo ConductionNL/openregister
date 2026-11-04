@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 use OCA\OpenRegister\Db\OpenProjectLink;
 use OCA\OpenRegister\Db\OpenProjectLinkMapper;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
-use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
+use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -73,7 +73,7 @@ class OpenProjectProvider extends AbstractIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param ExternalIntegrationRouter $router External-call router.
+	 * @param ExternalIntegrationRouterInterface $router External-call router.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IL10N $l10n Localisation.
 	 * @param OpenProjectLinkMapper|null $linkMapper Tier-2 link table (optional).
@@ -81,7 +81,7 @@ class OpenProjectProvider extends AbstractIntegrationProvider {
 	 * @return void
 	 */
 	public function __construct(
-		private ExternalIntegrationRouter $router,
+		private ExternalIntegrationRouterInterface $router,
 		private IAppManager $appManager,
 		private IL10N $l10n,
 		private ?OpenProjectLinkMapper $linkMapper = null,

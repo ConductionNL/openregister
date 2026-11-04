@@ -108,7 +108,12 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 		$register = new Register();
 		$register->setId(10);
 		$registers = $this->createMock(RegisterMapper::class);
-		$registers->method('find')->willReturn($register);
+		$registers->method('find')->willReturnCallback(
+			function ($id) use ($register): Register {
+				$this->trace[] = ['register', $id];
+				return $register;
+			}
+		);
 
 		$reflection = new ReflectionClass(SaveObject::class);
 		$reflection->getProperty('schemaReferenceCache')->setValue($handler, ['note' => '2']);
@@ -116,6 +121,9 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 		$reflection->getProperty('urlGenerator')->setValue($handler, $this->createMock(IURLGenerator::class));
 		$reflection->getProperty('objectEntityMapper')->setValue($handler, $mapper);
 		$reflection->getProperty('registerMapper')->setValue($handler, $registers);
+		$schemas = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
+		$schemas->method('findAll')->willReturn([$note]);
+		$reflection->getProperty('schemaMapper')->setValue($handler, $schemas);
 		$reflection->getProperty('userSession')->setValue($handler, $this->createMock(IUserSession::class));
 		$reflection->getProperty('logger')->setValue($handler, new NullLogger());
 		if ($reflection->hasProperty('permissionHandler') === true) {
@@ -166,6 +174,8 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 		$old = ['notes' => ['old-1', self::IDS[0], 'old-2', 7]];
 		$singleCascade = ['lead' => ['type' => 'object', '$ref' => 'note', 'objectConfiguration' => ['handling' => 'cascade']]];
 		$singleInverse = ['lead' => ['type' => 'object', '$ref' => 'note', 'inversedBy' => 'incidents']];
+		$itemsWriteBack = ['tags' => ['type' => 'array', 'register' => '12', 'items' => ['$ref' => 'note', 'inversedBy' => 'incidents', 'writeBack' => true, 'register' => '11', 'removeAfterWriteBack' => true]]];
+		$listWriteBack = ['tags' => ['type' => 'array', 'writeBack' => true, 'register' => '12', 'removeAfterWriteBack' => true, 'items' => ['$ref' => 'note', 'inversedBy' => 'incidents', 'register' => '11']]];
 		$listInverse = ['kids' => ['type' => 'array', 'items' => ['$ref' => 'note', 'inversedBy' => 'incidents']]];
 		$mixed = array_merge(self::IDS, [['text' => 'new'], ['id' => ''], [], 7]);
 
@@ -186,6 +196,11 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 			'list inversedBy drops the property' => $this->runOnParent(method: 'cascadeObjects', properties: $listInverse, data: ['kids' => [['text' => 'new']]], stored: ['kids' => ['old-1']]),
 			'list inversedBy emptied' => $this->runOnParent(method: 'cascadeObjects', properties: $listInverse, data: ['kids' => []], stored: ['kids' => ['old-1']]),
 			'list without a value' => $this->runOnParent(method: 'cascadeObjects', properties: $listInverse, data: ['kids' => 'old-1']),
+			'write-back items carry register and removal' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: $itemsWriteBack, data: ['tags' => ['42', 'not-an-id'], 'keep' => 1]),
+			'write-back at list level for items' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: $listWriteBack, data: ['tags' => '42']),
+			'write-back to an unknown schema' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: ['tags' => ['type' => 'array', 'items' => ['$ref' => 'missing', 'inversedBy' => 'incidents', 'writeBack' => true, 'removeAfterWriteBack' => true]]], data: ['tags' => ['42']]),
+			'write-back with an empty schema reference' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: ['tags' => ['type' => 'array', 'items' => ['$ref' => '', 'inversedBy' => 'incidents', 'writeBack' => true, 'removeAfterWriteBack' => true]]], data: ['tags' => ['42']]),
+			'write-back of an empty list' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: $itemsWriteBack, data: ['tags' => []]),
 			'write-back to valid ids' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: $writeBack, data: ['tags' => $mixed]),
 			'write-back single id' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: $single, data: ['note' => '42']),
 			'write-back single non-id' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: $single, data: ['note' => 'not-an-id']),

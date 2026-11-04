@@ -45,7 +45,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
@@ -114,7 +114,7 @@ class FormSubmitService {
 	 * Constructor.
 	 *
 	 * @param RegisterMapper       $registers Resolves a destination's register.
-	 * @param SchemaMapper         $schemas   Resolves a destination's schema.
+	 * @param SchemaMapperInterface         $schemas   Resolves a destination's schema.
 	 * @param ValidateObject       $validator The destination schema's full validator.
 	 * @param ObjectService        $objects   Creates, re-reads and (to compensate) deletes objects.
 	 * @param FormPayloadFindings  $findings  Turns a refusal into per-property findings.
@@ -130,7 +130,7 @@ class FormSubmitService {
 	 */
 	public function __construct(
 		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly ValidateObject $validator,
 		private readonly ObjectService $objects,
 		private readonly FormPayloadFindings $findings,

@@ -31,7 +31,7 @@ use OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Task\TaskMetricsProvider;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
@@ -98,7 +98,7 @@ final class ObservabilityRegistrar {
 				return new ObjectMetricSource(
 					objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
 					registerMapper: $container->get(RegisterMapper::class),
-					schemaMapper: $container->get(SchemaMapper::class),
+					schemaMapper: $container->get(SchemaMapperInterface::class),
 					logger: $container->get('Psr\Log\LoggerInterface')
 				);
 			}

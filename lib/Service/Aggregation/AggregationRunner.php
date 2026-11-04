@@ -46,7 +46,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
@@ -152,7 +152,7 @@ class AggregationRunner {
 	 *
 	 * @param MagicMapper $magicMapper Magic-table mapper used for the PHP fallback path.
 	 * @param RegisterMapper $registerMapper Register loader.
-	 * @param SchemaMapper $schemaMapper Schema loader.
+	 * @param SchemaMapperInterface $schemaMapper Schema loader.
 	 * @param PlaceholderResolver $placeholders Resolves dynamic placeholders inside filters.
 	 * @param IDBConnection $db Database connection for the Postgres-native fast path.
 	 * @param AggregationCacheInterface $cache 60s aggregation result cache.
@@ -181,7 +181,7 @@ class AggregationRunner {
 	public function __construct(
 		private readonly MagicMapper $magicMapper,
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PlaceholderResolver $placeholders,
 		private readonly IDBConnection $db,
 		private readonly AggregationCacheInterface $cache,

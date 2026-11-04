@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Dto\DeepLinkRegistration;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -368,7 +368,7 @@ class DeepLinkRegistryService {
 		}
 
 		try {
-			$schemaMapper = $this->container->get(SchemaMapper::class);
+			$schemaMapper = $this->container->get(SchemaMapperInterface::class);
 			$schemas = $schemaMapper->findAll(
 				_rbac: false,
 				_multitenancy: false

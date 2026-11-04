@@ -48,7 +48,7 @@ use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -302,7 +302,7 @@ class ObjectService implements ObjectServiceInterface
      * @param CascadingHandler               $cascadingHandler     Handler for cascading operations.
      * @param MigrationHandler               $migrationHandler     Handler for migration operations.
      * @param RegisterMapper                 $registerMapper       Mapper for register operations.
-     * @param SchemaMapper                   $schemaMapper         Mapper for schema operations.
+     * @param SchemaMapperInterface                   $schemaMapper         Mapper for schema operations.
      * @param ViewMapperInterface                     $viewMapper           Mapper for view operations.
      * @param MagicMapper                    $objectMapper         Unified mapper for object
      *                                                             operations (routes to
@@ -315,7 +315,7 @@ class ObjectService implements ObjectServiceInterface
      * @param OrganisationService            $organisationService  Service for organisation operations.
      * @param LoggerInterface                $logger               Logger for performance monitoring.
      * @param CacheHandler                   $cacheHandler         Service for entity and query caching.
-     * @param SettingsService                $settingsService      Service for settings operations.
+     * @param SettingsServiceInterface                $settingsService      Service for settings operations.
      * @param DateTimeNormalizer             $dateTimeNormalizer   Normaliser for user-supplied datetime input.
      * @param IAppContainer                  $container            Application container.
      * @param ObjectSourceRegistry           $objectSourceRegistry Registry of object-source providers (virtual schemas).
@@ -359,7 +359,7 @@ class ObjectService implements ObjectServiceInterface
         private readonly CascadingHandler $cascadingHandler,
         private readonly MigrationHandler $migrationHandler,
         private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
+        private readonly SchemaMapperInterface $schemaMapper,
         private readonly ViewMapperInterface $viewMapper,
         private readonly MagicMapper $objectMapper,
         private readonly FileService $fileService,
@@ -370,7 +370,7 @@ class ObjectService implements ObjectServiceInterface
         private readonly OrganisationService $organisationService,
         private readonly LoggerInterface $logger,
         private readonly CacheHandler $cacheHandler,
-        private readonly SettingsService $settingsService,
+        private readonly SettingsServiceInterface $settingsService,
         private readonly DateTimeNormalizer $dateTimeNormalizer,
         private readonly IAppContainer $container,
         private readonly ObjectSourceRegistry $objectSourceRegistry,

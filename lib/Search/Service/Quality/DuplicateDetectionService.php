@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Search\Service\Quality;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use Psr\Log\LoggerInterface;
@@ -106,7 +106,7 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 * Wire collaborators.
 	 *
 	 * @param ObjectService $objectService Object query path (RBAC + tenant scoped).
-	 * @param SchemaMapper $schemaMapper Schema lookup for the dedup annotation.
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup for the dedup annotation.
 	 * @param RegisterMapper $registerMapper Register lookup — the boundary the schema resolves inside.
 	 * @param SimilarityCalculator $similarity Pure field-similarity primitives.
 	 * @param DismissedPairStore $dismissals Pairs a person has already ruled out.
@@ -118,7 +118,7 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 		RegisterMapper $registerMapper,
 		private readonly SimilarityCalculator $similarity,
 		private readonly DismissedPairStore $dismissals,

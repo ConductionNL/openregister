@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\ExportProfileMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ExportService;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
@@ -57,7 +57,7 @@ class ExportProfileService {
 	 *
 	 * @param ExportProfileMapper  $mapper        Profile persistence.
 	 * @param RegisterMapper       $registerMapper Register lookups.
-	 * @param SchemaMapper         $schemaMapper  Schema lookups.
+	 * @param SchemaMapperInterface         $schemaMapper  Schema lookups.
 	 * @param ExportService        $exportService The selection every export shares.
 	 * @param ExportProfileWriter  $writer        Projection and file writing.
 	 * @param ExportRightService    $rightService  The export verb.
@@ -69,7 +69,7 @@ class ExportProfileService {
 	public function __construct(
 		private readonly ExportProfileMapper $mapper,
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ExportService $exportService,
 		private readonly ExportProfileWriter $writer,
 		private readonly ExportRightService $rightService,

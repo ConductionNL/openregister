@@ -63,13 +63,13 @@ namespace OCA\OpenRegister\Service\Object;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Object\SaveObject\BulkObjectSlugs;
@@ -193,7 +193,7 @@ class SaveObjects {
 	 * Constructor for SaveObjects handler
 	 *
 	 * @param MagicMapper $objectEntityMapper Mapper for object entity database operations
-	 * @param SchemaMapper $schemaMapper Mapper for schema operations
+	 * @param SchemaMapperInterface $schemaMapper Mapper for schema operations
 	 * @param RegisterMapper $registerMapper Mapper for register operations
 	 * @param SaveObject $saveHandler Handler for individual object operations
 	 * @param IUserSession $userSession User session for getting current user
@@ -206,7 +206,7 @@ class SaveObjects {
 	 * @param ValidateObject|null $validateHandler Validation handler for per-object schema validation;
 	 *                                             wave-12 Fix 3 per-row JSON-Schema validation
 	 * @param IEventDispatcher|null $eventDispatcher Event dispatcher for object lifecycle events
-	 * @param AuditTrailMapper|null $auditTrailMapper Audit trail mapper for logging bulk changes
+	 * @param AuditTrailMapperInterface|null $auditTrailMapper Audit trail mapper for logging bulk changes
 	 * @param BulkRowRules|null $rowRules The decision-table rules, property authorization and save events a
 	 *                                    bulk row goes through. Null only in legacy fixtures.
 	 *
@@ -214,7 +214,7 @@ class SaveObjects {
 	 */
 	public function __construct(
 		private readonly MagicMapper $objectEntityMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SaveObject $saveHandler,
 		private readonly IUserSession $userSession,
@@ -224,7 +224,7 @@ class SaveObjects {
 		private readonly ?PermissionHandler $permissionHandler = null,
 		private readonly ?ValidateObject $validateHandler = null,
 		private readonly ?IEventDispatcher $eventDispatcher = null,
-		private readonly ?AuditTrailMapper $auditTrailMapper = null,
+		private readonly ?AuditTrailMapperInterface $auditTrailMapper = null,
 		private readonly ?BulkRowRules $rowRules = null,
 	) {
 

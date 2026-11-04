@@ -26,7 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use Psr\Container\ContainerInterface;
@@ -54,7 +54,7 @@ class AutoTransitionRunner {
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container Resolves ObjectService and TransitionEngine lazily; see the class docblock.
-	 * @param SchemaMapper $schemaMapper Reads the schema's lifecycle annotation.
+	 * @param SchemaMapperInterface $schemaMapper Reads the schema's lifecycle annotation.
 	 * @param AutoTransitionSelector $selector Picks the one eligible move, or none.
 	 * @param AutoTransitionQueue $queue Decides inline versus queued, and owns the job list.
 	 * @param LoggerInterface $logger Logs every refusal, so a move that never happens is visible.
@@ -63,7 +63,7 @@ class AutoTransitionRunner {
 	 */
 	public function __construct(
 		private readonly ContainerInterface $container,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly AutoTransitionSelector $selector,
 		private readonly AutoTransitionQueue $queue,
 		private readonly LoggerInterface $logger,
