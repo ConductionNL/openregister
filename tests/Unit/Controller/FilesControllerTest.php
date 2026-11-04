@@ -6,6 +6,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\FilesController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\FileService;
@@ -44,7 +45,7 @@ class FilesControllerTest extends TestCase {
 		$this->rootFolder = $this->createMock(IRootFolder::class);
 		$this->userManager = $this->createMock(IUserManager::class);
 
-		$this->controller = new FilesController(
+		$this->controller = FilesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->fileService,
