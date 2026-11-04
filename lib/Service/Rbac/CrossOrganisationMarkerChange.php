@@ -68,6 +68,8 @@ final class CrossOrganisationMarkerChange {
 	 * @param mixed $authorization The authorization value as sent.
 	 *
 	 * @return mixed The decoded block, or the value itself when it is no text.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
 	 */
 	public function asStored(mixed $authorization): mixed {
 		if (is_string($authorization) === true) {
