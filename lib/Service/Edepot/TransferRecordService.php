@@ -39,7 +39,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Edepot;
 
 use DateTime;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 
@@ -75,11 +75,11 @@ class TransferRecordService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService The RBAC/tenant-scoped, audited object store.
+	 * @param ObjectOperationsInterface $objectService The RBAC/tenant-scoped, audited object store.
 	 * @param LoggerInterface $logger Structured logging.
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 

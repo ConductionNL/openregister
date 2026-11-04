@@ -94,7 +94,7 @@ class IntegrationMockModeTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($objectService, $callService) {
-				if ($id === ObjectService::class) {
+				if ($id === \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class) {
 					return $objectService;
 				}
 

@@ -903,7 +903,7 @@ class SettingsController extends Controller {
 	public function debugTypeFiltering(): JSONResponse {
 		try {
 			// Get services.
-			$objectService = $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
+			$objectService = $this->container->get(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class);
 
 			// Set register and schema context. The register slug is RESOLVED,
 			// not written: stackiq's repair step renames it from
@@ -952,12 +952,12 @@ class SettingsController extends Controller {
 	 *
 	 * The unfiltered search also returns each organisation's object data.
 	 *
-	 * @param \OCA\OpenRegister\Service\ObjectService $objectService The object service, set to the organisation schema.
+	 * @param \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService The object service, set to the organisation schema.
 	 * @param list<string>  $types         The types to filter on; empty for no filter.
 	 *
 	 * @return array{count: int<0, max>, organizations: list<array<string, mixed>>}
 	 */
-	private function organisationsOfType(\OCA\OpenRegister\Service\ObjectService $objectService, array $types): array {
+	private function organisationsOfType(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService, array $types): array {
 		$query = [
 			'_limit' => 10,
 			'_page' => 1,

@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\Gdpr\Case;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\DsarService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 
 /**
@@ -56,11 +56,11 @@ class CaseObjectAccessor {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService RBAC + tenant scoped object store.
+	 * @param ObjectOperationsInterface $objectService RBAC + tenant scoped object store.
 	 * @param DsarService $dsarService Resolves the DSAR processing activity for audit pinning.
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly DsarService $dsarService,
 	) {
 	}//end __construct()
