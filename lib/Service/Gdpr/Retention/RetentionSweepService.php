@@ -44,7 +44,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
-use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -57,7 +57,7 @@ class RetentionSweepService {
 	 * Constructor.
 	 *
 	 * @param CaseObjectAccessor $accessor RBAC-scoped case query + audited delete.
-	 * @param RetentionService $retentionService Legal-hold / immutability awareness.
+	 * @param RetentionServiceInterface $retentionService Legal-hold / immutability awareness.
 	 * @param DataSubjectRequestService $dsrService Reused evidence-PII scrub (erase pseudonymise).
 	 * @param ITimeFactory $time Time source for the `retainUntil` cut-off.
 	 * @param LoggerInterface $logger Logger.
@@ -65,7 +65,7 @@ class RetentionSweepService {
 	 */
 	public function __construct(
 		private readonly CaseObjectAccessor $accessor,
-		private readonly RetentionService $retentionService,
+		private readonly RetentionServiceInterface $retentionService,
 		private readonly DataSubjectRequestService $dsrService,
 		private readonly ITimeFactory $time,
 		private readonly LoggerInterface $logger,

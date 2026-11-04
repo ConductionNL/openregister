@@ -33,7 +33,7 @@ use DateTime;
 use DateTimeInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\ScheduledReport;
 use OCA\OpenRegister\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -134,7 +134,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 * Constructor.
 	 *
 	 * @param ScheduledReportMapper $mapper Scheduled report mapper.
-	 * @param RegisterMapper $registerMapper Register lookup (create/update validation).
+	 * @param RegisterMapperInterface $registerMapper Register lookup (create/update validation).
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup (create/update validation).
 	 * @param ExportService $exportService The export engine this feature composes.
 	 * @param IRootFolder $rootFolder Files root, for owner-folder delivery.
@@ -154,7 +154,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 */
 	public function __construct(
 		private readonly ScheduledReportMapper $mapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ExportService $exportService,
 		private readonly IRootFolder $rootFolder,

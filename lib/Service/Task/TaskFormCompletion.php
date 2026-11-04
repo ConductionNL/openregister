@@ -83,7 +83,7 @@ class TaskFormCompletion {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskService $tasks The authorized task lifecycle.
+	 * @param TaskServiceInterface $tasks The authorized task lifecycle.
 	 * @param TaskFormResolver $forms Resolves the task's form.
 	 * @param TransitionEngine $engine The one allowlist, and the transition write.
 	 * @param ObjectService $objects The ordinary object write, for an inline field list.
@@ -92,7 +92,7 @@ class TaskFormCompletion {
 	 *                             so the run's own lock does not refuse it.
 	 */
 	public function __construct(
-		private readonly TaskService $tasks,
+		private readonly TaskServiceInterface $tasks,
 		private readonly TaskFormResolver $forms,
 		private readonly TransitionEngine $engine,
 		private readonly ObjectService $objects,

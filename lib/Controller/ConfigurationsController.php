@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -61,7 +61,7 @@ class ConfigurationsController extends Controller {
 	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
 	 * @param ConfigurationMapper $configurationMapper The configuration mapper instance
-	 * @param ConfigurationService $configurationService The configuration service instance
+	 * @param ConfigurationServiceInterface $configurationService The configuration service instance
 	 * @param UploadService $uploadService The upload service instance
 	 * @param string|null $userId The current user ID
 	 * @param IUserSession $userSession User session for admin checks
@@ -71,7 +71,7 @@ class ConfigurationsController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly ConfigurationMapper $configurationMapper,
-		private readonly ConfigurationService $configurationService,
+		private readonly ConfigurationServiceInterface $configurationService,
 		private readonly UploadService $uploadService,
 		?string $userId,
 		private readonly IUserSession $userSession,

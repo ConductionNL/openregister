@@ -153,7 +153,7 @@ class DocumentProcessingHandler {
 	 * @param IRootFolder $rootFolder Root folder for file access.
 	 * @param IUserSession $userSession User session for getting current user.
 	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param \OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper Used to honour skip-anonymization
+	 * @param \OCA\OpenRegister\Db\EntityRelationMapperInterface $entityRelationMapper Used to honour skip-anonymization
 	 *                                                                        flags during the redaction pass
 	 *                                                                        (see
 	 *                                                                        `entity-relation-grondslagen`).
@@ -173,7 +173,7 @@ class DocumentProcessingHandler {
 		private readonly IRootFolder $rootFolder,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly \OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper,
+		private readonly \OCA\OpenRegister\Db\EntityRelationMapperInterface $entityRelationMapper,
 		private readonly OfficeDocumentSanitizer $sanitizer,
 		private readonly ?AnonymisationLogMapper $anonymisationLogMapper = null,
 		private readonly ?IL10N $l10n = null,

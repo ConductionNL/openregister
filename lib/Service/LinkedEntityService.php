@@ -27,9 +27,9 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
@@ -68,8 +68,8 @@ class LinkedEntityService {
 	 *
 	 * @param MagicMapper $magicMapper Magic mapper for object operations
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper
-	 * @param RegisterMapper $registerMapper Register mapper
-	 * @param OrganisationMapper $organisationMapper Organisation mapper
+	 * @param RegisterMapperInterface $registerMapper Register mapper
+	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
 	 * @param IntegrationRegistry $integrationRegistry Integration registry (authoritative
 	 *                                                 type-id source, post `cleanup-linked-entity-type-map`)
 	 * @param LoggerInterface $logger Logger
@@ -79,8 +79,8 @@ class LinkedEntityService {
 	public function __construct(
 		private readonly MagicMapper $magicMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly OrganisationMapper $organisationMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly OrganisationMapperInterface $organisationMapper,
 		private readonly IntegrationRegistry $integrationRegistry,
 		private readonly LoggerInterface $logger,
 		private readonly PermissionHandler $permissionHandler,

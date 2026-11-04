@@ -24,15 +24,35 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Db\FileMapperInterface;
+use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
+use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
+use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
+use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -55,9 +75,19 @@ final class HubClassesAreReachedThroughInterfacesTest extends TestCase {
 	private const HUBS = [
 		AuditTrailMapper::class => AuditTrailMapperInterface::class,
 		CalculationEvaluator::class => CalculationEvaluatorInterface::class,
+		ConfigurationService::class => ConfigurationServiceInterface::class,
+		EntityRelationMapper::class => EntityRelationMapperInterface::class,
 		ExternalIntegrationRouter::class => ExternalIntegrationRouterInterface::class,
+		FileMapper::class => FileMapperInterface::class,
+		FlowRunMapper::class => FlowRunMapperInterface::class,
+		FlowRunService::class => FlowRunServiceInterface::class,
+		OrganisationMapper::class => OrganisationMapperInterface::class,
+		OrganisationService::class => OrganisationServiceInterface::class,
+		RegisterMapper::class => RegisterMapperInterface::class,
+		RetentionService::class => RetentionServiceInterface::class,
 		SchemaMapper::class => SchemaMapperInterface::class,
 		SettingsService::class => SettingsServiceInterface::class,
+		TaskService::class => TaskServiceInterface::class,
 	];
 
 	/**

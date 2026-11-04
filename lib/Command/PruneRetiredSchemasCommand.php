@@ -41,7 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\SchemaDeletionService;
@@ -62,7 +62,7 @@ class PruneRetiredSchemasCommand extends Command {
 	 * Wire the mappers and the cascade service.
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper (app-scoped resolution).
-	 * @param RegisterMapper $registerMapper Register mapper, to unlink the retired id.
+	 * @param RegisterMapperInterface $registerMapper Register mapper, to unlink the retired id.
 	 * @param SchemaDeletionService $deletionService Cascade teardown (objects, tables, row).
 	 *
 	 * @return void
@@ -71,7 +71,7 @@ class PruneRetiredSchemasCommand extends Command {
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaDeletionService $deletionService,
 	) {
 		parent::__construct();

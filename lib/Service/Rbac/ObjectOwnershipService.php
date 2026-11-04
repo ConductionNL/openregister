@@ -59,7 +59,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -134,7 +134,7 @@ class ObjectOwnershipService {
 	 * @param ObjectAuthorizationWriter $authorizationWriter The targeted write of the authorization block.
 	 * @param AuditTrailMapperInterface $auditTrailMapper The hash-sealed trail.
 	 * @param MagicMapper $magicMapper Resolves objects and their children.
-	 * @param RegisterMapper $registerMapper Resolves a child's register.
+	 * @param RegisterMapperInterface $registerMapper Resolves a child's register.
 	 * @param SchemaMapperInterface $schemaMapper Resolves a child's schema.
 	 * @param INotificationManager $notificationManager Tells the previous owner.
 	 * @param LoggerInterface $logger Where a transfer is noted.
@@ -153,7 +153,7 @@ class ObjectOwnershipService {
 		private readonly ObjectAuthorizationWriter $authorizationWriter,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly MagicMapper $magicMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly INotificationManager $notificationManager,
 		private readonly LoggerInterface $logger,

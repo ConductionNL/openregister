@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCP\ICache;
@@ -126,9 +126,9 @@ class ContactMatchingService implements ContactMatcherInterface {
 	/**
 	 * The register mapper for register lookups.
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * The distributed cache instance.
@@ -149,7 +149,7 @@ class ContactMatchingService implements ContactMatcherInterface {
 	 *
 	 * @param ObjectService $objectService The object service
 	 * @param SchemaMapperInterface $schemaMapper The schema mapper
-	 * @param RegisterMapper $registerMapper The register mapper
+	 * @param RegisterMapperInterface $registerMapper The register mapper
 	 * @param ICacheFactory $cacheFactory The cache factory
 	 * @param LoggerInterface $logger The logger
 	 *
@@ -158,7 +158,7 @@ class ContactMatchingService implements ContactMatcherInterface {
 	public function __construct(
 		ObjectService $objectService,
 		SchemaMapperInterface $schemaMapper,
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		ICacheFactory $cacheFactory,
 		LoggerInterface $logger,
 	) {

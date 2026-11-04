@@ -27,7 +27,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
@@ -54,9 +54,9 @@ class PreviewHandler {
 	/**
 	 * Register mapper for database operations.
 	 *
-	 * @var RegisterMapper The register mapper instance.
+	 * @var RegisterMapperInterface The register mapper instance.
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Schema mapper for database operations.
@@ -106,14 +106,14 @@ class PreviewHandler {
 	/**
 	 * Constructor for PreviewHandler.
 	 *
-	 * @param RegisterMapper $registerMapper The register mapper.
+	 * @param RegisterMapperInterface $registerMapper The register mapper.
 	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
 	 * @param LoggerInterface $logger The logger interface.
 	 * @param FetchHandler $fetchHandler The fetch handler for remote data fetching.
 	 * @param MagicMapper $objectMapper The object mapper, to find the local object a remote one would update.
 	 */
 	public function __construct(
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		SchemaMapperInterface $schemaMapper,
 		LoggerInterface $logger,
 		FetchHandler $fetchHandler,

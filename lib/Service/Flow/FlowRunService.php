@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunStep;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
@@ -70,7 +70,7 @@ use Throwable;
  * into unrelated existing methods would hide one code path inside another
  * that has nothing to do with it.
  */
-class FlowRunService {
+class FlowRunService implements FlowRunServiceInterface {
 	/**
 	 * How long one run may take, in minutes, when nothing overrides it.
 	 *
@@ -83,54 +83,6 @@ class FlowRunService {
 	 * @var integer
 	 */
 	private const DEFAULT_MAX_RUNTIME_MINUTES = 60;
-
-	/**
-	 * The context key an arriving signal's payload lands at.
-	 *
-	 * Read by whichever node suspended waiting for it, and cleared once that
-	 * walk finishes — a signal answers one question, and leaving it behind would
-	 * let a later suspension read an answer meant for an earlier one.
-	 *
-	 * @var string
-	 */
-	public const SIGNAL_CONTEXT_KEY = 'signal';
-
-	/**
-	 * The context key the run's ACTING IDENTITY travels under.
-	 *
-	 * Stamped by {@see self::baseContextFor()} from the run — never from the
-	 * context, per ADR-099 — and read back by every node whose work needs the
-	 * run's rights. Exported so consumers reference one name instead of each
-	 * hard-coding the literal; the VALUE is frozen, because it is stored inside
-	 * every parked run's context and a rename would strand them.
-	 *
-	 * @var string
-	 */
-	public const RUN_AS_CONTEXT_KEY = 'runAs';
-
-	/**
-	 * The context key the run's FLOW id travels under.
-	 *
-	 * Stamped from the run, like the acting identity, so a node can name the
-	 * flow it belongs to (a sent-email event does) without a lookup.
-	 *
-	 * @var string
-	 */
-	public const FLOW_ID_CONTEXT_KEY = 'flowId';
-
-	/**
-	 * The trigger a direct node invocation carries (or-flow-run-node).
-	 *
-	 * Unlike {@see FlowRunVersionPin::TRIGGER_TEST}, this trigger is NOT
-	 * exempt from the published-version requirement: a direct-invoked node
-	 * still runs against a real, published graph (RN-3) — it is the AUTHORING
-	 * trust that is absent here (this is an app button, not the editor), not
-	 * the soundness/publication requirement every live dispatch already
-	 * carries.
-	 *
-	 * @var string
-	 */
-	public const TRIGGER_DIRECT_NODE = 'direct-node';
 
 	/**
 	 * The acting-identity scope handed to every dispatcher this service builds.
@@ -166,7 +118,7 @@ class FlowRunService {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapper $mapper Persists runs.
+	 * @param FlowRunMapperInterface $mapper Persists runs.
 	 * @param FlowStateMapper $stateMapper Persists state that outlives a run.
 	 * @param FlowEngine $engine Walks the graph.
 	 * @param FlowNodeRegistry $registry Resolves step types.
@@ -189,7 +141,7 @@ class FlowRunService {
 	 *                                   default applies.
 	 */
 	public function __construct(
-		private readonly FlowRunMapper $mapper,
+		private readonly FlowRunMapperInterface $mapper,
 		FlowStateMapper $stateMapper,
 		private readonly FlowEngine $engine,
 		private readonly FlowNodeRegistry $registry,

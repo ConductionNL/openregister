@@ -36,7 +36,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphNode;
@@ -148,7 +148,7 @@ class ReferentialIntegrityService {
 	 * Constructor for ReferentialIntegrityService.
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Schema data mapper.
-	 * @param RegisterMapper $registerMapper Register data mapper.
+	 * @param RegisterMapperInterface $registerMapper Register data mapper.
 	 * @param MagicMapper $objectEntityMapper Object entity data mapper.
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for integrity action logging.
 	 * @param LoggerInterface $logger Logger for debugging.
@@ -160,7 +160,7 @@ class ReferentialIntegrityService {
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly MagicMapper $objectEntityMapper,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,

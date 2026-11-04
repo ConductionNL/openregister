@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
@@ -57,7 +57,7 @@ class ObjectAccessReport {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper            $registerMapper   Register lookup.
+	 * @param RegisterMapperInterface            $registerMapper   Register lookup.
 	 * @param SchemaMapperInterface              $schemaMapper     Schema lookup.
 	 * @param AuditTrailMapperInterface          $auditTrailMapper The trail the history is read from.
 	 * @param ObjectPermissionsResolver $holders          Reads the access set out of the rules.
@@ -65,7 +65,7 @@ class ObjectAccessReport {
 	 * @param DenyEnforcementMode       $enforcement      The staging switch.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly ObjectPermissionsResolver $holders,

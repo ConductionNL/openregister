@@ -37,7 +37,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\DetectionMethod;
 use OCA\OpenRegister\Db\EntityRelation;
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Exception\ChunkMatcherException;
@@ -81,7 +81,7 @@ class ManualEntityService {
 	 * Constructor.
 	 *
 	 * @param GdprEntityMapper $gdprEntityMapper Catalogue mapper.
-	 * @param EntityRelationMapper $entityRelationMapper Relation mapper.
+	 * @param EntityRelationMapperInterface $entityRelationMapper Relation mapper.
 	 * @param ChunkMapper $chunkMapper Chunk reader for the target file.
 	 * @param ChunkTextMatcher $matcher Chunk-aware string-match utility.
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit-trail persistence.
@@ -92,7 +92,7 @@ class ManualEntityService {
 	 */
 	public function __construct(
 		private readonly GdprEntityMapper $gdprEntityMapper,
-		private readonly EntityRelationMapper $entityRelationMapper,
+		private readonly EntityRelationMapperInterface $entityRelationMapper,
 		private readonly ChunkMapper $chunkMapper,
 		private readonly ChunkTextMatcher $matcher,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,

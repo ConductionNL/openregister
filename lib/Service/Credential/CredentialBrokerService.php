@@ -71,7 +71,7 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use OCA\OpenRegister\Service\WriteCause;
@@ -158,7 +158,7 @@ class CredentialBrokerService {
 	 * @param IUserSession $userSession Current session (owner guard identity).
 	 * @param IClientService $clientService NC HTTP client factory (the outbound call).
 	 * @param LoggerInterface $logger Logger for secret-free server-side diagnostics.
-	 * @param OrganisationService $organisationService Resolves organisation membership (organisation guard branch).
+	 * @param OrganisationServiceInterface $organisationService Resolves organisation membership (organisation guard branch).
 	 * @param IGroupManager|null $groupManager Resolves group principals for the share guard; null ⇒ group shares admit
 	 *                                         nobody.
 	 * @param IUserManager|null $userManager Resolves the asserted uid's groups on the sessionless path; null ⇒ no
@@ -179,7 +179,7 @@ class CredentialBrokerService {
 		private readonly IUserSession $userSession,
 		private readonly IClientService $clientService,
 		private readonly LoggerInterface $logger,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 		// Optional collaborators for the share-principal guard branch. Nullable
 		// with a default so the eight existing call sites that construct this
 		// service directly keep working — a drifted constructor signature is a

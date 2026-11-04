@@ -47,9 +47,9 @@ class FederatedShareMapper extends QBMapper {
 	/**
 	 * Organisation mapper (required by MultiTenancyTrait).
 	 *
-	 * @var OrganisationMapper
+	 * @var OrganisationMapperInterface
 	 */
-	protected OrganisationMapper $organisationMapper;
+	protected OrganisationMapperInterface $organisationMapper;
 
 	/**
 	 * User session (required by MultiTenancyTrait).
@@ -76,14 +76,14 @@ class FederatedShareMapper extends QBMapper {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db Database connection.
-	 * @param OrganisationMapper $organisationMapper Organisation mapper.
+	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper.
 	 * @param IUserSession $userSession User session.
 	 * @param IGroupManager $groupManager Group manager.
 	 * @param IAppConfig $appConfig App configuration.
 	 */
 	public function __construct(
 		IDBConnection $db,
-		OrganisationMapper $organisationMapper,
+		OrganisationMapperInterface $organisationMapper,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 		IAppConfig $appConfig,

@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Service\Calculation;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -85,7 +85,7 @@ class ReferencedCalculationRefresher {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper     $registers The registers.
+	 * @param RegisterMapperInterface     $registers The registers.
 	 * @param SchemaMapperInterface       $schemas   The schemas.
 	 * @param MagicMapper        $rows      Finds the referring objects.
 	 * @param ContainerInterface $container Hands out the object service on first use.
@@ -93,7 +93,7 @@ class ReferencedCalculationRefresher {
 	 * @param SchemaTypeConverter $types    Restores the stored form of `type: string` values the read decoded.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registers,
+		private readonly RegisterMapperInterface $registers,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly MagicMapper $rows,
 		private readonly ContainerInterface $container,

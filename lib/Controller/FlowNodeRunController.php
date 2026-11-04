@@ -58,7 +58,8 @@ use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowUnattributed;
 use OCA\OpenRegister\Service\Flow\IFlowDirectlyInvokable;
@@ -121,7 +122,7 @@ class FlowNodeRunController extends Controller {
 	 *                              step's `type` to its node, and its
 	 *                              `IFlowDirectlyInvokable` / `IFlowNodeConfigForm`
 	 *                              opt-ins.
-	 * @param FlowRunService $runner Queues and executes the one node.
+	 * @param FlowRunServiceInterface $runner Queues and executes the one node.
 	 * @param ObjectService $objects Loads the subject, scoped to the CALLER's
 	 *                               own organisation (`_multitenancy: true`) —
 	 *                               RBAC is deliberately OFF here
@@ -146,7 +147,7 @@ class FlowNodeRunController extends Controller {
 		private readonly FlowPublishedGraph $publishedGraphs,
 		private readonly FlowLocator $subjects,
 		private readonly FlowNodeRegistry $nodes,
-		private readonly FlowRunService $runner,
+		private readonly FlowRunServiceInterface $runner,
 		private readonly ObjectService $objects,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly PermissionHandler $permissions,
@@ -255,7 +256,7 @@ class FlowNodeRunController extends Controller {
 			$run = $this->runner->queue(
 				flowId: $id,
 				subject: $ref,
-				trigger: FlowRunService::TRIGGER_DIRECT_NODE,
+				trigger: FlowRunServiceInterface::TRIGGER_DIRECT_NODE,
 				context: ['nodeId' => $nodeId],
 				user: $callerUid
 			);

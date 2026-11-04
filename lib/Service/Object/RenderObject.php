@@ -30,11 +30,11 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Adbar\Dot;
 use Exception;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
@@ -208,9 +208,9 @@ class RenderObject {
 	/**
 	 * Constructor for RenderObject handler.
 	 *
-	 * @param FileMapper $fileMapper File mapper for database operations.
+	 * @param FileMapperInterface $fileMapper File mapper for database operations.
 	 * @param MagicMapper $objectEntityMapper Object entity mapper for database operations.
-	 * @param RegisterMapper $registerMapper Register mapper for database operations.
+	 * @param RegisterMapperInterface $registerMapper Register mapper for database operations.
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for database operations.
 	 * @param ISystemTagManager $systemTagManager System tag manager for file tags.
 	 * @param ISystemTagObjectMapper $systemTagMapper System tag object mapper for file tags.
@@ -247,9 +247,9 @@ class RenderObject {
 	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-authorized-reads-are-decrypted-unauthorized-reads-never-see-ciphertext
 	 */
 	public function __construct(
-		private readonly FileMapper $fileMapper,
+		private readonly FileMapperInterface $fileMapper,
 		private readonly MagicMapper $objectEntityMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ISystemTagManager $systemTagManager,
 		private readonly ISystemTagObjectMapper $systemTagMapper,
@@ -1886,7 +1886,7 @@ class RenderObject {
 	 *
 	 * Without a container (legacy fixtures) nothing is filtered.
 	 *
-	 * @param array<int, array<string, mixed>> $fileRecords FileMapper records carrying `fileid`.
+	 * @param array<int, array<string, mixed>> $fileRecords FileMapperInterface records carrying `fileid`.
 	 *
 	 * @return array<int, array<string, mixed>> The readable records.
 	 *
@@ -1915,7 +1915,7 @@ class RenderObject {
 	 * Shared by getFileObject() and the page-level batch prefetch so both paths emit
 	 * an identical structure.
 	 *
-	 * @param array $fileRecord The raw file record from FileMapper
+	 * @param array $fileRecord The raw file record from FileMapperInterface
 	 *
 	 * @return array The formatted file object (same structure as renderFiles()).
 	 *

@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service\ObjectSource;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
@@ -59,7 +59,7 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	 * Constructor.
 	 *
 	 * @param ViewMapperInterface      $viewMapper     Reads the backing view.
-	 * @param RegisterMapper  $registerMapper Resolves the source register.
+	 * @param RegisterMapperInterface  $registerMapper Resolves the source register.
 	 * @param SchemaMapperInterface    $schemaMapper   Resolves the source schema.
 	 * @param MagicMapper     $magicMapper    Searches the source table.
 	 * @param LoggerInterface $logger         Logs a view that cannot back a type.
@@ -68,7 +68,7 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	 */
 	public function __construct(
 		private readonly ViewMapperInterface $viewMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapper $magicMapper,
 		private readonly LoggerInterface $logger,

@@ -31,12 +31,12 @@ use JsonException;
 use OCA\OpenRegister\Db\Chunk;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
-use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\TextExtraction\EmlParser;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
@@ -136,17 +136,17 @@ class TextExtractionService {
 	/**
 	 * Constructor
 	 *
-	 * @param FileMapper $fileMapper Mapper for Nextcloud files
+	 * @param FileMapperInterface $fileMapper Mapper for Nextcloud files
 	 * @param ChunkMapper $chunkMapper Mapper for chunks
 	 * @param IRootFolder $rootFolder Nextcloud root folder
 	 * @param IDBConnection $db Database connection
 	 * @param LoggerInterface $logger Logger
 	 * @param MagicMapper $objectEntityMapper Mapper for object entities
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schemas
-	 * @param RegisterMapper $registerMapper Mapper for registers
+	 * @param RegisterMapperInterface $registerMapper Mapper for registers
 	 * @param EntityRecognitionHandler $entityHandler Handler for entity recognition
 	 * @param GdprEntityMapper $entityMapper Mapper for GDPR entities
-	 * @param EntityRelationMapper $entityRelationMapper Mapper for entity relations
+	 * @param EntityRelationMapperInterface $entityRelationMapper Mapper for entity relations
 	 * @param SettingsServiceInterface $settingsService Settings service
 	 * @param RiskLevelService $riskLevelService Risk level computation service
 	 * @param EmlParser $emlParser EML message-parser (used for message/rfc822
@@ -161,17 +161,17 @@ class TextExtractionService {
 	 * @SuppressWarnings(PHPMD.ShortVariable)          $db is a well-known PHP idiom for a database connection parameter.
 	 */
 	public function __construct(
-		private readonly FileMapper $fileMapper,
+		private readonly FileMapperInterface $fileMapper,
 		private readonly ChunkMapper $chunkMapper,
 		private readonly IRootFolder $rootFolder,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 		private readonly MagicMapper $objectEntityMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly EntityRecognitionHandler $entityHandler,
 		private readonly GdprEntityMapper $entityMapper,
-		private readonly EntityRelationMapper $entityRelationMapper,
+		private readonly EntityRelationMapperInterface $entityRelationMapper,
 		private readonly SettingsServiceInterface $settingsService,
 		private readonly RiskLevelService $riskLevelService,
 		private readonly EmlParser $emlParser,

@@ -48,7 +48,7 @@ use OCA\OpenRegister\Db\ImportPreviewMapper;
 use OCA\OpenRegister\Db\ImportPreviewRow;
 use OCA\OpenRegister\Db\ImportPreviewRowMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ImportService;
@@ -110,7 +110,7 @@ class ImportPreviewService {
 	 * @param ImportService $importService The row transform the write path uses.
 	 * @param ObjectService $objectService The write path.
 	 * @param ValidateObject $validateObject Schema validation.
-	 * @param RegisterMapper $registerMapper Register lookup.
+	 * @param RegisterMapperInterface $registerMapper Register lookup.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
 	 * @param LoggerInterface $logger Logger.
 	 */
@@ -124,7 +124,7 @@ class ImportPreviewService {
 		private readonly ImportService $importService,
 		private readonly ObjectService $objectService,
 		private readonly ValidateObject $validateObject,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {

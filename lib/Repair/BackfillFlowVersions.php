@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Repair;
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionPin;
@@ -257,7 +257,7 @@ class BackfillFlowVersions implements IRepairStep {
 		$flow->setLifecycleStatus(FlowVersion::STATUS_PUBLISHED);
 		$this->container->get(FlowMapper::class)->update($flow);
 
-		$pinned = $this->container->get(FlowRunMapper::class)
+		$pinned = $this->container->get(FlowRunMapperInterface::class)
 			->pinUnversionedActive(flowUuid: $flowId, version: 1);
 
 		return ['published' => true, 'pinned' => $pinned];

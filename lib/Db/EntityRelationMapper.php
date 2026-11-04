@@ -48,7 +48,7 @@ use Psr\Log\LoggerInterface;
  *
  * @template-extends QBMapper<EntityRelation>
  */
-class EntityRelationMapper extends QBMapper {
+class EntityRelationMapper extends QBMapper implements EntityRelationMapperInterface {
 	/**
 	 * The optional fields buildRelationFromRow() sets from a row, in order:
 	 * [setter, cast, whether a null value leaves the field unset].
@@ -574,7 +574,7 @@ class EntityRelationMapper extends QBMapper {
 	 * clean up.
 	 *
 	 * ONLY the entities actually redacted are marked: each `entity_id` present
-	 * in `$placeholderByEntityId` (i.e. the entities that were substituted into
+	 * in `$placeholders` (i.e. the entities that were substituted into
 	 * the document) has all its non-skipped relations on the file set to
 	 * `anonymized = true` with `anonymized_value` = its exact placeholder.
 	 *
@@ -587,7 +587,7 @@ class EntityRelationMapper extends QBMapper {
 	 * honoured (skipped rows untouched).
 	 *
 	 * @param int $fileId The file ID.
-	 * @param array<int|string, string> $placeholderByEntityId Keys are int|string,
+	 * @param array<int|string, string> $placeholders Keys are int|string,
 	 *        not string: a stringified entity id is a canonical numeric string,
 	 *        which PHP coerces to an int array key. Map of entity id → the
 	 *                                                     exact placeholder emitted for it
@@ -597,10 +597,10 @@ class EntityRelationMapper extends QBMapper {
 	 */
 	public function markAsAnonymizedWithPlaceholders(
 		int $fileId,
-		array $placeholderByEntityId,
+		array $placeholders,
 	): int {
 		$total = 0;
-		foreach ($placeholderByEntityId as $entityId => $placeholder) {
+		foreach ($placeholders as $entityId => $placeholder) {
 			$qb = $this->db->getQueryBuilder();
 			$qb->update($this->getTableName())
 				->set('anonymized', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL))

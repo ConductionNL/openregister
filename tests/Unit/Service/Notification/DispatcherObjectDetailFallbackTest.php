@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
@@ -95,7 +96,7 @@ class DispatcherObjectDetailFallbackTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static fn (string $id) => match ($id) {
-				RegisterMapper::class => $registerMapper,
+				RegisterMapperInterface::class => $registerMapper,
 				SchemaMapperInterface::class => $schemaMapper,
 				IEventDispatcher::class => $dispatcher,
 				default => null,
