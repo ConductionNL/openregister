@@ -108,6 +108,8 @@ final class MultiSchemaSearch {
 	 * @param bool $multitenancy Whether multitenancy applies.
 	 *
 	 * @return self This search.
+	 *
+	 * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
 	 */
 	public function securedBy(bool $rbac, bool $multitenancy): self {
 		$this->rbac         = $rbac;
@@ -121,6 +123,8 @@ final class MultiSchemaSearch {
 	 * @param array $query The query.
 	 *
 	 * @return array The query with `_rbac` and `_multitenancy`.
+	 *
+	 * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
 	 */
 	public function withFlags(array $query): array {
 		$query['_rbac']         = $this->rbac;

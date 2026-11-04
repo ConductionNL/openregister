@@ -13369,7 +13369,7 @@ class MagicMapper extends AbstractObjectMapper {
 	/**
 	 * The owning register of a schema, loaded on first use.
 	 *
-	 * find() runs with _multitenancy:false so it resolves regardless of the active
+	 * The lookup runs with _multitenancy:false so it resolves regardless of the active
 	 * organisation; a register that fails to load is logged and answers null.
 	 *
 	 * @param MultiSchemaSearch $search   The search.
