@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Db\FileMapperInterface;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\Files\IRootFolder;
 
 /**
@@ -37,7 +37,7 @@ final class FileStore {
 	 * Bundle the services.
 	 *
 	 * @param FileService   $fileService   The file service.
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectOperationsInterface $objectService The object service.
 	 * @param IRootFolder   $rootFolder    The root folder.
 	 * @param ?FileMapperInterface   $fileMapper    The file mapper, null when absent.
 	 *
@@ -45,7 +45,7 @@ final class FileStore {
 	 */
 	public function __construct(
 		public readonly FileService $fileService,
-		public readonly ObjectService $objectService,
+		public readonly ObjectOperationsInterface $objectService,
 		public readonly IRootFolder $rootFolder,
 		public readonly ?FileMapperInterface $fileMapper = null,
 	) {
