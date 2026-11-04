@@ -56,6 +56,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Credential\CredentialBrokerService
  * @uses \OCA\OpenRegister\Service\Credential\CredentialUpdateRequest
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver
  */
 class CredentialControllerTest extends TestCase {
 

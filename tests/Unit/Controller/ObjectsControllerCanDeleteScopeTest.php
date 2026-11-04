@@ -56,6 +56,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Dto\DeletionAnalysis
  * @uses \OCA\OpenRegister\Exception\ReferentialIntegrityException
+ * @uses \OCA\OpenRegister\Service\WritePhaseProbe
  */
 class ObjectsControllerCanDeleteScopeTest extends TestCase {
 
