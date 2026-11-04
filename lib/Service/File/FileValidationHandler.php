@@ -46,6 +46,77 @@ use Psr\Log\LoggerInterface;
  */
 class FileValidationHandler {
 	/**
+	 * File extensions that are never accepted as uploads.
+	 *
+	 * @var array<int, string>
+	 */
+	private const DANGEROUS_EXTENSIONS = [
+		// Windows executables.
+		'exe',
+		'bat',
+		'cmd',
+		'com',
+		'msi',
+		'scr',
+		'vbs',
+		'vbe',
+		'js',
+		'jse',
+		'wsf',
+		'wsh',
+		'ps1',
+		'dll',
+		// Unix/Linux executables.
+		'sh',
+		'bash',
+		'csh',
+		'ksh',
+		'zsh',
+		'run',
+		'bin',
+		'app',
+		'deb',
+		'rpm',
+		// Scripts and code.
+		'php',
+		'phtml',
+		'php3',
+		'php4',
+		'php5',
+		'phps',
+		'phar',
+		'py',
+		'pyc',
+		'pyo',
+		'pyw',
+		'pl',
+		'pm',
+		'cgi',
+		'rb',
+		'rbw',
+		'jar',
+		'war',
+		'ear',
+		'class',
+		// Containers and packages.
+		'appimage',
+		'snap',
+		'flatpak',
+		// MacOS.
+		'dmg',
+		'pkg',
+		'command',
+		// Android.
+		'apk',
+		// Other dangerous.
+		'elf',
+		'out',
+		'o',
+		'so',
+		'dylib',
+	];
+
+	/**
 	 * Constructor for FileValidationHandler.
 	 *
 	 * @param FileMapper $fileMapper File mapper for ownership operations.
@@ -78,81 +149,12 @@ class FileValidationHandler {
 	 * @psalm-return   void
 	 * @phpstan-return void
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive list of dangerous extensions requires extensive code
-	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function blockExecutableFile(string $fileName, string $fileContent): void {
-		// List of dangerous executable extensions.
-		$dangerousExtensions = [
-			// Windows executables.
-			'exe',
-			'bat',
-			'cmd',
-			'com',
-			'msi',
-			'scr',
-			'vbs',
-			'vbe',
-			'js',
-			'jse',
-			'wsf',
-			'wsh',
-			'ps1',
-			'dll',
-			// Unix/Linux executables.
-			'sh',
-			'bash',
-			'csh',
-			'ksh',
-			'zsh',
-			'run',
-			'bin',
-			'app',
-			'deb',
-			'rpm',
-			// Scripts and code.
-			'php',
-			'phtml',
-			'php3',
-			'php4',
-			'php5',
-			'phps',
-			'phar',
-			'py',
-			'pyc',
-			'pyo',
-			'pyw',
-			'pl',
-			'pm',
-			'cgi',
-			'rb',
-			'rbw',
-			'jar',
-			'war',
-			'ear',
-			'class',
-			// Containers and packages.
-			'appimage',
-			'snap',
-			'flatpak',
-			// MacOS.
-			'dmg',
-			'pkg',
-			'command',
-			// Android.
-			'apk',
-			// Other dangerous.
-			'elf',
-			'out',
-			'o',
-			'so',
-			'dylib',
-		];
-
 		// Check file extension.
 		$extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-		if (in_array($extension, $dangerousExtensions, true) === true) {
+		if (in_array($extension, self::DANGEROUS_EXTENSIONS, true) === true) {
 			$this->logger->warning(
 				message: '[FileValidationHandler] Executable file upload blocked',
 				context: [
