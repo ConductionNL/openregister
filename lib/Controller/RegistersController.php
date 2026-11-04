@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
@@ -1035,113 +1036,152 @@ class RegistersController extends Controller {
 	 */
 	public function export(int $id): JSONResponse|DataDownloadResponse {
 		try {
-			// Get export format from query parameter.
-			$format = $this->request->getParam(key: 'format', default: 'configuration');
+			$format          = $this->request->getParam(key: 'format', default: 'configuration');
 			$includeObjParam = $this->request->getParam(key: 'includeObjects', default: false);
-			$includeObjects = filter_var($includeObjParam, FILTER_VALIDATE_BOOLEAN);
-			$register = $this->registerService->find($id);
+			$includeObjects  = filter_var($includeObjParam, FILTER_VALIDATE_BOOLEAN);
+			$register        = $this->registerService->find($id);
 
 			switch ($format) {
 				case 'excel':
-					$spreadsheet = $this->exportService->exportToExcel(
-						register: $register,
-						schema: null,
-						filters: [],
-						currentUser: $this->userSession->getUser()
-					);
-					$writer = new Xlsx($spreadsheet);
-					$slug = $register->getSlug() ?? 'register';
-					$date = (new DateTime())->format('Y-m-d_His');
-					$filename = sprintf('%s_%s.xlsx', $slug, $date);
-					ob_start();
-					$writer->save('php://output');
-					$content = ob_get_clean();
-					$mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-					return new DataDownloadResponse($content, $filename, $mime);
+					return $this->exportRegisterToExcel(register: $register);
 				case 'csv':
-					// CSV exports require a specific schema.
-					$schemaId = $this->request->getParam('schema');
-
-					if ($schemaId === null || $schemaId === '') {
-						// If no schema specified, return error (CSV cannot handle multiple schemas).
-						$errMsg = 'CSV export requires a specific schema to be selected';
-						return new JSONResponse(data: ['error' => $errMsg], statusCode: 400);
-					}
-
-					$schema = $this->schemaMapper->find($schemaId);
-					$csv = $this->exportService->exportToCsv(
-						register: $register,
-						schema: $schema,
-						filters: [],
-						currentUser: $this->userSession->getUser()
-					);
-					$filename = sprintf(
-						'%s_%s_%s.csv',
-						$register->getSlug() ?? 'register',
-						$schema->getSlug() ?? 'schema',
-						(new DateTime())->format('Y-m-d_His')
-					);
-					return new DataDownloadResponse($csv, $filename, 'text/csv');
 				case 'pdf':
-					// PDF exports require a specific schema, same as CSV — a coherent
-					// single table needs one column set.
-					$schemaId = $this->request->getParam('schema');
-
-					if ($schemaId === null || $schemaId === '') {
-						$errMsg = 'PDF export requires a specific schema to be selected';
-						return new JSONResponse(data: ['error' => $errMsg], statusCode: 400);
-					}
-
-					$schema = $this->schemaMapper->find($schemaId);
-
-					try {
-						$pdf = $this->exportService->exportToPdf(
-							register: $register,
-							schema: $schema,
-							filters: [],
-							currentUser: $this->userSession->getUser()
-						);
-					} catch (ExportTooLargeException $e) {
-						return new JSONResponse(
-							data: [
-								'error' => 'export_too_large',
-								'message' => $e->getMessage(),
-								'rowCount' => $e->getRowCount(),
-								'maxRows' => $e->getMaxRows(),
-							],
-							statusCode: ExportTooLargeException::HTTP_STATUS
-						);
-					} catch (OfficeServerRequiredException $e) {
-						return new JSONResponse(data: $e->toResponseData(), statusCode: OfficeServerRequiredException::HTTP_STATUS);
-					}
-
-					$filename = sprintf(
-						'%s_%s_%s.pdf',
-						$register->getSlug() ?? 'register',
-						$schema->getSlug() ?? 'schema',
-						(new DateTime())->format('Y-m-d_His')
-					);
-					return new DataDownloadResponse($pdf, $filename, 'application/pdf');
+					return $this->exportRegisterSchemaTable(register: $register, format: $format);
 				case 'configuration':
 				default:
-					$exportData = $this->configurationService->exportConfig(
-						input: $register,
-						includeObjects: $includeObjects
-					);
-					$jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-					if ($jsonContent === false) {
-						throw new Exception('Failed to encode register data to JSON');
-					}
-
-					$slug = $register->getSlug() ?? 'register';
-					$date = (new DateTime())->format('Y-m-d_His');
-					$filename = sprintf('%s_%s.json', $slug, $date);
-					return new DataDownloadResponse($jsonContent, $filename, 'application/json');
-			}//end switch
+					return $this->exportRegisterConfiguration(register: $register, includeObjects: $includeObjects);
+			}
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => 'Failed to export register: ' . $e->getMessage()], statusCode: 400);
 		}//end try
 	}//end export()
+
+	/**
+	 * A register's objects as an Excel download.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return DataDownloadResponse The download.
+	 */
+	private function exportRegisterToExcel(Register $register): DataDownloadResponse {
+		$spreadsheet = $this->exportService->exportToExcel(
+			register: $register,
+			schema: null,
+			filters: [],
+			currentUser: $this->userSession->getUser()
+		);
+		$writer   = new Xlsx($spreadsheet);
+		$slug     = $register->getSlug() ?? 'register';
+		$date     = (new DateTime())->format('Y-m-d_His');
+		$filename = sprintf('%s_%s.xlsx', $slug, $date);
+		ob_start();
+		$writer->save('php://output');
+		$content = ob_get_clean();
+		$mime    = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+		return new DataDownloadResponse($content, $filename, $mime);
+	}//end exportRegisterToExcel()
+
+	/**
+	 * One schema of a register as a CSV or PDF download.
+	 *
+	 * Both formats hold a single table, so they need one column set: a schema is required.
+	 *
+	 * @param Register $register The register.
+	 * @param string   $format   'csv' or 'pdf'.
+	 *
+	 * @return JSONResponse|DataDownloadResponse The download, or 400 without a schema.
+	 */
+	private function exportRegisterSchemaTable(Register $register, string $format): JSONResponse|DataDownloadResponse {
+		$schemaId = $this->request->getParam('schema');
+		if ($schemaId === null || $schemaId === '') {
+			$errMsg = strtoupper($format) . ' export requires a specific schema to be selected';
+			return new JSONResponse(data: ['error' => $errMsg], statusCode: 400);
+		}
+
+		$schema = $this->schemaMapper->find($schemaId);
+		if ($format === 'pdf') {
+			return $this->exportRegisterSchemaToPdf(register: $register, schema: $schema);
+		}
+
+		$csv = $this->exportService->exportToCsv(
+			register: $register,
+			schema: $schema,
+			filters: [],
+			currentUser: $this->userSession->getUser()
+		);
+		$filename = sprintf(
+			'%s_%s_%s.csv',
+			$register->getSlug() ?? 'register',
+			$schema->getSlug() ?? 'schema',
+			(new DateTime())->format('Y-m-d_His')
+		);
+		return new DataDownloadResponse($csv, $filename, 'text/csv');
+	}//end exportRegisterSchemaTable()
+
+	/**
+	 * One schema of a register as a PDF download.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return JSONResponse|DataDownloadResponse The download, or the refusal when the export is too large or needs an office server.
+	 */
+	private function exportRegisterSchemaToPdf(Register $register, Schema $schema): JSONResponse|DataDownloadResponse {
+		try {
+			$pdf = $this->exportService->exportToPdf(
+				register: $register,
+				schema: $schema,
+				filters: [],
+				currentUser: $this->userSession->getUser()
+			);
+		} catch (ExportTooLargeException $e) {
+			return new JSONResponse(
+				data: [
+					'error'    => 'export_too_large',
+					'message'  => $e->getMessage(),
+					'rowCount' => $e->getRowCount(),
+					'maxRows'  => $e->getMaxRows(),
+				],
+				statusCode: ExportTooLargeException::HTTP_STATUS
+			);
+		} catch (OfficeServerRequiredException $e) {
+			return new JSONResponse(data: $e->toResponseData(), statusCode: OfficeServerRequiredException::HTTP_STATUS);
+		}
+
+		$filename = sprintf(
+			'%s_%s_%s.pdf',
+			$register->getSlug() ?? 'register',
+			$schema->getSlug() ?? 'schema',
+			(new DateTime())->format('Y-m-d_His')
+		);
+		return new DataDownloadResponse($pdf, $filename, 'application/pdf');
+	}//end exportRegisterSchemaToPdf()
+
+	/**
+	 * A register's configuration as a JSON download.
+	 *
+	 * @param Register $register       The register.
+	 * @param bool     $includeObjects Whether the export carries the register's objects.
+	 *
+	 * @return DataDownloadResponse The download.
+	 *
+	 * @throws Exception When the configuration cannot be encoded as JSON.
+	 */
+	private function exportRegisterConfiguration(Register $register, bool $includeObjects): DataDownloadResponse {
+		$exportData  = $this->configurationService->exportConfig(
+			input: $register,
+			includeObjects: $includeObjects
+		);
+		$jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+		if ($jsonContent === false) {
+			throw new Exception('Failed to encode register data to JSON');
+		}
+
+		$slug     = $register->getSlug() ?? 'register';
+		$date     = (new DateTime())->format('Y-m-d_His');
+		$filename = sprintf('%s_%s.json', $slug, $date);
+		return new DataDownloadResponse($jsonContent, $filename, 'application/json');
+	}//end exportRegisterConfiguration()
 
 	/**
 	 * Download an empty import template for a schema
@@ -1249,131 +1289,39 @@ class RegistersController extends Controller {
 
 		try {
 			$register = $this->registerMapper->find($id);
-
-			$data = $this->request->getParams();
-			$owner = $data['owner'] ?? '';
-			$repo = $data['repo'] ?? '';
-			$path = $data['path'] ?? '';
-			$branch = $data['branch'] ?? 'main';
-			$commitMessage = $data['commitMessage'] ?? "Update register OAS: {$register->getTitle()}";
-
-			if (empty($owner) === true || empty($repo) === true) {
+			$target   = $this->gitHubPublishTarget(register: $register);
+			if (empty($target['owner']) === true || empty($target['repo']) === true) {
 				return new JSONResponse(data: ['error' => 'Owner and repo parameters are required'], statusCode: 400);
-			}
-
-			// Strip leading slash from path.
-			$path = ltrim($path, '/');
-
-			// If path is empty, use a default filename based on register slug.
-			if (empty($path) === true) {
-				$slug = $register->getSlug() ?? 'register';
-				$path = $slug . '_openregister.json';
 			}
 
 			$this->logger->info(
 				message: '[RegistersController] Publishing register OAS to GitHub',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'register_id' => $id,
-					'register_slug' => $register->getSlug(),
-					'owner' => $owner,
-					'repo' => $repo,
-					'path' => $path,
-					'branch' => $branch,
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'register_id' => $id, 'register_slug' => $register->getSlug()]
+					+ array_intersect_key($target, array_flip(['owner', 'repo', 'path', 'branch']))
 			);
 
-			// Generate real OAS (OpenAPI Specification) for the register.
-			// Do NOT add x-openregister metadata - this is a pure OAS file, not a configuration file.
+			// A pure OAS file, not a configuration file: no x-openregister metadata.
 			$oasData = $this->oasService->createOas((string)$register->getId());
-
-			$jsonContent = json_encode($oasData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-
-			// Check if file already exists (for updates).
-			$fileSha = null;
-			try {
-				$fileSha = $this->githubService->getFileSha(owner: $owner, repo: $repo, path: $path, branch: $branch);
-			} catch (Exception $e) {
-				// File doesn't exist, which is fine for new files.
-				$this->logger->debug(
-					message: '[RegistersController] File does not exist, will create new file',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'path' => $path]
-				);
-			}
-
-			// Publish to GitHub.
-			$result = $this->githubService->publishConfiguration(
-				owner: $owner,
-				repo: $repo,
-				path: $path,
-				branch: $branch,
-				content: $jsonContent,
-				commitMessage: $commitMessage,
-				fileSha: $fileSha
+			$result  = $this->githubService->publishConfiguration(
+				owner: $target['owner'],
+				repo: $target['repo'],
+				path: $target['path'],
+				branch: $target['branch'],
+				content: json_encode($oasData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+				commitMessage: $target['commitMessage'],
+				fileSha: $this->gitHubFileSha(target: $target)
 			);
 
 			$this->logger->info(
 				message: "[RegistersController] Successfully published register OAS {$register->getTitle()} to GitHub",
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'owner' => $owner,
-					'repo' => $repo,
-					'branch' => $branch,
-					'path' => $path,
-					'file_url' => $result['file_url'] ?? null,
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'owner' => $target['owner'], 'repo' => $target['repo']]
+					+ ['branch' => $target['branch'], 'path' => $target['path'], 'file_url' => $result['file_url'] ?? null]
 			);
 
-			// Check if published to default branch (required for Code Search indexing).
-			$defaultBranch = null;
-			try {
-				$repoInfo = $this->githubService->getRepositoryInfo(owner: $owner, repo: $repo);
-				$defaultBranch = $repoInfo['default_branch'] ?? 'main';
-			} catch (Exception $e) {
-				$this->logger->warning(
-					message: '[RegistersController] Could not fetch repository default branch',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'owner' => $owner,
-						'repo' => $repo,
-						'error' => $e->getMessage(),
-					]
-				);
-			}
-
-			$message = 'Register OAS published successfully to GitHub';
-			if (($defaultBranch !== null && $defaultBranch !== '') === true && $branch !== $defaultBranch) {
-				$searchNote = 'GitHub Code Search primarily indexes the default branch.';
-				$delayNote = 'This may not appear in search results immediately.';
-				$branchNote = "Note: Published to branch '{$branch}' (default is '{$defaultBranch}').";
-				$message .= ". {$branchNote} {$searchNote} {$delayNote}";
-			}
-
-			if (($defaultBranch === null || $defaultBranch === '') === true || $branch === $defaultBranch) {
-				$message .= '. Note: GitHub Code Search may take a few minutes to index new files.';
-			}
-
-			// Determine indexing note.
-			$indexingNote = 'File published successfully. GitHub Code Search indexing may take a few minutes.';
-			if (($defaultBranch !== null) === true && $branch !== $defaultBranch) {
-				$indexingNote = "Published to non-default branch. For discovery, publish to '{$defaultBranch}' branch.";
-			}
-
+			$notes = $this->gitHubBranchNotes(target: $target, defaultBranch: $this->gitHubDefaultBranch(target: $target));
 			return new JSONResponse(
-				data: [
-					'success' => true,
-					'message' => $message,
-					'registerId' => $register->getId(),
-					'commit_sha' => $result['commit_sha'],
-					'commit_url' => $result['commit_url'],
-					'file_url' => $result['file_url'],
-					'branch' => $branch,
-					'default_branch' => $defaultBranch,
-					'indexing_note' => $indexingNote,
-				],
+				data: ['success' => true, 'message' => $notes['message'], 'registerId' => $register->getId()]
+					+ ['commit_sha' => $result['commit_sha'], 'commit_url' => $result['commit_url'], 'file_url' => $result['file_url']] + $notes,
 				statusCode: 200
 			);
 		} catch (DoesNotExistException $e) {
@@ -1391,6 +1339,97 @@ class RegistersController extends Controller {
 			return new JSONResponse(data: ['error' => 'Failed to publish register OAS: ' . $e->getMessage()], statusCode: 500);
 		}//end try
 	}//end publishToGitHub()
+
+	/**
+	 * Where to publish a register's OAS, from the request.
+	 *
+	 * The path loses its leading slash and defaults to `<slug>_openregister.json`.
+	 *
+	 * @param Register $register The register to publish.
+	 *
+	 * @return array{owner: string, repo: string, path: string, branch: string, commitMessage: string} The target.
+	 */
+	private function gitHubPublishTarget(Register $register): array {
+		$data = $this->request->getParams();
+		$path = ltrim($data['path'] ?? '', '/');
+		if (empty($path) === true) {
+			$path = ($register->getSlug() ?? 'register') . '_openregister.json';
+		}
+
+		return [
+			'owner'         => $data['owner'] ?? '',
+			'repo'          => $data['repo'] ?? '',
+			'path'          => $path,
+			'branch'        => $data['branch'] ?? 'main',
+			'commitMessage' => $data['commitMessage'] ?? "Update register OAS: {$register->getTitle()}",
+		];
+	}//end gitHubPublishTarget()
+
+	/**
+	 * The sha of the file at the publish target, null when it does not exist yet.
+	 *
+	 * @param array{owner: string, repo: string, path: string, branch: string} $target The publish target.
+	 *
+	 * @return string|null The sha.
+	 */
+	private function gitHubFileSha(array $target): ?string {
+		try {
+			return $this->githubService->getFileSha(owner: $target['owner'], repo: $target['repo'], path: $target['path'], branch: $target['branch']);
+		} catch (Exception $e) {
+			$this->logger->debug(
+				message: '[RegistersController] File does not exist, will create new file',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'path' => $target['path']]
+			);
+			return null;
+		}
+	}//end gitHubFileSha()
+
+	/**
+	 * The default branch of the target repository, null when GitHub could not tell.
+	 *
+	 * @param array{owner: string, repo: string} $target The publish target.
+	 *
+	 * @return string|null The default branch.
+	 */
+	private function gitHubDefaultBranch(array $target): ?string {
+		try {
+			$repoInfo = $this->githubService->getRepositoryInfo(owner: $target['owner'], repo: $target['repo']);
+			return $repoInfo['default_branch'] ?? 'main';
+		} catch (Exception $e) {
+			$this->logger->warning(
+				message: '[RegistersController] Could not fetch repository default branch',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'owner' => $target['owner'], 'repo' => $target['repo'], 'error' => $e->getMessage()]
+			);
+			return null;
+		}
+	}//end gitHubDefaultBranch()
+
+	/**
+	 * The branch part of a publish response, with its Code Search notes.
+	 *
+	 * GitHub Code Search primarily indexes the default branch, so a publish elsewhere says so.
+	 *
+	 * @param array{branch: string} $target        The publish target.
+	 * @param string|null           $defaultBranch The repository's default branch, if known.
+	 *
+	 * @return array{message: string, branch: string, default_branch: string|null, indexing_note: string} The fields.
+	 */
+	private function gitHubBranchNotes(array $target, ?string $defaultBranch): array {
+		$branch  = $target['branch'];
+		$message = 'Register OAS published successfully to GitHub. Note: GitHub Code Search may take a few minutes to index new files.';
+		if ($defaultBranch !== null && $defaultBranch !== '' && $branch !== $defaultBranch) {
+			$message = 'Register OAS published successfully to GitHub'
+				. ". Note: Published to branch '{$branch}' (default is '{$defaultBranch}')."
+				. ' GitHub Code Search primarily indexes the default branch. This may not appear in search results immediately.';
+		}
+
+		$indexingNote = 'File published successfully. GitHub Code Search indexing may take a few minutes.';
+		if ($defaultBranch !== null && $branch !== $defaultBranch) {
+			$indexingNote = "Published to non-default branch. For discovery, publish to '{$defaultBranch}' branch.";
+		}
+
+		return ['message' => $message, 'branch' => $branch, 'default_branch' => $defaultBranch, 'indexing_note' => $indexingNote];
+	}//end gitHubBranchNotes()
 
 	/**
 	 * Import data into a register
