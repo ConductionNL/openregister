@@ -51,6 +51,7 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects
  * @covers \OCA\OpenRegister\Service\Object\BulkSafeguardRun
  * @uses   \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @uses   \OCA\OpenRegister\Service\Object\PermissionCheck
  * @uses   \OCA\OpenRegister\Service\Object\DraftCallerRule
  * @uses   \OCA\OpenRegister\Service\Object\DraftStatusPolicy
