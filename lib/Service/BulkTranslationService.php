@@ -144,11 +144,7 @@ class BulkTranslationService {
 			return ['translated' => false, 'text' => 'no-source-value'];
 		}
 
-		if (is_array($existing) === true
-			&& isset($existing[$request->toLong]) === true
-			&& is_string($existing[$request->toLong]) === true
-			&& $existing[$request->toLong] !== ''
-		) {
+		if ($this->targetSlotFilled(existing: $existing, toLong: $request->toLong) === true) {
 			return ['translated' => false, 'text' => 'target-slot-already-filled'];
 		}
 
@@ -196,6 +192,21 @@ class BulkTranslationService {
 
 		return null;
 	}//end sourceValue()
+
+	/**
+	 * Whether a property already holds a non-empty target-language value.
+	 *
+	 * @param mixed  $existing The property's stored value.
+	 * @param string $toLong   Target language code.
+	 *
+	 * @return bool True when the target slot is filled.
+	 */
+	private function targetSlotFilled(mixed $existing, string $toLong): bool {
+		return is_array($existing) === true
+			&& isset($existing[$toLong]) === true
+			&& is_string($existing[$toLong]) === true
+			&& $existing[$toLong] !== '';
+	}//end targetSlotFilled()
 
 	/**
 	 * Write a machine translation into the sidecar, so search and completeness queries see it
