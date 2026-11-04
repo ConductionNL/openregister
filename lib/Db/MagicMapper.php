@@ -3652,148 +3652,38 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return (bool|int|mixed|null|string)[] Column definition.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.StaticAccess)          ObjectHandling::relates() is a pure enum-style helper
+	 * @spec openspec/specs/magic-table-columns/spec.md
 	 */
 	private function mapSchemaPropertyToColumn(string $propertyName, array $propertyConfig): array {
 		$type = $propertyConfig['type'] ?? 'string';
-		$format = $propertyConfig['format'] ?? null;
-
-		// Sanitize column name.
 		$columnName = $this->sanitizeColumnName(name: $propertyName);
 
 		switch ($type) {
 			case 'string':
-				return $this->mapStringProperty(columnName: $columnName, propertyConfig: $propertyConfig, format: $format);
+				return $this->mapStringProperty(columnName: $columnName, propertyConfig: $propertyConfig, format: $propertyConfig['format'] ?? null);
 			case 'integer':
 				return $this->mapIntegerProperty(columnName: $columnName, propertyConfig: $propertyConfig);
 			case 'number':
 				return $this->mapNumberProperty(columnName: $columnName, propertyConfig: $propertyConfig);
 			case 'boolean':
-				// Determine default value.
-				$defaultValue = null;
-				if (array_key_exists('default', $propertyConfig) === true) {
-					$defaultValue = $propertyConfig['default'];
-				}
-
-				// Handle 'required' - can be boolean (property level) or array (schema level).
-				$required = $propertyConfig['required'] ?? false;
-				$isRequired = false;
-				if (is_array($required) === true) {
-					$isRequired = in_array($propertyName, $required);
-				} elseif (is_bool($required) === true) {
-					$isRequired = $required;
-				}
 				return [
 					'name' => $columnName,
 					'type' => 'boolean',
-					'nullable' => $isRequired === false,
-					// PropertyConfig may contain 'default' key even if not in type definition.
-					'default' => $defaultValue,
+					'nullable' => $this->isRequiredIn(name: $propertyName, propertyConfig: $propertyConfig) === false,
+					'default' => $propertyConfig['default'] ?? null,
 				];
-
 			case 'file':
-				// File properties store file IDs (integers) after processing by FilePropertyHandler.
-				// Use TEXT to safely store the file ID reference without JSON parsing issues.
-				// This prevents "invalid input syntax for type json" errors if raw base64 data.
-				// accidentally gets stored instead of the processed file ID.
-				$required = $propertyConfig['required'] ?? false;
-				$isRequired = false;
-				if (is_array($required) === true) {
-					$isRequired = in_array($propertyName, $required);
-				} elseif (is_bool($required) === true) {
-					$isRequired = $required;
-				}
+				// A file property stores the file ID after FilePropertyHandler ran. TEXT,
+				// not json: raw base64 stored by accident must not fail as invalid json.
 				return [
 					'name' => $columnName,
 					'type' => 'text',
-					'nullable' => $isRequired === false,
+					'nullable' => $this->isRequiredIn(name: $propertyName, propertyConfig: $propertyConfig) === false,
 					'comment' => 'File ID reference',
 				];
-
 			case 'array':
 			case 'object':
-				// Handle 'required' - can be boolean (property level) or array (schema level).
-				$required = $propertyConfig['required'] ?? false;
-				$isRequired = false;
-				if (is_array($required) === true) {
-					$isRequired = in_array($propertyName, $required);
-				} elseif (is_bool($required) === true) {
-					$isRequired = $required;
-				}
-
-				// Check if this is an object reference (related-object).
-				// For object references, we store only the UUID string instead of full JSON object.
-				// This allows CSV imports with UUID strings to work directly.
-				$objectConfig = $propertyConfig['objectConfiguration'] ?? [];
-				$handling = $objectConfig['handling'] ?? null;
-				$hasRef = isset($propertyConfig['$ref']);
-
-				// Also check for nested items.oneOf[] pattern (e.g., moduleB with multiple possible types).
-				// Pattern: { "type": "object", "items": { "oneOf": [{ "$ref": "...", "objectConfiguration": {...} }] } }.
-				if ($handling === null && isset($propertyConfig['items']['oneOf']) === true) {
-					foreach ($propertyConfig['items']['oneOf'] as $oneOfItem) {
-						if (isset($oneOfItem['objectConfiguration']['handling']) === true
-							&& ObjectHandling::relates($oneOfItem['objectConfiguration']['handling']) === true
-						) {
-							$handling = $oneOfItem['objectConfiguration']['handling'];
-							$hasRef = isset($oneOfItem['$ref']);
-							break;
-						}
-					}
-				}
-
-				// A relating property stores a bare UUID STRING, so it needs a VARCHAR
-				// column — never a json one. `related-schema` used to miss this branch and
-				// got a json column, into which the save path then wrote a raw UUID:
-				// "SQLSTATE[22P02]: invalid input syntax for type json ... Token
-				// "b25f5f9c" is invalid", surfaced to the user as a bare 403.
-				if ($type === 'object' && $hasRef === true && ObjectHandling::relates($handling) === true) {
-					// This is a reference to another object - store as UUID string.
-					$this->logger->debug(
-						message: '[MagicMapper] Detected object reference property, using VARCHAR for UUID storage',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'propertyName' => $propertyName,
-							'$ref' => $propertyConfig['$ref'] ?? 'nested in items.oneOf',
-							'handling' => $handling,
-						]
-					);
-
-					return [
-						'name' => $columnName,
-						'type' => 'string',
-						'length' => 255,
-						'nullable' => $isRequired === false,
-						'comment' => 'Object reference (UUID)',
-					];
-				}//end if
-
-				// For object-typed properties, use an order-preserving JSON column type.
-				// PostgreSQL JSONB hashes keys and loses client-supplied insertion order, which
-				// breaks object-keyed schemas where order is semantically meaningful (e.g. the
-				// openconnector mapping rules, where drag-to-reorder must round-trip via the
-				// PUT API). See issue #1720. Plain JSON stores the document verbatim and
-				// preserves PHP/JSON-encoder insertion order. Arrays continue to use JSONB
-				// because (a) JSON arrays preserve element order regardless of column type
-				// and (b) MagicSearchHandler/MagicFacetHandler rely on jsonb containment
-				// operators (`@>`, `jsonb_array_elements_text`) for array filtering.
-				if ($type === 'object') {
-					return [
-						'name' => $columnName,
-						'type' => 'json_ordered',
-						'nullable' => $isRequired === false,
-						'comment' => 'Order-preserving JSON (object-typed schema property)',
-					];
-				}
-				return [
-					'name' => $columnName,
-					'type' => 'json',
-					'nullable' => $isRequired === false,
-				];
-
+				return $this->mapStructuredProperty(propertyName: $propertyName, propertyConfig: $propertyConfig);
 			default:
 				// Unknown type - store as JSON for flexibility.
 				$this->logger->warning(
@@ -3815,6 +3705,122 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end mapSchemaPropertyToColumn()
 
 	/**
+	 * Whether a property is required: `required` is a boolean on the property
+	 * or a list of names on the schema.
+	 *
+	 * @param string $name           The name to look for in a list.
+	 * @param array  $propertyConfig The property configuration.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md
+	 */
+	private function isRequiredIn(string $name, array $propertyConfig): bool {
+		$required = $propertyConfig['required'] ?? false;
+		if (is_array($required) === true) {
+			// Loose comparison, as the schema's required list has always been read.
+			return in_array($name, $required);
+		}
+
+		return $required === true;
+	}//end isRequiredIn()
+
+	/**
+	 * Map an array or object property to its column.
+	 *
+	 * A relating object reference stores a bare UUID string, so it gets a
+	 * VARCHAR column (a json column refused the raw UUID with SQLSTATE 22P02).
+	 * Any other object gets an order-preserving JSON column: JSONB reorders
+	 * keys, which breaks object-keyed schemas whose order matters (#1720).
+	 * Arrays keep JSONB, which the search and facet handlers query with
+	 * containment operators.
+	 *
+	 * @param string $propertyName   The property name.
+	 * @param array  $propertyConfig The property configuration.
+	 *
+	 * @return array Column definition.
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md
+	 */
+	private function mapStructuredProperty(string $propertyName, array $propertyConfig): array {
+		$columnName = $this->sanitizeColumnName(name: $propertyName);
+		$nullable = $this->isRequiredIn(name: $propertyName, propertyConfig: $propertyConfig) === false;
+		$type = $propertyConfig['type'];
+
+		$reference = $this->resolveObjectReference(propertyConfig: $propertyConfig);
+		if ($type === 'object' && $reference !== null) {
+			$this->logger->debug(
+				message: '[MagicMapper] Detected object reference property, using VARCHAR for UUID storage',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'propertyName' => $propertyName,
+					'$ref' => $propertyConfig['$ref'] ?? 'nested in items.oneOf',
+					'handling' => $reference,
+				]
+			);
+
+			return [
+				'name' => $columnName,
+				'type' => 'string',
+				'length' => 255,
+				'nullable' => $nullable,
+				'comment' => 'Object reference (UUID)',
+			];
+		}//end if
+
+		if ($type === 'object') {
+			return [
+				'name' => $columnName,
+				'type' => 'json_ordered',
+				'nullable' => $nullable,
+				'comment' => 'Order-preserving JSON (object-typed schema property)',
+			];
+		}
+
+		return [
+			'name' => $columnName,
+			'type' => 'json',
+			'nullable' => $nullable,
+		];
+	}//end mapStructuredProperty()
+
+	/**
+	 * The relating handling of a property that references another object, or
+	 * null when it does not. Without a handling of its own, the first
+	 * `items.oneOf` entry with a relating handling decides.
+	 *
+	 * @param array $propertyConfig The property configuration.
+	 *
+	 * @return string|null The handling (`related-object` or `related-schema`), or null.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectHandling::relates() is a pure enum-style helper
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md
+	 */
+	private function resolveObjectReference(array $propertyConfig): ?string {
+		$handling = ($propertyConfig['objectConfiguration'] ?? [])['handling'] ?? null;
+		$hasRef = isset($propertyConfig['$ref']);
+
+		if ($handling === null && isset($propertyConfig['items']['oneOf']) === true) {
+			foreach ($propertyConfig['items']['oneOf'] as $oneOfItem) {
+				$itemHandling = $oneOfItem['objectConfiguration']['handling'] ?? null;
+				if ($itemHandling !== null && ObjectHandling::relates($itemHandling) === true) {
+					$handling = $itemHandling;
+					$hasRef = isset($oneOfItem['$ref']);
+					break;
+				}
+			}
+		}
+
+		if ($hasRef === true && ObjectHandling::relates($handling) === true) {
+			return $handling;
+		}
+
+		return null;
+	}//end resolveObjectReference()
+
+	/**
 	 * Map string property to SQL column
 	 *
 	 * @param string $columnName The column name
@@ -3832,14 +3838,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 */
 	private function mapStringProperty(string $columnName, array $propertyConfig, ?string $format): array {
 		$maxLength = $propertyConfig['maxLength'] ?? null;
-		// Handle 'required' - can be boolean (property level) or array (schema level).
-		$required = $propertyConfig['required'] ?? false;
-		$isRequired = false;
-		if (is_array($required) === true) {
-			$isRequired = in_array($columnName, $required);
-		} elseif (is_bool($required) === true) {
-			$isRequired = $required;
-		}
+		$isRequired = $this->isRequiredIn(name: $columnName, propertyConfig: $propertyConfig);
 
 		// Handle special formats.
 		switch ($format) {
@@ -3918,14 +3917,7 @@ class MagicMapper extends AbstractObjectMapper {
 	private function mapIntegerProperty(string $columnName, array $propertyConfig): array {
 		$minimum = $propertyConfig['minimum'] ?? null;
 		$maximum = $propertyConfig['maximum'] ?? null;
-		// Handle 'required' - can be boolean (property level) or array (schema level).
-		$required = $propertyConfig['required'] ?? false;
-		$isRequired = false;
-		if (is_array($required) === true) {
-			$isRequired = in_array($columnName, $required);
-		} elseif (is_bool($required) === true) {
-			$isRequired = $required;
-		}
+		$isRequired = $this->isRequiredIn(name: $columnName, propertyConfig: $propertyConfig);
 
 		// Choose appropriate integer type based on range.
 		$intType = 'integer';
@@ -3969,14 +3961,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
 	 */
 	private function mapNumberProperty(string $columnName, array $propertyConfig): array {
-		// Handle 'required' - can be boolean (property level) or array (schema level).
-		$required = $propertyConfig['required'] ?? false;
-		$isRequired = false;
-		if (is_array($required) === true) {
-			$isRequired = in_array($columnName, $required);
-		} elseif (is_bool($required) === true) {
-			$isRequired = $required;
-		}
+		$isRequired = $this->isRequiredIn(name: $columnName, propertyConfig: $propertyConfig);
 
 		// Determine default value.
 		$defaultValue = null;
