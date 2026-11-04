@@ -234,7 +234,7 @@ interface EntityRelationMapperInterface {
 	 * clean up.
 	 *
 	 * ONLY the entities actually redacted are marked: each `entity_id` present
-	 * in `$placeholderByEntityId` (i.e. the entities that were substituted into
+	 * in `$placeholders` (i.e. the entities that were substituted into
 	 * the document) has all its non-skipped relations on the file set to
 	 * `anonymized = true` with `anonymized_value` = its exact placeholder.
 	 *
@@ -247,7 +247,7 @@ interface EntityRelationMapperInterface {
 	 * honoured (skipped rows untouched).
 	 *
 	 * @param int $fileId The file ID.
-	 * @param array<int|string, string> $placeholderByEntityId Keys are int|string,
+	 * @param array<int|string, string> $placeholders Keys are int|string,
 	 *        not string: a stringified entity id is a canonical numeric string,
 	 *        which PHP coerces to an int array key. Map of entity id → the
 	 *                                                     exact placeholder emitted for it
@@ -255,7 +255,7 @@ interface EntityRelationMapperInterface {
 	 *
 	 * @return int Number of relation rows marked anonymized.
 	 */
-	public function markAsAnonymizedWithPlaceholders(int $fileId, array $placeholderByEntityId): int;
+	public function markAsAnonymizedWithPlaceholders(int $fileId, array $placeholders): int;
 
 	/**
 	 * Find entity relations for the anonymise pass — skip-aware.

@@ -189,7 +189,7 @@ class Wave12ConditionMatcherDotSyntaxTest extends TestCase {
 			->method('get')
 			->willReturnCallback(
 				function (string $class) use ($orgService) {
-					if ($class === 'OCA\OpenRegister\Service\OrganisationService') {
+					if ($class === 'OCA\OpenRegister\Service\OrganisationServiceInterface') {
 						return $orgService;
 					}
 

@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\AppHost\Listener\GenericDeepLinkRegistrationListener;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
@@ -149,7 +150,7 @@ class DeepLinkRegistryBackgroundTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static fn (string $id) => match ($id) {
-				RegisterMapper::class => $registerMapper,
+				RegisterMapperInterface::class => $registerMapper,
 				SchemaMapperInterface::class => $schemaMapper,
 				IEventDispatcher::class => $events,
 				default => null,
