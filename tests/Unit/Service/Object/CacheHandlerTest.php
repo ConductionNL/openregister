@@ -3079,4 +3079,86 @@ class CacheHandlerTest extends TestCase {
 		$this->assertIsInt($count);
 		$this->assertGreaterThanOrEqual(0, $count);
 	}
+
+	/**
+	 * Warmup records how many organisations, objects and magic rows it read, and the unique names cached.
+	 *
+	 * @return void
+	 */
+	public function testWarmupNameCacheRecordsBreakdownPerSource(): void {
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$db = $this->createMock(IDBConnection::class);
+
+		$org = new Organisation();
+		$org->setUuid('org-uuid-1');
+		$org->setName('Org One');
+		$this->organisationMapper->method('findAllWithUserCount')
+			->willReturn([$org]);
+		$this->objectMapper->method('findAll')
+			->willReturn([$this->createObjectEntity(1, 'obj-uuid-1'), $this->createObjectEntity(2, 'org-uuid-1')]);
+
+		$registerMapper->method('findAll')
+			->willReturn([$this->createRegister(1, [5], ['schemas' => ['test-schema' => ['magicMapping' => true]]])]);
+		$schemaMapper->method('find')
+			->willReturn($this->createSchema(5, 'test-schema'));
+		$queryResult = $this->createMock(IResult::class);
+		$queryResult->method('fetch')
+			->willReturnOnConsecutiveCalls(
+				['_uuid' => 'magic-uuid-1', '_name' => 'Magic Name 1'],
+				['_uuid' => 'obj-uuid-1', '_name' => ' '],
+				['_name' => 'no uuid'],
+				false
+			);
+		$db->method('executeQuery')
+			->willReturn($queryResult);
+
+		$handler = $this->createHandlerWithDbDeps(null, $registerMapper, $schemaMapper, $db);
+
+		$this->assertSame(3, $handler->warmupNameCache());
+		$this->assertSame(
+			['organisations' => 1, 'objects_table' => 2, 'magic_tables' => 2, 'total_unique' => 3],
+			$handler->getStats()['warmup_breakdown']
+		);
+	}
+
+	/**
+	 * A delete removes the object's distributed name under its UUID and id, once when the name is
+	 * cleared and once more for the delete itself.
+	 *
+	 * @return void
+	 */
+	public function testInvalidateForObjectChangeDeleteRemovesDistributedNamesTwice(): void {
+		$removed = [];
+		$this->nameDistributedCache->method('remove')
+			->willReturnCallback(function (string $key) use (&$removed): bool {
+				$removed[] = $key;
+				return true;
+			});
+
+		$this->handler->invalidateForObjectChange($this->createObjectEntity(7, 'uuid-7'), 'delete');
+
+		$this->assertSame(['name_uuid-7', 'name_7', 'name_uuid-7', 'name_7'], $removed);
+	}
+
+	/**
+	 * An update clears the distributed name once and caches the fresh name under both the UUID and the database id.
+	 *
+	 * @return void
+	 */
+	public function testInvalidateForObjectChangeUpdateCachesNameUnderUuidAndId(): void {
+		$removed = [];
+		$this->nameDistributedCache->method('remove')
+			->willReturnCallback(function (string $key) use (&$removed): bool {
+				$removed[] = $key;
+				return true;
+			});
+		$entity = $this->createObjectEntity(7, 'uuid-7');
+		$entity->setName('Fresh');
+
+		$this->handler->invalidateForObjectChange($entity, 'update');
+
+		$this->assertSame(['name_uuid-7', 'name_7'], $removed);
+		$this->assertSame(2, $this->handler->getStats()['name_cache_size']);
+	}
 }

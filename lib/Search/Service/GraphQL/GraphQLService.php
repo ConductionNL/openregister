@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\IAppConfig;
 use OCP\IRequest;
@@ -56,7 +56,7 @@ class GraphQLService {
 	 * @param QueryComplexityAnalyzer $complexityAnalyzer Complexity analyzer
 	 * @param GraphQLErrorFormatter $errorFormatter Error formatter
 	 * @param GraphQLResolver $resolver GraphQL resolver
-	 * @param ObjectService $objectService Object service
+	 * @param ObjectOperationsInterface $objectService Object service
 	 * @param PermissionHandler $permissionHandler Permission handler
 	 * @param PropertyRbacHandler $propertyRbac Property RBAC handler
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper
@@ -74,7 +74,7 @@ class GraphQLService {
 		private readonly QueryComplexityAnalyzer $complexityAnalyzer,
 		private readonly GraphQLErrorFormatter $errorFormatter,
 		private readonly GraphQLResolver $resolver,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly PropertyRbacHandler $propertyRbac,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,

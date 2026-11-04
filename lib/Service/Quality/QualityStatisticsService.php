@@ -48,7 +48,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -110,7 +110,7 @@ class QualityStatisticsService {
 	/**
 	 * Wire collaborators.
 	 *
-	 * @param ObjectService $objectService Object query path (RBAC + tenant scoped).
+	 * @param ObjectOperationsInterface $objectService Object query path (RBAC + tenant scoped).
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup for the quality annotation.
 	 * @param RegisterMapperInterface $registerMapper Register lookup — the boundary the schema resolves inside.
 	 * @param QualityScorer $scorer Reused for status() bucketing — never reimplemented.
@@ -121,7 +121,7 @@ class QualityStatisticsService {
 	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-1
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		SchemaMapperInterface $schemaMapper,
 		RegisterMapperInterface $registerMapper,
 		private readonly QualityScorer $scorer,

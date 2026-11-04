@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
@@ -1130,75 +1131,24 @@ class CacheHandler implements ObjectNameCacheInterface {
 	): void {
 		$startTime = microtime(true);
 
-		// Extract context from object if provided.
 		if ($object !== null) {
-			// Extract register ID if not provided.
 			if ($registerId === null && $object->getRegister() !== null) {
 				$registerId = (int)$object->getRegister();
 			}
 
-			// Extract schema ID if not provided.
 			if ($schemaId === null && $object->getSchema() !== null) {
 				$schemaId = (int)$object->getSchema();
 			}
 
-			// Clear individual object from cache.
-			$this->clearObjectFromCache(object: $object);
-
-			// BUG-OBJ-7: drop any stale cached name for this object up-front, regardless
-			// of the operation label. The create/update branch below re-writes the fresh
-			// name; for any other (or unknown) operation the stale name is at least
-			// invalidated so a rename can never serve a stale value from cache.
-			$this->clearObjectNameFromCache(object: $object);
-
+			$this->forgetChangedObject(object: $object, operation: $operation);
 			if ($operation === 'create' || $operation === 'update') {
-				// Update name cache for the modified object, carrying its tenancy and
-				// its table, so the entry is only served to callers who may read it.
-				$name = $object->getName() ?? $object->getUuid();
-				$organisation = $object->getOrganisation();
-				$source = self::objectNameSource(register: $registerId, schema: $schemaId);
-				$this->setObjectName(identifier: $object->getUuid(), name: $name, organisation: $organisation, source: $source);
-				if (($object->getId() !== null) === true && (string)$object->getId() !== $object->getUuid()) {
-					$this->setObjectName(identifier: $object->getId(), name: $name, organisation: $organisation, source: $source);
-				}
-			} elseif ($operation === 'delete') {
-				// Remove from in-memory name cache (name AND its recorded tenancy).
-				unset($this->nameCache[$object->getUuid()]);
-				unset($this->nameCache[(string)$object->getId()]);
-				unset($this->nameOrganisations[$object->getUuid()]);
-				unset($this->nameOrganisations[(string)$object->getId()]);
-
-				// Remove from distributed name cache.
-				if ($this->nameDistributedCache !== null) {
-					try {
-						$this->nameDistributedCache->remove('name_' . $object->getUuid());
-						if ($object->getId() !== null) {
-							$this->nameDistributedCache->remove('name_' . $object->getId());
-						}
-					} catch (\Exception $e) {
-						$this->logger->warning(
-							message: '[CacheHandler] Failed to remove object name from distributed cache',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'uuid' => $object->getUuid(),
-								'error' => $e->getMessage(),
-							]
-						);
-					}
-				}
-			}//end if
-		}//end if
+				$this->rememberChangedObjectName(object: $object, source: self::objectNameSource(register: $registerId, schema: $schemaId));
+			}
+		}
 
 		// **SCHEMA-WIDE INVALIDATION**: Clear ALL search caches for this schema.
 		// This ensures colleagues see each other's changes immediately.
-		// SchemaId and registerId are already typed as ?int, so no conversion needed.
-		$schemaIdInt = $schemaId;
-		$registerIdInt = $registerId;
-
-		$this->clearSchemaRelatedCaches(schemaId: $schemaIdInt, registerId: $registerIdInt, operation: $operation);
-
-		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
+		$this->clearSchemaRelatedCaches(schemaId: $schemaId, registerId: $registerId, operation: $operation);
 
 		$this->logger->info(
 			message: '[CacheHandler] Schema-wide cache invalidated for CRUD operation',
@@ -1209,11 +1159,77 @@ class CacheHandler implements ObjectNameCacheInterface {
 				'registerId' => $registerId,
 				'schemaId' => $schemaId,
 				'objectId' => $object?->getId(),
-				'executionTime' => $executionTime . 'ms',
+				'executionTime' => round((microtime(true) - $startTime) * 1000, 2) . 'ms',
 				'scope' => 'all_users_in_schema',
 			]
 		);
 	}//end invalidateForObjectChange()
+
+	/**
+	 * Drop a changed object and its cached name; a delete also drops its name everywhere it was recorded.
+	 *
+	 * BUG-OBJ-7: the stale name is dropped whatever the operation label, so a rename can never serve
+	 * a stale value from cache.
+	 *
+	 * @param ObjectEntity $object    The changed object.
+	 * @param string       $operation The operation performed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function forgetChangedObject(ObjectEntity $object, string $operation): void {
+		$this->clearObjectFromCache(object: $object);
+		$this->clearObjectNameFromCache(object: $object);
+		if ($operation !== 'delete') {
+			return;
+		}
+
+		unset($this->nameCache[$object->getUuid()]);
+		unset($this->nameCache[(string)$object->getId()]);
+		unset($this->nameOrganisations[$object->getUuid()]);
+		unset($this->nameOrganisations[(string)$object->getId()]);
+
+		if ($this->nameDistributedCache === null) {
+			return;
+		}
+
+		try {
+			$this->nameDistributedCache->remove('name_' . $object->getUuid());
+			if ($object->getId() !== null) {
+				$this->nameDistributedCache->remove('name_' . $object->getId());
+			}
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[CacheHandler] Failed to remove object name from distributed cache',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'uuid' => $object->getUuid(),
+					'error' => $e->getMessage(),
+				]
+			);
+		}
+	}//end forgetChangedObject()
+
+	/**
+	 * Cache a created or updated object's fresh name under its UUID and id, with its tenancy and table.
+	 *
+	 * @param ObjectEntity $object The changed object.
+	 * @param string|null  $source The object's name source, "<registerId>:<schemaId>".
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function rememberChangedObjectName(ObjectEntity $object, ?string $source): void {
+		$name = $object->getName() ?? $object->getUuid();
+		$organisation = $object->getOrganisation();
+		$this->setObjectName(identifier: $object->getUuid(), name: $name, organisation: $organisation, source: $source);
+		if (($object->getId() !== null) === true && (string)$object->getId() !== $object->getUuid()) {
+			$this->setObjectName(identifier: $object->getId(), name: $name, organisation: $organisation, source: $source);
+		}
+	}//end rememberChangedObjectName()
 
 	/**
 	 * Clear specific object from cache by ID/UUID
@@ -2016,77 +2032,34 @@ class CacheHandler implements ObjectNameCacheInterface {
 		$this->stats['name_warmups']++;
 
 		try {
-			$loadedCount = 0;
-			$magicNamesLoaded = 0;
+			$breakdown = [
+				'organisations' => $this->warmOrganisationNames(),
+				'objects_table' => $this->warmObjectTableNames(),
+				'magic_tables' => 0,
+			];
 
-			// STEP 1: Load all organisations first (they take priority).
-			$organisations = $this->organisationMapper->findAllWithUserCount();
-			foreach ($organisations as $organisation) {
-				$name = $organisation->getName() ?? $organisation->getUuid();
-
-				// Cache by UUID only (not by database ID). An organisation's own
-				// tenancy is itself, so that is what is recorded alongside it.
-				if ($organisation->getUuid() !== null && $name !== null) {
-					$this->nameCache[$organisation->getUuid()] = $name;
-					$this->rememberNameOrganisation(
-						key: $organisation->getUuid(),
-						organisation: $organisation->getUuid(),
-						source: self::NAME_SOURCE_ORGANISATION
-					);
-					$loadedCount++;
-				}
-			}
-
-			// STEP 2: Load all objects from main table.
-			$objects = $this->getObjectMapper()->findAll();
-			foreach ($objects as $object) {
-				$name = $object->getName() ?? $object->getUuid();
-
-				// Cache by UUID only (not by database ID).
-				// Note: If an organisation has the same UUID, it will remain (organisations loaded first).
-				$uuid = $object->getUuid();
-				if ($uuid !== null && $name !== null && (($this->nameCache[$uuid] ?? null) === null) === true) {
-					$this->nameCache[$uuid] = $name;
-					$this->rememberNameOrganisation(
-						key: $uuid,
-						organisation: $object->getOrganisation(),
-						source: self::objectNameSource(register: $object->getRegister(), schema: $object->getSchema())
-					);
-					$loadedCount++;
-				}
-			}
-
-			// STEP 3: Load names from magic tables (overwrites names with proper enriched values).
 			if ($this->registerMapper !== null && $this->schemaMapper !== null && $this->db !== null) {
-				$magicNamesLoaded = $this->loadNamesFromMagicTables();
+				$breakdown['magic_tables'] = $this->loadNamesFromMagicTables();
 			}
 
-			// STEP 4: Persist to distributed cache for cross-request availability.
 			$distributedCount = $this->persistNameCacheToDistributed();
-
-			$executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
 			$this->logger->debug(
 				message: '[CacheHandler] Name cache warmed up',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'organisations_processed' => count($organisations),
-					'objects_processed' => count($objects),
-					'magic_names_loaded' => $magicNamesLoaded,
+					'organisations_processed' => $breakdown['organisations'],
+					'objects_processed' => $breakdown['objects_table'],
+					'magic_names_loaded' => $breakdown['magic_tables'],
 					'distributed_cache_stored' => $distributedCount,
 					'total_names_cached' => count($this->nameCache),
-					'execution_time' => $executionTime . 'ms',
+					'execution_time' => round((microtime(true) - $startTime) * 1000, 2) . 'ms',
 				]
 			);
 
-			// Store breakdown for diagnostics.
-			$this->stats['warmup_breakdown'] = [
-				'organisations' => count($organisations),
-				'objects_table' => count($objects),
-				'magic_tables' => $magicNamesLoaded,
-				'total_unique' => count($this->nameCache),
-			];
+			$breakdown['total_unique'] = count($this->nameCache);
+			$this->stats['warmup_breakdown'] = $breakdown;
 
 			return count($this->nameCache);
 		} catch (\Exception $e) {
@@ -2103,6 +2076,55 @@ class CacheHandler implements ObjectNameCacheInterface {
 	}//end warmupNameCache()
 
 	/**
+	 * Cache every organisation's name under its UUID, recording the organisation as its own tenancy.
+	 *
+	 * @return int Number of organisations read.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function warmOrganisationNames(): int {
+		$organisations = $this->organisationMapper->findAllWithUserCount();
+		foreach ($organisations as $organisation) {
+			$name = $organisation->getName() ?? $organisation->getUuid();
+			if ($organisation->getUuid() !== null && $name !== null) {
+				$this->nameCache[$organisation->getUuid()] = $name;
+				$this->rememberNameOrganisation(
+					key: $organisation->getUuid(),
+					organisation: $organisation->getUuid(),
+					source: self::NAME_SOURCE_ORGANISATION
+				);
+			}
+		}
+
+		return count($organisations);
+	}//end warmOrganisationNames()
+
+	/**
+	 * Cache the names of the objects table under their UUID; a name already cached (an organisation's) stays.
+	 *
+	 * @return int Number of objects read.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function warmObjectTableNames(): int {
+		$objects = $this->getObjectMapper()->findAll();
+		foreach ($objects as $object) {
+			$name = $object->getName() ?? $object->getUuid();
+			$uuid = $object->getUuid();
+			if ($uuid !== null && $name !== null && (($this->nameCache[$uuid] ?? null) === null) === true) {
+				$this->nameCache[$uuid] = $name;
+				$this->rememberNameOrganisation(
+					key: $uuid,
+					organisation: $object->getOrganisation(),
+					source: self::objectNameSource(register: $object->getRegister(), schema: $object->getSchema())
+				);
+			}
+		}
+
+		return count($objects);
+	}//end warmObjectTableNames()
+
+	/**
 	 * Load object names from magic tables.
 	 *
 	 * Queries all magic tables (register+schema combinations with magic mapping enabled)
@@ -2117,84 +2139,13 @@ class CacheHandler implements ObjectNameCacheInterface {
 		$loadedCount = 0;
 
 		try {
-			// Get all registers.
-			$registers = $this->registerMapper->findAll();
-
-			foreach ($registers as $register) {
-				$registerId = $register->getId();
-				$schemaIds = $register->getSchemas() ?? [];
-
-				foreach ($schemaIds as $schemaId) {
-					// Get schema slug for config lookup (config uses slugs as keys).
-					$schemaSlug = null;
-					try {
-						$schema = $this->schemaMapper->find((int)$schemaId);
-						$schemaSlug = $schema->getSlug();
-					} catch (\Exception $e) {
-						// Schema not found, continue without slug.
+			foreach ($this->registerMapper->findAll() as $register) {
+				foreach ($register->getSchemas() ?? [] as $schemaId) {
+					if ($this->isMagicNameTable(register: $register, schemaId: (int)$schemaId) === true) {
+						$loadedCount += $this->loadNamesFromMagicTable(registerId: $register->getId(), schemaId: $schemaId);
 					}
-
-					// Check if this schema has magic mapping enabled.
-					$magicEnabled = $register->isMagicMappingEnabledForSchema(
-						schemaId: (int)$schemaId,
-						schemaSlug: $schemaSlug
-					);
-					if ($magicEnabled === false) {
-						continue;
-					}
-
-					// Query the magic table for names.
-					$tableName = '*PREFIX*openregister_table_' . $registerId . '_' . $schemaId;
-
-					try {
-						// Check if table exists and has the name column.
-						// Magic table columns have underscore prefix: _id, _name, _deleted, etc.
-						// Note: _id is bigint (internal DB ID), we need _uuid (the UUID) for mapping.
-						// Filter: only exclude deleted objects.
-						// SEC-CTRL-2 step 2: `_organisation` is selected as well. It is the
-						// tenancy oracle for every object-backed name — the ObjectEntity
-						// produced by MagicMapper::rowToObjectEntity() never carries one.
-						$sql = 'SELECT "_uuid", "_name", "_organisation" FROM ' . $tableName . ' WHERE "_deleted" IS NULL';
-						$result = $this->db->executeQuery($sql);
-
-						while (($row = $result->fetch()) !== false) {
-							$uuid = $row['_uuid'] ?? null;
-							$name = $row['_name'] ?? null;
-							$rowOrganisation = $row['_organisation'] ?? null;
-
-							if ($uuid !== null) {
-								// Use name if available, otherwise fall back to UUID.
-								$effectiveName = $uuid;
-								if (($name !== null) && trim($name) !== '') {
-									$effectiveName = $name;
-								}
-
-								// Overwrite any existing name (magic table has enriched names).
-								$this->nameCache[$uuid] = $effectiveName;
-								$this->rememberNameOrganisation(
-									key: $uuid,
-									organisation: $rowOrganisation,
-									source: self::objectNameSource(register: $registerId, schema: $schemaId)
-								);
-								$loadedCount++;
-							}
-						}
-
-						$result->closeCursor();
-					} catch (\Exception $e) {
-						// Table might not exist or have different structure - skip silently.
-						$this->logger->debug(
-							message: '[CacheHandler] Could not query magic table for names',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'table' => $tableName,
-								'error' => $e->getMessage(),
-							]
-						);
-					}//end try
-				}//end foreach
-			}//end foreach
+				}
+			}
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[CacheHandler] Failed to load names from magic tables',
@@ -2208,6 +2159,80 @@ class CacheHandler implements ObjectNameCacheInterface {
 
 		return $loadedCount;
 	}//end loadNamesFromMagicTables()
+
+	/**
+	 * Whether a register keeps a schema's objects in a magic table; an unknown schema is looked up without a slug.
+	 *
+	 * @param Register $register The register.
+	 * @param int      $schemaId The schema id.
+	 *
+	 * @return bool True when magic mapping is enabled for the schema.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function isMagicNameTable(Register $register, int $schemaId): bool {
+		$schemaSlug = null;
+		try {
+			$schemaSlug = $this->schemaMapper->find($schemaId)->getSlug();
+		} catch (\Exception $e) {
+			// Schema not found, continue without slug.
+		}
+
+		return $register->isMagicMappingEnabledForSchema(schemaId: $schemaId, schemaSlug: $schemaSlug);
+	}//end isMagicNameTable()
+
+	/**
+	 * Cache the enriched name and tenancy of every live row of one magic table, overwriting earlier names.
+	 *
+	 * A table that cannot be read is skipped.
+	 *
+	 * @param mixed $registerId The register id.
+	 * @param mixed $schemaId   The schema id.
+	 *
+	 * @return int Number of rows cached.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function loadNamesFromMagicTable(mixed $registerId, mixed $schemaId): int {
+		$tableName = '*PREFIX*openregister_table_' . $registerId . '_' . $schemaId;
+		$source = self::objectNameSource(register: $registerId, schema: $schemaId);
+		$loadedCount = 0;
+
+		try {
+			// SEC-CTRL-2 step 2: `_organisation` is the tenancy oracle for every object-backed
+			// name; the ObjectEntity built from a magic row never carries one.
+			$result = $this->db->executeQuery('SELECT "_uuid", "_name", "_organisation" FROM ' . $tableName . ' WHERE "_deleted" IS NULL');
+			while (($row = $result->fetch()) !== false) {
+				$uuid = $row['_uuid'] ?? null;
+				if ($uuid === null) {
+					continue;
+				}
+
+				$name = $row['_name'] ?? null;
+				$this->nameCache[$uuid] = $uuid;
+				if (($name !== null) && trim($name) !== '') {
+					$this->nameCache[$uuid] = $name;
+				}
+
+				$this->rememberNameOrganisation(key: $uuid, organisation: $row['_organisation'] ?? null, source: $source);
+				$loadedCount++;
+			}
+
+			$result->closeCursor();
+		} catch (\Exception $e) {
+			$this->logger->debug(
+				message: '[CacheHandler] Could not query magic table for names',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'table' => $tableName,
+					'error' => $e->getMessage(),
+				]
+			);
+		}//end try
+
+		return $loadedCount;
+	}//end loadNamesFromMagicTable()
 
 	/**
 	 * Batch load names for specific UUIDs from magic tables.
@@ -2227,12 +2252,6 @@ class CacheHandler implements ObjectNameCacheInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function batchLoadNamesFromMagicTables(array $uuids): array {
-		$results = [];
-
-		if (empty($uuids) === true) {
-			return $results;
-		}
-
 		// Filter to only UUID-like strings.
 		$uuidList = array_filter(
 			$uuids,
@@ -2241,86 +2260,18 @@ class CacheHandler implements ObjectNameCacheInterface {
 			}
 		);
 
-		if (empty($uuidList) === true) {
-			return $results;
-		}
-
 		// The magic-table dependencies are optional constructor arguments. Without
 		// them there is no tenancy oracle, so the honest answer is "nothing
 		// resolved" rather than a fatal on a null mapper.
-		if ($this->registerMapper === null || $this->schemaMapper === null || $this->db === null) {
-			return $results;
+		if (empty($uuidList) === true
+			|| $this->registerMapper === null || $this->schemaMapper === null || $this->db === null
+		) {
+			return [];
 		}
 
+		$results = [];
 		try {
-			// Get all registers.
-			$registers = $this->registerMapper->findAll();
-
-			// Collect all schema IDs across all registers to load in one batch.
-			$allSchemaIds = [];
-			foreach ($registers as $register) {
-				foreach ($register->getSchemas() ?? [] as $schemaId) {
-					$allSchemaIds[(int)$schemaId] = true;
-				}
-			}
-
-			// Bulk-load all schemas in one query instead of N individual find() calls.
-			$schemaMap = [];
-			if (empty($allSchemaIds) === false) {
-				$schemaMap = $this->schemaMapper->findMultipleOptimized(ids: array_keys($allSchemaIds));
-			}
-
-			foreach ($registers as $register) {
-				// If we found all UUIDs, stop searching.
-				if (count($results) >= count($uuidList)) {
-					break;
-				}
-
-				$registerId = $register->getId();
-				$schemaIds = $register->getSchemas() ?? [];
-
-				foreach ($schemaIds as $schemaId) {
-					// If we found all UUIDs, stop searching.
-					if (count($results) >= count($uuidList)) {
-						break;
-					}
-
-					// Get schema slug from pre-loaded map (no individual query needed).
-					$schema = $schemaMap[(int)$schemaId] ?? null;
-					if ($schema === null) {
-						continue;
-					}
-
-					$schemaSlug = $schema->getSlug();
-
-					// Check if this schema has magic mapping enabled.
-					if ($register->isMagicMappingEnabledForSchema(
-						schemaId: (int)$schemaId,
-						schemaSlug: $schemaSlug
-					) === false
-					) {
-						continue;
-					}
-
-					// Build table name.
-					$tableName = 'oc_openregister_table_' . $registerId . '_' . $schemaId;
-
-					// Find UUIDs we still need to look up.
-					$remainingUuids = array_diff($uuidList, array_keys($results));
-					if (empty($remainingUuids) === true) {
-						break;
-					}
-
-					// Batch query this table.
-					$tableResults = $this->queryTableForNames(
-						tableName: $tableName,
-						uuids: array_values($remainingUuids),
-						source: self::objectNameSource(register: $registerId, schema: $schemaId)
-					);
-
-					$results = array_merge($results, $tableResults);
-				}//end foreach
-			}//end foreach
+			$this->batchLoadNamesFromRegisters(uuidList: $uuidList, results: $results);
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[CacheHandler] Failed to batch load names from magic tables',
@@ -2330,6 +2281,75 @@ class CacheHandler implements ObjectNameCacheInterface {
 
 		return $results;
 	}//end batchLoadNamesFromMagicTables()
+
+	/**
+	 * Walk the magic tables register by register, querying each for the UUIDs not resolved yet.
+	 *
+	 * Stops as soon as every UUID is resolved. Names found before a failure stay in $results.
+	 *
+	 * @param array                                                                              $uuidList The UUID-like identifiers to look up.
+	 * @param array<string, array{name: string, organisation: string|null, source: string|null}> $results  Map of UUID to name,
+	 *                                                                                                     owning organisation and name source.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function batchLoadNamesFromRegisters(array $uuidList, array &$results): void {
+		$registers = $this->registerMapper->findAll();
+		$schemaMap = $this->loadSchemasOfRegisters(registers: $registers);
+
+		foreach ($registers as $register) {
+			foreach ($register->getSchemas() ?? [] as $schemaId) {
+				if (count($results) >= count($uuidList)) {
+					break 2;
+				}
+
+				$schema = $schemaMap[(int)$schemaId] ?? null;
+				if ($schema === null
+					|| $register->isMagicMappingEnabledForSchema(schemaId: (int)$schemaId, schemaSlug: $schema->getSlug()) === false
+				) {
+					continue;
+				}
+
+				$remainingUuids = array_diff($uuidList, array_keys($results));
+				if (empty($remainingUuids) === true) {
+					break;
+				}
+
+				$tableResults = $this->queryTableForNames(
+					tableName: 'oc_openregister_table_' . $register->getId() . '_' . $schemaId,
+					uuids: array_values($remainingUuids),
+					source: self::objectNameSource(register: $register->getId(), schema: $schemaId)
+				);
+				$results = array_merge($results, $tableResults);
+			}//end foreach
+		}//end foreach
+	}//end batchLoadNamesFromRegisters()
+
+	/**
+	 * Load every schema the registers list in one query, keyed by schema id.
+	 *
+	 * @param array $registers The registers.
+	 *
+	 * @return array The schemas keyed by id.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function loadSchemasOfRegisters(array $registers): array {
+		$allSchemaIds = [];
+		foreach ($registers as $register) {
+			foreach ($register->getSchemas() ?? [] as $schemaId) {
+				$allSchemaIds[(int)$schemaId] = true;
+			}
+		}
+
+		if (empty($allSchemaIds) === true) {
+			return [];
+		}
+
+		return $this->schemaMapper->findMultipleOptimized(ids: array_keys($allSchemaIds));
+	}//end loadSchemasOfRegisters()
 
 	/**
 	 * Query a single magic table for names by UUIDs.
