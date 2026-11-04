@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Exception;
+use OCA\OpenRegister\Controller\Support\BulkControllerServices;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -68,32 +69,76 @@ class BulkController extends Controller {
 	public const ATOMIC_BATCH_LIMIT = 1000;
 
 	/**
+	 * The object service
+	 *
+	 * @var ObjectService
+	 */
+	private readonly ObjectService $objectService;
+
+	/**
+	 * Mapper for resolving registers (RBAC gates)
+	 *
+	 * @var RegisterMapper
+	 */
+	private readonly RegisterMapper $registerMapper;
+
+	/**
+	 * Mapper for resolving schemas (RBAC gates)
+	 *
+	 * @var SchemaMapper
+	 */
+	private readonly SchemaMapper $schemaMapper;
+
+	/**
+	 * User session for admin/manage checks
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for admin/manage checks
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * The connection an atomic batch runs its transaction on
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * Who may manage a schema. Built from the collaborators above when null.
+	 *
+	 * @var ?SchemaManageGate
+	 */
+	private readonly ?SchemaManageGate $schemaManageGate;
+
+	/**
 	 * Constructor for the BulkController
 	 *
 	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
-	 * @param ObjectService $objectService The object service
-	 * @param RegisterMapper $registerMapper Mapper for resolving registers (RBAC gates)
-	 * @param SchemaMapper $schemaMapper Mapper for resolving schemas (RBAC gates)
-	 * @param IUserSession $userSession User session for admin/manage checks
-	 * @param IGroupManager $groupManager Group manager for admin/manage checks
-	 * @param IDBConnection $db The connection an atomic batch runs its transaction on
-	 * @param SchemaManageGate|null $schemaManageGate Who may manage a schema. Built from the collaborators above when null.
+	 * @param BulkControllerServices $services The bulk controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objectService,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly IDBConnection $db,
-		private readonly ?SchemaManageGate $schemaManageGate = null,
+		BulkControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->objectService = $services->store->objectService;
+		$this->registerMapper = $services->store->registerMapper;
+		$this->schemaMapper = $services->store->schemaMapper;
+		$this->userSession = $services->platform->userSession;
+		$this->groupManager = $services->platform->groupManager;
+		$this->db = $services->platform->db;
+		$this->schemaManageGate = $services->store->schemaManageGate;
 	}//end __construct()
 
 	/**

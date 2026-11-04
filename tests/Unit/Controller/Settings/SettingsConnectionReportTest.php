@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\EdepotSettingsControllerFactory;
 use OCA\OpenRegister\Controller\Settings\ApiTokenSettingsController;
 use OCA\OpenRegister\Controller\Settings\EdepotSettingsController;
 use OCA\OpenRegister\Controller\Settings\LlmSettingsController;
@@ -321,7 +322,7 @@ class SettingsConnectionReportTest extends TestCase {
 			$rest->method('testConnection')->willReturn($outcome);
 		}
 
-		return new EdepotSettingsController(
+		return EdepotSettingsControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			appConfig: $this->createMock(originalClassName: IAppConfig::class),

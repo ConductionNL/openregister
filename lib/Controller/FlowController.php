@@ -37,6 +37,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\FlowControllerServices;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Exception\BpmnImportRefused;
@@ -120,30 +121,74 @@ use Throwable;
  */
 class FlowController extends Controller {
 	/**
+	 * The flow trigger catalog.
+	 *
+	 * @var EventCatalogService
+	 */
+	private readonly EventCatalogService $eventCatalog;
+
+	/**
+	 * The registered flow-step types.
+	 *
+	 * @var FlowNodeRegistry
+	 */
+	private readonly FlowNodeRegistry $nodes;
+
+	/**
+	 * Reads state a flow keeps between runs.
+	 *
+	 * @var FlowStateMapper
+	 */
+	private readonly FlowStateMapper $flowState;
+
+	/**
+	 * Resolves a document's step types.
+	 *
+	 * @var FlowNodePreflight
+	 */
+	private readonly FlowNodePreflight $preflight;
+
+	/**
+	 * Reads, writes and runs flow definitions.
+	 *
+	 * @var FlowService
+	 */
+	private readonly FlowService $flows;
+
+	/**
+	 * Who may do what with a flow.
+	 *
+	 * @var FlowAccess
+	 */
+	private readonly FlowAccess $access;
+
+	/**
+	 * Reads, publishes, drafts and deprecates versions.
+	 *
+	 * @var FlowVersionService
+	 */
+	private readonly FlowVersionService $flowVersionService;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param EventCatalogService $eventCatalog The flow trigger catalog.
-	 * @param FlowNodeRegistry $nodes The registered flow-step types.
-	 * @param FlowStateMapper $flowState Reads state a flow keeps between runs.
-	 * @param FlowNodePreflight $preflight Resolves a document's step types.
-	 * @param FlowService $flows Reads, writes and runs flow definitions.
-	 * @param FlowAccess $access Who may do what with a flow.
-	 * @param FlowVersionService $flowVersionService Reads, publishes, drafts and deprecates versions.
+	 * @param FlowControllerServices $services The flow controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly EventCatalogService $eventCatalog,
-		private readonly FlowNodeRegistry $nodes,
-		private readonly FlowStateMapper $flowState,
-		private readonly FlowNodePreflight $preflight,
-		private readonly FlowService $flows,
-		private readonly FlowAccess $access,
-		private readonly FlowVersionService $flowVersionService,
+		FlowControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->eventCatalog = $services->catalogue->eventCatalog;
+		$this->nodes = $services->catalogue->nodes;
+		$this->flowState = $services->catalogue->flowState;
+		$this->preflight = $services->catalogue->preflight;
+		$this->flows = $services->definitions->flows;
+		$this->access = $services->definitions->access;
+		$this->flowVersionService = $services->definitions->flowVersionService;
 	}//end __construct()
 
 	/**

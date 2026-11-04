@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\TimelineEntriesControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Timeline\ReferenceService;
@@ -65,32 +66,76 @@ use Throwable;
 class TimelineEntriesController extends Controller {
 
 	/**
+	 * Resolves an object through the RBAC boundary.
+	 *
+	 * @var ObjectService
+	 */
+	private readonly ObjectService $objects;
+
+	/**
+	 * The record.
+	 *
+	 * @var TimelineEntryService
+	 */
+	private readonly TimelineEntryService $entries;
+
+	/**
+	 * Writing an entry end to end.
+	 *
+	 * @var TimelineWriteService
+	 */
+	private readonly TimelineWriteService $writer;
+
+	/**
+	 * Entries searched across objects.
+	 *
+	 * @var TimelineEntrySearchService
+	 */
+	private readonly TimelineEntrySearchService $search;
+
+	/**
+	 * What an entry points at.
+	 *
+	 * @var ReferenceService
+	 */
+	private readonly ReferenceService $references;
+
+	/**
+	 * The internal or public flag and who may set it.
+	 *
+	 * @var TimelineVisibilityService
+	 */
+	private readonly TimelineVisibilityService $visibility;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                     $appName    App name.
 	 * @param IRequest                   $request    Request.
-	 * @param ObjectService              $objects    Resolves an object through the RBAC boundary.
-	 * @param TimelineEntryService       $entries    The record.
-	 * @param TimelineWriteService       $writer     Writing an entry end to end.
-	 * @param TimelineEntrySearchService $search     Entries searched across objects.
-	 * @param ReferenceService           $references What an entry points at.
-	 * @param TimelineVisibilityService  $visibility The internal or public flag and who may set it.
-	 * @param LoggerInterface            $logger     Logger.
+	 * @param TimelineEntriesControllerServices $services The timeline entries controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objects,
-		private readonly TimelineEntryService $entries,
-		private readonly TimelineWriteService $writer,
-		private readonly TimelineEntrySearchService $search,
-		private readonly ReferenceService $references,
-		private readonly TimelineVisibilityService $visibility,
-		private readonly LoggerInterface $logger,
+		TimelineEntriesControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->objects = $services->domain->objects;
+		$this->entries = $services->domain->entries;
+		$this->writer = $services->domain->writer;
+		$this->search = $services->domain->search;
+		$this->references = $services->visibility->references;
+		$this->visibility = $services->visibility->visibility;
+		$this->logger = $services->visibility->logger;
 	}//end __construct()
 
 	/**

@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ObjectDraftControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -62,30 +63,74 @@ use Throwable;
 class ObjectDraftController extends Controller {
 
 	/**
+	 * Resolves the record through the RBAC boundary.
+	 *
+	 * @var ObjectService
+	 */
+	private readonly ObjectService $objects;
+
+	/**
+	 * Resolves the register.
+	 *
+	 * @var RegisterMapper
+	 */
+	private readonly RegisterMapper $registers;
+
+	/**
+	 * Resolves the schema.
+	 *
+	 * @var SchemaMapper
+	 */
+	private readonly SchemaMapper $schemas;
+
+	/**
+	 * Makes the draft definitive.
+	 *
+	 * @var DraftActivation
+	 */
+	private readonly DraftActivation $activation;
+
+	/**
+	 * The acting user, who is the asserted owner.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $session;
+
+	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string          $appName    App name.
 	 * @param IRequest        $request    Request.
-	 * @param ObjectService   $objects    Resolves the record through the RBAC boundary.
-	 * @param RegisterMapper  $registers  Resolves the register.
-	 * @param SchemaMapper    $schemas    Resolves the schema.
-	 * @param DraftActivation $activation Makes the draft definitive.
-	 * @param IUserSession    $session    The acting user, who is the asserted owner.
-	 * @param IL10N           $l10n       Translations.
-	 * @param LoggerInterface $logger     Logger.
+	 * @param ObjectDraftControllerServices $services The object draft controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objects,
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
-		private readonly DraftActivation $activation,
-		private readonly IUserSession $session,
-		private readonly IL10N $l10n,
-		private readonly LoggerInterface $logger,
+		ObjectDraftControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->objects = $services->domain->objects;
+		$this->registers = $services->domain->registers;
+		$this->schemas = $services->domain->schemas;
+		$this->activation = $services->domain->activation;
+		$this->session = $services->platform->session;
+		$this->l10n = $services->platform->l10n;
+		$this->logger = $services->platform->logger;
 	}//end __construct()
 
 	/**

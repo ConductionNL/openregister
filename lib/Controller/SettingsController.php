@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Controller\Support\SettingsControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
 use OCP\App\IAppManager;
@@ -135,32 +136,74 @@ class SettingsController extends Controller {
 	 */
 
 	/**
+	 * The app configuration.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $config;
+
+	/**
+	 * The database connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * The container.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * The app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * The settings service.
+	 *
+	 * @var AppSettingsInterface
+	 */
+	private readonly AppSettingsInterface $settingsService;
+
+	/**
+	 * The logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * The localization service.
+	 *
+	 * @var ?IL10N
+	 */
+	private readonly ?IL10N $l10n;
+
+	/**
 	 * SettingsController constructor.
 	 *
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
-	 * @param IAppConfig $config The app configuration.
-	 * @param IDBConnection $db The database connection.
-	 * @param ContainerInterface $container The container.
-	 * @param IAppManager $appManager The app manager.
-	 * @param AppSettingsInterface $settingsService The settings service.
-	 * @param LoggerInterface $logger The logger.
-	 * @param IL10N|null $l10n The localization service.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI injects all controller dependencies via constructor
+	 * @param SettingsControllerServices $services The settings controller services.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly IAppConfig $config,
-		private readonly IDBConnection $db,
-		private readonly ContainerInterface $container,
-		private readonly IAppManager $appManager,
-		private readonly AppSettingsInterface $settingsService,
-		private readonly LoggerInterface $logger,
-		private readonly ?IL10N $l10n = null,
+		SettingsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->config = $services->store->config;
+		$this->db = $services->store->db;
+		$this->container = $services->store->container;
+		$this->appManager = $services->runtime->appManager;
+		$this->settingsService = $services->store->settingsService;
+		$this->logger = $services->runtime->logger;
+		$this->l10n = $services->runtime->l10n;
 	}//end __construct()
 
 	/**
