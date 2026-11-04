@@ -813,118 +813,158 @@ class RenderObject {
 		}
 
 		// The trusted-internal-read bypass applies to property `authorization.read` and to
-		// decryption ONLY. The writeOnly strip below deliberately does not consult it.
-		$applyGatedStrips = ($_rbac !== false) && (SystemOperationContext::isActive() === false);
+		// decryption ONLY. The writeOnly strip deliberately does not consult it.
+		$pass = new RowRedaction();
+		$pass->applyGatedStrips = ($_rbac !== false) && (SystemOperationContext::isActive() === false);
 
 		foreach ($rows as &$row) {
 			if ($row instanceof ObjectEntity === true) {
-				$schema = $this->getSchema(id: $row->getSchema());
-
-				$doWriteOnly = $this->schemaHasWriteOnlyRule(schema: $schema);
-				$doGated = ($applyGatedStrips === true && $this->schemaNeedsReadStrip(schema: $schema) === true);
-				if ($doWriteOnly === false && $doGated === false) {
-					$this->maskEntityReveals(entity: $row, schema: $schema);
-					continue;
-				}
-
-				$object = $row->getObject();
-				if (is_array($object) === true) {
-					if ($doGated === true) {
-						// Note filterReadableProperties strips writeOnly first, then applies
-						// the group-authorization filter, so this covers both concerns.
-						$object = $this->filterAuthorizedProperties(entity: $row, schema: $schema, objectData: $object);
-					} else {
-						// The writeOnly-only path (admin / `_rbac: false` / system context, or a
-						// schema with no property authorization): strip writeOnly unconditionally.
-						$object = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $schema, object: $object);
-					}
-
-					// Decrypt AFTER redaction: a field the RBAC/writeOnly strip above just
-					// removed is no longer a key in $object, so decryptProperties() (which
-					// only acts on keys still present) silently skips it — an unauthorized
-					// caller never reaches decryption for that field.
-					if ($doGated === true
-						&& $this->fieldEncryptionHandler !== null
-						&& $schema->hasEncryptedProperties() === true
-					) {
-						$object = $this->fieldEncryptionHandler->decryptProperties(data: $object, schema: $schema);
-					}//end if
-
-					$row->setObject($object);
-				}//end if
-
-				// Explicit-reveal values leave masked on every read, admins and `_rbac: false` included.
-				$this->maskEntityReveals(entity: $row, schema: $schema);
-
-				// The body strip above leaves the `relations` search index untouched; it is
-				// a separate scalar mirror that jsonSerialize surfaces as @self.relations,
-				// so a write-only secret leaks there unless stripped too (#429). It rides the
-				// SAME unconditional boundary as the body strip. Encrypted values are
-				// ciphertext by the time scanForRelations() runs at save time and do not look
-				// like references (isReference() matches UUID/URI/URL shapes), so they are not
-				// expected to appear in this mirror in the first place — only the writeOnly
-				// strip applies here.
-				if ($doWriteOnly === true) {
-					$relations = $row->getRelations();
-					if (is_array($relations) === true) {
-						$row->setRelations($this->propertyRbacHandler->stripWriteOnlyProperties(schema: $schema, object: $relations));
-					}
-				}
-
+				$this->redactEntityRow(pass: $pass, row: $row);
 				continue;
-			}//end if
+			}
 
 			if (is_array($row) === true) {
-				$schemaId = $row['@self']['schema'] ?? null;
-				if (is_int($schemaId) === false && is_string($schemaId) === false) {
-					continue;
-				}
-
-				$schema = $this->getSchema(id: $schemaId);
-
-				$doWriteOnly = $this->schemaHasWriteOnlyRule(schema: $schema);
-				$doGated = ($applyGatedStrips === true && $this->schemaNeedsReadStrip(schema: $schema) === true);
-				if ($doWriteOnly === false && $doGated === false) {
-					$row = $this->maskRowReveals(row: $row, schema: $schema);
-					continue;
-				}
-
-				if ($doGated === true) {
-					$unfiltered = $row;
-					$row = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $row);
-					$row = $this->withholdRowCopies(
-						row: $row,
-						schema: $schema,
-						removed: $this->removedProperties(before: $unfiltered, after: $row)
-					);
-				} else {
-					$row = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $schema, object: $row);
-				}
-
-				// Decrypt AFTER redaction, same ordering rationale as the ObjectEntity branch above.
-				if ($doGated === true
-					&& $this->fieldEncryptionHandler !== null
-					&& $schema->hasEncryptedProperties() === true
-				) {
-					$row = $this->fieldEncryptionHandler->decryptProperties(data: $row, schema: $schema);
-				}
-
-				$row = $this->maskRowReveals(row: $row, schema: $schema);
-
-				if ($doWriteOnly === true
-					&& isset($row['@self']['relations']) === true
-					&& is_array($row['@self']['relations']) === true
-				) {
-					$row['@self']['relations'] = $this->propertyRbacHandler->stripWriteOnlyProperties(
-						schema: $schema,
-						object: $row['@self']['relations']
-					);
-				}
-			}//end if
-		}//end foreach
+				$row = $this->redactArrayRow(pass: $pass, row: $row);
+			}
+		}
 
 		unset($row);
 	}//end redactWriteOnlyFromRows()
+
+	/**
+	 * Record on the pass the schema of a row and which strips apply to it.
+	 *
+	 * @param RowRedaction $pass     The redaction pass.
+	 * @param int|string   $schemaId The row's schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	private function planRowRedaction(RowRedaction $pass, int|string $schemaId): void {
+		$pass->schema = $this->getSchema(id: $schemaId);
+		$pass->doWriteOnly = $this->schemaHasWriteOnlyRule(schema: $pass->schema);
+		$pass->doGated = ($pass->applyGatedStrips === true && $this->schemaNeedsReadStrip(schema: $pass->schema) === true);
+	}//end planRowRedaction()
+
+	/**
+	 * Decrypt a row's fields when the gated strips apply and the schema encrypts properties.
+	 *
+	 * Runs AFTER redaction: a field the strip removed is no longer a key, so
+	 * decryptProperties() (which only acts on keys still present) skips it,
+	 * and an unauthorized caller never reaches decryption for that field.
+	 *
+	 * @param RowRedaction $pass The redaction pass, on one row.
+	 * @param array        $data The redacted data.
+	 *
+	 * @return array The data, decrypted where allowed.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	private function decryptRedactedRow(RowRedaction $pass, array $data): array {
+		if ($pass->doGated === true
+			&& $this->fieldEncryptionHandler !== null
+			&& $pass->schema->hasEncryptedProperties() === true
+		) {
+			return $this->fieldEncryptionHandler->decryptProperties(data: $data, schema: $pass->schema);
+		}
+
+		return $data;
+	}//end decryptRedactedRow()
+
+	/**
+	 * Redact one ObjectEntity row in place: body, masked reveals and the relations index.
+	 *
+	 * The gated path uses filterAuthorizedProperties, which strips writeOnly
+	 * first and then applies the group-authorization filter. The writeOnly-only
+	 * path (admin, `_rbac: false`, system context, or no property authorization)
+	 * strips writeOnly unconditionally. Explicit-reveal values leave masked on
+	 * every read. The `relations` search index is a separate scalar mirror
+	 * surfaced as `@self.relations`, so a writeOnly secret leaks there unless
+	 * it is stripped too (#429); encrypted values do not look like references,
+	 * so only the writeOnly strip applies to it.
+	 *
+	 * @param RowRedaction $pass The redaction pass.
+	 * @param ObjectEntity $row  The row.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	private function redactEntityRow(RowRedaction $pass, ObjectEntity $row): void {
+		$this->planRowRedaction(pass: $pass, schemaId: $row->getSchema());
+		if ($pass->doWriteOnly === false && $pass->doGated === false) {
+			$this->maskEntityReveals(entity: $row, schema: $pass->schema);
+			return;
+		}
+
+		$object = $row->getObject();
+		if (is_array($object) === true) {
+			if ($pass->doGated === true) {
+				$object = $this->filterAuthorizedProperties(entity: $row, schema: $pass->schema, objectData: $object);
+			} else {
+				$object = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $pass->schema, object: $object);
+			}
+
+			$row->setObject($this->decryptRedactedRow(pass: $pass, data: $object));
+		}
+
+		$this->maskEntityReveals(entity: $row, schema: $pass->schema);
+
+		$relations = $row->getRelations();
+		if ($pass->doWriteOnly === true && is_array($relations) === true) {
+			$row->setRelations($this->propertyRbacHandler->stripWriteOnlyProperties(schema: $pass->schema, object: $relations));
+		}
+	}//end redactEntityRow()
+
+	/**
+	 * Redact one array row: body, `@self` copies of removed properties, masked reveals and `@self.relations`.
+	 *
+	 * A row without a usable `@self.schema` is returned unchanged.
+	 *
+	 * @param RowRedaction $pass The redaction pass.
+	 * @param array        $row  The row.
+	 *
+	 * @return array The redacted row.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	private function redactArrayRow(RowRedaction $pass, array $row): array {
+		$schemaId = $row['@self']['schema'] ?? null;
+		if (is_int($schemaId) === false && is_string($schemaId) === false) {
+			return $row;
+		}
+
+		$this->planRowRedaction(pass: $pass, schemaId: $schemaId);
+		if ($pass->doWriteOnly === false && $pass->doGated === false) {
+			return $this->maskRowReveals(row: $row, schema: $pass->schema);
+		}
+
+		if ($pass->doGated === true) {
+			$unfiltered = $row;
+			$row = $this->propertyRbacHandler->filterReadableProperties(schema: $pass->schema, object: $row);
+			$row = $this->withholdRowCopies(
+				row: $row,
+				schema: $pass->schema,
+				removed: $this->removedProperties(before: $unfiltered, after: $row)
+			);
+		} else {
+			$row = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $pass->schema, object: $row);
+		}
+
+		$row = $this->maskRowReveals(row: $this->decryptRedactedRow(pass: $pass, data: $row), schema: $pass->schema);
+		if ($pass->doWriteOnly === true
+			&& isset($row['@self']['relations']) === true
+			&& is_array($row['@self']['relations']) === true
+		) {
+			$row['@self']['relations'] = $this->propertyRbacHandler->stripWriteOnlyProperties(
+				schema: $pass->schema,
+				object: $row['@self']['relations']
+			);
+		}
+
+		return $row;
+	}//end redactArrayRow()
 
 	/**
 	 * The schema configuration keys that copy a property into `@self` metadata.
