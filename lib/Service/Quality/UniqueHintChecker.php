@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Quality;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
@@ -59,7 +59,7 @@ class UniqueHintChecker {
 	/**
 	 * Wire collaborators.
 	 *
-	 * @param ObjectService $objectService Object query path (RBAC + tenant scoped).
+	 * @param ObjectOperationsInterface $objectService Object query path (RBAC + tenant scoped).
 	 * @param UniqueHintAnnotationValidator $annotation Reader for the nominations.
 	 * @param UniqueHintWarnings $warnings Per-request collector the controller drains.
 	 * @param LoggerInterface $logger PSR logger.
@@ -67,7 +67,7 @@ class UniqueHintChecker {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly UniqueHintAnnotationValidator $annotation,
 		private readonly UniqueHintWarnings $warnings,
 		private readonly LoggerInterface $logger,

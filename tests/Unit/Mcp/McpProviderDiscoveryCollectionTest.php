@@ -158,7 +158,7 @@ class McpProviderDiscoveryCollectionTest extends TestCase {
 			[
 				SchemaMapperInterface::class => $schemaMapper,
 				RegisterMapperInterface::class => $registerMapper,
-				ObjectService::class => $this->createMock(ObjectService::class),
+				\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class => $this->createMock(ObjectService::class),
 				AuditTrailMapperInterface::class => $this->createMock(AuditTrailMapper::class),
 			]
 		);

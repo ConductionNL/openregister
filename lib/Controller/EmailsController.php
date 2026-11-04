@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Service\EmailService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -50,9 +50,9 @@ class EmailsController extends Controller {
 	/**
 	 * Object service for object validation.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * User session.
@@ -74,7 +74,7 @@ class EmailsController extends Controller {
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param EmailService $emailService Email service
-	 * @param ObjectService $objectService Object service
+	 * @param ObjectOperationsInterface $objectService Object service
 	 * @param \OCP\IUserSession $userSession User session
 	 * @param \Psr\Log\LoggerInterface $logger Logger
 	 *
@@ -84,7 +84,7 @@ class EmailsController extends Controller {
 		string $appName,
 		IRequest $request,
 		EmailService $emailService,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		\OCP\IUserSession $userSession,
 		\Psr\Log\LoggerInterface $logger,
 	) {

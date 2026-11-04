@@ -41,7 +41,7 @@ use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ObjectTreeService;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
@@ -72,7 +72,7 @@ class ObjectRelationsController extends Controller {
 	 * @param IRequest $request HTTP request.
 	 * @param ObjectRelationService $relations The relation row service.
 	 * @param RelationGraphService $graphs The bounded graph walk.
-	 * @param ObjectService $objectService Reads and writes objects, with RBAC.
+	 * @param ObjectOperationsInterface $objectService Reads and writes objects, with RBAC.
 	 * @param ExportGate $exportGate The export verb, checked before the graph leaves.
 	 * @param ObjectReadAccess $access Resolves an object under the caller's own RBAC.
 	 * @param ObjectTreeService $trees The bounded walk along a schema's parent property.
@@ -88,7 +88,7 @@ class ObjectRelationsController extends Controller {
 		IRequest $request,
 		private readonly ObjectRelationService $relations,
 		private readonly RelationGraphService $graphs,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly ExportGate $exportGate,
 		private readonly ObjectReadAccess $access,
 		private readonly ObjectTreeService $trees,
