@@ -206,6 +206,73 @@ class FederationControllerScopeTest extends TestCase {
 	}//end testAReadOnlyShareCannotUpdateOrDelete()
 
 	/**
+	 * A read-write schema-scope share over one visible stored object, addressed as `slug-1`.
+	 *
+	 * @param string|null $storedUuid The stored object's uuid.
+	 *
+	 * @return void
+	 */
+	private function writableObjectBySlug(?string $storedUuid): void {
+		$share = $this->objectScopeShare(permissions: 'read-write');
+		$share->setScope('schema');
+		$share->setObjectUri(null);
+
+		$entity = new ObjectEntity();
+		$entity->setUuid($storedUuid);
+		$entity->setSlug('slug-1');
+		$entity->setOrganisation('org-a');
+		$entity->setObject(['confidentiality' => 'openbaar']);
+
+		$this->shareMapper->method('findByToken')->willReturn($share);
+		$this->objectService->method('find')->willReturn($entity);
+	}//end writableObjectBySlug()
+
+	/**
+	 * An update by another identifier writes the object the guard checked, by its uuid.
+	 *
+	 * @return void
+	 */
+	public function testAnUpdateWritesTheGuardedObjectByItsUuid(): void {
+		$this->writableObjectBySlug(storedUuid: 'stored-uuid');
+		$written = [];
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (...$args) use (&$written): ObjectEntity {
+				$written[] = ($args['uuid'] ?? $args[4] ?? null);
+				return new ObjectEntity();
+			}
+		);
+
+		$this->assertSame(200, $this->controller->updateObject(shareToken: 'tok', id: 'slug-1')->getStatus());
+		$this->assertSame(['stored-uuid'], $written);
+	}//end testAnUpdateWritesTheGuardedObjectByItsUuid()
+
+	/**
+	 * A delete by another identifier removes the object the guard checked, by its uuid.
+	 *
+	 * @return void
+	 */
+	public function testADeleteRemovesTheGuardedObjectByItsUuid(): void {
+		$this->writableObjectBySlug(storedUuid: 'stored-uuid');
+		$this->objectService->expects($this->once())->method('deleteObject')->with('stored-uuid')->willReturn(true);
+
+		$this->assertSame(200, $this->controller->deleteObject(shareToken: 'tok', id: 'slug-1')->getStatus());
+	}//end testADeleteRemovesTheGuardedObjectByItsUuid()
+
+	/**
+	 * A guarded object without a uuid is not written: there is nothing to name it by.
+	 *
+	 * @return void
+	 */
+	public function testAnObjectWithoutUuidIsNotWritten(): void {
+		$this->writableObjectBySlug(storedUuid: null);
+		$this->objectService->expects($this->never())->method('saveObject');
+		$this->objectService->expects($this->never())->method('deleteObject');
+
+		$this->assertSame(404, $this->controller->updateObject(shareToken: 'tok', id: 'slug-1')->getStatus());
+		$this->assertSame(404, $this->controller->deleteObject(shareToken: 'tok', id: 'slug-1')->getStatus());
+	}//end testAnObjectWithoutUuidIsNotWritten()
+
+	/**
 	 * A REGISTER/SCHEMA-scope share is unaffected: its breadth IS the grant,
 	 * and `applyShareVisibility()` remains the guard there. Narrowing it here
 	 * would have broken federation rather than secured it.

@@ -349,7 +349,18 @@ The doelbinding guard of the object GET SHALL apply to the history as well. An
 anonymous caller SHALL receive 401. An administrator SHALL read the history as
 before. The instance-wide and register-wide listings (`GET /api/audit-trails`,
 `GET /api/audit-trails/{id}`, `GET /api/audit-trails/statistics`,
-`GET /api/audit-trails/export`) SHALL stay admin-only.
+`GET /api/audit-trails/export`) SHALL stay admin-only. Every other surface that
+shows one object's entries, such as the audit-trail integration leaf
+(`GET /api/objects/{register}/{schema}/{id}/integrations/audit-trail`) and the
+merged activity feed, SHALL read them through this reader path, for every caller.
+
+#### Scenario: the integration leaf shows the history as the reader path gives it
+
+- **GIVEN** a caller who may read an object, and an entry on it whose change set holds a property behind a read rule the caller does not meet, with a session and an IP address
+- **WHEN** they list the object's audit-trail integration leaf
+- **THEN** the entry carries no value of that property and no `session`, `request` or `ipAddress`
+- **AND** a caller who may not read the object, or whose read the doelbinding guard refuses, gets no entries
+- @e2e exclude {asserted with the real HistoryEntryRedactor in tests/Unit/Service/Integration/AuditTrailProviderReaderPathTest.php}
 
 #### Scenario: a reader of the object gets its history
 
