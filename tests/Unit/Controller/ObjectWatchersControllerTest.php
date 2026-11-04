@@ -120,6 +120,28 @@ class ObjectWatchersControllerTest extends TestCase {
 	 *
 	 * @return Watcher The row.
 	 */
+	/**
+	 * An object that does not exist is a 404 even when the lookup throws while
+	 * the object is being set, which is where ObjectService looks it up.
+	 *
+	 * @return void
+	 */
+	public function testAnUnknownObjectIsA404WhenItsLookupThrows(): void {
+		$this->objects->method('setObject')->willThrowException(new RuntimeException('not found in magic table'));
+		$this->watchers->expects($this->never())->method('watch');
+		$controller = new ObjectWatchersController(
+			'openregister',
+			$this->createMock(IRequest::class),
+			$this->objects,
+			$this->watchers,
+			$this->users,
+			$this->logger
+		);
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->watch('reg', 'sch', 'uuid-unknown')->getStatus());
+		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->unwatch('reg', 'sch', 'uuid-unknown')->getStatus());
+	}//end testAnUnknownObjectIsA404WhenItsLookupThrows()
+
 	private function row(string $userId, bool $notify = true): Watcher {
 		$watcher = new Watcher();
 		$watcher->setUserId($userId);

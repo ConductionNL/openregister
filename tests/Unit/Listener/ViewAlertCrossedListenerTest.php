@@ -58,6 +58,10 @@ use Psr\Log\AbstractLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\ViewerReachResolver
  * @uses \OCA\OpenRegister\Service\Rbac\ViewShareResolver
  * @uses \OCA\OpenRegister\Service\View\ViewAlert
+ * @uses \OCA\OpenRegister\Service\Notification\RecipientSource
+ * @uses \OCA\OpenRegister\Service\Notification\UnsubscribeHeaders
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
  */
 class ViewAlertCrossedListenerTest extends TestCase {
 

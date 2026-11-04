@@ -44,6 +44,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Controller\HardeningStatementController
  * @uses \OCA\OpenRegister\Service\Hardening\ElevationRequiredException
  * @uses \OCA\OpenRegister\Service\Hardening\HardeningPolicy
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningFloorException
  */
 class HardeningControllerTest extends TestCase {
 

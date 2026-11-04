@@ -4,7 +4,7 @@ No screen.
 
 ## D-1: the task carries its approving set
 
-`consume` reads one task. Looking up the task's sequence for its set would give `consume` a second source of truth and a second failure mode. So the set travels with the task: a sequence copies its chain's declared `approvingOutcomes` onto each position's `templateSnapshot` when it provisions the position. A task outside a sequence can declare the same key on its own snapshot. A task that declares nothing uses the default set, `approved` and `done`, the same default sequences use.
+`consume` reads one task. Looking up the task's sequence for its set would give `consume` a second source of truth and a second failure mode. So the set travels with the task: a sequence copies its chain's declared `approvingOutcomes` onto each position's `templateSnapshot` when it provisions the position. A task outside a sequence carries the key only when a trusted in-process caller imports it; the task routes refuse it (`sequence-fields-are-set-by-the-sequence-service-only`). A task that declares nothing uses the default set, `approved` and `done`, the same default sequences use.
 
 ## D-2: three refusals, told apart
 

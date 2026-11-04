@@ -260,198 +260,47 @@ class OasService {
 	 * @throws \Exception When base OAS file cannot be read or parsed
 	 * @throws OasValidationException In strict mode, when the generated OAS has validation errors
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
 	 * @spec openspec/specs/oas-validation/spec.md#requirement-server-url-is-absolute
 	 */
 	public function createOas(?string $registerId = null, bool $strict = false): array {
-		// Reset the validation report at the start of every generation pass.
 		$this->report = new OasValidationReport();
-
-		// Step 1: Reset OAS to base state from template file.
 		$this->oas = $this->getBaseOas();
 
-		// Step 2: Get registers to document.
-		// If registerId provided, get only that register; otherwise get all registers.
+		// Bypass RBAC and multi-tenancy: the document describes every register
+		// and schema, whatever the current user's organisation.
 		$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
 		if ($registerId !== null) {
 			$registers = [$this->registerMapper->find($registerId, _rbac: false, _multitenancy: false)];
 		}
 
-		// Step 3: Extract unique schema IDs from all registers.
-		// Multiple registers may share schemas, so we deduplicate.
-		$schemaIds = [];
-		foreach ($registers ?? [] as $register) {
-			$schemaIds = array_merge($schemaIds, $register->getSchemas());
-		}
-
-		// Remove duplicates to avoid loading same schema multiple times.
-		$uniqueSchemaIds = array_unique($schemaIds);
-
-		// Step 4: Get all schemas using unique schema IDs and index by schema ID.
-		// Indexing by ID allows fast lookup when processing registers.
-		// Bypass RBAC and multi-tenancy since OAS generation needs all schemas
-		// regardless of the current user's organization.
-		$schemas = [];
-		foreach ($this->schemaMapper->findMultiple($uniqueSchemaIds, _rbac: false, _multitenancy: false) as $schema) {
-			$schemas[$schema->getId()] = $schema;
-		}
-
-		// Step 5: Update servers configuration with actual API base URL.
-		$this->oas['servers'] = [
-			[
-				'url' => $this->urlGenerator->getAbsoluteURL('/apps/openregister/api'),
-				'description' => 'OpenRegister API Server',
-			],
-		];
-
-		// The OAuth flow URLs ship relative in BaseOas.json. The OAS 3.1
-		// meta-schema types them `format: uri` (absolute), so every generated
-		// document failed its own meta-schema check on them, and a client
-		// that resolves them against the page rather than the server lands
-		// on the wrong host. Anchor them to this instance, as the server is.
-		// Read, rewrite, write back, rather than taking a reference into the
-		// array: psalm refuses to analyse a reference into a property
-		// (UnsupportedPropertyReferenceUsage), and a guard it cannot analyse
-		// is a guard nobody checks.
-		$flow = ($this->oas['components']['securitySchemes']['oauth2']['flows']['authorizationCode'] ?? null);
-		if (is_array($flow) === true) {
-			foreach (['authorizationUrl', 'tokenUrl', 'refreshUrl'] as $urlKey) {
-				if (isset($flow[$urlKey]) === true && str_starts_with((string)$flow[$urlKey], '/') === true) {
-					$flow[$urlKey] = $this->urlGenerator->getAbsoluteURL((string)$flow[$urlKey]);
-				}
-			}
-
-			$this->oas['components']['securitySchemes']['oauth2']['flows']['authorizationCode'] = $flow;
-		}
-
-		// Step 6: If specific register requested, update info section with register details.
+		$schemas = $this->schemasOfRegisters(registers: $registers);
+		$this->anchorServerUrls();
 		if ($registerId !== null) {
-			$register = $registers[0];
-
-			// Build enhanced description from register description or generate default.
-			$description = $register->getDescription();
-			if (empty($description) === true) {
-				$description = 'API for ' . $register->getTitle() . ' register providing CRUD ';
-				$description .= 'operations, filtering, and search capabilities.';
-			}
-
-			// Update info section while preserving base contact and license information.
-			$this->oas['info'] = array_merge(
-				$this->oas['info'],
-				[
-					'title' => $register->getTitle() . ' API',
-					'version' => $register->getVersion(),
-					'description' => $description,
-				]
-			);
+			$this->describeRegister(register: $registers[0]);
 		}
 
-		// Step 7: Initialize tags array for API endpoint grouping.
-		$this->oas['tags'] = [];
+		$this->addSchemaComponents(schemas: $schemas);
+		$schemaRbacMap = $this->addRbacScopes(schemas: $schemas);
 
-		// Step 8: Add schemas to components and create tags for each schema.
-		foreach ($schemas as $schema) {
-			// Step 8a: Ensure schema has valid title (skip if empty).
-			$schemaTitle = $schema->getTitle();
-			if (empty($schemaTitle) === true) {
-				continue;
-			}
-
-			// Step 8b: Enrich schema definition with OpenAPI-specific properties.
-			$schemaDefinition = $this->enrichSchema(schema: $schema);
-			$sanitizedSchemaName = $this->sanitizeSchemaName(title: $schemaTitle);
-
-			// Step 8c: Validate schema definition before adding to components.
-			if (empty($schemaDefinition) === false) {
-				$this->oas['components']['schemas'][$sanitizedSchemaName] = $schemaDefinition;
-
-				// Add tag for the schema (keep original title for display).
-				$this->oas['tags'][] = [
-					'name' => $schemaTitle,
-					'description' => $schema->getDescription() ?? 'Operations for ' . $schemaTitle,
-				];
-			}
-		}//end foreach
-
-		// Step 9: Extract RBAC groups from all schemas and generate OAuth2 scopes.
-		$schemaRbacMap = [];
-		$allGroups = [];
-		foreach ($schemas as $schemaId => $schema) {
-			$rbac = $this->rbacAnnotator->extractSchemaGroups(schema: $schema);
-			$schemaRbacMap[$schemaId] = $rbac;
-			$allGroups = array_merge(
-				$allGroups,
-				$rbac['createGroups'],
-				$rbac['readGroups'],
-				$rbac['updateGroups'],
-				$rbac['deleteGroups']
-			);
-		}
-
-		// Always include admin since it has access to all endpoints.
-		$allGroups[] = 'admin';
-		$allGroups = array_values(array_unique($allGroups));
-
-		$scopes = [];
-		foreach ($allGroups as $group) {
-			$scopes[$group] = $this->rbacAnnotator->getScopeDescription(group: $group);
-		}
-
-		$this->oas['components']['securitySchemes']['oauth2']['flows']['authorizationCode']['scopes'] = $scopes;
-
-		// Initialize paths array.
+		// Generating for several registers prefixes operationIds with the
+		// register title, so two registers sharing a schema stay unique.
+		$operationIdPrefixes = ($registerId === null && count($registers) > 1);
 		$this->oas['paths'] = [];
-
-		// Determine if we need operationId prefixes for uniqueness.
-		// When generating for all registers, prefix with register slug to avoid collisions.
-		$useRegisterPrefix = ($registerId === null && count($registers) > 1);
-
-		// Add paths for each register.
 		foreach ($registers ?? [] as $register) {
-			// Get schema slugs for the current register.
-			$schemaIds = $register->getSchemas();
+			$this->addRegisterPaths(
+				register: $register,
+				context: ['schemas' => $schemas, 'rbac' => $schemaRbacMap, 'prefixed' => $operationIdPrefixes]
+			);
+		}
 
-			// Build operationId prefix from register title (PascalCase).
-			$operationIdPrefix = '';
-			if ($useRegisterPrefix === true) {
-				$operationIdPrefix = $this->pascalCase(string: $register->getTitle());
-			}
-
-			// Loop through each schema slug to get the schema from the schemas array.
-			foreach ($schemaIds ?? [] as $schemaId) {
-				if (($schemas[$schemaId] ?? null) !== null) {
-					$schema = $schemas[$schemaId];
-					$rbac = $schemaRbacMap[$schemaId] ?? [
-						'createGroups' => [],
-						'readGroups' => [],
-						'updateGroups' => [],
-						'deleteGroups' => [],
-					];
-					$this->addCrudPaths(
-						register: $register,
-						schema: $schema,
-						rbac: $rbac,
-						operationIdPrefix: $operationIdPrefix
-					);
-					$this->addExtendedPaths(register: $register, schema: $schema);
-					$this->addJsonLdContextPaths(register: $register, schema: $schema);
-				}
-			}
-		}//end foreach
-
-		// Validate the final OpenAPI specification before returning.
 		$this->validateOasIntegrity();
-
-		// Log validation issues so operators see them in the standard logs.
 		$this->logValidationIssues();
 
-		// Strict mode: refuse to return invalid output. The report is still
-		// available via getLastValidationReport() so the caller can render it.
+		// Strict mode refuses invalid output. The report is still available via
+		// getLastValidationReport() so the caller can render it.
 		if ($strict === true && $this->report->hasErrors() === true) {
 			throw new OasValidationException(
 				message: 'Generated OAS failed strict validation: ' . count($this->report->getErrors()) . ' error(s)',
@@ -461,6 +310,184 @@ class OasService {
 
 		return $this->oas;
 	}//end createOas()
+
+	/**
+	 * The schemas the registers use, each loaded once, indexed by id.
+	 *
+	 * @param array $registers The registers.
+	 *
+	 * @return array<int|string, Schema> The schemas by id.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function schemasOfRegisters(array $registers): array {
+		$schemaIds = [];
+		foreach ($registers as $register) {
+			$schemaIds = array_merge($schemaIds, $register->getSchemas());
+		}
+
+		$schemas = [];
+		foreach ($this->schemaMapper->findMultiple(array_unique($schemaIds), _rbac: false, _multitenancy: false) as $schema) {
+			$schemas[$schema->getId()] = $schema;
+		}
+
+		return $schemas;
+	}//end schemasOfRegisters()
+
+	/**
+	 * Point the server and the OAuth flow URLs at this instance.
+	 *
+	 * The OAuth flow URLs ship relative in BaseOas.json, and the OAS 3.1
+	 * meta-schema types them `format: uri` (absolute), so a document leaving
+	 * them relative fails its own meta-schema check, and a client resolving
+	 * them against the page lands on the wrong host. Read, rewrite and write
+	 * back rather than taking a reference: psalm cannot analyse a reference
+	 * into a property (UnsupportedPropertyReferenceUsage).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md#requirement-server-url-is-absolute
+	 */
+	private function anchorServerUrls(): void {
+		$this->oas['servers'] = [
+			[
+				'url' => $this->urlGenerator->getAbsoluteURL('/apps/openregister/api'),
+				'description' => 'OpenRegister API Server',
+			],
+		];
+
+		$flow = ($this->oas['components']['securitySchemes']['oauth2']['flows']['authorizationCode'] ?? null);
+		if (is_array($flow) === false) {
+			return;
+		}
+
+		foreach (['authorizationUrl', 'tokenUrl', 'refreshUrl'] as $urlKey) {
+			if (isset($flow[$urlKey]) === true && str_starts_with((string)$flow[$urlKey], '/') === true) {
+				$flow[$urlKey] = $this->urlGenerator->getAbsoluteURL((string)$flow[$urlKey]);
+			}
+		}
+
+		$this->oas['components']['securitySchemes']['oauth2']['flows']['authorizationCode'] = $flow;
+	}//end anchorServerUrls()
+
+	/**
+	 * Title, version and description of a single-register document, keeping the base contact and license.
+	 *
+	 * @param object $register The register.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function describeRegister(object $register): void {
+		$description = $register->getDescription();
+		if (empty($description) === true) {
+			$description = 'API for ' . $register->getTitle() . ' register providing CRUD ';
+			$description .= 'operations, filtering, and search capabilities.';
+		}
+
+		$this->oas['info'] = array_merge(
+			$this->oas['info'],
+			[
+				'title' => $register->getTitle() . ' API',
+				'version' => $register->getVersion(),
+				'description' => $description,
+			]
+		);
+	}//end describeRegister()
+
+	/**
+	 * Add each titled schema as a component, with a tag named by its title.
+	 *
+	 * @param array<int|string, Schema> $schemas The schemas.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function addSchemaComponents(array $schemas): void {
+		$this->oas['tags'] = [];
+		foreach ($schemas as $schema) {
+			$schemaTitle = $schema->getTitle();
+			if (empty($schemaTitle) === true) {
+				continue;
+			}
+
+			$schemaDefinition = $this->enrichSchema(schema: $schema);
+			if (empty($schemaDefinition) === true) {
+				continue;
+			}
+
+			$this->oas['components']['schemas'][$this->sanitizeSchemaName(title: $schemaTitle)] = $schemaDefinition;
+			$this->oas['tags'][] = [
+				'name' => $schemaTitle,
+				'description' => $schema->getDescription() ?? 'Operations for ' . $schemaTitle,
+			];
+		}
+	}//end addSchemaComponents()
+
+	/**
+	 * Declare an OAuth2 scope for every group the schemas grant, plus admin.
+	 *
+	 * @param array<int|string, Schema> $schemas The schemas.
+	 *
+	 * @return array<int|string, array> Each schema's groups per operation, by schema id.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function addRbacScopes(array $schemas): array {
+		$schemaRbacMap = [];
+		$allGroups = [];
+		foreach ($schemas as $schemaId => $schema) {
+			$rbac = $this->rbacAnnotator->extractSchemaGroups(schema: $schema);
+			$schemaRbacMap[$schemaId] = $rbac;
+			$allGroups = array_merge($allGroups, $rbac['createGroups'], $rbac['readGroups'], $rbac['updateGroups'], $rbac['deleteGroups']);
+		}
+
+		$allGroups[] = 'admin';
+		$scopes = [];
+		foreach (array_values(array_unique($allGroups)) as $group) {
+			$scopes[$group] = $this->rbacAnnotator->getScopeDescription(group: $group);
+		}
+
+		$this->oas['components']['securitySchemes']['oauth2']['flows']['authorizationCode']['scopes'] = $scopes;
+		return $schemaRbacMap;
+	}//end addRbacScopes()
+
+	/**
+	 * Add the CRUD, extended and JSON-LD context paths for each loaded schema of a register.
+	 *
+	 * @param object                                             $register The register.
+	 * @param array{schemas: array, rbac: array, prefixed: bool} $context  The loaded schemas, their groups,
+	 *                                                                     and whether operationIds carry the register prefix.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function addRegisterPaths(object $register, array $context): void {
+		$operationIdPrefix = '';
+		if ($context['prefixed'] === true) {
+			$operationIdPrefix = $this->pascalCase(string: $register->getTitle());
+		}
+
+		$noGroups = ['createGroups' => [], 'readGroups' => [], 'updateGroups' => [], 'deleteGroups' => []];
+		foreach ($register->getSchemas() ?? [] as $schemaId) {
+			$schema = ($context['schemas'][$schemaId] ?? null);
+			if ($schema === null) {
+				continue;
+			}
+
+			$this->addCrudPaths(
+				register: $register,
+				schema: $schema,
+				rbac: ($context['rbac'][$schemaId] ?? $noGroups),
+				operationIdPrefix: $operationIdPrefix
+			);
+			$this->addExtendedPaths(register: $register, schema: $schema);
+			$this->addJsonLdContextPaths(register: $register, schema: $schema);
+		}
+	}//end addRegisterPaths()
 
 	/**
 	 * Log every validation issue once at the appropriate severity level.
@@ -2301,98 +2328,148 @@ class OasService {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Recursive schema validation with multiple reference types
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional paths for allOf, $ref, and nested validation
-	 *
 	 * @spec openspec/specs/oas-validation/spec.md#scenario-pagination-structure-follows-api-42
 	 */
 	private function validateSchemaReferences(array &$schema, string $context): void {
-		// Check allOf constructs.
-		if (isset($schema['allOf']) === true) {
-			if (is_array($schema['allOf']) === false || empty($schema['allOf']) === true) {
-				unset($schema['allOf']);
+		$this->validateAllOf(schema: $schema, context: $context);
+		$this->validateRef(schema: $schema, context: $context);
+		$this->validateNestedReferences(schema: $schema, context: $context);
+	}//end validateSchemaReferences()
+
+	/**
+	 * Keep only the allOf items that carry a $ref, a type or properties; drop an allOf left empty.
+	 *
+	 * @param array<string, mixed> $schema  The schema, repaired in place.
+	 * @param string               $context The schema's path, for the report.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md
+	 */
+	private function validateAllOf(array &$schema, string $context): void {
+		if (isset($schema['allOf']) === false) {
+			return;
+		}
+
+		if (is_array($schema['allOf']) === false || empty($schema['allOf']) === true) {
+			unset($schema['allOf']);
+			return;
+		}
+
+		$validAllOfItems = array_values(
+			array_filter($schema['allOf'], fn ($item): bool => is_array($item) === true && $this->isUsableAllOfItem(item: $item))
+		);
+		if (empty($validAllOfItems) === false) {
+			$schema['allOf'] = $validAllOfItems;
+			return;
+		}
+
+		unset($schema['allOf']);
+		$this->report->addAutoCorrection(
+			path: $context . '.allOf',
+			message: 'allOf with no valid items was removed.',
+			code: OasValidationReport::CODE_INVALID_ALLOF,
+		);
+	}//end validateAllOf()
+
+	/**
+	 * Whether an allOf item carries a non-empty string $ref, a type or properties.
+	 *
+	 * @param array<int|string, mixed> $item The allOf item.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md
+	 */
+	private function isUsableAllOfItem(array $item): bool {
+		if (empty($item) === true) {
+			return false;
+		}
+
+		if (empty($item['$ref']) === false && is_string($item['$ref']) === true) {
+			return true;
+		}
+
+		return ($item['type'] ?? null) !== null || ($item['properties'] ?? null) !== null;
+	}//end isUsableAllOfItem()
+
+	/**
+	 * Repair a $ref: drop an empty or non-string one, match a component name case-insensitively,
+	 * and replace a dangling component reference with a string type.
+	 *
+	 * @param array<string, mixed> $schema  The schema, repaired in place.
+	 * @param string               $context The schema's path, for the report.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md
+	 */
+	private function validateRef(array &$schema, string $context): void {
+		if (($schema['$ref'] ?? null) === null) {
+			return;
+		}
+
+		if (empty($schema['$ref']) === true || is_string($schema['$ref']) === false) {
+			unset($schema['$ref']);
+			return;
+		}
+
+		$refPath = str_replace('#/components/schemas/', '', $schema['$ref']);
+		if (strpos($schema['$ref'], '#/components/schemas/') !== 0
+			|| isset($this->oas['components']['schemas'][$refPath]) === true
+		) {
+			return;
+		}
+
+		$existingName = $this->componentNamedLike(refPath: $refPath);
+		if ($existingName !== null) {
+			$schema['$ref'] = '#/components/schemas/' . $existingName;
+			return;
+		}
+
+		unset($schema['$ref']);
+		if (isset($schema['type']) === false) {
+			$schema['type'] = 'string';
+			$schema['description'] = $schema['description'] ?? 'Reference to ' . $refPath;
+		}
+
+		$this->report->addError(
+			path: $context . '.$ref',
+			message: 'Dangling $ref to "#/components/schemas/' . $refPath . '"; substituted with type=string.',
+			code: OasValidationReport::CODE_DANGLING_REF,
+		);
+	}//end validateRef()
+
+	/**
+	 * The component schema whose name matches ignoring case, if any.
+	 *
+	 * @param string $refPath The referenced component name.
+	 *
+	 * @return string|null The existing name.
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md
+	 */
+	private function componentNamedLike(string $refPath): ?string {
+		foreach (array_keys($this->oas['components']['schemas'] ?? []) as $existingName) {
+			if (strtolower($existingName) === strtolower($refPath)) {
+				return $existingName;
 			}
+		}
 
-			if (isset($schema['allOf']) === true && is_array($schema['allOf']) === true) {
-				$validAllOfItems = [];
-				foreach ($schema['allOf'] as $index => $item) {
-					// Suppress unused variable warning for $index - only processing items.
-					unset($index);
-					if (is_array($item) === false || empty($item) === true) {
-						continue;
-					}
+		return null;
+	}//end componentNamedLike()
 
-					// Validate each allOf item has required structure.
-					$hasValidRef = ($item['$ref'] ?? null) !== null
-						&& empty($item['$ref']) === false
-						&& is_string($item['$ref']) === true;
-					if ($hasValidRef === true) {
-						$validAllOfItems[] = $item;
-						continue;
-					}
-
-					if (($item['type'] ?? null) !== null || (($item['properties'] ?? null) !== null) === true) {
-						$validAllOfItems[] = $item;
-					}
-				}
-
-				// If no valid items remain, remove allOf.
-				if (empty($validAllOfItems) === true) {
-					unset($schema['allOf']);
-					$this->report->addAutoCorrection(
-						path: $context . '.allOf',
-						message: 'allOf with no valid items was removed.',
-						code: OasValidationReport::CODE_INVALID_ALLOF,
-					);
-				}
-
-				if (empty($validAllOfItems) === false) {
-					$schema['allOf'] = $validAllOfItems;
-				}
-			}//end if
-		}//end if
-
-		// Check $ref validity.
-		if (($schema['$ref'] ?? null) !== null) {
-			if (empty($schema['$ref']) === true || is_string($schema['$ref']) === false) {
-				unset($schema['$ref']);
-			}
-
-			if (isset($schema['$ref']) === true && is_string($schema['$ref']) === true) {
-				// Check if reference points to existing schema.
-				$refPath = str_replace('#/components/schemas/', '', $schema['$ref']);
-				if (strpos($schema['$ref'], '#/components/schemas/') === 0
-					&& isset($this->oas['components']['schemas'][$refPath]) === false
-				) {
-					// Try case-insensitive match against existing component names.
-					$resolved = false;
-					foreach (array_keys($this->oas['components']['schemas'] ?? []) as $existingName) {
-						if (strtolower($existingName) === strtolower($refPath)) {
-							$schema['$ref'] = '#/components/schemas/' . $existingName;
-							$resolved = true;
-							break;
-						}
-					}
-
-					// If no match found, remove the broken $ref and fall back to string type.
-					if ($resolved === false) {
-						unset($schema['$ref']);
-						if (isset($schema['type']) === false) {
-							$schema['type'] = 'string';
-							$schema['description'] = $schema['description'] ?? 'Reference to ' . $refPath;
-						}
-
-						$this->report->addError(
-							path: $context . '.$ref',
-							message: 'Dangling $ref to "#/components/schemas/' . $refPath . '"; substituted with type=string.',
-							code: OasValidationReport::CODE_DANGLING_REF,
-						);
-					}
-				}//end if
-			}//end if
-		}//end if
-
-		// Recursively check nested schemas (by reference so fixes are applied).
+	/**
+	 * Validate the references in properties, items and oneOf/anyOf/allOf items, in place.
+	 *
+	 * @param array<string, mixed> $schema  The schema, repaired in place.
+	 * @param string               $context The schema's path, for the report.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md
+	 */
+	private function validateNestedReferences(array &$schema, string $context): void {
 		if (($schema['properties'] ?? null) !== null) {
 			foreach ($schema['properties'] as $propName => &$property) {
 				if (is_array($property) === true) {
@@ -2407,21 +2484,19 @@ class OasService {
 			$this->validateSchemaReferences(schema: $schema['items'], context: "{$context}.items");
 		}
 
-		// Recursively check oneOf/anyOf/allOf items for broken refs.
 		foreach (['oneOf', 'anyOf', 'allOf'] as $compositionKey) {
-			if (($schema[$compositionKey] ?? null) !== null && is_array($schema[$compositionKey]) === true) {
-				foreach ($schema[$compositionKey] as $idx => &$compositionItem) {
-					if (is_array($compositionItem) === true) {
-						$this->validateSchemaReferences(
-							schema: $compositionItem,
-							context: "{$context}.{$compositionKey}[{$idx}]"
-						);
-					}
-				}
-
-				unset($compositionItem);
+			if (is_array($schema[$compositionKey] ?? null) === false) {
+				continue;
 			}
+
+			foreach ($schema[$compositionKey] as $idx => &$compositionItem) {
+				if (is_array($compositionItem) === true) {
+					$this->validateSchemaReferences(schema: $compositionItem, context: "{$context}.{$compositionKey}[{$idx}]");
+				}
+			}
+
+			unset($compositionItem);
 		}
-	}//end validateSchemaReferences()
+	}//end validateNestedReferences()
 
 }//end class

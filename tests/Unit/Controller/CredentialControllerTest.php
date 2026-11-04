@@ -55,6 +55,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Credential\CredentialBrokerService
  * @uses \OCA\OpenRegister\Service\Credential\CredentialUpdateRequest
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class CredentialControllerTest extends TestCase {
 
@@ -124,6 +125,7 @@ class CredentialControllerTest extends TestCase {
 
 		// A real ObjectEntity — getOwner()/jsonSerialize() are magic accessors.
 		$entity = new ObjectEntity();
+		$entity->setUuid('cred-1');
 		$entity->setOwner($ownerUid);
 		$entity->setObject($credData);
 
@@ -560,7 +562,7 @@ class CredentialControllerTest extends TestCase {
 		array $params,
 		CredentialStore $store,
 		bool $saveFails = false,
-		?string $storedUuid = null,
+		?string $storedUuid = 'cred-1',
 	): CredentialController {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn($ownerUid);
@@ -650,28 +652,31 @@ class CredentialControllerTest extends TestCase {
 	}//end testAnUpdateWritesTheCheckedRowByItsUuid()
 
 	/**
-	 * A stored row that carries no uuid is written by the identifier as sent, never by an empty one.
+	 * A stored row that carries no uuid is refused: its writes would have nothing to name it by.
+	 *
+	 * @return array<string, array{0: string}>
 	 */
-	public function testARowWithoutUuidIsWrittenByTheIdentifierAsSent(): void {
-		$puts = [];
+	public static function writes(): array {
+		return ['update' => ['update'], 'share update' => ['updateShares'], 'delete' => ['destroy']];
+	}//end writes()
+
+	#[DataProvider('writes')]
+	public function testARowWithoutUuidIsRefused(string $method): void {
 		$store = $this->createMock(CredentialStore::class);
-		$store->method('put')->willReturnCallback(
-			function (string $uuid) use (&$puts): void {
-				$puts[] = $uuid;
-			}
-		);
+		$store->expects($this->never())->method('put');
+		$store->expects($this->never())->method('delete');
 
 		$controller = $this->makeUpdateController(
 			ownerUid: 'alice',
 			credData: ['name' => 'My GitHub', 'provider' => 'github'],
-			params: ['secret' => 'gho_rotated'],
-			store: $store
+			params: ['secret' => 'gho_rotated', 'sharedWith' => [['type' => 'user', 'id' => 'bob']]],
+			store: $store,
+			storedUuid: null
 		);
 
-		$this->assertSame(Http::STATUS_OK, $controller->update('cred-1')->getStatus());
-		$this->assertSame(['cred-1'], $puts);
-		$this->assertSame(['cred-1'], $this->writtenUuids);
-	}//end testARowWithoutUuidIsWrittenByTheIdentifierAsSent()
+		$this->assertSame(Http::STATUS_FORBIDDEN, $controller->{$method}('cred-1')->getStatus());
+		$this->assertSame([], $this->writtenUuids);
+	}//end testARowWithoutUuidIsRefused()
 
 	/**
 	 * A share update is written by the uuid of the row the guard checked.

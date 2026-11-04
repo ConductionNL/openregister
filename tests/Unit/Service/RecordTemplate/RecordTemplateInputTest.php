@@ -29,6 +29,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\RecordTemplate\RecordTemplateInput
+ * @uses \OCA\OpenRegister\Db\RecordTemplate
+ * @uses \OCA\OpenRegister\Exception\RecordTemplateRefused
  */
 class RecordTemplateInputTest extends TestCase {
 

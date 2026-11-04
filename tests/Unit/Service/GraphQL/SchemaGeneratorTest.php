@@ -22,7 +22,7 @@ class SchemaGeneratorTest extends TestCase {
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
-		$this->generator = new SchemaGenerator($this->registerMapper, $this->schemaMapper);
+		$this->generator = new SchemaGenerator($this->registerMapper, $this->schemaMapper, $this->createMock(\OCP\IUserSession::class));
 	}
 
 	/**
@@ -205,6 +205,22 @@ class SchemaGeneratorTest extends TestCase {
 		$this->assertArrayHasKey('_owner', $fields);
 		$this->assertArrayHasKey('_auditTrail', $fields);
 		$this->assertArrayHasKey('_usedBy', $fields);
+	}
+
+	public function testTheAuditTrailFieldGivesNothingEvenWhenTheObjectCarriesTheKey(): void {
+		$schema = $this->createSchema(1, 'items', [
+			'name' => ['type' => 'string'],
+		]);
+
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
+		$this->registerMapper->method('findAll')->willReturn([]);
+
+		$this->generator->generate();
+		$field = $this->generator->getObjectType($schema)->getField('_auditTrail');
+
+		$this->assertIsCallable($field->resolveFn);
+		$root = ['_uuid' => 'obj-1', '_auditTrail' => [['action' => 'update', 'ipAddress' => '203.0.113.9']]];
+		$this->assertNull(($field->resolveFn)($root, ['last' => 10], null, null));
 	}
 
 	// ── Register query ──

@@ -1788,10 +1788,6 @@ class ValidateObject {
 	 *
 	 * @return ValidationResult The result of the validation.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Comprehensive validation with many edge case handlers
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple validation scenarios and schema types
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complete validation logic requires extensive handling
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
@@ -1810,25 +1806,8 @@ class ValidateObject {
 			$schema = $this->schemaMapper->find($schema);
 		}
 
-		// Use == because === will never be true when comparing stdClass-instances.
-		// Phpcs:ignore Squiz.Operators.ComparisonOperatorUsage.NotAllowed
-		$useDefaultSchema = ($schemaObject == new stdClass());
-		if ($useDefaultSchema === true && $schema instanceof Schema) {
-			$schemaObject = $schema->getSchemaObject($this->urlGenerator);
-		}
-
-		// A property recorded as not supplied is excused from being answered.
-		// The excusing is per object, so the prepared-schema cache is bypassed
-		// for this call: a cached schema object with one object's excusals
-		// baked in would excuse them for every other object validated against
-		// that schema in the same request.
-		if ($notSupplied !== [] && $schema instanceof Schema) {
-			$schemaObject = $this->notSupplied()->excuse(
-				schemaObject: $schemaObject,
-				declared: $notSupplied
-			);
-			$useDefaultSchema = false;
-		}
+		$target = $this->validationTarget(schema: $schema, given: ['schemaObject' => $schemaObject, 'notSupplied' => $notSupplied]);
+		$schemaObject = $target['schemaObject'];
 
 		if ($schema instanceof Schema) {
 			$this->validateUniqueFields(object: $object, schema: $schema);
@@ -1838,24 +1817,10 @@ class ValidateObject {
 		// un-transformed schema so the declared `type`/`format` annotations are intact.
 		$this->validateExtendedFieldTypes(object: $object, schemaObject: $schemaObject);
 
-		// Run the per-schema preparation pipeline (transform, clean, computed strip,
-		// null-type widening) — memoized per schemaId:version so bulk validation of
-		// N objects against one schema prepares it once instead of N times. A custom
-		// caller-supplied $schemaObject bypasses the cache (no stable cache key).
-		$cacheKey = null;
-		$prepared = null;
-		if ($useDefaultSchema === true && $schema instanceof Schema) {
-			$cacheKey = ((string)$schema->getId()) . ':' . ((string)$schema->getVersion());
-			$prepared = ($this->preparedSchemaCache[$cacheKey] ?? null);
-		}
-
-		if ($prepared === null) {
-			$prepared = $this->prepareSchemaForValidation(schemaObject: $schemaObject, schema: $schema);
-			if ($cacheKey !== null) {
-				$this->preparedSchemaCache[$cacheKey] = $prepared;
-			}
-		}
-
+		// The per-schema preparation pipeline (transform, clean, computed strip,
+		// null-type widening) is memoized per schemaId:version, so bulk
+		// validation of N objects against one schema prepares it once.
+		$prepared = $this->preparedSchema(schemaObject: $schemaObject, target: ['schema' => $schema, 'cacheKey' => $target['cacheKey']]);
 		$schemaObject = $prepared['schemaObject'];
 
 		// If there are no properties, we don't need to validate.
@@ -1876,62 +1841,141 @@ class ValidateObject {
 
 		// Remove only truly empty values that have no validation significance.
 		// Keep empty strings for required fields so they can fail validation with proper error messages.
-		$requiredFields = $prepared['required'];
+		$context = ['required' => $prepared['required'], 'schemaObject' => $schemaObject];
 		$object = array_filter(
 			$object,
-			function ($value, $key) use ($requiredFields, $schemaObject) {
-				// Always keep required fields, even if they're empty strings (they should fail validation).
-				if (in_array($key, $requiredFields) === true) {
-					return true;
-				}
-
-				// Check if this is an enum field.
-				$propertySchema = $schemaObject->properties->$key ?? null;
-				if (($propertySchema !== null) === true
-					&& (($propertySchema->enum ?? null) !== null) === true
-					&& is_array($propertySchema->enum) === true
-				) {
-					// For enum fields, only keep null if it's explicitly allowed in the enum.
-					// Strict: loosely, null == "", so an enum listing "" (stored as null)
-					// read as allowing null, the null was kept, and failed the string type.
-					if ($value === null && in_array(null, $propertySchema->enum, true) === false) {
-						return false;
-						// Remove null values for enum fields that don't allow null.
-					}
-				}
-
-				// For non-required fields, filter out empty arrays ONLY if they have no validation constraints.
-				// Keep empty arrays if they have minItems, maxItems, or other array validation rules.
-				if (is_array($value) === true && empty($value) === true) {
-					// Check if this field has array validation constraints.
-					if (($propertySchema !== null) === true) {
-						$hasMinItems = isset($propertySchema->minItems) && $propertySchema->minItems > 0;
-						$hasMaxItems = isset($propertySchema->maxItems);
-						$hasUniqueItems = isset($propertySchema->uniqueItems) && $propertySchema->uniqueItems === true;
-
-						// Keep empty arrays if they have validation constraints (should fail validation).
-						if ($hasMinItems === true || $hasMaxItems === true || $hasUniqueItems === true) {
-							return true;
-						}
-					}
-
-					return false;
-					// Remove empty arrays for non-required fields without validation constraints.
-				}
-
-				if ($value === '') {
-					return false;
-					// Remove empty strings for non-required fields.
-				}
-
-				// Keep everything else (including null, 0, false, etc.).
-				return true;
-			},
+			fn ($value, $key): bool => $this->isSignificantForValidation(entry: ['key' => $key, 'value' => $value], context: $context),
 			ARRAY_FILTER_USE_BOTH
 		);
 
 		return $this->getValidator()->validate(json_decode(json_encode($object)), $schemaObject);
 	}//end validateObject()
+
+	/**
+	 * The schema object to validate against, and the key its preparation is cached under.
+	 *
+	 * Without a caller-supplied schema object the schema entity's own is used,
+	 * and cached per schemaId:version. Properties recorded as not supplied are
+	 * excused per object, so such a call is never cached: a cached schema object
+	 * with one object's excusals baked in would excuse them for every other
+	 * object validated against that schema in the same request.
+	 *
+	 * @param Schema|null                                                    $schema The schema entity, if any.
+	 * @param array{schemaObject: object, notSupplied: array<string, string>} $given  The caller's schema object and excusals.
+	 *
+	 * @return array{schemaObject: object, cacheKey: string|null}
+	 *
+	 * @spec openspec/specs/object-validation/spec.md
+	 */
+	private function validationTarget(?Schema $schema, array $given): array {
+		$schemaObject = $given['schemaObject'];
+		// Use == because === will never be true when comparing stdClass-instances.
+		// Phpcs:ignore Squiz.Operators.ComparisonOperatorUsage.NotAllowed
+		$useDefaultSchema = ($schemaObject == new stdClass());
+		if ($schema === null) {
+			return ['schemaObject' => $schemaObject, 'cacheKey' => null];
+		}
+
+		if ($useDefaultSchema === true) {
+			$schemaObject = $schema->getSchemaObject($this->urlGenerator);
+		}
+
+		if ($given['notSupplied'] !== []) {
+			return [
+				'schemaObject' => $this->notSupplied()->excuse(schemaObject: $schemaObject, declared: $given['notSupplied']),
+				'cacheKey' => null,
+			];
+		}
+
+		$cacheKey = null;
+		if ($useDefaultSchema === true) {
+			$cacheKey = ((string)$schema->getId()) . ':' . ((string)$schema->getVersion());
+		}
+
+		return ['schemaObject' => $schemaObject, 'cacheKey' => $cacheKey];
+	}//end validationTarget()
+
+	/**
+	 * The prepared schema for validation, memoized per schemaId:version.
+	 *
+	 * A null cache key (a caller-supplied schema object, or excused properties)
+	 * prepares afresh and caches nothing.
+	 *
+	 * @param object                                         $schemaObject The schema object to prepare.
+	 * @param array{schema: Schema|null, cacheKey: string|null} $target       The schema entity and the cache key.
+	 *
+	 * @return array{schemaObject: object, computed: array, required: array} The prepared schema.
+	 *
+	 * @spec openspec/specs/object-validation/spec.md
+	 */
+	private function preparedSchema(object $schemaObject, array $target): array {
+		$cacheKey = $target['cacheKey'];
+		if ($cacheKey !== null && isset($this->preparedSchemaCache[$cacheKey]) === true) {
+			return $this->preparedSchemaCache[$cacheKey];
+		}
+
+		$prepared = $this->prepareSchemaForValidation(schemaObject: $schemaObject, schema: $target['schema']);
+		if ($cacheKey !== null) {
+			$this->preparedSchemaCache[$cacheKey] = $prepared;
+		}
+
+		return $prepared;
+	}//end preparedSchema()
+
+	/**
+	 * Whether a value is kept for validation.
+	 *
+	 * Required fields are always kept, so an empty one fails. Otherwise a null
+	 * is dropped from an enum that does not list null, an empty array is
+	 * dropped unless the property constrains its items, and an empty string is
+	 * dropped. Everything else (null, 0, false) is kept.
+	 *
+	 * @param array{key: string|int, value: mixed}             $entry   The property and its value.
+	 * @param array{required: array, schemaObject: object} $context The required fields and the prepared schema.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/object-validation/spec.md
+	 */
+	private function isSignificantForValidation(array $entry, array $context): bool {
+		$key = $entry['key'];
+		$value = $entry['value'];
+		if (in_array($key, $context['required']) === true) {
+			return true;
+		}
+
+		$propertySchema = $context['schemaObject']->properties->$key ?? null;
+		// Strict: loosely, null == "", so an enum listing "" (stored as null)
+		// would read as allowing null, keep the null, and fail the string type.
+		if ($value === null && is_array($propertySchema->enum ?? null) === true) {
+			return in_array(null, $propertySchema->enum, true) === true;
+		}
+
+		if (is_array($value) === true && empty($value) === true) {
+			return $this->constrainsItems(propertySchema: $propertySchema);
+		}
+
+		return $value !== '';
+	}//end isSignificantForValidation()
+
+	/**
+	 * Whether a property schema puts minItems above 0, maxItems, or uniqueItems on its array.
+	 *
+	 * @param object|null $propertySchema The property schema.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/object-validation/spec.md
+	 */
+	private function constrainsItems(?object $propertySchema): bool {
+		if ($propertySchema === null) {
+			return false;
+		}
+
+		return (isset($propertySchema->minItems) === true && $propertySchema->minItems > 0)
+			|| isset($propertySchema->maxItems) === true
+			|| (isset($propertySchema->uniqueItems) === true && $propertySchema->uniqueItems === true);
+	}//end constrainsItems()
 
 	/**
 	 * Run the complete per-schema preparation pipeline for validation.

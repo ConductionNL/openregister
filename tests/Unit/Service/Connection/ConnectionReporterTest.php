@@ -47,6 +47,7 @@ use RuntimeException;
  * design D6 of the hydra change connection-registry.
  *
  * @covers \OCA\OpenRegister\Service\Connection\ConnectionReporter
+ * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
  */
 class ConnectionReporterTest extends TestCase {
 

@@ -56,6 +56,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  */
 class PermissionHandlerRecordOrganisationTest extends TestCase {
 

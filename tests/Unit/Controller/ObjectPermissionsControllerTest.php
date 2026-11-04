@@ -69,6 +69,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectAccessReport
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectPermissionsResolver
  * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
+ * @uses \OCA\OpenRegister\Db\AuditTrail
  */
 class ObjectPermissionsControllerTest extends TestCase {
 

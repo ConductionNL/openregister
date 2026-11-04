@@ -70,6 +70,7 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
  * @uses   \OCA\OpenRegister\Service\Rbac\ShareGrantAttributes
  * @uses   \OCA\OpenRegister\Support\PermissionBit
+ * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  */
 class ObjectGrantsReportTest extends TestCase {
 

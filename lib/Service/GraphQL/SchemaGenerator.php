@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\GraphQL\Scalar\UriType;
 use OCA\OpenRegister\Service\GraphQL\Scalar\UuidType;
 use OCA\OpenRegister\Service\GraphQL\SchemaGenerator\CompositionHandler;
 use OCA\OpenRegister\Service\GraphQL\SchemaGenerator\TypeMapperHandler;
+use OCP\IUserSession;
 
 /**
  * Generates a GraphQL schema from OpenRegister register/schema definitions.
@@ -123,10 +124,12 @@ class SchemaGenerator {
 	 *
 	 * @param RegisterMapper $registerMapper Register mapper
 	 * @param SchemaMapper $schemaMapper Schema mapper
+	 * @param IUserSession $userSession The session that says who is asking
 	 */
 	public function __construct(
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
+		private readonly IUserSession $userSession,
 	) {
 	}//end __construct()
 
@@ -476,9 +479,15 @@ class SchemaGenerator {
 		$fields['_schema'] = ['type' => Type::int(), 'description' => 'Schema ID'];
 		$fields['_created'] = ['type' => $this->scalars['DateTime'], 'description' => 'Creation timestamp'];
 		$fields['_updated'] = ['type' => $this->scalars['DateTime'], 'description' => 'Last update timestamp'];
-		$fields['_owner'] = ['type' => Type::string(), 'description' => 'Object owner user ID'];
+		$fields['_owner'] = [
+			'type' => Type::string(),
+			'description' => 'Object owner user ID, null for an anonymous caller',
+			'resolve' => fn (array $row): ?string => $this->ownerForCaller(row: $row),
+		];
 
-		// Audit trail field.
+		// Audit trail field. It answers null: an object's entries may only be
+		// given out through ObjectHistoryForReaders, and the explicit resolver
+		// keeps the default one from reading an `_auditTrail` key off the object.
 		$fields['_auditTrail'] = [
 			'type' => Type::listOf($this->typeMapper->getAuditTrailType()),
 			'description' => 'Audit trail entries for this object',
@@ -489,6 +498,7 @@ class SchemaGenerator {
 					'description' => 'Number of most recent entries to return',
 				],
 			],
+			'resolve' => static fn (): ?array => null,
 		];
 
 		// Schema property fields.
@@ -673,6 +683,25 @@ class SchemaGenerator {
 
 		return $plural;
 	}//end singularize()
+
+	/**
+	 * The `_owner` field: answered at the field, so an alias cannot get round it.
+	 *
+	 * The row keeps `_owner`, because a property rule on a related row reads it there.
+	 *
+	 * @param array<string, mixed> $row The resolved row.
+	 *
+	 * @return string|null The owner, or null for an anonymous caller.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	private function ownerForCaller(array $row): ?string {
+		if ($this->userSession->getUser() === null) {
+			return null;
+		}
+
+		return $row['_owner'] ?? null;
+	}//end ownerForCaller()
 
 	/**
 	 * Create a resolver for single object queries.
