@@ -105,8 +105,7 @@ class ProcessingLogControllerTest extends TestCase {
 			appName: 'openregister',
 			request: $this->request,
 			logMapper: $this->logMapper,
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
+			session: new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, $this->groupManager, $this->createMock(\Psr\Log\LoggerInterface::class)),
 			appConfig: $this->appConfig,
 			organisationService: $this->organisationService
 		);

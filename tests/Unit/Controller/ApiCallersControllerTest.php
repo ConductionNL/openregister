@@ -94,9 +94,7 @@ class ApiCallersControllerTest extends TestCase {
 			$mapper,
 			new ApiVersionCatalogue($appConfig, $this->createMock(LoggerInterface::class)),
 			$appConfig,
-			$session,
-			$groups,
-			$this->createMock(LoggerInterface::class),
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($session, $groups, $this->createMock(LoggerInterface::class)),
 		);
 
 		return [$controller, $mapper];

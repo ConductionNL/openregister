@@ -114,10 +114,8 @@ class FederatedConfigControllerTrustGateTest extends TestCase {
 			$this->request,
 			$this->service,
 			$this->createMock(FederatedConfigAccess::class),
-			$this->userSession,
-			$this->createMock(IConfig::class),
-			$this->groupManager
-		);
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, $this->groupManager, $this->createMock(\Psr\Log\LoggerInterface::class)),
+			$this->createMock(IConfig::class));
 
 	}//end controllerFor()
 
@@ -314,10 +312,8 @@ class FederatedConfigControllerTrustGateTest extends TestCase {
 			$this->request,
 			$service,
 			$this->createMock(FederatedConfigAccess::class),
-			$this->userSession,
-			$this->createMock(IConfig::class),
-			$this->groupManager
-		);
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, $this->groupManager, $this->createMock(\Psr\Log\LoggerInterface::class)),
+			$this->createMock(IConfig::class));
 
 		$this->assertSame(200, $controller->setTrust()->getStatus());
 
