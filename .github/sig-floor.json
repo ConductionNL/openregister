@@ -6,7 +6,7 @@
   "lizard": "1.24.3"
  },
  "unit_reader": 2,
- "measured_at": "eb3a390862dddf4da46f08d2e811541a43247193",
+ "measured_at": "7c0cbcca0fb70554dd4eb5415e13be159c22475f",
  "checks": [
   "javascript duplication",
   "javascript unit_complexity >10",
@@ -44,6 +44,7 @@
   "typescript unit_size >30",
   "typescript unit_size >60",
   "vue unit_complexity >10",
+  "vue unit_complexity >25",
   "vue unit_complexity >5",
   "vue unit_interfacing >2",
   "vue unit_interfacing >4",
