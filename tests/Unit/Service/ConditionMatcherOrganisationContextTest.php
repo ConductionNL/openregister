@@ -33,6 +33,8 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\ConditionMatcher
  * @uses   \OCA\OpenRegister\Service\OrganisationContext
  * @uses   \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class ConditionMatcherOrganisationContextTest extends TestCase {
 

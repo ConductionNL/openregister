@@ -1519,7 +1519,9 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * field reads `@self`, and an object without `@self` the body key of that name.
 	 * Both can come from whoever wrote the data, so the data's own `@self` is replaced
 	 * and the body keys that name a metadata field are dropped: the record answers for
-	 * its metadata, also when a field is empty.
+	 * its metadata, also when a field is empty. The envelope also carries the
+	 * record's `expires`, which the rendered `@self` does not, so a delegation
+	 * can end on `_expires`.
 	 *
 	 * @return array<int|string, mixed>
 	 *
@@ -1528,6 +1530,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function getMatchEnvelope(): array {
 		$envelope = $this->getObject();
 		$metadata = $this->getObjectArray();
+		$metadata['expires'] = $this->getFormattedDate(date: $this->expires);
 		foreach (array_keys($metadata) as $field) {
 			unset($envelope['_' . $field]);
 		}

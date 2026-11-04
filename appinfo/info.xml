@@ -512,6 +512,10 @@ Vrij en open source onder de EUPL-licentie.
 		     it never adds members, so an unpopulated group still denies every
 		     caller. This is how that state becomes visible. -->
 		<command>OCA\OpenRegister\Command\DeclaredGroupsCommand</command>
+		<!-- Read-only report: stored rules conditioned on record metadata no record
+		     carries (such as _published). Saving such a rule is refused; this lists
+		     the ones stored before that. -->
+		<command>OCA\OpenRegister\Command\UnknownMetadataConditionsCommand</command>
 		<!-- Backwards remediation for the #2150 cross-app schema-slug collision:
 		     the per-register uniqueness fix is preventive only, so pre-existing
 		     shared rows still need splitting. Reports only unless applied. -->
