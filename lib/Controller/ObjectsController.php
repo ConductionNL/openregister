@@ -30,12 +30,12 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\CustomValidationException;
@@ -154,9 +154,9 @@ class ObjectsController extends Controller {
 	 * @param IAppConfig $config The app configuration object
 	 * @param IAppManager $appManager The app manager
 	 * @param ContainerInterface $container The DI container
-	 * @param RegisterMapper $registerMapper The register mapper
-	 * @param SchemaMapper $schemaMapper The schema mapper
-	 * @param AuditTrailMapper $auditTrailMapper The audit trail mapper
+	 * @param RegisterMapperInterface $registerMapper The register mapper
+	 * @param SchemaMapperInterface $schemaMapper The schema mapper
+	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail mapper
 	 * @param ObjectService $objectService The object service
 	 * @param IUserSession $userSession The user session
 	 * @param IGroupManager $groupManager The group manager
@@ -188,9 +188,9 @@ class ObjectsController extends Controller {
 		private readonly IAppConfig $config,
 		private readonly IAppManager $appManager,
 		private readonly ContainerInterface $container,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly ObjectService $objectService,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
@@ -1920,7 +1920,7 @@ class ObjectsController extends Controller {
 	 */
 	private function activeOrganisationUuid(): ?string {
 		try {
-			$organisationService = $this->container->get(\OCA\OpenRegister\Service\OrganisationService::class);
+			$organisationService = $this->container->get(\OCA\OpenRegister\Service\OrganisationServiceInterface::class);
 			$activeOrg = $organisationService?->getActiveOrganisation();
 			return $activeOrg?->getUuid();
 		} catch (\Throwable $e) {

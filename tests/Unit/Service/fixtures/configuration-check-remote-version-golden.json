@@ -1,0 +1,280 @@
+{
+    "top-level version": [
+        [
+            "log.debug",
+            "[FetchHandler] Fetching data from URL: https://example.org/c.json",
+            []
+        ],
+        [
+            "http",
+            "GET",
+            "https://example.org/c.json"
+        ],
+        [
+            "log.debug",
+            "[FetchHandler] Successfully fetched and parsed data from URL: https://example.org/c.json",
+            []
+        ],
+        [
+            "update",
+            "1.2.0",
+            true
+        ],
+        [
+            "log.info",
+            "[ConfigurationService] Checked remote version for configuration 42: 1.2.0",
+            []
+        ],
+        [
+            "result",
+            "1.2.0"
+        ]
+    ],
+    "version under info": [
+        [
+            "log.debug",
+            "[FetchHandler] Fetching data from URL: https://example.org/c.json",
+            []
+        ],
+        [
+            "http",
+            "GET",
+            "https://example.org/c.json"
+        ],
+        [
+            "log.debug",
+            "[FetchHandler] Successfully fetched and parsed data from URL: https://example.org/c.json",
+            []
+        ],
+        [
+            "update",
+            "2.0.1",
+            true
+        ],
+        [
+            "log.info",
+            "[ConfigurationService] Checked remote version for configuration 42: 2.0.1",
+            []
+        ],
+        [
+            "result",
+            "2.0.1"
+        ]
+    ],
+    "top-level wins over info": [
+        [
+            "log.debug",
+            "[FetchHandler] Fetching data from URL: https://example.org/c.json",
+            []
+        ],
+        [
+            "http",
+            "GET",
+            "https://example.org/c.json"
+        ],
+        [
+            "log.debug",
+            "[FetchHandler] Successfully fetched and parsed data from URL: https://example.org/c.json",
+            []
+        ],
+        [
+            "update",
+            "3",
+            true
+        ],
+        [
+            "log.info",
+            "[ConfigurationService] Checked remote version for configuration 42: 3",
+            []
+        ],
+        [
+            "result",
+            "3"
+        ]
+    ],
+    "no version": [
+        [
+            "log.debug",
+            "[FetchHandler] Fetching data from URL: https://example.org/c.json",
+            []
+        ],
+        [
+            "http",
+            "GET",
+            "https://example.org/c.json"
+        ],
+        [
+            "log.debug",
+            "[FetchHandler] Successfully fetched and parsed data from URL: https://example.org/c.json",
+            []
+        ],
+        [
+            "log.warning",
+            "[ConfigurationService] Remote configuration does not contain a version field",
+            []
+        ],
+        [
+            "result",
+            null
+        ]
+    ],
+    "unparseable body": [
+        [
+            "log.debug",
+            "[FetchHandler] Fetching data from URL: https://example.org/c.json",
+            []
+        ],
+        [
+            "http",
+            "GET",
+            "https://example.org/c.json"
+        ],
+        [
+            "log.error",
+            "[FetchHandler] Failed to parse response body as JSON or YAML",
+            {
+                "Content-Type": "application/json",
+                "url": "https://example.org/c.json"
+            }
+        ],
+        [
+            "log.error",
+            "[ConfigurationService] Failed to fetch remote configuration",
+            {
+                "error": {
+                    "error": "Failed to parse response body as JSON or YAML",
+                    "Content-Type": "application/json"
+                }
+            }
+        ],
+        [
+            "result",
+            null
+        ]
+    ],
+    "remote down": [
+        [
+            "log.debug",
+            "[FetchHandler] Fetching data from URL: https://example.org/c.json",
+            []
+        ],
+        [
+            "http",
+            "GET",
+            "https://example.org/c.json"
+        ],
+        [
+            "log.error",
+            "[FetchHandler] Failed to do a GET api-call on url: https://example.org/c.json refused",
+            []
+        ],
+        [
+            "log.error",
+            "[ConfigurationService] Failed to fetch remote configuration",
+            {
+                "error": {
+                    "error": "Failed to do a GET api-call on url: https://example.org/c.json refused"
+                }
+            }
+        ],
+        [
+            "result",
+            null
+        ]
+    ],
+    "update fails": [
+        [
+            "log.debug",
+            "[FetchHandler] Fetching data from URL: https://example.org/c.json",
+            []
+        ],
+        [
+            "http",
+            "GET",
+            "https://example.org/c.json"
+        ],
+        [
+            "log.debug",
+            "[FetchHandler] Successfully fetched and parsed data from URL: https://example.org/c.json",
+            []
+        ],
+        [
+            "update",
+            "1.2.0",
+            true
+        ],
+        [
+            "log.error",
+            "[ConfigurationService] Unexpected error checking remote version: database gone",
+            []
+        ],
+        [
+            "result",
+            null
+        ]
+    ],
+    "github source": [
+        [
+            "log.debug",
+            "[FetchHandler] Fetching data from URL: https://example.org/c.json",
+            []
+        ],
+        [
+            "http",
+            "GET",
+            "https://example.org/c.json"
+        ],
+        [
+            "log.debug",
+            "[FetchHandler] Successfully fetched and parsed data from URL: https://example.org/c.json",
+            []
+        ],
+        [
+            "update",
+            "1.2.0",
+            true
+        ],
+        [
+            "log.info",
+            "[ConfigurationService] Checked remote version for configuration 42: 1.2.0",
+            []
+        ],
+        [
+            "result",
+            "1.2.0"
+        ]
+    ],
+    "local source": [
+        [
+            "log.info",
+            "[ConfigurationService] Configuration is not from a remote source, skipping version check",
+            []
+        ],
+        [
+            "result",
+            null
+        ]
+    ],
+    "no url": [
+        [
+            "log.warning",
+            "[ConfigurationService] Configuration has no source URL, cannot check remote version",
+            []
+        ],
+        [
+            "result",
+            null
+        ]
+    ],
+    "url is zero": [
+        [
+            "log.warning",
+            "[ConfigurationService] Configuration has no source URL, cannot check remote version",
+            []
+        ],
+        [
+            "result",
+            null
+        ]
+    ]
+}

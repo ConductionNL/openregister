@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationTrialService;
 use OCA\OpenRegister\Service\Calculation\OperatorCatalogue;
 
@@ -38,16 +38,16 @@ final class CalculationsControllerServices {
 	 *
 	 * @param OperatorCatalogue       $catalogue      The published operator catalogue.
 	 * @param CalculationTrialService $trials         Dry-run evaluation of an unsaved declaration.
-	 * @param RegisterMapper          $registerMapper Register lookup, scoped to the caller.
-	 * @param SchemaMapper            $schemaMapper   Schema lookup, scoped to the caller.
+	 * @param RegisterMapperInterface          $registerMapper Register lookup, scoped to the caller.
+	 * @param SchemaMapperInterface            $schemaMapper   Schema lookup, scoped to the caller.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function __construct(
 		public readonly OperatorCatalogue $catalogue,
 		public readonly CalculationTrialService $trials,
-		public readonly RegisterMapper $registerMapper,
-		public readonly SchemaMapper $schemaMapper,
+		public readonly RegisterMapperInterface $registerMapper,
+		public readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 }//end class

@@ -59,7 +59,7 @@ use RuntimeException;
  * manager, the container, the object service, the source entity, the fleet id
  * resolver and the connector's call signature; each is one side of the join.
  */
-class ExternalIntegrationRouter {
+class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	use ConnectorRequestTrait;
 
 

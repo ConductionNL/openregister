@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\ToolRegistry;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -76,9 +76,9 @@ class AgentsController extends Controller {
 	 *
 	 * Used to get active organisation for multi-tenancy filtering.
 	 *
-	 * @var OrganisationService Organisation service instance
+	 * @var OrganisationServiceInterface Organisation service instance
 	 */
-	private readonly OrganisationService $organisationService;
+	private readonly OrganisationServiceInterface $organisationService;
 
 	/**
 	 * Tool registry
@@ -116,7 +116,7 @@ class AgentsController extends Controller {
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param AgentMapper $agentMapper Agent mapper for database operations
-	 * @param OrganisationService $organisationService Organisation service for multi-tenancy
+	 * @param OrganisationServiceInterface $organisationService Organisation service for multi-tenancy
 	 * @param ToolRegistry $toolRegistry Tool registry for available tools
 	 * @param LoggerInterface $logger Logger for error tracking
 	 * @param string|null $userId Current user ID for RBAC checks
@@ -127,7 +127,7 @@ class AgentsController extends Controller {
 		string $appName,
 		IRequest $request,
 		AgentMapper $agentMapper,
-		OrganisationService $organisationService,
+		OrganisationServiceInterface $organisationService,
 		ToolRegistry $toolRegistry,
 		LoggerInterface $logger,
 		?string $userId,

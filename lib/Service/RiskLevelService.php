@@ -37,7 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCP\FilesMetadata\IFilesMetadataManager;
 use OCP\FilesMetadata\Model\IMetadataValueWrapper;
@@ -108,12 +108,12 @@ class RiskLevelService {
 	/**
 	 * Constructor.
 	 *
-	 * @param EntityRelationMapper $entityRelationMapper Mapper for entity-file relations
+	 * @param EntityRelationMapperInterface $entityRelationMapper Mapper for entity-file relations
 	 * @param IFilesMetadataManager $metadataManager Nextcloud files metadata manager
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
-		private readonly EntityRelationMapper $entityRelationMapper,
+		private readonly EntityRelationMapperInterface $entityRelationMapper,
 		private readonly IFilesMetadataManager $metadataManager,
 		private readonly LoggerInterface $logger,
 	) {

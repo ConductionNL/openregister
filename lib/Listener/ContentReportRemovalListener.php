@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Service\Audit\ContentReportService;
 use OCP\EventDispatcher\Event;
@@ -56,12 +56,12 @@ class ContentReportRemovalListener implements IEventListener {
 	 * Wire collaborators.
 	 *
 	 * @param ContentReportService $reports The reports and their copies.
-	 * @param AuditTrailMapper $auditTrail Records the removal against the copy.
+	 * @param AuditTrailMapperInterface $auditTrail Records the removal against the copy.
 	 * @param LoggerInterface $logger PSR logger for warnings.
 	 */
 	public function __construct(
 		private readonly ContentReportService $reports,
-		private readonly AuditTrailMapper $auditTrail,
+		private readonly AuditTrailMapperInterface $auditTrail,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

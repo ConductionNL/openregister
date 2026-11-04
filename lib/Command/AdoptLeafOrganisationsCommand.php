@@ -50,7 +50,7 @@ namespace OCA\OpenRegister\Command;
 
 use DateTime;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
@@ -109,7 +109,7 @@ class AdoptLeafOrganisationsCommand extends Command {
 	/**
 	 * Wire the mappers and the object reader.
 	 *
-	 * @param OrganisationMapper $organisationMapper The Organisation mapper.
+	 * @param OrganisationMapperInterface $organisationMapper The Organisation mapper.
 	 * @param ObjectService      $objectService      Reader for the leaf objects.
 	 * @param LoggerInterface    $logger             Logger.
 	 *
@@ -118,7 +118,7 @@ class AdoptLeafOrganisationsCommand extends Command {
 	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md#requirement-a-leaf-apps-organisations-are-adopted-not-re-created-req-org-106
 	 */
 	public function __construct(
-		private readonly OrganisationMapper $organisationMapper,
+		private readonly OrganisationMapperInterface $organisationMapper,
 		private readonly ObjectService $objectService,
 		private readonly LoggerInterface $logger,
 	) {

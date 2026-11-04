@@ -138,7 +138,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.StaticAccess)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class SchemaMapper extends QBMapper {
+class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	use MultiTenancyTrait;
 
 	/**
@@ -176,9 +176,9 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * Used to get active organisation and apply organisation filters.
 	 *
-	 * @var OrganisationMapper Organisation mapper instance
+	 * @var OrganisationMapperInterface Organisation mapper instance
 	 */
-	protected readonly OrganisationMapper $organisationMapper;
+	protected readonly OrganisationMapperInterface $organisationMapper;
 
 	/**
 	 * App configuration for multi-tenancy settings
@@ -257,7 +257,7 @@ class SchemaMapper extends QBMapper {
 	 * @param IDBConnection $db Database connection for queries
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher for schema events
 	 * @param PropertyValidatorHandler $validator Schema property validator for validation
-	 * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy
+	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy
 	 * @param IUserSession $userSession User session for current user context
 	 * @param IGroupManager $groupManager Group manager for RBAC checks
 	 * @param IAppConfig $appConfig App configuration for multitenancy settings
@@ -270,7 +270,7 @@ class SchemaMapper extends QBMapper {
 		IDBConnection $db,
 		IEventDispatcher $eventDispatcher,
 		PropertyValidatorHandler $validator,
-		OrganisationMapper $organisationMapper,
+		OrganisationMapperInterface $organisationMapper,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 		IAppConfig $appConfig,
@@ -3983,10 +3983,9 @@ class SchemaMapper extends QBMapper {
 
 		// Now merge child schema properties on top (child can add constraints).
 		$childProperties = $schema->getProperties();
-		$mergedProperties = $this->mergeSchemaPropertiesWithValidation(
+		$mergedProperties = (new SchemaPropertyInheritance(schemaId: (string)$currentId))->mergeProperties(
 			parentProperties: $mergedProperties,
-			childProperties: $childProperties,
-			schemaId: (string)$currentId
+			childProperties: $childProperties
 		);
 
 		// Merge child required fields (can only add, not remove).
@@ -4244,7 +4243,7 @@ class SchemaMapper extends QBMapper {
 	 * - For nested properties (objects), performs recursive merge
 	 *
 	 * NOTE: This method does NOT enforce Liskov Substitution Principle.
-	 * Use mergeSchemaPropertiesWithValidation() for extension scenarios.
+	 * Use SchemaPropertyInheritance::mergeProperties() for extension scenarios.
 	 *
 	 * @param array $parentProperties Parent schema properties
 	 * @param array $childProperties Child schema properties (overrides)
@@ -4276,83 +4275,13 @@ class SchemaMapper extends QBMapper {
 	}//end mergeSchemaProperties()
 
 	/**
-	 * Merge parent and child schema properties WITH Liskov Substitution validation
-	 *
-	 * This method enforces the Liskov Substitution Principle:
-	 * - Child schemas can ONLY ADD constraints, never relax them
-	 * - Metadata (title, description, order, icon) CAN be overridden
-	 * - Validation rules (type, format, enum, pattern, min/max) CANNOT be relaxed
-	 *
-	 * Examples of ALLOWED changes:
-	 * - Adding new properties
-	 * - Adding more restrictive validation (lower maxLength, higher minLength)
-	 * - Changing title, description, order (metadata)
-	 * - Removing enum values (more restrictive)
-	 *
-	 * Examples of FORBIDDEN changes:
-	 * - Changing property type (string to number)
-	 * - Relaxing validation (higher maxLength, lower minLength)
-	 * - Adding enum values (less restrictive)
-	 * - Removing required constraints
-	 *
-	 * @param array $parentProperties Parent schema properties
-	 * @param array $childProperties Child schema properties
-	 * @param string $schemaId Schema ID for error messages
-	 *
-	 * @throws \Exception If child violates Liskov Substitution Principle
-	 *
-	 * @return array Merged properties array
-	 */
-	private function mergeSchemaPropertiesWithValidation(
-		array $parentProperties,
-		array $childProperties,
-		string $schemaId,
-	): array {
-		// Start with parent properties as the base.
-		$merged = $parentProperties;
-
-		// Apply child properties on top with validation.
-		foreach ($childProperties as $propertyName => $childProperty) {
-			// If property doesn't exist in parent, it's new - allowed.
-			if (isset($merged[$propertyName]) === false) {
-				$merged[$propertyName] = $childProperty;
-				continue;
-			}
-
-			$parentProperty = $merged[$propertyName];
-
-			// If both are arrays, perform deep merge with validation.
-			if (is_array($parentProperty) === false || is_array($childProperty) === false) {
-				// Scalar replacement - validate it doesn't relax constraints.
-				$this->validateConstraintAddition(
-					parentProperty: $parentProperty,
-					childProperty: $childProperty,
-					propertyName: $propertyName,
-					schemaId: $schemaId
-				);
-				$merged[$propertyName] = $childProperty;
-				continue;
-			}
-
-			$merged[$propertyName] = $this->deepMergePropertyWithValidation(
-				parentProperty: $parentProperty,
-				childProperty: $childProperty,
-				propertyName: $propertyName,
-				schemaId: $schemaId
-			);
-		}//end foreach
-
-		return $merged;
-	}//end mergeSchemaPropertiesWithValidation()
-
-	/**
 	 * Perform deep merge of a single property definition (WITHOUT validation)
 	 *
 	 * This method recursively merges property definitions, allowing child schemas
 	 * to override specific aspects of a property while preserving others.
 	 *
 	 * NOTE: This method does NOT enforce Liskov Substitution Principle.
-	 * Use deepMergePropertyWithValidation() for extension scenarios.
+	 * Use SchemaPropertyInheritance for extension scenarios.
 	 *
 	 * Examples:
 	 * - Parent has 'minLength': 5, child has 'maxLength': 100 -> both are preserved
@@ -4390,522 +4319,6 @@ class SchemaMapper extends QBMapper {
 
 		return $merged;
 	}//end deepMergeProperty()
-
-	/**
-	 * Perform deep merge of a single property WITH Liskov Substitution validation
-	 *
-	 * This method enforces that child properties only add constraints, never relax them.
-	 * Metadata fields (title, description, order, icon, etc.) can be freely overridden.
-	 * Validation fields (type, format, enum, pattern, min/max, etc.) cannot be relaxed.
-	 *
-	 * @param array $parentProperty Parent property definition
-	 * @param array $childProperty Child property definition
-	 * @param string $propertyName Property name for error messages
-	 * @param string $schemaId Schema ID for error messages
-	 *
-	 * @throws \Exception If child violates Liskov Substitution Principle
-	 *
-	 * @return array Merged property definition
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 */
-	private function deepMergePropertyWithValidation(
-		array $parentProperty,
-		array $childProperty,
-		string $propertyName,
-		string $schemaId,
-	): array {
-		// List of metadata fields that can be freely overridden.
-		$metadataFields = [
-			'title',
-			'description',
-			'order',
-			'icon',
-			'placeholder',
-			'help',
-			'example',
-			'examples',
-			'$comment',
-			'deprecated',
-			'readOnly',
-			'writeOnly',
-			'default',
-			'x-order',
-			'x-display',
-			'x-tabName',
-			'x-section',
-			'ui:order',
-			'ui:widget',
-			'ui:options',
-		];
-
-		// List of validation fields that require constraint checking.
-		$validationFields = [
-			'type',
-			'format',
-			'pattern',
-			'enum',
-			'const',
-			'minimum',
-			'maximum',
-			'exclusiveMinimum',
-			'exclusiveMaximum',
-			'minLength',
-			'maxLength',
-			'minItems',
-			'maxItems',
-			'minProperties',
-			'maxProperties',
-			'multipleOf',
-			'uniqueItems',
-			'required',
-			'additionalProperties',
-			'patternProperties',
-			'dependencies',
-			'if',
-			'then',
-			'else',
-		];
-
-		$merged = $parentProperty;
-
-		foreach ($childProperty as $key => $childValue) {
-			// If key doesn't exist in parent, it's new - allowed.
-			if (isset($merged[$key]) === false) {
-				$merged[$key] = $childValue;
-				continue;
-			}
-
-			$parentValue = $merged[$key];
-
-			// Metadata fields can be freely overridden.
-			if (in_array($key, $metadataFields) === true) {
-				$merged[$key] = $childValue;
-				continue;
-			}
-
-			// Special handling for nested properties and items.
-			$isNestedKey = ($key === 'properties' || $key === 'items') === true;
-			$bothAreArrays = is_array($childValue) === true && is_array($parentValue) === true;
-			if ($isNestedKey === true && $bothAreArrays === true) {
-				// Recursively validate nested properties.
-				$mergedNested = [];
-				foreach ($childValue as $nestedKey => $nestedChild) {
-					if (($parentValue[$nestedKey] ?? null) === null) {
-						// New nested property - allowed.
-						$mergedNested[$nestedKey] = $nestedChild;
-						continue;
-					}
-
-					$mergedNested[$nestedKey] = $this->deepMergePropertyWithValidation(
-						parentProperty: $parentValue[$nestedKey],
-						childProperty: $nestedChild,
-						propertyName: "{$propertyName}.{$key}.{$nestedKey}",
-						schemaId: $schemaId
-					);
-				}
-
-				// Include parent nested properties not in child.
-				foreach ($parentValue as $nestedKey => $nestedParent) {
-					if (isset($mergedNested[$nestedKey]) === false) {
-						$mergedNested[$nestedKey] = $nestedParent;
-					}
-				}
-
-				$merged[$key] = $mergedNested;
-				continue;
-			}//end if
-
-			// Validation fields require constraint checking.
-			if (in_array($key, $validationFields) === true) {
-				$this->validateConstraintChange(
-					parentValue: $parentValue,
-					childValue: $childValue,
-					constraint: $key,
-					propertyName: $propertyName,
-					schemaId: $schemaId
-				);
-				$merged[$key] = $childValue;
-				continue;
-			}
-
-			// For other fields, perform standard merge.
-			if (is_array($parentValue) === false || is_array($childValue) === false) {
-				$merged[$key] = $childValue;
-				continue;
-			}
-
-			$merged[$key] = $this->deepMergePropertyWithValidation(
-				parentProperty: $parentValue,
-				childProperty: $childValue,
-				propertyName: "{$propertyName}.{$key}",
-				schemaId: $schemaId
-			);
-		}//end foreach
-
-		return $merged;
-	}//end deepMergePropertyWithValidation()
-
-	/**
-	 * Validate that a constraint change does not relax validation
-	 *
-	 * Enforces Liskov Substitution Principle for constraint modifications.
-	 *
-	 * @param mixed $parentValue Parent constraint value
-	 * @param mixed $childValue Child constraint value
-	 * @param string $constraint Constraint name
-	 * @param string $propertyName Property name for error messages
-	 * @param string $schemaId Schema ID for error messages
-	 *
-	 * @throws \Exception If constraint is relaxed
-	 *
-	 * @return void
-	 */
-	private function validateConstraintChange(
-		mixed $parentValue,
-		mixed $childValue,
-		string $constraint,
-		string $propertyName,
-		string $schemaId,
-	): void {
-		if ($constraint === 'type') {
-			$this->validateTypeConstraint(
-				parentValue: $parentValue,
-				childValue: $childValue,
-				propertyName: $propertyName,
-				schemaId: $schemaId
-			);
-			return;
-		}
-
-		if ($constraint === 'format') {
-			$this->validateFormatConstraint(
-				parentValue: $parentValue,
-				childValue: $childValue,
-				propertyName: $propertyName,
-				schemaId: $schemaId
-			);
-			return;
-		}
-
-		if ($constraint === 'enum') {
-			$this->validateEnumConstraint(
-				parentValue: $parentValue,
-				childValue: $childValue,
-				propertyName: $propertyName,
-				schemaId: $schemaId
-			);
-			return;
-		}
-
-		if ($this->isMinimumConstraint(constraint: $constraint) === true) {
-			$this->validateMinimumConstraint(
-				parentValue: $parentValue,
-				childValue: $childValue,
-				constraint: $constraint,
-				propertyName: $propertyName,
-				schemaId: $schemaId
-			);
-			return;
-		}
-
-		if ($this->isMaximumConstraint(constraint: $constraint) === true) {
-			$this->validateMaximumConstraint(
-				parentValue: $parentValue,
-				childValue: $childValue,
-				constraint: $constraint,
-				propertyName: $propertyName,
-				schemaId: $schemaId
-			);
-			return;
-		}
-
-		if ($constraint === 'pattern') {
-			$this->validatePatternConstraint(
-				parentValue: $parentValue,
-				childValue: $childValue,
-				propertyName: $propertyName,
-				schemaId: $schemaId
-			);
-		}
-	}//end validateConstraintChange()
-
-	/**
-	 * Check if constraint is a minimum constraint
-	 *
-	 * @param string $constraint Constraint name
-	 *
-	 * @return bool True if minimum constraint
-	 */
-	private function isMinimumConstraint(string $constraint): bool {
-		return in_array($constraint, ['minimum', 'minLength', 'minItems', 'minProperties'], true);
-	}//end isMinimumConstraint()
-
-	/**
-	 * Check if constraint is a maximum constraint
-	 *
-	 * @param string $constraint Constraint name
-	 *
-	 * @return bool True if maximum constraint
-	 */
-	private function isMaximumConstraint(string $constraint): bool {
-		return in_array($constraint, ['maximum', 'maxLength', 'maxItems', 'maxProperties'], true);
-	}//end isMaximumConstraint()
-
-	/**
-	 * Validate type constraint change
-	 *
-	 * @param mixed $parentValue Parent type value
-	 * @param mixed $childValue Child type value
-	 * @param string $propertyName Property name
-	 * @param string $schemaId Schema ID
-	 *
-	 * @throws \Exception If type change is invalid
-	 *
-	 * @return void
-	 */
-	private function validateTypeConstraint(
-		mixed $parentValue,
-		mixed $childValue,
-		string $propertyName,
-		string $schemaId,
-	): void {
-		if ($parentValue === $childValue) {
-			return;
-		}
-
-		if (is_array($parentValue) === true && is_array($childValue) === true) {
-			$diff = array_diff($childValue, $parentValue);
-			if (count($diff) > 0) {
-				$parentJson = json_encode($parentValue);
-				$childJson = json_encode($childValue);
-				$message = sprintf(
-					"Schema '%s': Property '%s' cannot change type from %s to %s (adds types not in parent)",
-					$schemaId,
-					$propertyName,
-					$parentJson,
-					$childJson
-				);
-				throw new Exception($message);
-			}
-
-			return;
-		}
-
-		if (is_array($parentValue) === false && is_array($childValue) === false) {
-			$msg = sprintf(
-				"Schema '%s': Property '%s' cannot change type from '%s' to '%s'",
-				$schemaId,
-				$propertyName,
-				$parentValue,
-				$childValue
-			);
-			throw new Exception($msg);
-		}
-
-		throw new Exception("Schema '{$schemaId}': Property '{$propertyName}' type change is not compatible");
-	}//end validateTypeConstraint()
-
-	/**
-	 * Validate format constraint change
-	 *
-	 * @param mixed $parentValue Parent format value
-	 * @param mixed $childValue Child format value
-	 * @param string $propertyName Property name
-	 * @param string $schemaId Schema ID
-	 *
-	 * @throws \Exception If format change is invalid
-	 *
-	 * @return void
-	 */
-	private function validateFormatConstraint(
-		mixed $parentValue,
-		mixed $childValue,
-		string $propertyName,
-		string $schemaId,
-	): void {
-		if ($parentValue !== null && $parentValue !== $childValue) {
-			$msg = sprintf(
-				"Schema '%s': Property '%s' cannot change format from '%s' to '%s'",
-				$schemaId,
-				$propertyName,
-				$parentValue,
-				$childValue
-			);
-			throw new Exception($msg);
-		}
-	}//end validateFormatConstraint()
-
-	/**
-	 * Validate enum constraint change
-	 *
-	 * @param mixed $parentValue Parent enum value
-	 * @param mixed $childValue Child enum value
-	 * @param string $propertyName Property name
-	 * @param string $schemaId Schema ID
-	 *
-	 * @throws \Exception If enum change is invalid
-	 *
-	 * @return void
-	 */
-	private function validateEnumConstraint(
-		mixed $parentValue,
-		mixed $childValue,
-		string $propertyName,
-		string $schemaId,
-	): void {
-		if (is_array($parentValue) === false || is_array($childValue) === false) {
-			return;
-		}
-
-		$diff = array_diff($childValue, $parentValue);
-		if (count($diff) > 0) {
-			$msg = sprintf(
-				"Schema '%s': Property '%s' enum cannot add values not in parent (added: %s)",
-				$schemaId,
-				$propertyName,
-				json_encode($diff)
-			);
-			throw new Exception($msg);
-		}
-	}//end validateEnumConstraint()
-
-	/**
-	 * Validate minimum constraint change
-	 *
-	 * @param mixed $parentValue Parent minimum value
-	 * @param mixed $childValue Child minimum value
-	 * @param string $constraint Constraint name
-	 * @param string $propertyName Property name
-	 * @param string $schemaId Schema ID
-	 *
-	 * @throws \Exception If minimum constraint is relaxed
-	 *
-	 * @return void
-	 */
-	private function validateMinimumConstraint(
-		mixed $parentValue,
-		mixed $childValue,
-		string $constraint,
-		string $propertyName,
-		string $schemaId,
-	): void {
-		if (is_numeric($parentValue) === false || is_numeric($childValue) === false) {
-			return;
-		}
-
-		if ($childValue < $parentValue) {
-			$message = sprintf(
-				"Schema '%s': Property '%s' %s cannot be decreased from %s to %s (relaxes constraint)",
-				$schemaId,
-				$propertyName,
-				$constraint,
-				$parentValue,
-				$childValue
-			);
-			throw new Exception($message);
-		}
-	}//end validateMinimumConstraint()
-
-	/**
-	 * Validate maximum constraint change
-	 *
-	 * @param mixed $parentValue Parent maximum value
-	 * @param mixed $childValue Child maximum value
-	 * @param string $constraint Constraint name
-	 * @param string $propertyName Property name
-	 * @param string $schemaId Schema ID
-	 *
-	 * @throws \Exception If maximum constraint is relaxed
-	 *
-	 * @return void
-	 */
-	private function validateMaximumConstraint(
-		mixed $parentValue,
-		mixed $childValue,
-		string $constraint,
-		string $propertyName,
-		string $schemaId,
-	): void {
-		if (is_numeric($parentValue) === false || is_numeric($childValue) === false) {
-			return;
-		}
-
-		if ($childValue > $parentValue) {
-			$message = sprintf(
-				"Schema '%s': Property '%s' %s cannot be increased from %s to %s (relaxes constraint)",
-				$schemaId,
-				$propertyName,
-				$constraint,
-				$parentValue,
-				$childValue
-			);
-			throw new Exception($message);
-		}
-	}//end validateMaximumConstraint()
-
-	/**
-	 * Validate pattern constraint change
-	 *
-	 * @param mixed $parentValue Parent pattern value
-	 * @param mixed $childValue Child pattern value
-	 * @param string $propertyName Property name
-	 * @param string $schemaId Schema ID
-	 *
-	 * @throws \Exception If pattern change is invalid
-	 *
-	 * @return void
-	 */
-	private function validatePatternConstraint(
-		mixed $parentValue,
-		mixed $childValue,
-		string $propertyName,
-		string $schemaId,
-	): void {
-		if ($parentValue !== null && $parentValue !== $childValue) {
-			$msg = sprintf(
-				"Schema '%s': Property '%s' pattern cannot be changed from '%s' to '%s'",
-				$schemaId,
-				$propertyName,
-				$parentValue,
-				$childValue
-			);
-			throw new Exception($msg);
-		}
-	}//end validatePatternConstraint()
-
-	/**
-	 * Validate that replacing a property doesn't relax constraints
-	 *
-	 * Used when entire property is replaced (not merged).
-	 *
-	 * @param mixed $parentProperty Parent property value
-	 * @param mixed $childProperty Child property value
-	 * @param string $propertyName Property name for error messages
-	 * @param string $schemaId Schema ID for error messages
-	 *
-	 * @throws \Exception If constraint is relaxed
-	 *
-	 * @return void
-	 */
-	private function validateConstraintAddition(
-		mixed $parentProperty,
-		mixed $childProperty,
-		string $propertyName,
-		string $schemaId,
-	): void {
-		// If parent had validation and child removes it, that's relaxing.
-		if (empty($parentProperty) === false && empty($childProperty) === true) {
-			$msg = sprintf(
-				"Schema '%s': Property '%s' cannot remove constraints (parent had value, child is empty)",
-				$schemaId,
-				$propertyName
-			);
-			throw new Exception($msg);
-		}
-	}//end validateConstraintAddition()
 
 	/**
 	 * Extract the delta (differences) between parent schemas and child schema properties

@@ -80,7 +80,7 @@ class FlowRunAsScope {
 	 * Run the operation as the context's acting identity, when it names one.
 	 *
 	 * @param array $context The node context, possibly carrying the identity
-	 *                       under {@see FlowRunService::RUN_AS_CONTEXT_KEY}.
+	 *                       under {@see FlowRunServiceInterface::RUN_AS_CONTEXT_KEY}.
 	 * @param callable $operation The node's work.
 	 *
 	 * @return mixed Whatever the operation returns.
@@ -90,7 +90,7 @@ class FlowRunAsScope {
 	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
 	 */
 	public function call(array $context, callable $operation): mixed {
-		$uid = trim((string)($context[FlowRunService::RUN_AS_CONTEXT_KEY] ?? ''));
+		$uid = trim((string)($context[FlowRunServiceInterface::RUN_AS_CONTEXT_KEY] ?? ''));
 		if ($uid === '') {
 			// No acting identity declared: the interactive path, where the
 			// ambient session user already answers the permission checks.

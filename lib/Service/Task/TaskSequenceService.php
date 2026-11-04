@@ -68,14 +68,14 @@ class TaskSequenceService {
 	 * @param TaskSequenceMapper $sequences The sequence rows.
 	 * @param TaskMapper $taskReader Reads a sequence's positions. Read-only
 	 *                               here; every write goes through the verbs.
-	 * @param TaskService $tasks The authorized task lifecycle.
+	 * @param TaskServiceInterface $tasks The authorized task lifecycle.
 	 * @param IEventDispatcher $dispatcher Announces sequence completion.
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
 		private readonly TaskSequenceMapper $sequences,
 		private readonly TaskMapper $taskReader,
-		private readonly TaskService $tasks,
+		private readonly TaskServiceInterface $tasks,
 		private readonly IEventDispatcher $dispatcher,
 		private readonly LoggerInterface $logger,
 	) {

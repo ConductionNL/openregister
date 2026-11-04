@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Oversight;
 
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\IFlowOversightCheck;
 use Throwable;
@@ -42,11 +42,11 @@ class OrganisationHaltCheck implements IFlowOversightCheck {
 	 * Constructor.
 	 *
 	 * @param OrganisationHaltService $halts The halts.
-	 * @param FlowRunMapper           $runs  To read a run's organisation.
+	 * @param FlowRunMapperInterface           $runs  To read a run's organisation.
 	 */
 	public function __construct(
 		private readonly OrganisationHaltService $halts,
-		private readonly FlowRunMapper $runs,
+		private readonly FlowRunMapperInterface $runs,
 	) {
 	}//end __construct()
 

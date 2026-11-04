@@ -30,7 +30,7 @@ use OCA\OpenRegister\Controller\Support\MappingsControllerServices;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Service\MappingService;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -84,9 +84,9 @@ class MappingsController extends Controller {
 	/**
 	 * Organisation service for multi-tenancy
 	 *
-	 * @var OrganisationService
+	 * @var OrganisationServiceInterface
 	 */
-	private readonly OrganisationService $organisationService;
+	private readonly OrganisationServiceInterface $organisationService;
 
 	/**
 	 * Constructor

@@ -59,6 +59,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\ConditionMatcher
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\RbacPermissionCheck
  * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @uses   \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
  * @uses   \OCA\OpenRegister\Service\OperatorEvaluator
