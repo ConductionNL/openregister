@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Rbac\SchemaManageGate;
 use OCP\AppFramework\Http;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -114,6 +115,16 @@ class BulkControllerStreamTest extends TestCase {
 
 		return $controller->save('1', '2');
 	}//end save()
+
+	public function testNoSessionIsNoAdministrator(): void {
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn(null);
+		$groups = $this->createMock(IGroupManager::class);
+		$groups->expects($this->never())->method('isAdmin');
+		$gate = new SchemaManageGate(userSession: $session, groupManager: $groups, schemaMapper: $this->createMock(SchemaMapper::class));
+
+		$this->assertFalse($gate->callerIsAdministrator());
+	}
 
 	public function testAManagerWhoIsNoAdministratorMayNotStream(): void {
 		$response = $this->save(uid: 'mallory', params: ['stream' => true]);

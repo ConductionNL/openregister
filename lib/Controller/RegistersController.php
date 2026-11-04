@@ -39,6 +39,7 @@ use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\Configuration\RegisterBundleBinding;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Service\OasService;
@@ -46,6 +47,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\RegisterService;
+use OCA\OpenRegister\Service\Lifecycle\KeepLifecycleStatesScope;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\App\IAppManager;
@@ -1573,6 +1575,7 @@ class RegistersController extends Controller {
 			'publish' => $this->parseBooleanParam(paramName: 'publish', default: false),
 			'enrich' => $this->parseBooleanParam(paramName: 'enrich', default: true),
 			'dryRun' => $this->parseBooleanParam(paramName: 'dryRun', default: false),
+			'historic' => $this->parseBooleanParam(paramName: 'historic', default: false),
 			'pack' => null,
 		];
 
@@ -1615,6 +1618,33 @@ class RegistersController extends Controller {
 	}//end logImportOptions()
 
 	/**
+	 * Run the import; when an administrator marked it historic, rows keep their own lifecycle state.
+	 *
+	 * Anybody but an administrator gets 403 for a historic import before any row
+	 * is read. The import is not elevated: it runs as the administrator, with
+	 * only the initial-state check on creates lifted.
+	 *
+	 * @param array $options The import options, including type, register, file and historic
+	 *
+	 * @return array|JSONResponse The import summary, or an error response
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) KeepLifecycleStatesScope is an ambient marker; a static call is the whole point of it.
+	 *
+	 * @spec openspec/changes/lifecycle-guards-see-the-stored-object/specs/object-lifecycle/spec.md#requirement-an-administrator-can-import-historic-data-in-its-own-states
+	 */
+	private function runImport(array $options): array|JSONResponse {
+		if ($options['historic'] !== true) {
+			return $this->runImporter(options: $options);
+		}
+
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Only an administrator can import historic data.'], statusCode: 403);
+		}
+
+		return KeepLifecycleStatesScope::run(fn (): array|JSONResponse => $this->runImporter(options: $options));
+	}//end runImport()
+
+	/**
 	 * Run the importer that matches the import type.
 	 *
 	 * @param array $options The import options, including type, register and file
@@ -1623,7 +1653,7 @@ class RegistersController extends Controller {
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function runImport(array $options): array|JSONResponse {
+	private function runImporter(array $options): array|JSONResponse {
 		switch ($options['type']) {
 			case 'excel':
 				return $this->importExcel(options: $options);
@@ -1634,7 +1664,7 @@ class RegistersController extends Controller {
 			default:
 				return $this->importConfigurationBundle(options: $options);
 		}
-	}//end runImport()
+	}//end runImporter()
 
 	/**
 	 * The arguments every row importer (excel, csv, json) receives.
@@ -1803,12 +1833,20 @@ class RegistersController extends Controller {
 			return $jsonData;
 		}
 
+		$refusal = $this->bundleRefusal(register: $options['register'], bundle: $jsonData);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		// The importer falls back to the app id a bundle names; here the register decides.
+		unset($jsonData['appId']);
+
 		// ImportFromJson takes a Configuration entity; this endpoint has none to pass.
 		$result = $this->configurationService->importFromJson(
 			data: $jsonData,
 			configuration: null,
-			owner: $this->request->getParam('owner'),
-			appId: $this->request->getParam('appId'),
+			owner: $this->userSession->getUser()?->getUID(),
+			appId: $options['register']->getApplication(),
 			version: $this->request->getParam('version'),
 			force: $options['force']
 		);
@@ -1821,6 +1859,29 @@ class RegistersController extends Controller {
 
 		return $summary;
 	}//end importConfigurationBundle()
+
+	/**
+	 * Refuse a bundle that reaches outside the register for a caller who is not an administrator.
+	 *
+	 * @param Register             $register The register the bundle was uploaded to
+	 * @param array<string, mixed> $bundle   The bundle
+	 *
+	 * @return JSONResponse|null A 403, or null when the import may go ahead
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-a-bundle-uploaded-by-a-register-manager-stays-inside-that-register
+	 */
+	private function bundleRefusal(Register $register, array $bundle): ?JSONResponse {
+		if ($this->isCurrentUserAdmin() === true) {
+			return null;
+		}
+
+		$reason = (new RegisterBundleBinding(schemaMapper: $this->schemaMapper))->refusalFor(register: $register, bundle: $bundle);
+		if ($reason === null) {
+			return null;
+		}
+
+		return new JSONResponse(data: ['error' => $reason], statusCode: 403);
+	}//end bundleRefusal()
 
 	/**
 	 * Build the sheet-based summary of a configuration import.

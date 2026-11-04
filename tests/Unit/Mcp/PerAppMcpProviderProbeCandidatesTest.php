@@ -24,6 +24,7 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Mcp\PerAppMcpProviderProbe
  * @uses   \OCA\OpenRegister\Mcp\RegisterMcpToolProvidersEvent
+ * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
  */
 class PerAppMcpProviderProbeCandidatesTest extends TestCase {
 

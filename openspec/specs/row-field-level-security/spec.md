@@ -840,6 +840,36 @@ property SHALL keep PUT semantics.
 - **WHEN** a member of `service` PUTs the document without `restricted`
 - **THEN** `restricted` is null
 
+### Requirement: An anonymous caller reads no user ids in a record's envelope
+
+A JSON answer to a caller without a session MUST NOT carry `@self.owner`,
+`@self.authorization`, `@self.retention`, the linked items in `@self` (`mail`, `contacts`, `notes`,
+`todos`, `calendar`, `talk`, `deck`), or the user id inside `@self.locked`, `@self.deleted`,
+`@self.archived`, `@self.frozen`, `@self.register` and `@self.schema`. GraphQL's `_owner` MUST answer
+null. Rules MUST keep reading the record through `ObjectEntity::getMatchEnvelope()`, so a condition
+on `_owner` and the owner bypass decide as they did. A signed-in caller's answer MUST NOT change.
+
+#### Scenario: an anonymous read of a public record
+
+- **GIVEN** a record on a public-read schema, owned by a user
+- **WHEN** an anonymous caller reads it through show, index, search or a federation share
+- **THEN** the answer holds the record and its `@self.organisation`, and no user id
+- @e2e exclude {asserted per read path through the real controllers in tests/Unit/Middleware/AnonymousEnvelopeReadPathsTest.php::testAnAnonymousAnswerCarriesNoUserId}
+
+#### Scenario: an anonymous GraphQL query asks for the owner under an alias
+
+- **GIVEN** a record owned by a user
+- **WHEN** an anonymous caller queries `_owner` and `madeBy: _owner`
+- **THEN** both answer null, and a property rule still reads the owner
+- @e2e exclude {asserted on the real generated schema in tests/Unit/Middleware/AnonymousEnvelopeReadPathsTest.php::testAnAnonymousGraphQlAnswerCarriesNoOwner and ::testAnAnonymousRuleStillReadsTheOwner}
+
+#### Scenario: a signed-in read is unchanged
+
+- **GIVEN** a signed-in caller
+- **WHEN** they read the same record
+- **THEN** the answer is byte-identical to the answer before this requirement
+- @e2e exclude {asserted against a golden recorded on the earlier code in tests/Unit/Middleware/AnonymousEnvelopeReadPathsTest.php::testTheSignedInAnswersMatchTheGolden}
+
 ## Current Implementation Status
 
 **Substantially implemented.** The row-level and field-level security system is production-ready with the following components:

@@ -156,6 +156,12 @@ final class TenancyGuardHost {
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\View
  * @uses \OCA\OpenRegister\Db\Webhook
+ * @uses \OCA\OpenRegister\Db\Agent
+ * @uses \OCA\OpenRegister\Db\Application
+ * @uses \OCA\OpenRegister\Db\Mapping
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Source
+ * @uses \OCA\OpenRegister\Service\TenantLogRedactor
  */
 class MultiTenancyTraitOrganisationAccessTest extends TestCase {
 

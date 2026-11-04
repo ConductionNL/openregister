@@ -92,3 +92,45 @@ Saving a schema whose authorization rule carries a `crossOrganisation` value tha
 - **AND** `"hr"` MUST be left as it is and logged as narrowed
 - **AND** a second run MUST change nothing
 - @e2e exclude {repair step unit test}
+
+### Requirement: Only an administrator may add a crossing
+
+A write to a schema's authorization by a caller who is not an administrator MUST be refused with 403 when the new block holds a rule or matrix row with `"crossOrganisation": true` that the old block did not hold in that form and in that place. Such a caller MAY change the other rules, keep a marked rule as it is, and remove a marker. The rule applies to update, patch, draft publish and upload, and it judges the block the schema would store: an `authorization` sent as JSON text is judged decoded.
+
+A schema or register MUST store a body key only under its exact property name, so `Authorization`, `Organisation` or `Owner` store nothing. An upload over an existing schema MUST NOT change its `id`, `organisation`, `owner` or `created`.
+
+#### Scenario: A schema manager adds the marker
+- **GIVEN** a schema whose `manage` rule names a group the caller is in, and the caller is not an administrator
+- **WHEN** the caller writes a read rule with `"crossOrganisation": true` that was not there
+- **THEN** the write MUST be refused with 403 and nothing MUST be stored
+- @e2e exclude {controller unit test}
+
+#### Scenario: A schema manager edits around a marker
+- **GIVEN** the same caller and a schema whose read rule an administrator marked
+- **WHEN** the caller adds another read rule and keeps the marked rule as it is
+- **THEN** the write MUST succeed
+- @e2e exclude {controller unit test}
+
+#### Scenario: A marked rule moves to another action
+- **GIVEN** the same caller and a schema with a marked rule under `update`
+- **WHEN** the caller moves that rule to `read`
+- **THEN** the write MUST be refused with 403
+- @e2e exclude {comparator unit test}
+
+#### Scenario: The marker is sent in another form
+- **GIVEN** the same caller
+- **WHEN** the caller sends the marked block as JSON text, or under the key `Authorization`
+- **THEN** the JSON text MUST be refused with 403 and the other spelling MUST store nothing
+- @e2e exclude {controller and entity unit tests}
+
+#### Scenario: A manager tries to move a schema
+- **GIVEN** the same caller
+- **WHEN** the caller uploads a document with `organisation`, `Organisation`, `owner` or `Owner`
+- **THEN** the schema MUST keep its organisation and owner
+- @e2e exclude {controller unit test}
+
+#### Scenario: A repair step keeps an explicit choice
+- **GIVEN** a stored read rule with `"crossOrganisation": false`
+- **WHEN** the repair step runs
+- **THEN** the rule MUST be left as written
+- @e2e exclude {repair step unit test}

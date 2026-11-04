@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
  * @uses \OCA\OpenRegister\Event\ObjectDeletedEvent
  * @uses \OCA\OpenRegister\Service\MetricsService
+ * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
  */
 class ObjectMetricsListenerTest extends TestCase {
 	/**

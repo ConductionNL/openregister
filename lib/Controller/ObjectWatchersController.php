@@ -301,11 +301,11 @@ class ObjectWatchersController extends Controller {
 	 * @return ObjectEntity|JSONResponse The object, or the response to return.
 	 */
 	private function resolveObject(string $register, string $schema, string $id): ObjectEntity|JSONResponse {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
-
 		try {
+			// The setObject() call already looks the object up, so an unknown id throws here.
+			$this->objectService->setRegister($register);
+			$this->objectService->setSchema($schema);
+			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
 		} catch (\Throwable $e) {
 			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);

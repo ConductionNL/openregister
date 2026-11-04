@@ -54,6 +54,14 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\BackgroundJob\RelatedRetentionRecalculationJob
  * @covers \OCA\OpenRegister\Listener\RelatedRetentionRecalculationListener
  * @covers \OCA\OpenRegister\Service\Archival\DependantRetentionIndex
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
+ * @uses \OCA\OpenRegister\Service\Archival\ActionDateFollower
+ * @uses \OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator
+ * @uses \OCA\OpenRegister\Service\Archival\SelectielijstResolver
+ * @uses \OCA\OpenRegister\Service\RetentionService
  */
 class RelatedRetentionRecalculationJobTest extends TestCase {
 
@@ -188,6 +196,34 @@ class RelatedRetentionRecalculationJobTest extends TestCase {
 		$this->assertSame(['k1' => '2028-10-01', 'k2' => '2028-10-01'], $stored);
 		$this->assertArrayNotHasKey('archiefactiedatum', $other->getRetention());
 	}//end testAClientsEndDateRecalculatesItsTwoContactPersons()
+
+	/**
+	 * A long-running worker drops the table memos before it looks the source up, so a
+	 * table created after the worker started is found.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
+	 */
+	public function testTheTableMemosAreDroppedBeforeTheSourceIsLookedUp(): void {
+		$order = [];
+		$client = new ObjectEntity();
+		$client->setUuid(self::CLIENT);
+		$client->setSchema('7');
+		$this->objectMapper->expects($this->once())->method('invalidateTableMemos')
+			->willReturnCallback(function () use (&$order): void {
+				$order[] = 'memos';
+			});
+		$this->objectMapper->method('find')->willReturnCallback(function () use (&$order, $client): ObjectEntity {
+			$order[] = 'find';
+			return $client;
+		});
+		$this->registerMapper->method('getAllRegisterIdsWithSchema')->willReturn([]);
+
+		$this->job->recalculateDependantsOf(uuid: self::CLIENT);
+
+		$this->assertSame(['memos', 'find'], $order);
+	}//end testTheTableMemosAreDroppedBeforeTheSourceIsLookedUp()
 
 	/**
 	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method

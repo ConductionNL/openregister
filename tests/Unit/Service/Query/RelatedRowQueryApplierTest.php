@@ -54,6 +54,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowExistsClause
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilter
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilterParser
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 class RelatedRowQueryApplierTest extends TestCase {
 
