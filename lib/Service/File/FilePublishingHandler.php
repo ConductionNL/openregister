@@ -27,7 +27,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCP\Files\File;
-use OCP\Files\NotFoundException;
 use OCP\IServerContainer;
 use Psr\Log\LoggerInterface;
 use ZipArchive;
@@ -111,14 +110,9 @@ class FilePublishingHandler {
 	 * @return File The published file node.
 	 *
 	 * @throws Exception If publishing fails.
-	 * @throws NotFoundException If the file is not found.
 	 *
 	 * @phpstan-return File
 	 * @psalm-return   File
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  File lookup requires handling ID vs path scenarios
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple file resolution paths with fallback logic
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file lookup and sharing requires extensive code
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -141,145 +135,11 @@ class FilePublishingHandler {
 			objectUuid: (string)($object->getUuid() ?? '')
 		);
 
-		// Debug logging - original file parameter.
-		$originalFile = $file;
 		$this->logger->debug(
-			message: "[FilePublishingHandler] publishFile: Original file parameter received: '$originalFile'",
+			message: "[FilePublishingHandler] publishFile: Original file parameter received: '$file'",
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
-
-		// Initialize fileNode before conditional assignment.
-		$fileNode = null;
-
-		// If $file is an integer (file ID), try to find the file directly by ID.
-		if (is_int($file) === true) {
-			$this->logger->debug(
-				message: "[FilePublishingHandler] publishFile: File ID provided: $file",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			// Try to find the file in the object's folder by ID.
-			$fileNode = $this->fileService->getFile(object: $object, file: $file);
-			if ($fileNode === null) {
-				$this->logger->error(
-					message: "[FilePublishingHandler] publishFile: No file found with ID: $file",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				throw new Exception("File with ID $file does not exist");
-			}
-
-			$foundMsg = '[FilePublishingHandler] publishFile: Found file by ID: ' . $fileNode->getName();
-			$foundMsg .= ' (ID: ' . $fileNode->getId() . ')';
-			$this->logger->debug(message: $foundMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-		}//end if
-
-		if (is_int($file) === false) {
-			// Handle string file paths (existing logic).
-			// Clean file path and extract filename using utility method.
-			$pathInfo = $this->fileService->extractFileNameFromPath($file);
-			$filePath = $pathInfo['cleanPath'];
-			$fileName = $pathInfo['fileName'];
-
-			$this->logger->debug(
-				message: "[FilePublishingHandler] publishFile: After cleaning: '$filePath'",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			if ($fileName !== $filePath) {
-				$extractMsg = '[FilePublishingHandler] publishFile:';
-				$extractMsg .= " Extracted filename from path: '$fileName' (from '$filePath')";
-				$this->logger->debug(
-					message: $extractMsg,
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-
-			// Get the object folder (this is where the files actually are).
-			$objectFolder = $this->fileService->getObjectFolder($object);
-
-			if ($objectFolder === null) {
-				$objectId = $object->getId();
-				$this->logger->error(
-					message: "[FilePublishingHandler] publishFile: Could not get object folder for object: $objectId",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				throw new Exception('Object folder not found.');
-			}
-
-			$this->logger->debug(
-				message: '[FilePublishingHandler] publishFile: Object folder path: ' . $objectFolder->getPath(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			// Debug: List all files in the object folder.
-			try {
-				$objectFiles = $objectFolder->getDirectoryListing();
-				$objectFileNames = array_map(
-					function ($file) {
-						return $file->getName();
-					},
-					$objectFiles
-				);
-				$this->logger->debug(
-					message: '[FilePublishingHandler] publishFile: Files in object folder: ' . json_encode($objectFileNames),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			} catch (Exception $e) {
-				$this->logger->error(
-					message: '[FilePublishingHandler] publishFile: Error listing object folder contents: ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-
-			try {
-				$this->logger->debug(
-					message: "[FilePublishingHandler] publishFile: Attempting to get file '$fileName' from object folder",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				$fileNode = $objectFolder->get($fileName);
-				$foundFileMsg = '[FilePublishingHandler] publishFile: Successfully found file: ' . $fileNode->getName();
-				$foundFileMsg .= ' at ' . $fileNode->getPath();
-				$this->logger->debug(message: $foundFileMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-			} catch (NotFoundException $e) {
-				// Try with full path if filename didn't work.
-				try {
-					$attemptMsg = '[FilePublishingHandler] publishFile:';
-					$attemptMsg .= " Attempting to get file '$filePath' (full path) from object folder";
-					$this->logger->debug(message: $attemptMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-					$fileNode = $objectFolder->get($filePath);
-					$nodeName = $fileNode->getName();
-					$nodePath = $fileNode->getPath();
-					$successMsg = '[FilePublishingHandler] publishFile:';
-					$successMsg .= " Successfully found file using full path: $nodeName at $nodePath";
-					$this->logger->debug(message: $successMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-				} catch (NotFoundException $e2) {
-					$errDetail = $e2->getMessage();
-					$prefix = '[FilePublishingHandler] publishFile:';
-					$errMsg = "$prefix File '$fileName' and '$filePath' not found";
-					$errMsg .= " in object folder. NotFoundException: $errDetail";
-					$this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-					throw new Exception('File not found.');
-				}
-			} catch (Exception $e) {
-				$errMsg = '[FilePublishingHandler] publishFile:';
-				$errMsg .= ' Unexpected error getting file from object folder: ';
-				$errMsg .= $e->getMessage();
-				$this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-				throw new Exception('File not found.');
-			}//end try
-		}//end if
-
-		// Verify file exists and is a File instance.
-		if ($fileNode instanceof File === false) {
-			$nodeClass = get_class($fileNode);
-			$this->logger->error(
-				message: "[FilePublishingHandler] publishFile: Found node is not a File instance, it's a: $nodeClass",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			throw new Exception('File not found.');
-		}
-
-		// @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-		$this->fileService->checkOwnership($fileNode);
+		$fileNode = $this->fileFinder(operation: 'publishFile')->find(object: $object, file: $file);
 
 		$this->logger->debug(
 			message: '[FilePublishingHandler] publishFile: Creating share link for file: ' . $fileNode->getPath(),
@@ -291,34 +151,43 @@ class FilePublishingHandler {
 			throw new Exception('A restricted file cannot be published');
 		}
 
-		// Use FileMapper to create the share directly in the database.
-		try {
-			$openRegisterUser = $this->fileService->getUser();
-			$shareInfo = $this->fileMapper->publishFile(
-				fileId: $fileNode->getId(),
-				sharedBy: $openRegisterUser->getUID(),
-				shareOwner: $openRegisterUser->getUID(),
-				// Read only.
-			);
-
-			$shareId = $shareInfo['id'];
-			$token = $shareInfo['token'];
-			$url = $shareInfo['accessUrl'];
-			$message = '[FilePublishingHandler] publishFile: Successfully created public share via FileMapper';
-			$message .= " - ID: {$shareId}, Token: {$token}, URL: {$url}";
-			$this->logger->debug(message: $message, context: ['file' => __FILE__, 'line' => __LINE__]);
-		} catch (Exception $e) {
-			$errMsg = '[FilePublishingHandler] publishFile: Failed to create share via FileMapper: ' . $e->getMessage();
-			$this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-			throw new Exception('Failed to create share link: ' . $e->getMessage());
-		}
-
+		$this->createPublicShare(fileNode: $fileNode);
 		$this->logger->debug(
 			message: '[FilePublishingHandler] publishFile: Successfully published file: ' . $fileNode->getName(),
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 		return $fileNode;
 	}//end publishFile()
+
+	/**
+	 * Create the read-only public share of a file directly in the database.
+	 *
+	 * @param File $fileNode The file.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the share cannot be created.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function createPublicShare(File $fileNode): void {
+		try {
+			$openRegisterUser = $this->fileService->getUser();
+			$shareInfo = $this->fileMapper->publishFile(
+				fileId: $fileNode->getId(),
+				sharedBy: $openRegisterUser->getUID(),
+				shareOwner: $openRegisterUser->getUID(),
+			);
+
+			$message = '[FilePublishingHandler] publishFile: Successfully created public share via FileMapper';
+			$message .= " - ID: {$shareInfo['id']}, Token: {$shareInfo['token']}, URL: {$shareInfo['accessUrl']}";
+			$this->logger->debug(message: $message, context: ['file' => __FILE__, 'line' => __LINE__]);
+		} catch (Exception $e) {
+			$errMsg = '[FilePublishingHandler] publishFile: Failed to create share via FileMapper: ' . $e->getMessage();
+			$this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
+			throw new Exception('Failed to create share link: ' . $e->getMessage());
+		}
+	}//end createPublicShare()
 
 	/**
 	 * Unpublish a file by removing public share links.
@@ -332,14 +201,9 @@ class FilePublishingHandler {
 	 * @return File The unpublished file node.
 	 *
 	 * @throws Exception If unpublishing fails.
-	 * @throws NotFoundException If the file is not found.
 	 *
 	 * @phpstan-return File
 	 * @psalm-return   File
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  File lookup requires handling ID vs path scenarios
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple file resolution paths with fallback logic
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file lookup and unsharing requires extensive code
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -349,158 +213,40 @@ class FilePublishingHandler {
 			$object = $this->objectEntityMapper->find($object);
 		}
 
-		// Debug logging - original file path.
-		$originalFilePath = $filePath;
 		$this->logger->debug(
-			message: "[FilePublishingHandler] unpublishFile: Original file path received: '$originalFilePath'",
+			message: "[FilePublishingHandler] unpublishFile: Original file path received: '$filePath'",
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
-
-		// Initialize file before conditional assignment.
-		$file = null;
-
-		// If $filePath is an integer (file ID), try to find the file directly by ID.
-		if (is_int($filePath) === true) {
-			$this->logger->debug(
-				message: "[FilePublishingHandler] unpublishFile: File ID provided: $filePath",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			// Try to find the file in the object's folder by ID.
-			$file = $this->fileService->getFile(object: $object, file: $filePath);
-			if ($file === null) {
-				$this->logger->error(
-					message: "[FilePublishingHandler] unpublishFile: No file found with ID: $filePath",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				throw new Exception("File with ID $filePath does not exist");
-			}
-
-			$foundMsg = '[FilePublishingHandler] unpublishFile: Found file by ID: ' . $file->getName();
-			$foundMsg .= ' (ID: ' . $file->getId() . ')';
-			$this->logger->debug(message: $foundMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-		}//end if
-
-		if (is_int($filePath) === false) {
-			// Handle string file paths (existing logic).
-			// Clean file path and extract filename using utility method.
-			$pathInfo = $this->fileService->extractFileNameFromPath($filePath);
-			$filePath = $pathInfo['cleanPath'];
-			$fileName = $pathInfo['fileName'];
-
-			$this->logger->debug(
-				message: "[FilePublishingHandler] unpublishFile: After cleaning: '$filePath'",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			if ($fileName !== $filePath) {
-				$extractMsg = '[FilePublishingHandler] unpublishFile:';
-				$extractMsg .= " Extracted filename from path: '$fileName' (from '$filePath')";
-				$this->logger->debug(
-					message: $extractMsg,
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-
-			// Get the object folder (this is where the files actually are).
-			$objectFolder = $this->fileService->getObjectFolder($object);
-
-			if ($objectFolder === null) {
-				$objectId = $object->getId();
-				$this->logger->error(
-					message: "[FilePublishingHandler] unpublishFile: Could not get object folder for object: $objectId",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				throw new Exception('Object folder not found.');
-			}
-
-			$this->logger->debug(
-				message: '[FilePublishingHandler] unpublishFile: Object folder path: ' . $objectFolder->getPath(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			// Debug: List all files in the object folder.
-			try {
-				$objectFiles = $objectFolder->getDirectoryListing();
-				$objectFileNames = array_map(
-					function ($file) {
-						return $file->getName();
-					},
-					$objectFiles
-				);
-				$this->logger->debug(
-					message: '[FilePublishingHandler] unpublishFile: Files in object folder: ' . json_encode($objectFileNames),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			} catch (Exception $e) {
-				$errDetail = $e->getMessage();
-				$this->logger->error(
-					message: "[FilePublishingHandler] unpublishFile: Error listing object folder contents: $errDetail",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-
-			try {
-				$this->logger->debug(
-					message: "[FilePublishingHandler] unpublishFile: Attempting to get file '$fileName' from object folder",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				$file = $objectFolder->get($fileName);
-				$foundFileMsg = '[FilePublishingHandler] unpublishFile: Successfully found file: ' . $file->getName();
-				$foundFileMsg .= ' at ' . $file->getPath();
-				$this->logger->debug(message: $foundFileMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-			} catch (NotFoundException $e) {
-				// Try with full path if filename didn't work.
-				try {
-					$attemptMsg = '[FilePublishingHandler] unpublishFile:';
-					$attemptMsg .= " Attempting to get file '$filePath' (full path) from object folder";
-					$this->logger->debug(message: $attemptMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-					$file = $objectFolder->get($filePath);
-					$successMsg = '[FilePublishingHandler] unpublishFile: Successfully found file';
-					$successMsg .= ' using full path: ' . $file->getName() . ' at ' . $file->getPath();
-					$this->logger->debug(message: $successMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-				} catch (NotFoundException $e2) {
-					$errDetail = $e2->getMessage();
-					$prefix = '[FilePublishingHandler] unpublishFile:';
-					$errMsg = "$prefix File '$fileName' and '$filePath' not found";
-					$errMsg .= " in object folder. NotFoundException: $errDetail";
-					$this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-					throw new Exception('File not found.');
-				}
-			} catch (Exception $e) {
-				$errMsg = '[FilePublishingHandler] unpublishFile:';
-				$errMsg .= ' Unexpected error getting file from object folder: ';
-				$errMsg .= $e->getMessage();
-				$this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-				throw new Exception('File not found.');
-			}//end try
-		}//end if
-
-		// Verify file exists and is a File instance.
-		if ($file instanceof File === false) {
-			$fileClass = get_class($file);
-			$this->logger->error(
-				message: "[FilePublishingHandler] unpublishFile: Found node is not a File instance, it's a: $fileClass",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			throw new Exception('File not found.');
-		}
-
-		// @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-		$this->fileService->checkOwnership($file);
+		$file = $this->fileFinder(operation: 'unpublishFile')->find(object: $object, file: $filePath);
 
 		$this->logger->debug(
 			message: '[FilePublishingHandler] unpublishFile: Removing share links for file: ' . $file->getPath(),
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
+		$this->removePublicShares(file: $file);
+		$this->logger->debug(
+			message: '[FilePublishingHandler] unpublishFile: Successfully unpublished file: ' . $file->getName(),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+		return $file;
+	}//end unpublishFile()
 
-		// Use FileMapper to remove all public shares directly from the database.
+	/**
+	 * Remove every public share of a file directly from the database.
+	 *
+	 * @param File $file The file.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the shares cannot be removed.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function removePublicShares(File $file): void {
 		try {
 			$deletionInfo = $this->fileMapper->depublishFile($file->getId());
-
-			$deletedShares = $deletionInfo['deleted_shares'];
-			$fileId = $deletionInfo['file_id'];
 			$message = '[FilePublishingHandler] unpublishFile: Successfully removed public shares via FileMapper - ';
-			$message .= "Deleted shares: {$deletedShares}, File ID: {$fileId}";
+			$message .= "Deleted shares: {$deletionInfo['deleted_shares']}, File ID: {$deletionInfo['file_id']}";
 			$this->logger->debug(message: $message, context: ['file' => __FILE__, 'line' => __LINE__]);
 
 			if ($deletionInfo['deleted_shares'] === 0) {
@@ -513,13 +259,24 @@ class FilePublishingHandler {
 			$this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
 			throw new Exception('Failed to remove share links: ' . $e->getMessage());
 		}
+	}//end removePublicShares()
 
-		$this->logger->debug(
-			message: '[FilePublishingHandler] unpublishFile: Successfully unpublished file: ' . $file->getName(),
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-		return $file;
-	}//end unpublishFile()
+	/**
+	 * A finder of files in an object's folder, its log lines naming one operation of this handler.
+	 *
+	 * Built per call: the file service arrives through a setter, after construction.
+	 *
+	 * @param string $operation The operation, named in every log line.
+	 *
+	 * @return ObjectFileFinder The finder.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function fileFinder(string $operation): ObjectFileFinder {
+		$finder = new ObjectFileFinder(logger: $this->logger, fileService: $this->fileService);
+		$finder->prefix = "[FilePublishingHandler] {$operation}:";
+		return $finder;
+	}//end fileFinder()
 
 	/**
 	 * Create a ZIP archive of all files for an object.
