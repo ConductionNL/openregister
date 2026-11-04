@@ -695,14 +695,21 @@ function modelOption(options, id) {
 function applyLlmSettings(vm, llmSettings) {
 	vm.llmEnabled = llmSettings.enabled || false
 	if (llmSettings.embeddingProvider) {
-		vm.selectedEmbeddingProvider = vm.embeddingProviderOptions.find((p) => p.id === llmSettings.embeddingProvider)
+		vm.selectedEmbeddingProvider = vm.embeddingProviderOptions.find(
+			(p) => p.id === llmSettings.embeddingProvider,
+		)
 	}
 	if (llmSettings.chatProvider) {
-		vm.selectedChatProvider = vm.chatProviderOptions.find((p) => p.id === llmSettings.chatProvider)
+		vm.selectedChatProvider = vm.chatProviderOptions.find(
+			(p) => p.id === llmSettings.chatProvider,
+		)
 	}
-	if (llmSettings.openaiConfig) vm.openaiConfig = openaiFormConfig(llmSettings.openaiConfig)
-	if (llmSettings.ollamaConfig) vm.ollamaConfig = ollamaFormConfig(llmSettings.ollamaConfig)
-	if (llmSettings.fireworksConfig) vm.fireworksConfig = fireworksFormConfig(vm, llmSettings.fireworksConfig)
+	if (llmSettings.openaiConfig)
+		vm.openaiConfig = openaiFormConfig(llmSettings.openaiConfig)
+	if (llmSettings.ollamaConfig)
+		vm.ollamaConfig = ollamaFormConfig(llmSettings.ollamaConfig)
+	if (llmSettings.fireworksConfig)
+		vm.fireworksConfig = fireworksFormConfig(vm, llmSettings.fireworksConfig)
 	if (Array.isArray(llmSettings.enabledFeatures)) {
 		vm.aiFeatures.forEach((feature) => {
 			feature.enabled = llmSettings.enabledFeatures.includes(feature.id)
@@ -717,7 +724,9 @@ function applyLlmSettings(vm, llmSettings) {
  * @return {boolean} True when the Ollama models should be fetched.
  */
 function usesOllama(vm) {
-	const chosen = vm.selectedEmbeddingProvider?.id === 'ollama' || vm.selectedChatProvider?.id === 'ollama'
+	const chosen =
+		vm.selectedEmbeddingProvider?.id === 'ollama'
+		|| vm.selectedChatProvider?.id === 'ollama'
 	return chosen && Boolean(vm.ollamaConfig.url)
 }
 
@@ -1129,7 +1138,6 @@ export default {
 				this.loading = false
 			}
 		},
-
 
 		/**
 		 * @spec exclude UI event handler — clears the embedding test result on provider change.

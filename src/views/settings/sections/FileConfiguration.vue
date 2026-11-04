@@ -1468,7 +1468,6 @@ export default {
 			return hint ? hint() : null
 		},
 
-
 		/**
 		 * Deep link to the OpenAnonymiser ExApp in the App Store discover view.
 		 *
@@ -1565,7 +1564,6 @@ export default {
 				console.error('Failed to load file settings:', error)
 			}
 		},
-
 
 		/**
 		 * Load object text extraction settings
