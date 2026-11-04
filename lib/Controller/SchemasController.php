@@ -1975,11 +1975,12 @@ class SchemasController extends Controller {
 	 *
 	 * @param array<string, mixed> $document The schema body being written.
 	 *
-	 * @return array<string, mixed> The body with a JSON text authorization decoded.
+	 * @return array<string, mixed> The body with a JSON text block decoded; any other text stays for the write to judge.
 	 */
 	private function withAuthorizationAsStored(array $document): array {
-		if (array_key_exists('authorization', $document) === true) {
-			$document['authorization'] = (new CrossOrganisationMarkerChange())->asStored(authorization: $document['authorization']);
+		$stored = (new CrossOrganisationMarkerChange())->asStored(authorization: ($document['authorization'] ?? null));
+		if (is_array($stored) === true) {
+			$document['authorization'] = $stored;
 		}
 
 		return $document;
