@@ -43,7 +43,7 @@ use OCA\OpenRegister\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Service\File\FileMetadataFormHandler;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
 use OCA\OpenRegister\Service\File\AttachNodeHandler;
 use OCA\OpenRegister\Service\Integration\AttachTargetFilter;
@@ -111,9 +111,9 @@ class FilesController extends Controller {
 	 *
 	 * Used to validate object existence and permissions.
 	 *
-	 * @var ObjectService Object service instance
+	 * @var ObjectOperationsInterface Object service instance
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * The root folder.

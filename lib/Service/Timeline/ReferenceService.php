@@ -40,7 +40,7 @@ use OCA\OpenRegister\Db\EntryReference;
 use OCA\OpenRegister\Db\EntryReferenceMapper;
 use OCA\OpenRegister\Db\ReferencePattern;
 use OCA\OpenRegister\Db\ReferencePatternMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
@@ -79,7 +79,7 @@ class ReferenceService {
 	 *
 	 * @param ReferencePatternMapper $patterns   The administered patterns.
 	 * @param EntryReferenceMapper   $references The recorded references.
-	 * @param ObjectService          $objects    Resolves a code to an object the caller may read.
+	 * @param ObjectOperationsInterface          $objects    Resolves a code to an object the caller may read.
 	 * @param LoggerInterface        $logger     Logger for the paths that decline rather than throw.
 	 *
 	 * @return void
@@ -87,7 +87,7 @@ class ReferenceService {
 	public function __construct(
 		private readonly ReferencePatternMapper $patterns,
 		private readonly EntryReferenceMapper $references,
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

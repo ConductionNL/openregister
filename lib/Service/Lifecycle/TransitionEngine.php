@@ -39,7 +39,7 @@ use OCA\OpenRegister\Exception\LifecycleProviderException;
 use OCA\OpenRegister\Exception\LifecycleSubjectNotFoundException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -86,7 +86,7 @@ class TransitionEngine {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService Object CRUD service used to load + save the entity.
+	 * @param ObjectOperationsInterface $objectService Object CRUD service used to load + save the entity.
 	 * @param SchemaMapperInterface $schemaMapper Mapper to resolve the entity's schema.
 	 * @param IEventDispatcher $eventDispatcher Dispatcher used to fire ObjectTransitionedEvent.
 	 * @param IUserSession $userSession Current user session, for actor attribution.
@@ -108,7 +108,7 @@ class TransitionEngine {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly IUserSession $userSession,
