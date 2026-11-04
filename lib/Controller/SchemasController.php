@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
+use OCA\OpenRegister\Controller\Support\SchemasControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
@@ -55,8 +55,6 @@ use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
-use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
-use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaDeletionService;
@@ -70,14 +68,12 @@ use OCA\OpenRegister\Service\Schemas\ReferenceFilterOperandGuard;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
-use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception as DBException;
-use OCP\IAppConfig;
 use OCP\IRequest;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -175,6 +171,97 @@ class SchemasController extends Controller {
 	private readonly ReferenceFilterOperandGuard $referenceFilterOperands;
 
 	/**
+	 * The schema mapper.
+	 *
+	 * @var SchemaMapper
+	 */
+	private readonly SchemaMapper $schemaMapper;
+
+	/**
+	 * The register mapper.
+	 *
+	 * @var RegisterMapper
+	 */
+	private readonly RegisterMapper $registerMapper;
+
+	/**
+	 * The object entity mapper.
+	 *
+	 * @var MagicMapper
+	 */
+	private readonly MagicMapper $objectEntityMapper;
+
+	/**
+	 * The audit trail mapper.
+	 *
+	 * @var AuditTrailMapper
+	 */
+	private readonly AuditTrailMapper $auditTrailMapper;
+
+	/**
+	 * The schema cache service.
+	 *
+	 * @var SchemaCacheHandler
+	 */
+	private readonly SchemaCacheHandler $schemaCacheService;
+
+	/**
+	 * The facet cache svc.
+	 *
+	 * @var FacetCacheHandler
+	 */
+	private readonly FacetCacheHandler $facetCacheSvc;
+
+	/**
+	 * The logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * The container.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * The schema versioning service.
+	 *
+	 * @var SchemaVersioningService
+	 */
+	private readonly SchemaVersioningService $schemaVersioningService;
+
+	/**
+	 * The schema import service.
+	 *
+	 * @var ?SchemaImportService
+	 */
+	private readonly ?SchemaImportService $schemaImportService;
+
+	/**
+	 * The semantic type resolver.
+	 *
+	 * @var ?SemanticTypeResolver
+	 */
+	private readonly ?SemanticTypeResolver $semanticTypeResolver;
+
+	/**
+	 * The semantic roles.
+	 *
+	 * @var ?SemanticRoleHandler
+	 */
+	private readonly ?SemanticRoleHandler $semanticRoles;
+
+	/**
+	 * The controller's injected services.
+	 *
+	 * @var SchemasControllerServices
+	 */
+	private readonly SchemasControllerServices $services;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes controller with required dependencies for schema operations.
@@ -182,56 +269,35 @@ class SchemasController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param IAppConfig $config App configuration for settings
-	 * @param SchemaMapper $schemaMapper Schema mapper for database operations
-	 * @param RegisterMapper $registerMapper Register mapper for register lookups and schema linkage
-	 * @param MagicMapper $objectEntityMapper Object entity mapper for object queries
-	 * @param UploadService $uploadService Upload service for file uploads
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for log statistics
-	 * @param OrganisationService $organisationService Organisation service for multi-tenancy
-	 * @param SchemaCacheHandler $schemaCacheService Schema cache handler for caching operations
-	 * @param FacetCacheHandler $facetCacheSvc Schema facet cache service for facet caching
-	 * @param SchemaExplorationInterface $schemaService Schema service for exploration operations
-	 * @param LoggerInterface $logger Logger for error tracking
-	 * @param ContainerInterface $container Container for lazy loading services
-	 * @param SchemaVersioningService $schemaVersioningService Schema versioning service for version operations
-	 * @param JsonLdContextService $jsonLdContextService JSON-LD context service
-	 * @param SchemaImportService $schemaImportService Schema import service for importing schemas
-	 * @param SemanticTypeResolver $semanticTypeResolver Semantic-type → schema resolver (cross-app references)
-	 * @param SemanticRoleHandler|null $semanticRoles Reads and validates the title, status, assignee and term roles
+	 * @param SchemasControllerServices $services The schemas controller services.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud AppFramework requires all services to be constructor-injected.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly IAppConfig $config,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly MagicMapper $objectEntityMapper,
-		private readonly UploadService $uploadService,
-		private readonly AuditTrailMapper $auditTrailMapper,
-		private readonly OrganisationService $organisationService,
-		private readonly SchemaCacheHandler $schemaCacheService,
-		private readonly FacetCacheHandler $facetCacheSvc,
-		private readonly SchemaExplorationInterface $schemaService,
-		private readonly LoggerInterface $logger,
-		private readonly ContainerInterface $container,
-		private readonly SchemaVersioningService $schemaVersioningService,
-		private readonly ?JsonLdContextService $jsonLdContextService = null,
-		private readonly ?SchemaImportService $schemaImportService = null,
-		private readonly ?SemanticTypeResolver $semanticTypeResolver = null,
-		private readonly ?SemanticRoleHandler $semanticRoles = null,
+		SchemasControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
+		$this->services = $services;
+		$this->schemaMapper = $services->mappers->schemaMapper;
+		$this->registerMapper = $services->mappers->registerMapper;
+		$this->objectEntityMapper = $services->mappers->objectEntityMapper;
+		$this->auditTrailMapper = $services->mappers->auditTrailMapper;
+		$this->schemaCacheService = $services->schemas->schemaCacheService;
+		$this->facetCacheSvc = $services->schemas->facetCacheSvc;
+		$this->logger = $services->platform->logger;
+		$this->container = $services->platform->container;
+		$this->schemaVersioningService = $services->schemas->versioning;
+		$this->schemaImportService = $services->semantics->schemaImportService;
+		$this->semanticTypeResolver = $services->semantics->semanticTypeResolver;
+		$this->semanticRoles = $services->semantics->semanticRoles;
 		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper
+			registerMapper: $this->registerMapper,
+			schemaMapper: $this->schemaMapper
 		);
-		$this->referenceFilterOperands = new ReferenceFilterOperandGuard(schemaMapper: $schemaMapper);
+		$this->referenceFilterOperands = new ReferenceFilterOperandGuard(schemaMapper: $this->schemaMapper);
 	}//end __construct()
 
 	/**
@@ -765,7 +831,7 @@ class SchemasController extends Controller {
 	 * @return JSONResponse|null A 400 naming the bad mapping, or null when there is nothing to refuse.
 	 */
 	private function validateJsonLdMapping(array $data): ?JSONResponse {
-		if ($this->jsonLdContextService === null) {
+		if ($this->services->semantics->jsonLdContextService === null) {
 			return null;
 		}
 
@@ -779,7 +845,7 @@ class SchemasController extends Controller {
 			return null;
 		}
 
-		$errors = $this->jsonLdContextService->validateMapping(jsonld: $jsonld);
+		$errors = $this->services->semantics->jsonLdContextService->validateMapping(jsonld: $jsonld);
 		if (empty($errors) === true) {
 			return null;
 		}
@@ -1945,7 +2011,7 @@ class SchemasController extends Controller {
 			return $denied;
 		}
 
-		$phpArray = $this->uploadService->getUploadedJson($this->request->getParams());
+		$phpArray = $this->services->platform->uploadService->getUploadedJson($this->request->getParams());
 		if ($phpArray instanceof JSONResponse) {
 			return $phpArray;
 		}
@@ -2121,7 +2187,7 @@ class SchemasController extends Controller {
 
 		$schema = $this->schemaMapper->insert($schema);
 		if ($schema->getOrganisation() === null || $schema->getOrganisation() === '') {
-			$schema->setOrganisation($this->organisationService->getOrganisationForNewEntity());
+			$schema->setOrganisation($this->services->platform->organisationService->getOrganisationForNewEntity());
 			$schema = $this->schemaMapper->update($schema);
 		}
 
@@ -2357,7 +2423,7 @@ class SchemasController extends Controller {
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 
-			$explorationResults = $this->schemaService->exploreSchemaProperties($id);
+			$explorationResults = $this->services->schemas->schemaService->exploreSchemaProperties($id);
 
 			$this->logger->info(
 				message: '[SchemasController] Schema exploration completed successfully',
@@ -2424,7 +2490,7 @@ class SchemasController extends Controller {
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 
-			$updatedSchema = $this->schemaService->updateSchemaFromExploration(
+			$updatedSchema = $this->services->schemas->schemaService->updateSchemaFromExploration(
 				schemaId: $id,
 				propertyUpdates: $propertyUpdates
 			);
