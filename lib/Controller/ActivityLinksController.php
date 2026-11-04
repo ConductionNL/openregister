@@ -36,7 +36,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Trait\ResolvesLinkedObjectTrait;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ActivityFilterService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\TimelineVisibilityService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -58,14 +58,14 @@ class ActivityLinksController extends Controller {
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
 	 * @param ActivityFilterService $filterService Backing service.
-	 * @param ObjectService $objectService OR object resolver.
+	 * @param ObjectOperationsInterface $objectService OR object resolver.
 	 * @param TimelineVisibilityService $visibility Internal/public filter for the feed.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly ActivityFilterService $filterService,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly TimelineVisibilityService $visibility,
 	) {
 		parent::__construct(appName: $appName, request: $request);

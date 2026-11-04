@@ -48,7 +48,7 @@ namespace OCA\OpenRegister\Service\Calculation;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -64,7 +64,7 @@ class ReferenceResolver {
 	/**
 	 * Wire the object service used to read referenced objects and the logger.
 	 *
-	 * @param ObjectService $objectService Read-side object service.
+	 * @param ObjectOperationsInterface $objectService Read-side object service.
 	 * @param ReferenceTenantGuard $tenantGuard Keeps references inside the saving object's tenant.
 	 * @param LoggerInterface $logger PSR logger for unresolved-reference warnings.
 	 *
@@ -74,7 +74,7 @@ class ReferenceResolver {
 	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly ReferenceTenantGuard $tenantGuard,
 		private readonly LoggerInterface $logger,
 	) {

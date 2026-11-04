@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Quality;
 
-use OCA\OpenRegister\Service\ObjectService;
 
 /**
  * Every public method of DuplicateDetectionService. Callers depend on this interface, not on the class.

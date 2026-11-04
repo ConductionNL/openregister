@@ -35,7 +35,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -193,7 +193,7 @@ class ExampleSetRegisters {
 	public function removeImport(string $appId, string $jobId): bool {
 		try {
 			$uuids   = $this->container->get(AuditTrailMapperInterface::class)->objectUuidsByImportJobId(importJobId: $jobId);
-			$objects = $this->container->get(ObjectService::class);
+			$objects = $this->container->get(ObjectOperationsInterface::class);
 		} catch (Throwable) {
 			return false;
 		}

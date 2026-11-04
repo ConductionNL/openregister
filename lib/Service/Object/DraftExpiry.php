@@ -49,7 +49,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -84,13 +84,13 @@ class DraftExpiry {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService   $objects   Lists and deletes objects.
+	 * @param ObjectOperationsInterface   $objects   Lists and deletes objects.
 	 * @param RegisterMapperInterface  $registers Lists the registers.
 	 * @param SchemaMapperInterface    $schemas   Loads each register's schemas.
 	 * @param LoggerInterface $logger    Records what a sweep could not do.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly RegisterMapperInterface $registers,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly LoggerInterface $logger,

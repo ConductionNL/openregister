@@ -24,7 +24,7 @@
 namespace OCA\OpenRegister\Tool;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -52,21 +52,21 @@ class ObjectsTool extends AbstractTool {
 	/**
 	 * Object service
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private ObjectService $objectService;
+	private ObjectOperationsInterface $objectService;
 
 	/**
 	 * Constructor
 	 *
 	 * @param IUserSession $userSession User session service
 	 * @param LoggerInterface $logger Logger service
-	 * @param ObjectService $objectService Object service
+	 * @param ObjectOperationsInterface $objectService Object service
 	 */
 	public function __construct(
 		IUserSession $userSession,
 		LoggerInterface $logger,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	) {
 		parent::__construct(userSession: $userSession, logger: $logger);
 		$this->objectService = $objectService;
