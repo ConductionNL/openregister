@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
@@ -36,14 +36,14 @@ final class FlowNodeRunExecution {
 	 * Bundle the services.
 	 *
 	 * @param FlowRunServiceInterface    $runner      Queues and executes the one node.
-	 * @param ObjectService     $objects     Loads the subject, scoped to the CALLER's
+	 * @param ObjectOperationsInterface     $objects     Loads the subject, scoped to the CALLER's
 	 * @param PermissionHandler $permissions The SAME object-RBAC evaluator the
 	 *
 	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
 	 */
 	public function __construct(
 		public readonly FlowRunServiceInterface $runner,
-		public readonly ObjectService $objects,
+		public readonly ObjectOperationsInterface $objects,
 		public readonly PermissionHandler $permissions,
 	) {
 	}//end __construct()

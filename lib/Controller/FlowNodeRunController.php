@@ -292,7 +292,7 @@ class FlowNodeRunController extends Controller {
 			$run = $this->runner->queue(
 				flowId: $id,
 				subject: $ref,
-				trigger: FlowRunService::TRIGGER_DIRECT_NODE,
+				trigger: FlowRunServiceInterface::TRIGGER_DIRECT_NODE,
 				context: ['nodeId' => $nodeId],
 				user: $callerUid
 			);
