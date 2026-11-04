@@ -62,6 +62,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
  * @uses   \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
+ * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
  * @covers \OCA\OpenRegister\Db\MagicMapper\OrganisationScopeCondition
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler
