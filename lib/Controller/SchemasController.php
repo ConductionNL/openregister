@@ -1952,16 +1952,8 @@ class SchemasController extends Controller {
 			return $refusal;
 		}
 
-		if ($id !== null) {
-			unset($phpArray['id'], $phpArray['organisation'], $phpArray['owner'], $phpArray['created']);
-		}
-
-		if (empty($phpArray['title']) === true) {
-			$phpArray['title'] = 'New Schema';
-		}
-
 		try {
-			return new JSONResponse(data: $this->saveUploadedSchema(schema: $schema, document: $phpArray));
+			return new JSONResponse(data: $this->saveUploadedSchema(schema: $schema, document: $this->uploadDocument(document: $phpArray, id: $id)));
 		} catch (Exception $e) {
 			return $this->schemaWriteErrorResponse(
 				e: $e,
@@ -1969,6 +1961,27 @@ class SchemasController extends Controller {
 			);
 		}
 	}//end upload()
+
+	/**
+	 * The uploaded body as it is saved: an update keeps the stored identity and
+	 * ownership, and a body without a title gets a default one.
+	 *
+	 * @param array<string, mixed> $document The uploaded body.
+	 * @param int|null             $id       The schema being updated, or null for a new one.
+	 *
+	 * @return array<string, mixed> The body to save.
+	 */
+	private function uploadDocument(array $document, ?int $id): array {
+		if ($id !== null) {
+			unset($document['id'], $document['organisation'], $document['owner'], $document['created']);
+		}
+
+		if (empty($document['title']) === true) {
+			$document['title'] = 'New Schema';
+		}
+
+		return $document;
+	}//end uploadDocument()
 
 	/**
 	 * The body with its authorization in the form the schema will store, so
