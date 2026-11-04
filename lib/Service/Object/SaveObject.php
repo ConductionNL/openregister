@@ -2132,13 +2132,27 @@ class SaveObject {
 		$hasRef = isset($property['$ref']) || (($property['items']['$ref'] ?? null) !== null);
 		$hasInversedBy = isset($property['inversedBy'])
 			|| (($property['items']['inversedBy'] ?? null) !== null);
-		$objHandling = $property['objectConfiguration']['handling'] ?? null;
-		$itemsHandling = $property['items']['objectConfiguration']['handling'] ?? null;
-		$hasCascade = $objHandling === 'cascade' || ObjectHandling::relates($objHandling) === true
-			|| $itemsHandling === 'cascade' || ObjectHandling::relates($itemsHandling) === true;
+		$hasCascade = self::cascadesOrRelates(property: $property);
 
 		return $property['type'] === 'array' && $hasRef && ($hasInversedBy || $hasCascade);
 	}//end isCascadedArrayProperty()
+
+	/**
+	 * Whether a property, or its items, declares cascade or relates handling.
+	 *
+	 * @param array $property The property definition.
+	 *
+	 * @return bool True when the property's objects cascade or are related.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function cascadesOrRelates(array $property): bool {
+		$objHandling = $property['objectConfiguration']['handling'] ?? null;
+		$itemsHandling = $property['items']['objectConfiguration']['handling'] ?? null;
+
+		return $objHandling === 'cascade' || ObjectHandling::relates($objHandling) === true
+			|| $itemsHandling === 'cascade' || ObjectHandling::relates($itemsHandling) === true;
+	}//end cascadesOrRelates()
 
 	/**
 	 * Cascade the single object of the run's property into its own object.
