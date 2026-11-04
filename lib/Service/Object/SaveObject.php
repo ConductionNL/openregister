@@ -64,6 +64,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceCheck;
+use OCA\OpenRegister\Service\Object\SaveObject\RelationScanRun;
 use OCA\OpenRegister\Service\Object\SaveObject\WriteBackSettings;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog;
@@ -943,117 +944,134 @@ class SaveObject {
 	 *
 	 * @return array Array of relations with dot notation paths as keys and UUIDs/URLs as values
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex relation detection logic
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple detection paths for different value types
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive relation scanning requires extended logic
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function scanForRelations(array $data, string $prefix = '', ?Schema $schema = null): array {
-		$relations = [];
+		$scan = new RelationScanRun();
+		$scan->schema = $schema;
 
 		try {
-			// Get schema properties if available.
-			$schemaProperties = null;
-			if ($schema !== null) {
-				try {
-					$schemaJson = json_encode($schema->getSchemaObject($this->urlGenerator));
-					$schemaObject = json_decode($schemaJson, associative: true);
-					$schemaProperties = $schemaObject['properties'] ?? [];
-				} catch (Exception $e) {
-					// Continue without schema properties if parsing fails.
-				}
-			}
-
+			$scan->schemaProperties = $this->relationScanProperties(schema: $schema);
 			foreach ($data as $key => $value) {
 				// Skip if key is not a string or is empty.
 				if (is_string($key) === false || empty($key) === true) {
 					continue;
 				}
 
-				$currentPath = $key;
+				$scan->key = $key;
+				$scan->path = $key;
 				if (($prefix !== '') === true) {
-					$currentPath = $prefix . '.' . $key;
+					$scan->path = $prefix . '.' . $key;
 				}
 
 				if (is_array($value) === true && empty($value) === false) {
-					// Check if this is an array property in the schema.
-					$propertyConfig = $schemaProperties[$key] ?? null;
-					$isArrayOfObjects = $propertyConfig
-									  && ($propertyConfig['type'] ?? '') === 'array'
-									  && isset($propertyConfig['items']['type'])
-									  && $propertyConfig['items']['type'] === 'object';
-
-					if ($isArrayOfObjects === true) {
-						// For arrays of objects, scan each item for relations.
-						foreach ($value as $index => $item) {
-							if (is_array($item) === true) {
-								$itemRelations = $this->scanForRelations(
-									data: $item,
-									prefix: $currentPath . '.' . $index,
-									schema: $schema
-								);
-								$relations = array_merge($relations, $itemRelations);
-							} elseif (is_string($item) === true && empty($item) === false) {
-								// String values in object arrays are always treated as relations.
-								$relations[$currentPath . '.' . $index] = $item;
-							}
-						}
-					}
-
-					if ($isArrayOfObjects === false) {
-						// For non-object arrays, check each item.
-						foreach ($value as $index => $item) {
-							if (is_array($item) === true) {
-								// Recursively scan nested arrays/objects.
-								$itemRelations = $this->scanForRelations(
-									data: $item,
-									prefix: $currentPath . '.' . $index,
-									schema: $schema
-								);
-								$relations = array_merge($relations, $itemRelations);
-							} elseif (is_string($item) === true && empty($item) === false && trim($item) !== '') {
-								// Check if the string looks like a reference.
-								if ($this->isReference(value: $item) === true) {
-									$relations[$currentPath . '.' . $index] = $item;
-								}
-							}
-						}
-					}//end if
+					$this->scanListForRelations(scan: $scan, value: $value);
 				} elseif (is_string($value) === true && empty($value) === false && trim($value) !== '') {
-					$treatAsRelation = false;
-
-					// Check schema property configuration first.
-					if (($schemaProperties !== null) === true && (($schemaProperties[$key] ?? null) !== null)) {
-						$propertyConfig = $schemaProperties[$key];
-						$propertyType = $propertyConfig['type'] ?? '';
-						$propertyFormat = $propertyConfig['format'] ?? '';
-
-						// Check for explicit relation types.
-						if ($propertyType === 'text' && in_array($propertyFormat, ['uuid', 'uri', 'url']) === true) {
-							$treatAsRelation = true;
-						} elseif ($propertyType === 'object') {
-							// Object properties with string values are always relations.
-							$treatAsRelation = true;
-						}
-					}
-
-					// If not determined by schema, check for reference patterns.
-					if ($treatAsRelation === false) {
-						$treatAsRelation = $this->isReference(value: $value);
-					}
-
-					if ($treatAsRelation === true) {
-						$relations[$currentPath] = $value;
-					}
-				}//end if
-			}//end foreach
+					$this->scanStringForRelation(scan: $scan, value: $value);
+				}
+			}
 		} catch (Exception $e) {
-			// Error scanning for relations.
+			// Error scanning for relations: the relations found so far are kept.
 		}//end try
 
-		return $relations;
+		return $scan->relations;
 	}//end scanForRelations()
+
+	/**
+	 * The property definitions of the schema a relation scan reads, or null without a (readable) schema.
+	 *
+	 * @param Schema|null $schema The schema, if any.
+	 *
+	 * @return array|null The property definitions.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function relationScanProperties(?Schema $schema): ?array {
+		if ($schema === null) {
+			return null;
+		}
+
+		try {
+			$schemaObject = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
+			return $schemaObject['properties'] ?? [];
+		} catch (Exception $e) {
+			// Continue without schema properties if parsing fails.
+			return null;
+		}
+	}//end relationScanProperties()
+
+	/**
+	 * Scan a list value for relations: nested objects recursively, strings by the property kind.
+	 *
+	 * In an array-of-objects property every non-empty string is a relation;
+	 * elsewhere only strings that look like a reference are.
+	 *
+	 * @param RelationScanRun $scan  The scan, on one key.
+	 * @param array           $value The list.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function scanListForRelations(RelationScanRun $scan, array $value): void {
+		$propertyConfig = $scan->schemaProperties[$scan->key] ?? null;
+		$isArrayOfObjects = $propertyConfig
+			&& ($propertyConfig['type'] ?? '') === 'array'
+			&& isset($propertyConfig['items']['type'])
+			&& $propertyConfig['items']['type'] === 'object';
+
+		foreach ($value as $index => $item) {
+			$itemPath = $scan->path . '.' . $index;
+			if (is_array($item) === true) {
+				$scan->relations = array_merge(
+					$scan->relations,
+					$this->scanForRelations(data: $item, prefix: $itemPath, schema: $scan->schema)
+				);
+				continue;
+			}
+
+			if (is_string($item) === false || empty($item) === true) {
+				continue;
+			}
+
+			if ($isArrayOfObjects === true
+				|| (trim($item) !== '' && $this->isReference(value: $item) === true)
+			) {
+				$scan->relations[$itemPath] = $item;
+			}
+		}//end foreach
+	}//end scanListForRelations()
+
+	/**
+	 * Record a string value as a relation when its schema property declares one, or when it looks like a reference.
+	 *
+	 * A 'text' property with format uuid, uri or url, or an 'object' property, is always a relation.
+	 *
+	 * @param RelationScanRun $scan  The scan, on one key.
+	 * @param string          $value The value.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function scanStringForRelation(RelationScanRun $scan, string $value): void {
+		$treatAsRelation = false;
+		$propertyConfig = ($scan->schemaProperties[$scan->key] ?? null);
+		if ($scan->schemaProperties !== null && $propertyConfig !== null) {
+			$propertyType = $propertyConfig['type'] ?? '';
+			$propertyFormat = $propertyConfig['format'] ?? '';
+			$treatAsRelation = ($propertyType === 'text' && in_array($propertyFormat, ['uuid', 'uri', 'url']) === true)
+				|| $propertyType === 'object';
+		}
+
+		if ($treatAsRelation === false) {
+			$treatAsRelation = $this->isReference(value: $value);
+		}
+
+		if ($treatAsRelation === true) {
+			$scan->relations[$scan->path] = $value;
+		}
+	}//end scanStringForRelation()
 
 	/**
 	 * Determines if a string value should be treated as a reference to another object
