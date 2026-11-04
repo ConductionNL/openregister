@@ -192,6 +192,89 @@ class OasService {
 	private const PROPERTY_TYPES = ['object', 'array', 'string', 'number', 'integer', 'boolean', 'null'];
 
 	/**
+	 * The JSON body of every error response: the shared Error schema.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const ERROR_CONTENT = ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Error']]];
+
+	/**
+	 * The JSON-LD `@graph` response schema of a collection.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const JSON_LD_COLLECTION_SCHEMA = [
+		'type' => 'object',
+		'description' => 'JSON-LD @graph serialization of the collection.',
+		'properties' => [
+			'@context' => ['type' => 'string', 'format' => 'uri'],
+			'@graph' => ['type' => 'array', 'items' => ['type' => 'object']],
+			'or:total' => ['type' => 'integer'],
+		],
+	];
+
+	/**
+	 * The JSON-LD response schema of a single object.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const JSON_LD_OBJECT_SCHEMA = [
+		'type' => 'object',
+		'description' => 'JSON-LD serialization of the object.',
+		'properties' => [
+			'@context' => ['type' => 'string', 'format' => 'uri'],
+			'@id' => ['type' => 'string', 'format' => 'uri'],
+			'@type' => ['type' => 'string'],
+		],
+	];
+
+	/**
+	 * The query parameters every object operation accepts.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private const COMMON_QUERY_PARAMETERS = [
+		[
+			'name' => '_extend',
+			'in' => 'query',
+			'required' => false,
+			'description' => 'Comma-separated list of properties to extend.',
+			'schema' => ['type' => 'string'],
+			'example' => 'property1,property2,property3',
+		],
+		[
+			'name' => '_filter',
+			'in' => 'query',
+			'required' => false,
+			'description' => 'Comma-separated list of properties to include in the response. ',
+			'schema' => ['type' => 'string'],
+			'example' => 'id,name,description',
+		],
+		[
+			'name' => '_unset',
+			'in' => 'query',
+			'required' => false,
+			'description' => 'Comma-separated list of properties to remove from the response.',
+			'schema' => ['type' => 'string'],
+			'example' => 'internalField1,internalField2',
+		],
+	];
+
+	/**
+	 * The full-text search parameter of a collection operation.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const SEARCH_QUERY_PARAMETER = [
+		'name' => '_search',
+		'in' => 'query',
+		'required' => false,
+		'description' => 'Full-text search query to filter objects in the collection.',
+		'schema' => ['type' => 'string'],
+		'example' => 'search term',
+	];
+
+	/**
 	 * What the RBAC declarations mean for the document.
 	 *
 	 * @var OasRbacAnnotator
@@ -981,14 +1064,7 @@ class OasService {
 					],
 				],
 			],
-			'404' => [
-				'description' => 'Register or schema not found',
-				'content' => [
-					'application/json' => [
-						'schema' => ['$ref' => '#/components/schemas/Error'],
-					],
-				],
-			],
+			'404' => $this->errorResponse(description: 'Register or schema not found'),
 		];
 
 		// Register-wide context document (idempotent across schemas of a register).
@@ -1078,107 +1154,65 @@ class OasService {
 	}//end addExtendedPaths()
 
 	/**
-	 * Create common query parameters for object operations
+	 * Create common query parameters for object operations.
 	 *
-	 * @param bool $isCollection Whether this is for a collection endpoint
-	 * @param object $schema The schema object for generating dynamic filter parameters
-	 *                       (only used for collection endpoints)
+	 * @param bool        $isCollection Whether this is for a collection endpoint
+	 * @param object|null $schema       The schema object for generating dynamic filter parameters
+	 *                                  (only used for collection endpoints)
 	 *
 	 * @return array List of query parameter definitions for OpenAPI spec.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag controls collection vs single item parameters
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Dynamic parameter generation from schema properties
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function createCommonQueryParameters(bool $isCollection = false, ?object $schema = null): array {
-		$parameters = [
-			[
-				'name' => '_extend',
-				'in' => 'query',
-				'required' => false,
-				'description' => 'Comma-separated list of properties to extend.',
-				'schema' => [
-					'type' => 'string',
-				],
-				'example' => 'property1,property2,property3',
-			],
-			[
-				'name' => '_filter',
-				'in' => 'query',
-				'required' => false,
-				'description' => 'Comma-separated list of properties to include in the response. ',
-				'schema' => [
-					'type' => 'string',
-				],
-				'example' => 'id,name,description',
-			],
-			[
-				'name' => '_unset',
-				'in' => 'query',
-				'required' => false,
-				'description' => 'Comma-separated list of properties to remove from the response.',
-				'schema' => [
-					'type' => 'string',
-				],
-				'example' => 'internalField1,internalField2',
-			],
-		];
+		if ($isCollection === false) {
+			return self::COMMON_QUERY_PARAMETERS;
+		}
 
-		// Add collection-specific parameters.
-		if ($isCollection === true) {
-			// Add _search parameter.
-			$parameters[] = [
-				'name' => '_search',
-				'in' => 'query',
-				'required' => false,
-				'description' => 'Full-text search query to filter objects in the collection.',
-				'schema' => [
-					'type' => 'string',
-				],
-				'example' => 'search term',
-			];
+		$parameters = [...self::COMMON_QUERY_PARAMETERS, self::SEARCH_QUERY_PARAMETER];
+		if ($schema === null) {
+			return $parameters;
+		}
 
-			// Add dynamic filter parameters based on schema properties.
-			if ($schema !== null) {
-				$schemaProperties = $schema->getProperties();
-				foreach ($schemaProperties ?? [] as $propertyName => $propertyDefinition) {
-					// Skip metadata properties and internal system properties.
-					if (str_starts_with($propertyName, '@') === true) {
-						continue;
-					}
+		foreach ($schema->getProperties() ?? [] as $propertyName => $propertyDefinition) {
+			// Metadata properties are skipped, and id is already a path parameter.
+			if (str_starts_with($propertyName, '@') === true || $propertyName === 'id') {
+				continue;
+			}
 
-					// Skip the id property as it's already handled as a path parameter.
-					if ($propertyName === 'id') {
-						continue;
-					}
-
-					// Get property type from definition.
-					$propertyType = $this->getPropertyType(propertyDefinition: $propertyDefinition);
-
-					// Build schema for parameter.
-					$paramSchema = [
-						'type' => $propertyType,
-					];
-
-					// Array types require an items field.
-					if ($propertyType === 'array') {
-						$paramSchema['items'] = ['type' => 'string'];
-					}
-
-					$parameters[] = [
-						'name' => $propertyName,
-						'in' => 'query',
-						'required' => false,
-						'description' => 'Filter results by ' . $propertyName,
-						'schema' => $paramSchema,
-					];
-				}//end foreach
-			}//end if
-		}//end if
+			$parameters[] = $this->propertyFilterParameter(propertyName: $propertyName, propertyDefinition: $propertyDefinition);
+		}
 
 		return $parameters;
 	}//end createCommonQueryParameters()
+
+	/**
+	 * The query parameter that filters a collection by one schema property.
+	 *
+	 * @param string $propertyName       The property name
+	 * @param mixed  $propertyDefinition The property definition
+	 *
+	 * @return array<string, mixed> OpenAPI parameter object
+	 */
+	private function propertyFilterParameter(string $propertyName, $propertyDefinition): array {
+		$propertyType = $this->getPropertyType(propertyDefinition: $propertyDefinition);
+		$paramSchema = ['type' => $propertyType];
+
+		// Array types require an items field.
+		if ($propertyType === 'array') {
+			$paramSchema['items'] = ['type' => 'string'];
+		}
+
+		return [
+			'name' => $propertyName,
+			'in' => 'query',
+			'required' => false,
+			'description' => 'Filter results by ' . $propertyName,
+			'schema' => $paramSchema,
+		];
+	}//end propertyFilterParameter()
 
 	/**
 	 * Get OpenAPI type for a property definition
@@ -1221,6 +1255,46 @@ class OasService {
 		// Default to string if type cannot be determined.
 		return 'string';
 	}//end getPropertyType()
+
+	/**
+	 * An error response: a description and the shared Error schema as its JSON body.
+	 *
+	 * @param string $description The response description
+	 *
+	 * @return array<string, mixed> OpenAPI response object
+	 */
+	private function errorResponse(string $description): array {
+		return ['description' => $description, 'content' => self::ERROR_CONTENT];
+	}//end errorResponse()
+
+	/**
+	 * The required `id` path parameter of a single-object operation.
+	 *
+	 * @param string $description The parameter description
+	 *
+	 * @return array<string, mixed> OpenAPI parameter object
+	 */
+	private function idPathParameter(string $description): array {
+		return [
+			'name' => 'id',
+			'in' => 'path',
+			'required' => true,
+			'description' => $description,
+			'schema' => ['type' => 'string', 'format' => 'uuid'],
+		];
+	}//end idPathParameter()
+
+	/**
+	 * A JSON content map whose schema references a schema component by its sanitized name.
+	 *
+	 * @param string $schemaName The schema title
+	 *
+	 * @return array<string, mixed> OpenAPI content map
+	 */
+	private function schemaRefContent(string $schemaName): array {
+		$reference = '#/components/schemas/' . $this->sanitizeSchemaName(title: $schemaName);
+		return ['application/json' => ['schema' => ['$ref' => $reference]]];
+	}//end schemaRefContent()
 
 	/**
 	 * Create GET collection operation.
@@ -1278,27 +1352,10 @@ class OasService {
 								],
 							],
 						],
-						'application/ld+json' => [
-							'schema' => [
-								'type' => 'object',
-								'description' => 'JSON-LD @graph serialization of the collection.',
-								'properties' => [
-									'@context' => ['type' => 'string', 'format' => 'uri'],
-									'@graph' => ['type' => 'array', 'items' => ['type' => 'object']],
-									'or:total' => ['type' => 'integer'],
-								],
-							],
-						],
+						'application/ld+json' => ['schema' => self::JSON_LD_COLLECTION_SCHEMA],
 					],
 				],
-				'400' => [
-					'description' => 'Invalid query parameters',
-					'content' => [
-						'application/json' => [
-							'schema' => ['$ref' => '#/components/schemas/Error'],
-						],
-					],
-				],
+				'400' => $this->errorResponse(description: 'Invalid query parameters'),
 			],
 		];
 	}//end createGetCollectionOperation()
@@ -1326,16 +1383,7 @@ class OasService {
 			'description' => 'Retrieve a specific ' . $schema->getTitle() . ' object by its unique identifier',
 			'parameters' => array_merge(
 				[
-					[
-						'name' => 'id',
-						'in' => 'path',
-						'required' => true,
-						'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object',
-						'schema' => [
-							'type' => 'string',
-							'format' => 'uuid',
-						],
-					],
+					$this->idPathParameter(description: 'Unique identifier of the ' . $schema->getTitle() . ' object'),
 				],
 				$this->createCommonQueryParameters()
 			),
@@ -1351,29 +1399,10 @@ class OasService {
 								'$ref' => '#/components/schemas/' . $this->sanitizeSchemaName(title: $schemaName),
 							],
 						],
-						'application/ld+json' => [
-							'schema' => [
-								'type' => 'object',
-								'description' => 'JSON-LD serialization of the object.',
-								'properties' => [
-									'@context' => ['type' => 'string', 'format' => 'uri'],
-									'@id' => ['type' => 'string', 'format' => 'uri'],
-									'@type' => ['type' => 'string'],
-								],
-							],
-						],
+						'application/ld+json' => ['schema' => self::JSON_LD_OBJECT_SCHEMA],
 					],
 				],
-				'404' => [
-					'description' => $schema->getTitle() . ' not found',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/Error',
-							],
-						],
-					],
-				],
+				'404' => $this->errorResponse(description: $schema->getTitle() . ' not found'),
 			],
 		];
 	}//end createGetOperation()
@@ -1401,50 +1430,20 @@ class OasService {
 			'description' => 'Update an existing ' . $schema->getTitle() . ' object with the provided data',
 			'parameters' => array_merge(
 				[
-					[
-						'name' => 'id',
-						'in' => 'path',
-						'required' => true,
-						'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object to update',
-						'schema' => [
-							'type' => 'string',
-							'format' => 'uuid',
-						],
-					],
+					$this->idPathParameter(description: 'Unique identifier of the ' . $schema->getTitle() . ' object to update'),
 				],
 				$this->createCommonQueryParameters()
 			),
 			'requestBody' => [
 				'required' => true,
-				'content' => [
-					'application/json' => [
-						'schema' => [
-							'$ref' => '#/components/schemas/' . $this->sanitizeSchemaName(title: $schemaName),
-						],
-					],
-				],
+				'content' => $this->schemaRefContent(schemaName: $schemaName),
 			],
 			'responses' => [
 				'200' => [
 					'description' => $schema->getTitle() . ' updated successfully',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/' . $this->sanitizeSchemaName(title: $schemaName),
-							],
-						],
-					],
+					'content' => $this->schemaRefContent(schemaName: $schemaName),
 				],
-				'404' => [
-					'description' => $schema->getTitle() . ' not found',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/Error',
-							],
-						],
-					],
-				],
+				'404' => $this->errorResponse(description: $schema->getTitle() . ' not found'),
 			],
 		];
 	}//end createPutOperation()
@@ -1509,33 +1508,14 @@ class OasService {
 			'parameters' => $this->createCommonQueryParameters(),
 			'requestBody' => [
 				'required' => true,
-				'content' => [
-					'application/json' => [
-						'schema' => [
-							'$ref' => '#/components/schemas/' . $this->sanitizeSchemaName(title: $schemaName),
-						],
-					],
-				],
+				'content' => $this->schemaRefContent(schemaName: $schemaName),
 			],
 			'responses' => [
 				'201' => [
 					'description' => $schema->getTitle() . ' created successfully.',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/' . $this->sanitizeSchemaName(title: $schemaName),
-							],
-						],
-					],
+					'content' => $this->schemaRefContent(schemaName: $schemaName),
 				],
-				'400' => [
-					'description' => 'Invalid request body',
-					'content' => [
-						'application/json' => [
-							'schema' => ['$ref' => '#/components/schemas/Error'],
-						],
-					],
-				],
+				'400' => $this->errorResponse(description: 'Invalid request body'),
 			],
 		];
 
@@ -1577,7 +1557,7 @@ class OasService {
 			'schema' => ['type' => 'string', 'enum' => $keys],
 		];
 
-		$error = ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Error']]];
+		$error = self::ERROR_CONTENT;
 		$operation['responses']['200'] = [
 			'description' => 'Upsert: the record holding the key was updated.',
 			'content' => $operation['responses']['201']['content'],
@@ -1611,31 +1591,13 @@ class OasService {
 			'tags' => [$schema->getTitle()],
 			'description' => 'Delete a specific ' . $schema->getTitle() . ' object by its unique identifier',
 			'parameters' => [
-				[
-					'name' => 'id',
-					'in' => 'path',
-					'required' => true,
-					'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object to delete',
-					'schema' => [
-						'type' => 'string',
-						'format' => 'uuid',
-					],
-				],
+				$this->idPathParameter(description: 'Unique identifier of the ' . $schema->getTitle() . ' object to delete'),
 			],
 			'responses' => [
 				'204' => [
 					'description' => $schema->getTitle() . ' deleted successfully',
 				],
-				'404' => [
-					'description' => $schema->getTitle() . ' not found',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/Error',
-							],
-						],
-					],
-				],
+				'404' => $this->errorResponse(description: $schema->getTitle() . ' not found'),
 			],
 		];
 	}//end createDeleteOperation()
@@ -1656,16 +1618,7 @@ class OasService {
 			'tags' => [$schema->getTitle()],
 			'description' => 'Retrieve the audit trail for a specific ' . $schema->getTitle() . ' object',
 			'parameters' => [
-				[
-					'name' => 'id',
-					'in' => 'path',
-					'required' => true,
-					'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object',
-					'schema' => [
-						'type' => 'string',
-						'format' => 'uuid',
-					],
-				],
+				$this->idPathParameter(description: 'Unique identifier of the ' . $schema->getTitle() . ' object'),
 			],
 			'responses' => [
 				'200' => [
@@ -1681,16 +1634,7 @@ class OasService {
 						],
 					],
 				],
-				'404' => [
-					'description' => $schema->getTitle() . ' not found',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/Error',
-							],
-						],
-					],
-				],
+				'404' => $this->errorResponse(description: $schema->getTitle() . ' not found'),
 			],
 		];
 	}//end createLogsOperation()
@@ -1711,16 +1655,7 @@ class OasService {
 			'tags' => [$schema->getTitle()],
 			'description' => 'Retrieve all files associated with a specific ' . $schema->getTitle() . ' object',
 			'parameters' => [
-				[
-					'name' => 'id',
-					'in' => 'path',
-					'required' => true,
-					'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object',
-					'schema' => [
-						'type' => 'string',
-						'format' => 'uuid',
-					],
-				],
+				$this->idPathParameter(description: 'Unique identifier of the ' . $schema->getTitle() . ' object'),
 			],
 			'responses' => [
 				'200' => [
@@ -1736,16 +1671,7 @@ class OasService {
 						],
 					],
 				],
-				'404' => [
-					'description' => $schema->getTitle() . ' not found',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/Error',
-							],
-						],
-					],
-				],
+				'404' => $this->errorResponse(description: $schema->getTitle() . ' not found'),
 			],
 		];
 	}//end createGetFilesOperation()
@@ -1766,16 +1692,7 @@ class OasService {
 			'tags' => [$schema->getTitle()],
 			'description' => 'Upload a new file and associate it with a specific ' . $schema->getTitle() . ' object',
 			'parameters' => [
-				[
-					'name' => 'id',
-					'in' => 'path',
-					'required' => true,
-					'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object',
-					'schema' => [
-						'type' => 'string',
-						'format' => 'uuid',
-					],
-				],
+				$this->idPathParameter(description: 'Unique identifier of the ' . $schema->getTitle() . ' object'),
 			],
 			'requestBody' => [
 				'required' => true,
@@ -1805,16 +1722,7 @@ class OasService {
 						],
 					],
 				],
-				'404' => [
-					'description' => $schema->getTitle() . ' not found',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/Error',
-							],
-						],
-					],
-				],
+				'404' => $this->errorResponse(description: $schema->getTitle() . ' not found'),
 			],
 		];
 	}//end createPostFileOperation()
@@ -1835,16 +1743,7 @@ class OasService {
 			'tags' => [$schema->getTitle()],
 			'description' => 'Lock a specific ' . $schema->getTitle() . ' object to prevent concurrent modifications',
 			'parameters' => [
-				[
-					'name' => 'id',
-					'in' => 'path',
-					'required' => true,
-					'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object to lock',
-					'schema' => [
-						'type' => 'string',
-						'format' => 'uuid',
-					],
-				],
+				$this->idPathParameter(description: 'Unique identifier of the ' . $schema->getTitle() . ' object to lock'),
 			],
 			'responses' => [
 				'200' => [
@@ -1857,16 +1756,7 @@ class OasService {
 						],
 					],
 				],
-				'404' => [
-					'description' => $schema->getTitle() . ' not found',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/Error',
-							],
-						],
-					],
-				],
+				'404' => $this->errorResponse(description: $schema->getTitle() . ' not found'),
 				'409' => [
 					'description' => 'Object is already locked',
 				],
@@ -1890,31 +1780,13 @@ class OasService {
 			'tags' => [$schema->getTitle()],
 			'description' => 'Remove the lock from a specific ' . $schema->getTitle() . ' object',
 			'parameters' => [
-				[
-					'name' => 'id',
-					'in' => 'path',
-					'required' => true,
-					'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object to unlock',
-					'schema' => [
-						'type' => 'string',
-						'format' => 'uuid',
-					],
-				],
+				$this->idPathParameter(description: 'Unique identifier of the ' . $schema->getTitle() . ' object to unlock'),
 			],
 			'responses' => [
 				'200' => [
 					'description' => 'Object unlocked successfully',
 				],
-				'404' => [
-					'description' => $schema->getTitle() . ' not found',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/Error',
-							],
-						],
-					],
-				],
+				'404' => $this->errorResponse(description: $schema->getTitle() . ' not found'),
 				'409' => [
 					'description' => 'Object is not locked or locked by another user',
 				],

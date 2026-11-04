@@ -68,6 +68,119 @@ class ContentScanService {
 	private const MAX_SCAN_BYTES = 262144;
 
 	/**
+	 * The heuristic rule table: a case-insensitive regex plus a category, a severity and
+	 * a human-readable reason per rule, ordered dangerous-first for readability.
+	 *
+	 * @var array<int, array{pattern: string, category: string, severity: string, reason: string}>
+	 */
+	private const RULES = [
+		// Download-and-execute: the single most common skill/prompt supply-chain attack.
+		[
+			'pattern' => '/\b(?:curl|wget|fetch)\b[^\n|]*\|\s*(?:sudo\s+)?(?:ba)?sh\b/i',
+			'category' => 'remote-code',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Pipes a remote download straight into a shell (curl|bash).',
+		],
+		[
+			'pattern' => '/\b(?:ba)?sh\b\s*<\s*\(\s*(?:curl|wget)\b/i',
+			'category' => 'remote-code',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Executes a remotely fetched script via process substitution.',
+		],
+		[
+			'pattern' => '/\b(?:eval|exec|system|passthru|popen|proc_open)\s*\(\s*(?:\$?_?(?:GET|POST|REQUEST)|base64_decode|curl)/i',
+			'category' => 'remote-code',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Evaluates dynamically-fetched or request-supplied code.',
+		],
+		[
+			'pattern' => '/(?:iex|invoke-expression)\s*\(\s*(?:new-object\s+net\.webclient|iwr|invoke-webrequest)/i',
+			'category' => 'remote-code',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'PowerShell download-and-execute (IEX + WebClient).',
+		],
+		// Destructive shell.
+		[
+			'pattern' => '/\brm\s+-[a-z]*r[a-z]*f[a-z]*\s+(?:\/|~|\$HOME|\*)/i',
+			'category' => 'destructive',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Recursive force-delete of a root/home/glob path (rm -rf).',
+		],
+		[
+			'pattern' => '/\b(?:mkfs|dd\s+if=\S+\s+of=\/dev\/|>\s*\/dev\/sd[a-z])\b/i',
+			'category' => 'destructive',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Overwrites a raw block device (mkfs/dd/redirect to /dev/sdX).',
+		],
+		[
+			'pattern' => '/:\s*\(\s*\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:/',
+			'category' => 'destructive',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Fork-bomb definition.',
+		],
+		// Credential / data exfiltration.
+		[
+			'pattern' => '/\b(?:nc|ncat|netcat)\b[^\n]*\s-\w*e\w*\s/i',
+			'category' => 'exfiltration',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Netcat with -e (reverse/bind shell).',
+		],
+		[
+			'pattern' => '#(?:/dev/tcp/|/dev/udp/)\d#i',
+			'category' => 'exfiltration',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Bash /dev/tcp network socket (reverse shell / exfil).',
+		],
+		[
+			'pattern' => '#(?:cat|cp|curl|scp|tar|base64)\b[^\n]*(?:~|/root|/home/[^\s/]+)?'
+				. '/\.(?:ssh/id_|aws/credentials|kube/config|netrc|npmrc|docker/config)#i',
+			'category' => 'exfiltration',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Reads/copies known credential files (~/.ssh, ~/.aws, .netrc …).',
+		],
+		// Embedded secrets (someone shipping live keys inside skill content).
+		[
+			'pattern' => '/-----BEGIN\s+(?:RSA|OPENSSH|EC|DSA|PGP)?\s*PRIVATE KEY-----/i',
+			'category' => 'embedded-secret',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Embeds a private key block.',
+		],
+		[
+			'pattern' => '/\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/',
+			'category' => 'embedded-secret',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Embeds an AWS access-key id.',
+		],
+		[
+			'pattern' => '/\b(?:ghp|gho|ghs|ghr)_[A-Za-z0-9]{30,}\b/',
+			'category' => 'embedded-secret',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Embeds a GitHub access token.',
+		],
+		// Prompt-injection — the LLM-specific manipulation surface.
+		[
+			'pattern' => '/\b(?:ignore|disregard|forget)\b[^\n]{0,40}\b(?:previous|prior|above|earlier|all)\b'
+				. '[^\n]{0,20}\b(?:instruction|prompt|rule|direction)/i',
+			'category' => 'prompt-injection',
+			'severity' => self::SEVERITY_SUSPICIOUS,
+			'reason' => 'Instructs the model to ignore prior instructions.',
+		],
+		[
+			'pattern' => '/\b(?:reveal|print|repeat|show|leak|exfiltrate)\b[^\n]{0,30}'
+				. '\b(?:system prompt|your instructions|initial prompt|api[\s_-]?key|secret)/i',
+			'category' => 'prompt-injection',
+			'severity' => self::SEVERITY_SUSPICIOUS,
+			'reason' => 'Attempts to extract the system prompt or secrets.',
+		],
+		[
+			'pattern' => '/<\|im_(?:start|end)\|>\s*system|<\/?(?:system|assistant)>\s*(?:you are|ignore)/i',
+			'category' => 'prompt-injection',
+			'severity' => self::SEVERITY_SUSPICIOUS,
+			'reason' => 'Injects a forged system/role turn into the conversation.',
+		],
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger PSR-3 logger.
@@ -143,115 +256,7 @@ class ContentScanService {
 	 * @return array<int, array{pattern: string, category: string, severity: string, reason: string}>
 	 */
 	private function rules(): array {
-		$dangerous = self::SEVERITY_DANGEROUS;
-		$suspicious = self::SEVERITY_SUSPICIOUS;
-
-		return [
-			// Download-and-execute: the single most common skill/prompt supply-chain attack.
-			[
-				'pattern' => '/\b(?:curl|wget|fetch)\b[^\n|]*\|\s*(?:sudo\s+)?(?:ba)?sh\b/i',
-				'category' => 'remote-code',
-				'severity' => $dangerous,
-				'reason' => 'Pipes a remote download straight into a shell (curl|bash).',
-			],
-			[
-				'pattern' => '/\b(?:ba)?sh\b\s*<\s*\(\s*(?:curl|wget)\b/i',
-				'category' => 'remote-code',
-				'severity' => $dangerous,
-				'reason' => 'Executes a remotely fetched script via process substitution.',
-			],
-			[
-				'pattern' => '/\b(?:eval|exec|system|passthru|popen|proc_open)\s*\(\s*(?:\$?_?(?:GET|POST|REQUEST)|base64_decode|curl)/i',
-				'category' => 'remote-code',
-				'severity' => $dangerous,
-				'reason' => 'Evaluates dynamically-fetched or request-supplied code.',
-			],
-			[
-				'pattern' => '/(?:iex|invoke-expression)\s*\(\s*(?:new-object\s+net\.webclient|iwr|invoke-webrequest)/i',
-				'category' => 'remote-code',
-				'severity' => $dangerous,
-				'reason' => 'PowerShell download-and-execute (IEX + WebClient).',
-			],
-			// Destructive shell.
-			[
-				'pattern' => '/\brm\s+-[a-z]*r[a-z]*f[a-z]*\s+(?:\/|~|\$HOME|\*)/i',
-				'category' => 'destructive',
-				'severity' => $dangerous,
-				'reason' => 'Recursive force-delete of a root/home/glob path (rm -rf).',
-			],
-			[
-				'pattern' => '/\b(?:mkfs|dd\s+if=\S+\s+of=\/dev\/|>\s*\/dev\/sd[a-z])\b/i',
-				'category' => 'destructive',
-				'severity' => $dangerous,
-				'reason' => 'Overwrites a raw block device (mkfs/dd/redirect to /dev/sdX).',
-			],
-			[
-				'pattern' => '/:\s*\(\s*\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:/',
-				'category' => 'destructive',
-				'severity' => $dangerous,
-				'reason' => 'Fork-bomb definition.',
-			],
-			// Credential / data exfiltration.
-			[
-				'pattern' => '/\b(?:nc|ncat|netcat)\b[^\n]*\s-\w*e\w*\s/i',
-				'category' => 'exfiltration',
-				'severity' => $dangerous,
-				'reason' => 'Netcat with -e (reverse/bind shell).',
-			],
-			[
-				'pattern' => '#(?:/dev/tcp/|/dev/udp/)\d#i',
-				'category' => 'exfiltration',
-				'severity' => $dangerous,
-				'reason' => 'Bash /dev/tcp network socket (reverse shell / exfil).',
-			],
-			[
-				'pattern' => '#(?:cat|cp|curl|scp|tar|base64)\b[^\n]*(?:~|/root|/home/[^\s/]+)?'
-					. '/\.(?:ssh/id_|aws/credentials|kube/config|netrc|npmrc|docker/config)#i',
-				'category' => 'exfiltration',
-				'severity' => $dangerous,
-				'reason' => 'Reads/copies known credential files (~/.ssh, ~/.aws, .netrc …).',
-			],
-			// Embedded secrets (someone shipping live keys inside skill content).
-			[
-				'pattern' => '/-----BEGIN\s+(?:RSA|OPENSSH|EC|DSA|PGP)?\s*PRIVATE KEY-----/i',
-				'category' => 'embedded-secret',
-				'severity' => $dangerous,
-				'reason' => 'Embeds a private key block.',
-			],
-			[
-				'pattern' => '/\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/',
-				'category' => 'embedded-secret',
-				'severity' => $dangerous,
-				'reason' => 'Embeds an AWS access-key id.',
-			],
-			[
-				'pattern' => '/\b(?:ghp|gho|ghs|ghr)_[A-Za-z0-9]{30,}\b/',
-				'category' => 'embedded-secret',
-				'severity' => $dangerous,
-				'reason' => 'Embeds a GitHub access token.',
-			],
-			// Prompt-injection — the LLM-specific manipulation surface.
-			[
-				'pattern' => '/\b(?:ignore|disregard|forget)\b[^\n]{0,40}\b(?:previous|prior|above|earlier|all)\b'
-					. '[^\n]{0,20}\b(?:instruction|prompt|rule|direction)/i',
-				'category' => 'prompt-injection',
-				'severity' => $suspicious,
-				'reason' => 'Instructs the model to ignore prior instructions.',
-			],
-			[
-				'pattern' => '/\b(?:reveal|print|repeat|show|leak|exfiltrate)\b[^\n]{0,30}'
-					. '\b(?:system prompt|your instructions|initial prompt|api[\s_-]?key|secret)/i',
-				'category' => 'prompt-injection',
-				'severity' => $suspicious,
-				'reason' => 'Attempts to extract the system prompt or secrets.',
-			],
-			[
-				'pattern' => '/<\|im_(?:start|end)\|>\s*system|<\/?(?:system|assistant)>\s*(?:you are|ignore)/i',
-				'category' => 'prompt-injection',
-				'severity' => $suspicious,
-				'reason' => 'Injects a forged system/role turn into the conversation.',
-			],
-		];
+		return self::RULES;
 
 	}//end rules()
 
