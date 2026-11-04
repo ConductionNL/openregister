@@ -38,7 +38,7 @@ use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rbac\SchemaManageGate;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -71,9 +71,9 @@ class BulkController extends Controller {
 	/**
 	 * The object service
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Mapper for resolving registers (RBAC gates)
@@ -263,7 +263,7 @@ class BulkController extends Controller {
 	 *
 	 * @param string        $register      Register slug, uuid or numeric id.
 	 * @param string        $schema        Schema slug, uuid or numeric id.
-	 * @param ObjectService $objectService The request's object service.
+	 * @param ObjectOperationsInterface $objectService The request's object service.
 	 *
 	 * @return array The resolved ids.
 	 *
@@ -272,7 +272,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
-	private function resolveRegisterSchemaIds(string $register, string $schema, ObjectService $objectService): array {
+	private function resolveRegisterSchemaIds(string $register, string $schema, ObjectOperationsInterface $objectService): array {
 		$resolved = $this->resolveRegisterAndSchema(
 			register: $register,
 			schema: $schema,

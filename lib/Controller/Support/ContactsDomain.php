@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
 /**
  * The domain services of the contacts API.
@@ -37,7 +37,7 @@ final class ContactsDomain {
 	 * Bundle the services.
 	 *
 	 * @param ContactService          $contactService   Contact service
-	 * @param ObjectService           $objectService    Object service
+	 * @param ObjectOperationsInterface           $objectService    Object service
 	 * @param ContactMatcherInterface $matchingService  Contact matching service
 	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry
 	 *
@@ -45,7 +45,7 @@ final class ContactsDomain {
 	 */
 	public function __construct(
 		public readonly ContactService $contactService,
-		public readonly ObjectService $objectService,
+		public readonly ObjectOperationsInterface $objectService,
 		public readonly ContactMatcherInterface $matchingService,
 		public readonly DeepLinkRegistryService $deepLinkRegistry,
 	) {

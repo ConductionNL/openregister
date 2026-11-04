@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\DraftActivation;
 
 /**
@@ -38,7 +38,7 @@ final class ObjectDraftDomain {
 	 *
 	 * @param RegisterMapperInterface  $registers  Resolves the register.
 	 * @param SchemaMapperInterface    $schemas    Resolves the schema.
-	 * @param ObjectService   $objects    Resolves the record through the RBAC boundary.
+	 * @param ObjectOperationsInterface   $objects    Resolves the record through the RBAC boundary.
 	 * @param DraftActivation $activation Makes the draft definitive.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
@@ -46,7 +46,7 @@ final class ObjectDraftDomain {
 	public function __construct(
 		public readonly RegisterMapperInterface $registers,
 		public readonly SchemaMapperInterface $schemas,
-		public readonly ObjectService $objects,
+		public readonly ObjectOperationsInterface $objects,
 		public readonly DraftActivation $activation,
 	) {
 	}//end __construct()

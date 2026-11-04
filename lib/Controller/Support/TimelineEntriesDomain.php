@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Timeline\TimelineEntrySearchService;
 use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
 use OCA\OpenRegister\Service\Timeline\TimelineWriteService;
@@ -36,7 +36,7 @@ final class TimelineEntriesDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ObjectService              $objects Resolves an object through the RBAC boundary.
+	 * @param ObjectOperationsInterface              $objects Resolves an object through the RBAC boundary.
 	 * @param TimelineEntryService       $entries The record.
 	 * @param TimelineWriteService       $writer  Writing an entry end to end.
 	 * @param TimelineEntrySearchService $search  Entries searched across objects.
@@ -44,7 +44,7 @@ final class TimelineEntriesDomain {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function __construct(
-		public readonly ObjectService $objects,
+		public readonly ObjectOperationsInterface $objects,
 		public readonly TimelineEntryService $entries,
 		public readonly TimelineWriteService $writer,
 		public readonly TimelineEntrySearchService $search,
