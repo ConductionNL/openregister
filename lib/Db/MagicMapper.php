@@ -58,6 +58,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun;
+use OCA\OpenRegister\Db\MagicMapper\MagicUnionArm;
 use OCA\OpenRegister\Db\MagicMapper\RecentLensOrder;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
@@ -2038,14 +2039,10 @@ class MagicMapper extends AbstractObjectMapper {
 			$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
 			// Build SELECT for this table with schema/register metadata and property columns.
-			$selectPart = $this->buildUnionSelectPart(
-				tableName: $tableName,
-				query: $query,
-				schema: $schema,
-				register: $register,
-				allPropertyColumns: $allPropertyColumns,
-				metadataOnly: $metadataOnly
-			);
+			$arm = new MagicUnionArm(tableName: $tableName, query: $query, schema: $schema, register: $register);
+			$arm->allPropertyColumns = $allPropertyColumns;
+			$arm->metadataOnly = $metadataOnly;
+			$selectPart = $this->buildUnionSelectPart(arm: $arm);
 
 			if ($selectPart !== null) {
 				$parts[] = $selectPart;
@@ -2338,227 +2335,195 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end convertUnionRowsToEntities()
 
 	/**
-	 * Build SELECT part for UNION ALL query.
+	 * Build the SELECT of one UNION ALL arm.
 	 *
-	 * @param string $tableName Table name.
-	 * @param array $query Search query.
-	 * @param Schema $schema Schema entity.
-	 * @param Register $register Register entity.
-	 * @param array $allPropertyColumns Superset of all property columns across schemas.
-	 * @param bool $metadataOnly Project only metadata columns (no property columns) to keep wide unions under the target-list limit.
+	 * Every arm must project identical columns in the same order: the metadata
+	 * columns, the superset of property columns across all arms (absent ones as
+	 * typed NULLs, present ones cast to text so the same column from two
+	 * schemas stays type-compatible), the arm's register and schema ids, and a
+	 * search score.
 	 *
-	 * @return string|null SQL SELECT statement or null if table doesn't exist.
+	 * @param MagicUnionArm $arm The arm.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.UnusedLocalVariable)   `$_` is the conventional ignore name in the metadata-column foreach
+	 * @return string|null SQL SELECT statement.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
 	 */
-	private function buildUnionSelectPart(
-		string $tableName,
-		array $query,
-		Schema $schema,
-		Register $register,
-		array $allPropertyColumns = [],
-		bool $metadataOnly = false,
-	): ?string {
-		$qb = $this->db->getQueryBuilder();
+	private function buildUnionSelectPart(MagicUnionArm $arm): ?string {
+		$arm->isPostgres = stripos($this->db->getDatabasePlatform()::class, 'PostgreSQL') !== false;
 
-		// Detect database platform for identifier quoting.
-		$platform = $this->db->getDatabasePlatform();
-		$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
-
-		// Add table prefix.
-		$fullTableName = $this->getFullTableName(tableName: $tableName);
-
-		// Get metadata column names, checking each exists in this table.
-		// Newer metadata columns (e.g. _tmlo) may not exist in older tables.
-		// Cast to text for UNION type compatibility (some columns are jsonb/json,
-		// others datetime/bigint/text). Cast syntax is database-specific:
-		// PostgreSQL uses `col::text`, MariaDB/MySQL requires `CAST(col AS CHAR)`.
-		$metadataColumns = $this->getMetadataColumns();
-		$selectColumns = [];
-		foreach (array_keys($metadataColumns) as $metaCol) {
-			$columnInTable = $this->columnExistsInTable(
-				tableName: $tableName,
-				columnName: $metaCol
-			);
-			if ($columnInTable === true) {
-				$colExpr = "CAST({$metaCol} AS CHAR) AS {$metaCol}";
-				if ($isPostgres === true) {
-					$colExpr = "{$metaCol}::text AS {$metaCol}";
-				}
-
-				$selectColumns[] = $colExpr;
-				continue;
-			}
-
-			$colExpr = "NULL AS {$metaCol}";
-			if ($isPostgres === true) {
-				$colExpr = "NULL::text AS {$metaCol}";
-			}
-
-			$selectColumns[] = $colExpr;
-		}//end foreach
-
-		/*
-		 * Every SELECT in the UNION must have identical columns in the same order.
-		 * We build the superset of all property columns across all schemas:
-		 *  - Columns present in this table are cast to a text type so that the same
-		 *    column from two different schemas (e.g. 'type' as VARCHAR in one table
-		 *    and JSONB in another) remains type-compatible across the UNION arms.
-		 *  - Columns absent from this table are emitted as NULL with the same alias
-		 *    so the column count stays consistent.
-		 * Cast syntax is database-specific: PostgreSQL uses `col::text`, while
-		 * MariaDB/MySQL requires the standard `CAST(col AS CHAR)`.
-		 */
-
-		$existingColumns = [];
-		if ($metadataOnly === true) {
-			// Metadata-only projection: do NOT project per-schema property
-			// columns (that superset is what trips Postgres's 1664-column cap).
-			// Still resolve THIS table's own searchable property columns so the
-			// term match + relevance score below run against real data — they
-			// are referenced in WHERE/score expressions, not in the projection.
-			foreach (array_keys($schema->getProperties() ?? []) as $ownProperty) {
-				$ownColumn = $this->sanitizeColumnName(name: $ownProperty);
-				if ($this->columnExistsInTable(tableName: $tableName, columnName: $ownColumn) === true) {
-					$existingColumns[] = $ownColumn;
-				}
-			}
-		} else {
-			foreach (array_keys($allPropertyColumns) as $columnName) {
-				$quotedCol = $this->quoteIdentifier(
-					name: $columnName,
-					isPostgres: $isPostgres
-				);
-				// Absent column: emit a typed NULL placeholder.
-				$colExpr = "NULL AS {$quotedCol}";
-				if ($isPostgres === true) {
-					$colExpr = "NULL::text AS {$quotedCol}";
-				}
-
-				$columnInTable = $this->columnExistsInTable(
-					tableName: $tableName,
-					columnName: $columnName
-				);
-				if ($columnInTable === true) {
-					// Present column: cast to text for cross-schema type compatibility.
-					$colExpr = "CAST({$quotedCol} AS CHAR) AS {$quotedCol}";
-					if ($isPostgres === true) {
-						$colExpr = "{$quotedCol}::text AS {$quotedCol}";
-					}
-
-					$existingColumns[] = $columnName;
-				}
-
-				$selectColumns[] = $colExpr;
-			}//end foreach
-		}//end if
-
-		$selectColumns[] = "'{$register->getId()}' AS _union_register_id";
-		$selectColumns[] = "'{$schema->getId()}' AS _union_schema_id";
-
-		// Add search score if _search is present.
-		$hasSearch = isset($query['_search']) === true
-			&& empty($query['_search']) === false;
-		$searchTerm = $query['_search'] ?? '';
-		$schemaProps = $schema->getProperties() ?? [];
-
-		if ($hasSearch === true && empty($schemaProps) === false) {
-			// Build fuzzy search score.
-			// Note: quote() already adds quotes, so don't wrap in additional quotes.
-			$searchColumns = [];
-			$quotedTerm = $qb->getConnection()->quote($searchTerm);
-			$hasTrgm = $this->hasPgTrgmExtension();
-
-			foreach ($schemaProps as $propName => $propDef) {
-				$type = $propDef['type'] ?? 'string';
-				if (in_array($type, ['string', 'text'], true) === true) {
-					$columnName = $this->sanitizeColumnName(name: $propName);
-					// Only score columns that actually exist in this table.
-					// Columns from other schemas are aliased as NULL in the SELECT
-					// and cannot be referenced by similarity()/ILIKE expressions.
-					$columnInTable = $this->columnExistsInTable(
-						tableName: $tableName,
-						columnName: $columnName
-					);
-					if ($columnInTable === false) {
-						continue;
-					}
-
-					$quotedCol = $this->quoteIdentifier(
-						name: $columnName,
-						isPostgres: $isPostgres
-					);
-					$likePattern = "'%" . trim($quotedTerm, "'") . "%'";
-					// MariaDB/MySQL default: ILIKE and similarity() are unavailable;
-					// use case-sensitive LIKE with a standard CAST instead.
-					$scoreExpr = "CASE WHEN CAST({$quotedCol} AS CHAR) LIKE {$likePattern} THEN 1 ELSE 0 END";
-					if ($isPostgres === true) {
-						// PostgreSQL: pg_trgm similarity() for fuzzy relevance;
-						// fall back to ILIKE when pg_trgm is unavailable.
-						$scoreExpr = "CASE WHEN {$quotedCol}::text ILIKE {$likePattern} THEN 1 ELSE 0 END";
-						if ($hasTrgm === true) {
-							$scoreExpr = "COALESCE(similarity({$quotedCol}::text, {$quotedTerm}), 0)";
-						}
-					}
-
-					$searchColumns[] = $scoreExpr;
-				}//end if
-			}//end foreach
-
-			$selectColumns[] = '0 AS _search_score';
-			if (empty($searchColumns) === false) {
-				$scoreExpression = 'GREATEST(' . implode(', ', $searchColumns) . ')';
-				$lastIndex = count($selectColumns) - 1;
-				$selectColumns[$lastIndex] = "{$scoreExpression} AS _search_score";
-			}
-		}//end if
-
-		if ($hasSearch === false || empty($schemaProps) === true) {
-			$selectColumns[] = '0 AS _search_score';
-		}
-
-		$colList = implode(', ', $selectColumns);
-		$selectSql = "SELECT {$colList} FROM {$fullTableName}";
-
-		// Build WHERE conditions using shared method (single source of truth for filters).
-		// This ensures search, count, and facets all use the same filter logic.
-		// Pass existing columns so property-based search only targets columns in this table.
-		//
-		// Scope the `@self.schema` filter to THIS arm's schema: the incoming
-		// query may carry a large allow-list (every searchable schema), but each
-		// UNION arm already targets a single schema's table, so re-applying the
-		// full list as an IN() is redundant and trips the database's
-		// 1000-element IN-list cap when many schemas are searchable.
-		$armQuery = $query;
-		if (isset($armQuery['@self']) === true && is_array($armQuery['@self']) === true
-			&& array_key_exists('schema', $armQuery['@self']) === true
-		) {
-			$armQuery['@self']['schema'] = $schema->getId();
-		}
-
-		// The register goes with the question. It is what lets the organisation
-		// boundary widen by a declared shared master data holder on this arm,
-		// the same way the single-table path does; without it this arm would
-		// answer a NARROWER set than the sequential path answers for the same
-		// query, and the two paths disagreeing is the defect this whole area
-		// keeps producing.
-		$whereClauses = $this->searchHandler->buildWhereConditionsSql(
-			query: $armQuery,
-			schema: $schema,
-			existingColumns: $existingColumns,
-			registerId: $register->getId(),
-			tableName: $tableName
+		$selectColumns = array_merge(
+			$this->unionMetadataSelect(arm: $arm),
+			$this->unionPropertySelect(arm: $arm)
 		);
+		$selectColumns[] = "'{$arm->register->getId()}' AS _union_register_id";
+		$selectColumns[] = "'{$arm->schema->getId()}' AS _union_schema_id";
+		$selectColumns[] = $this->unionSearchScore(arm: $arm);
 
+		$fullTableName = $this->getFullTableName(tableName: $arm->tableName);
+		$selectSql = 'SELECT ' . implode(', ', $selectColumns) . " FROM {$fullTableName}";
+
+		$whereClauses = $this->unionArmWhereClauses(arm: $arm);
 		if (empty($whereClauses) === false) {
 			$selectSql .= ' WHERE ' . implode(' AND ', $whereClauses);
 		}
 
 		return $selectSql;
 	}//end buildUnionSelectPart()
+
+	/**
+	 * The metadata columns of a UNION arm, as text, or as typed NULLs for the
+	 * newer metadata columns (such as `_tmlo`) an older table lacks.
+	 *
+	 * @param MagicUnionArm $arm The arm.
+	 *
+	 * @return array<int, string> The select expressions.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+	 */
+	private function unionMetadataSelect(MagicUnionArm $arm): array {
+		$selectColumns = [];
+		foreach (array_keys($this->getMetadataColumns()) as $metaCol) {
+			if ($this->columnExistsInTable(tableName: $arm->tableName, columnName: $metaCol) === true) {
+				$selectColumns[] = $arm->castAsText(column: $metaCol);
+				continue;
+			}
+
+			$selectColumns[] = $arm->nullAs(column: $metaCol);
+		}
+
+		return $selectColumns;
+	}//end unionMetadataSelect()
+
+	/**
+	 * The property columns of a UNION arm, and the ones its table has.
+	 *
+	 * A metadata-only arm projects no property columns (that superset is what
+	 * trips PostgreSQL's 1664-column cap) but still resolves its own table's
+	 * property columns, which the search terms and score are matched against.
+	 *
+	 * @param MagicUnionArm $arm The arm; its existingColumns are filled.
+	 *
+	 * @return array<int, string> The select expressions.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+	 */
+	private function unionPropertySelect(MagicUnionArm $arm): array {
+		$arm->existingColumns = [];
+		if ($arm->metadataOnly === true) {
+			foreach (array_keys($arm->schema->getProperties() ?? []) as $ownProperty) {
+				$ownColumn = $this->sanitizeColumnName(name: $ownProperty);
+				if ($this->columnExistsInTable(tableName: $arm->tableName, columnName: $ownColumn) === true) {
+					$arm->existingColumns[] = $ownColumn;
+				}
+			}
+
+			return [];
+		}
+
+		$selectColumns = [];
+		foreach (array_keys($arm->allPropertyColumns) as $columnName) {
+			$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $arm->isPostgres);
+			if ($this->columnExistsInTable(tableName: $arm->tableName, columnName: $columnName) === true) {
+				$selectColumns[] = $arm->castAsText(column: $quotedCol);
+				$arm->existingColumns[] = $columnName;
+				continue;
+			}
+
+			$selectColumns[] = $arm->nullAs(column: $quotedCol);
+		}
+
+		return $selectColumns;
+	}//end unionPropertySelect()
+
+	/**
+	 * The `_search_score` column of a UNION arm.
+	 *
+	 * With a search term, each string or text property column this table has
+	 * is scored: pg_trgm similarity() on PostgreSQL with the extension, ILIKE
+	 * on PostgreSQL without it, LIKE on MariaDB/MySQL; the arm scores the
+	 * greatest of them. Columns from other schemas are NULL in this arm and
+	 * cannot be scored. Without a term, or without scorable columns, it is 0.
+	 *
+	 * @param MagicUnionArm $arm The arm.
+	 *
+	 * @return string The select expression.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+	 */
+	private function unionSearchScore(MagicUnionArm $arm): string {
+		$searchTerm = $arm->query['_search'] ?? '';
+		$schemaProps = $arm->schema->getProperties() ?? [];
+		if (empty($searchTerm) === true || empty($schemaProps) === true) {
+			return '0 AS _search_score';
+		}
+
+		// quote() adds the quotes itself.
+		$quotedTerm = $this->db->getQueryBuilder()->getConnection()->quote($searchTerm);
+		$likePattern = "'%" . trim($quotedTerm, "'") . "%'";
+		$hasTrgm = $this->hasPgTrgmExtension();
+
+		$scores = [];
+		foreach ($schemaProps as $propName => $propDef) {
+			$columnName = $this->sanitizeColumnName(name: $propName);
+			if (in_array($propDef['type'] ?? 'string', ['string', 'text'], true) === false
+				|| $this->columnExistsInTable(tableName: $arm->tableName, columnName: $columnName) === false
+			) {
+				continue;
+			}
+
+			$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $arm->isPostgres);
+			$score = "CASE WHEN CAST({$quotedCol} AS CHAR) LIKE {$likePattern} THEN 1 ELSE 0 END";
+			if ($arm->isPostgres === true) {
+				$score = "CASE WHEN {$quotedCol}::text ILIKE {$likePattern} THEN 1 ELSE 0 END";
+			}
+
+			if ($arm->isPostgres === true && $hasTrgm === true) {
+				$score = "COALESCE(similarity({$quotedCol}::text, {$quotedTerm}), 0)";
+			}
+
+			$scores[] = $score;
+		}//end foreach
+
+		if ($scores === []) {
+			return '0 AS _search_score';
+		}
+
+		return 'GREATEST(' . implode(', ', $scores) . ') AS _search_score';
+	}//end unionSearchScore()
+
+	/**
+	 * The WHERE conditions of a UNION arm, from the shared filter builder that
+	 * search, count and facets all use.
+	 *
+	 * The `@self.schema` filter is scoped to this arm's schema: the incoming
+	 * allow-list (every searchable schema) is redundant on an arm that reads
+	 * one schema's table, and trips the 1000-element IN-list cap. The register
+	 * goes with the question, so the organisation boundary widens by a shared
+	 * master data holder here the same way it does on the single-table path.
+	 *
+	 * @param MagicUnionArm $arm The arm.
+	 *
+	 * @return array<int, string> The conditions.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+	 */
+	private function unionArmWhereClauses(MagicUnionArm $arm): array {
+		$armQuery = $arm->query;
+		if (isset($armQuery['@self']) === true && is_array($armQuery['@self']) === true
+			&& array_key_exists('schema', $armQuery['@self']) === true
+		) {
+			$armQuery['@self']['schema'] = $arm->schema->getId();
+		}
+
+		return $this->searchHandler->buildWhereConditionsSql(
+			query: $armQuery,
+			schema: $arm->schema,
+			existingColumns: $arm->existingColumns,
+			registerId: $arm->register->getId(),
+			tableName: $arm->tableName
+		);
+	}//end unionArmWhereClauses()
 
 	/**
 	 * Collect the superset of all sanitized property column names across schemas.
