@@ -49,6 +49,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ProcessingLogController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Db\Organisation
  */
 class ProcessingLogControllerTest extends TestCase {

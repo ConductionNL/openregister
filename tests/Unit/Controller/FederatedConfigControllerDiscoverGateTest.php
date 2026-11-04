@@ -44,6 +44,7 @@ use PHPUnit\Framework\TestCase;
  * The install gate on the discover and fetch endpoints.
  *
  * @covers \OCA\OpenRegister\Controller\FederatedConfigController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  */
 class FederatedConfigControllerDiscoverGateTest extends TestCase {
 

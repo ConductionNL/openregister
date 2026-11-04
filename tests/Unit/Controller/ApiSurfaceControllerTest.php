@@ -35,6 +35,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ApiSurfaceController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersion
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue
  */

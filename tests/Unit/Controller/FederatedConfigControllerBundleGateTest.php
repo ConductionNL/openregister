@@ -40,6 +40,7 @@ use PHPUnit\Framework\TestCase;
  * The publish gate on the bundle endpoint.
  *
  * @covers \OCA\OpenRegister\Controller\FederatedConfigController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  */
 class FederatedConfigControllerBundleGateTest extends TestCase {
 

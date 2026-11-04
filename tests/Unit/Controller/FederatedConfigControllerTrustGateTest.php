@@ -44,6 +44,7 @@ use PHPUnit\Framework\TestCase;
  * Reading and writing the trust configuration is administrators only.
  *
  * @covers \OCA\OpenRegister\Controller\FederatedConfigController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses   \OCA\OpenRegister\Service\Config\FederatedConfigService
  */
 class FederatedConfigControllerTrustGateTest extends TestCase {
