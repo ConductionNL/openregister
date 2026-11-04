@@ -1300,6 +1300,21 @@ abstract class ExampleSetTestCase extends TestCase {
 	}
 
 	/**
+	 * A stored moment as the set's local wall time, `Y-m-d H:i` in Amsterdam.
+	 *
+	 * @param \DateTimeInterface|null $moment The moment.
+	 *
+	 * @return string|null
+	 */
+	protected function local(?\DateTimeInterface $moment): ?string {
+		if ($moment === null) {
+			return null;
+		}
+
+		return DateTimeImmutable::createFromInterface($moment)->setTimezone(new DateTimeZone('Europe/Amsterdam'))->format('Y-m-d H:i');
+	}
+
+	/**
 	 * A fixed install day.
 	 *
 	 * @return DateTimeImmutable

@@ -127,8 +127,8 @@ class ExampleSetNotesAndReadStatesTest extends ExampleSetTestCase {
 		$this->assertSame(expected: 'esra.demir', actual: $note['user']);
 		$this->assertSame(expected: $caseId, actual: $note['object']);
 		$this->assertSame(expected: 'Inwoner gebeld.', actual: $note['message']);
-		$this->assertSame(expected: '2026-10-13 15:40', actual: $note['createdAt']->format('Y-m-d H:i'));
-		$this->assertSame(expected: '2026-10-13 09:12', actual: $this->readStates['esra.demir '.$caseId]->format('Y-m-d H:i'));
+		$this->assertSame(expected: '2026-10-13 15:40', actual: $this->local(moment: $note['createdAt']));
+		$this->assertSame(expected: '2026-10-13 09:12', actual: $this->local(moment: $this->readStates['esra.demir '.$caseId]));
 
 		$again = $this->installer->install(plan: $plan, today: $this->today());
 		$this->assertSame(expected: ['alpha/esra-noteert' => 'kept'], actual: $again['notes']);
@@ -211,8 +211,8 @@ class ExampleSetNotesAndReadStatesTest extends ExampleSetTestCase {
 		$this->assertSame(expected: ['alpha/n' => 'refreshed'], actual: $report['notes']);
 		$this->assertSame(expected: ['alpha/r' => 'refreshed'], actual: $report['readStates']);
 		$this->assertCount(expectedCount: 1, haystack: $this->notes);
-		$this->assertSame(expected: '2026-10-16 15:40', actual: array_values($this->notes)[0]['createdAt']->format('Y-m-d H:i'));
-		$this->assertSame(expected: '2026-10-16 09:12', actual: array_values($this->readStates)[0]->format('Y-m-d H:i'));
+		$this->assertSame(expected: '2026-10-16 15:40', actual: $this->local(moment: array_values($this->notes)[0]['createdAt']));
+		$this->assertSame(expected: '2026-10-16 09:12', actual: $this->local(moment: array_values($this->readStates)[0]));
 	}//end testARefreshWritesTheNoteAndReadStateAgainForToday()
 
 	/**
