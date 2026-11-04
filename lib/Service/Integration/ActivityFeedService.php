@@ -16,15 +16,14 @@
  * apps' tables to build one list would be four integrations nobody declared,
  * and each of them would break silently on an instance without that app.
  *
- * 🔴 ACCESS IS NOT ENFORCED HERE, AND SAYING SO IS THE POINT. The feed is
- * read for an object the caller has already resolved; every row is about that
- * object and carries no rights of its own. Whether this caller may see the
- * object at all is decided by the object read that got them here, which is
- * MagicRbacHandler's business — and on a schema that configures no
- * authorization, that read is open to every authenticated account. A feed
- * mounted on an object anybody can read is a feed anybody can read. Closing
- * that is the schema's job, not this class's, and a check added here would be
- * a second answer to a question the platform already answers.
+ * 🔴 THE TRAIL IS READ THROUGH THE OBJECT'S HISTORY FOR THIS CALLER. The
+ * audit rows come from ObjectHistoryForReaders::page(), so the object is read
+ * with the caller's RBAC and organisation, the doelbinding guard runs, and a
+ * summary names only the properties the caller may see. A caller who may not
+ * read the object gets no audit rows. Whether this caller may see the object
+ * at all is still decided by the object read that got them here, and on a
+ * schema that configures no authorization that read is open to every
+ * authenticated account.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration
@@ -45,7 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Integration\Providers\ActivityProvider;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -61,13 +60,13 @@ class ActivityFeedService {
 	 * Constructor.
 	 *
 	 * @param ActivityFeedMerge $merge    Decides order, bounds and the cursor.
-	 * @param AuditTrailMapper  $audit    OpenRegister's own trail for the object.
+	 * @param ObjectHistoryForReaders $history The object's history, as this caller is given it.
 	 * @param ActivityProvider  $activity The NC Activity rows marked for this object.
 	 * @param LoggerInterface   $logger   Logger.
 	 */
 	public function __construct(
 		private readonly ActivityFeedMerge $merge,
-		private readonly AuditTrailMapper $audit,
+		private readonly ObjectHistoryForReaders $history,
 		private readonly ActivityProvider $activity,
 		private readonly LoggerInterface $logger,
 	) {
@@ -106,7 +105,10 @@ class ActivityFeedService {
 		}
 
 		try {
-			$sources['audit'] = $this->auditRows(objectId: $objectId, bound: $bound);
+			$sources['audit'] = $this->auditRows(
+				path: ['register' => $register, 'schema' => $schema, 'id' => $objectId],
+				bound: $bound
+			);
 		} catch (Throwable $e) {
 			// A source that could not be read is NAMED rather than merged as
 			// nothing. An empty audit list and an unreadable one render the
@@ -149,42 +151,51 @@ class ActivityFeedService {
 	 * them at the query would make the toggle unable to bring them back
 	 * without a second, differently shaped read.
 	 *
-	 * @param string $objectId The object's uuid.
-	 * @param int    $bound    How many rows this source may contribute.
+	 * @param array{register: string, schema: string, id: string} $path  The object's register, schema and uuid.
+	 * @param int                                                   $bound How many rows this source may contribute.
 	 *
-	 * @return array<int,array<string,mixed>> The rows.
+	 * @return array<int,array<string,mixed>> The rows, or none when the caller may not read the object.
+	 *
+	 * @throws \OCA\OpenRegister\Service\Audit\PurposeRefusedException When the schema asks for a purpose and none usable was named.
 	 *
 	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-activity-leaf-merges-an-objects-feed-from-five-sources
 	 */
-	private function auditRows(string $objectId, int $bound): array {
-		$entries = $this->audit->findAll(
-			limit: $bound,
-			offset: 0,
-			filters: ['objectUuid' => $objectId],
-			sort: ['created' => 'DESC'],
+	private function auditRows(array $path, int $bound): array {
+		$page = $this->history->page(
+			register: $path['register'],
+			schema: $path['schema'],
+			id: $path['id'],
+			params: ['limit' => $bound]
 		);
+		if ($page === null) {
+			return [];
+		}
 
 		$rows = [];
-		foreach ($entries as $entry) {
-			$created = $entry->getCreated();
-			$timestamp = 0;
-			if ($created instanceof \DateTimeInterface) {
-				$timestamp = $created->getTimestamp();
+		foreach ($page['results'] as $entry) {
+			$timestamp = strtotime((string)($entry['created'] ?? ''));
+			if ($timestamp === false) {
+				$timestamp = 0;
 			}
 
+			$action = (string)($entry['action'] ?? '');
+			$changed = ($entry['changed'] ?? null);
+			if (is_array($changed) === false) {
+				$changed = null;
+			}
 
 			$rows[] = [
-				'id' => (string)$entry->getUuid(),
-				'action' => (string)$entry->getAction(),
+				'id' => (string)($entry['uuid'] ?? ''),
+				'action' => $action,
 				'timestamp' => $timestamp,
-				'actor' => (string)($entry->getUserName() ?? $entry->getUser() ?? ''),
-				'summary' => $this->summaryOf(action: (string)$entry->getAction(), changed: $entry->getChanged()),
+				'actor' => (string)($entry['userName'] ?? $entry['user'] ?? ''),
+				'summary' => $this->summaryOf(action: $action, changed: $changed),
 				// The trail has no page of its own to link to; the row is the
 				// record. An empty url is the honest answer, and the surface
 				// renders no link rather than a link to here.
 				'url' => '',
 			];
-		}
+		}//end foreach
 
 		return $rows;
 	}//end auditRows()

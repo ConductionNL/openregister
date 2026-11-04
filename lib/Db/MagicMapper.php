@@ -9573,6 +9573,33 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end updateObjectEntity()
 
 	/**
+	 * Ask the delete guards whether an object may be deleted.
+	 *
+	 * Dispatches the stoppable ObjectDeletingEvent, on which the frozen, the
+	 * working-calendar and the concept guards listen. Both the permanent and
+	 * the soft delete ask it before they write.
+	 *
+	 * @param ObjectEntity $entity The object about to be deleted.
+	 *
+	 * @return void
+	 *
+	 * @throws HookStoppedException When a listener stops the delete.
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-frozen-record-cannot-be-deleted
+	 */
+	public function assertDeletable(ObjectEntity $entity): void {
+		$deletingEvent = new ObjectDeletingEvent(object: $entity);
+		$this->eventDispatcher->dispatchTyped($deletingEvent);
+
+		if ($deletingEvent->isPropagationStopped() === true) {
+			throw new HookStoppedException(
+				message: (string)($deletingEvent->getErrors()['message'] ?? 'Object deletion rejected by hook'),
+				errors: $deletingEvent->getErrors()
+			);
+		}
+	}//end assertDeletable()
+
+	/**
 	 * Delete ObjectEntity from register+schema table.
 	 *
 	 * Supports both soft delete (sets _deleted field) and hard delete (removes from table).
@@ -9596,18 +9623,8 @@ class MagicMapper extends AbstractObjectMapper {
 		bool $hardDelete = false,
 		bool $dispatchEvents = true,
 	): ObjectEntity {
-		// Dispatch deleting event (pre-save hook).
 		if ($dispatchEvents === true) {
-			$deletingEvent = new ObjectDeletingEvent(object: $entity);
-			$this->eventDispatcher->dispatchTyped($deletingEvent);
-
-			// Check if a hook stopped propagation (reject mode).
-			if ($deletingEvent->isPropagationStopped() === true) {
-				throw new HookStoppedException(
-					message: (string)($deletingEvent->getErrors()['message'] ?? 'Object deletion rejected by hook'),
-					errors: $deletingEvent->getErrors()
-				);
-			}
+			$this->assertDeletable(entity: $entity);
 		}
 
 		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);

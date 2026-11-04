@@ -44,10 +44,12 @@ namespace OCA\OpenRegister\Service\Credential;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -287,10 +289,12 @@ class OAuth2RefreshService {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
 	 */
 	public function persist(string $credentialId, string $scope, OAuth2TokenSet $set, array $extraMetadata = []): void {
-		$this->credentialStore->put($credentialId, $set->toStoredJson(), $scope);
+		// The secret is kept under the uuid of the stored credential, not under the identifier as sent.
+		$uuid = (string) $this->storedCredential(credentialId: $credentialId)->getUuid();
+		$this->credentialStore->put($uuid, $set->toStoredJson(), $scope);
 
 		$this->writeMetadata(
-			credentialId: $credentialId,
+			credentialId: $uuid,
 			metadata: array_merge(
 				[
 					'status' => 'active',
@@ -590,6 +594,33 @@ class OAuth2RefreshService {
 	}//end markRelinkNeeded()
 
 	/**
+	 * The stored credential an identifier names, past RBAC and multitenancy.
+	 *
+	 * @param string $credentialId The credential identifier.
+	 *
+	 * @return ObjectEntity The credential, which has a uuid to be written under.
+	 *
+	 * @throws RuntimeException When no credential with a uuid is stored under it.
+	 * @throws Throwable When the lookup itself fails.
+	 */
+	private function storedCredential(string $credentialId): ObjectEntity {
+		$stored = WriteCause::asLookup(fn () => $this->objectService->find(
+			register: CredentialBrokerService::REGISTER,
+			schema: CredentialBrokerService::SCHEMA,
+			id: $credentialId,
+			_render: false,
+			_rbac: false,
+			_multitenancy: false
+		));
+
+		if ($stored === null || (string) $stored->getUuid() === '') {
+			throw new RuntimeException('The credential is not stored.');
+		}
+
+		return $stored;
+	}//end storedCredential()
+
+	/**
 	 * Write non-secret metadata back onto the credential object.
 	 *
 	 * Runs with RBAC and multitenancy off for the same reason `mint()` does: the
@@ -605,18 +636,7 @@ class OAuth2RefreshService {
 	 */
 	private function writeMetadata(string $credentialId, array $metadata): void {
 		try {
-			$existing = WriteCause::asLookup(fn () => $this->objectService->find(
-				id: $credentialId,
-				register: CredentialBrokerService::REGISTER,
-				schema: CredentialBrokerService::SCHEMA,
-				_rbac: false,
-				_multitenancy: false,
-				_render: false
-			));
-
-			if ($existing === null) {
-				return;
-			}
+			$existing = $this->storedCredential(credentialId: $credentialId);
 
 			$data = $existing->jsonSerialize();
 			unset($data['@self']);
@@ -625,7 +645,7 @@ class OAuth2RefreshService {
 				object: array_merge($data, $metadata),
 				register: CredentialBrokerService::REGISTER,
 				schema: CredentialBrokerService::SCHEMA,
-				uuid: $credentialId,
+				uuid: $existing->getUuid(),
 				_rbac: false,
 				_multitenancy: false
 			);
