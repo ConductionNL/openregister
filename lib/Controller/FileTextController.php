@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Exception\ManualEntityException;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
@@ -59,6 +60,8 @@ use Throwable;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class FileTextController extends Controller {
+	use RequiresJsonBodyTrait;
+
 	/**
 	 * Constructor
 	 *
@@ -688,7 +691,7 @@ class FileTextController extends Controller {
 	 * @NoCSRFRequired
 	 */
 	public function addManualEntity(int $fileId): JSONResponse {
-		$refusal = $this->unsupportedManualEntityMediaType();
+		$refusal = $this->refuseNonJsonBody(route: 'POST /api/files/{fileId}/manual-entities');
 		if ($refusal !== null) {
 			return $refusal;
 		}
@@ -745,28 +748,6 @@ class FileTextController extends Controller {
 		return $this->formatManualEntityResponse(result: $result);
 	}//end addManualEntity()
 
-	/**
-	 * The 415 response for a manual entity request that is not JSON, if any.
-	 *
-	 * Rejecting other media types keeps callers from tripping the body-parser heuristics.
-	 *
-	 * @return JSONResponse|null The refusal, or null to proceed.
-	 */
-	private function unsupportedManualEntityMediaType(): ?JSONResponse {
-		$contentType = (string)$this->request->getHeader('Content-Type');
-		$mediaType   = strtolower(trim(explode(';', $contentType, 2)[0]));
-		if ($mediaType !== 'application/json' && $mediaType !== '') {
-			return new JSONResponse(
-				data: [
-					'error'  => 'unsupported_media_type',
-					'reason' => 'POST /api/files/{fileId}/manual-entities requires Content-Type: application/json',
-				],
-				statusCode: Http::STATUS_UNSUPPORTED_MEDIA_TYPE
-			);
-		}
-
-		return null;
-	}//end unsupportedManualEntityMediaType()
 
 	/**
 	 * The manual entity fields of the request body, with their defaults.
