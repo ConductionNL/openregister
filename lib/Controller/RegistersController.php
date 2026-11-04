@@ -26,6 +26,8 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\RegistersControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
@@ -42,17 +44,11 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Configuration\RegisterBundleBinding;
 use OCA\OpenRegister\Service\ConfigurationService;
-use OCA\OpenRegister\Service\MigrationPackService;
-use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
-use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\Lifecycle\KeepLifecycleStatesScope;
-use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
-use OCA\OpenRegister\Service\UploadService;
-use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -155,18 +151,53 @@ class RegistersController extends Controller {
 	private readonly GitHubClientInterface $githubService;
 
 	/**
-	 * App manager for getting app version
+	 * The register service.
 	 *
-	 * @var IAppManager
+	 * @var RegisterService
 	 */
-	private readonly IAppManager $appManager;
+	private readonly RegisterService $registerService;
 
 	/**
-	 * OAS service for generating OpenAPI specifications
+	 * The object entity mapper.
 	 *
-	 * @var OasService
+	 * @var MagicMapper
 	 */
-	private readonly OasService $oasService;
+	private readonly MagicMapper $objectEntityMapper;
+
+	/**
+	 * The logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * The container.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * The group manager.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * The controller's injected services.
+	 *
+	 * @var RegistersControllerServices
+	 */
+	private readonly RegistersControllerServices $services;
 
 	/**
 	 * Constructor
@@ -176,75 +207,44 @@ class RegistersController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param RegisterService $registerService Register service for business logic
-	 * @param MagicMapper $objectEntityMapper Object entity mapper for database operations
-	 * @param UploadService $uploadService Upload service for file uploads
-	 * @param LoggerInterface $logger Logger for error tracking
-	 * @param IUserSession $userSession User session service
-	 * @param ConfigurationService $configurationService Configuration service for import/export
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for log statistics
-	 * @param ObjectExporterInterface $exportService Export service for data exports
-	 * @param ObjectImporterInterface $importService Import service for data imports
-	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations
-	 * @param RegisterMapper $registerMapper Register mapper for database operations
-	 * @param GitHubClientInterface $githubService GitHub service for publishing
-	 * @param IAppManager $appManager App manager for app version
-	 * @param OasService $oasService OAS service for OpenAPI generation
-	 * @param ContainerInterface $container Container for lazy loading services
-	 * @param IGroupManager $groupManager Group manager for RBAC checks
-	 * @param RegisterCacheHandler $registerCacheHandler Register cache handler (runtime-schema-api)
-	 * @param RegisterSerializer $registerSerializer Register serializer for response shaping
-	 * @param MigrationPackService $migrationPackService Migration pack lookup for import's `packId` param
+	 * @param ControllerSession $session Session, group manager and logger.
+	 * @param RegistersControllerServices $services The registers controller services.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly RegisterService $registerService,
-		private readonly MagicMapper $objectEntityMapper,
-		private readonly UploadService $uploadService,
-		private readonly LoggerInterface $logger,
-		private readonly IUserSession $userSession,
-		ConfigurationService $configurationService,
-		AuditTrailMapper $auditTrailMapper,
-		ObjectExporterInterface $exportService,
-		ObjectImporterInterface $importService,
-		SchemaMapper $schemaMapper,
-		RegisterMapper $registerMapper,
-		GitHubClientInterface $githubService,
-		IAppManager $appManager,
-		OasService $oasService,
-		private readonly ContainerInterface $container,
-		private readonly IGroupManager $groupManager,
-		private readonly RegisterCacheHandler $registerCacheHandler,
-		private readonly RegisterSerializer $registerSerializer,
-		private readonly MigrationPackService $migrationPackService,
+		ControllerSession $session,
+		RegistersControllerServices $services,
 	) {
+		$this->logger = $session->logger;
 		$this->logger->debug(
 			message: '[RegistersController] Constructor started.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 		parent::__construct(appName: $appName, request: $request);
+		$this->services = $services;
+		$this->registerService = $services->registers->registerService;
+		$this->objectEntityMapper = $services->mappers->objectEntityMapper;
+		$this->userSession = $session->userSession;
+		$this->container = $services->integrations->container;
+		$this->groupManager = $session->groupManager;
 		$this->logger->debug(
 			message: '[RegistersController] Parent constructor called.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
-		$this->configurationService = $configurationService;
+		$this->configurationService = $services->integrations->configurationService;
 		$this->logger->debug(
 			message: '[RegistersController] ConfigurationService assigned.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
-		$this->auditTrailMapper = $auditTrailMapper;
-		$this->exportService = $exportService;
-		$this->importService = $importService;
-		$this->schemaMapper = $schemaMapper;
-		$this->registerMapper = $registerMapper;
-		$this->githubService = $githubService;
-		$this->appManager = $appManager;
-		$this->oasService = $oasService;
+		$this->auditTrailMapper = $services->mappers->auditTrailMapper;
+		$this->exportService = $services->transfer->exportService;
+		$this->importService = $services->transfer->importService;
+		$this->schemaMapper = $services->mappers->schemaMapper;
+		$this->registerMapper = $services->mappers->registerMapper;
+		$this->githubService = $services->integrations->githubService;
 		$this->logger->debug(
 			message: '[RegistersController] Constructor completed.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
@@ -323,7 +323,7 @@ class RegistersController extends Controller {
 			$statsByRegisterId = $this->schemaStatsByRegister(registers: $registers);
 		}
 
-		$registersArr = $this->registerSerializer->serializeMany($registers, $extend, $statsByRegisterId);
+		$registersArr = $this->services->registers->registerSerializer->serializeMany($registers, $extend, $statsByRegisterId);
 
 		// If '@self.stats' is requested, attach register-level statistics
 		// alongside the schema-level stats already produced by the
@@ -616,7 +616,7 @@ class RegistersController extends Controller {
 			// **CACHE INVALIDATION (runtime-schema-api)**: Drop the request-scoped
 			// find cache for the freshly-created ID so any follow-up read in the
 			// same PHP worker observes the new register.
-			$this->registerCacheHandler->invalidate(registerId: $register->getId());
+			$this->services->registers->registerCacheHandler->invalidate(registerId: $register->getId());
 
 			return new JSONResponse(data: $register, statusCode: 201);
 		} catch (AuthorizationBlockException $e) {
@@ -722,7 +722,7 @@ class RegistersController extends Controller {
 			// **CACHE INVALIDATION (runtime-schema-api)**: Drop the request-scoped
 			// find cache for the updated ID so any follow-up read in the same PHP
 			// worker observes the new register state (e.g. an added schema in schemas[]).
-			$this->registerCacheHandler->invalidate(registerId: $updatedRegister->getId());
+			$this->services->registers->registerCacheHandler->invalidate(registerId: $updatedRegister->getId());
 
 			// Log authorization and role changes.
 			try {
@@ -856,7 +856,7 @@ class RegistersController extends Controller {
 
 			// **CACHE INVALIDATION (runtime-schema-api)**: Drop request-scoped
 			// find cache for the deleted register.
-			$this->registerCacheHandler->invalidate(registerId: $register->getId());
+			$this->services->registers->registerCacheHandler->invalidate(registerId: $register->getId());
 
 			// Return an empty response.
 			return new JSONResponse(data: []);
@@ -1303,7 +1303,7 @@ class RegistersController extends Controller {
 			);
 
 			// A pure OAS file, not a configuration file: no x-openregister metadata.
-			$oasData = $this->oasService->createOas((string)$register->getId());
+			$oasData = $this->services->integrations->oasService->createOas((string)$register->getId());
 			$result  = $this->githubService->publishConfiguration(
 				owner: $target['owner'],
 				repo: $target['repo'],
@@ -1627,7 +1627,7 @@ class RegistersController extends Controller {
 		}
 
 		try {
-			$options['pack'] = $this->migrationPackService->findByPackSlug(packSlug: (string)$packId)->getDefinitionArray();
+			$options['pack'] = $this->services->registers->migrationPackService->findByPackSlug(packSlug: (string)$packId)->getDefinitionArray();
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Migration pack "' . $packId . '" not found'], statusCode: 400);
 		}
