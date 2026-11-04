@@ -63,7 +63,7 @@ class ExampleSetStoreTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(static fn (string $id): object => match ($id) {
-			ObjectService::class  => $objects,
+			\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class  => $objects,
 			ValidateObject::class => $validator,
 		});
 
@@ -223,7 +223,7 @@ class ExampleSetStoreTest extends TestCase {
 		);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(static fn (string $id): object => match ($id) {
-			ObjectService::class          => $objects,
+			\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class          => $objects,
 			LifecycleActionContext::class => $actions,
 		});
 		$store = new ExampleSetStore(container: $container, logger: $this->createMock(LoggerInterface::class));
@@ -286,7 +286,7 @@ class ExampleSetStoreTest extends TestCase {
 		);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(static fn (string $id): object => match ($id) {
-			ObjectService::class          => $objects,
+			\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class          => $objects,
 			ObjectOwnershipService::class => $ownership,
 		});
 		$store = new ExampleSetStore(container: $container, logger: $this->createMock(LoggerInterface::class));

@@ -38,7 +38,7 @@ use JsonException;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCP\EventDispatcher\Event;
@@ -70,13 +70,13 @@ class PartyMergeListener implements IEventListener {
 	 *
 	 * @param ContactLinkMapper $links The link rows.
 	 * @param PartyService $parties The party records.
-	 * @param ObjectService $objects The object layer, for the address union.
+	 * @param ObjectOperationsInterface $objects The object layer, for the address union.
 	 * @param LoggerInterface $logger Diagnostics; a party that will not carry over never fails the merge.
 	 */
 	public function __construct(
 		private readonly ContactLinkMapper $links,
 		private readonly PartyService $parties,
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

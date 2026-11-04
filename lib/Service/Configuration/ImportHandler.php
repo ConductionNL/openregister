@@ -52,7 +52,7 @@ use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\File\RegisterFolderProvisioner;
 use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Archival\SelectionListSeeder;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
@@ -207,9 +207,9 @@ class ImportHandler {
 	/**
 	 * Object service for object CRUD operations.
 	 *
-	 * @var ObjectService|null The object service instance.
+	 * @var ObjectOperationsInterface|null The object service instance.
 	 */
-	private ?ObjectService $objectService = null;
+	private ?ObjectOperationsInterface $objectService = null;
 
 	/**
 	 * Map of registers indexed by slug during import.
@@ -374,7 +374,7 @@ class ImportHandler {
 	 * @param LoggerInterface $logger The logger interface.
 	 * @param string $appDataPath The app data path.
 	 * @param UploadHandler $uploadHandler The upload handler.
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectOperationsInterface $objectService The object service.
 	 * @param ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator Optional schema-shape validator used at import time.
 	 * @param ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard Optional
 	 *        guard that keeps local changes to an app-shipped schema.
@@ -394,7 +394,7 @@ class ImportHandler {
 		LoggerInterface $logger,
 		string $appDataPath,
 		UploadHandler $uploadHandler,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		private readonly ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator = null,
 		private readonly ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard = null,
 		private readonly ?AppImportJobRecorder $importJobRecorder = null,
@@ -420,13 +420,13 @@ class ImportHandler {
 	 * This method allows setting the ObjectService after construction
 	 * to avoid circular dependency issues.
 	 *
-	 * @param ObjectService $objectService The object service instance.
+	 * @param ObjectOperationsInterface $objectService The object service instance.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	public function setObjectService(ObjectService $objectService): void {
+	public function setObjectService(ObjectOperationsInterface $objectService): void {
 		$this->objectService = $objectService;
 	}//end setObjectService()
 

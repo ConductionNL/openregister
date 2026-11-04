@@ -49,11 +49,11 @@ class NotificationTemplating {
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger Logger for resolve diagnostics.
-	 * @param \OCA\OpenRegister\Service\ObjectService|null $objectService Object resolver for relation display names (RBAC-scoped).
+	 * @param \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface|null $objectService Object resolver for relation display names (RBAC-scoped).
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly ?\OCA\OpenRegister\Service\ObjectService $objectService = null,
+		private readonly ?\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService = null,
 	) {
 
 	}//end __construct()

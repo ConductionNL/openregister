@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Service\Survivorship;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -69,7 +69,7 @@ class SourceRecordResolver {
 	 * Wire the object read path used to resolve uuid references (embedded
 	 * mode) and to query source objects (reverse-FK mode).
 	 *
-	 * @param ObjectService $objectService Object read path (RBAC + tenant scoped).
+	 * @param ObjectOperationsInterface $objectService Object read path (RBAC + tenant scoped).
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup, to resolve the source schema slug to a numeric id.
 	 * @param LoggerInterface $logger PSR logger for non-fatal warnings.
 	 *
@@ -78,7 +78,7 @@ class SourceRecordResolver {
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {

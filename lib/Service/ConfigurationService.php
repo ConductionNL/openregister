@@ -26,6 +26,7 @@
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -151,9 +152,9 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	/**
 	 * Object service instance for handling object operations.
 	 *
-	 * @var ObjectService The object service instance.
+	 * @var ObjectOperationsInterface The object service instance.
 	 */
-	private ObjectService $objectService;
+	private ObjectOperationsInterface $objectService;
 
 	/**
 	 * Application data path
@@ -210,7 +211,7 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 * @param IAppConfig $appConfig App config for configuration metadata
 	 * @param LoggerInterface $logger Logger for error tracking
 	 * @param Client $client HTTP client for external requests
-	 * @param ObjectService $objectService Object service for object operations
+	 * @param ObjectOperationsInterface $objectService Object service for object operations
 	 * @param GitHubHandler $githubHandler GitHub handler for GitHub operations
 	 * @param GitLabHandler $gitlabHandler GitLab handler for GitLab operations
 	 * @param CacheHandler $cacheHandler Cache handler for configuration caching
@@ -232,7 +233,7 @@ class ConfigurationService implements ConfigurationServiceInterface {
 		IAppConfig $appConfig,
 		LoggerInterface $logger,
 		Client $client,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		GitHubHandler $githubHandler,
 		GitLabHandler $gitlabHandler,
 		CacheHandler $cacheHandler,

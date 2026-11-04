@@ -40,7 +40,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
@@ -72,7 +72,7 @@ class SurvivorshipController extends Controller {
 	 *
 	 * @param string $appName The application name.
 	 * @param IRequest $request The current request.
-	 * @param ObjectService $objectService Object read/write path (RBAC + tenant scoped).
+	 * @param ObjectOperationsInterface $objectService Object read/write path (RBAC + tenant scoped).
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup for the survivorship annotation.
 	 * @param SourceRecordResolver $sourceRecordResolver Mode-aware source-record resolver (embedded | reverseFk).
 	 * @param IUserSession $userSession Current user session, for actor attribution.
@@ -80,7 +80,7 @@ class SurvivorshipController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly SourceRecordResolver $sourceRecordResolver,
 		private readonly IUserSession $userSession,

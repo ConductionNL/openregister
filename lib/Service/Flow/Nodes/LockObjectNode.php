@@ -72,7 +72,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -146,14 +146,14 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects Object lock operations, RBAC-enforcing.
+	 * @param ObjectOperationsInterface $objects Object lock operations, RBAC-enforcing.
 	 * @param IUserManager $userManager Resolves the run's acting identity.
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urls For the palette icon.
 	 * @param FlowRunSubjectRecorder|null $subjects Records the locked object under the declared role.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly IUserManager $userManager,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urls,
