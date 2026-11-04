@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\ProcessingLogMapper;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -109,7 +109,7 @@ class ProcessingLogController extends Controller {
 	 * @param ProcessingLogMapper $logMapper Append-only log mapper.
 	 * @param ControllerSession $session Session, group manager and logger.
 	 * @param IAppConfig $appConfig App-config reader.
-	 * @param OrganisationService $organisationService Org-scoping helper.
+	 * @param OrganisationServiceInterface $organisationService Org-scoping helper.
 	 */
 	public function __construct(
 		string $appName,
@@ -117,7 +117,7 @@ class ProcessingLogController extends Controller {
 		private readonly ProcessingLogMapper $logMapper,
 		ControllerSession $session,
 		private readonly IAppConfig $appConfig,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 

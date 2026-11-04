@@ -56,7 +56,7 @@ use OCP\IDBConnection;
  * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
  * @spec openspec/specs/flow-queue-fairness/spec.md
  */
-class FlowRunMapper extends QBMapper {
+class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	/**
 	 * Constructor.
 	 *

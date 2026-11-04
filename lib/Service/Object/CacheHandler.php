@@ -29,9 +29,9 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCP\AppFramework\IAppContainer;
 use OCP\IAppConfig;
@@ -238,13 +238,13 @@ class CacheHandler implements ObjectNameCacheInterface {
 	/**
 	 * Constructor for CacheHandler
 	 *
-	 * @param OrganisationMapper $organisationMapper The organisation entity mapper
+	 * @param OrganisationMapperInterface $organisationMapper The organisation entity mapper
 	 * @param LoggerInterface $logger Logger for performance monitoring
 	 * @param ICacheFactory|null $cacheFactory Cache factory for query result caching
 	 * @param IUserSession|null $userSession User session for cache key generation
 	 * @param IAppContainer|null $container Container for lazy loading dependencies (optional)
-	 * @param RegisterMapper|null $registerMapper Register mapper for magic table queries
-	 * @param SchemaMapper|null $schemaMapper Schema mapper for magic table queries
+	 * @param RegisterMapperInterface|null $registerMapper Register mapper for magic table queries
+	 * @param SchemaMapperInterface|null $schemaMapper Schema mapper for magic table queries
 	 * @param IDBConnection|null $db Database connection for magic table queries
 	 * @param IGroupManager|null $groupManager Group manager for the admin-override arm of the name scope
 	 * @param IAppConfig|null $appConfig App config for the multitenancy switches read by the name scope
@@ -256,13 +256,13 @@ class CacheHandler implements ObjectNameCacheInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly OrganisationMapper $organisationMapper,
+		private readonly OrganisationMapperInterface $organisationMapper,
 		private readonly LoggerInterface $logger,
 		?ICacheFactory $cacheFactory = null,
 		?IUserSession $userSession = null,
 		?IAppContainer $container = null,
-		private readonly ?RegisterMapper $registerMapper = null,
-		private readonly ?SchemaMapper $schemaMapper = null,
+		private readonly ?RegisterMapperInterface $registerMapper = null,
+		private readonly ?SchemaMapperInterface $schemaMapper = null,
 		private readonly ?IDBConnection $db = null,
 		private readonly ?IGroupManager $groupManager = null,
 		private readonly ?IAppConfig $appConfig = null,

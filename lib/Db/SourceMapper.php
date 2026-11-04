@@ -27,7 +27,7 @@ use DateTime;
 use OCA\OpenRegister\Event\SourceCreatedEvent;
 use OCA\OpenRegister\Event\SourceDeletedEvent;
 use OCA\OpenRegister\Event\SourceUpdatedEvent;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -63,7 +63,7 @@ class SourceMapper extends QBMapper {
 	/**
 	 * Organisation service for multi-tenancy
 	 *
-	 * @var OrganisationService
+	 * @var OrganisationServiceInterface
 	 */
 	// REMOVED: Services should not be in mappers.
 	// Private OrganisationService $organisationService.
@@ -92,9 +92,9 @@ class SourceMapper extends QBMapper {
 	/**
 	 * Organisation mapper for multi-tenancy
 	 *
-	 * @var OrganisationMapper
+	 * @var OrganisationMapperInterface
 	 */
-	protected OrganisationMapper $organisationMapper;
+	protected OrganisationMapperInterface $organisationMapper;
 
 	/**
 	 * App configuration for multitenancy settings
@@ -107,7 +107,7 @@ class SourceMapper extends QBMapper {
 	 * Constructor
 	 *
 	 * @param IDBConnection $db Database connection
-	 * @param OrganisationMapper $organisationMapper Organisation mapper
+	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
 	 * @param IUserSession $userSession User session
 	 * @param IGroupManager $groupManager Group manager
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher
@@ -115,7 +115,7 @@ class SourceMapper extends QBMapper {
 	 */
 	public function __construct(
 		IDBConnection $db,
-		OrganisationMapper $organisationMapper,
+		OrganisationMapperInterface $organisationMapper,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 		IEventDispatcher $eventDispatcher,

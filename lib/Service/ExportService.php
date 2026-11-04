@@ -39,7 +39,7 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
@@ -87,9 +87,9 @@ class ExportService implements ObjectExporterInterface {
 	/**
 	 * Register mapper instance
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Group manager for checking admin group membership
@@ -143,7 +143,7 @@ class ExportService implements ObjectExporterInterface {
 	/**
 	 * Constructor for the ExportService.
 	 *
-	 * @param RegisterMapper $registerMapper The register mapper.
+	 * @param RegisterMapperInterface $registerMapper The register mapper.
 	 * @param IUserManager $_userManager The user manager (unused).
 	 * @param IGroupManager $groupManager The group manager.
 	 * @param ObjectService $objectService The object service.
@@ -155,7 +155,7 @@ class ExportService implements ObjectExporterInterface {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
 	public function __construct(
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		IUserManager $_userManager,
 		IGroupManager $groupManager,
 		ObjectService $objectService,

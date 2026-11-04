@@ -212,6 +212,33 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 		$this->assertArrayNotHasKey('skipAnonymization', $changed['fields']);
 	}//end testSettingBasesForFirstTimeEmitsAuditEntry()
 
+	public function testReplacingBasesAuditsThePreviousBases(): void {
+		$relation = new EntityRelation();
+		$relation->setId(43);
+		$relation->setBases(['uuid-a']);
+		$mapper = $this->mapperWithMockedUpdate();
+
+		$captured = null;
+		$this->auditTrailMapper
+			->expects($this->once())
+			->method('insert')
+			->willReturnCallback(
+				function (AuditTrail $entry) use (&$captured) {
+					$captured = $entry;
+					return $entry;
+				}
+			);
+
+		$mapper->updateDecisionMetadata(
+			relation: $relation,
+			fields: ['bases' => ['uuid-b']],
+			actingUser: $this->user
+		);
+
+		$this->assertNotNull($captured);
+		$this->assertSame(['previous' => ['uuid-a'], 'new' => ['uuid-b']], $captured->getChanged()['fields']['bases']);
+	}//end testReplacingBasesAuditsThePreviousBases()
+
 	public function testFlippingSkipEmitsAuditEntry(): void {
 		$relation = new EntityRelation();
 		$relation->setId(7);

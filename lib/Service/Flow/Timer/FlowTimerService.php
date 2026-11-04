@@ -56,7 +56,7 @@ use OCA\OpenRegister\Event\FlowTimerFiredEvent;
 use OCA\OpenRegister\Exception\FlowTimerStateException;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Exception\TaskConflictException;
-use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -104,7 +104,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @param FlowTimerFireMapper $fires The rung dedup ledger.
 	 * @param FlowTimerEventMapper $events The append-only history.
 	 * @param TaskMapper $tasks The task table, for the projection and the subject read.
-	 * @param TaskService $taskService Applies enforcing outcomes as named task actions.
+	 * @param TaskServiceInterface $taskService Applies enforcing outcomes as named task actions.
 	 * @param WorkingCalendarService $calendars Calendar resolution.
 	 * @param SlaCalculator $calculator Business-time arithmetic.
 	 * @param EscalationLadderService $ladder Rung resolution and validation.
@@ -117,7 +117,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 		private readonly FlowTimerFireMapper $fires,
 		private readonly FlowTimerEventMapper $events,
 		private readonly TaskMapper $tasks,
-		private readonly TaskService $taskService,
+		private readonly TaskServiceInterface $taskService,
 		private readonly WorkingCalendarService $calendars,
 		private readonly SlaCalculator $calculator,
 		private readonly EscalationLadderService $ladder,

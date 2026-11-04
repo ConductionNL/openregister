@@ -22,7 +22,7 @@
 namespace OCA\OpenRegister\Service\GraphQL;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
@@ -55,11 +55,11 @@ class SubscriptionService {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema mapper
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper
 	 * @param PermissionHandler $permissionHandler Permission handler
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PermissionHandler $permissionHandler,
 	) {
 	}//end __construct()

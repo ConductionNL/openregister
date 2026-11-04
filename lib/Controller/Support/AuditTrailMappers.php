@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 
 /**
  * The mappers and repositories of the audit trail API.
@@ -33,12 +33,12 @@ final class AuditTrailMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param AuditTrailMapper $auditTrailMapper The audit trail mapper
+	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail mapper
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 	 */
 	public function __construct(
-		public readonly AuditTrailMapper $auditTrailMapper,
+		public readonly AuditTrailMapperInterface $auditTrailMapper,
 	) {
 	}//end __construct()
 }//end class

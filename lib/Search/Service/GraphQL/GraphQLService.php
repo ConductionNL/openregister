@@ -24,9 +24,9 @@ use GraphQL\Error\Error;
 use GraphQL\GraphQL;
 use GraphQL\Language\Parser;
 use GraphQL\Type\Schema;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -59,9 +59,9 @@ class GraphQLService {
 	 * @param ObjectService $objectService Object service
 	 * @param PermissionHandler $permissionHandler Permission handler
 	 * @param PropertyRbacHandler $propertyRbac Property RBAC handler
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper
-	 * @param RegisterMapper $registerMapper Register mapper
-	 * @param SchemaMapper $schemaMapper Schema mapper
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper
+	 * @param RegisterMapperInterface $registerMapper Register mapper
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper
 	 * @param IAppConfig $appConfig App configuration
 	 * @param IRequest $request Current request
 	 * @param IUserSession $userSession User session
@@ -77,9 +77,9 @@ class GraphQLService {
 		private readonly ObjectService $objectService,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly PropertyRbacHandler $propertyRbac,
-		private readonly AuditTrailMapper $auditTrailMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IAppConfig $appConfig,
 		private readonly IRequest $request,
 		private readonly IUserSession $userSession,

@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
-use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskState;
 use Psr\Container\ContainerInterface;
 use Throwable;
@@ -429,10 +429,10 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	/**
 	 * The task service.
 	 *
-	 * @return TaskService
+	 * @return TaskServiceInterface
 	 */
-	private function service(): TaskService {
-		return $this->container->get(TaskService::class);
+	private function service(): TaskServiceInterface {
+		return $this->container->get(TaskServiceInterface::class);
 	}//end service()
 
 	/**
