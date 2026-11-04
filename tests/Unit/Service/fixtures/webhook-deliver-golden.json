@@ -366,6 +366,82 @@
             ]
         ]
     },
+    "request-error-long-body": {
+        "result": false,
+        "calls": [
+            [
+                "client.request"
+            ],
+            [
+                "logger.error",
+                "[WebhookService] Webhook delivery failed",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "error": "Client error",
+                    "error_details": {
+                        "status_code": 500,
+                        "response_body": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx... [truncated]",
+                        "request_url": "https://93.184.216.34/hook",
+                        "request_method": "POST",
+                        "timeout": 30
+                    },
+                    "attempt": 1,
+                    "max_retries": 3,
+                    "exception_class": "GuzzleHttp\\Exception\\RequestException",
+                    "exception_code": 500
+                }
+            ],
+            [
+                "webhookMapper.updateStatistics",
+                7,
+                false
+            ],
+            [
+                "logger.info",
+                "[WebhookService] Scheduling webhook retry",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "attempt": 2,
+                    "delay": 300
+                }
+            ],
+            [
+                "webhookLogMapper.insert",
+                {
+                    "id": null,
+                    "webhook": 7,
+                    "eventClass": "Golden\\Event",
+                    "payload": {
+                        "event": "Golden\\Event",
+                        "webhook": {
+                            "id": "webhook-uuid-7",
+                            "name": "Golden hook"
+                        },
+                        "data": {
+                            "kind": "thing",
+                            "id": 5
+                        },
+                        "timestamp": "<time>",
+                        "attempt": 1
+                    },
+                    "url": "https://93.184.216.34/hook",
+                    "method": "POST",
+                    "success": false,
+                    "statusCode": 500,
+                    "requestBody": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}",
+                    "responseBody": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "errorMessage": "Client error",
+                    "attempt": 1,
+                    "nextRetryAt": "<time>",
+                    "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
+                }
+            ]
+        ]
+    },
     "request-error-no-response-code": {
         "result": false,
         "calls": [
@@ -566,6 +642,82 @@
                     "errorMessage": "Client error",
                     "attempt": 1,
                     "nextRetryAt": null,
+                    "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
+                }
+            ]
+        ]
+    },
+    "request-error-private-target": {
+        "result": false,
+        "calls": [
+            [
+                "client.request"
+            ],
+            [
+                "logger.error",
+                "[WebhookService] Webhook delivery failed",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "error": "Client error: inside",
+                    "error_details": {
+                        "status_code": 500,
+                        "response_body": "[redacted: webhook target is on an internal/private network]",
+                        "request_url": "http://10.0.0.5/hook",
+                        "request_method": "POST",
+                        "timeout": 30
+                    },
+                    "attempt": 1,
+                    "max_retries": 3,
+                    "exception_class": "GuzzleHttp\\Exception\\RequestException",
+                    "exception_code": 500
+                }
+            ],
+            [
+                "webhookMapper.updateStatistics",
+                7,
+                false
+            ],
+            [
+                "logger.info",
+                "[WebhookService] Scheduling webhook retry",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "attempt": 2,
+                    "delay": 300
+                }
+            ],
+            [
+                "webhookLogMapper.insert",
+                {
+                    "id": null,
+                    "webhook": 7,
+                    "eventClass": "Golden\\Event",
+                    "payload": {
+                        "event": "Golden\\Event",
+                        "webhook": {
+                            "id": "webhook-uuid-7",
+                            "name": "Golden hook"
+                        },
+                        "data": {
+                            "kind": "thing",
+                            "id": 5
+                        },
+                        "timestamp": "<time>",
+                        "attempt": 1
+                    },
+                    "url": "http://10.0.0.5/hook",
+                    "method": "POST",
+                    "success": false,
+                    "statusCode": 500,
+                    "requestBody": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}",
+                    "responseBody": "{\"message\":\"inside\"}",
+                    "errorMessage": "Client error: inside",
+                    "attempt": 1,
+                    "nextRetryAt": "<time>",
                     "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
                 }
             ]
