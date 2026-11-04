@@ -38,7 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use UnexpectedValueException;
@@ -51,14 +51,14 @@ class FlowRunSubjectRecorder {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapper   $runs     Reads and stores the run row.
+	 * @param FlowRunMapperInterface   $runs     Reads and stores the run row.
 	 * @param FlowRunSubjects $subjects The subject rules.
 	 * @param LoggerInterface $logger   Where a failure to record is reported.
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	public function __construct(
-		private readonly FlowRunMapper $runs,
+		private readonly FlowRunMapperInterface $runs,
 		private readonly FlowRunSubjects $subjects,
 		private readonly LoggerInterface $logger,
 	) {

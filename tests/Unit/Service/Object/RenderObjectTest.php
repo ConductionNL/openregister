@@ -6901,4 +6901,208 @@ class RenderObjectTest extends TestCase {
 			. '"dotted":[["u1","One","s-u1",' . $deep . ']],"plain":"u1","named":["u1","One","s-u1",' . $deep . ']}';
 		$this->assertSame(json_decode($all, true), $this->extendView($this->runExtendDot(true)));
 	}
+
+	// =========================================================================
+	// renderEntities — what every row is rendered with
+	// =========================================================================
+
+	/**
+	 * A RenderObject whose renderEntity() records its arguments, with the state of the real handler.
+	 *
+	 * @param array $calls Receives each renderEntity() call.
+	 *
+	 * @return RenderObject
+	 */
+	private function renderEntitySpy(array &$calls): RenderObject {
+		$spy = $this->getMockBuilder(RenderObject::class)->disableOriginalConstructor()->onlyMethods(['renderEntity'])->getMock();
+		$values = [];
+		foreach ((new ReflectionClass(RenderObject::class))->getProperties() as $prop) {
+			if ($prop->isStatic() === false && $prop->isInitialized($this->handler) === true) {
+				$values[$prop->getName()] = $prop->getValue($this->handler);
+			}
+		}
+
+		\Closure::bind(function (array $values): void {
+			foreach ($values as $name => $value) {
+				$this->$name = $value;
+			}
+		}, $spy, RenderObject::class)($values);
+
+		$spy->method('renderEntity')->willReturnCallback(
+			function (ObjectEntity $entity, ...$args) use (&$calls, $spy): ObjectEntity {
+				$state = \Closure::bind(fn (): array => [$this->batchFileIdsCache, $this->pageRenderActive], $spy, RenderObject::class)();
+				$calls[] = ['uuid' => $entity->getUuid(), 'args' => $args, 'fileIds' => $state[0], 'pageRender' => $state[1]];
+				return $entity;
+			}
+		);
+
+		return $spy;
+	}
+
+	/**
+	 * Every row gets the page's options as lists, the page caches are set during and cleared after, and no row keeps its source.
+	 *
+	 * @return void
+	 */
+	public function testRenderEntitiesRendersEveryRowWithThePageOptions(): void {
+		$this->setupBasicMocks();
+		$one = $this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001', ['name' => 'One']);
+		$one->setSource('src');
+		$two = $this->createBasicEntity(2, 'aaaaaaaa-0000-0000-0000-000000000002', ['name' => 'Two']);
+		$this->fileMapper->expects($this->once())->method('getFileIdsForObjects')
+			->with(['aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000002'])
+			->willReturn(['aaaaaaaa-0000-0000-0000-000000000001' => [7]]);
+
+		$calls = [];
+		$spy = $this->renderEntitySpy($calls);
+		$rendered = $spy->renderEntities([$one, $two], 'owner,lead', ' f1 , ,f2', 'name, ,title ', ' secret ', false, false);
+
+		// Positional: extend, depth, filter, fields, unset, registers, schemas, objects, visitedIds, rbac, multitenancy.
+		$expectedArgs = [['owner', 'lead'], 0, [0 => 'f1', 2 => 'f2'], [0 => 'name', 2 => 'title'], ['secret'], [], [], [], [], false, false];
+		$this->assertCount(2, $calls);
+		foreach ($calls as $call) {
+			$this->assertSame($expectedArgs, $call['args']);
+			$this->assertSame(['aaaaaaaa-0000-0000-0000-000000000001' => [7]], $call['fileIds']);
+			$this->assertTrue($call['pageRender']);
+		}
+
+		$this->assertSame([$one, $two], $rendered);
+		$this->assertNull($one->getSource());
+		$state = \Closure::bind(fn (): array => [$this->batchFileIdsCache, $this->pageRenderActive], $spy, RenderObject::class)();
+		$this->assertSame([null, false], $state);
+	}
+
+	/**
+	 * A page that extends @self.files does not prefetch the lightweight file ids; array options pass unchanged.
+	 *
+	 * @return void
+	 */
+	public function testRenderEntitiesSkipsTheFileIdPrefetchWhenFilesAreExtended(): void {
+		$this->setupBasicMocks();
+		$this->fileMapper->expects($this->never())->method('getFileIdsForObjects');
+		$calls = [];
+		$this->renderEntitySpy($calls)->renderEntities(
+			[$this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001')],
+			['@self.files'],
+			['a' => ' b '],
+			[' c '],
+			null
+		);
+
+		$this->assertSame(
+			[['@self.files'], 0, ['a' => ' b '], [' c '], null, [], [], [], [], true, true],
+			$calls[0]['args']
+		);
+	}
+
+	// =========================================================================
+	// extendObjectSourceRefs — references into object-source schemas
+	// =========================================================================
+
+	/**
+	 * Extended references into an object-source schema resolve through its provider and leave the extend list.
+	 *
+	 * @return void
+	 */
+	public function testExtendObjectSourceRefsResolvesThroughTheProvider(): void {
+		[$objectData, $extend, $asked] = $this->runSourceRefExtend();
+		$name = static fn ($rendered) => is_array($rendered) ? ($rendered['name'] ?? $rendered) : $rendered;
+		$this->assertSame('Org 1', $name($objectData['org']));
+		$this->assertSame(['Org 2', 9, ['x' => 1]], array_map($name, $objectData['orgs']));
+		$this->assertSame(['id' => 'kept', 'name' => 'Embedded'], $objectData['emb']);
+		$this->assertSame('p-1', $objectData['plain']);
+		$this->assertSame(['plain', 'blank', 'other'], $extend);
+		$this->assertSame([[1, 38, '1', ['table' => 't']], [1, 38, '2', ['table' => 't']], [1, 38, '9', ['table' => 't']]], $asked);
+	}
+
+	/**
+	 * A disabled provider resolves nothing and leaves the extend list alone.
+	 *
+	 * @return void
+	 */
+	public function testExtendObjectSourceRefsSkipsADisabledProvider(): void {
+		$this->sourceEnabled = false;
+		[$objectData, $extend, $asked] = $this->runSourceRefExtend();
+		$this->assertSame(1, $objectData['org']);
+		$this->assertSame(['org', 'orgs', 'emb', 'org.sub', 'plain', 'blank', 'other'], $extend);
+		$this->assertSame([], $asked);
+	}
+
+	/** Whether the object-source provider of the source-ref fixture is enabled. */
+	private bool $sourceEnabled = true;
+
+	/**
+	 * Run extendObjectSourceRefs() over the source-ref fixture.
+	 *
+	 * @return array{0: array, 1: array, 2: array} The object data, the remaining extends and the provider calls.
+	 */
+	private function runSourceRefExtend(): array {
+		$own = $this->createSchema(1, 'people');
+		$own->setProperties([
+			'org' => ['type' => 'object', '$ref' => 38],
+			'orgs' => ['type' => 'array', 'items' => ['$ref' => 'orgs-slug']],
+			'emb' => ['type' => 'object', '$ref' => 38],
+			'plain' => ['type' => 'object', '$ref' => 2],
+			'blank' => ['type' => 'object', '$ref' => ''],
+			'odd' => 'not-a-definition',
+		]);
+		$source = $this->createSchema(38, 'orgs-slug');
+		$source->setConfiguration(['x-openregister-object-source' => ['provider' => 'org-source', 'config' => ['table' => 't']]]);
+		$native = $this->createSchema(2, 'native');
+		$this->schemaMapper->method('find')->willReturnCallback(
+			static fn ($id) => match ((string)$id) { '1' => $own, '38', 'orgs-slug' => $source, '2' => $native, default => throw new Exception('none') }
+		);
+		$register = $this->createRegister(1, 'reg');
+		$this->registerMapper->method('find')->willReturn($register);
+
+		$asked = [];
+		$provider = $this->createMock(\OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider::class);
+		$provider->method('isEnabled')->willReturn($this->sourceEnabled);
+		$provider->method('find')->willReturnCallback(function ($reg, $schema, string $id, array $config = []) use (&$asked): ?ObjectEntity {
+			$asked[] = [$reg->getId(), $schema->getId(), $id, $config];
+			if ($id === '9') {
+				return null;
+			}
+
+			$row = $this->createObjectEntity((int)$id, 'row-' . $id, ['name' => 'Org ' . $id]);
+			$row->setSchema(38);
+			$row->setRegister(1);
+			return $row;
+		});
+		$registry = $this->createMock(\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry::class);
+		$registry->method('get')->willReturnCallback(static fn (string $name) => ($name === 'org-source') ? $provider : null);
+		$handler = (new ReflectionClass(RenderObject::class))->newInstanceWithoutConstructor();
+		$values = ['objectSourceRegistry' => $registry];
+		foreach ((new ReflectionClass(RenderObject::class))->getProperties() as $prop) {
+			if ($prop->isStatic() === false && $prop->isInitialized($this->handler) === true && $prop->getName() !== 'objectSourceRegistry') {
+				$values[$prop->getName()] = $prop->getValue($this->handler);
+			}
+		}
+
+		\Closure::bind(function (array $values): void {
+			foreach ($values as $name => $value) {
+				$this->$name = $value;
+			}
+		}, $handler, RenderObject::class)($values);
+		$this->handler = $handler;
+
+		$entity = $this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001');
+		$data = ['org' => 1, 'orgs' => [2, 9, ['x' => 1]], 'emb' => ['id' => 'kept', 'name' => 'Embedded'], 'plain' => 'p-1', 'blank' => 'b'];
+		[$objectData, $extend] = $this->invokePrivate(
+			'extendObjectSourceRefs',
+			[$entity, ['org', 'orgs', 'emb', 'org.sub', 'plain', 'blank', 'other'], $data, 0, ['visited']]
+		);
+
+		return [$objectData, $extend, $asked];
+	}
+
+	/**
+	 * Without a registry, or with nothing to extend, the data and extend list pass unchanged.
+	 *
+	 * @return void
+	 */
+	public function testExtendObjectSourceRefsWithoutARegistryChangesNothing(): void {
+		$entity = $this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001');
+		$this->assertSame([['org' => 1], ['org']], $this->invokePrivate('extendObjectSourceRefs', [$entity, ['org'], ['org' => 1], 0, []]));
+	}
 }

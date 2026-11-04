@@ -32,7 +32,7 @@ use OCA\OpenRegister\Controller\Support\RegistrySubscriptionControllerServices;
 use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -62,9 +62,9 @@ class RegistrySubscriptionController extends Controller {
 	/**
 	 * Resolves the object's schema.
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * The per-object `update` guard.

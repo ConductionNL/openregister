@@ -26,12 +26,12 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
@@ -41,7 +41,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Configuration\RegisterBundleBinding;
-use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -108,16 +108,16 @@ class RegistersController extends Controller {
 	/**
 	 * Configuration service for handling import/export operations
 	 *
-	 * @var ConfigurationService
+	 * @var ConfigurationServiceInterface
 	 */
-	private readonly ConfigurationService $configurationService;
+	private readonly ConfigurationServiceInterface $configurationService;
 
 	/**
 	 * Audit trail mapper for fetching log statistics
 	 *
-	 * @var AuditTrailMapper
+	 * @var AuditTrailMapperInterface
 	 */
-	private readonly AuditTrailMapper $auditTrailMapper;
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * Export service for handling data exports
@@ -136,16 +136,16 @@ class RegistersController extends Controller {
 	/**
 	 * Schema mapper for handling schema operations
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Register mapper for handling register operations
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * GitHub service for publishing to GitHub
@@ -181,12 +181,12 @@ class RegistersController extends Controller {
 	 * @param UploadService $uploadService Upload service for file uploads
 	 * @param LoggerInterface $logger Logger for error tracking
 	 * @param IUserSession $userSession User session service
-	 * @param ConfigurationService $configurationService Configuration service for import/export
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for log statistics
+	 * @param ConfigurationServiceInterface $configurationService Configuration service for import/export
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for log statistics
 	 * @param ObjectExporterInterface $exportService Export service for data exports
 	 * @param ObjectImporterInterface $importService Import service for data imports
-	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations
-	 * @param RegisterMapper $registerMapper Register mapper for database operations
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
+	 * @param RegisterMapperInterface $registerMapper Register mapper for database operations
 	 * @param GitHubClientInterface $githubService GitHub service for publishing
 	 * @param IAppManager $appManager App manager for app version
 	 * @param OasService $oasService OAS service for OpenAPI generation
@@ -208,12 +208,12 @@ class RegistersController extends Controller {
 		private readonly UploadService $uploadService,
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
-		ConfigurationService $configurationService,
-		AuditTrailMapper $auditTrailMapper,
+		ConfigurationServiceInterface $configurationService,
+		AuditTrailMapperInterface $auditTrailMapper,
 		ObjectExporterInterface $exportService,
 		ObjectImporterInterface $importService,
-		SchemaMapper $schemaMapper,
-		RegisterMapper $registerMapper,
+		SchemaMapperInterface $schemaMapper,
+		RegisterMapperInterface $registerMapper,
 		GitHubClientInterface $githubService,
 		IAppManager $appManager,
 		OasService $oasService,

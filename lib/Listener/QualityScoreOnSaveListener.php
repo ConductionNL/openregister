@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Listener;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Quality\QualityScorer;
@@ -60,7 +60,7 @@ class QualityScoreOnSaveListener implements IEventListener {
 	/**
 	 * Wire collaborators used to look up and score the schema's quality rules.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
 	 * @param QualityScorer $scorer Pure data-quality scorer.
 	 * @param LoggerInterface $logger PSR logger for warnings.
 	 *
@@ -69,7 +69,7 @@ class QualityScoreOnSaveListener implements IEventListener {
 	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly QualityScorer $scorer,
 		private readonly LoggerInterface $logger,
 	) {

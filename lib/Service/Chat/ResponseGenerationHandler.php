@@ -43,7 +43,7 @@ use LLPhant\Exception\MissingFeatureException;
 use LLPhant\OllamaConfig;
 use LLPhant\OpenAIConfig;
 use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Tool\StreamingToolInstanceWrapper;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
@@ -74,9 +74,9 @@ class ResponseGenerationHandler {
 	/**
 	 * Settings service
 	 *
-	 * @var SettingsService
+	 * @var SettingsServiceInterface
 	 */
-	private SettingsService $settingsService;
+	private SettingsServiceInterface $settingsService;
 
 	/**
 	 * Tool management handler
@@ -104,7 +104,7 @@ class ResponseGenerationHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param SettingsService $settingsService Settings service for LLM config.
+	 * @param SettingsServiceInterface $settingsService Settings service for LLM config.
 	 * @param ToolManagementHandler $toolHandler Tool management handler.
 	 * @param LoggerInterface $logger Logger.
 	 *
@@ -113,7 +113,7 @@ class ResponseGenerationHandler {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		SettingsService $settingsService,
+		SettingsServiceInterface $settingsService,
 		ToolManagementHandler $toolHandler,
 		LoggerInterface $logger,
 	) {

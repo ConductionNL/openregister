@@ -31,7 +31,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Support\AgentsControllerServices;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\ToolRegistry;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -77,9 +77,9 @@ class AgentsController extends Controller {
 	 *
 	 * Used to get active organisation for multi-tenancy filtering.
 	 *
-	 * @var OrganisationService Organisation service instance
+	 * @var OrganisationServiceInterface Organisation service instance
 	 */
-	private readonly OrganisationService $organisationService;
+	private readonly OrganisationServiceInterface $organisationService;
 
 	/**
 	 * Tool registry

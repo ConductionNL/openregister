@@ -446,7 +446,7 @@ class MagicOrganizationHandler {
 	public function getActiveOrganizationUuids(): array {
 		try {
 			// Get OrganisationService from container (lazy loading to avoid circular dependencies).
-			$organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
+			$organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationServiceInterface');
 
 			// Get active organisations including parent chain.
 			$orgUuids = $organisationService->getUserActiveOrganisations();

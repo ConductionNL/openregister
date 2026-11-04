@@ -99,7 +99,7 @@ class FlowRunAttributionTest extends TestCase {
 
 				// A session-less caller: OrganisationService is unavailable, so
 				// activeOrganisation() yields null and the flow has to answer.
-				if ($id === 'OCA\OpenRegister\Service\OrganisationService' && $activeOrg !== null) {
+				if ($id === 'OCA\OpenRegister\Service\OrganisationServiceInterface' && $activeOrg !== null) {
 					return new class($activeOrg) {
 						public function __construct(private readonly string $uuid) {
 						}

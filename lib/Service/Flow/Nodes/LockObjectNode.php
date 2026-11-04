@@ -65,7 +65,7 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -631,7 +631,7 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * @throws RuntimeException When there is no usable acting identity.
 	 */
 	private function resolveOwner(array $context): IUser {
-		$uid = ($context[FlowRunService::RUN_AS_CONTEXT_KEY] ?? null);
+		$uid = ($context[FlowRunServiceInterface::RUN_AS_CONTEXT_KEY] ?? null);
 		if (is_string($uid) === false || trim($uid) === '') {
 			throw new RuntimeException(
 				$this->l10n->t('This flow run has no acting identity (runAs); a lock must be attributable.')

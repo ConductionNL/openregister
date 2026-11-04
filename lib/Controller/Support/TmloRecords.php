@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TmloService;
 
@@ -36,16 +36,16 @@ final class TmloRecords {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param RegisterMapper $registerMapper Register mapper
-	 * @param SchemaMapper   $schemaMapper   Schema mapper
+	 * @param RegisterMapperInterface $registerMapper Register mapper
+	 * @param SchemaMapperInterface   $schemaMapper   Schema mapper
 	 * @param TmloService    $tmloService    TMLO metadata service
 	 * @param ObjectService  $objectService  Object service for querying objects
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-1
 	 */
 	public function __construct(
-		public readonly RegisterMapper $registerMapper,
-		public readonly SchemaMapper $schemaMapper,
+		public readonly RegisterMapperInterface $registerMapper,
+		public readonly SchemaMapperInterface $schemaMapper,
 		public readonly TmloService $tmloService,
 		public readonly ObjectService $objectService,
 	) {

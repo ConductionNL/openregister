@@ -358,7 +358,7 @@ class SchemaFlowImportListener implements IEventListener {
 			// that resolved the active organisation passed on a dev stack that
 			// happened to have one, and failed in CI, which does not.
 			$uuid = $this->container
-				->get('OCA\OpenRegister\Service\OrganisationService')
+				->get('OCA\OpenRegister\Service\OrganisationServiceInterface')
 				->getOrganisationForNewEntity();
 		} catch (Throwable $e) {
 			$this->logger->warning(

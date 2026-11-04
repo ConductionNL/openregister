@@ -27,6 +27,7 @@ namespace Unit\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -143,7 +144,7 @@ class PermissionHandlerFailClosedTest extends TestCase {
 		$this->registerMapper->method('find')
 			->willThrowException(new \RuntimeException('database is on fire'));
 		$this->container->method('get')
-			->with(RegisterMapper::class)
+			->with(RegisterMapperInterface::class)
 			->willReturn($this->registerMapper);
 	}//end breakRegisterLookup()
 
@@ -241,7 +242,7 @@ class PermissionHandlerFailClosedTest extends TestCase {
 				}
 			);
 		$this->container->method('get')
-			->with(RegisterMapper::class)
+			->with(RegisterMapperInterface::class)
 			->willReturn($this->registerMapper);
 
 		// First call: unresolvable -> denied.

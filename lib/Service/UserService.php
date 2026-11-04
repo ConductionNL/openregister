@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Event\UserProfileUpdatedEvent;
 use OCP\Accounts\IAccountManager;
 use OCP\Accounts\PropertyDoesNotExistException;
@@ -130,10 +130,10 @@ class UserService {
 	 * @param IGroupManager $groupManager The group manager service
 	 * @param IAccountManager $accountManager The account manager service
 	 * @param LoggerInterface $logger The logger interface
-	 * @param OrganisationService $organisationService The organisation service
+	 * @param OrganisationServiceInterface $organisationService The organisation service
 	 * @param IEventDispatcher $eventDispatcher The event dispatcher service
 	 * @param IAvatarManager $avatarManager The avatar manager service
-	 * @param AuditTrailMapper $auditTrailMapper The audit trail mapper
+	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail mapper
 	 * @param ISecureRandom $secureRandom Secure random generator
 	 * @param IDBConnection $db Database connection for direct queries
 	 * @param IFactory $l10nFactory L10N factory for language detection
@@ -147,10 +147,10 @@ class UserService {
 		private readonly IGroupManager $groupManager,
 		private readonly IAccountManager $accountManager,
 		private readonly LoggerInterface $logger,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly IAvatarManager $avatarManager,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly ISecureRandom $secureRandom,
 		private readonly IDBConnection $db,
 		private readonly IFactory $l10nFactory,

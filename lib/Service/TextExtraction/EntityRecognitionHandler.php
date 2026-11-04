@@ -27,13 +27,13 @@ use Exception;
 use OCA\OpenRegister\Db\Chunk;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Exception\AnalyzeRequestRejectedException;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\BackendState;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\TextExtraction\PatternSet\NlPatternSet;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
@@ -121,20 +121,20 @@ class EntityRecognitionHandler {
 	 *
 	 * @param ChunkMapper $chunkMapper Chunk mapper.
 	 * @param GdprEntityMapper $entityMapper Entity mapper.
-	 * @param EntityRelationMapper $entityRelationMapper Entity relation mapper.
+	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper.
 	 * @param IDBConnection $db Database connection.
 	 * @param LoggerInterface $logger Logger.
-	 * @param SettingsService $settingsService Settings service.
+	 * @param SettingsServiceInterface $settingsService Settings service.
 	 * @param AnonymisationBackendService $anonymisationBackendService Backend state + ExApp client.
 	 * @param ContainerInterface|null $container App container, consulted lazily for the object mapper.
 	 */
 	public function __construct(
 		private readonly ChunkMapper $chunkMapper,
 		private readonly GdprEntityMapper $entityMapper,
-		private readonly EntityRelationMapper $entityRelationMapper,
+		private readonly EntityRelationMapperInterface $entityRelationMapper,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
-		private readonly SettingsService $settingsService,
+		private readonly SettingsServiceInterface $settingsService,
 		private readonly AnonymisationBackendService $anonymisationBackendService,
 		private readonly ?ContainerInterface $container = null,
 	) {

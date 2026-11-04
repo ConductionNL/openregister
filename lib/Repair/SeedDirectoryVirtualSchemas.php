@@ -38,9 +38,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ObjectSource\NcEntitySemanticMap;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -96,15 +96,15 @@ class SeedDirectoryVirtualSchemas implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registerMapper Register data mapper.
-	 * @param SchemaMapper $schemaMapper Schema data mapper.
+	 * @param RegisterMapperInterface $registerMapper Register data mapper.
+	 * @param SchemaMapperInterface $schemaMapper Schema data mapper.
 	 * @param LoggerInterface $logger Logger for seed diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

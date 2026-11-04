@@ -28,8 +28,8 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\TmloControllerServices;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\ObjectService;
@@ -86,9 +86,9 @@ class TmloController extends Controller {
 	/**
 	 * Register mapper
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Logger interface

@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluator;
@@ -91,7 +91,7 @@ class StateFieldRuleListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Resolves the object's schema.
+	 * @param SchemaMapperInterface $schemaMapper Resolves the object's schema.
 	 * @param StateFieldRuleResolver $resolver Resolves the rules that apply to this object and user.
 	 * @param StateConditionEvaluator $stateConditions Evaluates a state's entry and exit conditions.
 	 * @param RuleRunRecorder $ruleRuns Records a refusal for the rule run log.
@@ -100,7 +100,7 @@ class StateFieldRuleListener implements IEventListener {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly StateFieldRuleResolver $resolver,
 		private readonly StateConditionEvaluator $stateConditions,
 		private readonly RuleRunRecorder $ruleRuns,

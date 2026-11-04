@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
@@ -36,7 +36,7 @@ final class RegistrySubscriptionDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param SchemaMapper                $schemaMapper      Resolves the object's schema.
+	 * @param SchemaMapperInterface                $schemaMapper      Resolves the object's schema.
 	 * @param ObjectService               $objectService     Resolves the target object.
 	 * @param PermissionHandler           $permissionHandler The per-object `update` guard.
 	 * @param RegistrySubscriptionService $subscriptions     Owns the subscription lifecycle.
@@ -44,7 +44,7 @@ final class RegistrySubscriptionDomain {
 	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
 	 */
 	public function __construct(
-		public readonly SchemaMapper $schemaMapper,
+		public readonly SchemaMapperInterface $schemaMapper,
 		public readonly ObjectService $objectService,
 		public readonly PermissionHandler $permissionHandler,
 		public readonly RegistrySubscriptionService $subscriptions,

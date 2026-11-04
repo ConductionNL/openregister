@@ -37,11 +37,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\BackgroundJob;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Service\Aggregation\ThresholdEvaluationService;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -60,10 +60,10 @@ class AggregationThresholdJob extends ActorForwardedJob {
 	 * @param ITimeFactory $time Time factory for the parent job class.
 	 * @param IUserSession $userSession Session to impersonate on / restore.
 	 * @param IUserManager $userManager Resolver for the captured user id.
-	 * @param OrganisationService $organisation Active-organisation resolver.
+	 * @param OrganisationServiceInterface $organisation Active-organisation resolver.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param DeferredEntryObjectResolver $resolver Stale-safe entry re-fetch.
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
 	 * @param ThresholdEvaluationService $evaluator Shared threshold evaluation logic.
 	 *
 	 * @return void
@@ -72,10 +72,10 @@ class AggregationThresholdJob extends ActorForwardedJob {
 		ITimeFactory $time,
 		IUserSession $userSession,
 		IUserManager $userManager,
-		OrganisationService $organisation,
+		OrganisationServiceInterface $organisation,
 		LoggerInterface $logger,
 		private readonly DeferredEntryObjectResolver $resolver,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ThresholdEvaluationService $evaluator,
 	) {
 		parent::__construct(
