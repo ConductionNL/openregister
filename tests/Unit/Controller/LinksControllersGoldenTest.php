@@ -189,6 +189,32 @@ class LinksControllersGoldenTest extends TestCase {
 	}//end caseProvider()
 
 	/**
+	 * A link action resolves the object its route names: register, schema and id, in that order.
+	 *
+	 * @return void
+	 */
+	public function testTheRouteNamesTheObject(): void {
+		$objectService = $this->createMock(ObjectService::class);
+		$calls         = [];
+		foreach (['setRegister', 'setSchema', 'setObject'] as $setter) {
+			$objectService->expects($this->once())->method($setter)->willReturnCallback(
+				function ($value) use (&$calls, $setter, &$objectService) {
+					$calls[] = $setter . ' ' . $value;
+					return $objectService;
+				}
+			);
+		}
+
+		$objectService->method('getObject')->willReturn(null);
+		$talk = $this->createMock(\OCA\OpenRegister\Service\TalkLinkService::class);
+		$talk->method('isTalkAvailable')->willReturn(true);
+		$controller = new \OCA\OpenRegister\Controller\TalkLinksController('openregister', $this->createMock(IRequest::class), $talk, $objectService);
+
+		$this->assertSame(404, $controller->index('reg', 'sch', 'obj')->getStatus());
+		$this->assertSame(['setRegister reg', 'setSchema sch', 'setObject obj'], $calls);
+	}//end testTheRouteNamesTheObject()
+
+	/**
 	 * One action in one scenario answers as recorded.
 	 *
 	 * @param string $controller The controller class.
