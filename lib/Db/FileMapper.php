@@ -82,7 +82,7 @@ use OCP\IDBConnection;
  *   each method is one focused query, splitting the mapper would scatter it without
  *   reducing complexity.
  */
-class FileMapper extends QBMapper {
+class FileMapper extends QBMapper implements FileMapperInterface {
 
 	/**
 	 * Builds share and file links for the host the visitor used

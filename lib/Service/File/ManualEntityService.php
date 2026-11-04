@@ -33,11 +33,11 @@ namespace OCA\OpenRegister\Service\File;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\DetectionMethod;
 use OCA\OpenRegister\Db\EntityRelation;
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Exception\ChunkMatcherException;
@@ -81,10 +81,10 @@ class ManualEntityService {
 	 * Constructor.
 	 *
 	 * @param GdprEntityMapper $gdprEntityMapper Catalogue mapper.
-	 * @param EntityRelationMapper $entityRelationMapper Relation mapper.
+	 * @param EntityRelationMapperInterface $entityRelationMapper Relation mapper.
 	 * @param ChunkMapper $chunkMapper Chunk reader for the target file.
 	 * @param ChunkTextMatcher $matcher Chunk-aware string-match utility.
-	 * @param AuditTrailMapper $auditTrailMapper Audit-trail persistence.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit-trail persistence.
 	 * @param IRootFolder $rootFolder Nextcloud root folder (for file-write access check).
 	 * @param IDBConnection $db Connection for explicit transaction control.
 	 * @param LoggerInterface $logger Structured log sink for write-access failures and
@@ -92,10 +92,10 @@ class ManualEntityService {
 	 */
 	public function __construct(
 		private readonly GdprEntityMapper $gdprEntityMapper,
-		private readonly EntityRelationMapper $entityRelationMapper,
+		private readonly EntityRelationMapperInterface $entityRelationMapper,
 		private readonly ChunkMapper $chunkMapper,
 		private readonly ChunkTextMatcher $matcher,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IRootFolder $rootFolder,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
@@ -129,6 +129,8 @@ class ManualEntityService {
 	 *
 	 * @throws ManualEntityException For orchestration-layer failures (file not extracted,
 	 *                               regex compile failure, audit-write failure, etc.).
+	 *
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function addManualEntity(
 		int $fileId,
@@ -138,16 +140,36 @@ class ManualEntityService {
 		bool $caseSensitive,
 		IUser $actor,
 	): ManualEntityResult {
+		$request = (new ManualEntityRequest(fileId: $fileId, value: $value, type: $type, actor: $actor))
+			->withMatching(wholeWord: $wholeWord, caseSensitive: $caseSensitive);
 		$this->assertFileWriteAccess(fileId: $fileId, actor: $actor);
 
+		// Run the matcher BEFORE opening the transaction: a regex compile
+		// failure aborts the operation without any DB writes to roll back.
+		$matches = $this->matchFileChunks(request: $request);
+
+		return $this->persistMatches(request: $request, matches: $matches);
+
+	}//end addManualEntity()
+
+	/**
+	 * Run the chunk-aware matcher over the file's extracted chunks.
+	 *
+	 * @param ManualEntityRequest $request The manual-entity input.
+	 *
+	 * @return array<int, array{chunkId: int, positionStart: int, positionEnd: int, context: string}> The matches.
+	 *
+	 * @throws ManualEntityException When the file has no chunks or the needle cannot be compiled.
+	 */
+	private function matchFileChunks(ManualEntityRequest $request): array {
 		$chunks = $this->chunkMapper->findBySource(
 			sourceType: self::CHUNK_SOURCE_TYPE,
-			sourceId: $fileId
+			sourceId: $request->fileId
 		);
 		if (empty($chunks) === true) {
 			throw new ManualEntityException(
 				reason: ManualEntityException::REASON_FILE_NOT_EXTRACTED,
-				message: sprintf('File %d has no extracted chunks; run text extraction first.', $fileId)
+				message: sprintf('File %d has no extracted chunks; run text extraction first.', $request->fileId)
 			);
 		}
 
@@ -161,23 +183,17 @@ class ManualEntityService {
 			$chunkOverlap = self::FALLBACK_CHUNK_OVERLAP_CHARS;
 		}
 
-		// Run the matcher BEFORE opening the transaction — a regex
-		// compile failure here aborts the operation without any DB
-		// writes to roll back.
 		try {
-			$matches = $this->matcher->match(
+			return $this->matcher->match(
 				chunks: $chunks,
-				needle: $value,
-				wholeWord: $wholeWord,
-				caseSensitive: $caseSensitive,
+				needle: $request->value,
+				wholeWord: $request->wholeWord(),
+				caseSensitive: $request->caseSensitive(),
 				chunkOverlap: $chunkOverlap
 			);
 		} catch (ChunkMatcherException $e) {
-			// Translate to the orchestration-layer exception. Both
-			// `value_too_long` and `regex_compile_failure` are mapped
-			// to `regex_compile_failure` here for the controller's
-			// 400 → response shape simplicity; the controller doesn't
-			// need to distinguish.
+			// Both `value_too_long` and `regex_compile_failure` map to
+			// `regex_compile_failure`; the controller does not distinguish them.
 			throw new ManualEntityException(
 				reason: ManualEntityException::REASON_REGEX_COMPILE_FAILURE,
 				message: $e->getMessage(),
@@ -185,29 +201,40 @@ class ManualEntityService {
 			);
 		}
 
+	}//end matchFileChunks()
+
+	/**
+	 * Write the catalogue entry, the relation rows and the audit rows in one transaction.
+	 *
+	 * @param ManualEntityRequest $request The manual-entity input.
+	 * @param array<int, array{chunkId: int, positionStart: int, positionEnd: int, context: string}> $matches The matcher output.
+	 *
+	 * @return ManualEntityResult The persisted entity, relation rows and match counts.
+	 *
+	 * @throws ManualEntityException When any write fails; the transaction is rolled back.
+	 */
+	private function persistMatches(ManualEntityRequest $request, array $matches): ManualEntityResult {
 		$this->db->beginTransaction();
 		try {
 			[$entity, $entityWasNew] = $this->lookupOrCreateEntity(
-				value: $value,
-				type: $type
+				value: $request->value,
+				type: $request->type
 			);
 
 			[$insertedRelations, $matchesSkipped] = $this->createRelationsForMatches(
-				fileId: $fileId,
+				fileId: $request->fileId,
 				entity: $entity,
 				matches: $matches
 			);
 
-			$this->writeAuditTrails(
+			$result = new ManualEntityResult(
 				entity: $entity,
 				entityWasNew: $entityWasNew,
-				fileId: $fileId,
-				value: $value,
-				type: $type,
-				insertedRelations: $insertedRelations,
-				matchesSkipped: $matchesSkipped,
-				actor: $actor
+				relations: $insertedRelations,
+				matchCount: count($matches),
+				matchesSkipped: $matchesSkipped
 			);
+			$this->writeAuditTrails(request: $request, result: $result);
 
 			$this->db->commit();
 		} catch (Throwable $error) {
@@ -216,45 +243,49 @@ class ManualEntityService {
 				throw $error;
 			}
 
-			// Log the root cause before we wrap. The controller's
-			// translated-exception log only carries the reason code; without
-			// this log a 500 leaves no debuggable trail.
-			//
-			// ADR-005: do NOT log the exception message or trace. Both can
-			// surface the operator-supplied `value` (PII) — getTraceAsString()
-			// formats call-frame arguments (which include `$value`), and a DB
-			// driver may embed bound parameters into the wrapped exception's
-			// message. Record only PII-safe structural fields here; the audit
-			// trail (ADR-022 forensic exception) is the sole place `value` lives.
-			$this->logger->error(
-				'[ManualEntityService] Transactional manual-entity write failed; rolled back',
-				[
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'fileId' => $fileId,
-					'actor' => $actor->getUID(),
-					'errorClass' => $error::class,
-					'errorCode' => $error->getCode(),
-					'errorLocation' => $error->getFile() . ':' . $error->getLine(),
-				]
-			);
-
-			throw new ManualEntityException(
-				reason: ManualEntityException::REASON_INTERNAL_ERROR,
-				message: 'Transactional manual-entity write failed: ' . $error->getMessage(),
-				previous: $error
-			);
+			throw $this->transactionFailure(request: $request, error: $error);
 		}//end try
 
-		return new ManualEntityResult(
-			entity: $entity,
-			entityWasNew: $entityWasNew,
-			relations: $insertedRelations,
-			matchCount: count($matches),
-			matchesSkipped: $matchesSkipped
+		return $result;
+
+	}//end persistMatches()
+
+	/**
+	 * Log a failed transactional write and wrap it as an internal error.
+	 *
+	 * ADR-005: the exception message and trace are NOT logged. Both can
+	 * surface the operator-supplied `value` (PII): getTraceAsString()
+	 * formats call-frame arguments, and a DB driver may embed bound
+	 * parameters into the wrapped exception's message. Only PII-safe
+	 * structural fields are recorded; the audit trail (ADR-022 forensic
+	 * exception) is the sole place `value` lives.
+	 *
+	 * @param ManualEntityRequest $request The manual-entity input.
+	 * @param Throwable $error The root cause.
+	 *
+	 * @return ManualEntityException The exception to throw.
+	 */
+	private function transactionFailure(ManualEntityRequest $request, Throwable $error): ManualEntityException {
+		$this->logger->error(
+			'[ManualEntityService] Transactional manual-entity write failed; rolled back',
+			[
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'fileId' => $request->fileId,
+				'actor' => $request->actor->getUID(),
+				'errorClass' => $error::class,
+				'errorCode' => $error->getCode(),
+				'errorLocation' => $error->getFile() . ':' . $error->getLine(),
+			]
 		);
 
-	}//end addManualEntity()
+		return new ManualEntityException(
+			reason: ManualEntityException::REASON_INTERNAL_ERROR,
+			message: 'Transactional manual-entity write failed: ' . $error->getMessage(),
+			previous: $error
+		);
+
+	}//end transactionFailure()
 
 	/**
 	 * Verify the acting user can write the target file.
@@ -434,59 +465,35 @@ class ManualEntityService {
 	 * Write the per-operation audit-trail rows.
 	 *
 	 * Two action types per the spec:
-	 *   - `entity_create` — only when a NEW catalogue row was inserted.
-	 *   - `entity_relations_batch_create` — every call (records operator intent
+	 *   - `entity_create`: only when a NEW catalogue row was inserted.
+	 *   - `entity_relations_batch_create`: every call (records operator intent
 	 *     even when zero matches).
 	 *
 	 * PII rule: ADR-005 keeps the operator-supplied `value` out of HTTP
 	 * logs and error responses. The audit trail is the explicit forensic
-	 * exception per ADR-022 — `value` is allowed here.
+	 * exception per ADR-022, so `value` is allowed here.
 	 *
-	 * @param GdprEntity $entity Catalogue entry referenced by the relations.
-	 * @param bool $entityWasNew Whether `$entity` was just inserted (vs reused).
-	 * @param int $fileId Target file id.
-	 * @param string $value Operator-supplied value (PII, audit-only).
-	 * @param string $type Entity type tag.
-	 * @param EntityRelation[] $insertedRelations Relations created by this call.
-	 * @param int $matchesSkipped How many matches were skipped because the
-	 *                            relation row already existed.
-	 * @param IUser $actor Acting user (UID-only is what gets persisted).
+	 * @param ManualEntityRequest $request The manual-entity input.
+	 * @param ManualEntityResult $result The persisted entity and relation rows.
 	 *
 	 * @return void
 	 */
-	private function writeAuditTrails(
-		GdprEntity $entity,
-		bool $entityWasNew,
-		int $fileId,
-		string $value,
-		string $type,
-		array $insertedRelations,
-		int $matchesSkipped,
-		IUser $actor,
-	): void {
-		$userId = $actor->getUID();
+	private function writeAuditTrails(ManualEntityRequest $request, ManualEntityResult $result): void {
 		$now = new DateTime();
 
-		if ($entityWasNew === true) {
-			// Category is derived server-side on the entity itself
-			// (`EntityRecognitionHandler::getCategoryForType()`); the
-			// audit row reads from the entity so the persisted value
-			// is recorded verbatim — operators and forensic auditors
-			// can see exactly which category was applied.
-			$entityAudit = new AuditTrail();
-			$entityAudit->setUuid(Uuid::v4()->toRfc4122());
+		if ($result->entityWasNew === true) {
+			// The audit row reads the category from the entity, so the
+			// server-derived value is recorded verbatim.
+			$entityAudit = $this->newAuditRow(request: $request, created: $now);
 			$entityAudit->setAction('entity_create');
-			$entityAudit->setUser($userId);
-			$entityAudit->setUserName(null);
-			$entityAudit->setCreated($now);
 			$entityAudit->setChanged(
 				[
 					'subjectType' => 'openregister_entities',
-					'subjectId' => (int)$entity->getId(),
+					'subjectId' => (int)$result->entity->getId(),
 					'fields' => [
-						'value' => $value,
-						'type' => $type,
-						'category' => $entity->getCategory(),
+						'value' => $request->value,
+						'type' => $request->type,
+						'category' => $result->entity->getCategory(),
 					],
 				]
 			);
@@ -495,26 +502,22 @@ class ManualEntityService {
 
 		$relationIds = array_map(
 			static fn (EntityRelation $r): int => (int)$r->getId(),
-			$insertedRelations
+			$result->relations
 		);
 
-		$batchAudit = new AuditTrail();
-		$batchAudit->setUuid(Uuid::v4()->toRfc4122());
+		$batchAudit = $this->newAuditRow(request: $request, created: $now);
 		$batchAudit->setAction('entity_relations_batch_create');
-		$batchAudit->setUser($userId);
-		$batchAudit->setUserName(null);
-		$batchAudit->setCreated($now);
 		$batchAudit->setChanged(
 			[
 				'subjectType' => 'openregister_files',
-				'subjectId' => $fileId,
+				'subjectId' => $request->fileId,
 				'fields' => [
-					'value' => $value,
-					'type' => $type,
-					'fileId' => $fileId,
+					'value' => $request->value,
+					'type' => $request->type,
+					'fileId' => $request->fileId,
 					'detectionMethod' => DetectionMethod::MANUAL,
-					'matchCount' => (count($insertedRelations) + $matchesSkipped),
-					'matchesSkipped' => $matchesSkipped,
+					'matchCount' => (count($result->relations) + $result->matchesSkipped),
+					'matchesSkipped' => $result->matchesSkipped,
 					'relationIds' => $relationIds,
 				],
 			]
@@ -522,4 +525,22 @@ class ManualEntityService {
 		$this->auditTrailMapper->insert($batchAudit);
 
 	}//end writeAuditTrails()
+
+	/**
+	 * A new audit row stamped with a fresh uuid, the actor's UID and the given time.
+	 *
+	 * @param ManualEntityRequest $request The manual-entity input.
+	 * @param DateTime $created The creation time shared by the rows of one call.
+	 *
+	 * @return AuditTrail The unsaved row.
+	 */
+	private function newAuditRow(ManualEntityRequest $request, DateTime $created): AuditTrail {
+		$row = new AuditTrail();
+		$row->setUuid(Uuid::v4()->toRfc4122());
+		$row->setUser($request->actor->getUID());
+		$row->setUserName(null);
+		$row->setCreated($created);
+		return $row;
+
+	}//end newAuditRow()
 }//end class

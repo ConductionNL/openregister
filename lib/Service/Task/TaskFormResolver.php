@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Service\Task;
 use DateTime;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FormLinkMapper;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
@@ -86,7 +86,7 @@ class TaskFormResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapper $runs Reads the run for its flow and version pin.
+	 * @param FlowRunMapperInterface $runs Reads the run for its flow and version pin.
 	 * @param FlowMapper $flows Reads the live flow, for an unpinned draft test run only.
 	 * @param FlowPublishedGraph $published Resolves the pinned graph of a run.
 	 * @param FormLinkMapper $formLinks Reads the subject's bound Forms form.
@@ -94,7 +94,7 @@ class TaskFormResolver {
 	 * @param IL10N $l10n Translations, for reasons a performer reads.
 	 */
 	public function __construct(
-		private readonly FlowRunMapper $runs,
+		private readonly FlowRunMapperInterface $runs,
 		private readonly FlowMapper $flows,
 		private readonly FlowPublishedGraph $published,
 		private readonly FormLinkMapper $formLinks,

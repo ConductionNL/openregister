@@ -15,8 +15,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Vectorization\Handlers;
 
 use Exception;
-use OCA\OpenRegister\Service\Vectorization\Handlers\PgVectorPlatform;
-use OCA\OpenRegister\Service\Vectorization\Handlers\VectorSearchHandler;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\PgVectorPlatform;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSearchHandler;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;

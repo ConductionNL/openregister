@@ -95,7 +95,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
-class TaskService implements TaskManagerInterface {
+class TaskService implements TaskServiceInterface, TaskManagerInterface {
 
 	/**
 	 * The fields only the task sequence sets, through {@see import()}.

@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
-use OCA\OpenRegister\Service\Search\SearchIndexMaintenance;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -185,12 +185,12 @@ class SettingsController extends Controller {
 	/**
 	 * Attempts to retrieve the Configuration service from the container.
 	 *
-	 * @return \OCA\OpenRegister\Service\ConfigurationService|null The Configuration service if available, null otherwise.
+	 * @return \OCA\OpenRegister\Service\ConfigurationServiceInterface|null The Configuration service if available, null otherwise.
 	 * @throws \RuntimeException If the service is not available.
 	 *
 	 * @spec exclude DI service accessor (not a routed endpoint): returns the ConfigurationService from the container.
 	 */
-	public function getConfigurationService(): ?\OCA\OpenRegister\Service\ConfigurationService {
+	public function getConfigurationService(): ?\OCA\OpenRegister\Service\ConfigurationServiceInterface {
 		// Check if the 'openregister' app is installed.
 		if (in_array(needle: 'openregister', haystack: $this->appManager->getInstalledApps()) === true) {
 			// Retrieve the ConfigurationService from the container.
@@ -692,7 +692,7 @@ class SettingsController extends Controller {
 			],
 		];
 
-		$sidecar = \OCA\OpenRegister\Service\Vectorization\Handlers\PgVectorPlatform::SIDECAR_TABLE;
+		$sidecar = \OCA\OpenRegister\Search\Service\Vectorization\Handlers\PgVectorPlatform::SIDECAR_TABLE;
 
 		if ($isPostgres === true) {
 			$diagnostics = array_replace(

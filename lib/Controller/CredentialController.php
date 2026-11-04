@@ -46,7 +46,7 @@ use OCA\OpenRegister\Service\Credential\CredentialUpdateRequest;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
@@ -96,7 +96,7 @@ class CredentialController extends Controller {
 	 * @param ProviderCatalogue $catalogue Read-only provider catalogue (validation).
 	 * @param CredentialBrokerService $broker The guarded outbound broker.
 	 * @param CredentialAppTokenService $tokenService Per-app signing-secret registry + token verify.
-	 * @param OrganisationService $organisationService Organisation membership + admin authority resolution.
+	 * @param OrganisationServiceInterface $organisationService Organisation membership + admin authority resolution.
 	 * @param SharePrincipalDeriver $shareDeriver Validates share lists and derives the principal lists RBAC matches.
 	 * @param LoggerInterface $logger Records a failed update by class, never with its trace.
 	 * @param IL10N|null $l10n Translates the provider titles the picker shows.
@@ -115,7 +115,7 @@ class CredentialController extends Controller {
 		private readonly ProviderCatalogue $catalogue,
 		private readonly CredentialBrokerService $broker,
 		private readonly CredentialAppTokenService $tokenService,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 		private readonly SharePrincipalDeriver $shareDeriver,
 		private readonly LoggerInterface $logger,
 		private readonly ?IL10N $l10n=null,

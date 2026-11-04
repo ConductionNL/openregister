@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TmloService;
@@ -252,7 +253,7 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 		$container->method('get')->willReturnMap(
 			[
 				[SharedMasterDataService::class, $shared],
-				[OrganisationService::class, $organisations],
+				[OrganisationServiceInterface::class, $organisations],
 				[DeleteObject::class, $deletes],
 			]
 		);
@@ -702,7 +703,7 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$deletes = $this->createMock(DeleteObject::class);
 		$deletes->method('canDelete')->willReturn(new DeletionAnalysis(deletable: true));
-		$container->method('get')->willReturnMap([[SharedMasterDataService::class, $shared], [OrganisationService::class, $organisations], [DeleteObject::class, $deletes]]);
+		$container->method('get')->willReturnMap([[SharedMasterDataService::class, $shared], [OrganisationServiceInterface::class, $organisations], [DeleteObject::class, $deletes]]);
 		$permissions = $this->createMock(PermissionHandler::class);
 		$permissions->method('hasPermission')->willReturn(true);
 		$mapper = $this->createMock(MagicMapper::class);

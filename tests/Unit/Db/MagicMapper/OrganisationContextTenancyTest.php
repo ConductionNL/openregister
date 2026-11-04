@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
@@ -45,6 +46,7 @@ use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -187,8 +189,8 @@ class OrganisationContextTenancyTest extends TestCase {
 			static function (string $id) use ($permissionHandler, $registerMapper, $organisationService) {
 				return match ($id) {
 					PermissionHandler::class => $permissionHandler,
-					RegisterMapper::class => $registerMapper,
-					OrganisationService::class => $organisationService,
+					RegisterMapperInterface::class => $registerMapper,
+					OrganisationServiceInterface::class => $organisationService,
 					default => throw new RuntimeException('Unexpected service ' . $id),
 				};
 			}

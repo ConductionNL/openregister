@@ -41,8 +41,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -101,14 +101,14 @@ class HierarchyDescender {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db The database.
-	 * @param SchemaMapper $schemaMapper Reads the schemas.
-	 * @param RegisterMapper $registerMapper Reads the registers a schema belongs to.
+	 * @param SchemaMapperInterface $schemaMapper Reads the schemas.
+	 * @param RegisterMapperInterface $registerMapper Reads the registers a schema belongs to.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

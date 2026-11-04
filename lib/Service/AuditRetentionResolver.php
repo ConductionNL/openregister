@@ -382,7 +382,7 @@ class AuditRetentionResolver {
 		}
 
 		try {
-			$schemaMapper = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
+			$schemaMapper = $this->container->get(\OCA\OpenRegister\Db\SchemaMapperInterface::class);
 
 			return $schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
 		} catch (Throwable $error) {
