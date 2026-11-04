@@ -23,10 +23,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges;
@@ -34,7 +36,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks;
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
+use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetParties;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards;
@@ -57,6 +59,7 @@ use OCA\OpenRegister\Service\Timeline\TimelineKindService;
 use OCA\OpenRegister\Service\Timeline\TimelineValidationException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkStore;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapper;
@@ -83,11 +86,13 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\TaskAudit;
 use OCA\OpenRegister\Db\TaskAuditMapper;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
@@ -97,12 +102,13 @@ use OCP\Comments\NotFoundException as CommentNotFoundException;
 use OCA\OpenRegister\Db\Watcher;
 use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Db\ViewMapper;
-use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskState;
 use OCP\Config\IUserConfig;
 use OCA\OpenRegister\Service\FileService;
@@ -290,11 +296,11 @@ abstract class ExampleSetTestCase extends TestCase {
 		$container       = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(fn (string $id): object => match ($id) {
 			FileService::class        => $this->fileService(),
-			OrganisationMapper::class => $this->organisationMapper(),
-			TaskService::class        => $this->taskService(),
+			OrganisationMapperInterface::class => $this->organisationMapper(),
+			TaskServiceInterface::class        => $this->taskService(),
 			TaskMapper::class         => $this->taskMapper(),
 			ViewService::class        => $this->viewService(),
-			ViewMapper::class         => $this->viewMapper(),
+			ViewMapperInterface::class         => $this->viewMapper(),
 			WatcherMapper::class      => $this->watcherMapper(),
 			PartyRoleService::class   => $this->partyRoles(),
 			PartyService::class       => $this->partyService(),
@@ -304,13 +310,13 @@ abstract class ExampleSetTestCase extends TestCase {
 			FlowMapper::class         => $this->flowMapper(),
 			FlowVersionService::class => $this->flowVersions(),
 			FlowService::class        => $this->flowService(),
-			FlowRunMapper::class      => $this->flowRunMapper(),
+			FlowRunMapperInterface::class      => $this->flowRunMapper(),
 			TaskAuditMapper::class    => $this->taskAuditMapper(),
 			ExampleSetDeckStore::class => $this->deckStore(),
 			ExampleSetCollectivesStore::class => $this->collectivesStore(),
 			ExampleSetTalkStore::class => $this->talkStore(),
 			TalkLinkMapper::class     => $this->talkLinkMapper(),
-			AuditTrailMapper::class   => $this->auditTrailMapper(),
+			AuditTrailMapperInterface::class => $this->auditTrailMapper(),
 			TimelineEntryMapper::class => $this->timelineEntryMapper(),
 			TimelineKindService::class => $this->timelineKindService(),
 			DeckLinkMapper::class     => $this->deckLinkMapper(),
@@ -320,7 +326,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			CasePlanService::class    => $this->casePlans(),
 			CaseItemMapper::class     => $this->caseItemMapper(),
 			IUserManager::class       => $this->createMock(IUserManager::class),
-			OrganisationService::class => $this->organisationService(),
+			OrganisationServiceInterface::class => $this->organisationService(),
 			default                   => $this->services[$id],
 		});
 		$files     = new ExampleSetFiles(container: $container);

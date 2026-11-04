@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -127,7 +128,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			fn (string $id) => match ($id) {
 				'userId' => 'alice',
-				SettingsService::class => $this->settings,
+				SettingsServiceInterface::class => $this->settings,
 				default => throw new \RuntimeException('unexpected service ' . $id),
 			}
 		);

@@ -51,4 +51,44 @@ final class TableTermsFacet {
 		public readonly Schema $schema,
 	) {
 	}//end __construct()
+
+	/**
+	 * The same table facet on a metadata column.
+	 *
+	 * @param string $field The metadata column.
+	 *
+	 * @return self The facet on that column.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	public function forMetadataField(string $field): self {
+		return new self(
+			tableName: $this->tableName,
+			field: $field,
+			baseQuery: $this->baseQuery,
+			isMetadata: true,
+			register: $this->register,
+			schema: $this->schema
+		);
+	}//end forMetadataField()
+
+	/**
+	 * The same table facet on a property column.
+	 *
+	 * @param string $field The property column.
+	 *
+	 * @return self The facet on that column.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	public function forPropertyField(string $field): self {
+		return new self(
+			tableName: $this->tableName,
+			field: $field,
+			baseQuery: $this->baseQuery,
+			isMetadata: false,
+			register: $this->register,
+			schema: $this->schema
+		);
+	}//end forPropertyField()
 }//end class

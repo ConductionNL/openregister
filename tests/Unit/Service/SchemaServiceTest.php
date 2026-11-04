@@ -1282,10 +1282,11 @@ class SchemaServiceTest extends TestCase {
 	 */
 	public function testCompareStringConstraintsSkipsNonStringTypes(): void {
 		$currentConfig = ['type' => 'integer'];
-		$analysis = ['max_length' => 10, 'detected_format' => 'email', 'string_patterns' => ['snake_case']];
-		$recommendedType = 'integer';
+		$analysis = ['max_length' => 10, 'detected_format' => null, 'string_patterns' => ['snake_case'], 'types' => ['integer'], 'examples' => [1, 2]];
 
-		$result = $this->invokePrivate('compareStringConstraints', [$currentConfig, $analysis, $recommendedType]);
+		$result = $this->invokePrivate('comparePropertyWithAnalysis', [$currentConfig, $analysis]);
+
+		$this->assertSame('integer', $result['recommended_type']);
 
 		$this->assertEmpty($result['issues']);
 		$this->assertEmpty($result['suggestions']);

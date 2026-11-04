@@ -7,6 +7,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 use OCA\OpenRegister\Controller\Settings\FileSettingsController;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Db\FileMapperInterface;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\ProbeResult;
 use OCA\OpenRegister\Service\SettingsService;
@@ -224,7 +225,7 @@ class FileSettingsControllerBranchTest extends TestCase {
 
 		$this->container->method('get')->willReturnMap(
 			[
-				[FileMapper::class, $fileMapper],
+				[FileMapperInterface::class, $fileMapper],
 				[ChunkMapper::class, $chunkMapper],
 				[TextExtractionService::class, $textExtraction],
 			]

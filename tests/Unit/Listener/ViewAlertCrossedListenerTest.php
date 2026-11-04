@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Listener\ViewAlertCrossedListener;
@@ -51,7 +51,7 @@ use Psr\Log\AbstractLogger;
 
 /**
  * @covers \OCA\OpenRegister\Listener\ViewAlertCrossedListener
- * @uses \OCA\OpenRegister\Db\View
+ * @uses \OCA\OpenRegister\Search\Db\View
  * @uses \OCA\OpenRegister\Event\ViewAlertCrossedEvent
  * @uses \OCA\OpenRegister\Service\Notification\EmailSender
  * @uses \OCA\OpenRegister\Service\Notification\NotificationRecipientResolver

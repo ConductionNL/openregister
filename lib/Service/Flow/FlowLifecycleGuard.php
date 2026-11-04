@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use Psr\Log\LoggerInterface;
 
@@ -41,12 +41,12 @@ class FlowLifecycleGuard {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapper     $runs      Counts runs pinned to a version.
+	 * @param FlowRunMapperInterface     $runs      Counts runs pinned to a version.
 	 * @param FlowNodePreflight $preflight Inspects a graph for dead ends.
 	 * @param LoggerInterface   $logger    Records every refusal and its reason.
 	 */
 	public function __construct(
-		private readonly FlowRunMapper $runs,
+		private readonly FlowRunMapperInterface $runs,
 		private readonly FlowNodePreflight $preflight,
 		private readonly LoggerInterface $logger,
 	) {

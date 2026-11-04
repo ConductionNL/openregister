@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\FlowClaimMapper;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunStep;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStream;
@@ -76,7 +76,7 @@ class FlowRunCommit {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db The connection whose transaction is the critical section.
-	 * @param FlowRunMapper $runs The run rows (locked for update).
+	 * @param FlowRunMapperInterface $runs The run rows (locked for update).
 	 * @param FlowStreamMapper $streams The stream rows.
 	 * @param FlowClaimMapper $claims The claim rows.
 	 * @param FlowRunStepMapper $steps The step rows.
@@ -84,7 +84,7 @@ class FlowRunCommit {
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly FlowRunMapper $runs,
+		private readonly FlowRunMapperInterface $runs,
 		private readonly FlowStreamMapper $streams,
 		private readonly FlowClaimMapper $claims,
 		private readonly FlowRunStepMapper $steps,

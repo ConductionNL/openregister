@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OCA\OpenRegister\Controller\FileSearchController;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Service\File\FileReadScope;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;

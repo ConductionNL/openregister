@@ -102,7 +102,7 @@ class FlowEmailAnnouncer {
 			channelKind: $kind,
 			subject: $subject,
 			body: $body,
-			flowId: $this->stringOrNull(value: ($context[FlowRunService::FLOW_ID_CONTEXT_KEY] ?? null)),
+			flowId: $this->stringOrNull(value: ($context[FlowRunServiceInterface::FLOW_ID_CONTEXT_KEY] ?? null)),
 			runId: $this->stringOrNull(value: ($context[FlowRunContext::CONTEXT_RUN] ?? ($context['runUuid'] ?? null))),
 			stepName: $step,
 			actingUser: $actor

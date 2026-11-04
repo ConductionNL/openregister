@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Quality;
 
-use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidator;
+use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
 use PHPUnit\Framework\TestCase;
 
 class UniqueHintAnnotationValidatorTest extends TestCase {

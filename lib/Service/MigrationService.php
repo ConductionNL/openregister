@@ -20,9 +20,9 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCP\IDBConnection;
 
@@ -53,14 +53,14 @@ class MigrationService {
 	 * Constructor.
 	 *
 	 * @param MagicMapper $magicMapper The magic mapper.
-	 * @param RegisterMapper $registerMapper The register mapper.
-	 * @param SchemaMapper $schemaMapper The schema mapper.
+	 * @param RegisterMapperInterface $registerMapper The register mapper.
+	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
 	 * @param IDBConnection $db The database connection.
 	 */
 	public function __construct(
 		private readonly MagicMapper $magicMapper,
-		RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
+		RegisterMapperInterface $registerMapper,
+		SchemaMapperInterface $schemaMapper,
 		private readonly IDBConnection $db,
 	) {
 		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(

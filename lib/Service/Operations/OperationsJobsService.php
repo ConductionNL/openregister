@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Service\Operations;
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\CacheClearAndWarmJob;
 use OCA\OpenRegister\BackgroundJob\ConsistencyCheckJob;
-use OCA\OpenRegister\BackgroundJob\SearchIndexRebuildJob;
+use OCA\OpenRegister\Search\BackgroundJob\SearchIndexRebuildJob;
 use OCA\OpenRegister\Db\JobRun;
 use OCA\OpenRegister\Db\JobRunMapper;
 use OCA\OpenRegister\Exception\JobRunRefusedException;

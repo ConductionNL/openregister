@@ -36,7 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjects;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -89,7 +89,7 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$runs = $this->container->get(FlowRunMapper::class);
+			$runs = $this->container->get(FlowRunMapperInterface::class);
 			$subjects = new FlowRunSubjects(logger: $this->logger);
 		} catch (Throwable $e) {
 			$output->info('Flow run trigger-subject seeding skipped: ' . $e->getMessage());
@@ -122,14 +122,14 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 	 * Seed one run, if it has something to seed and nothing already.
 	 *
 	 * @param FlowRun         $run      The run.
-	 * @param FlowRunMapper   $runs     The mapper.
+	 * @param FlowRunMapperInterface   $runs     The mapper.
 	 * @param FlowRunSubjects $subjects The subject rules.
 	 *
 	 * @return int 1 when it was seeded, 0 otherwise.
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
-	private function seedOne(FlowRun $run, FlowRunMapper $runs, FlowRunSubjects $subjects): int {
+	private function seedOne(FlowRun $run, FlowRunMapperInterface $runs, FlowRunSubjects $subjects): int {
 		if ($subjects->all(run: $run) !== []) {
 			// Already declared something. A repair must not overwrite what a
 			// flow author said.
@@ -160,13 +160,13 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 	 * 🔴 A MAPPER'S DEFAULT LIMIT WOULD SILENTLY SEED THE FIRST PAGE and report
 	 * success — the shape that left 119 of 219 flows unversioned once already.
 	 *
-	 * @param FlowRunMapper $runs The mapper.
+	 * @param FlowRunMapperInterface $runs The mapper.
 	 *
 	 * @return array<int, FlowRun> Every run.
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
-	private function everyRun(FlowRunMapper $runs): array {
+	private function everyRun(FlowRunMapperInterface $runs): array {
 		$page = 500;
 		$offset = 0;
 		$all = [];

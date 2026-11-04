@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
 use Throwable;
@@ -215,7 +215,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 			$this->declare(flow: $flow, data: $data);
 			$flow->setEnabled(false);
 			$flow->setOwner(null);
-			$flow->setOrganisation($this->container->get(OrganisationService::class)->getOrganisationForNewEntity());
+			$flow->setOrganisation($this->container->get(OrganisationServiceInterface::class)->getOrganisationForNewEntity());
 			$flow->setCreated(new DateTime());
 			$flow->setUpdated(new DateTime());
 

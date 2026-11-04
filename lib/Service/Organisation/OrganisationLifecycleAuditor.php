@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service\Organisation;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Organisation;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -65,12 +65,12 @@ class OrganisationLifecycleAuditor {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapper $mapper      The trail, which seals every row it writes.
+	 * @param AuditTrailMapperInterface $mapper      The trail, which seals every row it writes.
 	 * @param IUserSession     $userSession Who made the change.
 	 * @param LoggerInterface  $logger      The logger.
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $mapper,
+		private readonly AuditTrailMapperInterface $mapper,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {

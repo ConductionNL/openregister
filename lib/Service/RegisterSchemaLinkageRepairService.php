@@ -23,7 +23,7 @@
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCP\IDBConnection;
 use PDO;
 use Psr\Log\LoggerInterface;
@@ -81,14 +81,14 @@ class RegisterSchemaLinkageRepairService {
 	 * Constructor.
 	 *
 	 * @param IDBConnection   $db             The database connection.
-	 * @param RegisterMapper  $registerMapper The register mapper.
+	 * @param RegisterMapperInterface  $registerMapper The register mapper.
 	 * @param LoggerInterface $logger         The logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

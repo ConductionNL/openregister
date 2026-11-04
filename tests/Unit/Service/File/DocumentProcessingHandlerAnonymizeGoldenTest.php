@@ -48,6 +48,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\File\DocumentProcessingHandler
  * @uses   \OCA\OpenRegister\Service\File\PlaceholderIdTranslator
  * @uses   \OCA\OpenRegister\Service\File\PlaceholderLookup
+ * @uses   \OCA\OpenRegister\Service\File\DocumentReplacement
  */
 class DocumentProcessingHandlerAnonymizeGoldenTest extends TestCase {
 
