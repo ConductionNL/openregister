@@ -28,9 +28,9 @@ use Symfony\Component\Workflow\Workflow;
 /**
  * The per-pass state of FlowEngine's single in-memory stream walk.
  *
- * The flow, workflow, subject, dispatcher and context are fixed for the pass.
- * The log, the items in hand, the items per place and the firing count change
- * with every firing.
+ * The flow, workflow, subject and dispatcher are fixed for the pass; the
+ * context is set once before the walk. The log, the items in hand, the items
+ * per place and the firing count change with every firing.
  *
  * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-records-what-each-node-received-returned-and-logged
  */
@@ -49,6 +49,13 @@ final class FlowWalkPass {
 	 * @var integer
 	 */
 	public int $fired = 0;
+
+	/**
+	 * Run-level metadata handed to every step.
+	 *
+	 * @var array<string, mixed>
+	 */
+	public array $context = [];
 
 	/**
 	 * The items in hand, returned with the result.
@@ -71,14 +78,12 @@ final class FlowWalkPass {
 	 * @param Workflow           $workflow   The workflow built from it.
 	 * @param object             $subject    The marking holder.
 	 * @param FlowStepDispatcher $dispatcher Performs each step's side effect.
-	 * @param array              $context    Run-level metadata handed to every step.
 	 */
 	public function __construct(
 		public readonly array $flow,
 		public readonly Workflow $workflow,
 		public readonly object $subject,
 		public readonly FlowStepDispatcher $dispatcher,
-		public readonly array $context,
 	) {
 	}//end __construct()
 

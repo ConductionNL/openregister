@@ -351,7 +351,8 @@ class FlowEngine {
 			return $this->walkStreams(pass: $pass);
 		}
 
-		$walk = new FlowWalkPass(flow: $flow, workflow: $workflow, subject: $subject, dispatcher: $dispatcher, context: $context);
+		$walk = new FlowWalkPass(flow: $flow, workflow: $workflow, subject: $subject, dispatcher: $dispatcher);
+		$walk->context = $context;
 		$walk->items = $items;
 		$walk->placeItems = $placeItems;
 		return $this->walkSingle(pass: $walk);
