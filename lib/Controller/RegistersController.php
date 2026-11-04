@@ -236,7 +236,7 @@ class RegistersController extends Controller {
 		);
 		$this->configurationService = $services->integrations->configurationService;
 		$this->logger->debug(
-			message: '[RegistersController] ConfigurationServiceInterface assigned.',
+			message: '[RegistersController] ConfigurationService assigned.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 		$this->auditTrailMapper = $services->mappers->auditTrailMapper;
