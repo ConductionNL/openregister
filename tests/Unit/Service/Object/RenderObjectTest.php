@@ -6901,4 +6901,97 @@ class RenderObjectTest extends TestCase {
 			. '"dotted":[["u1","One","s-u1",' . $deep . ']],"plain":"u1","named":["u1","One","s-u1",' . $deep . ']}';
 		$this->assertSame(json_decode($all, true), $this->extendView($this->runExtendDot(true)));
 	}
+
+	// =========================================================================
+	// renderEntities — what every row is rendered with
+	// =========================================================================
+
+	/**
+	 * A RenderObject whose renderEntity() records its arguments, with the state of the real handler.
+	 *
+	 * @param array $calls Receives each renderEntity() call.
+	 *
+	 * @return RenderObject
+	 */
+	private function renderEntitySpy(array &$calls): RenderObject {
+		$spy = $this->getMockBuilder(RenderObject::class)->disableOriginalConstructor()->onlyMethods(['renderEntity'])->getMock();
+		$values = [];
+		foreach ((new ReflectionClass(RenderObject::class))->getProperties() as $prop) {
+			if ($prop->isStatic() === false && $prop->isInitialized($this->handler) === true) {
+				$values[$prop->getName()] = $prop->getValue($this->handler);
+			}
+		}
+
+		\Closure::bind(function (array $values): void {
+			foreach ($values as $name => $value) {
+				$this->$name = $value;
+			}
+		}, $spy, RenderObject::class)($values);
+
+		$spy->method('renderEntity')->willReturnCallback(
+			function (ObjectEntity $entity, ...$args) use (&$calls, $spy): ObjectEntity {
+				$state = \Closure::bind(fn (): array => [$this->batchFileIdsCache, $this->pageRenderActive], $spy, RenderObject::class)();
+				$calls[] = ['uuid' => $entity->getUuid(), 'args' => $args, 'fileIds' => $state[0], 'pageRender' => $state[1]];
+				return $entity;
+			}
+		);
+
+		return $spy;
+	}
+
+	/**
+	 * Every row gets the page's options as lists, the page caches are set during and cleared after, and no row keeps its source.
+	 *
+	 * @return void
+	 */
+	public function testRenderEntitiesRendersEveryRowWithThePageOptions(): void {
+		$this->setupBasicMocks();
+		$one = $this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001', ['name' => 'One']);
+		$one->setSource('src');
+		$two = $this->createBasicEntity(2, 'aaaaaaaa-0000-0000-0000-000000000002', ['name' => 'Two']);
+		$this->fileMapper->expects($this->once())->method('getFileIdsForObjects')
+			->with(['aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000002'])
+			->willReturn(['aaaaaaaa-0000-0000-0000-000000000001' => [7]]);
+
+		$calls = [];
+		$spy = $this->renderEntitySpy($calls);
+		$rendered = $spy->renderEntities([$one, $two], 'owner,lead', ' f1 , ,f2', 'name, ,title ', ' secret ', false, false);
+
+		// Positional: extend, depth, filter, fields, unset, registers, schemas, objects, visitedIds, rbac, multitenancy.
+		$expectedArgs = [['owner', 'lead'], 0, [0 => 'f1', 2 => 'f2'], [0 => 'name', 2 => 'title'], ['secret'], [], [], [], [], false, false];
+		$this->assertCount(2, $calls);
+		foreach ($calls as $call) {
+			$this->assertSame($expectedArgs, $call['args']);
+			$this->assertSame(['aaaaaaaa-0000-0000-0000-000000000001' => [7]], $call['fileIds']);
+			$this->assertTrue($call['pageRender']);
+		}
+
+		$this->assertSame([$one, $two], $rendered);
+		$this->assertNull($one->getSource());
+		$state = \Closure::bind(fn (): array => [$this->batchFileIdsCache, $this->pageRenderActive], $spy, RenderObject::class)();
+		$this->assertSame([null, false], $state);
+	}
+
+	/**
+	 * A page that extends @self.files does not prefetch the lightweight file ids; array options pass unchanged.
+	 *
+	 * @return void
+	 */
+	public function testRenderEntitiesSkipsTheFileIdPrefetchWhenFilesAreExtended(): void {
+		$this->setupBasicMocks();
+		$this->fileMapper->expects($this->never())->method('getFileIdsForObjects');
+		$calls = [];
+		$this->renderEntitySpy($calls)->renderEntities(
+			[$this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001')],
+			['@self.files'],
+			['a' => ' b '],
+			[' c '],
+			null
+		);
+
+		$this->assertSame(
+			[['@self.files'], 0, ['a' => ' b '], [' c '], null, [], [], [], [], true, true],
+			$calls[0]['args']
+		);
+	}
 }
