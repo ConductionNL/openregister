@@ -30,6 +30,7 @@ use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Search\Db\View;
 
 /**
  * Agent entity class

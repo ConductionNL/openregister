@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ProcessingPurpose;
 use OCA\OpenRegister\Db\ProcessingPurposeMapper;
@@ -48,6 +49,20 @@ use Throwable;
  */
 class ProcessingPurposeController extends Controller {
 	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * The group manager.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                  $appName      App identifier.
@@ -55,8 +70,7 @@ class ProcessingPurposeController extends Controller {
 	 * @param ProcessingPurposeMapper $purposes     The administered list.
 	 * @param PurposeRegistry         $registry     Resolves a purpose to its activity.
 	 * @param AuditTrailMapper        $auditTrail   Counts entries per purpose.
-	 * @param IUserSession            $userSession  Current user session.
-	 * @param IGroupManager           $groupManager Group manager, for the admin gate.
+	 * @param ControllerSession $session Session, group manager and logger.
 	 */
 	public function __construct(
 		string $appName,
@@ -64,10 +78,12 @@ class ProcessingPurposeController extends Controller {
 		private readonly ProcessingPurposeMapper $purposes,
 		private readonly PurposeRegistry $registry,
 		private readonly AuditTrailMapper $auditTrail,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		ControllerSession $session,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+
+		$this->userSession = $session->userSession;
+		$this->groupManager = $session->groupManager;
 	}//end __construct()
 
 	/**

@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
-use OCA\OpenRegister\Service\Search\PropertySearchProfile;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use Psr\Log\LoggerInterface;
 
 /**

@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Service\RiskLevelService;
 use OCA\OpenRegister\Service\TextExtractionService;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\IRootFolder;
@@ -65,7 +65,7 @@ class FileExtractionController extends Controller {
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
 	 * @param TextExtractionService $textExtractor Text extraction service
-	 * @param VectorizationService $vectorizationService Unified vectorization service
+	 * @param VectorizationServiceInterface $vectorizationService Unified vectorization service
 	 * @param ChunkMapper $chunkMapper Chunk mapper for text chunks
 	 * @param EntityRelationMapper $entityRelationMapper Entity relation mapper
 	 * @param RiskLevelService $riskLevelService Risk level computation service
@@ -80,7 +80,7 @@ class FileExtractionController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly TextExtractionService $textExtractor,
-		private readonly VectorizationService $vectorizationService,
+		private readonly VectorizationServiceInterface $vectorizationService,
 		private readonly ChunkMapper $chunkMapper,
 		private readonly EntityRelationMapper $entityRelationMapper,
 		private readonly RiskLevelService $riskLevelService,

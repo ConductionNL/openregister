@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Db\EndpointMapper;
 use OCA\OpenRegister\Service\EndpointService;
@@ -128,9 +129,7 @@ class EndpointsController extends Controller {
 	 * @param EndpointMapper $endpointMapper Endpoint mapper for database operations
 	 * @param EndpointLogMapper $endpointLogMapper Endpoint log mapper for log operations
 	 * @param EndpointService $endpointService Endpoint service for business logic
-	 * @param LoggerInterface $logger Logger for error tracking
-	 * @param IUserSession $userSession User session for auth checks
-	 * @param IGroupManager $groupManager Group manager for admin checks
+	 * @param ControllerSession $session Session, group manager and logger.
 	 *
 	 * @return void
 	 */
@@ -140,9 +139,7 @@ class EndpointsController extends Controller {
 		EndpointMapper $endpointMapper,
 		EndpointLogMapper $endpointLogMapper,
 		EndpointService $endpointService,
-		LoggerInterface $logger,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
+		ControllerSession $session,
 	) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
@@ -151,9 +148,9 @@ class EndpointsController extends Controller {
 		$this->endpointMapper = $endpointMapper;
 		$this->endpointLogMapper = $endpointLogMapper;
 		$this->endpointService = $endpointService;
-		$this->logger = $logger;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
+		$this->logger = $session->logger;
+		$this->userSession = $session->userSession;
+		$this->groupManager = $session->groupManager;
 	}//end __construct()
 
 	/**

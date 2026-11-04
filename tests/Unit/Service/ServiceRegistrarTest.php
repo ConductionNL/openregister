@@ -53,7 +53,6 @@ class ServiceRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\Portal\PortalPartyResolver',
 				'OCA\OpenRegister\Service\Object\CacheHandler',
 				'OCA\OpenRegister\Service\File\FolderManagementHandler',
-				'OCA\OpenRegister\Service\VectorizationService',
 				'OCA\OpenRegister\Service\TaskService',
 				'OCA\OpenRegister\Service\NoteService',
 				'OCA\OpenRegister\Service\Integration\TimeProvider',

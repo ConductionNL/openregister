@@ -15,7 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
-use OCA\OpenRegister\Service\Vectorization\Handlers\VectorSearchHandler;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSearchHandler;
 use PHPUnit\Framework\TestCase;
 
 /**

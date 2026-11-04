@@ -288,6 +288,34 @@ class JobScheduleService {
 	}//end insideWindow()
 
 	/**
+	 * Carry a job's administered schedule from its old class name to its new one.
+	 *
+	 * A job whose class moved would otherwise fall back to the default schedule,
+	 * because the setting is keyed by class name. A schedule already stored under
+	 * the new name wins; the old setting is removed either way.
+	 *
+	 * @param string $from The class name the schedule is stored under.
+	 * @param string $to   The class name the job now has.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Upgrade plumbing for moved job classes; the schedule itself is unchanged.
+	 */
+	public function moveSchedule(string $from, string $to): void {
+		$stored = $this->config->getAppValue(self::APP_ID, $this->key(jobClass: $from), '');
+		if ($stored === '') {
+			return;
+		}
+
+		if ($this->config->getAppValue(self::APP_ID, $this->key(jobClass: $to), '') === '') {
+			$this->config->setAppValue(self::APP_ID, $this->key(jobClass: $to), $stored);
+		}
+
+		$this->config->deleteAppValue(self::APP_ID, $this->key(jobClass: $from));
+
+	}//end moveSchedule()
+
+	/**
 	 * The setting key one job's schedule is stored under.
 	 *
 	 * @param string $jobClass The job class.

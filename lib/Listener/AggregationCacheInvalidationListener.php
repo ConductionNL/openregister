@@ -36,7 +36,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationCacheInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Container\ContainerInterface;
@@ -54,7 +54,7 @@ class AggregationCacheInvalidationListener implements IEventListener {
 	 * injected, because RegisterMapper and MagicMapper reach each other at
 	 * construction time.
 	 *
-	 * @param AggregationCache $cache Cache holding aggregation read-models.
+	 * @param AggregationCacheInterface $cache Cache holding aggregation read-models.
 	 * @param ContainerInterface|null $container Resolves the register and schema mappers for slug lookup.
 	 *
 	 * @return void
@@ -62,7 +62,7 @@ class AggregationCacheInvalidationListener implements IEventListener {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
 	 */
 	public function __construct(
-		private readonly AggregationCache $cache,
+		private readonly AggregationCacheInterface $cache,
 		private readonly ?ContainerInterface $container = null,
 	) {
 	}//end __construct()

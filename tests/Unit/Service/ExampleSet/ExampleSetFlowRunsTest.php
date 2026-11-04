@@ -61,7 +61,7 @@ use OCA\OpenRegister\Db\FlowRun;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskChecklist
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTimelineEntries
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
  * @uses \OCA\OpenRegister\Service\Task\TaskState
  * @uses \OCA\OpenRegister\Service\WriteCause

@@ -32,7 +32,7 @@ use OCA\OpenRegister\Service\Rules\DependentValueValidator;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 
