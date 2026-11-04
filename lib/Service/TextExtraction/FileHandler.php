@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service\TextExtraction;
 
 use Exception;
 use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Db\FileMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\IRootFolder;
 use Psr\Log\LoggerInterface;
@@ -36,13 +36,13 @@ class FileHandler implements TextExtractionHandlerInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param FileMapper $fileMapper File mapper.
+	 * @param FileMapperInterface $fileMapper File mapper.
 	 * @param ChunkMapper $chunkMapper Chunk mapper.
 	 * @param IRootFolder $rootFolder Nextcloud root folder.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly FileMapper $fileMapper,
+		private readonly FileMapperInterface $fileMapper,
 		private readonly ChunkMapper $chunkMapper,
 		private readonly IRootFolder $rootFolder,
 		private readonly LoggerInterface $logger,

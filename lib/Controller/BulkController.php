@@ -30,9 +30,9 @@ use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Exception;
 use OCA\OpenRegister\Controller\Support\BulkControllerServices;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Dto\BulkSaveOutcome;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
@@ -78,16 +78,16 @@ class BulkController extends Controller {
 	/**
 	 * Mapper for resolving registers (RBAC gates)
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Mapper for resolving schemas (RBAC gates)
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * User session for admin/manage checks

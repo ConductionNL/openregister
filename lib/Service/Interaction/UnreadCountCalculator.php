@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Interaction;
 
 use DateTime;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectReadState;
 use Psr\Log\LoggerInterface;
@@ -46,12 +46,12 @@ class UnreadCountCalculator {
 	 * Constructor.
 	 *
 	 * @param SubstantiveChangeEvaluator $evaluator Declares an object's sub-resources.
-	 * @param FileMapper $fileMapper Counts an object's files for the files badge.
+	 * @param FileMapperInterface $fileMapper Counts an object's files for the files badge.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		private readonly SubstantiveChangeEvaluator $evaluator,
-		private readonly FileMapper $fileMapper,
+		private readonly FileMapperInterface $fileMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

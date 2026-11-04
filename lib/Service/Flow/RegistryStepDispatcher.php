@@ -262,7 +262,7 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	private function scopeSignal(array &$context, ?FlowNodeResumeState $scoped): void {
-		if (array_key_exists(FlowRunService::SIGNAL_CONTEXT_KEY, $context) === false) {
+		if (array_key_exists(FlowRunServiceInterface::SIGNAL_CONTEXT_KEY, $context) === false) {
 			return;
 		}
 
@@ -271,7 +271,7 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 			return;
 		}
 
-		unset($context[FlowRunService::SIGNAL_CONTEXT_KEY]);
+		unset($context[FlowRunServiceInterface::SIGNAL_CONTEXT_KEY]);
 
 	}//end scopeSignal()
 

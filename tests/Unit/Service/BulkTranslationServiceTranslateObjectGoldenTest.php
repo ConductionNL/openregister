@@ -27,6 +27,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Translation
+ * @uses   \OCA\OpenRegister\Service\ObjectTranslationRequest
  */
 class BulkTranslationServiceTranslateObjectGoldenTest extends TestCase {
 

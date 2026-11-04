@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Quality;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\DuplicateBlockedException;
 use OCP\IGroupManager;
@@ -83,7 +83,7 @@ class DedupCreatePolicy {
 	 * @param DuplicateDetectionServiceInterface $duplicates The one scorer, reused rather than reimplemented.
 	 * @param IUserSession $userSession Current session, to name the caller.
 	 * @param IGroupManager $groupManager Group membership, to evaluate `overrideGroups`.
-	 * @param AuditTrailMapper $auditTrailMapper Audit writer for the override record.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit writer for the override record.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
 	 * @return void
@@ -92,7 +92,7 @@ class DedupCreatePolicy {
 		private readonly DuplicateDetectionServiceInterface $duplicates,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

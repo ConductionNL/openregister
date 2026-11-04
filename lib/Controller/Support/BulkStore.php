@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rbac\SchemaManageGate;
 
@@ -36,16 +36,16 @@ final class BulkStore {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param RegisterMapper    $registerMapper   Mapper for resolving registers (RBAC gates)
-	 * @param SchemaMapper      $schemaMapper     Mapper for resolving schemas (RBAC gates)
+	 * @param RegisterMapperInterface    $registerMapper   Mapper for resolving registers (RBAC gates)
+	 * @param SchemaMapperInterface      $schemaMapper     Mapper for resolving schemas (RBAC gates)
 	 * @param ObjectService     $objectService    The object service
 	 * @param ?SchemaManageGate $schemaManageGate Who may manage a schema. Built from the collaborators above when null.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function __construct(
-		public readonly RegisterMapper $registerMapper,
-		public readonly SchemaMapper $schemaMapper,
+		public readonly RegisterMapperInterface $registerMapper,
+		public readonly SchemaMapperInterface $schemaMapper,
 		public readonly ObjectService $objectService,
 		public readonly ?SchemaManageGate $schemaManageGate = null,
 	) {

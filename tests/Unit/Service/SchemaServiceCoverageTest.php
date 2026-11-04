@@ -626,8 +626,9 @@ class SchemaServiceCoverageTest extends TestCase {
 	}
 
 	public function testCompareStringConstraintsNonStringType(): void {
-		$analysis = ['max_length' => 100, 'detected_format' => null, 'string_patterns' => []];
-		$result = $this->invokeMethod('compareStringConstraints', [['type' => 'integer'], $analysis, 'integer']);
+		$analysis = ['max_length' => 100, 'detected_format' => null, 'string_patterns' => [], 'types' => ['integer'], 'examples' => [1, 2]];
+		$result = $this->invokeMethod('comparePropertyWithAnalysis', [['type' => 'integer'], $analysis]);
+		$this->assertSame('integer', $result['recommended_type']);
 		$this->assertEmpty($result['issues']);
 	}
 
@@ -636,8 +637,9 @@ class SchemaServiceCoverageTest extends TestCase {
 	// =========================================================================
 
 	public function testCompareNumericConstraintsNonNumeric(): void {
-		$analysis = ['numeric_range' => ['min' => 1, 'max' => 10]];
-		$result = $this->invokeMethod('compareNumericConstraints', [['type' => 'string'], $analysis, 'string']);
+		$analysis = ['numeric_range' => ['min' => 1, 'max' => 10], 'types' => ['string'], 'examples' => ['a', 'b'], 'max_length' => 0];
+		$result = $this->invokeMethod('comparePropertyWithAnalysis', [['type' => 'string', 'minimum' => 50, 'maximum' => 2], $analysis]);
+		$this->assertSame('string', $result['recommended_type']);
 		$this->assertEmpty($result['issues']);
 	}
 

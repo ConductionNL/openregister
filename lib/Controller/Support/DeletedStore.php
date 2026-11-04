@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
 
 /**
@@ -37,16 +37,16 @@ final class DeletedStore {
 	 * Bundle the services.
 	 *
 	 * @param MagicMapper           $objectEntityMapper The object entity mapper
-	 * @param RegisterMapper        $registerMapper     The register mapper
-	 * @param AuditTrailMapper      $auditTrailMapper   Reads back a destruction record and records a restore
+	 * @param RegisterMapperInterface        $registerMapper     The register mapper
+	 * @param AuditTrailMapperInterface      $auditTrailMapper   Reads back a destruction record and records a restore
 	 * @param DeletionServiceBundle $deletion           The destruction-pipeline collaborators (window, right, scope, recorder, clock)
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function __construct(
 		public readonly MagicMapper $objectEntityMapper,
-		public readonly RegisterMapper $registerMapper,
-		public readonly AuditTrailMapper $auditTrailMapper,
+		public readonly RegisterMapperInterface $registerMapper,
+		public readonly AuditTrailMapperInterface $auditTrailMapper,
 		public readonly DeletionServiceBundle $deletion,
 	) {
 	}//end __construct()

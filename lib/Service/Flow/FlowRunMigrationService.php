@@ -44,7 +44,7 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowTimerMapper;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use Psr\Log\LoggerInterface;
@@ -77,14 +77,14 @@ class FlowRunMigrationService {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapper               $runs         The run store.
+	 * @param FlowRunMapperInterface               $runs         The run store.
 	 * @param FlowRunMigrationValidator   $validator    Whether a run fits the target version.
 	 * @param FlowTimerMapper             $timers       Open timers of a run.
 	 * @param FlowTimerService            $timerService Supersession.
 	 * @param LoggerInterface             $logger       The logger.
 	 */
 	public function __construct(
-		private readonly FlowRunMapper $runs,
+		private readonly FlowRunMapperInterface $runs,
 		private readonly FlowRunMigrationValidator $validator,
 		private readonly FlowTimerMapper $timers,
 		private readonly FlowTimerService $timerService,
@@ -133,12 +133,8 @@ class FlowRunMigrationService {
 		array $mapping = [],
 	): array {
 		return $this->perform(
-			runUuid: $runUuid,
-			targetVersion: $targetVersion,
-			reason: $reason,
-			actor: $actor,
-			mapping: $mapping,
-			dryRun: false
+			migration: (new FlowRunMigration(runUuid: $runUuid, targetVersion: $targetVersion, reason: trim($reason), actor: $actor))
+				->withPlan(mapping: $mapping, dryRun: false)
 		);
 	}//end migrate()
 
@@ -171,43 +167,28 @@ class FlowRunMigrationService {
 		array $mapping = [],
 	): array {
 		return $this->perform(
-			runUuid: $runUuid,
-			targetVersion: $targetVersion,
-			reason: $reason,
-			actor: $actor,
-			mapping: $mapping,
-			dryRun: true
+			migration: (new FlowRunMigration(runUuid: $runUuid, targetVersion: $targetVersion, reason: trim($reason), actor: $actor))
+				->withPlan(mapping: $mapping, dryRun: true)
 		);
 	}//end preview()
 
 	/**
 	 * The shared body of {@see self::migrate()} and {@see self::preview()}.
 	 *
-	 * @param string                $runUuid       The run.
-	 * @param int                   $targetVersion The version to move onto.
-	 * @param string                $reason        Why, recorded on the run.
-	 * @param string                $actor         Who asked.
-	 * @param array<string, string> $mapping       Old node id to new node id.
-	 * @param boolean               $dryRun        True to answer without writing.
+	 * @param FlowRunMigration $migration The run, target, reason, actor, mapping and dry-run choice.
 	 *
 	 * @return array{migrated: bool, dryRun: bool, run: string, from: int|null, to: int,
 	 *         marking: array<string, int>, unmapped: array<int, string>, reason: string}
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
-	private function perform(
-		string $runUuid,
-		int $targetVersion,
-		string $reason,
-		string $actor,
-		array $mapping,
-		bool $dryRun,
-	): array {
-		$reason = trim($reason);
-		if ($reason === '' && $dryRun === false) {
+	private function perform(FlowRunMigration $migration): array {
+		$runUuid = $migration->runUuid;
+		$targetVersion = $migration->targetVersion;
+		$dryRun = $migration->isDryRun();
+		if ($migration->reason === '' && $dryRun === false) {
 			return $this->refusal(
-				runUuid: $runUuid,
-				target: $targetVersion,
+				migration: $migration,
 				reason: 'Say why this run is being moved to another version. The reason is kept on the run.',
 			);
 		}
@@ -216,13 +197,12 @@ class FlowRunMigrationService {
 			$run = $this->runs->findByUuid(uuid: $runUuid);
 		} catch (Throwable $e) {
 			return $this->refusal(
-				runUuid: $runUuid,
-				target: $targetVersion,
+				migration: $migration,
 				reason: 'That run could not be found, so nothing was migrated.',
 			);
 		}
 
-		$verdict = $this->validate(run: $run, targetVersion: $targetVersion, mapping: $mapping);
+		$verdict = $this->validate(run: $run, targetVersion: $targetVersion, mapping: $migration->mapping());
 		$from = $run->getFlowVersion();
 
 		if ($verdict['ok'] === false) {
@@ -254,18 +234,19 @@ class FlowRunMigrationService {
 			];
 		}
 
+		$log = $this->appendLog(run: $run, migration: $migration);
 		$run->setFlowVersion($targetVersion);
 		$run->setMarking($verdict['marking']);
-		$run->setLog($this->appendLog(run: $run, from: $from, to: $targetVersion, mapping: $mapping, reason: $reason, actor: $actor));
+		$run->setLog($log);
 		$this->runs->update($run);
 
 		// AFTER the run is written, deliberately. A timer superseded against a
 		// run that then failed to save would point at a node the run is not on.
-		$moved = $this->supersedeTimers(runUuid: $runUuid, mapping: $mapping, actor: $actor);
+		$moved = $this->supersedeTimers(migration: $migration);
 
 		$this->logger->info(
 			message: '[FlowRunMigrationService] run ' . $runUuid . ' migrated from version '
-				. (string)$from . ' to ' . $targetVersion . ' by ' . $actor,
+				. (string)$from . ' to ' . $targetVersion . ' by ' . $migration->actor,
 			context: ['file' => __FILE__, 'line' => __LINE__, 'timersSuperseded' => $moved]
 		);
 
@@ -277,7 +258,7 @@ class FlowRunMigrationService {
 			'to' => $targetVersion,
 			'marking' => $verdict['marking'],
 			'unmapped' => [],
-			'reason' => $reason,
+			'reason' => $migration->reason,
 		];
 	}//end perform()
 
@@ -494,16 +475,12 @@ class FlowRunMigrationService {
 	 * version changed" with nothing beside it sends the next person digging
 	 * through the version table to work out what it used to walk.
 	 *
-	 * @param FlowRun               $run     The run.
-	 * @param int|null              $from    The version it leaves.
-	 * @param int                   $to      The version it joins.
-	 * @param array<string, string> $mapping The node mapping.
-	 * @param string                $reason  Why.
-	 * @param string                $actor   Who.
+	 * @param FlowRun          $run       The run, still on the version it leaves.
+	 * @param FlowRunMigration $migration The version it joins, mapping, reason and actor.
 	 *
 	 * @return array<int, array<string, mixed>> The log.
 	 */
-	private function appendLog(FlowRun $run, ?int $from, int $to, array $mapping, string $reason, string $actor): array {
+	private function appendLog(FlowRun $run, FlowRunMigration $migration): array {
 		$log = ($run->getLog() ?? []);
 		if (is_array($log) === false) {
 			$log = [];
@@ -511,11 +488,11 @@ class FlowRunMigrationService {
 
 		$log[] = [
 			'type' => self::LOG_ENTRY,
-			'fromVersion' => $from,
-			'toVersion' => $to,
-			'mapping' => $mapping,
-			'reason' => $reason,
-			'actor' => $actor,
+			'fromVersion' => $run->getFlowVersion(),
+			'toVersion' => $migration->targetVersion,
+			'mapping' => $migration->mapping(),
+			'reason' => $migration->reason,
+			'actor' => $migration->actor,
 			'at' => (new DateTime())->format('Y-m-d\TH:i:sP'),
 		];
 
@@ -531,13 +508,13 @@ class FlowRunMigrationService {
 	 * Elapsed time is kept either way: `supersede()` re-arms from the anchoring
 	 * event, not from now.
 	 *
-	 * @param string                $runUuid The run.
-	 * @param array<string, string> $mapping The node mapping.
-	 * @param string                $actor   Who asked.
+	 * @param FlowRunMigration $migration The run, node mapping and actor.
 	 *
 	 * @return int How many were superseded.
 	 */
-	private function supersedeTimers(string $runUuid, array $mapping, string $actor): int {
+	private function supersedeTimers(FlowRunMigration $migration): int {
+		$runUuid = $migration->runUuid;
+		$mapping = $migration->mapping();
 		if ($mapping === []) {
 			return 0;
 		}
@@ -554,7 +531,7 @@ class FlowRunMigrationService {
 					uuid: (string)$timer->getUuid(),
 					anchorEventAt: new DateTime(),
 					reason: self::LOG_ENTRY,
-					actor: $actor,
+					actor: $migration->actor,
 				);
 				$moved++;
 			} catch (Throwable $e) {
@@ -576,19 +553,18 @@ class FlowRunMigrationService {
 	/**
 	 * A refusal shaped like every other answer.
 	 *
-	 * @param string $runUuid The run.
-	 * @param int    $target  The version asked for.
-	 * @param string $reason  Why not.
+	 * @param FlowRunMigration $migration The run and the version asked for.
+	 * @param string           $reason    Why not.
 	 *
 	 * @return array<string, mixed> The answer.
 	 */
-	private function refusal(string $runUuid, int $target, string $reason): array {
+	private function refusal(FlowRunMigration $migration, string $reason): array {
 		return [
 			'migrated' => false,
 			'dryRun' => false,
-			'run' => $runUuid,
+			'run' => $migration->runUuid,
 			'from' => null,
-			'to' => $target,
+			'to' => $migration->targetVersion,
 			'marking' => [],
 			'unmapped' => [],
 			'reason' => $reason,

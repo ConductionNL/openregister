@@ -53,10 +53,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\File\CreateFileHandler;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
@@ -117,9 +117,9 @@ class FileService {
 	/**
 	 * File mapper
 	 *
-	 * @var FileMapper
+	 * @var FileMapperInterface
 	 */
-	private FileMapper $fileMapper;
+	private FileMapperInterface $fileMapper;
 
 	/**
 	 * Group manager
@@ -138,7 +138,7 @@ class FileService {
 	/**
 	 * REMOVED: Register mapper (unused, caused circular dependency)
 	 *
-	 * @var RegisterMapper|null
+	 * @var RegisterMapperInterface|null
 	 */
 	// Private ?RegisterMapper $registerMapper;.
 
@@ -384,7 +384,7 @@ class FileService {
 	/**
 	 * Constructor
 	 *
-	 * @param FileMapper $fileMapper File mapper
+	 * @param FileMapperInterface $fileMapper File mapper
 	 * @param IGroupManager $groupManager Group manager
 	 * @param LoggerInterface $logger Logger
 	 * @param IRootFolder $rootFolder Root folder
@@ -415,7 +415,7 @@ class FileService {
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
-		FileMapper $fileMapper,
+		FileMapperInterface $fileMapper,
 		IGroupManager $groupManager,
 		LoggerInterface $logger,
 		IRootFolder $rootFolder,

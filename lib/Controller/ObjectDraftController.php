@@ -35,8 +35,8 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ObjectDraftControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Service\Object\DraftActivation;
 use OCA\OpenRegister\Service\ObjectService;
@@ -72,16 +72,16 @@ class ObjectDraftController extends Controller {
 	/**
 	 * Resolves the register.
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface
 	 */
-	private readonly RegisterMapper $registers;
+	private readonly RegisterMapperInterface $registers;
 
 	/**
 	 * Resolves the schema.
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private readonly SchemaMapper $schemas;
+	private readonly SchemaMapperInterface $schemas;
 
 	/**
 	 * Makes the draft definitive.

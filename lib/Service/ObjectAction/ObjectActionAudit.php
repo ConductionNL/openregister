@@ -33,7 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectAction;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -62,11 +62,11 @@ class ObjectActionAudit {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapper $auditTrail Writes the entry.
+	 * @param AuditTrailMapperInterface $auditTrail Writes the entry.
 	 * @param LoggerInterface  $logger     Records a failure to write it.
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $auditTrail,
+		private readonly AuditTrailMapperInterface $auditTrail,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

@@ -21,7 +21,7 @@
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\StateHistoryMapper;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
@@ -74,9 +74,9 @@ class LogCleanUpTask extends TimedJob {
 	/**
 	 * The audit trail mapper for database operations
 	 *
-	 * @var AuditTrailMapper
+	 * @var AuditTrailMapperInterface
 	 */
-	private readonly AuditTrailMapper $auditTrailMapper;
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * The search trail mapper for database operations
@@ -103,7 +103,7 @@ class LogCleanUpTask extends TimedJob {
 	 * Constructor for the LogCleanUpTask
 	 *
 	 * @param ITimeFactory           $time              The time factory for time operations
-	 * @param AuditTrailMapper       $auditTrailMapper  The audit trail mapper for database operations
+	 * @param AuditTrailMapperInterface       $auditTrailMapper  The audit trail mapper for database operations
 	 * @param SearchTrailMapper      $searchTrailMapper The search trail mapper for database operations
 	 * @param ObjectRetentionHandler $retentionHandler  The retention settings handler
 	 * @param LoggerInterface        $logger            The logger for logging operations
@@ -115,7 +115,7 @@ class LogCleanUpTask extends TimedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		AuditTrailMapper $auditTrailMapper,
+		AuditTrailMapperInterface $auditTrailMapper,
 		SearchTrailMapper $searchTrailMapper,
 		ObjectRetentionHandler $retentionHandler,
 		LoggerInterface $logger,

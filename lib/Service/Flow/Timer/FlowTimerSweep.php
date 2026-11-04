@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\FlowTimerMapper;
 use OCA\OpenRegister\Db\TaskMapper;
-use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -63,7 +63,7 @@ class FlowTimerSweep {
 	 *                               (task-expiry-and-outcomes D-3). Nullable so
 	 *                               pre-existing positional instantiations keep
 	 *                               working; the container wires both.
-	 * @param TaskService|null $taskService Applies a due task's declared behaviour.
+	 * @param TaskServiceInterface|null $taskService Applies a due task's declared behaviour.
 	 */
 	public function __construct(
 		private readonly FlowTimerMapper $timers,
@@ -71,7 +71,7 @@ class FlowTimerSweep {
 		private readonly WorkingCalendarService $calendars,
 		private readonly LoggerInterface $logger,
 		private readonly ?TaskMapper $tasks = null,
-		private readonly ?TaskService $taskService = null,
+		private readonly ?TaskServiceInterface $taskService = null,
 	) {
 
 	}//end __construct()

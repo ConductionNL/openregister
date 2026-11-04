@@ -33,14 +33,14 @@ use DateTimeZone;
 use OCA\OpenRegister\Controller\Support\FlowRunControllerServices;
 use OCA\OpenRegister\Db\AuditFlowAttribution;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Exception\FlowSignalRefused;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowCaller;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -84,16 +84,16 @@ class FlowRunController extends Controller {
 	/**
 	 * Reads runs.
 	 *
-	 * @var FlowRunMapper
+	 * @var FlowRunMapperInterface
 	 */
-	private readonly FlowRunMapper $mapper;
+	private readonly FlowRunMapperInterface $mapper;
 
 	/**
 	 * Retries, requeues and runs.
 	 *
-	 * @var FlowRunService
+	 * @var FlowRunServiceInterface
 	 */
-	private readonly FlowRunService $runner;
+	private readonly FlowRunServiceInterface $runner;
 
 	/**
 	 * Resolves a flow id to its document.
@@ -112,9 +112,9 @@ class FlowRunController extends Controller {
 	/**
 	 * Scopes the active-runs list to the caller's tenant.
 	 *
-	 * @var OrganisationService
+	 * @var OrganisationServiceInterface
 	 */
-	private readonly OrganisationService $organisationService;
+	private readonly OrganisationServiceInterface $organisationService;
 
 	/**
 	 * Whether the caller may run the flow a run belongs to.

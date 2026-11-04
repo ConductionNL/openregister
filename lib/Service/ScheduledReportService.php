@@ -33,11 +33,11 @@ use DateTime;
 use DateTimeInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\ScheduledReport;
 use OCA\OpenRegister\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportInterface;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
@@ -134,8 +134,8 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 * Constructor.
 	 *
 	 * @param ScheduledReportMapper $mapper Scheduled report mapper.
-	 * @param RegisterMapper $registerMapper Register lookup (create/update validation).
-	 * @param SchemaMapper $schemaMapper Schema lookup (create/update validation).
+	 * @param RegisterMapperInterface $registerMapper Register lookup (create/update validation).
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup (create/update validation).
 	 * @param ExportService $exportService The export engine this feature composes.
 	 * @param IRootFolder $rootFolder Files root, for owner-folder delivery.
 	 * @param IUserManager $userManager Resolves the owner IUser for impersonation.
@@ -154,8 +154,8 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 */
 	public function __construct(
 		private readonly ScheduledReportMapper $mapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ExportService $exportService,
 		private readonly IRootFolder $rootFolder,
 		private readonly IUserManager $userManager,
@@ -669,7 +669,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'reportId' => $report->getId(), 'error' => $e->getMessage()]
 			);
 			$this->markOutcome(report: $report, status: 'failed', error: $e->getMessage());
-			$this->notifyOwner(report: $report, success: false, reason: $e->getMessage(), filename: null, emailFailureReason: null);
+			$this->notifyFailed(report: $report, reason: $e->getMessage());
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				message: '[ScheduledReportService] Scheduled report run failed',
@@ -681,7 +681,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 				]
 			);
 			$this->markOutcome(report: $report, status: 'failed', error: $e->getMessage());
-			$this->notifyOwner(report: $report, success: false, reason: $e->getMessage(), filename: null, emailFailureReason: null);
+			$this->notifyFailed(report: $report, reason: $e->getMessage());
 		} finally {
 			$this->userSession->setUser($previousUser);
 		}//end try
@@ -707,7 +707,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	private function finalizeOutcome(ScheduledReport $report, string $filename, bool $delivered, ?string $emailFailureReason): void {
 		if ($emailFailureReason === null) {
 			$this->markOutcome(report: $report, status: 'success', error: null);
-			$this->notifyOwner(report: $report, success: true, reason: null, filename: $filename, emailFailureReason: null);
+			$this->notifyDelivered(report: $report, filename: $filename, emailFailureReason: null);
 			return;
 		}
 
@@ -716,13 +716,13 @@ class ScheduledReportService implements ScheduledReportsInterface {
 			// don't report a hard failure, but do surface the distinct
 			// email problem.
 			$this->markOutcome(report: $report, status: 'email_failed', error: $emailFailureReason);
-			$this->notifyOwner(report: $report, success: true, reason: null, filename: $filename, emailFailureReason: $emailFailureReason);
+			$this->notifyDelivered(report: $report, filename: $filename, emailFailureReason: $emailFailureReason);
 			return;
 		}
 
 		// Email-only mode and the email leg failed — nothing was delivered.
 		$this->markOutcome(report: $report, status: 'failed', error: $emailFailureReason);
-		$this->notifyOwner(report: $report, success: false, reason: $emailFailureReason, filename: null, emailFailureReason: null);
+		$this->notifyFailed(report: $report, reason: $emailFailureReason);
 	}//end finalizeOutcome()
 
 	/**
@@ -1311,54 +1311,73 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	}//end markOutcome()
 
 	/**
-	 * Notify the report owner of a run's outcome. Reuses the existing
-	 * `scheduled_report_delivered`/`scheduled_report_failed` subjects for
-	 * every deliveryMode — `mode` and `emailFailureReason` are passed as
-	 * extra, optional subject parameters so `Notifier` can render
-	 * email-aware wording without a new notification subject.
+	 * Notify the report owner that a run failed.
 	 *
 	 * @param ScheduledReport $report The report.
-	 * @param bool $success Whether the run succeeded (or partially succeeded — see `email_failed`).
-	 * @param string|null $reason The failure reason (failure only).
-	 * @param string|null $filename The delivered filename (success only).
-	 * @param string|null $emailFailureReason Set when Files succeeded but the email leg failed (mode `both`).
+	 * @param string|null     $reason The failure reason.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	private function notifyOwner(
-		ScheduledReport $report,
-		bool $success,
-		?string $reason,
-		?string $filename,
-		?string $emailFailureReason,
-	): void {
+	private function notifyFailed(ScheduledReport $report, ?string $reason): void {
+		$this->notifyOwner(
+			report: $report,
+			subject: 'scheduled_report_failed',
+			parameters: [
+				'reportId' => $report->getId(),
+				'reportName' => $report->getName(),
+				'reason' => ($reason ?? 'Unknown error'),
+			]
+		);
+	}//end notifyFailed()
+
+	/**
+	 * Notify the report owner that a run delivered. `mode` and `emailFailureReason` are
+	 * optional subject parameters so `Notifier` can render email-aware wording without a
+	 * new notification subject.
+	 *
+	 * @param ScheduledReport $report             The report.
+	 * @param string          $filename           The delivered filename.
+	 * @param string|null     $emailFailureReason Set when Files succeeded but the email leg failed (mode `both`).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/scheduled-report-jobs/spec.md
+	 */
+	private function notifyDelivered(ScheduledReport $report, string $filename, ?string $emailFailureReason): void {
+		$this->notifyOwner(
+			report: $report,
+			subject: 'scheduled_report_delivered',
+			parameters: [
+				'reportId' => $report->getId(),
+				'reportName' => $report->getName(),
+				'folder' => $report->getDeliveryFolder(),
+				'filename' => $filename,
+				'mode' => ($report->getDeliveryMode() ?? 'files'),
+				'emailFailureReason' => $emailFailureReason,
+			]
+		);
+	}//end notifyDelivered()
+
+	/**
+	 * Send the report owner a notification; a failure to notify is logged, never thrown.
+	 *
+	 * @param ScheduledReport $report     The report.
+	 * @param string          $subject    The notification subject.
+	 * @param array           $parameters The subject parameters.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/scheduled-report-jobs/spec.md
+	 */
+	private function notifyOwner(ScheduledReport $report, string $subject, array $parameters): void {
 		$ownerUid = $report->getOwner();
 		if ($ownerUid === null) {
 			return;
 		}
 
 		try {
-			$mode = ($report->getDeliveryMode() ?? 'files');
-			$subject = 'scheduled_report_failed';
-			$parameters = [
-				'reportId' => $report->getId(),
-				'reportName' => $report->getName(),
-				'reason' => ($reason ?? 'Unknown error'),
-			];
-			if ($success === true) {
-				$subject = 'scheduled_report_delivered';
-				$parameters = [
-					'reportId' => $report->getId(),
-					'reportName' => $report->getName(),
-					'folder' => $report->getDeliveryFolder(),
-					'filename' => $filename,
-					'mode' => $mode,
-					'emailFailureReason' => $emailFailureReason,
-				];
-			}
-
 			$notification = $this->notificationManager->createNotification();
 			$notification->setApp('openregister')
 				->setUser($ownerUid)
@@ -1372,6 +1391,6 @@ class ScheduledReportService implements ScheduledReportsInterface {
 				message: '[ScheduledReportService] Failed to send outcome notification',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'reportId' => $report->getId(), 'error' => $e->getMessage()]
 			);
-		}//end try
+		}
 	}//end notifyOwner()
 }//end class

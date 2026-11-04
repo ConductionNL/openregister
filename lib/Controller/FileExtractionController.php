@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\FileExtractionListing;
 use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Service\RiskLevelService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
@@ -67,7 +67,7 @@ class FileExtractionController extends Controller {
 	 * @param TextExtractionService $textExtractor Text extraction service
 	 * @param VectorizationServiceInterface $vectorizationService Unified vectorization service
 	 * @param ChunkMapper $chunkMapper Chunk mapper for text chunks
-	 * @param EntityRelationMapper $entityRelationMapper Entity relation mapper
+	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper
 	 * @param RiskLevelService $riskLevelService Risk level computation service
 	 * @param IRootFolder $rootFolder Root folder for per-user file access checks
 	 * @param IUserSession $userSession Active user session for caller identity
@@ -82,7 +82,7 @@ class FileExtractionController extends Controller {
 		private readonly TextExtractionService $textExtractor,
 		private readonly VectorizationServiceInterface $vectorizationService,
 		private readonly ChunkMapper $chunkMapper,
-		private readonly EntityRelationMapper $entityRelationMapper,
+		private readonly EntityRelationMapperInterface $entityRelationMapper,
 		private readonly RiskLevelService $riskLevelService,
 		private readonly IRootFolder $rootFolder,
 		private readonly IUserSession $userSession,
