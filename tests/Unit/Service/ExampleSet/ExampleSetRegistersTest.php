@@ -105,7 +105,7 @@ class ExampleSetRegistersTest extends TestCase {
 		});
 		$recorder = $this->createMock(AppImportJobRecorder::class);
 		$recorder->expects($this->once())->method('forget')->with('openregister.vocabulary', 'job-mine');
-		$registers = $this->registersOver([AuditTrailMapperInterface::class => $audit, ObjectService::class => $objects, AppImportJobRecorder::class => $recorder]);
+		$registers = $this->registersOver([AuditTrailMapperInterface::class => $audit, \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class => $objects, AppImportJobRecorder::class => $recorder]);
 
 		$this->assertFalse($registers->removeImport(appId: 'openregister.vocabulary', jobId: 'job-mine'), 'a refused object leaves the job in place');
 		$refuse = false;

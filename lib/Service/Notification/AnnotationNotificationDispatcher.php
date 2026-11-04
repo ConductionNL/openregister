@@ -155,7 +155,7 @@ class AnnotationNotificationDispatcher {
 	 * @param IJobList|null $jobList Job list used to enqueue the web-push dispatch job.
 	 * @param IURLGenerator|null $urlGenerator URL generator for action-target deeplinks.
 	 * @param RegisterMapperInterface|null $registerMapper Register mapper used for the default originApp.
-	 * @param \OCA\OpenRegister\Service\ObjectService|null $objectService Object resolver for relation-target deeplinks (RBAC).
+	 * @param \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface|null $objectService Object resolver for relation-target deeplinks (RBAC).
 	 * @param \OCA\OpenRegister\Service\DeepLinkRegistryService|null $deepLinkRegistry Canonical per-app deeplink resolver.
 	 * @param IAppManager|null $appManager Resolves originApp display name (auto body).
 	 * @param NotificationDeliveryWindowService|null $deliveryWindowService Override-only quiet-hours resolver + evaluator.
@@ -191,7 +191,7 @@ class AnnotationNotificationDispatcher {
 		private readonly ?IJobList $jobList = null,
 		private readonly ?IURLGenerator $urlGenerator = null,
 		private readonly ?RegisterMapperInterface $registerMapper = null,
-		private readonly ?\OCA\OpenRegister\Service\ObjectService $objectService = null,
+		private readonly ?\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService = null,
 		private readonly ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry = null,
 		private readonly ?IAppManager $appManager = null,
 		private readonly ?NotificationDeliveryWindowService $deliveryWindowService = null,

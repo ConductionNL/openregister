@@ -40,7 +40,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Db\BulkJobMemberMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IUser;
 use Psr\Log\LoggerInterface;
 
@@ -93,12 +93,12 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	 * Constructor.
 	 *
 	 * @param BulkJobMemberMapper $memberMapper  The original job's outcomes.
-	 * @param ObjectService       $objectService The object write path.
+	 * @param ObjectOperationsInterface       $objectService The object write path.
 	 * @param LoggerInterface     $logger        Logger.
 	 */
 	public function __construct(
 		private readonly BulkJobMemberMapper $memberMapper,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

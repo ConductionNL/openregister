@@ -36,7 +36,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Http;
 use OCP\IUser;
 
@@ -62,12 +62,12 @@ class RunActionAction implements BulkActionInterface {
 	 *
 	 * @param ObjectActionRunner  $runner  The single-object run path.
 	 * @param MacroActionResolver $schemas Loads a member's schema.
-	 * @param ObjectService       $objects Runs the commit as the job's actor.
+	 * @param ObjectOperationsInterface       $objects Runs the commit as the job's actor.
 	 */
 	public function __construct(
 		private readonly ObjectActionRunner $runner,
 		private readonly MacroActionResolver $schemas,
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 	) {
 	}//end __construct()
 

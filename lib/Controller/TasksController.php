@@ -28,7 +28,7 @@ use Exception;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Exception\TaskValidationException;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskState;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
@@ -69,9 +69,9 @@ class TasksController extends Controller {
 	/**
 	 * Object service for object validation.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Constructor.
@@ -79,7 +79,7 @@ class TasksController extends Controller {
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param ObjectCalendarTasksInterface $taskService Task service for VTODO operations
-	 * @param ObjectService $objectService Object service for object validation
+	 * @param ObjectOperationsInterface $objectService Object service for object validation
 	 * @param TaskInboxService|null $inbox The engine inbox the aggregate answers from;
 	 *                                     without it the aggregate refuses (401), never
 	 *                                     falls back to walking calendars
@@ -95,7 +95,7 @@ class TasksController extends Controller {
 		string $appName,
 		IRequest $request,
 		ObjectCalendarTasksInterface $taskService,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		private readonly ?TaskInboxService $inbox = null,
 		private readonly ?IUserSession $userSession = null,
 		private readonly ?TaskTemporalProjection $temporal = null,

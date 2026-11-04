@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use OCA\OpenRegister\Exception\NoteWriteRefusedException;
 use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
 use OCA\OpenRegister\Service\Timeline\TimelineWriteService;
 use OCA\OpenRegister\Service\TimelineVisibilityService;
@@ -57,9 +57,9 @@ class NotesController extends Controller {
 	/**
 	 * Object service for object validation.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Constructor.
@@ -67,7 +67,7 @@ class NotesController extends Controller {
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param NoteService $noteService Note service for comment operations
-	 * @param ObjectService $objectService Object service for object validation
+	 * @param ObjectOperationsInterface $objectService Object service for object validation
 	 * @param TimelineVisibilityService $visibility Visibility guard, filter and audit
 	 * @param TimelineWriteService $timeline Projects a note into the entry record, so it is searchable
 	 * @param TimelineEntryService $entries Reads and forgets the record behind a note
@@ -78,7 +78,7 @@ class NotesController extends Controller {
 		string $appName,
 		IRequest $request,
 		NoteService $noteService,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		private readonly TimelineVisibilityService $visibility,
 		private readonly TimelineWriteService $timeline,
 		private readonly TimelineEntryService $entries,

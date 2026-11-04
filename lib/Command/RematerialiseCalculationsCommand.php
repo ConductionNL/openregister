@@ -42,7 +42,7 @@ use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -61,7 +61,7 @@ class RematerialiseCalculationsCommand extends Command {
 	 * @param RegisterMapperInterface $registerMapper Register lookup mapper.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
 	 * @param MagicMapper $magicMapper Magic table mapper for objects.
-	 * @param ObjectService $objectService Object persistence service.
+	 * @param ObjectOperationsInterface $objectService Object persistence service.
 	 * @param CalculationEvaluatorInterface $evaluator Expression evaluator.
 	 * @param ReferenceResolver $references Cross-object reference pre-resolver.
 	 * @param AggregateReferenceResolver $aggregates Aggregate-reference pre-resolver.
@@ -77,7 +77,7 @@ class RematerialiseCalculationsCommand extends Command {
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapper $magicMapper,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly CalculationEvaluatorInterface $evaluator,
 		private readonly ReferenceResolver $references,
 		private readonly AggregateReferenceResolver $aggregates,
