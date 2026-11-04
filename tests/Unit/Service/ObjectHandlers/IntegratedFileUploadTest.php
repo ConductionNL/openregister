@@ -41,7 +41,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use stdClass;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
  * Testable Schema subclass that allows overriding methods that depend on external services.
@@ -181,7 +181,7 @@ class IntegratedFileUploadTest extends TestCase {
 		$this->settingsService = $this->createMock(SettingsService::class);
 		$this->propertyRbacHandler = $this->createMock(PropertyRbacHandler::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$arrayLoader = new ArrayLoader();
+		$permissionHandler = $this->createMock(PermissionHandler::class);
 
 		// Create real entity instances (Entity __call methods cannot be mocked in PHPUnit 10+).
 		$this->mockRegister = new Register();
@@ -230,7 +230,7 @@ class IntegratedFileUploadTest extends TestCase {
 			$this->logger,
 			$tmloService,
 			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			$arrayLoader
+			$permissionHandler
 		);
 	}
 
