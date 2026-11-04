@@ -1,0 +1,1904 @@
+{
+    "pg / mixed / preUpdate true / freeze false": {
+        "events": [
+            {
+                "prepare": "SELECT column_name\n                        FROM information_schema.columns\n                        WHERE table_name = ? AND table_schema = 'public'"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_1_2"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_1_2",
+                    "columns": [
+                        "_uuid",
+                        "_slug",
+                        "_name",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "flag",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Generated missing _uuid for bulk object",
+                "context": {
+                    "uuid": "<generated-uuid>"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Generated missing _uuid for bulk object",
+                "context": {
+                    "uuid": "<generated-uuid>"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM \"oc_openregister_table_1_2\" WHERE \"_uuid\" IN (?,?,?,?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "<generated-uuid>",
+                    "<generated-uuid>"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 7,
+                    "total_uuids": 5,
+                    "existing_uuids": 2,
+                    "new_uuids": 3
+                }
+            },
+            {
+                "prepare": "INSERT INTO \"oc_openregister_table_1_2\" (\"_uuid\", \"_name\", \"title\", \"_slug\", \"flag\", \"_created\", \"_version\") VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6),(:p7,:p8,:p9,:p10,:p11,:p12,:p13),(:p14,:p15,:p16,:p17,:p18,:p19,:p20),(:p21,:p22,:p23,:p24,:p25,:p26,:p27),(:p28,:p29,:p30,:p31,:p32,:p33,:p34) ON CONFLICT (_uuid) DO UPDATE SET \"_name\" = EXCLUDED.\"_name\", \"title\" = EXCLUDED.\"title\", \"_slug\" = EXCLUDED.\"_slug\", \"flag\" = EXCLUDED.\"flag\""
+            },
+            {
+                "execute": {
+                    "p0": "u-1",
+                    "p1": "One again",
+                    "p2": "b",
+                    "p3": null,
+                    "p4": null,
+                    "p5": null,
+                    "p6": null,
+                    "p7": "u-2",
+                    "p8": null,
+                    "p9": null,
+                    "p10": "s-2",
+                    "p11": 0,
+                    "p12": "2020-01-01",
+                    "p13": "1.0.0",
+                    "p14": "u-3",
+                    "p15": null,
+                    "p16": "three again",
+                    "p17": null,
+                    "p18": null,
+                    "p19": null,
+                    "p20": null,
+                    "p21": "<generated-uuid>",
+                    "p22": null,
+                    "p23": "generated",
+                    "p24": null,
+                    "p25": null,
+                    "p26": null,
+                    "p27": null,
+                    "p28": "<generated-uuid>",
+                    "p29": null,
+                    "p30": "no uuid",
+                    "p31": null,
+                    "p32": null,
+                    "p33": null,
+                    "p34": null
+                }
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Executed UPSERT chunk",
+                "context": {
+                    "chunk": 7,
+                    "objects": 8,
+                    "table": "openregister_table_1_2",
+                    "sql_size_kb": 0.42,
+                    "sql_preview": "INSERT INTO \"oc_openregister_table_1_2\" (\"_uuid\", \"_name\", \"title\", \"_slug\", \"flag\", \"_created\", \"_version\") VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6),(:p7"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM \"oc_openregister_table_1_2\" WHERE \"_uuid\" IN (?,?,?,?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "<generated-uuid>",
+                    "<generated-uuid>"
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Classification complete (using pre-upsert UUID check)",
+                "context": {
+                    "chunk": 7,
+                    "uuids_requested": 5,
+                    "objects_returned": 5,
+                    "created": 3,
+                    "updated": 2,
+                    "unchanged": 0
+                }
+            }
+        ],
+        "result": [
+            {
+                "_uuid": "u-1",
+                "_updated": "<start>",
+                "object_status": "updated",
+                "_pre_update_row": {
+                    "_uuid": "u-1",
+                    "title": "old u-1"
+                },
+                "operation_start_time": "<start>"
+            },
+            {
+                "_uuid": "u-2",
+                "_updated": "2999-01-01 00:00:00",
+                "object_status": "updated",
+                "_pre_update_row": {
+                    "_uuid": "u-2",
+                    "title": "old u-2"
+                },
+                "operation_start_time": "<start>"
+            },
+            {
+                "_uuid": "u-3",
+                "_updated": "2000-01-01 00:00:00",
+                "object_status": "created",
+                "operation_start_time": "<start>"
+            },
+            {
+                "_uuid": "<generated-uuid>",
+                "_updated": "2000-01-01 00:00:00",
+                "object_status": "created",
+                "operation_start_time": "<start>"
+            },
+            {
+                "_uuid": "<generated-uuid>",
+                "_updated": "2000-01-01 00:00:00",
+                "object_status": "created",
+                "operation_start_time": "<start>"
+            }
+        ]
+    },
+    "pg / mixed / preUpdate false / freeze true": {
+        "events": [
+            {
+                "prepare": "SELECT column_name\n                        FROM information_schema.columns\n                        WHERE table_name = ? AND table_schema = 'public'"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_1_2"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_1_2",
+                    "columns": [
+                        "_uuid",
+                        "_slug",
+                        "_name",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "flag",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Generated missing _uuid for bulk object",
+                "context": {
+                    "uuid": "<generated-uuid>"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Generated missing _uuid for bulk object",
+                "context": {
+                    "uuid": "<generated-uuid>"
+                }
+            },
+            {
+                "prepare": "SELECT \"_uuid\" FROM \"oc_openregister_table_1_2\" WHERE \"_uuid\" IN (?,?,?,?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "<generated-uuid>",
+                    "<generated-uuid>"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 7,
+                    "total_uuids": 5,
+                    "existing_uuids": 2,
+                    "new_uuids": 3
+                }
+            },
+            {
+                "prepare": "INSERT INTO \"oc_openregister_table_1_2\" (\"_uuid\", \"_name\", \"title\", \"_slug\", \"flag\", \"_created\", \"_version\") VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6),(:p7,:p8,:p9,:p10,:p11,:p12,:p13),(:p14,:p15,:p16,:p17,:p18,:p19,:p20),(:p21,:p22,:p23,:p24,:p25,:p26,:p27),(:p28,:p29,:p30,:p31,:p32,:p33,:p34) ON CONFLICT (_uuid) DO UPDATE SET \"_name\" = EXCLUDED.\"_name\", \"title\" = EXCLUDED.\"title\", \"_slug\" = COALESCE(NULLIF(\"oc_openregister_table_1_2\".\"_slug\", ''), EXCLUDED.\"_slug\"), \"flag\" = EXCLUDED.\"flag\""
+            },
+            {
+                "execute": {
+                    "p0": "u-1",
+                    "p1": "One again",
+                    "p2": "b",
+                    "p3": null,
+                    "p4": null,
+                    "p5": null,
+                    "p6": null,
+                    "p7": "u-2",
+                    "p8": null,
+                    "p9": null,
+                    "p10": "s-2",
+                    "p11": 0,
+                    "p12": "2020-01-01",
+                    "p13": "1.0.0",
+                    "p14": "u-3",
+                    "p15": null,
+                    "p16": "three again",
+                    "p17": null,
+                    "p18": null,
+                    "p19": null,
+                    "p20": null,
+                    "p21": "<generated-uuid>",
+                    "p22": null,
+                    "p23": "generated",
+                    "p24": null,
+                    "p25": null,
+                    "p26": null,
+                    "p27": null,
+                    "p28": "<generated-uuid>",
+                    "p29": null,
+                    "p30": "no uuid",
+                    "p31": null,
+                    "p32": null,
+                    "p33": null,
+                    "p34": null
+                }
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Executed UPSERT chunk",
+                "context": {
+                    "chunk": 7,
+                    "objects": 8,
+                    "table": "openregister_table_1_2",
+                    "sql_size_kb": 0.48,
+                    "sql_preview": "INSERT INTO \"oc_openregister_table_1_2\" (\"_uuid\", \"_name\", \"title\", \"_slug\", \"flag\", \"_created\", \"_version\") VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6),(:p7"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM \"oc_openregister_table_1_2\" WHERE \"_uuid\" IN (?,?,?,?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "<generated-uuid>",
+                    "<generated-uuid>"
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Classification complete (using pre-upsert UUID check)",
+                "context": {
+                    "chunk": 7,
+                    "uuids_requested": 5,
+                    "objects_returned": 5,
+                    "created": 3,
+                    "updated": 2,
+                    "unchanged": 0
+                }
+            }
+        ],
+        "result": [
+            {
+                "_uuid": "u-1",
+                "_updated": "<start>",
+                "object_status": "updated",
+                "operation_start_time": "<start>"
+            },
+            {
+                "_uuid": "u-2",
+                "_updated": "2999-01-01 00:00:00",
+                "object_status": "updated",
+                "operation_start_time": "<start>"
+            },
+            {
+                "_uuid": "u-3",
+                "_updated": "2000-01-01 00:00:00",
+                "object_status": "created",
+                "operation_start_time": "<start>"
+            },
+            {
+                "_uuid": "<generated-uuid>",
+                "_updated": "2000-01-01 00:00:00",
+                "object_status": "created",
+                "operation_start_time": "<start>"
+            },
+            {
+                "_uuid": "<generated-uuid>",
+                "_updated": "2000-01-01 00:00:00",
+                "object_status": "created",
+                "operation_start_time": "<start>"
+            }
+        ]
+    },
+    "pg / single new / preUpdate true / freeze false": {
+        "events": [
+            {
+                "prepare": "SELECT column_name\n                        FROM information_schema.columns\n                        WHERE table_name = ? AND table_schema = 'public'"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_1_2"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_1_2",
+                    "columns": [
+                        "_uuid",
+                        "_slug",
+                        "_name",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "flag",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "prepare": "SELECT * FROM \"oc_openregister_table_1_2\" WHERE \"_uuid\" IN (?)"
+            },
+            {
+                "execute": [
+                    "u-9"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 7,
+                    "total_uuids": 1,
+                    "existing_uuids": 0,
+                    "new_uuids": 1
+                }
+            },
+            {
+                "prepare": "INSERT INTO \"oc_openregister_table_1_2\" (\"_uuid\", \"title\") VALUES (:p0,:p1) ON CONFLICT (_uuid) DO UPDATE SET \"title\" = EXCLUDED.\"title\""
+            },
+            {
+                "execute": {
+                    "p0": "u-9",
+                    "p1": "t"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Executed UPSERT chunk",
+                "context": {
+                    "chunk": 7,
+                    "objects": 1,
+                    "table": "openregister_table_1_2",
+                    "sql_size_kb": 0.13,
+                    "sql_preview": "INSERT INTO \"oc_openregister_table_1_2\" (\"_uuid\", \"title\") VALUES (:p0,:p1) ON CONFLICT (_uuid) DO UPDATE SET \"title\" = EXCLUDED.\"title\""
+                }
+            },
+            {
+                "prepare": "SELECT * FROM \"oc_openregister_table_1_2\" WHERE \"_uuid\" IN (?)"
+            },
+            {
+                "execute": [
+                    "u-9"
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Classification complete (using pre-upsert UUID check)",
+                "context": {
+                    "chunk": 7,
+                    "uuids_requested": 1,
+                    "objects_returned": 1,
+                    "created": 1,
+                    "updated": 0,
+                    "unchanged": 0
+                }
+            }
+        ],
+        "result": [
+            {
+                "_uuid": "u-9",
+                "_updated": "2999-01-01 00:00:00",
+                "object_status": "created",
+                "operation_start_time": "<start>"
+            }
+        ]
+    },
+    "pg / single new / preUpdate false / freeze true": {
+        "events": [
+            {
+                "prepare": "SELECT column_name\n                        FROM information_schema.columns\n                        WHERE table_name = ? AND table_schema = 'public'"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_1_2"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_1_2",
+                    "columns": [
+                        "_uuid",
+                        "_slug",
+                        "_name",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "flag",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "prepare": "SELECT \"_uuid\" FROM \"oc_openregister_table_1_2\" WHERE \"_uuid\" IN (?)"
+            },
+            {
+                "execute": [
+                    "u-9"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 7,
+                    "total_uuids": 1,
+                    "existing_uuids": 0,
+                    "new_uuids": 1
+                }
+            },
+            {
+                "prepare": "INSERT INTO \"oc_openregister_table_1_2\" (\"_uuid\", \"title\") VALUES (:p0,:p1) ON CONFLICT (_uuid) DO UPDATE SET \"title\" = EXCLUDED.\"title\""
+            },
+            {
+                "execute": {
+                    "p0": "u-9",
+                    "p1": "t"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Executed UPSERT chunk",
+                "context": {
+                    "chunk": 7,
+                    "objects": 1,
+                    "table": "openregister_table_1_2",
+                    "sql_size_kb": 0.13,
+                    "sql_preview": "INSERT INTO \"oc_openregister_table_1_2\" (\"_uuid\", \"title\") VALUES (:p0,:p1) ON CONFLICT (_uuid) DO UPDATE SET \"title\" = EXCLUDED.\"title\""
+                }
+            },
+            {
+                "prepare": "SELECT * FROM \"oc_openregister_table_1_2\" WHERE \"_uuid\" IN (?)"
+            },
+            {
+                "execute": [
+                    "u-9"
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Classification complete (using pre-upsert UUID check)",
+                "context": {
+                    "chunk": 7,
+                    "uuids_requested": 1,
+                    "objects_returned": 1,
+                    "created": 1,
+                    "updated": 0,
+                    "unchanged": 0
+                }
+            }
+        ],
+        "result": [
+            {
+                "_uuid": "u-9",
+                "_updated": "2999-01-01 00:00:00",
+                "object_status": "created",
+                "operation_start_time": "<start>"
+            }
+        ]
+    },
+    "pg / only unknown columns / preUpdate true / freeze false": {
+        "events": [
+            {
+                "prepare": "SELECT column_name\n                        FROM information_schema.columns\n                        WHERE table_name = ? AND table_schema = 'public'"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_1_2"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_1_2",
+                    "columns": [
+                        "_uuid",
+                        "_slug",
+                        "_name",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "flag",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "other",
+                    "table": "openregister_table_1_2"
+                }
+            }
+        ],
+        "result": []
+    },
+    "pg / only unknown columns / preUpdate false / freeze true": {
+        "events": [
+            {
+                "prepare": "SELECT column_name\n                        FROM information_schema.columns\n                        WHERE table_name = ? AND table_schema = 'public'"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_1_2"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_1_2",
+                    "columns": [
+                        "_uuid",
+                        "_slug",
+                        "_name",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "flag",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "other",
+                    "table": "openregister_table_1_2"
+                }
+            }
+        ],
+        "result": []
+    },
+    "pg / empty / preUpdate true / freeze false": {
+        "events": [],
+        "result": []
+    },
+    "pg / empty / preUpdate false / freeze true": {
+        "events": [],
+        "result": []
+    },
+    "pg / exists check fails": {
+        "events": [
+            {
+                "prepare": "SELECT column_name\n                        FROM information_schema.columns\n                        WHERE table_name = ? AND table_schema = 'public'"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_1_2"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_1_2",
+                    "columns": [
+                        "_uuid",
+                        "_slug",
+                        "_name",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "flag",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Generated missing _uuid for bulk object",
+                "context": {
+                    "uuid": "<generated-uuid>"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Generated missing _uuid for bulk object",
+                "context": {
+                    "uuid": "<generated-uuid>"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM \"oc_openregister_table_1_2\" WHERE \"_uuid\" IN (?,?,?,?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "<generated-uuid>",
+                    "<generated-uuid>"
+                ]
+            },
+            {
+                "log": "warning",
+                "message": "[MagicBulkHandler] Failed to check existing UUIDs, will use timestamp-based classification",
+                "context": {
+                    "error": "refused: IN ("
+                }
+            },
+            {
+                "prepare": "INSERT INTO \"oc_openregister_table_1_2\" (\"_uuid\", \"_name\", \"title\", \"_slug\", \"flag\", \"_created\", \"_version\") VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6),(:p7,:p8,:p9,:p10,:p11,:p12,:p13),(:p14,:p15,:p16,:p17,:p18,:p19,:p20),(:p21,:p22,:p23,:p24,:p25,:p26,:p27),(:p28,:p29,:p30,:p31,:p32,:p33,:p34) ON CONFLICT (_uuid) DO UPDATE SET \"_name\" = EXCLUDED.\"_name\", \"title\" = EXCLUDED.\"title\", \"_slug\" = EXCLUDED.\"_slug\", \"flag\" = EXCLUDED.\"flag\""
+            },
+            {
+                "execute": {
+                    "p0": "u-1",
+                    "p1": "One again",
+                    "p2": "b",
+                    "p3": null,
+                    "p4": null,
+                    "p5": null,
+                    "p6": null,
+                    "p7": "u-2",
+                    "p8": null,
+                    "p9": null,
+                    "p10": "s-2",
+                    "p11": 0,
+                    "p12": "2020-01-01",
+                    "p13": "1.0.0",
+                    "p14": "u-3",
+                    "p15": null,
+                    "p16": "three again",
+                    "p17": null,
+                    "p18": null,
+                    "p19": null,
+                    "p20": null,
+                    "p21": "<generated-uuid>",
+                    "p22": null,
+                    "p23": "generated",
+                    "p24": null,
+                    "p25": null,
+                    "p26": null,
+                    "p27": null,
+                    "p28": "<generated-uuid>",
+                    "p29": null,
+                    "p30": "no uuid",
+                    "p31": null,
+                    "p32": null,
+                    "p33": null,
+                    "p34": null
+                }
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Executed UPSERT chunk",
+                "context": {
+                    "chunk": 7,
+                    "objects": 8,
+                    "table": "openregister_table_1_2",
+                    "sql_size_kb": 0.42,
+                    "sql_preview": "INSERT INTO \"oc_openregister_table_1_2\" (\"_uuid\", \"_name\", \"title\", \"_slug\", \"flag\", \"_created\", \"_version\") VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6),(:p7"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM \"oc_openregister_table_1_2\" WHERE \"_uuid\" IN (?,?,?,?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "<generated-uuid>",
+                    "<generated-uuid>"
+                ]
+            }
+        ],
+        "result": {
+            "thrown": "Exception: refused: IN ("
+        }
+    },
+    "pg / upsert fails": {
+        "events": [
+            {
+                "prepare": "SELECT column_name\n                        FROM information_schema.columns\n                        WHERE table_name = ? AND table_schema = 'public'"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_1_2"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_1_2",
+                    "columns": [
+                        "_uuid",
+                        "_slug",
+                        "_name",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "flag",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Generated missing _uuid for bulk object",
+                "context": {
+                    "uuid": "<generated-uuid>"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Generated missing _uuid for bulk object",
+                "context": {
+                    "uuid": "<generated-uuid>"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM \"oc_openregister_table_1_2\" WHERE \"_uuid\" IN (?,?,?,?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "<generated-uuid>",
+                    "<generated-uuid>"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 7,
+                    "total_uuids": 5,
+                    "existing_uuids": 2,
+                    "new_uuids": 3
+                }
+            },
+            {
+                "prepare": "INSERT INTO \"oc_openregister_table_1_2\" (\"_uuid\", \"_name\", \"title\", \"_slug\", \"flag\", \"_created\", \"_version\") VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6),(:p7,:p8,:p9,:p10,:p11,:p12,:p13),(:p14,:p15,:p16,:p17,:p18,:p19,:p20),(:p21,:p22,:p23,:p24,:p25,:p26,:p27),(:p28,:p29,:p30,:p31,:p32,:p33,:p34) ON CONFLICT (_uuid) DO UPDATE SET \"_name\" = EXCLUDED.\"_name\", \"title\" = EXCLUDED.\"title\", \"_slug\" = EXCLUDED.\"_slug\", \"flag\" = EXCLUDED.\"flag\""
+            },
+            {
+                "execute": {
+                    "p0": "u-1",
+                    "p1": "One again",
+                    "p2": "b",
+                    "p3": null,
+                    "p4": null,
+                    "p5": null,
+                    "p6": null,
+                    "p7": "u-2",
+                    "p8": null,
+                    "p9": null,
+                    "p10": "s-2",
+                    "p11": 0,
+                    "p12": "2020-01-01",
+                    "p13": "1.0.0",
+                    "p14": "u-3",
+                    "p15": null,
+                    "p16": "three again",
+                    "p17": null,
+                    "p18": null,
+                    "p19": null,
+                    "p20": null,
+                    "p21": "<generated-uuid>",
+                    "p22": null,
+                    "p23": "generated",
+                    "p24": null,
+                    "p25": null,
+                    "p26": null,
+                    "p27": null,
+                    "p28": "<generated-uuid>",
+                    "p29": null,
+                    "p30": "no uuid",
+                    "p31": null,
+                    "p32": null,
+                    "p33": null,
+                    "p34": null
+                }
+            },
+            {
+                "log": "error",
+                "message": "[MagicBulkHandler] UPSERT chunk failed",
+                "context": {
+                    "chunk": 7,
+                    "table": "openregister_table_1_2",
+                    "error": "refused: INSERT INTO"
+                }
+            }
+        ],
+        "result": {
+            "thrown": "Exception: refused: INSERT INTO"
+        }
+    },
+    "mysql / mixed / preUpdate true / freeze false": {
+        "events": [
+            {
+                "prepare": "SHOW COLUMNS FROM `oc_openregister_table_1_2`"
+            },
+            {
+                "execute": []
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_1_2",
+                    "columns": [
+                        "_uuid",
+                        "_slug",
+                        "_name",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "flag",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Generated missing _uuid for bulk object",
+                "context": {
+                    "uuid": "<generated-uuid>"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Generated missing _uuid for bulk object",
+                "context": {
+                    "uuid": "<generated-uuid>"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM `oc_openregister_table_1_2` WHERE `_uuid` IN (?,?,?,?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "<generated-uuid>",
+                    "<generated-uuid>"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 7,
+                    "total_uuids": 5,
+                    "existing_uuids": 2,
+                    "new_uuids": 3
+                }
+            },
+            {
+                "prepare": "INSERT INTO `oc_openregister_table_1_2` (`_uuid`, `_name`, `title`, `_slug`, `flag`, `_created`, `_version`) VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6),(:p7,:p8,:p9,:p10,:p11,:p12,:p13),(:p14,:p15,:p16,:p17,:p18,:p19,:p20),(:p21,:p22,:p23,:p24,:p25,:p26,:p27),(:p28,:p29,:p30,:p31,:p32,:p33,:p34) ON DUPLICATE KEY UPDATE `_name` = VALUES(`_name`), `title` = VALUES(`title`), `_slug` = VALUES(`_slug`), `flag` = VALUES(`flag`)"
+            },
+            {
+                "execute": {
+                    "p0": "u-1",
+                    "p1": "One again",
+                    "p2": "b",
+                    "p3": null,
+                    "p4": null,
+                    "p5": null,
+                    "p6": null,
+                    "p7": "u-2",
+                    "p8": null,
+                    "p9": null,
+                    "p10": "s-2",
+                    "p11": 0,
+                    "p12": "2020-01-01",
+                    "p13": "1.0.0",
+                    "p14": "u-3",
+                    "p15": null,
+                    "p16": "three again",
+                    "p17": null,
+                    "p18": null,
+                    "p19": null,
+                    "p20": null,
+                    "p21": "<generated-uuid>",
+                    "p22": null,
+                    "p23": "generated",
+                    "p24": null,
+                    "p25": null,
+                    "p26": null,
+                    "p27": null,
+                    "p28": "<generated-uuid>",
+                    "p29": null,
+                    "p30": "no uuid",
+                    "p31": null,
+                    "p32": null,
+                    "p33": null,
+                    "p34": null
+                }
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Executed UPSERT chunk",
+                "context": {
+                    "chunk": 7,
+                    "objects": 8,
+                    "table": "openregister_table_1_2",
+                    "sql_size_kb": 0.41,
+                    "sql_preview": "INSERT INTO `oc_openregister_table_1_2` (`_uuid`, `_name`, `title`, `_slug`, `flag`, `_created`, `_version`) VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6),(:p7"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM `oc_openregister_table_1_2` WHERE `_uuid` IN (?,?,?,?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "<generated-uuid>",
+                    "<generated-uuid>"
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Classification complete (using pre-upsert UUID check)",
+                "context": {
+                    "chunk": 7,
+                    "uuids_requested": 5,
+                    "objects_returned": 5,
+                    "created": 3,
+                    "updated": 2,
+                    "unchanged": 0
+                }
+            }
+        ],
+        "result": [
+            {
+                "_uuid": "u-1",
+                "_updated": "<start>",
+                "object_status": "updated",
+                "_pre_update_row": {
+                    "_uuid": "u-1",
+                    "title": "old u-1"
+                },
+                "operation_start_time": "<start>"
+            },
+            {
+                "_uuid": "u-2",
+                "_updated": "2999-01-01 00:00:00",
+                "object_status": "updated",
+                "_pre_update_row": {
+                    "_uuid": "u-2",
+                    "title": "old u-2"
+                },
+                "operation_start_time": "<start>"
+            },
+            {
+                "_uuid": "u-3",
+                "_updated": "2000-01-01 00:00:00",
+                "object_status": "created",
+                "operation_start_time": "<start>"
+            },
+            {
+                "_uuid": "<generated-uuid>",
+                "_updated": "2000-01-01 00:00:00",
+                "object_status": "created",
+                "operation_start_time": "<start>"
+            },
+            {
+                "_uuid": "<generated-uuid>",
+                "_updated": "2000-01-01 00:00:00",
+                "object_status": "created",
+                "operation_start_time": "<start>"
+            }
+        ]
+    },
+    "mysql / mixed / preUpdate false / freeze true": {
+        "events": [
+            {
+                "prepare": "SHOW COLUMNS FROM `oc_openregister_table_1_2`"
+            },
+            {
+                "execute": []
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_1_2",
+                    "columns": [
+                        "_uuid",
+                        "_slug",
+                        "_name",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "flag",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Generated missing _uuid for bulk object",
+                "context": {
+                    "uuid": "<generated-uuid>"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Generated missing _uuid for bulk object",
+                "context": {
+                    "uuid": "<generated-uuid>"
+                }
+            },
+            {
+                "prepare": "SELECT `_uuid` FROM `oc_openregister_table_1_2` WHERE `_uuid` IN (?,?,?,?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "<generated-uuid>",
+                    "<generated-uuid>"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 7,
+                    "total_uuids": 5,
+                    "existing_uuids": 2,
+                    "new_uuids": 3
+                }
+            },
+            {
+                "prepare": "INSERT INTO `oc_openregister_table_1_2` (`_uuid`, `_name`, `title`, `_slug`, `flag`, `_created`, `_version`) VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6),(:p7,:p8,:p9,:p10,:p11,:p12,:p13),(:p14,:p15,:p16,:p17,:p18,:p19,:p20),(:p21,:p22,:p23,:p24,:p25,:p26,:p27),(:p28,:p29,:p30,:p31,:p32,:p33,:p34) ON DUPLICATE KEY UPDATE `_name` = VALUES(`_name`), `title` = VALUES(`title`), `_slug` = COALESCE(NULLIF(`_slug`, ''), VALUES(`_slug`)), `flag` = VALUES(`flag`)"
+            },
+            {
+                "execute": {
+                    "p0": "u-1",
+                    "p1": "One again",
+                    "p2": "b",
+                    "p3": null,
+                    "p4": null,
+                    "p5": null,
+                    "p6": null,
+                    "p7": "u-2",
+                    "p8": null,
+                    "p9": null,
+                    "p10": "s-2",
+                    "p11": 0,
+                    "p12": "2020-01-01",
+                    "p13": "1.0.0",
+                    "p14": "u-3",
+                    "p15": null,
+                    "p16": "three again",
+                    "p17": null,
+                    "p18": null,
+                    "p19": null,
+                    "p20": null,
+                    "p21": "<generated-uuid>",
+                    "p22": null,
+                    "p23": "generated",
+                    "p24": null,
+                    "p25": null,
+                    "p26": null,
+                    "p27": null,
+                    "p28": "<generated-uuid>",
+                    "p29": null,
+                    "p30": "no uuid",
+                    "p31": null,
+                    "p32": null,
+                    "p33": null,
+                    "p34": null
+                }
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Executed UPSERT chunk",
+                "context": {
+                    "chunk": 7,
+                    "objects": 8,
+                    "table": "openregister_table_1_2",
+                    "sql_size_kb": 0.44,
+                    "sql_preview": "INSERT INTO `oc_openregister_table_1_2` (`_uuid`, `_name`, `title`, `_slug`, `flag`, `_created`, `_version`) VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6),(:p7"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM `oc_openregister_table_1_2` WHERE `_uuid` IN (?,?,?,?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "<generated-uuid>",
+                    "<generated-uuid>"
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Classification complete (using pre-upsert UUID check)",
+                "context": {
+                    "chunk": 7,
+                    "uuids_requested": 5,
+                    "objects_returned": 5,
+                    "created": 3,
+                    "updated": 2,
+                    "unchanged": 0
+                }
+            }
+        ],
+        "result": [
+            {
+                "_uuid": "u-1",
+                "_updated": "<start>",
+                "object_status": "updated",
+                "operation_start_time": "<start>"
+            },
+            {
+                "_uuid": "u-2",
+                "_updated": "2999-01-01 00:00:00",
+                "object_status": "updated",
+                "operation_start_time": "<start>"
+            },
+            {
+                "_uuid": "u-3",
+                "_updated": "2000-01-01 00:00:00",
+                "object_status": "created",
+                "operation_start_time": "<start>"
+            },
+            {
+                "_uuid": "<generated-uuid>",
+                "_updated": "2000-01-01 00:00:00",
+                "object_status": "created",
+                "operation_start_time": "<start>"
+            },
+            {
+                "_uuid": "<generated-uuid>",
+                "_updated": "2000-01-01 00:00:00",
+                "object_status": "created",
+                "operation_start_time": "<start>"
+            }
+        ]
+    },
+    "mysql / single new / preUpdate true / freeze false": {
+        "events": [
+            {
+                "prepare": "SHOW COLUMNS FROM `oc_openregister_table_1_2`"
+            },
+            {
+                "execute": []
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_1_2",
+                    "columns": [
+                        "_uuid",
+                        "_slug",
+                        "_name",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "flag",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "prepare": "SELECT * FROM `oc_openregister_table_1_2` WHERE `_uuid` IN (?)"
+            },
+            {
+                "execute": [
+                    "u-9"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 7,
+                    "total_uuids": 1,
+                    "existing_uuids": 0,
+                    "new_uuids": 1
+                }
+            },
+            {
+                "prepare": "INSERT INTO `oc_openregister_table_1_2` (`_uuid`, `title`) VALUES (:p0,:p1) ON DUPLICATE KEY UPDATE `title` = VALUES(`title`)"
+            },
+            {
+                "execute": {
+                    "p0": "u-9",
+                    "p1": "t"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Executed UPSERT chunk",
+                "context": {
+                    "chunk": 7,
+                    "objects": 1,
+                    "table": "openregister_table_1_2",
+                    "sql_size_kb": 0.12,
+                    "sql_preview": "INSERT INTO `oc_openregister_table_1_2` (`_uuid`, `title`) VALUES (:p0,:p1) ON DUPLICATE KEY UPDATE `title` = VALUES(`title`)"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM `oc_openregister_table_1_2` WHERE `_uuid` IN (?)"
+            },
+            {
+                "execute": [
+                    "u-9"
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Classification complete (using pre-upsert UUID check)",
+                "context": {
+                    "chunk": 7,
+                    "uuids_requested": 1,
+                    "objects_returned": 1,
+                    "created": 1,
+                    "updated": 0,
+                    "unchanged": 0
+                }
+            }
+        ],
+        "result": [
+            {
+                "_uuid": "u-9",
+                "_updated": "2999-01-01 00:00:00",
+                "object_status": "created",
+                "operation_start_time": "<start>"
+            }
+        ]
+    },
+    "mysql / single new / preUpdate false / freeze true": {
+        "events": [
+            {
+                "prepare": "SHOW COLUMNS FROM `oc_openregister_table_1_2`"
+            },
+            {
+                "execute": []
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_1_2",
+                    "columns": [
+                        "_uuid",
+                        "_slug",
+                        "_name",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "flag",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "prepare": "SELECT `_uuid` FROM `oc_openregister_table_1_2` WHERE `_uuid` IN (?)"
+            },
+            {
+                "execute": [
+                    "u-9"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 7,
+                    "total_uuids": 1,
+                    "existing_uuids": 0,
+                    "new_uuids": 1
+                }
+            },
+            {
+                "prepare": "INSERT INTO `oc_openregister_table_1_2` (`_uuid`, `title`) VALUES (:p0,:p1) ON DUPLICATE KEY UPDATE `title` = VALUES(`title`)"
+            },
+            {
+                "execute": {
+                    "p0": "u-9",
+                    "p1": "t"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Executed UPSERT chunk",
+                "context": {
+                    "chunk": 7,
+                    "objects": 1,
+                    "table": "openregister_table_1_2",
+                    "sql_size_kb": 0.12,
+                    "sql_preview": "INSERT INTO `oc_openregister_table_1_2` (`_uuid`, `title`) VALUES (:p0,:p1) ON DUPLICATE KEY UPDATE `title` = VALUES(`title`)"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM `oc_openregister_table_1_2` WHERE `_uuid` IN (?)"
+            },
+            {
+                "execute": [
+                    "u-9"
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Classification complete (using pre-upsert UUID check)",
+                "context": {
+                    "chunk": 7,
+                    "uuids_requested": 1,
+                    "objects_returned": 1,
+                    "created": 1,
+                    "updated": 0,
+                    "unchanged": 0
+                }
+            }
+        ],
+        "result": [
+            {
+                "_uuid": "u-9",
+                "_updated": "2999-01-01 00:00:00",
+                "object_status": "created",
+                "operation_start_time": "<start>"
+            }
+        ]
+    },
+    "mysql / only unknown columns / preUpdate true / freeze false": {
+        "events": [
+            {
+                "prepare": "SHOW COLUMNS FROM `oc_openregister_table_1_2`"
+            },
+            {
+                "execute": []
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_1_2",
+                    "columns": [
+                        "_uuid",
+                        "_slug",
+                        "_name",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "flag",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "other",
+                    "table": "openregister_table_1_2"
+                }
+            }
+        ],
+        "result": []
+    },
+    "mysql / only unknown columns / preUpdate false / freeze true": {
+        "events": [
+            {
+                "prepare": "SHOW COLUMNS FROM `oc_openregister_table_1_2`"
+            },
+            {
+                "execute": []
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_1_2",
+                    "columns": [
+                        "_uuid",
+                        "_slug",
+                        "_name",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "flag",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "other",
+                    "table": "openregister_table_1_2"
+                }
+            }
+        ],
+        "result": []
+    },
+    "mysql / empty / preUpdate true / freeze false": {
+        "events": [],
+        "result": []
+    },
+    "mysql / empty / preUpdate false / freeze true": {
+        "events": [],
+        "result": []
+    },
+    "mysql / exists check fails": {
+        "events": [
+            {
+                "prepare": "SHOW COLUMNS FROM `oc_openregister_table_1_2`"
+            },
+            {
+                "execute": []
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_1_2",
+                    "columns": [
+                        "_uuid",
+                        "_slug",
+                        "_name",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "flag",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Generated missing _uuid for bulk object",
+                "context": {
+                    "uuid": "<generated-uuid>"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Generated missing _uuid for bulk object",
+                "context": {
+                    "uuid": "<generated-uuid>"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM `oc_openregister_table_1_2` WHERE `_uuid` IN (?,?,?,?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "<generated-uuid>",
+                    "<generated-uuid>"
+                ]
+            },
+            {
+                "log": "warning",
+                "message": "[MagicBulkHandler] Failed to check existing UUIDs, will use timestamp-based classification",
+                "context": {
+                    "error": "refused: IN ("
+                }
+            },
+            {
+                "prepare": "INSERT INTO `oc_openregister_table_1_2` (`_uuid`, `_name`, `title`, `_slug`, `flag`, `_created`, `_version`) VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6),(:p7,:p8,:p9,:p10,:p11,:p12,:p13),(:p14,:p15,:p16,:p17,:p18,:p19,:p20),(:p21,:p22,:p23,:p24,:p25,:p26,:p27),(:p28,:p29,:p30,:p31,:p32,:p33,:p34) ON DUPLICATE KEY UPDATE `_name` = VALUES(`_name`), `title` = VALUES(`title`), `_slug` = VALUES(`_slug`), `flag` = VALUES(`flag`)"
+            },
+            {
+                "execute": {
+                    "p0": "u-1",
+                    "p1": "One again",
+                    "p2": "b",
+                    "p3": null,
+                    "p4": null,
+                    "p5": null,
+                    "p6": null,
+                    "p7": "u-2",
+                    "p8": null,
+                    "p9": null,
+                    "p10": "s-2",
+                    "p11": 0,
+                    "p12": "2020-01-01",
+                    "p13": "1.0.0",
+                    "p14": "u-3",
+                    "p15": null,
+                    "p16": "three again",
+                    "p17": null,
+                    "p18": null,
+                    "p19": null,
+                    "p20": null,
+                    "p21": "<generated-uuid>",
+                    "p22": null,
+                    "p23": "generated",
+                    "p24": null,
+                    "p25": null,
+                    "p26": null,
+                    "p27": null,
+                    "p28": "<generated-uuid>",
+                    "p29": null,
+                    "p30": "no uuid",
+                    "p31": null,
+                    "p32": null,
+                    "p33": null,
+                    "p34": null
+                }
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Executed UPSERT chunk",
+                "context": {
+                    "chunk": 7,
+                    "objects": 8,
+                    "table": "openregister_table_1_2",
+                    "sql_size_kb": 0.41,
+                    "sql_preview": "INSERT INTO `oc_openregister_table_1_2` (`_uuid`, `_name`, `title`, `_slug`, `flag`, `_created`, `_version`) VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6),(:p7"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM `oc_openregister_table_1_2` WHERE `_uuid` IN (?,?,?,?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "<generated-uuid>",
+                    "<generated-uuid>"
+                ]
+            }
+        ],
+        "result": {
+            "thrown": "Exception: refused: IN ("
+        }
+    },
+    "mysql / upsert fails": {
+        "events": [
+            {
+                "prepare": "SHOW COLUMNS FROM `oc_openregister_table_1_2`"
+            },
+            {
+                "execute": []
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_1_2",
+                    "columns": [
+                        "_uuid",
+                        "_slug",
+                        "_name",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "flag",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_1_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Generated missing _uuid for bulk object",
+                "context": {
+                    "uuid": "<generated-uuid>"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Generated missing _uuid for bulk object",
+                "context": {
+                    "uuid": "<generated-uuid>"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM `oc_openregister_table_1_2` WHERE `_uuid` IN (?,?,?,?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "<generated-uuid>",
+                    "<generated-uuid>"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 7,
+                    "total_uuids": 5,
+                    "existing_uuids": 2,
+                    "new_uuids": 3
+                }
+            },
+            {
+                "prepare": "INSERT INTO `oc_openregister_table_1_2` (`_uuid`, `_name`, `title`, `_slug`, `flag`, `_created`, `_version`) VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6),(:p7,:p8,:p9,:p10,:p11,:p12,:p13),(:p14,:p15,:p16,:p17,:p18,:p19,:p20),(:p21,:p22,:p23,:p24,:p25,:p26,:p27),(:p28,:p29,:p30,:p31,:p32,:p33,:p34) ON DUPLICATE KEY UPDATE `_name` = VALUES(`_name`), `title` = VALUES(`title`), `_slug` = VALUES(`_slug`), `flag` = VALUES(`flag`)"
+            },
+            {
+                "execute": {
+                    "p0": "u-1",
+                    "p1": "One again",
+                    "p2": "b",
+                    "p3": null,
+                    "p4": null,
+                    "p5": null,
+                    "p6": null,
+                    "p7": "u-2",
+                    "p8": null,
+                    "p9": null,
+                    "p10": "s-2",
+                    "p11": 0,
+                    "p12": "2020-01-01",
+                    "p13": "1.0.0",
+                    "p14": "u-3",
+                    "p15": null,
+                    "p16": "three again",
+                    "p17": null,
+                    "p18": null,
+                    "p19": null,
+                    "p20": null,
+                    "p21": "<generated-uuid>",
+                    "p22": null,
+                    "p23": "generated",
+                    "p24": null,
+                    "p25": null,
+                    "p26": null,
+                    "p27": null,
+                    "p28": "<generated-uuid>",
+                    "p29": null,
+                    "p30": "no uuid",
+                    "p31": null,
+                    "p32": null,
+                    "p33": null,
+                    "p34": null
+                }
+            },
+            {
+                "log": "error",
+                "message": "[MagicBulkHandler] UPSERT chunk failed",
+                "context": {
+                    "chunk": 7,
+                    "table": "openregister_table_1_2",
+                    "error": "refused: INSERT INTO"
+                }
+            }
+        ],
+        "result": {
+            "thrown": "Exception: refused: INSERT INTO"
+        }
+    }
+}
