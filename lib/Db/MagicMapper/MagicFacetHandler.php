@@ -301,116 +301,57 @@ class MagicFacetHandler {
 	): array {
 		$startTime = microtime(true);
 
-		// Extract facet configuration.
 		$facetConfig = $query['_facets'] ?? [];
 		if (empty($facetConfig) === true) {
 			return [];
 		}
 
-		// Handle _facets as string (e.g., _facets=extend) by converting to array.
-		if (is_string($facetConfig) === true) {
-			$facetConfig = $this->expandFacetConfig(facetConfig: $facetConfig, schema: $schema);
-		}
-
-		// Handle _facets as numerically-indexed array (e.g., _facets[]=standaardversies).
-		// PHP converts ?_facets[]=foo&_facets[]=bar into [0 => 'foo', 1 => 'bar'].
-		if (is_array($facetConfig) === true && array_is_list($facetConfig) === true) {
-			$facetConfig = $this->expandFacetConfig(
-				facetConfig: implode(separator: ',', array: $facetConfig),
-				schema: $schema
-			);
-		}
+		$facetConfig = $this->normaliseFacetConfig(facetConfig: $facetConfig, schema: $schema);
 
 		// Extract base query (without facet config).
 		$baseQuery = $query;
 		unset($baseQuery['_facets']);
+		$table = new TableTermsFacet(
+			tableName: $tableName,
+			field: '',
+			baseQuery: $baseQuery,
+			isMetadata: false,
+			register: $register,
+			schema: $schema
+		);
 
-		$facets = [];
+		$facets     = [];
 		$facetTimes = [];
-		// Track time per facet for optimization
-		// Process metadata facets (@self).
 		if (($facetConfig['@self'] ?? null) !== null && is_array($facetConfig['@self']) === true) {
 			$facets['@self'] = [];
 			foreach ($facetConfig['@self'] as $field => $config) {
 				$facetStart = microtime(true);
-				$type = $config['type'] ?? 'terms';
-
-				if ($type === 'terms') {
-					$facets['@self'][$field] = $this->getTermsFacet(
-						facet: new TableTermsFacet(
-							tableName: $tableName,
-							field: self::METADATA_PREFIX . $field,
-							baseQuery: $baseQuery,
-							isMetadata: true,
-							register: $register,
-							schema: $schema
-						)
-					);
-				} elseif ($type === 'date_histogram') {
-					$interval = $config['interval'] ?? 'month';
-					$facets['@self'][$field] = $this->getDateHistogramFacet(
-						tableName: $tableName,
-						field: self::METADATA_PREFIX . $field,
-						interval: $interval,
-						baseQuery: $baseQuery,
-						schema: $schema,
-						register: $register
-					);
+				$facet      = $this->computeTableFacet(facet: $table->forMetadataField(field: self::METADATA_PREFIX . $field), config: $config);
+				if ($facet !== null) {
+					$facets['@self'][$field] = $facet;
 				}
 
 				$facetTimes['@self.' . $field] = round((microtime(true) - $facetStart) * 1000, 2);
-			}//end foreach
-		}//end if
+			}
+		}
 
-		// Process object field facets (schema properties).
-		$objectFacetConfig = array_filter(
-			$facetConfig,
-			function ($key) {
-				return $key !== '@self';
-			},
-			ARRAY_FILTER_USE_KEY
-		);
-
-		foreach ($objectFacetConfig as $field => $config) {
+		foreach ($facetConfig as $field => $config) {
 			// 🔴 AN EXPLICITLY REQUESTED FACET OBEYS THE READ RULE TOO. The
 			// guard in expandFacetConfig() covers only the auto-discovered
 			// `facetable` loop; a caller who names the property in
-			// `_facets[<prop>][type]=terms` skipped it and got the column's
-			// distinct values back (found live on the Rotterdam stack: an
-			// anonymous call listed a property ruled `authenticated`).
-			if ($this->callerMayFacet(schema: $schema, property: (string)$field) === false) {
+			// `_facets[<prop>][type]=terms` would otherwise get the column's
+			// distinct values back.
+			if ($field === '@self' || $this->callerMayFacet(schema: $schema, property: (string)$field) === false) {
 				continue;
 			}
 
 			$facetStart = microtime(true);
-			$type = $config['type'] ?? 'terms';
 			// Sanitize field name to match database column (camelCase -> snake_case).
-			$columnName = $this->sanitizeColumnName(name: $field);
-
-			if ($type === 'terms') {
-				$facets[$field] = $this->getTermsFacet(
-					facet: new TableTermsFacet(
-						tableName: $tableName,
-						field: $columnName,
-						baseQuery: $baseQuery,
-						isMetadata: false,
-						register: $register,
-						schema: $schema
-					)
-				);
-			} elseif ($type === 'date_histogram') {
-				$interval = $config['interval'] ?? 'month';
-				$facets[$field] = $this->getDateHistogramFacet(
-					tableName: $tableName,
-					field: $columnName,
-					interval: $interval,
-					baseQuery: $baseQuery,
-					schema: $schema,
-					register: $register
-				);
+			$facet = $this->computeTableFacet(facet: $table->forPropertyField(field: $this->sanitizeColumnName(name: $field)), config: $config);
+			if ($facet !== null) {
+				$facets[$field] = $facet;
 			}
 
-			// Add schema property title if available.
 			if (isset($config['title']) === true) {
 				$facets[$field]['title'] = $config['title'];
 			}
@@ -418,17 +359,71 @@ class MagicFacetHandler {
 			$facetTimes[$field] = round((microtime(true) - $facetStart) * 1000, 2);
 		}//end foreach
 
-		$totalTime = round((microtime(true) - $startTime) * 1000, 2);
-
 		// Add timing metadata to facets for performance debugging.
 		$facets['_metrics'] = [
-			'total_ms' => $totalTime,
+			'total_ms' => round((microtime(true) - $startTime) * 1000, 2),
 			'per_facet_ms' => $facetTimes,
 			'label_cache' => $this->cacheStats,
 		];
 
 		return $facets;
 	}//end getSimpleFacets()
+
+	/**
+	 * Expand a facet configuration given as a string or a list of names.
+	 *
+	 * `_facets=extend` arrives as a string, `_facets[]=a&_facets[]=b` as a list;
+	 * both expand to per-field configuration from the schema.
+	 *
+	 * @param mixed  $facetConfig The facet configuration from the query.
+	 * @param Schema $schema      The schema context.
+	 *
+	 * @return array The facet configuration keyed by field.
+	 */
+	private function normaliseFacetConfig(mixed $facetConfig, Schema $schema): array {
+		if (is_string($facetConfig) === true) {
+			$facetConfig = $this->expandFacetConfig(facetConfig: $facetConfig, schema: $schema);
+		}
+
+		if (is_array($facetConfig) === true && array_is_list($facetConfig) === true) {
+			$facetConfig = $this->expandFacetConfig(
+				facetConfig: implode(separator: ',', array: $facetConfig),
+				schema: $schema
+			);
+		}
+
+		return $facetConfig;
+	}//end normaliseFacetConfig()
+
+	/**
+	 * Compute one single-table facet of the configured type.
+	 *
+	 * @param TableTermsFacet $facet  The table, column and filters of the facet.
+	 * @param mixed           $config The facet configuration (type, interval).
+	 *
+	 * @return array|null The facet, or null for a type that is not supported.
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs.
+	 */
+	private function computeTableFacet(TableTermsFacet $facet, mixed $config): ?array {
+		$type = $config['type'] ?? 'terms';
+		if ($type === 'terms') {
+			return $this->getTermsFacet(facet: $facet);
+		}
+
+		if ($type !== 'date_histogram') {
+			return null;
+		}
+
+		return $this->getDateHistogramFacet(
+			tableName: $facet->tableName,
+			field: $facet->field,
+			interval: $config['interval'] ?? 'month',
+			baseQuery: $facet->baseQuery,
+			schema: $facet->schema,
+			register: $facet->register
+		);
+	}//end computeTableFacet()
 
 	/**
 	 * Get facets using UNION ALL across multiple tables for better performance.
