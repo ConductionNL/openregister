@@ -176,7 +176,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\ConnectionSeamReportJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\AvgRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DsarRetentionSweepJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\ReportRenderJob</job>
+		<job>OCA\OpenRegister\Search\BackgroundJob\ReportRenderJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\NotificationQueueFlushJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TaskScheduledNotificationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ArchivalRetentionTask</job>
@@ -531,7 +531,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\PruneRetiredSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\RelinkRegisterSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\ReconcileMagicTablesCommand</command>
-		<command>OCA\OpenRegister\Command\SearchIndexCommand</command>
+		<command>OCA\OpenRegister\Search\Command\SearchIndexCommand</command>
 		<!-- The sanctioned administrative purge. Every HTTP delete route refuses an
 		     archival record; this is the one path that can still destroy one, and it
 		     needs shell access plus an explicit force flag. -->

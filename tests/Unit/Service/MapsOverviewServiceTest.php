@@ -38,9 +38,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Geo\GeoFeatureCollectionBuilder;
+use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
-use OCA\OpenRegister\Service\MapsOverviewService;
+use OCA\OpenRegister\Search\Service\MapsOverviewService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
 use OCP\IUser;

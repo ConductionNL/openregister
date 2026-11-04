@@ -42,10 +42,10 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Search\Db\View;
 
 /**
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)

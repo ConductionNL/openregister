@@ -20,7 +20,7 @@
  * {@see \OCA\OpenRegister\Service\ObjectService::findAll()} /
  * {@see \OCA\OpenRegister\Service\ObjectService::count()} with RBAC and
  * multitenancy scoping on, mirroring
- * {@see \OCA\OpenRegister\Service\Quality\DuplicateDetectionService::loadCandidates()}
+ * {@see \OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService::loadCandidates()}
  * (ADR-022, ADR-045).
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -52,6 +52,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
 
 /**
  * Computes read-time quality statistics and serves the lowest-quality listing.

@@ -31,6 +31,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Response;
+use OCA\OpenRegister\Search\Db\View;
 
 /**
  * Trait MultiTenancyTrait

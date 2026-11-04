@@ -42,7 +42,7 @@ use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

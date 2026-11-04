@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Service\Schemas;
 
 use Exception;
 use OCA\OpenRegister\Service\Object\ReferenceKey;
-use OCA\OpenRegister\Service\Search\PropertySearchProfile;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 
 /**
  * Class PropertyValidatorHandler
