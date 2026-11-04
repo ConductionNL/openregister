@@ -24,6 +24,7 @@
 namespace OCA\OpenRegister\Db\ObjectHandlers;
 
 use DateTime;
+use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
@@ -38,6 +39,16 @@ use OCP\IDBConnection;
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class MariaDbFacetHandler {
+	/**
+	 * Metadata filter operators that compare a field with the value, and the expression method for each.
+	 */
+	private const METADATA_COMPARISONS = ['gt' => 'gt', 'lt' => 'lt', 'gte' => 'gte', 'lte' => 'lte', 'ne' => 'neq', '===' => 'eq'];
+
+	/**
+	 * Metadata filter operators that match a LIKE pattern: contains, starts with, ends with.
+	 */
+	private const METADATA_LIKE_PATTERNS = ['~' => '%%%s%%', '^' => '%s%%', '$' => '%%%s'];
+
 	/**
 	 * Constructor for the MariaDbFacetHandler
 	 *
@@ -798,126 +809,130 @@ class MariaDbFacetHandler {
 	 * @psalm-param array<string, mixed> $metadataFilters
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Metadata filtering requires handling many operator types
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Many filter operators need conditional handling
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive operator support requires extensive code
 	 */
 	private function applyMetadataFilters(IQueryBuilder $queryBuilder, array $metadataFilters): void {
 		foreach ($metadataFilters as $field => $value) {
-			// Handle simple values (backwards compatibility).
 			if (is_array($value) === false) {
-				if ($value === 'IS NOT NULL') {
-					$queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
-					continue;
-				}
-
-				if ($value === 'IS NULL') {
-					$queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
-					continue;
-				}
-
-				// Simple equals (case insensitive for strings).
-				$queryBuilder->andWhere($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($value)));
+				$queryBuilder->andWhere($this->simpleMetadataCondition(queryBuilder: $queryBuilder, filter: ['field' => $field, 'value' => $value]));
 				continue;
 			}
 
-			// Handle array of values (OR condition).
+			// A list of non-string values is an IN, not a set of operators.
 			if (($value[0] ?? null) !== null && is_string($value[0]) === false) {
-				// This is an array of values, not operators.
 				$queryBuilder->andWhere(
-					$queryBuilder->expr()->in(
-						$field,
-						$queryBuilder->createNamedParameter(
-							$value,
-							IQueryBuilder::PARAM_STR_ARRAY
-						)
-					)
+					$queryBuilder->expr()->in($field, $queryBuilder->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY))
 				);
 				continue;
 			}
 
-			// Handle operator-based filters.
 			foreach ($value as $operator => $operatorValue) {
-				$onParam = $queryBuilder->createNamedParameter($operatorValue);
-				switch ($operator) {
-					case 'gt':
-						$queryBuilder->andWhere($queryBuilder->expr()->gt($field, $onParam));
-						break;
-					case 'lt':
-						$queryBuilder->andWhere($queryBuilder->expr()->lt($field, $onParam));
-						break;
-					case 'gte':
-						$queryBuilder->andWhere($queryBuilder->expr()->gte($field, $onParam));
-						break;
-					case 'lte':
-						$queryBuilder->andWhere($queryBuilder->expr()->lte($field, $onParam));
-						break;
-					case 'ne':
-						$queryBuilder->andWhere($queryBuilder->expr()->neq($field, $onParam));
-						break;
-					case '~':
-						// Contains (case insensitive).
-						$likeParam = $queryBuilder->createNamedParameter('%' . $operatorValue . '%');
-						$queryBuilder->andWhere($queryBuilder->expr()->like($field, $likeParam));
-						break;
-					case '^':
-						// Starts with (case insensitive).
-						$startsParam = $queryBuilder->createNamedParameter($operatorValue . '%');
-						$queryBuilder->andWhere($queryBuilder->expr()->like($field, $startsParam));
-						break;
-					case '$':
-						// Ends with (case insensitive).
-						$endsParam = $queryBuilder->createNamedParameter('%' . $operatorValue);
-						$queryBuilder->andWhere($queryBuilder->expr()->like($field, $endsParam));
-						break;
-					case '===':
-						// Exact match (case sensitive).
-						$queryBuilder->andWhere($queryBuilder->expr()->eq($field, $onParam));
-						break;
-					case 'exists':
-						if ($operatorValue !== true && $operatorValue !== 'true') {
-							$queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
-							break;
-						}
-
-						$queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
-						break;
-					case 'empty':
-						if ($operatorValue !== true && $operatorValue !== 'true') {
-							$queryBuilder->andWhere(
-								$queryBuilder->expr()->andX(
-									$queryBuilder->expr()->isNotNull($field),
-									$queryBuilder->expr()->neq($field, $queryBuilder->createNamedParameter(''))
-								)
-							);
-							break;
-						}
-
-						$queryBuilder->andWhere(
-							$queryBuilder->expr()->orX(
-								$queryBuilder->expr()->isNull($field),
-								$queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter(''))
-							)
-						);
-						break;
-					case 'null':
-						if ($operatorValue !== true && $operatorValue !== 'true') {
-							$queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
-							break;
-						}
-
-						$queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
-						break;
-					default:
-						// Default to equals for unknown operators.
-						$defaultParam = $queryBuilder->createNamedParameter($operatorValue);
-						$queryBuilder->andWhere($queryBuilder->expr()->eq($field, $defaultParam));
-						break;
-				}//end switch
-			}//end foreach
+				$queryBuilder->andWhere(
+					$this->metadataOperatorCondition(
+						queryBuilder: $queryBuilder,
+						filter: ['field' => $field, 'operator' => (string)$operator, 'value' => $operatorValue]
+					)
+				);
+			}
 		}//end foreach
 	}//end applyMetadataFilters()
+
+	/**
+	 * The condition for a scalar metadata filter: IS NULL, IS NOT NULL, or equals.
+	 *
+	 * @param IQueryBuilder                      $queryBuilder The query builder.
+	 * @param array{field: string, value: mixed} $filter       The field and its value.
+	 *
+	 * @return string The condition.
+	 */
+	private function simpleMetadataCondition(IQueryBuilder $queryBuilder, array $filter): string {
+		if ($filter['value'] === 'IS NOT NULL') {
+			return $queryBuilder->expr()->isNotNull($filter['field']);
+		}
+
+		if ($filter['value'] === 'IS NULL') {
+			return $queryBuilder->expr()->isNull($filter['field']);
+		}
+
+		return $queryBuilder->expr()->eq($filter['field'], $queryBuilder->createNamedParameter($filter['value']));
+	}//end simpleMetadataCondition()
+
+	/**
+	 * The condition for one operator on a metadata field.
+	 *
+	 * Comparisons and `===` compare against the value; `~`, `^` and `$` are
+	 * contains, starts-with and ends-with; `exists`, `empty` and `null` take a
+	 * boolean; an unknown operator is an equals.
+	 *
+	 * @param IQueryBuilder                                        $queryBuilder The query builder.
+	 * @param array{field: string, operator: string, value: mixed} $filter       The field, operator and value.
+	 *
+	 * @return string|ICompositeExpression The condition.
+	 */
+	private function metadataOperatorCondition(IQueryBuilder $queryBuilder, array $filter): string|ICompositeExpression {
+		$field = $filter['field'];
+		$value = $filter['value'];
+		$onParam = $queryBuilder->createNamedParameter($value);
+		$comparison = self::METADATA_COMPARISONS[$filter['operator']] ?? null;
+		if ($comparison !== null) {
+			return $queryBuilder->expr()->$comparison($field, $onParam);
+		}
+
+		$likePattern = self::METADATA_LIKE_PATTERNS[$filter['operator']] ?? null;
+		if ($likePattern !== null) {
+			return $queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter(sprintf($likePattern, $value)));
+		}
+
+		$isTrue = ($value === true || $value === 'true');
+		switch ($filter['operator']) {
+			case 'exists':
+				return $this->nullCondition(queryBuilder: $queryBuilder, filter: ['field' => $field, 'isNull' => $isTrue === false]);
+			case 'null':
+				return $this->nullCondition(queryBuilder: $queryBuilder, filter: ['field' => $field, 'isNull' => $isTrue]);
+			case 'empty':
+				return $this->emptyCondition(queryBuilder: $queryBuilder, filter: ['field' => $field, 'isEmpty' => $isTrue]);
+			default:
+				return $queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($value));
+		}
+	}//end metadataOperatorCondition()
+
+	/**
+	 * IS NULL or IS NOT NULL on a field.
+	 *
+	 * @param IQueryBuilder                        $queryBuilder The query builder.
+	 * @param array{field: string, isNull: bool} $filter       The field, and whether it must be null.
+	 *
+	 * @return string The condition.
+	 */
+	private function nullCondition(IQueryBuilder $queryBuilder, array $filter): string {
+		if ($filter['isNull'] === true) {
+			return $queryBuilder->expr()->isNull($filter['field']);
+		}
+
+		return $queryBuilder->expr()->isNotNull($filter['field']);
+	}//end nullCondition()
+
+	/**
+	 * A field that is null or the empty string, or one that is neither.
+	 *
+	 * @param IQueryBuilder                         $queryBuilder The query builder.
+	 * @param array{field: string, isEmpty: bool} $filter       The field, and whether it must be empty.
+	 *
+	 * @return ICompositeExpression The condition.
+	 */
+	private function emptyCondition(IQueryBuilder $queryBuilder, array $filter): ICompositeExpression {
+		$field = $filter['field'];
+		if ($filter['isEmpty'] === true) {
+			return $queryBuilder->expr()->orX(
+				$queryBuilder->expr()->isNull($field),
+				$queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter(''))
+			);
+		}
+
+		return $queryBuilder->expr()->andX(
+			$queryBuilder->expr()->isNotNull($field),
+			$queryBuilder->expr()->neq($field, $queryBuilder->createNamedParameter(''))
+		);
+	}//end emptyCondition()
 
 	/**
 	 * Apply object field filters with advanced operator support

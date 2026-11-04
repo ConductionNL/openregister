@@ -926,6 +926,120 @@ import { useSettingsStore } from '../../../store/settings.js'
  * File configuration settings component for managing file upload and text extraction.
  * Allows users to control when and how text extraction occurs.
  */
+// The hint shown for each OpenAnonymiser probe error code.
+const OPEN_ANONYMISER_HINTS = new Map([
+	[
+		'appapi_missing',
+		() =>
+			t(
+				'openregister',
+				'AppAPI is not installed. Install AppAPI and the OpenAnonymiser ExApp to enable Dutch-focused PII detection.',
+			),
+	],
+	[
+		'exapp_not_installed',
+		() =>
+			t(
+				'openregister',
+				'The OpenAnonymiser ExApp is not installed. Install it to enable Dutch-focused PII detection.',
+			),
+	],
+	[
+		'exapp_disabled',
+		() =>
+			t(
+				'openregister',
+				'The OpenAnonymiser ExApp is installed but disabled. Enable it to use it for entity recognition.',
+			),
+	],
+])
+
+// The select fields of the file settings: the option list each picks from,
+// and the option it falls back to when the stored id is not in the list.
+const SELECT_SETTINGS = [
+	['extractionScope', 'extractionScopes', 3],
+	['textExtractor', 'textExtractors', 0],
+	['extractionMode', 'extractionModes', 0],
+	['entityRecognitionMethod', 'entityRecognitionMethods', 0],
+]
+
+// The plain file settings and the value each takes when the stored one is empty.
+const PLAIN_SETTING_DEFAULTS = [
+	['maxFileSize', 100],
+	['chunkSize', 1000],
+	['chunkOverlap', 200],
+	['chunkingStrategy', 'RECURSIVE_CHARACTER'],
+	['batchSize', 10],
+	['dolphinApiEndpoint', ''],
+	['dolphinApiKey', ''],
+	['entityRecognitionEnabled', false],
+	['presidioApiEndpoint', ''],
+	['openAnonymiserApiEndpoint', ''],
+	['openAnonymiserSource', 'internal'],
+	['openAnonymiserUsername', ''],
+]
+
+/**
+ * The option a stored select value (an id, or an option object) stands for.
+ *
+ * @param {Array<object>} options The options.
+ * @param {string|object} value The stored value.
+ * @return {object|undefined} The option, if the list has it.
+ */
+function optionFor(options, value) {
+	const id = typeof value === 'string' ? value : value.id
+	return options.find((option) => option.id === id)
+}
+
+/**
+ * Turn the stored select values into the options the selects show.
+ *
+ * @param {object} vm The file configuration section.
+ * @param {object} settings The stored file settings.
+ * @return {void}
+ */
+function applySelectedOptions(vm, settings) {
+	for (const [field, list, fallback] of SELECT_SETTINGS) {
+		if (settings[field]) {
+			vm.fileSettings[field] =
+				optionFor(vm[list], settings[field]) || vm[list][fallback]
+		}
+	}
+}
+
+/**
+ * Copy the plain stored settings into the form, with their defaults.
+ *
+ * @param {object} fileSettings The form's settings.
+ * @param {object} settings The stored file settings.
+ * @return {void}
+ */
+function applyPlainSettings(fileSettings, settings) {
+	fileSettings.includeInSearch =
+		settings.includeInSearch !== undefined ? settings.includeInSearch : true
+	for (const [field, fallback] of PLAIN_SETTING_DEFAULTS) {
+		fileSettings[field] = settings[field] || fallback
+	}
+	fileSettings.openAnonymiserPasswordSet =
+		settings.openAnonymiserPasswordSet === true
+}
+
+/**
+ * Mark the file types the stored settings enable.
+ *
+ * @param {Array<object>} fileTypes The file types.
+ * @param {object} settings The stored file settings.
+ * @return {void}
+ */
+function applyEnabledFileTypes(fileTypes, settings) {
+	if (!settings.enabledFileTypes) {
+		return
+	}
+	fileTypes.forEach((ft) => {
+		ft.enabled = settings.enabledFileTypes.includes(ft.extension)
+	})
+}
+
 export default {
 	name: 'FileConfiguration',
 
@@ -1350,25 +1464,8 @@ export default {
 		 * @return {string|null} The hint text, or null when no hint applies.
 		 */
 		openAnonymiserHint() {
-			switch (this.openAnonymiserError) {
-				case 'appapi_missing':
-					return t(
-						'openregister',
-						'AppAPI is not installed. Install AppAPI and the OpenAnonymiser ExApp to enable Dutch-focused PII detection.',
-					)
-				case 'exapp_not_installed':
-					return t(
-						'openregister',
-						'The OpenAnonymiser ExApp is not installed. Install it to enable Dutch-focused PII detection.',
-					)
-				case 'exapp_disabled':
-					return t(
-						'openregister',
-						'The OpenAnonymiser ExApp is installed but disabled. Enable it to use it for entity recognition.',
-					)
-				default:
-					return null
-			}
+			const hint = OPEN_ANONYMISER_HINTS.get(this.openAnonymiserError)
+			return hint ? hint() : null
 		},
 
 		/**
@@ -1457,87 +1554,10 @@ export default {
 			try {
 				const settings = await this.settingsStore.getFileSettings()
 				if (settings) {
-					// Convert scope and mode IDs to objects for NcSelect
-					if (settings.extractionScope) {
-						const scopeId =
-							typeof settings.extractionScope === 'string'
-								? settings.extractionScope
-								: settings.extractionScope.id
-						this.fileSettings.extractionScope =
-							this.extractionScopes.find((s) => s.id === scopeId)
-							|| this.extractionScopes[3] // default to 'objects'
-					}
-
-					// Load text extractor
-					if (settings.textExtractor) {
-						const extractorId =
-							typeof settings.textExtractor === 'string'
-								? settings.textExtractor
-								: settings.textExtractor.id
-						this.fileSettings.textExtractor =
-							this.textExtractors.find((e) => e.id === extractorId)
-							|| this.textExtractors[0] // default to 'llphant'
-					}
-
-					if (settings.extractionMode) {
-						const modeId =
-							typeof settings.extractionMode === 'string'
-								? settings.extractionMode
-								: settings.extractionMode.id
-						this.fileSettings.extractionMode =
-							this.extractionModes.find((m) => m.id === modeId)
-							|| this.extractionModes[0] // default to 'background'
-					}
-
-					// Load other settings
-					this.fileSettings.includeInSearch =
-						settings.includeInSearch !== undefined
-							? settings.includeInSearch
-							: true
-					this.fileSettings.maxFileSize = settings.maxFileSize || 100
-					this.fileSettings.chunkSize = settings.chunkSize || 1000
-					this.fileSettings.chunkOverlap = settings.chunkOverlap || 200
-					this.fileSettings.chunkingStrategy =
-						settings.chunkingStrategy || 'RECURSIVE_CHARACTER'
-					this.fileSettings.batchSize = settings.batchSize || 10
-					this.fileSettings.dolphinApiEndpoint =
-						settings.dolphinApiEndpoint || ''
-					this.fileSettings.dolphinApiKey = settings.dolphinApiKey || ''
-
-					// Load entity recognition settings
-					this.fileSettings.entityRecognitionEnabled =
-						settings.entityRecognitionEnabled || false
-					if (settings.entityRecognitionMethod) {
-						const methodId =
-							typeof settings.entityRecognitionMethod === 'string'
-								? settings.entityRecognitionMethod
-								: settings.entityRecognitionMethod.id
-						this.fileSettings.entityRecognitionMethod =
-							this.entityRecognitionMethods.find(
-								(m) => m.id === methodId,
-							) || this.entityRecognitionMethods[0]
-					}
-					this.fileSettings.presidioApiEndpoint =
-						settings.presidioApiEndpoint || ''
-					this.fileSettings.openAnonymiserApiEndpoint =
-						settings.openAnonymiserApiEndpoint || ''
-					this.fileSettings.openAnonymiserSource =
-						settings.openAnonymiserSource || 'internal'
-					this.fileSettings.openAnonymiserUsername =
-						settings.openAnonymiserUsername || ''
-					this.fileSettings.openAnonymiserPasswordSet =
-						settings.openAnonymiserPasswordSet === true
-
-					// Load file types
-					if (settings.enabledFileTypes) {
-						this.fileTypes.forEach((ft) => {
-							ft.enabled = settings.enabledFileTypes.includes(
-								ft.extension,
-							)
-						})
-					}
+					applySelectedOptions(this, settings)
+					applyPlainSettings(this.fileSettings, settings)
+					applyEnabledFileTypes(this.fileTypes, settings)
 				}
-
 				// Load object settings
 				await this.loadObjectSettings()
 			} catch (error) {

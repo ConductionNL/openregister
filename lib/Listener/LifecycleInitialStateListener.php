@@ -31,6 +31,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
+use OCA\OpenRegister\Service\Lifecycle\KeepLifecycleStatesScope;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -78,7 +80,7 @@ class LifecycleInitialStateListener implements IEventListener {
 	}//end __construct()
 
 	/**
-	 * Apply the schema-declared initial lifecycle value when missing.
+	 * Apply the schema-declared initial lifecycle value when missing, and refuse a create in another state.
 	 *
 	 * @param Event $event Inbound dispatcher event.
 	 *
@@ -102,46 +104,115 @@ class LifecycleInitialStateListener implements IEventListener {
 			return;
 		}
 
-		$this->applyInitial(object: $object, schema: $schema, annotation: $annotation);
+		$this->applyInitial(event: $event, declaration: ['schema' => $schema, 'annotation' => $annotation]);
 	}//end handle()
 
 	/**
-	 * Apply the resolved initial value to the lifecycle field when it is empty.
+	 * Fill an empty lifecycle field with the resolved initial state, or refuse a create in another state.
 	 *
-	 * @param ObjectEntity $object The object being created.
-	 * @param Schema $schema The resolved schema.
-	 * @param array<string, mixed> $annotation The `x-openregister-lifecycle` block.
+	 * A value the caller sets must equal the resolved initial state; when the initial
+	 * cannot be resolved, a value the caller sets is refused. A write inside
+	 * SystemOperationContext (a seed, an example set, a configuration import) may
+	 * create in any state, as it may write declared state on an update.
+	 *
+	 * @param ObjectCreatingEvent                                $event       The create.
+	 * @param array{schema: Schema, annotation: array<string, mixed>} $declaration The schema and its `x-openregister-lifecycle` block.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/lifecycle-guards-see-the-stored-object/specs/object-lifecycle/spec.md#requirement-a-create-starts-in-the-declared-initial-state
 	 */
-	private function applyInitial(ObjectEntity $object, Schema $schema, array $annotation): void {
-		$field = (string)($annotation['field'] ?? '');
+	private function applyInitial(ObjectCreatingEvent $event, array $declaration): void {
+		$annotation = $declaration['annotation'];
+		$field      = (string)($annotation['field'] ?? ($annotation['property'] ?? ''));
 		if ($field === '' || array_key_exists('initial', $annotation) === false) {
 			return;
 		}
 
-		$data = $object->getObject() ?? [];
-
-		// Caller already set a value — leave it alone (validator covers it).
-		// Resolve the (possibly dynamic) initial value only AFTER this guard so
-		// we never read a related object when the caller already chose.
-		if (isset($data[$field]) === true && $data[$field] !== '') {
-			return;
-		}
-
+		$object  = $event->getObject();
+		$data    = $object->getObject() ?? [];
 		$initial = $this->resolveInitial(
 			initial: $annotation['initial'],
 			object: $object,
-			schema: $schema,
+			schema: $declaration['schema'],
 			data: $data
 		);
-		if ($initial === null || $initial === '') {
+
+		$chosen = ($data[$field] ?? null);
+		if ($chosen !== null && $chosen !== '') {
+			$this->judgeChosenState(
+				event: $event,
+				state: ['field' => $field, 'chosen' => $chosen, 'initial' => $initial, 'allowed' => $this->createStates(annotation: $annotation)]
+			);
 			return;
 		}
 
-		$data[$field] = $initial;
-		$object->setObject($data);
+		if ($initial !== null && $initial !== '') {
+			$data[$field] = $initial;
+			$object->setObject($data);
+		}
 	}//end applyInitial()
+
+	/**
+	 * The states a create may start in besides the initial one: the string entries of `createStates`.
+	 *
+	 * A value that is not a list allows nothing extra; the annotation validator reports it.
+	 *
+	 * @param array<string, mixed> $annotation The `x-openregister-lifecycle` block.
+	 *
+	 * @return list<string>
+	 *
+	 * @spec openspec/changes/lifecycle-guards-see-the-stored-object/specs/object-lifecycle/spec.md#requirement-a-create-starts-in-the-declared-initial-state
+	 */
+	private function createStates(array $annotation): array {
+		$declared = ($annotation['createStates'] ?? []);
+		if (is_array($declared) === false || array_is_list($declared) === false) {
+			return [];
+		}
+
+		return array_values(array_filter($declared, static fn (mixed $state): bool => is_string($state) === true && $state !== ''));
+	}//end createStates()
+
+	/**
+	 * Refuse a create whose lifecycle value is not the initial state, unless the system writes it or a historic import keeps it.
+	 *
+	 * @param ObjectCreatingEvent $event The create.
+	 * @param array               $state `field`, the caller's value `chosen`, the resolved `initial`, and the
+	 *                                   `allowed` states the schema's `createStates` declares beside it.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext and KeepLifecycleStatesScope are ambient markers; a static read is
+	 *   the whole point of them.
+	 *
+	 * @spec openspec/changes/lifecycle-guards-see-the-stored-object/specs/object-lifecycle/spec.md#requirement-a-create-starts-in-the-declared-initial-state
+	 */
+	private function judgeChosenState(ObjectCreatingEvent $event, array $state): void {
+		if ($state['chosen'] === $state['initial']
+			|| in_array($state['chosen'], $state['allowed'], true) === true
+			|| SystemOperationContext::isActive() === true
+			|| KeepLifecycleStatesScope::isActive() === true
+		) {
+			return;
+		}
+
+		$chosen = 'a non-text value';
+		if (is_scalar($state['chosen']) === true) {
+			$chosen = (string)$state['chosen'];
+		}
+
+		$event->setErrors(
+			[
+				'code' => 'lifecycle-invalid-initial',
+				'field' => $state['field'],
+				'attempted' => $state['chosen'],
+				'initial' => $state['initial'],
+				'allowed' => $state['allowed'],
+				'message' => sprintf('A new object starts in "%s"; "%s" cannot be set when it is created.', (string)$state['initial'], $chosen),
+			]
+		);
+		$event->stopPropagation();
+	}//end judgeChosenState()
 
 	/**
 	 * Resolve the `initial` annotation to a concrete state string.

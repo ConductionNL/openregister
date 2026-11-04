@@ -49,6 +49,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\MdiIconRenderer
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class ObjectPreviewFormatterTest extends TestCase {
 

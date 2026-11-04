@@ -1536,7 +1536,9 @@ class PermissionHandler {
 	 * The clause is evaluated through the shared {@see ConditionMatcher}, the
 	 * same evaluator the grants beside it use (ADR-011). A fourth match
 	 * evaluator here would be a second reading of the same grammar, and the two
-	 * would only meet when a denial failed to bite.
+	 * would only meet when a denial failed to bite. A clause on metadata no
+	 * record carries can never match, so it selects every row: the deny fails
+	 * closed rather than never firing.
 	 *
 	 * @param DenyResolver $resolver      The deny-grammar reader.
 	 * @param array|null   $authorization The cascaded block.
@@ -1572,17 +1574,26 @@ class PermissionHandler {
 				continue;
 			}
 
-			if ($this->conditionMatcher->objectMatchesConditions(
-				object: $envelope,
-				match: $rule['match']
-			) === true
-			) {
+			if ($this->denialSelects(match: $rule['match'], envelope: $envelope) === true) {
 				return $denial;
 			}
 		}
 
 		return null;
 	}//end firstMatchingConditionalDenial()
+
+	/**
+	 * Whether a denial's clause selects the row: it matches, or it names metadata no record carries.
+	 *
+	 * @param array<string, mixed> $match    The clause.
+	 * @param array<mixed>         $envelope The row as a rule reads it.
+	 *
+	 * @return bool True when the denial applies.
+	 */
+	private function denialSelects(array $match, array $envelope): bool {
+		return $this->conditionMatcher->namesUnknownMetadata(match: $match, object: $envelope) === true
+			|| $this->conditionMatcher->objectMatchesConditions(object: $envelope, match: $match) === true;
+	}//end denialSelects()
 
 	/**
 	 * Decide a private object, or decline to decide.

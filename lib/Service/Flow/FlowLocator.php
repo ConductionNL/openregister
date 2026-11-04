@@ -371,11 +371,12 @@ class FlowLocator {
 	/**
 	 * The flows that run on a cron schedule.
 	 *
-	 * Shape is unchanged from the registry so `FlowScheduleService` is
-	 * untouched by this refactor.
+	 * `since` is when the flow was last saved (its creation time when it was
+	 * never updated), so the scheduler measures a never-fired flow's first
+	 * occurrence from there.
 	 *
-	 * @return array<int, array{id: string, enabled: bool, trigger: string, cron: string, owner: string|null}>
-	 *                                                                                                         The candidate flows.
+	 * @return array<int, array{id: string, enabled: bool, trigger: string, cron: string, owner: string|null, since: string}>
+	 *                                                                                                                        The candidate flows.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
@@ -409,9 +410,26 @@ class FlowLocator {
 				'trigger' => (string)($flow->getTrigger() ?? ''),
 				'cron' => (string)($flow->getCron() ?? ''),
 				'owner' => $flow->getOwner(),
+				'since' => $this->savedAt(flow: $flow),
 			];
 		}//end foreach
 
 		return $candidates;
 	}//end scheduledFlows()
+
+	/**
+	 * When a flow was last saved, as an ATOM timestamp, or the empty string.
+	 *
+	 * @param Flow $flow The flow.
+	 *
+	 * @return string The timestamp.
+	 */
+	private function savedAt(Flow $flow): string {
+		$saved = ($flow->getUpdated() ?? $flow->getCreated());
+		if ($saved === null) {
+			return '';
+		}
+
+		return $saved->format(DATE_ATOM);
+	}//end savedAt()
 }//end class

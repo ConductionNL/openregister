@@ -54,6 +54,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\ViewShareResolver
  * @uses \OCA\OpenRegister\Service\ViewService
  * @uses \OCA\OpenRegister\Service\View\ViewAlert
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
  */
 class ViewAlertRecipientsTest extends TestCase {
 

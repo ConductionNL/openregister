@@ -50,6 +50,7 @@ use ReflectionMethod;
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 class FacetsObeyThePropertyReadRuleTest extends TestCase {
 
