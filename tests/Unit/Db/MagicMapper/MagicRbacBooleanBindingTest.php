@@ -179,10 +179,11 @@ class MagicRbacBooleanBindingTest extends TestCase {
 	public function testTheRawSqlPathAlreadyEmitsABooleanLiteral(): void {
 		$schema = new Schema();
 		$schema->setId(12);
+		$schema->setProperties(['isPrivate' => ['type' => 'boolean']]);
 		$schema->setAuthorization(['read' => [['group' => 'authenticated', 'match' => ['isPrivate' => false]]]]);
 
 		$predicate = $this->handler()->buildRbacPredicateForAlias(schema: $schema, alias: 't', action: 'read');
 
-		$this->assertStringContainsString('is_private = FALSE', $predicate);
+		$this->assertStringContainsString('`is_private` = FALSE', $predicate);
 	}//end testTheRawSqlPathAlreadyEmitsABooleanLiteral()
 }//end class

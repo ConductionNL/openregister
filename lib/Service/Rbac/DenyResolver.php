@@ -73,6 +73,16 @@ namespace OCA\OpenRegister\Service\Rbac;
 class DenyResolver {
 
 	/**
+	 * How a raw SQL string literal escapes its body, keyed by whether the platform is PostgreSQL.
+	 *
+	 * @var array<int, array<string, string>>
+	 */
+	private const LITERAL_ESCAPES = [
+		1 => ["'" => "''"],
+		0 => ['\\' => '\\\\', "'" => "''"],
+	];
+
+	/**
 	 * The authorization-block key carrying the denials.
 	 *
 	 * @var string
@@ -470,7 +480,7 @@ class DenyResolver {
 			$asText = "COALESCE({$columnName}::text, '')";
 		}
 
-		$needle = $this->quoteLiteral(value: '%"' . self::DENY_KEY . '"%');
+		$needle = $this->quoteLiteral(value: '%"' . self::DENY_KEY . '"%', isPostgres: $isPostgres);
 
 		return "({$asText} NOT LIKE {$needle})";
 	}//end denyKeyProbeSql()
@@ -526,7 +536,7 @@ class DenyResolver {
 		bool $isPostgres,
 		string $candidateJson,
 	): string {
-		$quotedCandidate = $this->quoteLiteral(value: $candidateJson);
+		$quotedCandidate = $this->quoteLiteral(value: $candidateJson, isPostgres: $isPostgres);
 
 		if ($isPostgres === true) {
 			$subDocument = "COALESCE(COALESCE({$columnName}, '{}')::jsonb -> '" . self::DENY_KEY . "' -> '{$action}', '[]'::jsonb)";
@@ -543,12 +553,17 @@ class DenyResolver {
 	/**
 	 * Quote a string for safe use in raw SQL.
 	 *
-	 * @param string $value The value to quote.
+	 * MySQL and MariaDB read a backslash as an escape inside a string literal,
+	 * which would turn json_encode's `\u00e9`, `\/`, `\"` and `\\` into other
+	 * text, so there the backslash is doubled first.
+	 *
+	 * @param string $value      The value to quote.
+	 * @param bool   $isPostgres Whether the connected platform is PostgreSQL.
 	 *
 	 * @return string The quoted literal.
 	 */
-	private function quoteLiteral(string $value): string {
-		$escaped = str_replace("'", "''", $value);
+	private function quoteLiteral(string $value, bool $isPostgres): string {
+		$escaped = strtr($value, self::LITERAL_ESCAPES[(int)$isPostgres]);
 
 		return "'{$escaped}'";
 	}//end quoteLiteral()

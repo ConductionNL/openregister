@@ -48,6 +48,9 @@ use RuntimeException;
 /**
  * `MagicMapper::findFolderIdsByOrganisation()`.
  *
+ * @uses \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
+ * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
  * @covers \OCA\OpenRegister\Db\MagicMapper
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler

@@ -25,7 +25,6 @@ namespace OCA\OpenRegister\Service\Rbac;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -43,12 +42,20 @@ class MetadataConditionFindings {
 	private readonly RecordMetadataConditions $conditions;
 
 	/**
+	 * Reads the blocks a save is judged against.
+	 *
+	 * @var StoredRuleBlocks
+	 */
+	private readonly StoredRuleBlocks $stored;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IDBConnection|null $db Reads the stored block when a save has findings; without it a save is judged as new.
 	 */
-	public function __construct(private readonly ?IDBConnection $db = null) {
+	public function __construct(?IDBConnection $db = null) {
 		$this->conditions = new RecordMetadataConditions();
+		$this->stored = new StoredRuleBlocks(db: $db);
 	}//end __construct()
 
 	/**
@@ -67,15 +74,7 @@ class MetadataConditionFindings {
 			return;
 		}
 
-		$stored = null;
-		$row = $this->storedRow(table: 'openregister_schemas', id: $schema->getId());
-		if ($row !== null) {
-			$stored = new Schema();
-			$stored->setAuthorization($this->decoded(value: ($row['authorization'] ?? null)));
-			$stored->setProperties($this->decoded(value: ($row['properties'] ?? null)));
-		}
-
-		$this->assertNone(findings: $this->schemaFindings(schema: $schema, stored: $stored));
+		$this->assertNone(findings: $this->schemaFindings(schema: $schema, stored: $this->stored->schema(id: $schema->getId())));
 	}//end assertSchemaSavable()
 
 	/**
@@ -95,12 +94,11 @@ class MetadataConditionFindings {
 			return;
 		}
 
-		$row = $this->storedRow(table: 'openregister_registers', id: $register->getId());
 		$this->assertNone(
 			findings: $this->findings(
 				authorization: $register->getAuthorization(),
 				context: $subject,
-				stored: $this->decoded(value: ($row['authorization'] ?? null))
+				stored: $this->stored->registerAuthorization(id: $register->getId())
 			)
 		);
 	}//end assertRegisterSavable()
@@ -158,20 +156,8 @@ class MetadataConditionFindings {
 	public function schemaFindings(Schema $schema, ?Schema $stored = null): array {
 		$name = sprintf('schema "%s"', (string)($schema->getSlug() ?? $schema->getTitle() ?? $schema->getId()));
 		$findings = $this->findings(authorization: $schema->getAuthorization(), context: $name, stored: $stored?->getAuthorization());
-		$storedProperties = ($stored?->getProperties() ?? []);
-
-		foreach (($schema->getProperties() ?? []) as $property => $config) {
-			if (is_array($config) === false || is_array(($config['authorization'] ?? null)) === false) {
-				continue;
-			}
-
-			$held = ($storedProperties[$property]['authorization'] ?? null);
-			if (is_array($held) === false) {
-				$held = null;
-			}
-
-			$context = sprintf('property "%s" of %s', (string)$property, $name);
-			$findings = array_merge($findings, $this->findings(authorization: $config['authorization'], context: $context, stored: $held));
+		foreach ($this->stored->propertyBlocks(schema: $schema, stored: $stored, name: $name) as $block) {
+			$findings = array_merge($findings, $this->findings(authorization: $block['authorization'], context: $block['context'], stored: $block['stored']));
 		}
 
 		return $findings;
@@ -235,8 +221,10 @@ class MetadataConditionFindings {
 	 * @param array|null $authorization The block.
 	 *
 	 * @return array<string, array<int|string, mixed>> The lists.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
-	private function ruleLists(?array $authorization): array {
+	public function ruleLists(?array $authorization): array {
 		$lists = [];
 		foreach (($authorization ?? []) as $action => $rules) {
 			if (is_array($rules) === false) {
@@ -267,8 +255,10 @@ class MetadataConditionFindings {
 	 * @param array<string, mixed> $rule The rule.
 	 *
 	 * @return string The principal.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
-	private function principalOf(array $rule): string {
+	public function principalOf(array $rule): string {
 		if (is_string(($rule['group'] ?? null)) === true) {
 			return sprintf('group "%s"', $rule['group']);
 		}
@@ -279,50 +269,4 @@ class MetadataConditionFindings {
 
 		return 'an unnamed principal';
 	}//end principalOf()
-
-	/**
-	 * The stored row, read past the mappers' caches and organisation filter.
-	 *
-	 * @param string   $table The table.
-	 * @param int|null $id    The row's id, null for a new entity.
-	 *
-	 * @return array<string, mixed>|null The row, or null when there is none.
-	 */
-	private function storedRow(string $table, ?int $id): ?array {
-		if ($id === null || $this->db === null) {
-			return null;
-		}
-
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')->from($table)->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-		$result = $qb->executeQuery();
-		$row = $result->fetch();
-		$result->closeCursor();
-
-		if (is_array($row) === false) {
-			return null;
-		}
-
-		return $row;
-	}//end storedRow()
-
-	/**
-	 * A stored JSON column as an array, or null when it holds none.
-	 *
-	 * @param mixed $value The column value.
-	 *
-	 * @return array<int|string, mixed>|null The decoded value.
-	 */
-	private function decoded(mixed $value): ?array {
-		if (is_string($value) === false) {
-			return null;
-		}
-
-		$decoded = json_decode($value, true);
-		if (is_array($decoded) === false) {
-			return null;
-		}
-
-		return $decoded;
-	}//end decoded()
 }//end class

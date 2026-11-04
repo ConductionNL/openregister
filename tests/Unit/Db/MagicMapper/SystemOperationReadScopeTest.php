@@ -58,6 +58,7 @@ use Psr\Log\LoggerInterface;
 #[UsesClass(\OCA\OpenRegister\Service\SystemOperationContext::class)]
 #[UsesClass(\OCA\OpenRegister\Service\OrganisationContext::class)]
 #[UsesClass(\OCA\OpenRegister\Service\Object\DraftStatusPolicy::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Rbac\RuleColumns::class)]
 class SystemOperationReadScopeTest extends TestCase {
 
 	/**

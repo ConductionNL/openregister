@@ -766,6 +766,34 @@ apply to this object as it stands, not the rules that could apply.
 - **THEN** the condition is evaluated against that property's value
 - @e2e exclude {asserted in tests/Unit/Service/Lifecycle/StateFieldRuleResolverTest.php::testAConditionReadsAPropertyTheLifecycleDoesNotDeclare}
 
+### Requirement: A rule's `match` key reaches SQL only as a known column of the table
+On every list path, a `match` key MUST reach SQL only as a column resolved from the schema's declared properties, the fixed metadata columns or the schema's linked-type columns, quoted as the platform's identifier. Any other key MUST compile to the fail-closed predicate `1 = 0` for an allow, on the raw SQL path, the QueryBuilder path and the cross-organisation branch, and MUST empty the list for a conditional deny, whose negation would otherwise admit every row. A save that ADDS or CHANGES a condition on a malformed key, or on a key a schema does not declare, MUST be refused with a message that names the key, the rule and the schema, property or register. A register's rule can name any of its schemas' properties, so a register save judges only the key's form. A save that keeps a stored condition, edits around it, removes it, or drops a property a stored rule names MUST NOT be refused for it. `occ openregister:rbac:unknown-metadata-conditions` MUST list stored rules with such keys, without changing them.
+
+@e2e exclude backend list-query compilation, covered by tests/Unit/Db/MagicMapper/RuleKeysFailClosedTest.php and RuleKeyColumnsGoldenTest.php
+
+#### Scenario: A key that names no column admits no row
+- **GIVEN** a stored allow rule whose `match` key is malformed or names no property of the schema
+- **WHEN** a non-admin lists objects
+- **THEN** the rule MUST compile to `1 = 0`
+- **AND** none of the key's text MUST appear in the query
+
+#### Scenario: A conditional deny on such a key empties the list
+- **GIVEN** a stored deny rule, in `enforcing` mode, whose `match` key names no column
+- **WHEN** a caller the deny names lists objects
+- **THEN** the list MUST be empty
+
+#### Scenario: A known key compiles to its quoted column
+- **GIVEN** a rule on a declared property, a metadata key or a `@self.` key
+- **WHEN** it compiles
+- **THEN** the condition MUST be the one it was before, with the column quoted as an identifier
+
+#### Scenario: A save is refused only for what it adds or changes
+- **GIVEN** a schema with a stored condition on a key it does not declare
+- **WHEN** a save keeps that condition, or drops a property a stored rule names
+- **THEN** the save MUST succeed
+- **WHEN** a save adds such a condition or changes its value
+- **THEN** the save MUST be refused with a message naming the key and the rule
+
 ### Requirement: A property read rule holds on every route that returns its value
 
 When a property read rule withholds a property from a caller, the system SHALL

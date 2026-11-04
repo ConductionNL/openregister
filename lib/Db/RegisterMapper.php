@@ -30,6 +30,7 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings;
 use OCA\OpenRegister\Service\Rbac\MetadataConditionFindings;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -702,6 +703,7 @@ class RegisterMapper extends QBMapper {
 		}
 
 		(new MetadataConditionFindings(db: $this->db))->assertRegisterSavable(register: $register, subject: $subject);
+		(new UnknownRuleKeyFindings(db: $this->db))->assertRegisterSavable(register: $register, subject: $subject);
 
 		(new AuthorizationDenyValidator(denyResolver: new DenyResolver()))->assertStorable(
 			authorization: $authorization,

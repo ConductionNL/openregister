@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Command;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Rbac\MetadataConditionFindings;
+use OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -65,7 +66,8 @@ class UnknownMetadataConditionsCommand extends Command {
 		$this->setName(name: 'openregister:rbac:unknown-metadata-conditions')
 			->setDescription(
 				description: 'List schemas and registers whose authorization rules have a condition on record metadata'
-					.' that no record carries (such as _published). Reports only; exits 1 when any is found.'
+					.' that no record carries (such as _published), or on a key that names no property or is malformed.'
+					.' Reports only; exits 1 when any is found.'
 					.' Rules in an object\'s own _authorization are not scanned.'
 			);
 	}//end configure()
@@ -76,7 +78,7 @@ class UnknownMetadataConditionsCommand extends Command {
 	 * @param InputInterface  $input  Console input.
 	 * @param OutputInterface $output Console output.
 	 *
-	 * @return int 0 when no stored rule names unknown metadata, 1 otherwise.
+	 * @return int 0 when no stored rule names unknown metadata or an unknown key, 1 otherwise.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 *
@@ -84,10 +86,11 @@ class UnknownMetadataConditionsCommand extends Command {
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$conditions = new MetadataConditionFindings();
+		$keys = new UnknownRuleKeyFindings();
 		$found = 0;
 
 		foreach ($this->schemaMapper->findAll(_rbac: false, _multitenancy: false) as $schema) {
-			foreach ($conditions->schemaFindings(schema: $schema) as $finding) {
+			foreach (array_merge($conditions->schemaFindings(schema: $schema), $keys->schemaFindings(schema: $schema)) as $finding) {
 				$output->writeln(sprintf('schema %s: %s', (string)$schema->getId(), $finding));
 				$found++;
 			}
@@ -95,7 +98,11 @@ class UnknownMetadataConditionsCommand extends Command {
 
 		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
 			$subject = sprintf('register "%s"', (string)($register->getSlug() ?? $register->getTitle() ?? $register->getId()));
-			foreach ($conditions->findings(authorization: $register->getAuthorization(), context: $subject) as $finding) {
+			$authorization = $register->getAuthorization();
+			foreach (array_merge(
+				$conditions->findings(authorization: $authorization, context: $subject),
+				$keys->registerFindings(authorization: $authorization, context: $subject)
+			) as $finding) {
 				$output->writeln(sprintf('register %s: %s', (string)$register->getId(), $finding));
 				$found++;
 			}
@@ -104,7 +111,7 @@ class UnknownMetadataConditionsCommand extends Command {
 		$output->writeln('Rules in an object\'s own _authorization are not scanned.');
 
 		if ($found === 0) {
-			$output->writeln('<info>No stored rule has a condition on unknown record metadata.</info>');
+			$output->writeln('<info>No stored rule has a condition on unknown record metadata or an unknown key.</info>');
 			return Command::SUCCESS;
 		}
 

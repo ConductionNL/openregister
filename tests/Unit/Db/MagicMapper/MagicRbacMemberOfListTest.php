@@ -109,6 +109,7 @@ class MagicRbacMemberOfListTest extends TestCase {
 		$schema = new Schema();
 		$schema->setId(61);
 		$schema->setSlug('boeking');
+		$schema->setProperties(['administrationId' => ['type' => 'string']]);
 		$schema->setAuthorization(
 			[
 				'read' => [

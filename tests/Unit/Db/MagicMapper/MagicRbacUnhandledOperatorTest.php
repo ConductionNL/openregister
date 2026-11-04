@@ -97,6 +97,13 @@ class MagicRbacUnhandledOperatorTest extends TestCase {
 	private function listPredicateFor(array $match): string {
 		$schema = new Schema();
 		$schema->setId(681);
+		$schema->setProperties(
+			[
+				'status'  => ['type' => 'string'],
+				'project' => ['type' => 'string'],
+				'age'     => ['type' => 'integer'],
+			]
+		);
 		$schema->setAuthorization(['read' => [['group' => 'members', 'match' => $match]]]);
 
 		return $this->handler()->buildRbacPredicateForAlias(schema: $schema, alias: 't', action: 'read');
@@ -110,7 +117,7 @@ class MagicRbacUnhandledOperatorTest extends TestCase {
 	public function testAnUnknownOperatorBesideAValidPropertyDenies(): void {
 		$predicate = $this->listPredicateFor(['status' => 'open', 'project' => ['$lookup' => ['from' => 'project']]]);
 
-		$this->assertStringContainsString("t.status = 'open'", $predicate);
+		$this->assertStringContainsString("t.`status` = 'open'", $predicate);
 		$this->assertStringContainsString('1 = 0', $predicate, 'The unknown operator must make the rule unsatisfiable on the list, as it is on find.');
 	}//end testAnUnknownOperatorBesideAValidPropertyDenies()
 
@@ -134,8 +141,8 @@ class MagicRbacUnhandledOperatorTest extends TestCase {
 	public function testEveryOperatorOfAPropertyIsApplied(): void {
 		$predicate = $this->listPredicateFor(['age' => ['$gte' => 18, '$lt' => 65]]);
 
-		$this->assertStringContainsString('t.age >= 18', $predicate);
-		$this->assertStringContainsString('t.age < 65', $predicate);
+		$this->assertStringContainsString('t.`age` >= 18', $predicate);
+		$this->assertStringContainsString('t.`age` < 65', $predicate);
 	}//end testEveryOperatorOfAPropertyIsApplied()
 
 	/**
