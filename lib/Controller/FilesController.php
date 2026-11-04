@@ -139,9 +139,9 @@ class FilesController extends Controller {
 	/**
 	 * The file mapper.
 	 *
-	 * @var ?\OCA\OpenRegister\Db\FileMapper
+	 * @var ?\OCA\OpenRegister\Db\FileMapperInterface
 	 */
-	private readonly ?\OCA\OpenRegister\Db\FileMapper $fileMapper;
+	private readonly ?\OCA\OpenRegister\Db\FileMapperInterface $fileMapper;
 
 	/**
 	 * The file audit handler.
