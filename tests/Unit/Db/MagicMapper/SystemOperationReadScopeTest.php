@@ -53,6 +53,7 @@ use Psr\Log\LoggerInterface;
 #[UsesClass(\OCA\OpenRegister\Db\Schema::class)]
 #[UsesClass(\OCA\OpenRegister\Service\AnonymousEvaluationContext::class)]
 #[UsesClass(\OCA\OpenRegister\Service\Object\PermissionHandler::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\RbacFilterCall::class)]
 #[UsesClass(\OCA\OpenRegister\Service\Rbac\DenyEnforcementMode::class)]
 #[UsesClass(\OCA\OpenRegister\Service\Rbac\ObjectScopeResolver::class)]
 #[UsesClass(\OCA\OpenRegister\Service\SystemOperationContext::class)]
