@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
+use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
@@ -52,6 +53,7 @@ use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
+use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCP\DB\QueryBuilder\IParameter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
@@ -106,6 +108,14 @@ class MagicRbacHandler {
 	 * @var string
 	 */
 	private const IMPOSSIBLE_SQL_CONDITION = '1 = 0';
+
+	/**
+	 * Rule verdicts for the organisation filter, see {@see ruleBypassVerdict()}.
+	 */
+	private const RULE_NOT_HELD = 'not-held';
+	private const RULE_READS_ALL = 'reads-all';
+	private const RULE_CROSSES_ORGANISATIONS = 'crosses-organisations';
+	private const RULE_STAYS_IN_ORGANISATION = 'stays-in-organisation';
 
 	/**
 	 * Memoised database-platform verdict for `$contains` SQL emission.
@@ -801,27 +811,169 @@ class MagicRbacHandler {
 	/**
 	 * Whether a `public` read rule lifts the organisation filter for the current caller.
 	 *
-	 * True for an anonymous caller and for an admin. A signed-in caller only
-	 * qualifies for `public` when the schema inherits public rights, so for
-	 * anyone else the organisation filter stays on.
+	 * True for an anonymous caller and for an admin only. A signed-in caller
+	 * reads across organisations only through a rule marked
+	 * `crossOrganisation: true` ({@see crossOrganisationMatches()}).
 	 *
 	 * @param Schema $schema The schema being read.
 	 *
 	 * @return bool True when the `public` rule may lift the organisation filter.
 	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-when-inheritfrompublic-is-false-authenticated-users-must-not-qualify-for-public-rules
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The schema stays in the signature MagicMapper and ObjectService call.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
 	 */
 	public function publicReadLiftsOrganisationFilter(Schema $schema): bool {
-		$userId = $this->getCurrentUserId();
-		if ($userId === null || $this->isAdmin() === true) {
-			return true;
+		if (OrganisationContext::isActive() === true) {
+			return false;
 		}
 
-		return $this->qualifiesForPublic(
-			userId: $userId,
-			inheritFromPublic: $this->authenticatedInheritsPublic(schema: $schema)
-		);
+		return $this->getCurrentUserId() === null || $this->isAdmin() === true;
 	}//end publicReadLiftsOrganisationFilter()
+
+	/**
+	 * Whether the organisation filter of a signed-in, non-admin caller is widened
+	 * by the rows of the conditional `crossOrganisation` rules they hold.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return bool True when the filter stays and gets a cross-organisation branch.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function hasCrossOrganisationBranch(Schema $schema): bool {
+		if (OrganisationContext::isActive() === true || $this->getCurrentUserId() === null || $this->isAdmin() === true) {
+			return false;
+		}
+
+		$matches = $this->crossOrganisationMatches(schema: $schema);
+		return $matches !== null && $matches !== [];
+	}//end hasCrossOrganisationBranch()
+
+	/**
+	 * The rows the caller's conditional `crossOrganisation` rules admit, as a
+	 * QueryBuilder expression to OR into the organisation filter.
+	 *
+	 * @param IQueryBuilder $qb     The query builder.
+	 * @param Schema        $schema The schema being read.
+	 *
+	 * @return mixed The expression, or null when no rule renders.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function getCrossOrganisationBranch(IQueryBuilder $qb, Schema $schema): mixed {
+		$branches = [];
+		foreach (($this->crossOrganisationMatches(schema: $schema) ?? []) as $match) {
+			$condition = $this->buildMatchConditions(qb: $qb, match: $match);
+			if ($condition !== null) {
+				$branches[] = $condition;
+			}
+		}
+
+		if ($branches === []) {
+			return null;
+		}
+
+		return $qb->expr()->orX(...$branches);
+	}//end getCrossOrganisationBranch()
+
+	/**
+	 * The same rows as {@see getCrossOrganisationBranch()}, as SQL for the string-built paths.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return string|null The predicate, or null when no rule renders.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function getCrossOrganisationBranchSql(Schema $schema): ?string {
+		$branches = [];
+		foreach (($this->crossOrganisationMatches(schema: $schema) ?? []) as $match) {
+			$condition = $this->buildMatchConditionsSql(match: $match);
+			if ($condition !== null) {
+				$branches[] = $condition;
+			}
+		}
+
+		if ($branches === []) {
+			return null;
+		}
+
+		return '(' . implode(' OR ', $branches) . ')';
+	}//end getCrossOrganisationBranchSql()
+
+	/**
+	 * The match clauses of the `crossOrganisation: true` read rules of the
+	 * schema's own block that the current caller holds.
+	 *
+	 * Only a schema with a block of its own has such rules: a register's rules
+	 * never take a caller across organisations. The block is read resolved, so
+	 * role expansion and the rules a department matrix compiles count too. A
+	 * block that cannot be resolved has none.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return array<int, array>|null The clauses, or null when a held marked rule has no match (it reads every row).
+	 *                                A match that is not a list of conditions admits nothing.
+	 */
+	private function crossOrganisationMatches(Schema $schema): ?array {
+		$caller = $this->currentCaller(schema: $schema);
+		$matches = [];
+		foreach ($this->ownReadRules(schema: $schema) as $rule) {
+			if ((new ReadRuleTenancy())->isMarked(rule: $rule) === false
+				|| $this->callerHoldsConditionalRule(rule: $rule, caller: $caller) === false
+			) {
+				continue;
+			}
+
+			$match = ($rule['match'] ?? []);
+			if ($match === []) {
+				return null;
+			}
+
+			if (is_array($match) === true) {
+				$matches[] = $match;
+			}
+		}
+
+		return $matches;
+	}//end crossOrganisationMatches()
+
+	/**
+	 * The resolved read rules of a schema that has an authorization block of its own.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return array<int, mixed> The rules; none for a schema without its own block or an unresolvable one.
+	 */
+	private function ownReadRules(Schema $schema): array {
+		if (empty(PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization())) === true) {
+			return [];
+		}
+
+		try {
+			$resolved = $this->resolveSchemaAuthorization(schema: $schema);
+		} catch (AuthorizationUnresolvableException $e) {
+			return [];
+		}
+
+		return array_values((array)(($resolved ?? [])['read'] ?? []));
+	}//end ownReadRules()
+
+	/**
+	 * The current caller as the rule qualification reads it.
+	 *
+	 * @param Schema $schema The schema, for the public-inheritance gate.
+	 *
+	 * @return array{groups: array<int, string>, userId: ?string, inheritFromPublic: bool} The caller.
+	 */
+	private function currentCaller(Schema $schema): array {
+		return [
+			'groups'            => $this->getCurrentUserGroups(),
+			'userId'            => $this->getCurrentUserId(),
+			'inheritFromPublic' => $this->authenticatedInheritsPublic(schema: $schema),
+		];
+	}//end currentCaller()
 
 	/**
 	 * Process a single authorization rule
@@ -2738,34 +2890,39 @@ class MagicRbacHandler {
 	}//end callerQualifiesForAction()
 
 	/**
-	 * Check if schema has conditional RBAC rules that match on non-_organisation fields
+	 * Whether the caller's read lifts the organisation filter entirely.
 	 *
-	 * When RBAC rules include conditional matching on fields other than _organisation,
-	 * the multitenancy filter should be skipped because RBAC already handles the
-	 * organization-based access control. This allows users to access records based
-	 * on field matches (e.g., aanbieder) even if the _organisation differs.
-	 *
-	 * Only the schema's OWN block can lift the organisation filter. A schema
-	 * that inherits its register's rules never does: those rules admit the rows
-	 * with no organisation instead, see
-	 * {@see admitsOrganisationlessRowsThroughCascade()}, and the rows of other
-	 * organisations stay behind the filter.
+	 * True for an admin, for an anonymous caller on a schema whose own rules
+	 * let `public` read every row, and for a caller who holds a read rule of the schema's
+	 * own block that is marked `crossOrganisation: true` and has no match: that
+	 * rule reads every row, so no organisation filter can narrow it. Every
+	 * other rule keeps the filter; a marked rule with a match widens it instead
+	 * ({@see hasCrossOrganisationBranch()}).
 	 *
 	 * @param Schema $schema The schema to check
 	 * @param string $action The action to check (default: 'read')
 	 *
-	 * @return bool True if RBAC has conditional rules that should bypass multitenancy
+	 * @return bool True when the organisation filter may be dropped.
 	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
 	 */
 	public function hasConditionalRulesBypassingMultitenancy(Schema $schema, string $action = 'read'): bool {
-		// The schema's own authorization block, minus the descriptive `mcp`
-		// scope (see the note on the other read of this block above).
-		return $this->callerQualifiesForBypassRule(
-			schema: $schema,
-			authorization: PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization()),
-			action: $action
-		);
+		// Code acting for an organisation stays inside it: no rule lifts the filter.
+		if (OrganisationContext::isActive() === true) {
+			return false;
+		}
+
+		if ($this->isAdmin() === true) {
+			return true;
+		}
+
+		if ($this->getCurrentUserId() === null) {
+			return (new ReadRuleTenancy())->readsPublicUnconditionally(
+				readRules: ((PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization()) ?? [])[$action] ?? [])
+			);
+		}
+
+		return $action === 'read' && $this->crossOrganisationMatches(schema: $schema) === null;
 	}//end hasConditionalRulesBypassingMultitenancy()
 
 	/**
@@ -2808,6 +2965,11 @@ class MagicRbacHandler {
 	 * Whether the current caller qualifies for a rule of the given block that
 	 * lets RBAC, rather than the organisation filter, govern the rows.
 	 *
+	 * Asked only for the register cascade's rows with no organisation
+	 * ({@see admitsOrganisationlessRowsThroughCascade()}). Rows of other
+	 * organisations are decided by the explicit marker alone
+	 * ({@see crossOrganisationMatches()}).
+	 *
 	 * @param Schema     $schema        The schema, for the public-inheritance gate.
 	 * @param array|null $authorization The authorization block to read.
 	 * @param string     $action        The action.
@@ -2846,133 +3008,191 @@ class MagicRbacHandler {
 		$userId = $user?->getUID();
 		$inheritFromPublic = $this->authenticatedInheritsPublic(schema: $schema);
 
-		// Check if user qualifies for any rule that should bypass multitenancy.
-		// This includes:
-		// 1. Simple rules (group name strings) - user in group can see ALL records.
-		// 2. Conditional rules with non-_organisation match fields - RBAC handles filtering.
+		$caller = ['groups' => $userGroups, 'userId' => $userId, 'inheritFromPublic' => $inheritFromPublic];
+		$verdicts = [];
 		foreach ($rules as $rule) {
-			if ($this->ruleBypassesMultitenancy(
-				rule: $rule,
-				userGroups: $userGroups,
-				userId: $userId,
-				inheritFromPublic: $inheritFromPublic
-			) === true
-			) {
-				return true;
-			}
-		}//end foreach
+			$verdicts[] = $this->ruleBypassVerdict(rule: $rule, caller: $caller);
+		}
 
-		return false;
+		return $this->verdictsLiftOrganisationFilter(verdicts: $verdicts);
 	}//end callerQualifiesForBypassRule()
 
 	/**
-	 * Check if a single rule should bypass multitenancy for the current user
+	 * Whether the verdicts of every rule the caller holds let RBAC govern the rows.
 	 *
-	 * @param mixed $rule Authorization rule (string or array)
-	 * @param array $userGroups User's group IDs
-	 * @param string|null $userId Current user ID (null = anonymous)
-	 * @param bool $inheritFromPublic Whether auth users inherit public rights
+	 * A qualifying simple rule reads every row, so it lifts the filter on its
+	 * own. Otherwise the caller must qualify for at least one rule that crosses
+	 * organisations and for no rule that stays inside one: the RBAC predicate
+	 * ORs every qualifying rule, so lifting the filter for one rule lifts it for
+	 * all of them.
 	 *
-	 * @return bool True if this rule bypasses multitenancy
+	 * @param string[] $verdicts One RULE_* verdict per rule.
+	 *
+	 * @return bool True when the organisation filter may be dropped.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-multi-tenancy-integration-with-scopes
 	 */
-	private function ruleBypassesMultitenancy(mixed $rule, array $userGroups, ?string $userId, bool $inheritFromPublic): bool {
-		// Check simple rules (just group names).
-		// If user qualifies for a simple rule, they can see ALL records,
-		// so multitenancy should be bypassed.
+	private function verdictsLiftOrganisationFilter(array $verdicts): bool {
+		if (in_array(self::RULE_READS_ALL, $verdicts, true) === true) {
+			return true;
+		}
+
+		return in_array(self::RULE_CROSSES_ORGANISATIONS, $verdicts, true) === true
+			&& in_array(self::RULE_STAYS_IN_ORGANISATION, $verdicts, true) === false;
+	}//end verdictsLiftOrganisationFilter()
+
+	/**
+	 * How one rule bears on the organisation filter for the current caller.
+	 *
+	 * @param mixed $rule   Authorization rule (string or array).
+	 * @param array $caller The caller: `groups`, `userId` and `inheritFromPublic`.
+	 *
+	 * @return string One of the RULE_* verdicts.
+	 */
+	private function ruleBypassVerdict(mixed $rule, array $caller): string {
 		if (is_string($rule) === true) {
-			return $this->simpleRuleBypassesMultitenancy(
-				rule: $rule,
-				userGroups: $userGroups,
-				userId: $userId,
-				inheritFromPublic: $inheritFromPublic
-			);
+			return $this->simpleRuleVerdict(rule: $rule, caller: $caller);
 		}
 
-		// Check conditional rules.
-		if (is_array($rule) === true && isset($rule['group']) === true && isset($rule['match']) === true) {
-			return $this->conditionalRuleBypassesMultitenancy(
-				rule: $rule,
-				userGroups: $userGroups,
-				userId: $userId,
-				inheritFromPublic: $inheritFromPublic
-			);
+		if (is_array($rule) === true) {
+			return $this->conditionalRuleVerdict(rule: $rule, caller: $caller);
 		}
 
-		return false;
-	}//end ruleBypassesMultitenancy()
+		return self::RULE_NOT_HELD;
+	}//end ruleBypassVerdict()
 
 	/**
-	 * Check if a simple (group name) rule bypasses multitenancy
+	 * The verdict of a simple (group name) rule.
 	 *
-	 * @param string $rule Group name
-	 * @param array $userGroups User's group IDs
-	 * @param string|null $userId Current user ID (null = anonymous)
-	 * @param bool $inheritFromPublic Whether auth users inherit public rights
+	 * `public` (for a caller who qualifies) and a group the caller is in read
+	 * every row. `authenticated` and a `user:<uid>` override grant the caller
+	 * the rows of their own organisation only.
 	 *
-	 * @return bool True if this simple rule bypasses multitenancy
+	 * @param string $rule   Group name.
+	 * @param array  $caller The caller: `groups`, `userId` and `inheritFromPublic`.
+	 *
+	 * @return string One of the RULE_* verdicts.
 	 */
-	private function simpleRuleBypassesMultitenancy(string $rule, array $userGroups, ?string $userId, bool $inheritFromPublic): bool {
-		// A `public` rule only grants a cross-tenant bypass to principals who
-		// actually qualify for `public`: anonymous users always, authenticated
-		// users only when public inheritance is enabled. Otherwise the bypass
-		// would expose other-tenant rows to an authenticated user whose access
-		// was meant to come from a different (e.g. `authenticated`) rule.
+	private function simpleRuleVerdict(string $rule, array $caller): string {
 		if ($rule === 'public') {
-			return $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $inheritFromPublic);
-		}
-
-		return in_array($rule, $userGroups, true);
-	}//end simpleRuleBypassesMultitenancy()
-
-	/**
-	 * Check if a conditional rule bypasses multitenancy
-	 *
-	 * A conditional rule bypasses multitenancy when the user qualifies for the
-	 * group and the match conditions include fields other than _organisation.
-	 *
-	 * @param array $rule Rule with 'group' and 'match'
-	 * @param array $userGroups User's group IDs
-	 * @param string|null $userId Current user ID (null = anonymous)
-	 * @param bool $inheritFromPublic Whether auth users inherit public rights
-	 *
-	 * @return bool True if this conditional rule bypasses multitenancy
-	 */
-	private function conditionalRuleBypassesMultitenancy(array $rule, array $userGroups, ?string $userId, bool $inheritFromPublic): bool {
-		$group = $rule['group'];
-		$match = $rule['match'];
-
-		// Check if user qualifies for this group. A `public` group only qualifies
-		// an authenticated user when public inheritance is enabled (anonymous
-		// users always qualify), consistent with the simple-rule path above.
-		$userQualifies = (
-			($group === 'public' && $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $inheritFromPublic) === true)
-			|| in_array($group, $userGroups, true) === true
-		);
-
-		// If user qualifies and match contains non-_organisation fields, multitenancy should be bypassed.
-		if ($userQualifies === true && is_array($match) === true) {
-			return $this->matchHasNonOrganisationFields(match: $match);
-		}
-
-		return false;
-	}//end conditionalRuleBypassesMultitenancy()
-
-	/**
-	 * Check if match conditions contain fields other than _organisation
-	 *
-	 * @param array $match Match conditions
-	 *
-	 * @return bool True if non-_organisation fields exist
-	 */
-	private function matchHasNonOrganisationFields(array $match): bool {
-		foreach (array_keys($match) as $matchField) {
-			if ($matchField !== '_organisation') {
-				return true;
+			if ($this->qualifiesForPublic(userId: $caller['userId'], inheritFromPublic: $caller['inheritFromPublic']) === true) {
+				return self::RULE_READS_ALL;
 			}
+
+			return self::RULE_NOT_HELD;
 		}
 
-		return false;
-	}//end matchHasNonOrganisationFields()
+		if (in_array($rule, $caller['groups'], true) === true) {
+			return self::RULE_READS_ALL;
+		}
+
+		if ($this->processSimpleRule(
+			rule: $rule,
+			userGroups: $caller['groups'],
+			userId: $caller['userId'],
+			inheritFromPublic: $caller['inheritFromPublic']
+		) === true
+		) {
+			return self::RULE_STAYS_IN_ORGANISATION;
+		}
+
+		return self::RULE_NOT_HELD;
+	}//end simpleRuleVerdict()
+
+	/**
+	 * The verdict of a conditional rule.
+	 *
+	 * A rule whose match pins `_organisation` to the caller's organisation
+	 * admits only rows of that organisation by itself, and a conditional
+	 * `public` rule admits rows anyone may read, so neither lifts nor keeps
+	 * the filter. Any other rule the caller holds stays inside the
+	 * caller's organisation unless it crosses organisations ({@see ruleCrossesOrganisations()}) and the caller
+	 * holds it through `public` or a group. A crossing rule held only through
+	 * `authenticated` or a user override binds its rows to the caller's
+	 * organisation by its own match, so it neither lifts nor keeps the filter.
+	 *
+	 * @param array $rule   Rule with `group` or `user`, and an optional `match`.
+	 * @param array $caller The caller: `groups`, `userId` and `inheritFromPublic`.
+	 *
+	 * @return string One of the RULE_* verdicts.
+	 */
+	private function conditionalRuleVerdict(array $rule, array $caller): string {
+		if ($this->callerHoldsConditionalRule(rule: $rule, caller: $caller) === false) {
+			return self::RULE_NOT_HELD;
+		}
+
+		if (($rule['group'] ?? null) === 'public'
+			|| $this->pinsCallerOrganisation(value: ($rule['match']['_organisation'] ?? null)) === true
+		) {
+			return self::RULE_NOT_HELD;
+		}
+
+		if ($this->ruleCrossesOrganisations(rule: $rule) === false) {
+			return self::RULE_STAYS_IN_ORGANISATION;
+		}
+
+		$group = ($rule['group'] ?? null);
+		if (isset($rule['user']) === false && is_string($group) === true && $group !== 'authenticated') {
+			return self::RULE_CROSSES_ORGANISATIONS;
+		}
+
+		return self::RULE_NOT_HELD;
+	}//end conditionalRuleVerdict()
+
+	/**
+	 * Whether the caller holds a conditional rule, by the qualification the
+	 * RBAC filter itself applies ({@see processConditionalRule()}).
+	 *
+	 * @param array $rule   Rule with `group` or `user`.
+	 * @param array $caller The caller: `groups`, `userId` and `inheritFromPublic`.
+	 *
+	 * @return bool True when the rule applies to the caller.
+	 */
+	private function callerHoldsConditionalRule(array $rule, array $caller): bool {
+		if (isset($rule['user']) === true) {
+			return is_string($rule['user']) === true
+				&& $this->matchesUserOverride(rule: 'user:' . $rule['user'], userId: $caller['userId']) === true;
+		}
+
+		$group = ($rule['group'] ?? null);
+		return match (true) {
+			$group === 'public' => $this->qualifiesForPublic(userId: $caller['userId'], inheritFromPublic: $caller['inheritFromPublic']),
+			$group === 'authenticated' => $caller['userId'] !== null,
+			default => $group !== null && in_array($group, $caller['groups'], true) === true,
+		};
+	}//end callerHoldsConditionalRule()
+
+	/**
+	 * Whether a conditional rule's rows may come from other organisations.
+	 *
+	 * Two shapes cross: a rule that declares `"crossOrganisation": true`, and a
+	 * rule whose match binds a field other than `_organisation` to the caller's
+	 * organisation or membership (`{"aanbieder": "$organisation"}`,
+	 * `{"administrationId": {"$memberOf": {...}}}`). A match on any other value,
+	 * such as a case type or a status, selects rows inside the organisation.
+	 * This reading decides only the register cascade's org-less rows.
+	 *
+	 * @param array $rule The conditional rule.
+	 *
+	 * @return bool True when the rule crosses organisations.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-multi-tenancy-integration-with-scopes
+	 */
+	private function ruleCrossesOrganisations(array $rule): bool {
+		$tenancy = new ReadRuleTenancy();
+		return $tenancy->isMarked(rule: $rule) === true || $tenancy->bindsFieldToCallerTenancy(rule: $rule) === true;
+	}//end ruleCrossesOrganisations()
+
+	/**
+	 * Whether a match value is the caller's organisation, see {@see ReadRuleTenancy::pinsCallerOrganisation()}.
+	 *
+	 * @param mixed $value The match value as written.
+	 *
+	 * @return bool True when the value equals the caller's organisation.
+	 */
+	private function pinsCallerOrganisation(mixed $value): bool {
+		return (new ReadRuleTenancy())->pinsCallerOrganisation(value: $value);
+	}//end pinsCallerOrganisation()
 
 	/**
 	 * Resolve the effective authorization for a schema.

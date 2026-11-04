@@ -55,6 +55,7 @@ use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\DraftListLens;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -1307,6 +1308,15 @@ class MagicSearchHandler {
 					multitenancyExplicit: $multitenancyExplicit
 				)
 			);
+			$crossBranch = null;
+			if ($multitenancyExplicit === false && $this->rbacHandler->hasCrossOrganisationBranch(schema: $schema) === true) {
+				$crossBranch = $this->rbacHandler->getCrossOrganisationBranchSql(schema: $schema);
+			}
+
+			if ($orgCondition !== null && $crossBranch !== null) {
+				$orgCondition = '(' . $orgCondition . ' OR ' . $crossBranch . ')';
+			}
+
 			if ($orgCondition !== null) {
 				$conditions[] = $orgCondition;
 			}
@@ -1366,6 +1376,7 @@ class MagicSearchHandler {
 	 * @return bool True when the organisation filter must be emitted.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flags are the request posture, mirrored.
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	private function multitenancyApplies(
 		Schema $schema,
@@ -1373,6 +1384,11 @@ class MagicSearchHandler {
 		bool $_multitenancy,
 		bool $multitenancyExplicit,
 	): bool {
+		// Code acting for an organisation always reads inside it.
+		if (OrganisationContext::isActive() === true) {
+			return true;
+		}
+
 		if ($_multitenancy === false) {
 			return false;
 		}
@@ -1409,6 +1425,21 @@ class MagicSearchHandler {
 		// it and let RBAC handle access control.
 		return $multitenancyExplicit;
 	}//end multitenancyApplies()
+
+	/**
+	 * Whether the organisation boundary of a default read carries a branch for
+	 * the rows the caller's conditional `crossOrganisation` rules admit, which a
+	 * renderer of its own (the aggregation fast path) cannot express.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return bool True when the boundary has a cross-organisation branch.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function organisationBoundaryHasCrossOrganisationBranch(Schema $schema): bool {
+		return $this->rbacHandler->hasCrossOrganisationBranch(schema: $schema);
+	}//end organisationBoundaryHasCrossOrganisationBranch()
 
 	/**
 	 * Whether a default read (no `_multi` asked for) waives the organisation
@@ -1518,14 +1549,9 @@ class MagicSearchHandler {
 		IDBConnection $connection,
 		bool $withOrgless = false,
 	): ?string {
-		$scope = $this->organizationHandler->resolveOrganizationScope(
-			adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
-			registerId: $registerId,
-			schemaId: $schema->getId()
+		$scope = $this->organisationScopeFor(
+			table: ['registerId' => $registerId, 'schemaId' => $schema->getId(), 'withOrgless' => $withOrgless]
 		);
-		if ($withOrgless === true) {
-			$scope = MagicOrganizationHandler::admitOrganisationless(scope: $scope);
-		}
 
 		$column = '_organisation';
 
@@ -2735,10 +2761,10 @@ class MagicSearchHandler {
 	/**
 	 * Resolve the multitenancy flag based on public schema access and explicit request
 	 *
-	 * Public schemas bypass multitenancy by default, UNLESS the user explicitly requests
-	 * multitenancy with _multi=true. This allows public data to be visible across orgs
-	 * while still giving users the option to filter by their own organisation. A
-	 * signed-in caller on a schema that does not inherit public rights keeps it.
+	 * A schema with a `public` read rule bypasses multitenancy for an anonymous
+	 * caller and an admin, UNLESS the caller explicitly requests multitenancy with
+	 * _multi=true. A signed-in caller keeps it: they read other organisations'
+	 * rows only through rules marked `crossOrganisation: true`.
 	 *
 	 * @param bool $_multitenancy Current multitenancy flag
 	 * @param bool $multitenancyExplicit Whether multitenancy was explicitly requested
@@ -2747,18 +2773,24 @@ class MagicSearchHandler {
 	 * @return bool Resolved multitenancy flag
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-when-inheritfrompublic-is-false-authenticated-users-must-not-qualify-for-public-rules
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	private function resolveMultitenancyFlag(
 		bool $_multitenancy,
 		bool $multitenancyExplicit,
 		Schema $schema,
 	): bool {
+		if (OrganisationContext::isActive() === true) {
+			return true;
+		}
+
 		if ($_multitenancy === true) {
 			$schemaAuth = $schema->getAuthorization();
 			$readGroups = $schemaAuth['read'] ?? [];
 			$hasPublic = $this->hasPublicReadAccess(readRules: $readGroups);
 
-			// Public schemas bypass multitenancy UNLESS user explicitly set _multi=true.
+			// Public schemas bypass multitenancy for anonymous callers and admins
+			// UNLESS the caller explicitly set _multi=true.
 			if ($hasPublic === true
 				&& $multitenancyExplicit === false
 				&& $this->rbacHandler->publicReadLiftsOrganisationFilter(schema: $schema) === true
@@ -2798,6 +2830,76 @@ class MagicSearchHandler {
 
 		return null;
 	}//end registerIdFromQuery()
+
+	/**
+	 * Add the organisation boundary, widened by a cross-organisation branch when there is one.
+	 *
+	 * @param IQueryBuilder $qb          The query builder.
+	 * @param array         $table       The table: `registerId`, `schemaId` and `withOrgless`.
+	 * @param mixed         $crossBranch The rows of the caller's conditional `crossOrganisation` rules, or null.
+	 *
+	 * @return void
+	 */
+	private function applyOrganisationBoundary(IQueryBuilder $qb, array $table, mixed $crossBranch): void {
+		if ($crossBranch === null) {
+			$this->organizationHandler->applyOrganizationFilter(
+				qb: $qb,
+				adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
+				registerId: $table['registerId'],
+				schemaId: $table['schemaId'],
+				withOrgless: $table['withOrgless']
+			);
+			return;
+		}
+
+		(new OrganisationScopeCondition())->apply(
+			qb: $qb,
+			scope: $this->organisationScopeFor(table: $table),
+			orAlso: $crossBranch
+		);
+	}//end applyOrganisationBoundary()
+
+	/**
+	 * The organisation scope of one table, widened by the org-less rows when asked.
+	 *
+	 * @param array $table The table: `registerId`, `schemaId` and `withOrgless`.
+	 *
+	 * @return array{mode: string, uuids: array<int, string>} The scope.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) admitOrganisationless() is a pure transform of the decided scope.
+	 */
+	private function organisationScopeFor(array $table): array {
+		$scope = $this->organizationHandler->resolveOrganizationScope(
+			adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
+			registerId: $table['registerId'],
+			schemaId: $table['schemaId']
+		);
+		if ($table['withOrgless'] === true) {
+			$scope = MagicOrganizationHandler::admitOrganisationless(scope: $scope);
+		}
+
+		return $scope;
+	}//end organisationScopeFor()
+
+	/**
+	 * The rows the caller's conditional `crossOrganisation` rules admit, to OR
+	 * into the organisation filter, or null when the filter takes no such branch.
+	 *
+	 * @param IQueryBuilder $qb                   The query builder.
+	 * @param Schema        $schema               The schema being read.
+	 * @param bool          $multitenancyExplicit Whether the caller asked for the strict filter.
+	 *
+	 * @return mixed The branch, or null.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the request posture, mirrored.
+	 */
+	private function crossOrganisationBranch(IQueryBuilder $qb, Schema $schema, bool $multitenancyExplicit): mixed {
+		if ($multitenancyExplicit === true || $this->rbacHandler->hasCrossOrganisationBranch(schema: $schema) === false) {
+			return null;
+		}
+
+		return $this->rbacHandler->getCrossOrganisationBranch(qb: $qb, schema: $schema);
+	}//end crossOrganisationBranch()
 
 	/**
 	 * Apply access control filters (multitenancy and RBAC) to the query
@@ -2850,16 +2952,18 @@ class MagicSearchHandler {
 			// (REQ-SLE-001). Each magic table is exactly one such pair, so
 			// the widening reaches this table and nothing else the holder
 			// owns. A pair that cannot be resolved widens by nothing.
-			$this->organizationHandler->applyOrganizationFilter(
+			$this->applyOrganisationBoundary(
 				qb: $qb,
-				adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
-				registerId: $registerId,
-				schemaId: $schema->getId(),
-				withOrgless: $this->organisationlessRowsAdmitted(
-					schema: $schema,
-					_rbac: $_rbac,
-					multitenancyExplicit: $multitenancyExplicit
-				)
+				table: [
+					'registerId'  => $registerId,
+					'schemaId'    => $schema->getId(),
+					'withOrgless' => $this->organisationlessRowsAdmitted(
+						schema: $schema,
+						_rbac: $_rbac,
+						multitenancyExplicit: $multitenancyExplicit
+					),
+				],
+				crossBranch: $this->crossOrganisationBranch(qb: $qb, schema: $schema, multitenancyExplicit: $multitenancyExplicit)
 			);
 		}
 

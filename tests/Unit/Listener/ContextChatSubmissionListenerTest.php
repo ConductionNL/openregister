@@ -157,6 +157,34 @@ class ContextChatSubmissionListenerTest extends TestCase {
 	}
 
 	/**
+	 * The public-read question is asked on the record's metadata, not on an `@self` in its data.
+	 */
+	public function testThePublicReadQuestionCarriesTheRecordsMetadata(): void {
+		$this->schemaMapper->method('find')->willReturn($this->optedInSchema(2));
+		$this->permissionHandler->method('resolveAuthorization')->willReturn(['read' => [['group' => 'public', 'match' => ['_owner' => 'alice']]]]);
+		$this->permissionHandler->expects($this->once())
+			->method('hasGroupPermission')
+			->with(
+				$this->anything(),
+				'public',
+				'read',
+				null,
+				null,
+				null,
+				$this->callback(
+					static fn (?array $data): bool => ($data['@self']['owner'] ?? null) === 'alice'
+						&& ($data['@self']['schema'] ?? null) === '2'
+						&& array_key_exists('_owner', $data) === false
+				)
+			)
+			->willReturn(false);
+
+		$object = $this->makeObject(2, ['@self' => ['owner' => 'mallory'], '_owner' => 'mallory']);
+
+		$this->assertFalse($this->listener->submitIfEligible($object));
+	}
+
+	/**
 	 * 6.4: an opted-in schema whose object is NOT publicly readable never submits.
 	 */
 	public function testOptedInButUnpublishedNeverSubmits(): void {

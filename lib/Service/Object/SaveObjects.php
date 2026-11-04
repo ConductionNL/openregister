@@ -72,6 +72,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Service\Object\SaveObject\BulkObjectSlugs;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -112,6 +113,13 @@ class SaveObjects {
 	 * @var int
 	 */
 	private const AUDIT_INSERT_CHUNK_SIZE = 100;
+
+	/**
+	 * The safeguard action of a row whose stored row could not be resolved.
+	 *
+	 * @var string
+	 */
+	private const UNRESOLVED_ACTION = 'unresolved';
 
 	/**
 	 * Envelope keys that are never business data, whatever a schema declares.
@@ -172,6 +180,13 @@ class SaveObjects {
 	 * @var array<int|string, Register>
 	 */
 	private static array $registerCache = [];
+
+	/**
+	 * The bulk slug pass (#4037), built on first use.
+	 *
+	 * @var BulkObjectSlugs|null
+	 */
+	private ?BulkObjectSlugs $bulkSlugs = null;
 
 	/**
 	 * Constructor for SaveObjects handler
@@ -236,6 +251,26 @@ class SaveObjects {
 
 		return $schema;
 	}//end loadSchemaWithCache()
+
+	/**
+	 * The slug rules for a prepared batch (#4037), built once.
+	 *
+	 * @return BulkObjectSlugs The bulk slug pass.
+	 */
+	private function bulkSlugs(): BulkObjectSlugs {
+		$this->bulkSlugs ??= new BulkObjectSlugs(
+			slugHandler: $this->saveHandler->getSlugHandler(),
+			registerMapper: $this->registerMapper,
+			logger: $this->logger,
+			schemaOf: fn (string $schemaId): Schema => $this->loadSchemaWithCache(schemaId: $schemaId)
+		);
+
+		return $this->bulkSlugs;
+	}//end bulkSlugs()
+
+
+
+
 
 	/**
 	 * Get comprehensive schema analysis from cache or generate new analysis
@@ -378,8 +413,7 @@ class SaveObjects {
 			objects: $objects,
 			register: $register,
 			schema: $schema,
-			_rbac: $_rbac,
-			_validation: $_validation,
+			flags: ['rbac' => $_rbac, 'validation' => $_validation, 'multitenancy' => $_multitenancy],
 			result: $result
 		);
 		$safeguardMs = round((microtime(true) - $safeguardStart) * 1000, 2);
@@ -461,7 +495,9 @@ class SaveObjects {
 
 		// Process objects in chunks for optimal performance.
 		$chunkSize = $this->calculateOptimalChunkSize(totalObjects: count($processedObjects));
-		$chunks = array_chunk($processedObjects, $chunkSize);
+		// Decide object slugs per register+schema group, in batch order, before
+		// anything is written: the same rules as a single save (#4037).
+		$chunks = array_chunk($this->bulkSlugs()->apply(objects: $processedObjects, register: $register, schema: $schema), $chunkSize);
 
 		// SINGLE PATH PROCESSING - Process all chunks the same way regardless of size.
 		foreach ($chunks as $chunkIndex => $objectsChunk) {
@@ -632,8 +668,8 @@ class SaveObjects {
 	 * @param array<int, array<string, mixed>> $objects Raw input objects.
 	 * @param Register|string|int|null $register Default register context.
 	 * @param Schema|string|int|null $schema Default schema context (null = mixed-schema).
-	 * @param bool $_rbac Caller-requested RBAC flag (admin may set false).
-	 * @param bool $_validation Caller-requested validation flag.
+	 * @param array{rbac: bool, validation: bool, multitenancy?: bool} $flags The caller-requested
+	 *                                   RBAC, validation and multitenancy flags (admin may set rbac and multitenancy false).
 	 * @param array $result Result accumulator (mutated in place: `invalid` + `statistics`).
 	 *
 	 * @return array<int, array<string, mixed>> Objects that passed every gate.
@@ -642,8 +678,7 @@ class SaveObjects {
 		array $objects,
 		Register|string|int|null $register,
 		Schema|string|int|null $schema,
-		bool $_rbac,
-		bool $_validation,
+		array $flags,
 		array &$result,
 	): array {
 		// No-op when dependencies are not wired (legacy constructor signature).
@@ -653,7 +688,7 @@ class SaveObjects {
 
 		$run = $this->startBulkSafeguardRun(
 			batch: ['objects' => $objects, 'register' => $register, 'schema' => $schema],
-			flags: ['rbac' => $_rbac, 'validation' => $_validation]
+			flags: $flags
 		);
 
 		$passed = [];
@@ -689,7 +724,7 @@ class SaveObjects {
 	 * its own query: an empty map means "not prefetched", never "nothing exists".
 	 *
 	 * @param array{objects: array, register: Register|string|int|null, schema: Schema|string|int|null} $batch The batch
-	 * @param array{rbac: bool, validation: bool}                                                     $flags The caller's flags
+	 * @param array{rbac: bool, validation: bool, multitenancy?: bool}                                 $flags The caller's flags
 	 *
 	 * @return BulkSafeguardRun
 	 */
@@ -698,6 +733,7 @@ class SaveObjects {
 		$run->isAdmin    = $this->safeguardCallerIsAdmin(run: $run);
 		$run->rbac       = ($flags['rbac'] === true || $run->isAdmin === false);
 		$run->validation = $flags['validation'];
+		$run->multitenancy = (($flags['multitenancy'] ?? true) === true || $run->isAdmin === false);
 		$this->resolveSafeguardDefaults(run: $run, defaults: ['register' => $batch['register'], 'schema' => $batch['schema']]);
 		$run->existingByUuid = $this->prefetchExistingRows(
 			objects: $batch['objects'],
@@ -796,6 +832,7 @@ class SaveObjects {
 			rowRegister: $run->rowRegister,
 			existingByUuid: $run->existingByUuid
 		);
+		$this->setAsideDeletedRow(run: $run);
 
 		// A row that sends an explicit-reveal value back as its mask keeps the stored
 		// value, before validation refuses the mask's shape.
@@ -837,7 +874,10 @@ class SaveObjects {
 	 * @return array{0: array, 1: string|null}
 	 */
 	private function screenResolvedRow(array $row, BulkSafeguardRun $run): array {
-		$refusal = ($this->draftRefusal(run: $run)
+		$refusal = ($this->unresolvedRowRefusal(run: $run)
+			?? $this->organisationRefusal(run: $run)
+			?? $this->deletedRowRefusal(run: $run)
+			?? $this->draftRefusal(run: $run)
 			?? $this->appendOnlyRefusal(run: $run)
 			?? $this->permissionRefusal(run: $run));
 		if ($refusal !== null) {
@@ -897,6 +937,128 @@ class SaveObjects {
 
 		return 'Permission denied for action ' . $run->rowAction . ' on schema ' . $run->rowSchema->getSlug();
 	}//end draftRefusal()
+
+	/**
+	 * The refusal for a row whose stored row could not be resolved, or null.
+	 *
+	 * The writer upserts on the row's identity, so a lookup that was ambiguous
+	 * or failed does not make the row a create. Answered as a refused create,
+	 * like the organisation refusal, so the cause stays unannounced.
+	 *
+	 * @param BulkSafeguardRun $run The safeguard pass
+	 *
+	 * @return string|null
+	 */
+	private function unresolvedRowRefusal(BulkSafeguardRun $run): ?string {
+		if ($run->rowAction !== self::UNRESOLVED_ACTION) {
+			return null;
+		}
+
+		return 'Permission denied for action create on schema ' . $run->rowSchema->getSlug();
+	}//end unresolvedRowRefusal()
+
+	/**
+	 * The refusal for a row that would overwrite another organisation's row, or null.
+	 *
+	 * The stored row was found past the read filters, and the update rule it is
+	 * judged by next does not look at organisations, while the writer upserts the
+	 * row and stamps the caller as its owner and organisation. So a row outside the
+	 * caller's organisation scope is refused unless the caller can read it, the
+	 * same boundary ObjectService::checkSavePermissions keeps for a single write. A
+	 * row the caller reads (a rule that reaches across organisations) is left to the
+	 * update rule. Asked before the appendOnly gate, and answered as a refused
+	 * create, so the row's existence stays unannounced. Skipped when the write does
+	 * not keep to the caller's organisations (an administrator).
+	 *
+	 * @param BulkSafeguardRun $run The safeguard pass
+	 *
+	 * @return string|null
+	 */
+	private function organisationRefusal(BulkSafeguardRun $run): ?string {
+		if ($run->rbac === false || $run->multitenancy === false || $run->rowExisting === null) {
+			return null;
+		}
+
+		if ($this->objectEntityMapper->callerOrganisationsHold(row: $run->rowExisting) === true
+			|| $this->callerReadsStoredRow(run: $run) === true
+		) {
+			return null;
+		}
+
+		return 'Permission denied for action create on schema ' . $run->rowSchema->getSlug();
+	}//end organisationRefusal()
+
+	/**
+	 * Whether the caller's own read finds the row the current bulk row updates.
+	 *
+	 * The read matches an identifier on the id, the slug and the uri as well,
+	 * so it counts only when it found the stored row itself, by its uuid.
+	 *
+	 * @param BulkSafeguardRun $run The safeguard pass
+	 *
+	 * @return bool False when the read does not find the stored row or fails.
+	 */
+	private function callerReadsStoredRow(BulkSafeguardRun $run): bool {
+		$uuid = (string) $run->rowExisting->getUuid();
+		try {
+			$read = $this->objectEntityMapper->find(
+				identifier: $uuid,
+				register: $run->rowRegister,
+				schema: $run->rowSchema
+			);
+		} catch (\Throwable $e) {
+			return false;
+		}
+
+		return $read->getUuid() === $uuid;
+	}//end callerReadsStoredRow()
+
+	/**
+	 * Keep a soft-deleted stored row apart from the row the current bulk row updates.
+	 *
+	 * The stored rows are looked up with the deleted ones, so the organisation of a
+	 * deleted row the writer would upsert onto is known. The row itself still counts
+	 * as a create, as it did when deleted rows were not looked up.
+	 *
+	 * @param BulkSafeguardRun $run The safeguard pass
+	 *
+	 * @return void
+	 */
+	private function setAsideDeletedRow(BulkSafeguardRun $run): void {
+		$run->rowDeleted = null;
+		if ($run->rowExisting === null || $run->rowExisting->isSoftDeleted() === false) {
+			return;
+		}
+
+		$run->rowDeleted  = $run->rowExisting;
+		$run->rowExisting = null;
+		$run->rowAction   = 'create';
+	}//end setAsideDeletedRow()
+
+	/**
+	 * The refusal for a row that would overwrite another organisation's soft-deleted row, or null.
+	 *
+	 * The writer upserts on the uuid with no deleted filter and stamps the caller as
+	 * the row's owner and organisation, which would move another organisation's
+	 * deleted row into the caller's trash. Answered as a refused create, like a live
+	 * row of another organisation. Skipped when the write does not keep to the
+	 * caller's organisations (an administrator).
+	 *
+	 * @param BulkSafeguardRun $run The safeguard pass
+	 *
+	 * @return string|null
+	 */
+	private function deletedRowRefusal(BulkSafeguardRun $run): ?string {
+		if ($run->rbac === false || $run->multitenancy === false || $run->rowDeleted === null) {
+			return null;
+		}
+
+		if ($this->objectEntityMapper->callerOrganisationsHold(row: $run->rowDeleted) === true) {
+			return null;
+		}
+
+		return 'Permission denied for action create on schema ' . $run->rowSchema->getSlug();
+	}//end deletedRowRefusal()
 
 	/**
 	 * The refusal for an update to an appendOnly schema, or null.
@@ -1005,10 +1167,11 @@ class SaveObjects {
 		$incoming = $object;
 		unset($incoming['@self']);
 		$stored = ($existing?->getObject() ?? []);
+		$record = ($existing?->getMatchEnvelope() ?? []);
 
 		$unauthorized = $propertyRbac->getUnauthorizedProperties(
 			schema: $schema,
-			object: $stored,
+			object: $record,
 			incomingData: $incoming,
 			isCreate: $isCreate
 		);
@@ -1020,7 +1183,7 @@ class SaveObjects {
 			return [$object, null];
 		}
 
-		$omitted = $propertyRbac->collectOmittedProtectedProperties(schema: $schema, incoming: $incoming, stored: $stored);
+		$omitted = $propertyRbac->collectOmittedProtectedProperties(schema: $schema, incoming: $incoming, stored: $record);
 		if ($omitted === []) {
 			return [$object, null];
 		}
@@ -1294,12 +1457,16 @@ class SaveObjects {
 				identifier: $uuid,
 				register: $rowRegister,
 				schema: $boundedSchema,
+				includeDeleted: true,
 				_rbac: false,
 				_multitenancy: false
 			);
 			return [$uuid, 'update', $existing];
-		} catch (\Throwable $e) {
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return [$uuid, 'create', null];
+		} catch (\Throwable $e) {
+			// Ambiguous or failed: not known which row the writer would land on.
+			return [$uuid, self::UNRESOLVED_ACTION, null];
 		}
 	}//end resolveSafeguardActionForRow()
 
@@ -1378,7 +1545,8 @@ class SaveObjects {
 				$existing[$groupKey] = $this->objectEntityMapper->findObjectsByUuidsInRegisterSchema(
 					register: $group['register'],
 					schema: $group['schema'],
-					uuids: $group['uuids']
+					uuids: $group['uuids'],
+					includeDeleted: true
 				);
 			} catch (\Throwable $e) {
 				// Leave the group OUT of the map — see the method docblock. The
@@ -1785,6 +1953,10 @@ class SaveObjects {
 	): array {
 		// NO ERROR SUPPRESSION: Let single-schema preparation errors bubble up immediately!
 		$selfData = $object['@self'] ?? [];
+
+		// The call to extractBusinessData() below drops an undeclared top-level
+		// `slug`. Keep it for the slug decision, which removes this key again (#4037).
+		$selfData[BulkObjectSlugs::CLIENT_SLUG_KEY] = $this->bulkSlugs()->clientSlugToCarry(selfData: $selfData, object: $object);
 
 		// PERFORMANCE: Use pre-loaded values instead of per-object lookups.
 		$selfData['register'] = $selfData['register'] ?? $registerId;

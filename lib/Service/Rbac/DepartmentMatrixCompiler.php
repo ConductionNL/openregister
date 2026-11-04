@@ -105,9 +105,10 @@ class DepartmentMatrixCompiler {
 	/**
 	 * Constructor.
 	 *
-	 * @param MatrixRowWhere|null $where Reads a row's `where`; a fresh one when null.
+	 * @param MatrixRowWhere|null $where           Reads a row's `where`; a fresh one when null.
+	 * @param array<int, string>  $declaredActions The actions the schema declares itself, which a row may grant too.
 	 */
-	public function __construct(?MatrixRowWhere $where = null) {
+	public function __construct(?MatrixRowWhere $where = null, private readonly array $declaredActions = []) {
 		$this->where = ($where ?? new MatrixRowWhere());
 	}//end __construct()
 
@@ -148,10 +149,13 @@ class DepartmentMatrixCompiler {
 			foreach ($scopes as $scope) {
 				$values = $scope['values'];
 				sort($values);
-				$compiled[$action][] = [
-					'group' => $scope['group'],
-					'match' => array_merge([$field => ['$in' => $values]], $scope['where']),
-				];
+				$compiled[$action][] = array_merge(
+					[
+						'group' => $scope['group'],
+						'match' => array_merge([$field => ['$in' => $values]], $scope['where']),
+					],
+					$scope['marker']
+				);
 			}
 		}
 
@@ -171,7 +175,7 @@ class DepartmentMatrixCompiler {
 	 * @param string                   $field     The matrix field, which a `where` may not repeat.
 	 * @param DateTimeInterface        $now       The moment `until` is read against.
 	 *
-	 * @return array<string, array<string, array{group: string, where: array<string, mixed>, values: array<int, string>}>>
+	 * @return array<string, array<string, array{group: string, where: array<string, mixed>, marker: array<string, mixed>, values: array<int, string>}>>
 	 *         Scopes by action, keyed by group and `where`.
 	 *
 	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
@@ -209,12 +213,15 @@ class DepartmentMatrixCompiler {
 				continue;
 			}
 
-			$key = $group . "\0" . json_encode($where);
+			$marker = (new ReadRuleTenancy())->markerOf(rule: $row);
+
+			$key = $group . "\0" . json_encode($where) . "\0" . json_encode($marker);
 			foreach ($this->actionsOf(row: $row) as $action) {
 				$existing = ($gathered[$action][$key]['values'] ?? []);
 				$gathered[$action][$key] = [
 					'group' => $group,
 					'where' => $where,
+					'marker' => $marker,
 					'values' => array_values(array_unique(array_merge($existing, $values))),
 				];
 			}
@@ -384,7 +391,7 @@ class DepartmentMatrixCompiler {
 		$actions = [];
 		foreach ($declared as $action) {
 			$action = trim((string)$action);
-			if (in_array($action, self::ACTIONS, true) === false) {
+			if (in_array($action, self::ACTIONS, true) === false && in_array($action, $this->declaredActions, true) === false) {
 				continue;
 			}
 

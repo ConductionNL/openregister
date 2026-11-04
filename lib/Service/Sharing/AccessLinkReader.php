@@ -370,8 +370,13 @@ class AccessLinkReader {
 			return [];
 		}
 
+		$readable = $object->filterAsRecord(
+			data: $data,
+			filter: fn (array $probe): array => $this->properties->filterReadableProperties(schema: $schema, object: $probe)
+		);
+
 		// A link never reveals an explicit-reveal value: it reads masked.
-		return ExplicitReveal::maskAll(schema: $schema, object: $this->properties->filterReadableProperties(schema: $schema, object: $data));
+		return ExplicitReveal::maskAll(schema: $schema, object: $readable);
 	}//end filteredProperties()
 
 	/**

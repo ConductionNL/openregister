@@ -78,6 +78,18 @@ class ConditionMatcher {
 	];
 
 	/**
+	 * Match tokens that resolve to the caller's active organisation.
+	 *
+	 * @var string[]
+	 */
+	public const ORGANISATION_TOKENS = [
+		'$organisation',
+		'$activeOrganisation',
+		'$organisation.uuid',
+		'$activeOrganisation.uuid',
+	];
+
+	/**
 	 * Supported `$organisation.<property>` dot-path tokens.
 	 *
 	 * Currently only `uuid` is exposed so this keeps parity with the bare
@@ -237,7 +249,13 @@ class ConditionMatcher {
 	}//end unwrapResolvedRelation()
 
 	/**
-	 * Get a value from the object, checking both direct property and @self
+	 * Get a value from the object: `@self` for an underscore-prefixed property, else the body
+	 *
+	 * An underscore-prefixed property is metadata. When the object carries a
+	 * `@self`, that is the record's metadata and the only answer: a body key of
+	 * the same name is written by whoever wrote the body, and a field `@self`
+	 * lacks (`_published`, no longer record metadata) answers null. Only an
+	 * object without any `@self` falls back to its body.
 	 *
 	 * @param array $object Object data
 	 * @param string $property Property name
@@ -245,17 +263,12 @@ class ConditionMatcher {
 	 * @return mixed Property value or null
 	 */
 	private function getObjectValue(array $object, string $property): mixed {
-		// Check direct property first.
-		if (isset($object[$property]) === true) {
-			return $object[$property];
+		if (str_starts_with($property, '_') === true && is_array($object['@self'] ?? null) === true) {
+			return ($object['@self'][substr($property, 1)] ?? null);
 		}
 
-		// For underscore-prefixed properties, also check @self.
-		if (str_starts_with($property, '_') === true) {
-			$selfProperty = substr($property, 1);
-			if (isset($object['@self'][$selfProperty]) === true) {
-				return $object['@self'][$selfProperty];
-			}
+		if (isset($object[$property]) === true) {
+			return $object[$property];
 		}
 
 		return null;
@@ -472,14 +485,20 @@ class ConditionMatcher {
 	 * @return string|null The active organisation UUID or null
 	 *
 	 * @spec openspec/specs/actions/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	private function getActiveOrganisationUuid(): ?string {
 		// Keyed by the subject, because the subject can change within a request:
 		// ObjectService::runAsAnonymous() and runAs() both swap it. A flat memo
 		// resolved under an admin session would otherwise answer `@organisation.uuid`
 		// with that admin's organisation inside an evaluation meant to be anonymous,
-		// admitting their tenant's rows to a public read.
+		// admitting their tenant's rows to a public read. An organisation
+		// context is a subject of its own for the same reason.
 		$subject = ($this->userSession->getUser()?->getUID() ?? '_anon');
+		$contextUuid = OrganisationContext::current();
+		if ($contextUuid !== null) {
+			$subject = 'organisation-context:' . $contextUuid;
+		}
 		if (array_key_exists($subject, $this->cachedActiveOrg) === true) {
 			return $this->cachedActiveOrg[$subject];
 		}

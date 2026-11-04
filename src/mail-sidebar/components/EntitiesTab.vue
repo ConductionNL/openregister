@@ -99,7 +99,7 @@ export default {
 	methods: {
 		t,
 		/**
-		 * @param type
+		 * @param {string} type
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		formatType(type) {
@@ -145,7 +145,7 @@ export default {
 		/**
 		 * Build the deduplicated entity list from one message envelope.
 		 *
-		 * @param envelope
+		 * @param {object} envelope
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		extractEntities(envelope) {

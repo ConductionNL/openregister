@@ -101,7 +101,7 @@ class ObjectGrantsReport {
 	 */
 	public function rowsFor(ObjectEntity $object, mixed $registerRef, mixed $schemaRef, array $principalTypes = []): array {
 		$set = $this->accessReport->setFor(object: $object, registerRef: $registerRef, schemaRef: $schemaRef);
-		$envelope = $this->envelopeOf(object: $object);
+		$envelope = $object->getMatchEnvelope();
 
 		$rows = [];
 		$rows = $this->ownerRows(object: $object, rows: $rows);
@@ -394,21 +394,4 @@ class ObjectGrantsReport {
 			default => null,
 		};
 	}//end displayNameOf()
-
-	/**
-	 * The record as the single-object decision hands it to the matcher.
-	 *
-	 * @param ObjectEntity $object The record.
-	 *
-	 * @return array<string, mixed> The envelope.
-	 */
-	private function envelopeOf(ObjectEntity $object): array {
-		$envelope = ($object->getObject() ?? []);
-		$organisation = $object->getOrganisation();
-		if ($organisation !== null) {
-			$envelope['@self'] = (($envelope['@self'] ?? []) + ['organisation' => $organisation]);
-		}
-
-		return $envelope;
-	}//end envelopeOf()
 }//end class

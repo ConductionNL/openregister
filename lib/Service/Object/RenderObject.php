@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
@@ -831,13 +832,7 @@ class RenderObject {
 					if ($doGated === true) {
 						// Note filterReadableProperties strips writeOnly first, then applies
 						// the group-authorization filter, so this covers both concerns.
-						$unfiltered = $object;
-						$object = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $object);
-						$this->withholdEntityCopies(
-							entity: $row,
-							schema: $schema,
-							removed: $this->removedProperties(before: $unfiltered, after: $object)
-						);
+						$object = $this->filterAuthorizedProperties(entity: $row, schema: $schema, objectData: $object);
 					} else {
 						// The writeOnly-only path (admin / `_rbac: false` / system context, or a
 						// schema with no property authorization): strip writeOnly unconditionally.
@@ -2624,8 +2619,9 @@ class RenderObject {
 	 * Strip the properties the reader's groups may not read, writeOnly included.
 	 *
 	 * Property authorization can reference `@self.organisation` or `_organisation`,
-	 * so a temporary `@self` is supplied when the data has none and removed again
-	 * afterwards (jsonSerialize re-adds it).
+	 * so the rules read a temporary `@self` built from the record's own metadata,
+	 * never one the data carries. The data's own `@self`, if any, is put back
+	 * afterwards (jsonSerialize re-adds the record's).
 	 *
 	 * @param ObjectEntity $entity     The entity being rendered
 	 * @param Schema       $schema     The object's schema
@@ -2636,29 +2632,17 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function filterAuthorizedProperties(ObjectEntity $entity, Schema $schema, array $objectData): array {
-		$objectDataWithSelf = $objectData;
-		if (isset($objectDataWithSelf['@self']) === false) {
-			$objectDataWithSelf['@self'] = [
-				'organisation' => $entity->getOrganisation(),
-				'owner'        => $entity->getOwner(),
-			];
-		}
-
-		$objectData = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $objectDataWithSelf);
+		$filtered = $entity->filterAsRecord(
+			data: $objectData,
+			filter: fn (array $probe): array => $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $probe)
+		);
 		$this->withholdEntityCopies(
 			entity: $entity,
 			schema: $schema,
-			removed: $this->removedProperties(before: $objectDataWithSelf, after: $objectData)
+			removed: $this->removedProperties(before: $objectData, after: $filtered)
 		);
 
-		if (isset($objectData['@self']) === true
-			&& count($objectData['@self']) <= 2
-			&& isset($objectData['@self']['organisation']) === true
-		) {
-			unset($objectData['@self']);
-		}
-
-		return $objectData;
+		return $filtered;
 	}//end filterAuthorizedProperties()
 
 	/**
@@ -3140,7 +3124,7 @@ class RenderObject {
 	}//end applyReadStateMarkers()
 
 	/**
-	 * Attach `@self.can.update`: whether the reader may update this object.
+	 * Attach `@self.can`: whether the reader may update this object, and run each declared action on it.
 	 *
 	 * Opt-in through `_extend[]=@self.can`, because it costs one permission
 	 * evaluation per row and only the records list's in-place editor asks for
@@ -3178,16 +3162,14 @@ class RenderObject {
 				$owner = null;
 			}
 
-			$entity->setCan(
-				[
-					'update' => $permissions->hasPermission(
-						schema: $schema,
-						action: 'update',
-						objectOwner: $owner,
-						object: $entity
-					),
-				]
+			$can = $this->container->get(ObjectActionList::class)->canRun(object: $entity, schema: $schema);
+			$can['update'] = $permissions->hasPermission(
+				schema: $schema,
+				action: 'update',
+				objectOwner: $owner,
+				object: $entity
 			);
+			$entity->setCan($can);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				sprintf('[RenderObject] update right marker skipped for %s: %s', (string)$entity->getUuid(), $e->getMessage())

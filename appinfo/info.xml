@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.1.35-unstable.20261028180000</version>
+    <version>2.1.35-unstable.20261103200000</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -222,10 +222,14 @@ Vrij en open source onder de EUPL-licentie.
 				post-migration only. On a fresh install there are no old rows,
 				and the step is idempotent either way.
 			-->
+			<!-- Before reconciliation, so a moved job's old row is re-added under
+			     its new name rather than left beside a second, reconciled row. -->
+			<step>OCA\OpenRegister\Repair\RepointMovedBackgroundJobs</step>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
 			<step>OCA\OpenRegister\Repair\RemoveRetiredCronJobs</step>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
 			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
+			<step>OCA\OpenRegister\Repair\MarkImplicitCrossOrganisationReadRules</step>
 			<!-- The flows register must EXIST before any step reads flows.
 			     ImportFlowRegister was written, and named here zero times, so
 			     the `flows` register was never created and every flow step
@@ -493,6 +497,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\ResetSchemaToShippedCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
+		<command>OCA\OpenRegister\Command\BackfillObjectSlugsCommand</command>
 		<command>OCA\OpenRegister\Command\MoveObjectFilesCommand</command>
 		<command>OCA\OpenRegister\Command\ImportSkosCsvCommand</command>
 		<!-- App-rename repair: re-points registers and schemas at a new owning

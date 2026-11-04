@@ -209,6 +209,13 @@ class ImportHandler {
 	private array $schemasMap = [];
 
 	/**
+	 * The schema parts the shipped-baseline guard kept local in the running app import.
+	 *
+	 * @var array<int, array{slug: string, paths: array<int, string>}>
+	 */
+	private array $keptLocal = [];
+
+	/**
 	 * Mapping mapper instance for handling mapping operations.
 	 *
 	 * @var MappingMapper The mapping mapper instance.
@@ -237,6 +244,14 @@ class ImportHandler {
 	 * @var NoteService|null
 	 */
 	private ?NoteService $noteService = null;
+
+	/**
+	 * Decides the slug of a seed object so it cannot take a slug another live
+	 * object holds (#4037); null sets the seed slug as sent.
+	 *
+	 * @var \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler|null
+	 */
+	private ?\OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler $slugHandler = null;
 
 	/**
 	 * Optional file service for seeding related attachments.
@@ -439,6 +454,19 @@ class ImportHandler {
 	public function setNoteService(?NoteService $noteService): void {
 		$this->noteService = $noteService;
 	}//end setNoteService()
+
+	/**
+	 * Inject the slug handler that decides the slug of a seed object (#4037).
+	 *
+	 * @param \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler|null $slugHandler Optional slug handler.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 */
+	public function setSlugHandler(?\OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler $slugHandler): void {
+		$this->slugHandler = $slugHandler;
+	}//end setSlugHandler()
 
 	/**
 	 * Inject the FileService used by seed-related-items to attach files.
@@ -1542,6 +1570,7 @@ class ImportHandler {
 		}
 
 		if ($result['conflicts'] !== []) {
+			$this->keptLocal[] = ['slug' => $slug, 'paths' => array_column($result['conflicts'], 'path')];
 			$this->logger->warning(
 				message: '[ImportHandler] schema kept its local definition for parts the app also changed',
 				context: [
@@ -4401,6 +4430,23 @@ class ImportHandler {
 
 
 	/**
+	 * The schema parts the shipped-baseline guard kept local since the last call, and a fresh list.
+	 *
+	 * Called once before an import whose result reports them, to drop what an
+	 * earlier import left, and once after it for the report.
+	 *
+	 * @return array<int, array{slug: string, paths: array<int, string>}> One entry per schema.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	public function takeKeptLocalReport(): array {
+		$report = $this->keptLocal;
+		$this->keptLocal = [];
+
+		return $report;
+	}//end takeKeptLocalReport()
+
+	/**
 	 * Import configuration from an app's JSON data.
 	 *
 	 * This is a convenience wrapper method for apps that want to import their
@@ -4445,6 +4491,7 @@ class ImportHandler {
 
 			// Run under its own import job id so the objects it creates can be
 			// removed by job later (a setup wizard's "remove this example set").
+			$this->takeKeptLocalReport();
 			$result = $this->importFromJsonAsJob(
 				data: $import->data,
 				configuration: $configuration,
@@ -4452,6 +4499,7 @@ class ImportHandler {
 				version: $version,
 				force: $force
 			);
+			$result['keptLocal'] = ['schemas' => $this->takeKeptLocalReport()];
 
 			$update = new ImportedConfigurationUpdate(configuration: $configuration, result: $result);
 			if (count($result['registers']) > 0 || count($result['schemas']) > 0 || count($result['objects']) > 0) {
@@ -5677,6 +5725,149 @@ class ImportHandler {
 	}//end importSeedData()
 
 	/**
+	 * The object a seed already exists as: the one found by uuid or slug, else a suffixed copy.
+	 *
+	 * @param ObjectEntity|null $found      What the uuid or slug lookup found.
+	 * @param array             $objectData The seed object.
+	 * @param Schema            $schema     The schema the seed is imported into.
+	 * @param Register|null     $register   The register it is imported into.
+	 *
+	 * @return ObjectEntity|null The existing object, or null when the seed is new.
+	 */
+	private function orSuffixedSeed(?ObjectEntity $found, array $objectData, Schema $schema, ?Register $register): ?ObjectEntity {
+		if ($found !== null || isset($objectData['uuid']) === true || $register === null) {
+			return $found;
+		}
+
+		return $this->findSuffixedSeed(objectData: $objectData, schema: $schema, register: $register);
+	}//end orSuffixedSeed()
+
+	/**
+	 * Set the slug of a new seed object.
+	 *
+	 * A schema with managed slugs decides it through the one slug handler, so a seed
+	 * cannot take a slug another live object holds; without the handler the seed slug
+	 * is set as before.
+	 *
+	 * @param ObjectEntity $entity     The object being seeded.
+	 * @param Schema       $schema     Its schema.
+	 * @param array        $objectData The seed object.
+	 * @param mixed        $objectSlug The slug the seed data carries.
+	 *
+	 * @return void
+	 */
+	private function applySeedSlug(ObjectEntity $entity, Schema $schema, array $objectData, mixed $objectSlug): void {
+		if ($this->slugHandler === null) {
+			$entity->setSlug($objectSlug);
+			return;
+		}
+
+		$this->slugHandler->applyOnSeed(entity: $entity, schema: $schema, clientSlug: $this->seedClientSlug(objectData: $objectData));
+	}//end applySeedSlug()
+
+	/**
+	 * A uuid-less seed object stored under a suffixed slug (`<slug>-<14 digits>`), if there is one.
+	 *
+	 * On a schema with `objectSlugSuffix`, a first import whose slug was held by another object
+	 * stored the seed under the suffixed slug; the plain slug lookup does not find it, and
+	 * the next import would copy it again.
+	 *
+	 * @param array    $objectData The seed object.
+	 * @param Schema   $schema     The schema the seed is imported into.
+	 * @param Register $register   The register it is imported into.
+	 *
+	 * @return ObjectEntity|null The object, or null when none is stored under a suffixed variant.
+	 */
+	private function findSuffixedSeed(array $objectData, Schema $schema, Register $register): ?ObjectEntity {
+		$suffixOn = ((($schema->getConfiguration() ?? [])['objectSlugSuffix'] ?? false) === true);
+		$managed = ($this->slugHandler !== null && $this->slugHandler->isManaged(schema: $schema) === true);
+		if ($managed === false || $this->routingMapper === null || $suffixOn === false) {
+			return null;
+		}
+
+		$candidate = $this->slugHandler->candidate(
+			objectData: $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $schema),
+			schema: $schema,
+			clientSlug: $this->seedClientSlug(objectData: $objectData)
+		);
+		if ($candidate === null) {
+			return null;
+		}
+
+		// `<base>-` of a suffixed variant, the base being cut to fit the column.
+		$prefix = substr($this->slugHandler->withSuffix(slug: $candidate, stamp: '00000000000000'), 0, -14);
+		foreach ($this->routingMapper->findSlugsByPrefix(register: $register, schema: $schema, prefix: $prefix) as $match) {
+			if ($this->slugHandler->isSuffixOf(slug: $match['slug'], candidate: $candidate) === false) {
+				continue;
+			}
+
+			try {
+				return $this->routingMapper->find(
+					identifier: $match['uuid'],
+					register: $register,
+					schema: $schema,
+					includeDeleted: false,
+					_rbac: false,
+					_multitenancy: false
+				);
+			} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+				continue;
+			}
+		}
+
+		return null;
+	}//end findSuffixedSeed()
+
+	/**
+	 * The slug to look a uuid-less seed object up by.
+	 *
+	 * A schema with managed slugs stores the normalised slug, so the raw seed
+	 * slug or title (`School De Linde`) would never find the object it created
+	 * on the previous import; the lookup uses the same candidate the save does:
+	 * an explicit seed `slug`, else the schema's configured slug source.
+	 *
+	 * @param array  $objectData The seed object.
+	 * @param string $slug       The seed's slug, else its title.
+	 * @param Schema $schema     The schema the seed is imported into.
+	 *
+	 * @return string The slug to look up.
+	 */
+	private function seedLookupSlug(array $objectData, string $slug, Schema $schema): string {
+		if ($this->slugHandler === null || $this->slugHandler->isManaged(schema: $schema) === false) {
+			return $slug;
+		}
+
+		$candidate = $this->slugHandler->candidate(
+			objectData: $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $schema),
+			schema: $schema,
+			clientSlug: $this->seedClientSlug(objectData: $objectData)
+		);
+
+		return ($candidate ?? $slug);
+	}//end seedLookupSlug()
+
+	/**
+	 * The slug a seed object asks for itself: its explicit `slug`, never its title.
+	 *
+	 * The title only serves the idempotency lookup of a schema without managed
+	 * slugs; on a managed schema the configured source (`objectSlugField`,
+	 * `@schema.name`) decides, exactly as it does for the same object saved
+	 * through the API (#4037).
+	 *
+	 * @param array $objectData The seed object.
+	 *
+	 * @return string|null The explicit slug, or null when the seed has none.
+	 */
+	private function seedClientSlug(array $objectData): ?string {
+		$slug = $objectData['slug'] ?? null;
+		if (is_scalar($slug) === false || trim((string)$slug) === '') {
+			return null;
+		}
+
+		return (string)$slug;
+	}//end seedClientSlug()
+
+	/**
 	 * Remove the seed format's top-level `uuid` and `slug` from an object's data.
 	 *
 	 * A seed object carries its uuid and slug at the top level; the importer
@@ -6083,7 +6274,7 @@ class ImportHandler {
 					// IDEMPOTENCY CHECK: Check if object already exists by slug or uuid.
 					// This prevents duplicate data when configuration is run multiple times.
 					$existingObject = null;
-					$lookupIdentifier = $objectData['uuid'] ?? $objectSlug;
+					$lookupIdentifier = ($objectData['uuid'] ?? $this->seedLookupSlug(objectData: $objectData, slug: (string)$objectSlug, schema: $objectSchema));
 
 					try {
 						// Try to find existing object using MagicMapper.
@@ -6119,6 +6310,8 @@ class ImportHandler {
 						continue;
 					}//end try
 
+					$existingObject = $this->orSuffixedSeed(found: $existingObject, objectData: $objectData, schema: $objectSchema, register: $objectRegister);
+
 					if ($existingObject !== null) {
 						// Object already exists - skip creation to prevent duplication.
 						$this->logger->debug(
@@ -6140,11 +6333,7 @@ class ImportHandler {
 					$objectEntity = new ObjectEntity();
 
 					// Generate UUID if not provided.
-					$uuid = $objectData['uuid'] ?? \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
-					$objectEntity->setUuid($uuid);
-
-					// Set the slug for future idempotency checks.
-					$objectEntity->setSlug($objectSlug);
+					$objectEntity->setUuid($objectData['uuid'] ?? \Symfony\Component\Uid\Uuid::v4()->toRfc4122());
 
 					// Set schema reference - use resolved external schema if available.
 					$objectEntity->setSchema($objectSchema->getId());
@@ -6159,6 +6348,9 @@ class ImportHandler {
 					$objectEntity->setObject(
 						$this->withoutSeedMetadataKeys(objectData: $objectData, schema: $objectSchema)
 					);
+
+					// Set the slug for future idempotency checks (#4037).
+					$this->applySeedSlug(entity: $objectEntity, schema: $objectSchema, objectData: $objectData, objectSlug: $objectSlug);
 
 					// Set timestamps.
 					$now = new DateTime();

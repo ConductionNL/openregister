@@ -82,7 +82,7 @@ class VocabularyRegisterJsonTest extends TestCase {
 			$this->assertArrayHasKey($field, ($schema['properties'] ?? []), "conceptScheme.properties must declare {$field}");
 		}
 
-		$this->assertSame(['public'], ($schema['authorization']['read'] ?? null), 'conceptScheme reads must be public');
+		$this->assertSame([['group' => 'public', 'crossOrganisation' => true]], ($schema['authorization']['read'] ?? null), 'conceptScheme reads must be public in every organisation');
 		$this->assertArrayNotHasKey('write', ($schema['authorization'] ?? []), 'writes stay admin-gated by omission');
 	}//end testConceptSchemeHasMinimumRequiredFields()
 
@@ -105,7 +105,7 @@ class VocabularyRegisterJsonTest extends TestCase {
 
 		$this->assertContains('nl', ($schema['properties']['prefLabel']['required'] ?? []), 'prefLabel.nl must be required');
 
-		$this->assertSame(['public'], ($schema['authorization']['read'] ?? null), 'concept reads must be public');
+		$this->assertSame([['group' => 'public', 'crossOrganisation' => true]], ($schema['authorization']['read'] ?? null), 'concept reads must be public in every organisation');
 	}//end testConceptHasMinimumRequiredFieldsAndRelations()
 
 	/**

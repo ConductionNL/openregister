@@ -49,6 +49,39 @@ class DepartmentMatrixValidator {
 	public const ROWS_FROM_KEY = 'rowsFrom';
 
 	/**
+	 * Metadata fields a row's `where` may name besides the schema's properties.
+	 *
+	 * Each is a column of every magic table that the system sets (a writer
+	 * cannot put it in the object body) and that every enforcement path reads
+	 * the same way: `t._organisation` on the list, `@self.organisation` on a
+	 * single object.
+	 *
+	 * @var string[]
+	 */
+	public const WHERE_METADATA_FIELDS = ['_organisation', '_owner'];
+
+	/**
+	 * Constructor.
+	 *
+	 * @param array<int, string> $declaredActions The actions the schema declares itself, which a row may grant too.
+	 */
+	public function __construct(private readonly array $declaredActions = []) {
+	}//end __construct()
+
+	/**
+	 * This validator for a schema that declares these actions.
+	 *
+	 * @param array<int, string> $declaredActions The schema's declared action keys.
+	 *
+	 * @return self The validator.
+	 *
+	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 */
+	public function withDeclaredActions(array $declaredActions): self {
+		return new self(declaredActions: $declaredActions);
+	}//end withDeclaredActions()
+
+	/**
 	 * Findings for one row, as the compiler will read it.
 	 *
 	 * Used for rows an app adds at check time, which never pass a schema save.
@@ -255,7 +288,7 @@ class DepartmentMatrixValidator {
 		}
 
 		foreach ($actions as $action) {
-			if (in_array(trim((string)$action), DepartmentMatrixCompiler::ACTIONS, true) === false) {
+			if (in_array(trim((string)$action), [...DepartmentMatrixCompiler::ACTIONS, ...$this->declaredActions], true) === false) {
 				$findings[] = [
 					'code' => 'matrix.unknown-action',
 					'message' => 'Row ' . (string)$index . ' names the action "'
@@ -304,7 +337,7 @@ class DepartmentMatrixValidator {
 			}
 		}
 
-		return $findings;
+		return array_merge($findings, (new MatrixRowWhere())->crossingFindings(row: $row, name: $name));
 	}//end whereFindings()
 
 	/**
@@ -326,10 +359,11 @@ class DepartmentMatrixValidator {
 			];
 		}
 
-		if (array_key_exists($key, $properties) === false) {
+		if (array_key_exists($key, $properties) === false && in_array($key, self::WHERE_METADATA_FIELDS, true) === false) {
 			return [
 				'code' => 'matrix.where-unknown-field',
-				'message' => $name . ': where names "' . $key . '", which is not a property of this schema.',
+				'message' => $name . ': where names "' . $key . '", which is neither a property of this schema nor '
+					. implode(' or ', self::WHERE_METADATA_FIELDS) . '.',
 			];
 		}
 

@@ -88,6 +88,15 @@ final class ObjectActionDefinition {
 	public const KIND_STEPS = 'steps';
 
 	/**
+	 * Kind of an action that sets one empty property to the caller's uid.
+	 *
+	 * The body is `{"field": "<property>"}`.
+	 *
+	 * @var string
+	 */
+	public const KIND_SELF_ASSIGN = 'selfAssign';
+
+	/**
 	 * The places a host may offer an action.
 	 *
 	 * @var list<string>
@@ -113,7 +122,7 @@ final class ObjectActionDefinition {
 	 *
 	 * @var list<string>
 	 */
-	private const BODIES = [self::KIND_TRANSITION, self::KIND_FLOW, self::KIND_STEPS];
+	private const BODIES = [self::KIND_TRANSITION, self::KIND_FLOW, self::KIND_STEPS, self::KIND_SELF_ASSIGN];
 
 	/**
 	 * Constructor.
@@ -268,6 +277,21 @@ final class ObjectActionDefinition {
 	public function isRunnable(): bool {
 		return $this->kind !== null;
 	}//end isRunnable()
+
+	/**
+	 * The property a self-assign action sets, or null for any other kind.
+	 *
+	 * @return string|null The property name.
+	 *
+	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 */
+	public function selfAssignField(): ?string {
+		if ($this->kind !== self::KIND_SELF_ASSIGN || is_array($this->body) === false) {
+			return null;
+		}
+
+		return ObjectActionSelfAssignShape::fieldOf(body: $this->body);
+	}//end selfAssignField()
 
 	/**
 	 * Whether a host may offer this action on a selection.

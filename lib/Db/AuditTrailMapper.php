@@ -32,6 +32,7 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Audit\AuditAggregationService;
 use OCA\OpenRegister\Service\Audit\AuditSink;
+use OCA\OpenRegister\Service\Audit\OrganisationContextAttribution;
 use OCA\OpenRegister\Service\Audit\PurposeAttribution;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\TokenAttribution;
@@ -71,8 +72,20 @@ use Throwable;
  * @SuppressWarnings(PHPMD.TooManyMethods) The class already carried TooManyPublicMethods
  *   for the same reason: this is the one place an audit row is written, and every entry
  *   point that writes one has to go through it or the hash chain has a second author.
+ * @SuppressWarnings(PHPMD.ExcessivePublicCount) Same reason: the slug backfill's run entry
+ *   (createSlugBackfillEntry) is one more entry point that must seal into the hash chain here.
  */
 class AuditTrailMapper extends QBMapper {
+
+	/**
+	 * The most changes one slug backfill entry lists; the rest is in the log.
+	 */
+	public const SLUG_BACKFILL_MAX_CHANGES = 1000;
+
+	/**
+	 * The only slug backfill mode: fill slugs that are missing (a set slug is never rewritten).
+	 */
+	public const SLUG_BACKFILL_MODE = 'fill';
 
 	/**
 	 * Request-scoped import-job tag.
@@ -166,20 +179,7 @@ class AuditTrailMapper extends QBMapper {
 		// It must happen before the row is INSERTED, not merely before it is
 		// sealed: the sweep seals whatever is in the row, so a field added
 		// after insert would be outside the hash it is later given.
-		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
-
-		// The purpose the caller declared for the read that produced this row.
-		// Applied here as well as in buildAuditTrail() for the same reason the
-		// flow attribution is, and before the INSERT for the same reason again:
-		// the sealed half of it lives in `resultSummary`, which is inside the
-		// canonical JSON.
-		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
-
-		// Which token, whose, and for which consumer. Applied here as well as
-		// in buildAuditTrail() for the same reason the two above are, and
-		// before the INSERT for the same reason again: the sealed half lives in
-		// `resultSummary`, which is inside the canonical JSON.
-		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+		$this->applyAttributions(auditTrail: $auditTrail);
 
 		$inserted = $this->insert(entity: $auditTrail);
 
@@ -187,6 +187,33 @@ class AuditTrailMapper extends QBMapper {
 
 		return $inserted;
 	}//end insertHashChained()
+
+	/**
+	 * Stamp what caused a row onto it, before it is inserted.
+	 *
+	 * - Flow attribution: which run, node and step caused this write.
+	 * - Purpose (doelbinding): the purpose the caller declared for the read
+	 *   that produced this row.
+	 * - Token: which token, whose, and for which consumer.
+	 * - Organisation context: the organisation code acted for.
+	 *
+	 * The purpose, token and organisation context halves live in
+	 * `resultSummary`, which is inside the canonical JSON, so this MUST run
+	 * before the row is inserted. Re-applying to a row already stamped is
+	 * idempotent: it reads the same ambient frames and writes the same values.
+	 *
+	 * @param AuditTrail $auditTrail The row being built.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/act-for-an-organisation/specs/rbac-scopes/spec.md
+	 */
+	private function applyAttributions(AuditTrail $auditTrail): void {
+		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
+		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+		(new OrganisationContextAttribution())->apply(auditTrail: $auditTrail);
+	}//end applyAttributions()
 
 	/**
 	 * Set the request-scoped import-job UUID stamped on all
@@ -437,6 +464,44 @@ class AuditTrailMapper extends QBMapper {
 	}//end find()
 
 	/**
+	 * The columns findAll() filters and sorts on. A key outside this list is dropped.
+	 *
+	 * @var string[]
+	 */
+	public const QUERY_COLUMNS = [
+		'id',
+		'uuid',
+		'schema',
+		'register',
+		'object',
+		'object_uuid',
+		'action',
+		'changed',
+		'user',
+		'user_name',
+		'session',
+		'request',
+		'ip_address',
+		'version',
+		'created',
+		// Flow attribution. Absent from this allowlist a filter is
+		// not rejected — it is silently DROPPED by the `continue`
+		// in findAll(), so `?flow_run=<uuid>` would return the whole
+		// unfiltered audit trail with a 200 and read as a run that
+		// had touched everything on the instance.
+		'flow_run',
+		'flow_node',
+		'flow_step',
+		// The cause and its run. Absent from this allowlist a
+		// filter is not rejected, it is silently DROPPED by the
+		// `continue` in findAll() — so `?cause=import` would answer the
+		// WHOLE unfiltered trail with a 200 and read as a load
+		// that had touched everything on the instance.
+		'cause',
+		'cause_run',
+	];
+
+	/**
 	 * Find all audit trails with filters and sorting
 	 *
 	 * @param int|null $limit The limit of the results
@@ -479,38 +544,7 @@ class AuditTrailMapper extends QBMapper {
 			// Ensure the field is a valid column name.
 			if (in_array(
 				$field,
-				[
-					'id',
-					'uuid',
-					'schema',
-					'register',
-					'object',
-					'object_uuid',
-					'action',
-					'changed',
-					'user',
-					'user_name',
-					'session',
-					'request',
-					'ip_address',
-					'version',
-					'created',
-					// Flow attribution. Absent from this allowlist a filter is
-					// not rejected — it is silently DROPPED by the `continue`
-					// below, so `?flow_run=<uuid>` would return the whole
-					// unfiltered audit trail with a 200 and read as a run that
-					// had touched everything on the instance.
-					'flow_run',
-					'flow_node',
-					'flow_step',
-					// The cause and its run. Absent from this allowlist a
-					// filter is not rejected, it is silently DROPPED by the
-					// `continue` below — so `?cause=import` would answer the
-					// WHOLE unfiltered trail with a 200 and read as a load
-					// that had touched everything on the instance.
-					'cause',
-					'cause_run',
-				]
+				self::QUERY_COLUMNS
 			) === false
 			) {
 				continue;
@@ -566,35 +600,7 @@ class AuditTrailMapper extends QBMapper {
 			// Ensure the field is a valid column name.
 			if (in_array(
 				$field,
-				[
-					'id',
-					'uuid',
-					'schema',
-					'register',
-					'object',
-					'object_uuid',
-					'action',
-					'changed',
-					'user',
-					'user_name',
-					'session',
-					'request',
-					'ip_address',
-					'version',
-					'created',
-					// Sortable for the same reason they are filterable: a run's
-					// writes are read in step order.
-					'flow_run',
-					'flow_node',
-					'flow_step',
-					// The cause and its run. Absent from this allowlist a
-					// filter is not rejected, it is silently DROPPED by the
-					// `continue` below — so `?cause=import` would answer the
-					// WHOLE unfiltered trail with a 200 and read as a load
-					// that had touched everything on the instance.
-					'cause',
-					'cause_run',
-				]
+				self::QUERY_COLUMNS
 			) === false
 			) {
 				continue;
@@ -1072,24 +1078,12 @@ class AuditTrailMapper extends QBMapper {
 		$auditTrail->setCause($frame['cause']);
 		$auditTrail->setCauseRun($frame['run']);
 
-		// Flow attribution — which run, node and step caused this write.
-		// Applied HERE, in the shared builder, and not in the two insert
-		// methods: `insertAuditTrails()` (the batched path) builds its rows
-		// through this same method, and stamping the inserts instead would have
-		// left every bulk write in a flow silently unattributed.
-		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
-
-		// Doelbinding attribution, applied in the shared builder for the same
-		// reason the flow attribution is: `insertAuditTrails()` builds its rows
-		// here, and stamping only the inserts would leave every bulk write
-		// silently unattributed to the purpose it ran under.
-		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
-
-		// Token attribution, applied in the shared builder for the same reason
-		// the two above are: `insertAuditTrails()` builds its rows here, so
-		// stamping only the inserts would leave every bulk write by a koppeling
-		// unable to say which koppeling made it.
-		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+		// Flow, purpose, token and organisation context attribution. Applied
+		// HERE, in the shared builder, and not only in the two insert methods:
+		// `insertAuditTrails()` (the batched path) builds its rows through this
+		// same method, and stamping the inserts instead would have left every
+		// bulk write silently unattributed.
+		$this->applyAttributions(auditTrail: $auditTrail);
 
 		// Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
 		$serializedSize = strlen(serialize($objectEntity->jsonSerialize()));
@@ -1678,7 +1672,7 @@ class AuditTrailMapper extends QBMapper {
 	/**
 	 * Revert an object to a previous state
 	 *
-	 * @param string|int $identifier Object ID, UUID, or URI
+	 * @param ObjectEntity|string|int $identifier The object itself, or its ID, UUID or URI to look it up by
 	 * @param DateTime|string|null $until DateTime or AuditTrail ID to revert to
 	 * @param bool $overwriteVersion Whether to overwrite the version or increment it
 	 *
@@ -1690,9 +1684,12 @@ class AuditTrailMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Controls version handling strategy on revert
 	 */
 	public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity {
-		// Get the current object (lazy-resolved to avoid circular DI).
-		$objectMapper = $this->container->get(MagicMapper::class);
-		$object = $objectMapper->find($identifier);
+		// A caller that already checked the object passes it, so it is not looked up again.
+		$object = $identifier;
+		if ($object instanceof ObjectEntity === false) {
+			// Lazy-resolved to avoid circular DI.
+			$object = $this->container->get(MagicMapper::class)->find($identifier);
+		}
 
 		// Get audit trail entries until the specified point.
 		$auditTrails = $this->findByObjectUntil(
@@ -3471,6 +3468,94 @@ class AuditTrailMapper extends QBMapper {
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createExportEntry()
+
+	/**
+	 * Create one immutable, hash-chained audit record for a slug backfill run.
+	 *
+	 * The backfill (`occ openregister:backfill-slugs`) writes the slug column directly: no per-object version and no
+	 * per-object audit row. This single entry per run keeps the change
+	 * reconstructable: it lists the objects whose slug changed with the old and
+	 * the new value (bounded, see slugBackfillResultSummary()). Hangs on the register and schema, not on an object, like
+	 * {@see createExportEntry()}.
+	 *
+	 * The run mode is always `fill`: a set slug is never rewritten.
+	 *
+	 * @param list<array{uuid: string, old: ?string, new: ?string}> $changes Every slug the run wrote (the entry keeps the first 1,000).
+	 * @param array<string, mixed> $summary The run's counters.
+	 * @param int|null $register Register id.
+	 * @param int|null $schema Schema id.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createExportEntry.
+	 */
+	public function createSlugBackfillEntry(
+		array $changes,
+		array $summary,
+		?int $register = null,
+		?int $schema = null,
+	): AuditTrail {
+		$userId = 'system';
+		$userName = 'System';
+		$user = $this->userSession->getUser();
+		if ($user !== null) {
+			$userId = $user->getUID();
+			$userName = $user->getDisplayName();
+		}
+
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setAction('slug.backfill.' . self::SLUG_BACKFILL_MODE);
+		// `changed` is NOT NULL and QBMapper writes only the fields a setter touched.
+		$auditTrail->setChanged([]);
+		$auditTrail->setRegister($register);
+		$auditTrail->setSchema($schema);
+		$auditTrail->setResultSummary($this->slugBackfillResultSummary(mode: self::SLUG_BACKFILL_MODE, changes: $changes, summary: $summary));
+		$auditTrail->setUser($userId);
+		$auditTrail->setUserName($userName);
+		$auditTrail->setCreated(new DateTime());
+
+		return $this->insertHashChained(auditTrail: $auditTrail);
+	}//end createSlugBackfillEntry()
+
+	/**
+	 * What a slug backfill entry stores: the counters and a bounded change list.
+	 *
+	 * The entry is hash-chained and cannot be edited afterwards, and the slugs
+	 * come from the schema's `objectSlugField`, which can be a name. So only the
+	 * first {@see SLUG_BACKFILL_MAX_CHANGES} changes are kept, each reduced to
+	 * uuid, old and new slug, next to the total count; the caller logs the full
+	 * list.
+	 *
+	 * @param string $mode    The run mode, `fill`.
+	 * @param array  $changes Every slug the run wrote.
+	 * @param array  $summary The run's counters.
+	 *
+	 * @return array<string, mixed> The result summary of the entry.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 */
+	public function slugBackfillResultSummary(string $mode, array $changes, array $summary): array {
+		$total = count($changes);
+		$listed = [];
+		foreach (array_slice($changes, 0, self::SLUG_BACKFILL_MAX_CHANGES) as $change) {
+			$listed[] = ['uuid' => ($change['uuid'] ?? null), 'old' => ($change['old'] ?? null), 'new' => ($change['new'] ?? null)];
+		}
+
+		$truncated = ($total > self::SLUG_BACKFILL_MAX_CHANGES);
+		$result = ['mode' => $mode, 'summary' => $summary, 'changes' => $listed, 'changesTotal' => $total, 'truncated' => $truncated];
+		if ($truncated === true) {
+			$result['note'] = sprintf(
+				'Only the first %d of %d changes are listed here; the full list is in the Nextcloud log (lines starting "[ObjectSlug] Slug backfill changes").',
+				self::SLUG_BACKFILL_MAX_CHANGES,
+				$total
+			);
+		}
+
+		return $result;
+	}//end slugBackfillResultSummary()
 
 	/**
 	 * The objects one user read most recently, newest first.

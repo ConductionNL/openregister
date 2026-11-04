@@ -182,7 +182,7 @@ import SettingsSection from '../../../components/shared/SettingsSection.vue'
  * @copyright 2025 Conduction B.V.
  * @license  EUPL-1.2
  *
- * @link https://www.openregister.nl
+ * @see https://www.openregister.nl
  *
  * @spec openspec/changes/add-live-updates/tasks.md#task-11
  * @spec openspec/changes/archive/2026-10-05-openregister-web-push-engine/tasks.md#task-5.1

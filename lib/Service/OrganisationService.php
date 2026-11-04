@@ -27,6 +27,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\IConfig;
@@ -194,6 +195,13 @@ class OrganisationService {
 	private ?SettingsService $settingsService = null;
 
 	/**
+	 * Organisations named by an organisation context, by uuid (null = not found).
+	 *
+	 * @var array<string, Organisation|null>
+	 */
+	private array $contextOrganisations = [];
+
+	/**
 	 * OrganisationService constructor
 	 *
 	 * @param OrganisationMapper $organisationMapper Organisation database mapper
@@ -350,11 +358,7 @@ class OrganisationService {
 					$defaultOrg = $this->organisationMapper->findByUuid($defaultOrgUuid);
 				} catch (DoesNotExistException $e) {
 					// UUID in settings doesn't exist, create new default.
-					$defaultOrg = $this->createOrganisation(
-						name: 'Default Organisation',
-						description: 'Auto-generated default organisation',
-						addCurrentUser: false
-					);
+					$defaultOrg = $this->createDefaultOrganisation();
 					$isNewlyCreated = true;
 
 					// Update settings with new UUID.
@@ -370,11 +374,7 @@ class OrganisationService {
 
 			if ($defaultOrgUuid === null) {
 				// No UUID in settings, create a new default organisation.
-				$defaultOrg = $this->createOrganisation(
-					name: 'Default Organisation',
-					description: 'Auto-generated default organisation',
-					addCurrentUser: false
-				);
+				$defaultOrg = $this->createDefaultOrganisation();
 				$isNewlyCreated = true;
 
 				// Store in settings.
@@ -418,6 +418,27 @@ class OrganisationService {
 			throw $e;
 		}//end try
 	}//end fetchDefaultOrganisationFromDatabase()
+
+	/**
+	 * Create the default organisation, or use the one already holding its slug
+	 *
+	 * The organisation holding the slug is returned as it is; it is not rewritten.
+	 *
+	 * @return Organisation The default organisation
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-organisationservice-must-resolve-per-user-organisation-membership-and-active-context
+	 */
+	private function createDefaultOrganisation(): Organisation {
+		try {
+			return $this->createOrganisation(
+				name: 'Default Organisation',
+				description: 'Auto-generated default organisation',
+				addCurrentUser: false
+			);
+		} catch (OrganisationSlugConflictException $e) {
+			return $this->organisationMapper->findBySlug($e->getSlug());
+		}
+	}//end createDefaultOrganisation()
 
 	/**
 	 * Cache default organisation in static memory for performance
@@ -501,8 +522,16 @@ class OrganisationService {
 	 * @return Organisation|null The active organisation or null.
 	 *
 	 * @spec openspec/specs/saas-multi-tenant/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	public function getActiveOrganisation(?array $preloadedOrgs = null): ?Organisation {
+		// Code acting for an organisation answers with that organisation,
+		// whoever holds the session.
+		$contextUuid = OrganisationContext::current();
+		if ($contextUuid !== null) {
+			return $this->findContextOrganisation(uuid: $contextUuid);
+		}
+
 		$user = $this->getCurrentUser();
 		if ($user === null) {
 			return null;
@@ -536,6 +565,34 @@ class OrganisationService {
 
 		return $organisation;
 	}//end getActiveOrganisation()
+
+	/**
+	 * The organisation an organisation context acts for.
+	 *
+	 * Memoised per request by uuid. An organisation that does not exist answers
+	 * null, so the organisation filter admits nothing.
+	 *
+	 * @param string $uuid The organisation uuid the context names.
+	 *
+	 * @return Organisation|null The organisation, or null when it does not exist.
+	 *
+	 * @spec openspec/changes/act-for-an-organisation/specs/rbac-scopes/spec.md
+	 */
+	public function findContextOrganisation(string $uuid): ?Organisation {
+		if (array_key_exists($uuid, $this->contextOrganisations) === true) {
+			return $this->contextOrganisations[$uuid];
+		}
+
+		try {
+			$organisation = $this->organisationMapper->findByUuid($uuid);
+		} catch (DoesNotExistException $e) {
+			$organisation = null;
+		}
+
+		$this->contextOrganisations[$uuid] = $organisation;
+
+		return $organisation;
+	}//end findContextOrganisation()
 
 	/**
 	 * Set the active organisation for the current user
@@ -732,7 +789,8 @@ class OrganisationService {
 	 *
 	 * @return Organisation The created organisation
 	 *
-	 * @throws Exception If user not logged in or organisation creation fails
+	 * @throws OrganisationSlugConflictException If another organisation holds the slug the name gives
+	 * @throws Exception                         If user not logged in or organisation creation fails
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::isValid is standard Symfony UID pattern
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag controls whether to add current user to organisation
@@ -780,49 +838,7 @@ class OrganisationService {
 		// Add admin group to RBAC authorization with full permissions.
 		$organisation = $this->addAdminGroupToAuthorization(organisation: $organisation);
 
-		try {
-			$saved = $this->organisationMapper->save($organisation);
-		} catch (\OC\DB\Exceptions\DbalException $e) {
-			// Handle slug collision: if an organisation with the same slug already exists,.
-			// return the existing one instead of crashing.
-			if (str_contains($e->getMessage(), 'organisations_slug_unique') === true
-				|| str_contains($e->getMessage(), 'Unique violation') === true
-			) {
-				$slug = $this->generateSlug(name: $name);
-				$this->logger->info(
-					message: '[OrganisationService] Slug collision, returning existing organisation',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $slug, 'name' => $name]
-				);
-
-				try {
-					$existingBySlug = $this->organisationMapper->findBySlug($slug);
-
-					// If a specific UUID was requested and differs from the existing entity,.
-					// update the entity's UUID to match the requested one (the object UUID is canonical).
-					if ($uuid !== '' && $existingBySlug->getUuid() !== $uuid) {
-						$this->logger->info(
-							message: '[OrganisationService] Updating existing entity UUID to match requested UUID',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'oldUuid' => $existingBySlug->getUuid(),
-								'newUuid' => $uuid,
-								'slug' => $slug,
-							]
-						);
-						$existingBySlug->setUuid($uuid);
-						$this->organisationMapper->save($existingBySlug);
-					}
-
-					return $existingBySlug;
-				} catch (DoesNotExistException $findException) {
-					// Slug not found either — re-throw the original error.
-					throw $e;
-				}//end try
-			}//end if
-
-			throw $e;
-		}//end try
+		$saved = $this->organisationMapper->save($organisation);
 
 		// If there's no default organisation set, make this one the default.
 		$defaultOrgId = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');

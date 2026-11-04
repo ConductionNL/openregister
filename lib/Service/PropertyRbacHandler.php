@@ -470,11 +470,11 @@ class PropertyRbacHandler {
 	 * values are, through {@see restoreWriteOnlyValues()}.
 	 *
 	 * Omitting one the caller may not update would be the write the rule refuses.
-	 * Decided against the STORED object; call it on the RAW payload.
+	 * Decided on the STORED record's match envelope; call it on the RAW payload.
 	 *
 	 * @param Schema $schema   Schema whose property authorization applies.
 	 * @param array  $incoming The raw incoming update payload.
-	 * @param array  $stored   The raw stored object.
+	 * @param array  $stored   ObjectEntity::getMatchEnvelope() of the stored record (values come from the raw one).
 	 *
 	 * @return array<int, string> Top-level property names to carry forward (possibly empty).
 	 *

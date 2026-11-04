@@ -508,8 +508,8 @@ export default {
 	watch: {
 		filesComputed: {
 			/**
-			 * @param newFiles
-			 * @param _oldFiles
+			 * @param {Array<File>|null} newFiles
+			 * @param {Array<File>|null} _oldFiles
 			 * @spec exclude Watcher auto-triggering upload when files are queued; UI reactivity plumbing.
 			 */
 			handler(newFiles, _oldFiles) {
@@ -549,7 +549,7 @@ export default {
 		},
 
 		/**
-		 * @param bytes
+		 * @param {number} bytes
 		 * @spec exclude Human-readable byte-size formatter for file display; UI presentation helper.
 		 */
 		bytesToSize(bytes) {
@@ -562,7 +562,7 @@ export default {
 		},
 
 		/**
-		 * @param fullname
+		 * @param {string} fullname
 		 * @spec exclude Splits a filename into name + extension for display; UI presentation helper.
 		 */
 		getFileNameAndExtension(fullname) {
@@ -573,7 +573,7 @@ export default {
 		},
 
 		/**
-		 * @param files
+		 * @param {Array<File>|null} files
 		 * @spec exclude Flags over-size files in the queue with a status; UI validation helper.
 		 */
 		checkForTooBigFiles(files) {
@@ -594,7 +594,7 @@ export default {
 		},
 
 		/**
-		 * @param option
+		 * @param {string} option
 		 * @spec exclude Mutual-exclusion guard for the tag multiselect ("No label" vs real tags); UI selection helper.
 		 */
 		isSelectable(option) {
@@ -678,8 +678,8 @@ export default {
 		},
 
 		/**
-		 * @param file
-		 * @param editedTags
+		 * @param {File} file
+		 * @param {Array<string>} editedTags
 		 * @spec exclude Applies edited tags to a queued file and re-triggers upload; UI selection plumbing.
 		 */
 		saveTags(file, editedTags) {
@@ -692,7 +692,7 @@ export default {
 		},
 
 		/**
-		 * @param fileName
+		 * @param {string} fileName
 		 * @spec exclude Removes a file from the upload queue; UI file-picker plumbing.
 		 */
 		removeFile(fileName) {
@@ -715,7 +715,7 @@ export default {
 		},
 
 		/**
-		 * @param specificFile
+		 * @param {File|null} specificFile
 		 * @spec exclude Uploads queued attachments to the object via objectStore; entity-file persistence lives in the store, this is modal orchestration plumbing.
 		 */
 		async addAttachments(specificFile = null) {

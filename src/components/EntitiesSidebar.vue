@@ -158,7 +158,7 @@ export default {
 
 	watch: {
 		/**
-		 * @param newVal
+		 * @param {string} newVal
 		 * @spec exclude computed filter-state binding
 		 */
 		search(newVal) {
@@ -166,7 +166,7 @@ export default {
 		},
 
 		/**
-		 * @param newVal
+		 * @param {string|null} newVal
 		 * @spec exclude computed filter-state binding
 		 */
 		type(newVal) {
@@ -174,7 +174,7 @@ export default {
 		},
 
 		/**
-		 * @param newVal
+		 * @param {string|null} newVal
 		 * @spec exclude computed filter-state binding
 		 */
 		category(newVal) {
@@ -199,7 +199,7 @@ export default {
 		},
 
 		/**
-		 * @param type
+		 * @param {string|null} type
 		 * @spec exclude filter-state writer emitting update:type to parent, UI plumbing
 		 */
 		updateType(type) {
@@ -208,7 +208,7 @@ export default {
 		},
 
 		/**
-		 * @param category
+		 * @param {string|null} category
 		 * @spec exclude filter-state writer emitting update:category to parent, UI plumbing
 		 */
 		updateCategory(category) {

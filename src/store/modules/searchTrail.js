@@ -3,7 +3,8 @@
  */
 import { defineStore } from 'pinia'
 import {
-	getListPage,
+	copiedResults,
+	getRequest,
 	listPageQuery,
 	listPagination,
 	readOrFallback,
@@ -29,12 +30,18 @@ function emptyStatistics() {
 		uniqueSearchTerms: 0,
 		uniqueUsers: 0,
 		uniqueOrganizations: 0,
-		queryComplexity: {
-			simple: 0,
-			medium: 0,
-			complex: 0,
-		},
+		queryComplexity: emptyQueryComplexity(),
 	}
+}
+
+/**
+ * The query complexity counts, all 0.
+ *
+ * @return {{simple: number, medium: number, complex: number}} The counts.
+ * @spec exclude Client-side empty state of the statistics; no backend contract.
+ */
+function emptyQueryComplexity() {
+	return { simple: 0, medium: 0, complex: 0 }
 }
 
 /**
@@ -256,30 +263,21 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async fetchSearchTrails(options = {}) {
-			this.searchTrailLoading = true
-
-			try {
-				const query = listPageQuery(options, {
-					search: this.searchTrailSearch,
-					filters: this.searchTrailFilters,
-				})
-				const data = await getListPage(
-					`${apiUrl}/search-trails?${query}`,
-					'Failed to fetch search trails',
-				)
-
-				this.setSearchTrailList(
-					data.results ? JSON.parse(JSON.stringify(data.results)) : [],
-				)
-				this.setSearchTrailPagination(listPagination(data, 50))
-
-				return data
-			} catch (error) {
-				console.error('Error fetching search trails:', error)
-				throw error
-			} finally {
-				this.searchTrailLoading = false
-			}
+			const query = listPageQuery(options, {
+				search: this.searchTrailSearch,
+				filters: this.searchTrailFilters,
+			})
+			return storeRequest(this, {
+				flag: 'searchTrailLoading',
+				url: `${apiUrl}/search-trails?${query}`,
+				request: getRequest('Failed to fetch search trails'),
+				log: (error) =>
+					console.error('Error fetching search trails:', error),
+				keep: (data) => {
+					this.setSearchTrailList(copiedResults(data))
+					this.setSearchTrailPagination(listPagination(data, 50))
+				},
+			})
 		},
 
 		/**
@@ -533,16 +531,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			this.searchTrailList = []
 			this.searchTrailItem = null
 			this.searchTrailPagination = listPagination({}, 50)
-			this.statistics = emptyStatistics()
-			this.popularTerms = []
-			this.activity = {
-				hourly: [],
-				daily: [],
-				weekly: [],
-				monthly: [],
-			}
-			this.registerSchemaStats = []
-			this.userAgentStats = []
+			Object.assign(this, searchTrailInsightsState())
 			this.searchTrailFilters = {}
 			this.searchTrailSearch = ''
 		},

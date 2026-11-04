@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
+use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -654,16 +655,7 @@ class RelationHandler {
 				'offset' => $offset,
 			];
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[RelationHandler] Failed to get uses',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'objectId' => $objectId,
-				]
-			);
-			return $this->emptyPage(query: $query);
+			return $this->failedPage(error: $e, what: 'uses', objectId: $objectId, query: $query);
 		}//end try
 	}//end getUses()
 
@@ -925,10 +917,7 @@ class RelationHandler {
 				continue;
 			}
 
-			// Build object data with metadata for condition evaluation.
-			$objectData = $object->getObject() ?? [];
-			$objectData['_organisation'] = $object->getOrganisation();
-			$objectData['_owner'] = $object->getOwner();
+			$objectData = $object->getMatchEnvelope();
 
 			if ($this->rbacHandler->hasPermission(
 				schema: $schema,
@@ -1186,18 +1175,41 @@ class RelationHandler {
 				'offset' => $page->offset,
 			];
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[RelationHandler] Failed to get used by',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'objectId' => $objectId,
-				]
-			);
-			return $this->emptyPage(query: $query);
+			return $this->failedPage(error: $e, what: 'used by', objectId: $objectId, query: $query);
 		}//end try
 	}//end getUsedBy()
+
+	/**
+	 * The answer of a relation listing that failed: an empty page, logged.
+	 *
+	 * An ambiguous identifier is the exception: a slug two objects of the register
+	 * and schema hold is an answer the caller must see (409, #4037), not an empty list.
+	 *
+	 * @param \Exception $error    What went wrong.
+	 * @param string     $what     `uses` or `used by` (log message).
+	 * @param string     $objectId The object.
+	 * @param array      $query    The listing query (paging).
+	 *
+	 * @return array The empty page.
+	 *
+	 * @throws MultipleObjectsReturnedException When the identifier is ambiguous.
+	 */
+	private function failedPage(\Exception $error, string $what, string $objectId, array $query): array {
+		if ($error instanceof MultipleObjectsReturnedException) {
+			throw $error;
+		}
+
+		$this->logger->error(
+			message: '[RelationHandler] Failed to get ' . $what,
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $error->getMessage(),
+				'objectId' => $objectId,
+			]
+		);
+		return $this->emptyPage(query: $query);
+	}//end failedPage()
 
 	/**
 	 * Read one table's referrers into the page, newest first.

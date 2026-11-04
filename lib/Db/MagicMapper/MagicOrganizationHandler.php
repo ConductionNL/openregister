@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
@@ -145,41 +146,7 @@ class MagicOrganizationHandler {
 			$scope = self::admitOrganisationless(scope: $scope);
 		}
 
-		if ($scope['mode'] === self::SCOPE_ALL) {
-			return;
-		}
-
-		if ($scope['mode'] === self::SCOPE_NONE) {
-			$qb->andWhere('1 = 0');
-			return;
-		}
-
-		if ($scope['mode'] === self::SCOPE_NULL_ONLY) {
-			$qb->andWhere($qb->expr()->isNull('t._organisation'));
-			return;
-		}
-
-		// Condition 1: objects belonging to the caller's active organisation(s).
-		$conditions = [];
-		$conditions[] = $qb->expr()->in(
-			't._organisation',
-			$qb->createNamedParameter($scope['uuids'], IQueryBuilder::PARAM_STR_ARRAY)
-		);
-		if (count($scope['uuids']) === 1) {
-			array_pop($conditions);
-			$conditions[] = $qb->expr()->eq(
-				't._organisation',
-				$qb->createNamedParameter($scope['uuids'][0])
-			);
-		}
-
-		// Condition 2: objects with no organisation, for admins and for a
-		// register-cascade grant (admitOrganisationless()).
-		if ($scope['mode'] === self::SCOPE_IN_OR_NULL) {
-			$conditions[] = $qb->expr()->isNull('t._organisation');
-		}
-
-		$qb->andWhere($qb->expr()->orX(...$conditions));
+		(new OrganisationScopeCondition())->apply(qb: $qb, scope: $scope);
 
 	}//end applyOrganizationFilter()
 
@@ -247,12 +214,20 @@ class MagicOrganizationHandler {
 	 *   which has carried these three suppressions since it was written. The
 	 *   branches are the tenancy rule itself (system context, admin, bypass,
 	 *   SaaS, active-org set) and collapsing them would hide it.
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	public function resolveOrganizationScope(
 		bool $adminBypassEnabled = false,
 		?int $registerId = null,
 		?int $schemaId = null,
 	): array {
+		// Code acting for an organisation reads that organisation (and its
+		// parents and shared master data holders), never more: the session
+		// user, the admin bypass and the system context do not widen it.
+		if (OrganisationContext::isActive() === true) {
+			return $this->contextOrganizationScope(registerId: $registerId, schemaId: $schemaId);
+		}
+
 		$user = $this->userSession->getUser();
 
 		// CLI / no-session system context (occ commands, repair steps, cron
@@ -269,19 +244,8 @@ class MagicOrganizationHandler {
 			$isAdmin = in_array('admin', $userGroups, true);
 		}
 
-		if ($adminBypassEnabled === true && $isAdmin === true) {
-			// In SaaS mode, never bypass the organisation boundary.
-			$saasMode = $this->isSaasModeEnabled();
-			if ($saasMode === true) {
-				$this->logger->debug(
-					message: '[MagicOrganizationHandler] SaaS mode active — admin bypass disabled for org boundary',
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-
-			if ($saasMode !== true) {
-				return ['mode' => self::SCOPE_ALL, 'uuids' => []];
-			}
+		if ($adminBypassEnabled === true && $isAdmin === true && $this->adminBypassAllowed() === true) {
+			return ['mode' => self::SCOPE_ALL, 'uuids' => []];
 		}
 
 		$activeOrgUuids = $this->getActiveOrganizationUuids();
@@ -326,6 +290,53 @@ class MagicOrganizationHandler {
 		];
 
 	}//end resolveOrganizationScope()
+
+	/**
+	 * The organisation scope inside an organisation context.
+	 *
+	 * @param int|null $registerId The register of the table being read, for shared master data.
+	 * @param int|null $schemaId The schema of the table being read, for shared master data.
+	 *
+	 * @return array{mode: string, uuids: array<int, string>} SCOPE_IN, or SCOPE_NONE when the organisation is unknown.
+	 *
+	 * @spec openspec/changes/act-for-an-organisation/specs/rbac-scopes/spec.md
+	 */
+	private function contextOrganizationScope(?int $registerId, ?int $schemaId): array {
+		$orgUuids = $this->getActiveOrganizationUuids();
+		if ($orgUuids === []) {
+			return ['mode' => self::SCOPE_NONE, 'uuids' => []];
+		}
+
+		$sharedHolders = $this->sharedHolders(
+			registerId: $registerId,
+			schemaId: $schemaId,
+			consumerOrgUuids: $orgUuids
+		);
+
+		return [
+			'mode' => self::SCOPE_IN,
+			'uuids' => array_values(array_unique(array_merge($orgUuids, $sharedHolders))),
+		];
+	}//end contextOrganizationScope()
+
+	/**
+	 * Whether an admin with the bypass enabled may read every organisation.
+	 *
+	 * In SaaS mode the organisation boundary is never bypassed.
+	 *
+	 * @return bool True outside SaaS mode.
+	 */
+	private function adminBypassAllowed(): bool {
+		if ($this->isSaasModeEnabled() === true) {
+			$this->logger->debug(
+				message: '[MagicOrganizationHandler] SaaS mode active — admin bypass disabled for org boundary',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return false;
+		}
+
+		return true;
+	}//end adminBypassAllowed()
 
 	/**
 	 * The holder organisations whose rows in ONE register+schema pair the caller may read.

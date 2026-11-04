@@ -41,7 +41,7 @@ class EntityInterfacesTest extends TestCase {
 	 * @var array<class-string, array<int, string>>
 	 */
 	private const ENTITY_ONLY = [
-		Schema::class   => ['getManagedByConfiguration', 'hydrate', 'validateProperties'],
+		Schema::class   => ['declaredActionNames', 'getManagedByConfiguration', 'hydrate', 'validateProperties'],
 		Register::class => ['getManagedByConfiguration'],
 	];
 

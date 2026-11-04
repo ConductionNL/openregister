@@ -230,7 +230,7 @@ class AccessReviewGate {
 				groupId: (string)$groupId,
 				action: $action,
 				userId: $userId,
-				objectData: $object?->getObject(),
+				objectData: $object?->getMatchEnvelope(),
 				objectOrganisation: $object?->getOrganisation()
 			) === true
 			) {

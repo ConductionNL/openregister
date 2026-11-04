@@ -232,7 +232,7 @@ export default {
 				if (response.data && Array.isArray(response.data)) {
 					this.webhooksList = response.data
 				}
-			} catch (error) {
+			} catch {
 				// Silently fail - webhook name lookup is not critical.
 			}
 		},
@@ -263,7 +263,7 @@ export default {
 			try {
 				const date = new Date(dateString)
 				return date.toLocaleString()
-			} catch (error) {
+			} catch {
 				return dateString
 			}
 		},
@@ -282,7 +282,7 @@ export default {
 			try {
 				const parsed = JSON.parse(jsonString)
 				return JSON.stringify(parsed, null, 2)
-			} catch (error) {
+			} catch {
 				// If not valid JSON, return as-is.
 				return jsonString
 			}

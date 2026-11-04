@@ -56,6 +56,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
+use OCP\IL10N;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -71,6 +73,13 @@ use Throwable;
  * @psalm-suppress UnusedClass - Instantiated by McpProviderDiscovery::register()
  */
 class AttributeToolProvider implements IMcpToolProvider {
+	/**
+	 * The declaring app's translations, for tool titles; null leaves them as declared.
+	 *
+	 * @var IL10N|null
+	 */
+	private ?IL10N $l10n = null;
+
 	/**
 	 * Constructor.
 	 *
@@ -95,6 +104,28 @@ class AttributeToolProvider implements IMcpToolProvider {
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
+
+	/**
+	 * This provider translating its tool titles through the declaring app's IL10N.
+	 *
+	 * An app container that offers no IL10N leaves the titles as declared.
+	 *
+	 * @param ContainerInterface $appContainer The declaring app's own container.
+	 *
+	 * @return self The provider.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 */
+	public function translatedBy(ContainerInterface $appContainer): self {
+		if ($appContainer->has(IL10N::class) === false) {
+			return $this;
+		}
+
+		$translated = clone $this;
+		$translated->l10n = $appContainer->get(IL10N::class);
+
+		return $translated;
+	}//end translatedBy()
 
 	/**
 	 * Returns the owning app id.
@@ -163,11 +194,35 @@ class AttributeToolProvider implements IMcpToolProvider {
 				}
 			}
 
-			$tools[] = $descriptor;
+			$tools[] = ($descriptor + $this->titleOf(entry: $entry));
 		}//end foreach
 
 		return $tools;
 	}//end getTools()
+
+	/**
+	 * The entry's declared title in the caller's language, as `['title' => ...]`, or an empty array.
+	 *
+	 * Translated through the declaring app's IL10N when the provider has one
+	 * (translatedBy()); the declared text otherwise.
+	 *
+	 * @param array<string, mixed> $entry The scanned entry.
+	 *
+	 * @return array{title?: string} The title only.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 */
+	private function titleOf(array $entry): array {
+		if (is_string($entry['title'] ?? null) === false) {
+			return [];
+		}
+
+		if ($this->l10n !== null) {
+			return ['title' => $this->l10n->t($entry['title'])];
+		}
+
+		return ['title' => $entry['title']];
+	}//end titleOf()
 
 	/**
 	 * Invoke an attributed tool by its `{appId}.{toolName}` id — an
