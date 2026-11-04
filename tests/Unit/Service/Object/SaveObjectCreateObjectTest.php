@@ -82,6 +82,9 @@ final class SaveObjectCreateObjectTest extends TestCase {
 			'silent' => ['args' => ['silent' => true]],
 			'audit off' => ['audit' => false, 'args' => []],
 			'not persisted' => ['args' => ['persist' => false, 'folderId' => 77]],
+			'file property stored' => ['data' => ['doc' => 'raw'], 'image' => 'file', 'args' => []],
+			'file property, image not a file' => ['data' => ['doc' => 'raw'], 'image' => 'string', 'args' => []],
+			'file write fails' => ['data' => ['doc' => 'raw'], 'fileFails' => true, 'args' => []],
 		];
 	}
 
@@ -113,7 +116,8 @@ final class SaveObjectCreateObjectTest extends TestCase {
 		$schema = new Schema();
 		$schema->setId(7);
 		$schema->setSlug('things');
-		$schema->setProperties(['title' => ['type' => 'string']]);
+		$schema->setProperties(['title' => ['type' => 'string'], 'doc' => ['type' => ($case['image'] ?? 'file')]]);
+		$schema->setConfiguration(['objectImageField' => 'doc']);
 
 		$logger = new class extends AbstractLogger {
 			/** @var list<string> */
@@ -126,7 +130,8 @@ final class SaveObjectCreateObjectTest extends TestCase {
 
 		$handler = $this->handler(case: $case, logger: $logger);
 		$args = $case['args'];
-		$saved = $handler->saveObject(
+		try {
+			$saved = $handler->saveObject(
 			register: $register,
 			schema: $schema,
 			data: array_merge(['title' => 'new'], ($case['data'] ?? [])),
@@ -138,7 +143,10 @@ final class SaveObjectCreateObjectTest extends TestCase {
 			failIfExists: ($args['failIfExists'] ?? false),
 			_unowned: ($args['_unowned'] ?? false),
 			_owner: ($args['_owner'] ?? null)
-		);
+			);
+		} catch (\RuntimeException $e) {
+			return ['trace' => $this->trace, 'thrown' => $e->getMessage()];
+		}
 
 		$outcome = (new \ReflectionClass(SaveObject::class))->getProperty('lastSaveOutcome')->getValue($handler);
 		return [
@@ -159,12 +167,33 @@ final class SaveObjectCreateObjectTest extends TestCase {
 	private function handler(array $case, AbstractLogger $logger): SaveObject {
 		$mapper = $this->createMock(MagicMapper::class);
 		$mapper->method('find')->willThrowException(new DoesNotExistException('none'));
+		$mapper->method('update')->willReturnCallback(function (ObjectEntity $entity): ObjectEntity {
+			$this->trace[] = ['store', $entity->getObject(), $entity->getImage()];
+			$stored = clone $entity;
+			$stored->setDescription('stored again');
+			return $stored;
+		});
+		$mapper->method('delete')->willReturnCallback(function (ObjectEntity $entity): ObjectEntity {
+			$this->trace[] = ['delete', $entity->getUuid()];
+			return $entity;
+		});
+		$files = $this->createMock(FilePropertyHandler::class);
+		$files->method('isFileProperty')->willReturnCallback(static fn ($value, $schema = null, $propertyName = null): bool => $propertyName === 'doc');
+		$files->method('handleFileProperty')->willReturnCallback(function (ObjectEntity $objectEntity, array &$object, string $propertyName) use ($case): void {
+			$this->trace[] = ['file', $propertyName, $object[$propertyName]];
+			if (($case['fileFails'] ?? false) === true) {
+				throw new \RuntimeException('disk full');
+			}
+
+			$object[$propertyName] = 42;
+		});
 		$unified = $this->createMock(MagicMapper::class);
 		$unified->method('find')->willThrowException(new DoesNotExistException('none'));
 		$unified->method('insert')->willReturnCallback(function (ObjectEntity $entity, $register = null, $schema = null, bool $failIfExists = false): ObjectEntity {
 			$this->trace[] = ['insert', $entity->getRegister(), $entity->getSchema(), $entity->getFolder(), $entity->getOwner(), $failIfExists];
 			$entity->setName('Saved name');
 			$entity->setOrganisation('org-9');
+			$entity->setImage('img.png');
 			return $entity;
 		});
 		$unified->method('getLastWriteAction')->willReturn($case['action'] ?? 'insert');
@@ -193,6 +222,8 @@ final class SaveObjectCreateObjectTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(static fn (string $id): object => ($id === RetentionService::class) ? $retention : throw new \RuntimeException('no ' . $id));
 		$folders = $this->createMock(FolderManagementHandler::class);
+		$translations = $this->createMock(TranslationHandler::class);
+		$translations->method('normalizeTranslationsForSave')->willReturnCallback(static fn (array $objectData): array => $objectData);
 		$session = $this->createMock(IUserSession::class);
 		if (($case['session'] ?? false) === true) {
 			$bob = $this->createMock(\OCP\IUser::class);
@@ -206,7 +237,7 @@ final class SaveObjectCreateObjectTest extends TestCase {
 			$mapper,
 			$unified,
 			$this->createMock(MetadataHydrationHandler::class),
-			$this->createMock(FilePropertyHandler::class),
+			$files,
 			$this->createMock(LinkedEntityPropertyHandler::class),
 			$session,
 			$audit,
@@ -218,7 +249,7 @@ final class SaveObjectCreateObjectTest extends TestCase {
 			$settings,
 			$this->createMock(PropertyRbacHandler::class),
 			$this->createMock(ComputedFieldHandler::class),
-			$this->createMock(TranslationHandler::class),
+			$translations,
 			$this->createMock(TranslationProjectionService::class),
 			$this->createMock(TranslationStatusService::class),
 			$logger,
@@ -228,4 +259,21 @@ final class SaveObjectCreateObjectTest extends TestCase {
 			container: $container
 		);
 	}
+
+	public function testTheFileStepWritesTheFileIdsBackIntoTheCallersData(): void {
+		$register = new Register();
+		$register->setId(3);
+		$schema = new Schema();
+		$schema->setId(7);
+		$schema->setProperties(['doc' => ['type' => 'file']]);
+		$saved = new ObjectEntity();
+		$saved->setUuid(self::UUID);
+		$data = ['title' => 'new', 'doc' => 'raw'];
+
+		$method = (new \ReflectionClass(SaveObject::class))->getMethod('processFilePropertiesWithRollback');
+		$method->invokeArgs($this->handler(case: [], logger: new \Psr\Log\NullLogger()), [$saved, &$data, $register, $schema]);
+
+		$this->assertSame(['title' => 'new', 'doc' => 42], $data);
+	}
 }
+
