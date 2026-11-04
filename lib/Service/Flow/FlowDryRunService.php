@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -44,14 +44,14 @@ class FlowDryRunService {
 	 *
 	 * @param FlowService      $flows    Finds the flow within the caller's organisation.
 	 * @param FlowLocator      $locator  Builds the flow document the engine walks.
-	 * @param ObjectService    $objects  Reads the object with the caller's access.
+	 * @param ObjectOperationsInterface    $objects  Reads the object with the caller's access.
 	 * @param FlowEngine       $engine   The engine runs walk.
 	 * @param FlowNodeRegistry $registry Resolves each step's node.
 	 */
 	public function __construct(
 		private readonly FlowService $flows,
 		private readonly FlowLocator $locator,
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly FlowEngine $engine,
 		private readonly FlowNodeRegistry $registry,
 	) {

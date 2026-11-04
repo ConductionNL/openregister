@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -96,7 +96,7 @@ class ReferencedAddressNotifier {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService          $objects The object layer, for the referenced object.
+	 * @param ObjectOperationsInterface          $objects The object layer, for the referenced object.
 	 * @param EmailSender            $email   The email channel.
 	 * @param OptOutAuthority        $optOut  Asks integriq whether an address may be mailed.
 	 * @param LoggerInterface        $logger  Logger.
@@ -104,7 +104,7 @@ class ReferencedAddressNotifier {
 	 * @param RelationCascadeHandler $refs    Resolves a property's `$ref` to a schema id.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly EmailSender $email,
 		private readonly OptOutAuthority $optOut,
 		private readonly LoggerInterface $logger,

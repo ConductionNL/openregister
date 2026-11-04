@@ -48,7 +48,7 @@ use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Timeline\PublicTimeline;
 use OCA\OpenRegister\Service\TimelineVisibilityService;
@@ -103,7 +103,7 @@ class AccessLinkReader {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects The object read path.
+	 * @param ObjectOperationsInterface $objects The object read path.
 	 * @param SchemaMapperInterface $schemas Resolves the schema whose rules apply.
 	 * @param PropertyRbacHandler $properties Strips write-only and unreadable properties.
 	 * @param PublicTimeline $timeline Reads and projects the public half of the timeline.
@@ -112,7 +112,7 @@ class AccessLinkReader {
 	 * @param FileRestrictionStore|null $restrictions Refuses a restricted file to a link. Null only in legacy fixtures.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly PropertyRbacHandler $properties,
 		private readonly PublicTimeline $timeline,
