@@ -30,7 +30,7 @@ use DateTime;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -73,7 +73,7 @@ class GdprEntitiesController extends Controller {
 	 * @param LoggerInterface $logger Logger
 	 * @param IUserSession $userSession Current user (admin gate)
 	 * @param IGroupManager $groupManager Group manager (admin gate)
-	 * @param OrganisationService $organisationService Org-scoping helper
+	 * @param OrganisationServiceInterface $organisationService Org-scoping helper
 	 * @param DecisionVisibility $decisionVisibility Masks another reviewer's hidden decision
 	 */
 	public function __construct(
@@ -85,7 +85,7 @@ class GdprEntitiesController extends Controller {
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 		private readonly DecisionVisibility $decisionVisibility,
 	) {
 		parent::__construct(appName: $appName, request: $request);

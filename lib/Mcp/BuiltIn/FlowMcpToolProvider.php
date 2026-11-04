@@ -37,7 +37,7 @@ use OCA\OpenRegister\Exception\FlowRunRefused;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCP\IUserSession;
 use UnexpectedValueException;
@@ -49,7 +49,7 @@ class FlowMcpToolProvider implements IMcpToolProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunService $runner Queues a flow run.
+	 * @param FlowRunServiceInterface $runner Queues a flow run.
 	 * @param FlowRunMapper $mapper Reads recent runs (for listing / status).
 	 * @param FlowService $flows Authors flows, with the organisation scoping.
 	 * @param FlowNodePreflight $preflight Reports what a saved document is missing.
@@ -58,7 +58,7 @@ class FlowMcpToolProvider implements IMcpToolProvider {
 	 *                                  the actor a queued run is attributed to.
 	 */
 	public function __construct(
-		private readonly FlowRunService $runner,
+		private readonly FlowRunServiceInterface $runner,
 		private readonly FlowRunMapper $mapper,
 		private readonly FlowService $flows,
 		private readonly FlowNodePreflight $preflight,

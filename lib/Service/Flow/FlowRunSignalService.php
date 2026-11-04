@@ -62,7 +62,7 @@ class FlowRunSignalService {
 	 * Constructor.
 	 *
 	 * @param FlowRunMapper $mapper Resolves a run uuid to the run.
-	 * @param FlowRunService $runner Owns the unguarded delivery primitive.
+	 * @param FlowRunServiceInterface $runner Owns the unguarded delivery primitive.
 	 * @param LoggerInterface|null $logger Audits a refusal. Nullable so the
 	 *                                     controller can build this seam on
 	 *                                     demand without one — there the
@@ -87,7 +87,7 @@ class FlowRunSignalService {
 	 */
 	public function __construct(
 		private readonly FlowRunMapper $mapper,
-		private readonly FlowRunService $runner,
+		private readonly FlowRunServiceInterface $runner,
 		private readonly ?LoggerInterface $logger = null,
 		private readonly ?IGroupManager $groupManager = null,
 		private readonly ?FlowRunAssignee $assignees = null,

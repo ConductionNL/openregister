@@ -32,10 +32,10 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\OrganisationUsageService;
 use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
@@ -73,16 +73,16 @@ class OrganisationController extends Controller {
 	/**
 	 * Organisation service for business logic
 	 *
-	 * @var OrganisationService
+	 * @var OrganisationServiceInterface
 	 */
-	private OrganisationService $organisationService;
+	private OrganisationServiceInterface $organisationService;
 
 	/**
 	 * Organisation mapper for direct database operations
 	 *
-	 * @var OrganisationMapper
+	 * @var OrganisationMapperInterface
 	 */
-	private OrganisationMapper $organisationMapper;
+	private OrganisationMapperInterface $organisationMapper;
 
 	/**
 	 * Logger for debugging and error tracking
@@ -131,8 +131,8 @@ class OrganisationController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
-	 * @param OrganisationService $organisationService Organisation service
-	 * @param OrganisationMapper $organisationMapper Organisation mapper
+	 * @param OrganisationServiceInterface $organisationService Organisation service
+	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
 	 * @param LoggerInterface $logger Logger service
 	 * @param TenantLifecycleService $tenantLifecycleService Lifecycle service
 	 * @param TenantUsageMapper $tenantUsageMapper Usage mapper
@@ -149,8 +149,8 @@ class OrganisationController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		OrganisationService $organisationService,
-		OrganisationMapper $organisationMapper,
+		OrganisationServiceInterface $organisationService,
+		OrganisationMapperInterface $organisationMapper,
 		LoggerInterface $logger,
 		TenantLifecycleService $tenantLifecycleService,
 		TenantUsageMapper $tenantUsageMapper,

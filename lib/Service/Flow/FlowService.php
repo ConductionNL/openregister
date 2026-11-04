@@ -86,7 +86,7 @@ class FlowService {
 	 *
 	 * @param FlowMapper $mapper Reads and writes flow definitions.
 	 * @param FlowTriggerIndex $triggerIndex Keeps the trigger index derived from the nodes.
-	 * @param FlowRunService $runner Queues and executes runs.
+	 * @param FlowRunServiceInterface $runner Queues and executes runs.
 	 * @param FlowRunAdvancer $advancer Advances a run inline for a synchronous caller.
 	 * @param FlowRunMapper $runs Sweeps a deleted flow's runs.
 	 * @param FlowRunStepMapper $steps Sweeps those runs' step rows.
@@ -101,7 +101,7 @@ class FlowService {
 	public function __construct(
 		private readonly FlowMapper $mapper,
 		private readonly FlowTriggerIndex $triggerIndex,
-		private readonly FlowRunService $runner,
+		private readonly FlowRunServiceInterface $runner,
 		private readonly FlowRunAdvancer $advancer,
 		private readonly FlowRunMapper $runs,
 		private readonly FlowRunStepMapper $steps,

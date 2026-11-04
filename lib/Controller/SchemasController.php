@@ -56,7 +56,7 @@ use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaDeletionService;
@@ -188,7 +188,7 @@ class SchemasController extends Controller {
 	 * @param MagicMapper $objectEntityMapper Object entity mapper for object queries
 	 * @param UploadService $uploadService Upload service for file uploads
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for log statistics
-	 * @param OrganisationService $organisationService Organisation service for multi-tenancy
+	 * @param OrganisationServiceInterface $organisationService Organisation service for multi-tenancy
 	 * @param SchemaCacheHandler $schemaCacheService Schema cache handler for caching operations
 	 * @param FacetCacheHandler $facetCacheSvc Schema facet cache service for facet caching
 	 * @param SchemaExplorationInterface $schemaService Schema service for exploration operations
@@ -213,7 +213,7 @@ class SchemasController extends Controller {
 		private readonly MagicMapper $objectEntityMapper,
 		private readonly UploadService $uploadService,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 		private readonly SchemaCacheHandler $schemaCacheService,
 		private readonly FacetCacheHandler $facetCacheSvc,
 		private readonly SchemaExplorationInterface $schemaService,

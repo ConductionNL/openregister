@@ -59,7 +59,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -91,13 +91,13 @@ class OrganisationSpecialRights {
 	/**
 	 * Constructor.
 	 *
-	 * @param OrganisationMapper $organisations Loads the organisation a record belongs to.
+	 * @param OrganisationMapperInterface $organisations Loads the organisation a record belongs to.
 	 * @param RegisterMapper $registers Loads a record's register, for a narrowed entry.
 	 * @param SchemaMapperInterface $schemas Loads a record's schema, for a narrowed entry.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly OrganisationMapper $organisations,
+		private readonly OrganisationMapperInterface $organisations,
 		private readonly RegisterMapper $registers,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly LoggerInterface $logger,

@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
@@ -125,7 +125,7 @@ class TenantLifecycleService {
 	/**
 	 * Constructor
 	 *
-	 * @param OrganisationMapper $organisationMapper Organisation mapper
+	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
 	 * @param IGroupManager $groupManager Nextcloud group manager
 	 * @param IUserManager $userManager Nextcloud user manager, to look up the org admin
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher
@@ -133,7 +133,7 @@ class TenantLifecycleService {
 	 * @param OrganisationLifecycleAuditor|null $auditor Writes each status change to the audit trail. Null only in legacy fixtures.
 	 */
 	public function __construct(
-		private readonly OrganisationMapper $organisationMapper,
+		private readonly OrganisationMapperInterface $organisationMapper,
 		private readonly IGroupManager $groupManager,
 		private readonly IUserManager $userManager,
 		private readonly IEventDispatcher $eventDispatcher,

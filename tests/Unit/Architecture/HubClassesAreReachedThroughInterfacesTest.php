@@ -24,15 +24,25 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Db\FileMapperInterface;
+use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
+use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -55,9 +65,14 @@ final class HubClassesAreReachedThroughInterfacesTest extends TestCase {
 	private const HUBS = [
 		AuditTrailMapper::class => AuditTrailMapperInterface::class,
 		CalculationEvaluator::class => CalculationEvaluatorInterface::class,
+		FileMapper::class => FileMapperInterface::class,
+		FlowRunService::class => FlowRunServiceInterface::class,
 		ExternalIntegrationRouter::class => ExternalIntegrationRouterInterface::class,
+		OrganisationMapper::class => OrganisationMapperInterface::class,
+		OrganisationService::class => OrganisationServiceInterface::class,
 		SchemaMapper::class => SchemaMapperInterface::class,
 		SettingsService::class => SettingsServiceInterface::class,
+		TaskService::class => TaskServiceInterface::class,
 	];
 
 	/**

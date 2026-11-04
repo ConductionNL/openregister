@@ -109,9 +109,9 @@ class RegisterService {
 	 *
 	 * Handles organisation-related operations and permissions.
 	 *
-	 * @var OrganisationService Organisation service instance
+	 * @var OrganisationServiceInterface Organisation service instance
 	 */
-	private readonly OrganisationService $organisationService;
+	private readonly OrganisationServiceInterface $organisationService;
 
 	/**
 	 * Logger
@@ -142,7 +142,7 @@ class RegisterService {
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
 	 * @param IDBConnection $db Database connection for custom queries
 	 * @param FileService $fileService File service for file operations
-	 * @param OrganisationService $organisationService Organisation service for permissions
+	 * @param OrganisationServiceInterface $organisationService Organisation service for permissions
 	 * @param LoggerInterface $logger Logger for error tracking
 	 * @param RegisterSerializer $registerSerializer Serializer for `_extend` post-processing
 	 *
@@ -153,7 +153,7 @@ class RegisterService {
 		SchemaMapperInterface $schemaMapper,
 		IDBConnection $db,
 		FileService $fileService,
-		OrganisationService $organisationService,
+		OrganisationServiceInterface $organisationService,
 		LoggerInterface $logger,
 		RegisterSerializer $registerSerializer,
 	) {

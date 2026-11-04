@@ -23,6 +23,10 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Db\FileMapperInterface;
+use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
@@ -49,6 +53,8 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
+use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
@@ -57,6 +63,7 @@ use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
@@ -100,6 +107,11 @@ final class ContractBindings {
 		ExternalIntegrationRouterInterface::class => ExternalIntegrationRouter::class,
 		SchemaMapperInterface::class => SchemaMapper::class,
 		AuditTrailMapperInterface::class => AuditTrailMapper::class,
+		OrganisationServiceInterface::class => OrganisationService::class,
+		TaskServiceInterface::class => TaskService::class,
+		FlowRunServiceInterface::class => FlowRunService::class,
+		FileMapperInterface::class => FileMapper::class,
+		OrganisationMapperInterface::class => OrganisationMapper::class,
 	];
 
 	/**

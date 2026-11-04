@@ -311,7 +311,7 @@ class ObjectService implements ObjectServiceInterface
      * @param SearchTrailService             $searchTrailService   Service for search trail operations.
      * @param IGroupManager                  $groupManager         Group manager for checking user groups.
      * @param IUserManager                   $userManager          User manager for getting user objects.
-     * @param OrganisationService            $organisationService  Service for organisation operations.
+     * @param OrganisationServiceInterface            $organisationService  Service for organisation operations.
      * @param LoggerInterface                $logger               Logger for performance monitoring.
      * @param CacheHandler                   $cacheHandler         Service for entity and query caching.
      * @param SettingsServiceInterface                $settingsService      Service for settings operations.
@@ -366,7 +366,7 @@ class ObjectService implements ObjectServiceInterface
         private readonly SearchTrailService $searchTrailService,
         private readonly IGroupManager $groupManager,
         private readonly IUserManager $userManager,
-        private readonly OrganisationService $organisationService,
+        private readonly OrganisationServiceInterface $organisationService,
         private readonly LoggerInterface $logger,
         private readonly CacheHandler $cacheHandler,
         private readonly SettingsServiceInterface $settingsService,

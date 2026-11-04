@@ -52,7 +52,7 @@ final class MapperRegistrar {
 					db: $container->get('OCP\IDBConnection'),
 					eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
 					validator: $container->get(PropertyValidatorHandler::class),
-					organisationMapper: $container->get(OrganisationMapper::class),
+					organisationMapper: $container->get(OrganisationMapperInterface::class),
 					userSession: $container->get('OCP\IUserSession'),
 					groupManager: $container->get('OCP\IGroupManager'),
 					appConfig: $container->get('OCP\IAppConfig'),
@@ -69,7 +69,7 @@ final class MapperRegistrar {
 					schemaMapper: $container->get(SchemaMapperInterface::class),
 					eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
 					container: $container,
-					organisationMapper: $container->get(OrganisationMapper::class),
+					organisationMapper: $container->get(OrganisationMapperInterface::class),
 					userSession: $container->get('OCP\IUserSession'),
 					groupManager: $container->get('OCP\IGroupManager'),
 					appConfig: $container->get('OCP\IAppConfig'),
@@ -87,7 +87,7 @@ final class MapperRegistrar {
 			function (ContainerInterface $container) {
 				return new WebhookMapper(
 					db: $container->get('OCP\IDBConnection'),
-					organisationMapper: $container->get(OrganisationMapper::class),
+					organisationMapper: $container->get(OrganisationMapperInterface::class),
 					userSession: $container->get('OCP\IUserSession'),
 					groupManager: $container->get('OCP\IGroupManager'),
 					appConfig: $container->get('OCP\IAppConfig')

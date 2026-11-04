@@ -76,9 +76,9 @@ class ViewMapper extends QBMapper {
 	 *
 	 * Used to get active organisation UUID and apply organisation filters.
 	 *
-	 * @var OrganisationMapper Organisation mapper instance
+	 * @var OrganisationMapperInterface Organisation mapper instance
 	 */
-	protected OrganisationMapper $organisationMapper;
+	protected OrganisationMapperInterface $organisationMapper;
 
 	/**
 	 * App configuration for multitenancy settings (from trait)
@@ -124,7 +124,7 @@ class ViewMapper extends QBMapper {
 	 * Calls parent constructor to set up base mapper functionality.
 	 *
 	 * @param IDBConnection $db Database connection
-	 * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy
+	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy
 	 * @param IAppConfig $appConfig App configuration for multitenancy settings
 	 * @param IUserSession $userSession User session for RBAC
 	 * @param IGroupManager $groupManager Group manager for RBAC
@@ -134,7 +134,7 @@ class ViewMapper extends QBMapper {
 	 */
 	public function __construct(
 		IDBConnection $db,
-		OrganisationMapper $organisationMapper,
+		OrganisationMapperInterface $organisationMapper,
 		IAppConfig $appConfig,
 		IUserSession $userSession,
 		IGroupManager $groupManager,

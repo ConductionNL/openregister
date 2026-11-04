@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\ConfigurationDraftSetMapper;
 use OCA\OpenRegister\Db\ConfigurationValueMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SearchTrailMapper;
@@ -361,7 +361,7 @@ final class ConfigurationServiceRegistrar {
 					cacheFactory: $container->get('OCP\ICacheFactory'),
 					groupManager: $container->get('OCP\IGroupManager'),
 					logger: $container->get('Psr\Log\LoggerInterface'),
-					organisationMapper: $container->get(OrganisationMapper::class),
+					organisationMapper: $container->get(OrganisationMapperInterface::class),
 					schemaCacheService: $container->get(SchemaCacheHandler::class),
 					facetCacheSvc: $container->get(FacetCacheHandler::class),
 					searchTrailMapper: $container->get(SearchTrailMapper::class),

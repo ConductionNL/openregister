@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Aggregation;
 
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IUserSession;
@@ -69,7 +69,7 @@ class AggregationCache {
 	 * @param ICacheFactory $cacheFactory Factory used to create the distributed cache.
 	 * @param IUserSession $userSession Current user session, used to scope the cache key.
 	 * @param LoggerInterface $logger Logger for backend-unavailable warnings.
-	 * @param OrganisationService $organisationService Organisation service, used to include active organisation in cache key.
+	 * @param OrganisationServiceInterface $organisationService Organisation service, used to include active organisation in cache key.
 	 *
 	 * @return void
 	 *
@@ -79,7 +79,7 @@ class AggregationCache {
 		ICacheFactory $cacheFactory,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 	) {
 		try {
 			$this->cache = $cacheFactory->createDistributed('openregister_aggregations');

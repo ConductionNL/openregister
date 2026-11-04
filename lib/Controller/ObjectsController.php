@@ -1920,7 +1920,7 @@ class ObjectsController extends Controller {
 	 */
 	private function activeOrganisationUuid(): ?string {
 		try {
-			$organisationService = $this->container->get(\OCA\OpenRegister\Service\OrganisationService::class);
+			$organisationService = $this->container->get(\OCA\OpenRegister\Service\OrganisationServiceInterface::class);
 			$activeOrg = $organisationService?->getActiveOrganisation();
 			return $activeOrg?->getUuid();
 		} catch (\Throwable $e) {

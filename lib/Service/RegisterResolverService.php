@@ -96,14 +96,14 @@ final class RegisterResolverService {
 	 * @param IAppConfig $appConfig The app config store.
 	 * @param RegisterMapper $registerMapper Register lookup mapper.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param OrganisationService $organisationService Active-tenant resolution.
+	 * @param OrganisationServiceInterface $organisationService Active-tenant resolution.
 	 * @param LoggerInterface $logger Logger for diagnostics.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 		private readonly LoggerInterface $logger,
 	) {
 

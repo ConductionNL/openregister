@@ -26,7 +26,7 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -224,9 +224,9 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	/**
 	 * Organisation mapper
 	 *
-	 * @var OrganisationMapper
+	 * @var OrganisationMapperInterface
 	 */
-	private OrganisationMapper $organisationMapper;
+	private OrganisationMapperInterface $organisationMapper;
 
 	/**
 	 * Schema cache handler
@@ -296,7 +296,7 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * @param ICacheFactory $cacheFactory Cache factory
 	 * @param IGroupManager $groupManager Group manager
 	 * @param LoggerInterface $logger Logger
-	 * @param OrganisationMapper $organisationMapper Organisation mapper
+	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
 	 * @param SchemaCacheHandler $schemaCacheService Schema cache handler
 	 * @param FacetCacheHandler $facetCacheSvc Schema facet cache service
 	 * @param SearchTrailMapper $searchTrailMapper Search trail mapper
@@ -324,7 +324,7 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 		IGroupManager $groupManager,
 		LoggerInterface $logger,
 		// REMOVED: ObjectEntityMapper $objectEntityMapper (unused, caused circular dependency).
-		OrganisationMapper $organisationMapper,
+		OrganisationMapperInterface $organisationMapper,
 		SchemaCacheHandler $schemaCacheService,
 		FacetCacheHandler $facetCacheSvc,
 		SearchTrailMapper $searchTrailMapper,

@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
@@ -238,7 +238,7 @@ class CacheHandler implements ObjectNameCacheInterface {
 	/**
 	 * Constructor for CacheHandler
 	 *
-	 * @param OrganisationMapper $organisationMapper The organisation entity mapper
+	 * @param OrganisationMapperInterface $organisationMapper The organisation entity mapper
 	 * @param LoggerInterface $logger Logger for performance monitoring
 	 * @param ICacheFactory|null $cacheFactory Cache factory for query result caching
 	 * @param IUserSession|null $userSession User session for cache key generation
@@ -256,7 +256,7 @@ class CacheHandler implements ObjectNameCacheInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly OrganisationMapper $organisationMapper,
+		private readonly OrganisationMapperInterface $organisationMapper,
 		private readonly LoggerInterface $logger,
 		?ICacheFactory $cacheFactory = null,
 		?IUserSession $userSession = null,

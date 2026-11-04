@@ -3362,12 +3362,12 @@ class MagicRbacHandler {
 	 * Matches the lazy-load pattern already in use elsewhere in this class
 	 * (see e.g. line 415) — avoids constructor-level circular DI dependencies.
 	 *
-	 * @return \OCA\OpenRegister\Service\OrganisationService|null The service or
+	 * @return \OCA\OpenRegister\Service\OrganisationServiceInterface|null The service or
 	 *                                                            null if the container cannot resolve it (defensive).
 	 */
-	private function resolveOrganisationService(): ?\OCA\OpenRegister\Service\OrganisationService {
+	private function resolveOrganisationService(): ?\OCA\OpenRegister\Service\OrganisationServiceInterface {
 		try {
-			return $this->container->get(\OCA\OpenRegister\Service\OrganisationService::class);
+			return $this->container->get(\OCA\OpenRegister\Service\OrganisationServiceInterface::class);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				message: '[MagicRbacHandler] OrganisationService unavailable - skipping system-owner carve-out',

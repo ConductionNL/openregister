@@ -35,11 +35,11 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Exception\FlowSignalRefused;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowCaller;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -86,10 +86,10 @@ class FlowRunController extends Controller {
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param FlowRunMapper $mapper Reads runs.
-	 * @param FlowRunService $runner Retries, requeues and runs.
+	 * @param FlowRunServiceInterface $runner Retries, requeues and runs.
 	 * @param FlowLocator $resolvers Resolves a flow id to its document.
 	 * @param IUserSession $userSession Attributes a retried run to the caller.
-	 * @param OrganisationService $organisationService Scopes the active-runs list to the caller's tenant.
+	 * @param OrganisationServiceInterface $organisationService Scopes the active-runs list to the caller's tenant.
 	 * @param FlowRunnableGuard $guard Whether the caller may run the flow a run belongs to.
 	 *                                 REQUIRED, unlike the collaborators below: a run
 	 *                                 endpoint with no guard is the IDOR this controller
@@ -124,10 +124,10 @@ class FlowRunController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly FlowRunMapper $mapper,
-		private readonly FlowRunService $runner,
+		private readonly FlowRunServiceInterface $runner,
 		private readonly FlowLocator $resolvers,
 		private readonly IUserSession $userSession,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 		private readonly FlowRunnableGuard $guard,
 		private readonly ?IGroupManager $groupManager = null,
 		private readonly ?FlowCaller $flowOwnership = null,

@@ -127,7 +127,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -1674,7 +1674,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		// For a scheduled run they differ — the cause is a schedule, the acting
 		// identity is the user the trigger declares — and reading provenance here
 		// is what made a scheduled write execute as whoever authored the flow.
-		$uid = ($context[FlowRunService::RUN_AS_CONTEXT_KEY] ?? null);
+		$uid = ($context[FlowRunServiceInterface::RUN_AS_CONTEXT_KEY] ?? null);
 		if (is_string($uid) === false || trim($uid) === '') {
 			throw new RuntimeException(
 				$this->l10n->t('This flow run has no acting identity (runAs); an object write must be attributable.')

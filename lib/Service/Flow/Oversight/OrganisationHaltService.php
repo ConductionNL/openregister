@@ -27,7 +27,7 @@ use DateTimeInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -63,14 +63,14 @@ class OrganisationHaltService {
 	 * @param IAppConfig         $appConfig     Where the active halts are kept.
 	 * @param AuditTrailMapperInterface   $audit         Where their history goes.
 	 * @param IUserSession       $session       Who is acting.
-	 * @param OrganisationMapper $organisations To refuse an organisation that does not exist.
+	 * @param OrganisationMapperInterface $organisations To refuse an organisation that does not exist.
 	 * @param LoggerInterface    $logger        The logger.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
 		private readonly AuditTrailMapperInterface $audit,
 		private readonly IUserSession $session,
-		private readonly OrganisationMapper $organisations,
+		private readonly OrganisationMapperInterface $organisations,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

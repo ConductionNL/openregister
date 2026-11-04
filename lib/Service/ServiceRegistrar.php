@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
@@ -298,11 +298,11 @@ final class ServiceRegistrar {
 	 *
 	 * @param ContainerInterface $container The container.
 	 *
-	 * @return OrganisationService
+	 * @return OrganisationServiceInterface
 	 */
-	private static function buildOrganisationService(ContainerInterface $container): OrganisationService {
+	private static function buildOrganisationService(ContainerInterface $container): OrganisationServiceInterface {
 			return new OrganisationService(
-				organisationMapper: $container->get(OrganisationMapper::class),
+				organisationMapper: $container->get(OrganisationMapperInterface::class),
 				userSession: $container->get('OCP\IUserSession'),
 				session: $container->get('OCP\ISession'),
 				config: $container->get('OCP\IConfig'),
@@ -329,7 +329,7 @@ final class ServiceRegistrar {
 				groupManager: $container->get('OCP\IGroupManager'),
 				accountManager: $container->get('OCP\Accounts\IAccountManager'),
 				logger: $container->get('Psr\Log\LoggerInterface'),
-				organisationService: $container->get(OrganisationService::class),
+				organisationService: $container->get(OrganisationServiceInterface::class),
 				eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
 				avatarManager: $container->get('OCP\IAvatarManager'),
 				auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
@@ -368,7 +368,7 @@ final class ServiceRegistrar {
 	 */
 	private static function buildCacheHandler(ContainerInterface $container): CacheHandler {
 			return new CacheHandler(
-				organisationMapper: $container->get(OrganisationMapper::class),
+				organisationMapper: $container->get(OrganisationMapperInterface::class),
 				logger: $container->get('Psr\Log\LoggerInterface'),
 				cacheFactory: $container->get('OCP\ICacheFactory'),
 				userSession: $container->get('OCP\IUserSession'),

@@ -66,7 +66,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore;
 use OCA\OpenRegister\Service\OrganisationContext;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Quality\DedupCreatePolicy;
 use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
@@ -349,7 +349,7 @@ class SaveObject {
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
 	 * @param RegisterMapper $registerMapper Register mapper for register operations
 	 * @param IURLGenerator $urlGenerator URL generator service
-	 * @param OrganisationService $organisationService Service for organisation operations
+	 * @param OrganisationServiceInterface $organisationService Service for organisation operations
 	 * @param CacheHandler $cacheHandler Object entity and query cache
 	 * @param SettingsServiceInterface $settingsService Settings service for trail settings
 	 * @param PropertyRbacHandler $propertyRbacHandler Property-level RBAC handler
@@ -386,7 +386,7 @@ class SaveObject {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapper $registerMapper,
 		private readonly IURLGenerator $urlGenerator,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 		private readonly CacheHandler $cacheHandler,
 		private readonly SettingsServiceInterface $settingsService,
 		private readonly PropertyRbacHandler $propertyRbacHandler,

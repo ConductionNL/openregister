@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\Chunk;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -135,7 +135,7 @@ class TextExtractionService {
 	/**
 	 * Constructor
 	 *
-	 * @param FileMapper $fileMapper Mapper for Nextcloud files
+	 * @param FileMapperInterface $fileMapper Mapper for Nextcloud files
 	 * @param ChunkMapper $chunkMapper Mapper for chunks
 	 * @param IRootFolder $rootFolder Nextcloud root folder
 	 * @param IDBConnection $db Database connection
@@ -160,7 +160,7 @@ class TextExtractionService {
 	 * @SuppressWarnings(PHPMD.ShortVariable)          $db is a well-known PHP idiom for a database connection parameter.
 	 */
 	public function __construct(
-		private readonly FileMapper $fileMapper,
+		private readonly FileMapperInterface $fileMapper,
 		private readonly ChunkMapper $chunkMapper,
 		private readonly IRootFolder $rootFolder,
 		private readonly IDBConnection $db,
