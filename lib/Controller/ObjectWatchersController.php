@@ -302,7 +302,7 @@ class ObjectWatchersController extends Controller {
 	 */
 	private function resolveObject(string $register, string $schema, string $id): ObjectEntity|JSONResponse {
 		try {
-			// setObject() already looks the object up, so an unknown id throws here.
+			// The setObject() call already looks the object up, so an unknown id throws here.
 			$this->objectService->setRegister($register);
 			$this->objectService->setSchema($schema);
 			$this->objectService->setObject($id);

@@ -40,6 +40,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Audit\PurposeAttribution
  * @uses \OCA\OpenRegister\Service\Audit\TokenAttribution
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\Audit\OrganisationContextAttribution
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */

@@ -33,7 +33,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -374,13 +373,13 @@ class OasService {
 	/**
 	 * Title, version and description of a single-register document, keeping the base contact and license.
 	 *
-	 * @param Register $register The register.
+	 * @param object $register The register.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
-	private function describeRegister(Register $register): void {
+	private function describeRegister(object $register): void {
 		$description = $register->getDescription();
 		if (empty($description) === true) {
 			$description = 'API for ' . $register->getTitle() . ' register providing CRUD ';
@@ -458,7 +457,7 @@ class OasService {
 	/**
 	 * Add the CRUD, extended and JSON-LD context paths for each loaded schema of a register.
 	 *
-	 * @param Register                                           $register The register.
+	 * @param object                                             $register The register.
 	 * @param array{schemas: array, rbac: array, prefixed: bool} $context  The loaded schemas, their groups,
 	 *                                                                     and whether operationIds carry the register prefix.
 	 *
@@ -466,7 +465,7 @@ class OasService {
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
-	private function addRegisterPaths(Register $register, array $context): void {
+	private function addRegisterPaths(object $register, array $context): void {
 		$operationIdPrefix = '';
 		if ($context['prefixed'] === true) {
 			$operationIdPrefix = $this->pascalCase(string: $register->getTitle());

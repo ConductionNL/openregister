@@ -56,6 +56,7 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Controller\OrganisationController
  * @covers \OCA\OpenRegister\Exception\OrganisationSlugConflictException
  * @covers \OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider
+ * @uses   \OCA\OpenRegister\AppInfo\ClassAliasMap
  * @uses   \OCA\OpenRegister\Db\Organisation
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
