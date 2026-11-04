@@ -6814,4 +6814,91 @@ class RenderObjectTest extends TestCase {
 		$this->assertSame(['8' => []], $this->preloadCache('fileTagsCache'));
 		$this->assertSame(['8' => null], $this->preloadCache('fileObjectCache'));
 	}
+
+	// =========================================================================
+	// handleExtendDot — lists, single references, cycles and link exposure
+	// =========================================================================
+
+	/**
+	 * The rendered references reduced to what the extend decided: id, name and the exposed secret.
+	 *
+	 * @param mixed $value A rendered value.
+	 *
+	 * @return mixed
+	 */
+	private function extendView(mixed $value): mixed {
+		if (is_array($value) === false) {
+			return $value;
+		}
+
+		if (isset($value['@circular']) === true) {
+			return 'circular:' . $value['id'];
+		}
+
+		if (array_key_exists('name', $value) === true || isset($value['@self']) === true || isset($value['id']) === true) {
+			return [($value['@self']['id'] ?? $value['id'] ?? null), ($value['name'] ?? null), ($value['secret'] ?? null), $this->extendView($value['friend'] ?? null)];
+		}
+
+		return array_map(fn ($one) => $this->extendView($one), $value);
+	}
+
+	/**
+	 * Run handleExtendDot over one fixture page with the given flag and visited ids.
+	 *
+	 * @param bool $allFlag Whether everything is extended.
+	 *
+	 * @return array
+	 */
+	private function runExtendDot(bool $allFlag): array {
+		$this->setupBasicMocks();
+		$cache = [];
+		foreach (['u1' => 'One', 'u2' => 'Two', 'u3' => 'Three'] as $uuid => $name) {
+			$entity = $this->createBasicEntity(1, $uuid, ['name' => $name, 'secret' => 's-' . $uuid, 'friend' => 'u2']);
+			$cache[$uuid] = $entity;
+		}
+
+		$prop = (new ReflectionClass($this->handler))->getProperty('objectsCache');
+		$prop->setAccessible(true);
+		$prop->setValue($this->handler, $cache);
+
+		$data = [
+			'list' => ['u1', null, '@skip', 'missing', ['id' => 'pre', 'name' => 'Pre', 'secret' => 'x'], ['other' => 1], 'u3'],
+			'single' => 'https://h/api/objects/u2',
+			'under' => '_u1',
+			'at' => '@u1',
+			'circ' => 'u3',
+			'gone' => 'nowhere',
+			'dotted' => new \Adbar\Dot(['u1']),
+			'plain' => 'u1',
+		];
+		$extend = ['list', 'single', 'under', 'at', 'circ', 'gone', 'named' => 'plain', 'dotted', 'list.friend'];
+		$exposures = ['list' => ['exposes' => ['name']], 'single' => ['exposes' => ['name']]];
+
+		return $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, $allFlag, ['u3'], $exposures]);
+	}
+
+	/**
+	 * handleExtendDot renders references where the extend list asks, applies the link exposure and marks cycles.
+	 *
+	 * @return void
+	 */
+	public function testHandleExtendDotRendersListsSinglesCyclesAndExposures(): void {
+		$plain = '{"list":[["u1","One","__withheld__","__withheld__"],"missing",["pre","Pre","__withheld__",null],"circular:u3"],'
+			. '"single":["u2","Two","__withheld__","__withheld__"],"under":"_u1","at":"@u1","circ":"circular:u3","gone":"nowhere",'
+			. '"dotted":[["u1","One","s-u1",["u2","Two","s-u2","u2"]]],"plain":"u1","named":["u1","One","s-u1",["u2","Two","s-u2","u2"]]}';
+		$this->assertSame(json_decode($plain, true), $this->extendView($this->runExtendDot(false)));
+	}
+
+	/**
+	 * With the all flag, extended references extend everything below them too.
+	 *
+	 * @return void
+	 */
+	public function testHandleExtendDotWithTheAllFlagExtendsBelowTheReference(): void {
+		$deep = '[["u2","Two","s-u2","u2"],"Two","s-u2",["u2","Two","s-u2","u2"],["u2","u2",null,null]]';
+		$all = '{"list":[["u1","One","__withheld__","__withheld__"],"missing",["pre","Pre","__withheld__",null],"circular:u3"],'
+			. '"single":["u2","Two","__withheld__","__withheld__"],"under":"_u1","at":"@u1","circ":"circular:u3","gone":"nowhere",'
+			. '"dotted":[["u1","One","s-u1",' . $deep . ']],"plain":"u1","named":["u1","One","s-u1",' . $deep . ']}';
+		$this->assertSame(json_decode($all, true), $this->extendView($this->runExtendDot(true)));
+	}
 }

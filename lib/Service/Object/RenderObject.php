@@ -3639,9 +3639,6 @@ class RenderObject {
 	 *
 	 * @throws \OCP\DB\Exception
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex extension handling with multiple data types
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Many extension scenarios create multiple code paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive dot notation handling requires extensive logic
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   All flag controls extension behavior
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
@@ -3656,188 +3653,230 @@ class RenderObject {
 	): array {
 		$data = $this->handleWildcardExtends(objectData: $data, _extend: $_extend, depth: $depth + 1);
 
-		$dataDot = new Dot($data);
+		$run = new ExtendDotRun();
+		$run->data = new Dot($data);
+		$run->depth = $depth;
+		$run->allFlag = $allFlag;
+		$run->visitedIds = $visitedIds;
 
 		foreach ($_extend as $override => $key) {
-			// Skip if the key does not have to be extended.
-			if ($dataDot->has(keys: $key) === false) {
+			// Skip keys that are absent, and special '@' fields.
+			if ($run->data->has(keys: $key) === false || str_starts_with($key, '@') === true) {
 				continue;
 			}
 
-			// Skip if the key starts with '@' (special fields).
-			if (str_starts_with($key, '@') === true) {
-				continue;
-			}
-
-			// Get sub-keys for nested extension.
-			$keyExtends = array_map(
+			$run->override = $override;
+			$run->key = $key;
+			$run->descriptor = ($exposures[$key] ?? null);
+			$run->keyExtends = array_map(
 				fn (string $extendedKey) => substr(string: $extendedKey, offset: strlen($key) + 1),
 				array_filter(
 					$_extend,
 					fn (string $singleKey) => str_starts_with(haystack: $singleKey, needle: $key . '.')
 				)
 			);
+			$this->extendDotKey(run: $run);
+		}
 
-			$value = $dataDot->get(key: $key);
-
-			// Make sure arrays are arrays.
-			if ($value instanceof Dot) {
-				$value = $value->jsonSerialize();
-			}
-
-			// Skip if the value is null.
-			if ($value === null) {
-				continue;
-			}
-
-			// Extend the subobject(s).
-			if (is_array($value) === true) {
-				// Filter out null values and values starting with '@' before mapping.
-				$value = array_filter(
-					$value,
-					fn ($v) => $v !== null
-						&& (is_string($v) === false || str_starts_with(haystack: $v, needle: '@') === false)
-				);
-				$descriptor = ($exposures[$key] ?? null);
-				$renderedValue = array_map(
-					function ($identifier) use ($depth, $keyExtends, $allFlag, $visitedIds, $descriptor) {
-						// If already an extended object (has 'id' and '@self' keys), return as-is.
-						// This prevents double-processing when extend is called multiple times.
-						if (is_array($identifier) === true) {
-							if (isset($identifier['id']) === true || isset($identifier['@self']) === true) {
-								// Already extended, by the wildcard pass above or by an
-								// earlier call. The exposure still applies: an extend that
-								// arrives here pre-rendered is the same far record reached
-								// through the same link, and skipping the projection because
-								// somebody else did the loading would be a control that any
-								// caller can step around by asking for the wildcard form.
-								// Projecting twice is harmless, a withheld field stays
-								// withheld.
-								return $this->applyLinkExposure(rendered: $identifier, descriptor: $descriptor);
-							}
-
-							return null;
-						}
-
-						// **PERFORMANCE OPTIMIZATION**: Use preloaded cache instead of individual queries.
-						$object = $this->getObject(id: $identifier);
-						if ($object === null) {
-							// Object not found - preserve the original UUID instead of returning null.
-							// This keeps the reference data intact even when the referenced object
-							// doesn't exist (e.g., data imported from CSV with external references).
-							$this->logger->debug(
-								message: '[RenderObject] Object not found in preloaded cache - preserving original UUID',
-								context: [
-									'file' => __FILE__,
-									'line' => __LINE__,
-									'identifier' => $identifier,
-									'context' => 'extend_array_processing',
-								]
-							);
-							return $identifier;
-						}
-
-						if (in_array($object->getUuid(), $visitedIds, true) === true) {
-							return ['@circular' => true, 'id' => $object->getUuid()];
-						}
-
-						$subExtend = $keyExtends;
-						if ($allFlag === true) {
-							$subExtend = array_merge(['all'], $keyExtends);
-						}
-
-						$rendered = $this->renderEntity(
-							entity: $object,
-							_extend: $subExtend,
-							depth: $depth + 1,
-							filter: [],
-							fields: [],
-							unset: [],
-							visitedIds: $visitedIds
-						)->jsonSerialize();
-
-						return $this->applyLinkExposure(rendered: $rendered, descriptor: $descriptor);
-					},
-					$value
-				);
-
-				// Filter out any null values that might have been returned from the mapping.
-				$renderedValue = array_filter($renderedValue, fn ($v) => $v !== null);
-
-				if (is_numeric($override) === false) {
-					// Reset array keys.
-					$dataDot->set(keys: $override, value: array_values($renderedValue));
-					continue;
-				}
-
-				// Reset array keys.
-				$dataDot->set(keys: $key, value: array_values($renderedValue));
-				continue;
-			}//end if
-
-			// Skip if the value starts with '@' or '_'.
-			if (is_string($value) === true
-				&& ((str_starts_with(haystack: $value, needle: '@') === true)
-				|| (str_starts_with(haystack: $value, needle: '_') === true)) === true
-			) {
-				continue;
-			}
-
-			if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
-				$path = parse_url($value, PHP_URL_PATH);
-				$pathExploded = explode('/', $path);
-				$value = end($pathExploded);
-			}
-
-			// **PERFORMANCE OPTIMIZATION**: Use preloaded cache instead of individual queries.
-			$object = $this->getObject(id: $value);
-
-			if ($object === null) {
-				// If not in cache, this object wasn't preloaded - skip it to prevent N+1.
-				$this->logger->debug(
-					message: '[RenderObject] Single object not found in preloaded cache - skipping to prevent N+1 query',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'identifier' => $value,
-						'context' => 'extend_single_processing',
-					]
-				);
-				continue;
-			}
-
-			$subExtend = $keyExtends;
-			if ($allFlag === true) {
-				$subExtend = array_merge(['all'], $keyExtends);
-			}
-
-			$rendered = $this->applyLinkExposure(
-				rendered: $this->renderEntity(
-					entity: $object,
-					_extend: $subExtend,
-					depth: $depth + 1,
-					filter: [],
-					fields: [],
-					unset: [],
-					visitedIds: $visitedIds
-				)->jsonSerialize(),
-				descriptor: ($exposures[$key] ?? null)
-			);
-
-			if (in_array($object->getUuid(), $visitedIds, true) === true) {
-				$rendered = ['@circular' => true, 'id' => $object->getUuid()];
-			}
-
-			if (is_numeric($override) === false) {
-				$dataDot->set(keys: $override, value: $rendered);
-				continue;
-			}
-
-			$dataDot->set(keys: $key, value: $rendered);
-		}//end foreach
-
-		return $dataDot->jsonSerialize();
+		return $run->data->jsonSerialize();
 	}//end handleExtendDot()
+
+	/**
+	 * Extend the value at the run's key: a list of references or a single one.
+	 *
+	 * @param ExtendDotRun $run The extend pass, on one key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function extendDotKey(ExtendDotRun $run): void {
+		$value = $run->data->get(key: $run->key);
+
+		// Make sure arrays are arrays.
+		if ($value instanceof Dot) {
+			$value = $value->jsonSerialize();
+		}
+
+		if ($value === null) {
+			return;
+		}
+
+		if (is_array($value) === true) {
+			$this->extendDotList(run: $run, value: $value);
+			return;
+		}
+
+		$this->extendDotSingle(run: $run, value: $value);
+	}//end extendDotKey()
+
+	/**
+	 * Put an extended value where the run's extend entry sends it: its non-numeric list key, else the dot path.
+	 *
+	 * @param ExtendDotRun $run   The extend pass, on one key.
+	 * @param mixed        $value The extended value.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function storeExtended(ExtendDotRun $run, mixed $value): void {
+		if (is_numeric($run->override) === false) {
+			$run->data->set(keys: $run->override, value: $value);
+			return;
+		}
+
+		$run->data->set(keys: $run->key, value: $value);
+	}//end storeExtended()
+
+	/**
+	 * Extend a list of references, skipping nulls and '@' values, and reset its keys.
+	 *
+	 * @param ExtendDotRun $run   The extend pass, on one key.
+	 * @param array        $value The list at the key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function extendDotList(ExtendDotRun $run, array $value): void {
+		$value = array_filter(
+			$value,
+			fn ($v) => $v !== null
+				&& (is_string($v) === false || str_starts_with(haystack: $v, needle: '@') === false)
+		);
+		$renderedValue = array_map(
+			fn ($identifier) => $this->extendDotListItem(run: $run, identifier: $identifier),
+			$value
+		);
+
+		self::storeExtended(run: $run, value: array_values(array_filter($renderedValue, fn ($v) => $v !== null)));
+	}//end extendDotList()
+
+	/**
+	 * Extend one entry of a list of references.
+	 *
+	 * An entry that is already an extended object (it has 'id' or '@self')
+	 * still gets the link exposure: an extend that arrives pre-rendered is the
+	 * same far record reached through the same link, and skipping the
+	 * projection would be a control any caller can step around by asking for
+	 * the wildcard form. Projecting twice is harmless. A reference whose object
+	 * is not found keeps its original identifier, so imported external
+	 * references stay intact.
+	 *
+	 * @param ExtendDotRun $run        The extend pass, on one key.
+	 * @param mixed        $identifier The list entry.
+	 *
+	 * @return mixed The rendered entry, the kept identifier, or null to drop it.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function extendDotListItem(ExtendDotRun $run, mixed $identifier): mixed {
+		if (is_array($identifier) === true) {
+			if (isset($identifier['id']) === true || isset($identifier['@self']) === true) {
+				return $this->applyLinkExposure(rendered: $identifier, descriptor: $run->descriptor);
+			}
+
+			return null;
+		}
+
+		$object = $this->getObject(id: $identifier);
+		if ($object === null) {
+			$this->logger->debug(
+				message: '[RenderObject] Object not found in preloaded cache - preserving original UUID',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'identifier' => $identifier,
+					'context' => 'extend_array_processing',
+				]
+			);
+			return $identifier;
+		}
+
+		if (in_array($object->getUuid(), $run->visitedIds, true) === true) {
+			return ['@circular' => true, 'id' => $object->getUuid()];
+		}
+
+		return $this->renderExtendedObject(run: $run, object: $object);
+	}//end extendDotListItem()
+
+	/**
+	 * Render an extended object one level deeper, with the key's nested extends and link exposure.
+	 *
+	 * @param ExtendDotRun $run    The extend pass, on one key.
+	 * @param ObjectEntity $object The object to render.
+	 *
+	 * @return array The rendered object.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function renderExtendedObject(ExtendDotRun $run, ObjectEntity $object): array {
+		$subExtend = $run->keyExtends;
+		if ($run->allFlag === true) {
+			$subExtend = array_merge(['all'], $run->keyExtends);
+		}
+
+		$rendered = $this->renderEntity(
+			entity: $object,
+			_extend: $subExtend,
+			depth: $run->depth + 1,
+			filter: [],
+			fields: [],
+			unset: [],
+			visitedIds: $run->visitedIds
+		)->jsonSerialize();
+
+		return $this->applyLinkExposure(rendered: $rendered, descriptor: $run->descriptor);
+	}//end renderExtendedObject()
+
+	/**
+	 * Extend a single reference, by UUID or by URL ending in it.
+	 *
+	 * Values starting with '@' or '_' are left alone. An object that was not
+	 * preloaded is skipped rather than queried, to prevent N+1 queries.
+	 *
+	 * @param ExtendDotRun $run   The extend pass, on one key.
+	 * @param mixed        $value The value at the key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function extendDotSingle(ExtendDotRun $run, mixed $value): void {
+		if (is_string($value) === true
+			&& (str_starts_with(haystack: $value, needle: '@') === true || str_starts_with(haystack: $value, needle: '_') === true)
+		) {
+			return;
+		}
+
+		if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
+			$pathExploded = explode('/', parse_url($value, PHP_URL_PATH));
+			$value = end($pathExploded);
+		}
+
+		$object = $this->getObject(id: $value);
+		if ($object === null) {
+			$this->logger->debug(
+				message: '[RenderObject] Single object not found in preloaded cache - skipping to prevent N+1 query',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'identifier' => $value,
+					'context' => 'extend_single_processing',
+				]
+			);
+			return;
+		}
+
+		// A single reference is rendered even when it closes a cycle; the cycle marker then replaces it.
+		$rendered = $this->renderExtendedObject(run: $run, object: $object);
+		if (in_array($object->getUuid(), $run->visitedIds, true) === true) {
+			$rendered = ['@circular' => true, 'id' => $object->getUuid()];
+		}
+
+		self::storeExtended(run: $run, value: $rendered);
+	}//end extendDotSingle()
 
 
 	/**
