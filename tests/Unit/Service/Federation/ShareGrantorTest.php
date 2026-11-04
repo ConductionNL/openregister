@@ -185,14 +185,14 @@ class ShareGrantorTest extends TestCase {
 	}
 
 	public function testAnAdministratorMayAlwaysChangeAShare(): void {
-		$this->gate->method('isAdministrator')->willReturn(true);
+		$this->gate->method('callerIsAdministrator')->willReturn(true);
 		$this->gate->method('mayManage')->willReturn(false);
 
 		$this->assertNull($this->grantor->changeRefusal(share: $this->share(scope: 'schema', permissions: 'read')));
 	}
 
 	public function testAnyoneElseChangesAShareOnlyWithTheRightsItGrants(): void {
-		$this->gate->method('isAdministrator')->willReturn(false);
+		$this->gate->method('callerIsAdministrator')->willReturn(false);
 		$this->gate->method('mayManage')->willReturn(false);
 
 		$this->assertNotNull($this->grantor->changeRefusal(share: $this->share(scope: 'schema', permissions: 'read')));

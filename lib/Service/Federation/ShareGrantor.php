@@ -121,7 +121,7 @@ class ShareGrantor {
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
 	 */
 	public function changeRefusal(FederatedShare $share): ?string {
-		if ($this->manageGate->isAdministrator() === true) {
+		if ($this->manageGate->callerIsAdministrator() === true) {
 			return null;
 		}
 

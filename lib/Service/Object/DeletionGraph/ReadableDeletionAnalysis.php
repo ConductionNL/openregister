@@ -198,7 +198,7 @@ final class ReadableDeletionAnalysis {
 	 *
 	 * @param string $uuid The object's uuid.
 	 *
-	 * @return bool False when the read does not find it, fails, or the lookup budget is spent.
+	 * @return bool False when the read does not find it by its uuid, fails, or the lookup budget is spent.
 	 */
 	private function callerReads(string $uuid): bool {
 		if (array_key_exists($uuid, $this->readable) === true) {
@@ -208,8 +208,8 @@ final class ReadableDeletionAnalysis {
 		$readable = false;
 		if (count($this->readable) < self::MAX_LOOKUPS) {
 			try {
-				$this->mapper->find(identifier: $uuid);
-				$readable = true;
+				// The read also matches ids, slugs and uris: only the object itself counts.
+				$readable = ($this->mapper->find(identifier: $uuid)->getUuid() === $uuid);
 			} catch (\Throwable $e) {
 				$readable = false;
 			}

@@ -80,15 +80,15 @@ class SchemaManageGate {
 	/**
 	 * Whether the caller is an administrator.
 	 *
-	 * @return bool True for a signed-in administrator.
+	 * @return bool False without a session.
 	 *
-	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function isAdministrator(): bool {
+	public function callerIsAdministrator(): bool {
 		$user = $this->userSession->getUser();
 
 		return $user !== null && $this->groupManager->isAdmin($user->getUID()) === true;
-	}//end isAdministrator()
+	}//end callerIsAdministrator()
 
 	/**
 	 * Whether an authorization block's `manage` rule admits the caller; administrators always pass.

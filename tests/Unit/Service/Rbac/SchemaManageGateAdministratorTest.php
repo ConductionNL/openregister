@@ -48,14 +48,14 @@ class SchemaManageGateAdministratorTest extends TestCase {
 	}
 
 	public function testTheAdministratorIsAnswered(): void {
-		$this->assertTrue($this->gate(uid: 'root')->isAdministrator());
+		$this->assertTrue($this->gate(uid: 'root')->callerIsAdministrator());
 	}
 
 	public function testAMemberIsNotAnAdministrator(): void {
-		$this->assertFalse($this->gate(uid: 'alice')->isAdministrator());
+		$this->assertFalse($this->gate(uid: 'alice')->callerIsAdministrator());
 	}
 
 	public function testNoSessionIsNotAnAdministrator(): void {
-		$this->assertFalse($this->gate(uid: null)->isAdministrator());
+		$this->assertFalse($this->gate(uid: null)->callerIsAdministrator());
 	}
 }

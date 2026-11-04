@@ -29,7 +29,6 @@ use GraphQL\Deferred;
 use GraphQL\Error\Error;
 use InvalidArgumentException;
 use RuntimeException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -91,7 +90,6 @@ class GraphQLResolver {
 	 * @param PermissionHandler $permissionHandler Permission handler
 	 * @param PropertyRbacHandler $propertyRbac Property RBAC handler
 	 * @param RelationHandler $relationHandler Relation handler
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper
 	 * @param RegisterMapper $registerMapper Register mapper
 	 * @param LoggerInterface $logger Logger
 	 * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler Translation handler
@@ -106,7 +104,6 @@ class GraphQLResolver {
 		private readonly PermissionHandler $permissionHandler,
 		private readonly PropertyRbacHandler $propertyRbac,
 		private readonly RelationHandler $relationHandler,
-		private readonly AuditTrailMapper $auditTrailMapper,
 		private readonly RegisterMapper $registerMapper,
 		private readonly LoggerInterface $logger,
 		private readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler,
@@ -681,31 +678,6 @@ class GraphQLResolver {
 		);
 
 	}//end resolveRelation()
-
-	/**
-	 * Resolve the _auditTrail field for an object.
-	 *
-	 * @param string $objectUuid The object UUID
-	 * @param int $last Number of entries to return
-	 *
-	 * @return array<array<string, mixed>> The audit trail entries
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-log-operations-to-the-audit-trail
-	 */
-	public function resolveAuditTrail(string $objectUuid, int $last = 10): array {
-		$entries = $this->auditTrailMapper->findAll(
-			$last,
-			0,
-			['object_uuid' => $objectUuid],
-			['created' => 'DESC']
-		);
-
-		return array_map(
-			fn ($entry) => $entry->jsonSerialize(),
-			$entries
-		);
-
-	}//end resolveAuditTrail()
 
 	/**
 	 * Resolve the _usedBy field for an object.
