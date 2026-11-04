@@ -689,7 +689,7 @@ class RegistersControllerTest extends TestCase {
 
 		$this->assertInstanceOf(JSONResponse::class, $result);
 		$this->assertSame(400, $result->getStatus());
-		$this->assertStringContainsString('schema', $result->getData()['error']);
+		$this->assertSame('CSV export requires a specific schema to be selected', $result->getData()['error']);
 	}
 
 	// NOTE: publish()/depublish() success tests removed — endpoints retired
@@ -1695,6 +1695,7 @@ class RegistersControllerTest extends TestCase {
 		$this->assertStringContainsString('main', $data['message']);
 		$this->assertSame('develop', $data['branch']);
 		$this->assertSame('main', $data['default_branch']);
+		$this->assertSame("Published to non-default branch. For discovery, publish to 'main' branch.", $data['indexing_note']);
 	}
 
 	public function testPublishToGitHubGetRepositoryInfoFails(): void {
