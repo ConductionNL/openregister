@@ -125,7 +125,6 @@
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Db/MagicMapper/MagicRbacHandler.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Db/MagicMapper/MagicSearchHandler.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Db/MultiTenancyTrait.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Db/ObjectHandlers/HyperFacetHandler.php"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Db/OrganisationMapper.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Db/ProcessingLogMapper.php"/>
   <violation rule="PHPMD\Rule\ExcessivePublicCount" file="lib/Db/Schema.php"/>
