@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Service\Calculation;
 use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use Throwable;
 
 /**
@@ -64,7 +64,7 @@ use Throwable;
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-1
  */
-class CalculationEvaluator {
+class CalculationEvaluator implements CalculationEvaluatorInterface {
 	/**
 	 * The operator vocabulary, described.
 	 *

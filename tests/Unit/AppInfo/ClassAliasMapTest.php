@@ -53,6 +53,23 @@ class ClassAliasMapTest extends TestCase {
 	}//end testTheShippedMapNamesExistingClassesAndNoShims()
 
 	/**
+	 * Every shipped entry is a container alias, so fetching a moved class by its
+	 * old name returns the same shared instance as its new name.
+	 *
+	 * @return void
+	 */
+	public function testEveryShippedEntryIsAContainerAlias(): void {
+		$notService = [];
+		foreach (ClassAliasMap::fromFile()->entries() as $old => $entry) {
+			if (($entry['service'] ?? false) !== true) {
+				$notService[] = $old;
+			}
+		}
+
+		$this->assertSame(expected: [], actual: $notService, message: 'a moved class is no container alias');
+	}//end testEveryShippedEntryIsAContainerAlias()
+
+	/**
 	 * An eager entry is an alias as soon as the map is applied, so instanceof
 	 * on the old name holds without any autoload.
 	 *

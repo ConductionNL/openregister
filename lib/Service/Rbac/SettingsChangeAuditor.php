@@ -52,7 +52,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -100,12 +100,12 @@ class SettingsChangeAuditor {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapper $mapper The trail, which owns the chain.
+	 * @param AuditTrailMapperInterface $mapper The trail, which owns the chain.
 	 * @param IUserSession $userSession Who is making the change.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $mapper,
+		private readonly AuditTrailMapperInterface $mapper,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {

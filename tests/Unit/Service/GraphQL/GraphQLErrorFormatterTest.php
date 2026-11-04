@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Unit\Service\GraphQL;
 
 use GraphQL\Error\Error;
-use OCA\OpenRegister\Service\GraphQL\GraphQLErrorFormatter;
+use OCA\OpenRegister\Search\Service\GraphQL\GraphQLErrorFormatter;
 use PHPUnit\Framework\TestCase;
 
 class GraphQLErrorFormatterTest extends TestCase {

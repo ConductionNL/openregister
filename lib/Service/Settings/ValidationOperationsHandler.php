@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCP\AppFramework\IAppContainer;
 use Psr\Log\LoggerInterface;
@@ -64,13 +64,13 @@ class ValidationOperationsHandler {
 	 * Constructor for ValidationOperationsHandler.
 	 *
 	 * @param ValidateObject|null $validateHandler Handler for validation operations (nullable for lazy loading)
-	 * @param SchemaMapper $schemaMapper Mapper for schema entities
+	 * @param SchemaMapperInterface $schemaMapper Mapper for schema entities
 	 * @param LoggerInterface $logger Logger for logging operations
 	 * @param IAppContainer $container Application container
 	 */
 	public function __construct(
 		?ValidateObject $validateHandler,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 		IAppContainer $container,
 	) {

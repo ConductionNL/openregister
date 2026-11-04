@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
@@ -115,7 +115,7 @@ use RuntimeException;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class SettingsService implements AppSettingsInterface {
+class SettingsService implements SettingsServiceInterface, AppSettingsInterface {
 
 	/**
 	 * Configuration service
@@ -127,9 +127,9 @@ class SettingsService implements AppSettingsInterface {
 	/**
 	 * Audit trail mapper
 	 *
-	 * @var AuditTrailMapper
+	 * @var AuditTrailMapperInterface
 	 */
-	private AuditTrailMapper $auditTrailMapper;
+	private AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * Cache factory
@@ -335,7 +335,7 @@ class SettingsService implements AppSettingsInterface {
 	 * Constructor for SettingsService
 	 *
 	 * @param IConfig $config Configuration service
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper
 	 * @param ICacheFactory $cacheFactory Cache factory
 	 * @param IGroupManager $groupManager Group manager
 	 * @param LoggerInterface $logger Logger
@@ -362,7 +362,7 @@ class SettingsService implements AppSettingsInterface {
 	 */
 	public function __construct(
 		IConfig $config,
-		AuditTrailMapper $auditTrailMapper,
+		AuditTrailMapperInterface $auditTrailMapper,
 		ICacheFactory $cacheFactory,
 		IGroupManager $groupManager,
 		LoggerInterface $logger,

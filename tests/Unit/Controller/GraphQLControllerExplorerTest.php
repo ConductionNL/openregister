@@ -48,7 +48,7 @@ use OC\Security\CSP\ContentSecurityPolicyNonceManager;
 use OC\Security\CSRF\CsrfToken;
 use OC\Security\CSRF\CsrfTokenManager;
 use OCA\OpenRegister\Controller\GraphQLController;
-use OCA\OpenRegister\Service\GraphQL\GraphQLService;
+use OCA\OpenRegister\Search\Service\GraphQL\GraphQLService;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\Response;
 use OCP\IRequest;

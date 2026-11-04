@@ -57,7 +57,7 @@ use Exception;
 use OCA\OpenRegister\Db\OpenProjectLink;
 use OCA\OpenRegister\Db\OpenProjectLinkMapper;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
-use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
+use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
 use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
@@ -99,7 +99,7 @@ class OpenProjectLinkService {
 	 *
 	 * @param OpenProjectLinkMapper $openProjectLinkMapper Persistence for link rows.
 	 * @param OpenProjectProvider $provider Provider exposing the external dispatch.
-	 * @param ExternalIntegrationRouter $router External-call router (OpenConnector).
+	 * @param ExternalIntegrationRouterInterface $router External-call router (OpenConnector).
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IUserSession $userSession Active session.
 	 * @param LoggerInterface $logger Logger.
@@ -107,7 +107,7 @@ class OpenProjectLinkService {
 	public function __construct(
 		private readonly OpenProjectLinkMapper $openProjectLinkMapper,
 		private readonly OpenProjectProvider $provider,
-		private readonly ExternalIntegrationRouter $router,
+		private readonly ExternalIntegrationRouterInterface $router,
 		private readonly IAppManager $appManager,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,

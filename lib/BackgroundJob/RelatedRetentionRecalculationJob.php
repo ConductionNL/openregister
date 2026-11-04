@@ -31,7 +31,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\DependantRetentionIndex;
 use OCA\OpenRegister\Service\RetentionService;
@@ -59,7 +59,7 @@ class RelatedRetentionRecalculationJob extends QueuedJob {
 	 *
 	 * @param ITimeFactory                $time           The clock
 	 * @param MagicMapper                 $objectMapper   Reads and writes the records
-	 * @param SchemaMapper                $schemaMapper   Resolves the source record's schema
+	 * @param SchemaMapperInterface                $schemaMapper   Resolves the source record's schema
 	 * @param RegisterMapper              $registerMapper Finds the registers a dependant schema lives in
 	 * @param DependantRetentionIndex     $index          Knows the dependant schemas
 	 * @param ArchiveActionDateCalculator $calculator     Reads the reference a dependant holds
@@ -71,7 +71,7 @@ class RelatedRetentionRecalculationJob extends QueuedJob {
 	public function __construct(
 		ITimeFactory $time,
 		private readonly MagicMapper $objectMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapper $registerMapper,
 		private readonly DependantRetentionIndex $index,
 		private readonly ArchiveActionDateCalculator $calculator,

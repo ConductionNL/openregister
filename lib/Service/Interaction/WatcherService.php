@@ -53,7 +53,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Interaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Watcher;
 use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -111,7 +111,7 @@ class WatcherService {
 	 * @param WatcherMapper $mapper The watcher rows.
 	 * @param IUserSession $userSession Resolves the calling user.
 	 * @param IGroupManager $groupManager Resolves the caller's groups for the `manage` posture.
-	 * @param SchemaMapper $schemaMapper Resolves the object's schema for the `update` posture.
+	 * @param SchemaMapperInterface $schemaMapper Resolves the object's schema for the `update` posture.
 	 * @param PermissionHandler $permissions The one RBAC evaluator.
 	 * @param ObjectScopeResolver $scopeResolver The one definition of "admitted unconditionally".
 	 * @param LoggerInterface $logger Logger.
@@ -120,7 +120,7 @@ class WatcherService {
 		private readonly WatcherMapper $mapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PermissionHandler $permissions,
 		private readonly ObjectScopeResolver $scopeResolver,
 		private readonly LoggerInterface $logger,

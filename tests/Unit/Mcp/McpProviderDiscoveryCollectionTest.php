@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -153,10 +155,10 @@ class McpProviderDiscoveryCollectionTest extends TestCase {
 
 		$container = $this->container(
 			[
-				SchemaMapper::class => $schemaMapper,
+				SchemaMapperInterface::class => $schemaMapper,
 				RegisterMapper::class => $registerMapper,
 				ObjectService::class => $this->createMock(ObjectService::class),
-				AuditTrailMapper::class => $this->createMock(AuditTrailMapper::class),
+				AuditTrailMapperInterface::class => $this->createMock(AuditTrailMapper::class),
 			]
 		);
 

@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\File;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\DetectionMethod;
 use OCA\OpenRegister\Db\EntityRelation;
@@ -84,7 +84,7 @@ class ManualEntityService {
 	 * @param EntityRelationMapper $entityRelationMapper Relation mapper.
 	 * @param ChunkMapper $chunkMapper Chunk reader for the target file.
 	 * @param ChunkTextMatcher $matcher Chunk-aware string-match utility.
-	 * @param AuditTrailMapper $auditTrailMapper Audit-trail persistence.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit-trail persistence.
 	 * @param IRootFolder $rootFolder Nextcloud root folder (for file-write access check).
 	 * @param IDBConnection $db Connection for explicit transaction control.
 	 * @param LoggerInterface $logger Structured log sink for write-access failures and
@@ -95,7 +95,7 @@ class ManualEntityService {
 		private readonly EntityRelationMapper $entityRelationMapper,
 		private readonly ChunkMapper $chunkMapper,
 		private readonly ChunkTextMatcher $matcher,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IRootFolder $rootFolder,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,

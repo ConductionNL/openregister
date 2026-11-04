@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\OasValidationException;
 use OCA\OpenRegister\Service\Oas\OasRbacAnnotator;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
@@ -90,9 +90,9 @@ class OasService {
 	 *
 	 * Handles database operations for schema entities.
 	 *
-	 * @var SchemaMapper Schema mapper instance
+	 * @var SchemaMapperInterface Schema mapper instance
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * URL generator
@@ -285,7 +285,7 @@ class OasService {
 	 * Constructor for OasService
 	 *
 	 * @param RegisterMapper $registerMapper Register mapper for database operations
-	 * @param SchemaMapper $schemaMapper Schema mapper for database operations
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper for database operations
 	 * @param IURLGenerator $urlGenerator URL generator for absolute URLs
 	 * @param LoggerInterface|null $logger PSR-3 logger for surfacing validation issues
 	 * @param ?OasRequestValidator $metaValidator Optional validator for the vendored OAS 3.1 meta-schema check.
@@ -295,7 +295,7 @@ class OasService {
 	 */
 	public function __construct(
 		RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 		IURLGenerator $urlGenerator,
 		?LoggerInterface $logger = null,
 		private readonly ?OasRequestValidator $metaValidator = null,

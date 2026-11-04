@@ -27,8 +27,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -58,18 +58,18 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param ViewMapper      $viewMapper     Reads the backing view.
+	 * @param ViewMapperInterface      $viewMapper     Reads the backing view.
 	 * @param RegisterMapper  $registerMapper Resolves the source register.
-	 * @param SchemaMapper    $schemaMapper   Resolves the source schema.
+	 * @param SchemaMapperInterface    $schemaMapper   Resolves the source schema.
 	 * @param MagicMapper     $magicMapper    Searches the source table.
 	 * @param LoggerInterface $logger         Logs a view that cannot back a type.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ViewMapper $viewMapper,
+		private readonly ViewMapperInterface $viewMapper,
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapper $magicMapper,
 		private readonly LoggerInterface $logger,
 	) {

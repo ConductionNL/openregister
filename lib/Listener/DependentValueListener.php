@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Rules\DependentValueTable;
@@ -70,14 +70,14 @@ class DependentValueListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param DependentValueTable $tables Reads the tables and names what they refuse.
-	 * @param SchemaMapper $schemas Resolves the schema an object belongs to.
+	 * @param SchemaMapperInterface $schemas Resolves the schema an object belongs to.
 	 * @param LoggerInterface $logger The logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly DependentValueTable $tables,
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

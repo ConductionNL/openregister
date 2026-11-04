@@ -40,7 +40,7 @@ use Doctrine\DBAL\Schema\Table;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use Psr\Log\LoggerInterface;
@@ -76,7 +76,7 @@ class DatabaseIntrospectionService {
 	 * @param DbalConnectionFactory $connectionFactory Opens the DBAL connection for a source.
 	 * @param SqlTypeMapper $typeMapper SQL column → JSON-Schema mapping.
 	 * @param RegisterMapper $registerMapper Register persistence.
-	 * @param SchemaMapper $schemaMapper Schema persistence.
+	 * @param SchemaMapperInterface $schemaMapper Schema persistence.
 	 * @param SchemaDiffService $diffService Classifies structural drift between runs.
 	 * @param LoggerInterface $logger Secret-free diagnostics.
 	 *
@@ -86,7 +86,7 @@ class DatabaseIntrospectionService {
 		private readonly DbalConnectionFactory $connectionFactory,
 		private readonly SqlTypeMapper $typeMapper,
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly SchemaDiffService $diffService,
 		private readonly LoggerInterface $logger,
 	) {

@@ -182,13 +182,13 @@ class SettingsControllerCoverageTest extends TestCase {
 	// =========================================================================
 
 	public function testGetSearchIndexStatusReturnsInventory(): void {
-		$maintenance = $this->createMock(\OCA\OpenRegister\Service\Search\SearchIndexMaintenance::class);
+		$maintenance = $this->createMock(\OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance::class);
 		$maintenance->method('tablesInScope')->willReturn(['oc_openregister_table_1']);
 		$maintenance->method('indexNamesFor')->willReturn(['oc_openregister_table_1' => ['idx_a', 'idx_b']]);
 		$maintenance->method('supportsConcurrentRebuild')->willReturn(true);
 		$maintenance->method('lastRun')->willReturn([]);
 		$this->container->method('get')
-			->with(\OCA\OpenRegister\Service\Search\SearchIndexMaintenance::class)
+			->with(\OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance::class)
 			->willReturn($maintenance);
 
 		$result = $this->controller->getSearchIndexStatus();

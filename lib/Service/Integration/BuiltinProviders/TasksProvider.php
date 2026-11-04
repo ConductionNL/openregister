@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
@@ -54,7 +54,7 @@ class TasksProvider extends AbstractIntegrationProvider {
 	 *
 	 * @param TaskService $taskService Tasks service.
 	 * @param RegisterMapper $registerMapper Register lookup (slug/uuid/id → entity).
-	 * @param SchemaMapper $schemaMapper Schema lookup (slug/uuid/id → entity).
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup (slug/uuid/id → entity).
 	 * @param ObjectService $objectService Object lookup (for the LINK label title).
 	 * @param IL10N $l10n Localisation.
 	 *
@@ -63,7 +63,7 @@ class TasksProvider extends AbstractIntegrationProvider {
 	public function __construct(
 		private TaskService $taskService,
 		private RegisterMapper $registerMapper,
-		private SchemaMapper $schemaMapper,
+		private SchemaMapperInterface $schemaMapper,
 		private ObjectService $objectService,
 		private IL10N $l10n,
 	) {

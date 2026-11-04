@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -95,7 +96,7 @@ class DispatcherObjectDetailFallbackTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			static fn (string $id) => match ($id) {
 				RegisterMapper::class => $registerMapper,
-				SchemaMapper::class => $schemaMapper,
+				SchemaMapperInterface::class => $schemaMapper,
 				IEventDispatcher::class => $dispatcher,
 				default => null,
 			}

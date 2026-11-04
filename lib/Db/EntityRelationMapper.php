@@ -84,7 +84,7 @@ class EntityRelationMapper extends QBMapper {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db Database connection.
-	 * @param AuditTrailMapper $auditTrailMapper Audit-trail persistence (used by updateDecisionMetadata).
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit-trail persistence (used by updateDecisionMetadata).
 	 * @param IUserSession $userSession Session user lookup for audit-trail actor.
 	 * @param IEventDispatcher $eventDispatcher Symfony event dispatcher (used by updateDecisionMetadata
 	 *                                          to notify listeners after a decision-metadata write).
@@ -92,7 +92,7 @@ class EntityRelationMapper extends QBMapper {
 	 */
 	public function __construct(
 		IDBConnection $db,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IUserSession $userSession,
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly LoggerInterface $logger,
@@ -723,72 +723,8 @@ class EntityRelationMapper extends QBMapper {
 	 *                                   is detected.
 	 */
 	public function updateDecisionMetadata(EntityRelation $relation, array $fields, ?IUser $actingUser = null): EntityRelation {
-		$allowed = ['bases', 'skipAnonymization'];
-		$unknown = array_diff(array_keys($fields), $allowed);
-		if (count($unknown) > 0) {
-			$first = (string)reset($unknown);
-			throw new CustomValidationException(
-				message: 'Field not editable: ' . $first,
-				errors: ['field' => $first]
-			);
-		}
-
-		if (array_key_exists('bases', $fields) === true) {
-			$bases = $fields['bases'];
-			if ($bases !== null && is_array($bases) === false) {
-				throw new CustomValidationException(
-					message: 'Invalid bases shape: must be null or array of strings',
-					errors: ['field' => 'bases', 'reason' => 'must_be_null_or_array_of_strings']
-				);
-			}
-
-			if (is_array($bases) === true) {
-				foreach ($bases as $element) {
-					if (is_string($element) === false) {
-						throw new CustomValidationException(
-							message: 'Invalid bases shape: array elements must be strings',
-							errors: ['field' => 'bases', 'reason' => 'must_be_null_or_array_of_strings']
-						);
-					}
-				}
-			}
-		}
-
-		if (array_key_exists('skipAnonymization', $fields) === true
-			&& is_bool($fields['skipAnonymization']) === false
-		) {
-			throw new CustomValidationException(
-				message: 'Invalid skipAnonymization shape: must be a boolean',
-				errors: ['field' => 'skipAnonymization', 'reason' => 'must_be_boolean']
-			);
-		}
-
-		$changedFields = [];
-
-		if (array_key_exists('bases', $fields) === true) {
-			$previousBases = $relation->getBases();
-			// Compare as multiset — same UUIDs in different order is a
-			// semantic no-op for redaction policy. Storage preserves
-			// operator-supplied order; only the diff check normalises.
-			if (self::basesAreEqual(a: $previousBases, b: $fields['bases']) === false) {
-				$changedFields['bases'] = [
-					'previous' => $previousBases,
-					'new' => $fields['bases'],
-				];
-				$relation->setBases($fields['bases']);
-			}
-		}
-
-		if (array_key_exists('skipAnonymization', $fields) === true) {
-			$previousSkip = $relation->getSkipAnonymization();
-			if ($previousSkip !== $fields['skipAnonymization']) {
-				$changedFields['skipAnonymization'] = [
-					'previous' => $previousSkip,
-					'new' => $fields['skipAnonymization'],
-				];
-				$relation->setSkipAnonymization($fields['skipAnonymization']);
-			}
-		}
+		self::assertDecisionFieldsValid(fields: $fields);
+		$changedFields = self::applyDecisionChanges(relation: $relation, fields: $fields);
 
 		if (count($changedFields) === 0) {
 			return $relation;
@@ -855,6 +791,100 @@ class EntityRelationMapper extends QBMapper {
 
 		return $relation;
 	}//end updateDecisionMetadata()
+
+	/**
+	 * Reject decision-metadata fields outside the whitelist or of the wrong shape.
+	 *
+	 * @param array $fields Subset of whitelist keys with new values.
+	 *
+	 * @return void
+	 *
+	 * @throws CustomValidationException When a whitelist or shape violation is detected.
+	 */
+	private static function assertDecisionFieldsValid(array $fields): void {
+		$unknown = array_diff(array_keys($fields), ['bases', 'skipAnonymization']);
+		if (count($unknown) > 0) {
+			$first = (string)reset($unknown);
+			throw new CustomValidationException(
+				message: 'Field not editable: ' . $first,
+				errors: ['field' => $first]
+			);
+		}
+
+		if (array_key_exists('bases', $fields) === true) {
+			self::assertBasesShape(bases: $fields['bases']);
+		}
+
+		if (array_key_exists('skipAnonymization', $fields) === true
+			&& is_bool($fields['skipAnonymization']) === false
+		) {
+			throw new CustomValidationException(
+				message: 'Invalid skipAnonymization shape: must be a boolean',
+				errors: ['field' => 'skipAnonymization', 'reason' => 'must_be_boolean']
+			);
+		}
+	}//end assertDecisionFieldsValid()
+
+	/**
+	 * Reject a `bases` value that is neither null nor an array of strings.
+	 *
+	 * @param mixed $bases The supplied bases.
+	 *
+	 * @return void
+	 *
+	 * @throws CustomValidationException When the shape is wrong.
+	 */
+	private static function assertBasesShape(mixed $bases): void {
+		if ($bases !== null && is_array($bases) === false) {
+			throw new CustomValidationException(
+				message: 'Invalid bases shape: must be null or array of strings',
+				errors: ['field' => 'bases', 'reason' => 'must_be_null_or_array_of_strings']
+			);
+		}
+
+		foreach ($bases ?? [] as $element) {
+			if (is_string($element) === false) {
+				throw new CustomValidationException(
+					message: 'Invalid bases shape: array elements must be strings',
+					errors: ['field' => 'bases', 'reason' => 'must_be_null_or_array_of_strings']
+				);
+			}
+		}
+	}//end assertBasesShape()
+
+	/**
+	 * Apply the supplied decision metadata to the relation and list what changed.
+	 *
+	 * @param EntityRelation $relation The relation row, updated in place.
+	 * @param array          $fields   Validated decision-metadata fields.
+	 *
+	 * @return array<string, array{previous: mixed, new: mixed}> The changed fields.
+	 */
+	private static function applyDecisionChanges(EntityRelation $relation, array $fields): array {
+		$changedFields = [];
+
+		// Compare as multiset — same UUIDs in different order is a
+		// semantic no-op for redaction policy. Storage preserves
+		// operator-supplied order; only the diff check normalises.
+		if (array_key_exists('bases', $fields) === true
+			&& self::basesAreEqual(a: $relation->getBases(), b: $fields['bases']) === false
+		) {
+			$changedFields['bases'] = ['previous' => $relation->getBases(), 'new' => $fields['bases']];
+			$relation->setBases($fields['bases']);
+		}
+
+		if (array_key_exists('skipAnonymization', $fields) === true
+			&& $relation->getSkipAnonymization() !== $fields['skipAnonymization']
+		) {
+			$changedFields['skipAnonymization'] = [
+				'previous' => $relation->getSkipAnonymization(),
+				'new' => $fields['skipAnonymization'],
+			];
+			$relation->setSkipAnonymization($fields['skipAnonymization']);
+		}
+
+		return $changedFields;
+	}//end applyDecisionChanges()
 
 	/**
 	 * Multiset-equality on two `bases` values.
