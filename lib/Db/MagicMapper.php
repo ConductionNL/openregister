@@ -57,6 +57,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun;
 use OCA\OpenRegister\Db\MagicMapper\RecentLensOrder;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
@@ -202,6 +203,15 @@ class MagicMapper extends AbstractObjectMapper {
 	 * Metadata column prefix to avoid conflicts with schema properties
 	 */
 	private const METADATA_PREFIX = '_';
+
+	/**
+	 * Metadata fields indexed on every magic table besides UUID, register/schema,
+	 * organisation and owner. `slug` and `uri` are here because the single-object
+	 * lookup ORs `_id OR _uuid OR _slug OR _uri`, and Postgres only uses an index
+	 * for a disjunction when every branch has one (measured: 2.5ms Seq Scan
+	 * against 0.107ms by `_uuid` alone on a 2,962-row register).
+	 */
+	private const INDEXED_METADATA_FIELDS = ['created', 'updated', 'name', 'slug', 'uri', 'last_user_activity'];
 
 	/**
 	 * Schema-and-property pairs already warned about as named like a metadata column.
@@ -681,6 +691,17 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @return void
 	 */
 	private function initializeHandlers(): void {
+		$this->initializeAccessHandlers();
+		$this->initializeSearchHandler();
+		$this->initializeAnalysisHandlers();
+	}//end initializeHandlers()
+
+	/**
+	 * Build the metadata column healer, the RBAC handler and the organisation handler.
+	 *
+	 * @return void
+	 */
+	private function initializeAccessHandlers(): void {
 		// Built first: the RBAC handler asks it which metadata columns a
 		// degraded table still lacks, so the read predicate does not name a
 		// `_status` column the table could not be given.
@@ -709,7 +730,14 @@ class MagicMapper extends AbstractObjectMapper {
 			container: $this->container,
 			logger: $this->logger
 		);
+	}//end initializeAccessHandlers()
 
+	/**
+	 * Build the table handler and the search handler with its related-row applier.
+	 *
+	 * @return void
+	 */
+	private function initializeSearchHandler(): void {
 		// The table handler is built BEFORE the search handler because the
 		// related-row applier needs it, and the search handler needs the
 		// applier. It depends on nothing built later, so the move is safe; the
@@ -732,18 +760,7 @@ class MagicMapper extends AbstractObjectMapper {
 		// handler's nested-path filters: a filter that reaches through a
 		// reference and one on a path inside an object property are the same
 		// oracle on a field the caller may not read.
-		$relatedRowAccess = new RelatedRowAccess(
-			rbac: $this->rbacHandler,
-			logger: $this->logger,
-			guard: new PropertyReadGuard(container: $this->container, logger: $this->logger)
-		);
-		$relatedRowApplier = new RelatedRowQueryApplier(
-			schemaMapper: $this->schemaMapper,
-			tableHandler: $this->tableHandler,
-			db: $this->db,
-			logger: $this->logger,
-			access: $relatedRowAccess
-		);
+		$relatedRowApplier = $this->createRelatedRowApplier();
 
 		$this->searchHandler = new MagicSearchHandler(
 			db: $this->db,
@@ -761,7 +778,34 @@ class MagicMapper extends AbstractObjectMapper {
 			// property is refused unless the code is trusted (property-explicit-reveal).
 			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class)
 		);
+	}//end initializeSearchHandler()
 
+	/**
+	 * Assemble the related-row applier from the RBAC and table handlers.
+	 *
+	 * @return RelatedRowQueryApplier
+	 */
+	private function createRelatedRowApplier(): RelatedRowQueryApplier {
+		$relatedRowAccess = new RelatedRowAccess(
+			rbac: $this->rbacHandler,
+			logger: $this->logger,
+			guard: new PropertyReadGuard(container: $this->container, logger: $this->logger)
+		);
+		return new RelatedRowQueryApplier(
+			schemaMapper: $this->schemaMapper,
+			tableHandler: $this->tableHandler,
+			db: $this->db,
+			logger: $this->logger,
+			access: $relatedRowAccess
+		);
+	}//end createRelatedRowApplier()
+
+	/**
+	 * Build the bulk, facet and statistics handlers.
+	 *
+	 * @return void
+	 */
+	private function initializeAnalysisHandlers(): void {
 		$this->bulkHandler = new MagicBulkHandler(
 			db: $this->db,
 			logger: $this->logger,
@@ -782,6 +826,15 @@ class MagicMapper extends AbstractObjectMapper {
 			config: $this->config
 		);
 
+		$this->initializeStatisticsHandler();
+	}//end initializeAnalysisHandlers()
+
+	/**
+	 * Build the statistics handler and give it the count callback.
+	 *
+	 * @return void
+	 */
+	private function initializeStatisticsHandler(): void {
 		$this->statisticsHandler = new MagicStatisticsHandler(
 			db: $this->db,
 			logger: $this->logger,
@@ -801,7 +854,7 @@ class MagicMapper extends AbstractObjectMapper {
 				);
 			}
 		);
-	}//end initializeHandlers()
+	}//end initializeStatisticsHandler()
 
 	/**
 	 * The distributed cache the metadata-column healer shares across requests.
@@ -3244,6 +3297,240 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end buildTableColumnsFromSchema()
 
 	/**
+	 * Column definitions of the metadata columns every magic table carries, keyed by column name.
+	 */
+	private const METADATA_COLUMNS = [
+		self::METADATA_PREFIX . 'id' => [
+			'name' => self::METADATA_PREFIX . 'id',
+			'type' => 'bigint',
+			'nullable' => false,
+			'autoincrement' => true,
+			'primary' => true,
+		],
+		self::METADATA_PREFIX . 'uuid' => [
+			'name' => self::METADATA_PREFIX . 'uuid',
+			'type' => 'string',
+			'length' => 40,
+			// ArchiMate identifiers are max 39 chars (id-{uuid-36}).
+			'nullable' => false,
+			'unique' => true,
+			'index' => true,
+		],
+		self::METADATA_PREFIX . 'slug' => [
+			'name' => self::METADATA_PREFIX . 'slug',
+			'type' => 'string',
+			'length' => 255,
+			'nullable' => true,
+			'index' => true,
+		],
+		self::METADATA_PREFIX . 'uri' => [
+			'name' => self::METADATA_PREFIX . 'uri',
+			'type' => 'text',
+			'nullable' => true,
+		],
+		self::METADATA_PREFIX . 'version' => [
+			'name' => self::METADATA_PREFIX . 'version',
+			'type' => 'string',
+			'length' => 50,
+			'nullable' => true,
+		],
+		self::METADATA_PREFIX . 'register' => [
+			'name' => self::METADATA_PREFIX . 'register',
+			'type' => 'string',
+			'length' => 255,
+			'nullable' => false,
+			'index' => true,
+		],
+		self::METADATA_PREFIX . 'schema' => [
+			'name' => self::METADATA_PREFIX . 'schema',
+			'type' => 'string',
+			'length' => 255,
+			'nullable' => false,
+			'index' => true,
+		],
+		self::METADATA_PREFIX . 'owner' => [
+			'name' => self::METADATA_PREFIX . 'owner',
+			'type' => 'string',
+			'length' => 64,
+			'nullable' => true,
+			'index' => true,
+		],
+		self::METADATA_PREFIX . 'organisation' => [
+			'name' => self::METADATA_PREFIX . 'organisation',
+			'type' => 'string',
+			'length' => 36,
+			'nullable' => true,
+			'index' => true,
+		],
+		self::METADATA_PREFIX . 'application' => [
+			'name' => self::METADATA_PREFIX . 'application',
+			'type' => 'string',
+			'length' => 255,
+			'nullable' => true,
+		],
+		self::METADATA_PREFIX . 'folder' => [
+			'name' => self::METADATA_PREFIX . 'folder',
+			'type' => 'string',
+			'length' => 255,
+			'nullable' => true,
+		],
+		self::METADATA_PREFIX . 'name' => [
+			'name' => self::METADATA_PREFIX . 'name',
+			'type' => 'string',
+			'length' => 255,
+			'nullable' => true,
+			'index' => true,
+		],
+		self::METADATA_PREFIX . 'description' => [
+			'name' => self::METADATA_PREFIX . 'description',
+			'type' => 'text',
+			'nullable' => true,
+		],
+		self::METADATA_PREFIX . 'summary' => [
+			'name' => self::METADATA_PREFIX . 'summary',
+			'type' => 'text',
+			// Changed from varchar(500) to text to support longer summaries.
+			'nullable' => true,
+		],
+		self::METADATA_PREFIX . 'image' => [
+			'name' => self::METADATA_PREFIX . 'image',
+			'type' => 'text',
+			'nullable' => true,
+		],
+		self::METADATA_PREFIX . 'size' => [
+			'name' => self::METADATA_PREFIX . 'size',
+			'type' => 'string',
+			'length' => 50,
+			'nullable' => true,
+		],
+		self::METADATA_PREFIX . 'schema_version' => [
+			'name' => self::METADATA_PREFIX . 'schema_version',
+			'type' => 'string',
+			'length' => 50,
+			'nullable' => true,
+		],
+		self::METADATA_PREFIX . 'created' => [
+			'name' => self::METADATA_PREFIX . 'created',
+			'type' => 'datetime',
+			'nullable' => true,
+			'index' => true,
+		],
+		self::METADATA_PREFIX . 'updated' => [
+			'name' => self::METADATA_PREFIX . 'updated',
+			'type' => 'datetime',
+			'nullable' => true,
+			'index' => true,
+		],
+		// When a person last wrote the row; `_updated` moves on every write.
+		// Retrofitted onto existing tables by addMissingColumns(), like `_frozen`.
+		self::METADATA_PREFIX . 'last_user_activity' => [
+			'name' => self::METADATA_PREFIX . 'last_user_activity',
+			'type' => 'datetime',
+			'nullable' => true,
+			'index' => true,
+		],
+		self::METADATA_PREFIX . 'expires' => [
+			'name' => self::METADATA_PREFIX . 'expires',
+			'type' => 'datetime',
+			'nullable' => true,
+			'index' => true,
+		],
+		// JSON columns for complex data.
+		self::METADATA_PREFIX . 'files' => [
+			'name' => self::METADATA_PREFIX . 'files',
+			'type' => 'json',
+			'nullable' => true,
+		],
+		self::METADATA_PREFIX . 'relations' => [
+			'name' => self::METADATA_PREFIX . 'relations',
+			'type' => 'json',
+			'nullable' => true,
+		],
+		self::METADATA_PREFIX . 'locked' => [
+			'name' => self::METADATA_PREFIX . 'locked',
+			'type' => 'json',
+			'nullable' => true,
+		],
+		self::METADATA_PREFIX . 'authorization' => [
+			'name' => self::METADATA_PREFIX . 'authorization',
+			'type' => 'json',
+			'nullable' => true,
+		],
+		self::METADATA_PREFIX . 'validation' => [
+			'name' => self::METADATA_PREFIX . 'validation',
+			'type' => 'json',
+			'nullable' => true,
+		],
+		// Platform-owned quality assessment. Lives here rather than in the
+		// object body so a schema does not have to declare `qualityScore`
+		// as an ordinary property just to be scored — which put a number
+		// field the platform overwrites on every form the schema drives.
+		self::METADATA_PREFIX . 'quality' => [
+			'name' => self::METADATA_PREFIX . 'quality',
+			'type' => 'json',
+			'nullable' => true,
+		],
+		self::METADATA_PREFIX . 'deleted' => [
+			'name' => self::METADATA_PREFIX . 'deleted',
+			'type' => 'json',
+			'nullable' => true,
+		],
+		// The archive marker. A column rather than a key inside `_retention`
+		// because the default list query has to exclude archived rows in
+		// SQL, and a JSON member cannot carry the `IS NULL` the exclusion
+		// is built on. No migration accompanies it: syncTableForRegisterSchema()
+		// retrofits a missing metadata column onto every existing magic
+		// table through addMissingColumns(), which is how `_retention` and
+		// `_tmlo` arrived.
+		self::METADATA_PREFIX . 'archived' => [
+			'name' => self::METADATA_PREFIX . 'archived',
+			'type' => 'json',
+			'nullable' => true,
+		],
+		// The freeze marker. Separate from `_archived` because the two
+		// states differ in exactly the way that matters to a query: a
+		// frozen object stays in the working list, an archived one leaves
+		// it. Collapsing them would force every caller to pick a wrong half.
+		self::METADATA_PREFIX . 'frozen' => [
+			'name' => self::METADATA_PREFIX . 'frozen',
+			'type' => 'json',
+			'nullable' => true,
+		],
+		// The explicit lifecycle status (decision 180): `draft`, `active`, or
+		// NULL for every object written before it existed, whose status is
+		// deduced from its dates as before. A column, not a JSON member,
+		// because the list query hides other people's drafts in SQL. Added
+		// to existing tables by addMissingColumns(), like `_frozen`.
+		self::METADATA_PREFIX . 'status' => [
+			'name' => self::METADATA_PREFIX . 'status',
+			'type' => 'string',
+			'length' => 16,
+			'nullable' => true,
+			'index' => true,
+		],
+		self::METADATA_PREFIX . 'geo' => [
+			'name' => self::METADATA_PREFIX . 'geo',
+			'type' => 'json',
+			'nullable' => true,
+		],
+		self::METADATA_PREFIX . 'retention' => [
+			'name' => self::METADATA_PREFIX . 'retention',
+			'type' => 'json',
+			'nullable' => true,
+		],
+		self::METADATA_PREFIX . 'groups' => [
+			'name' => self::METADATA_PREFIX . 'groups',
+			'type' => 'json',
+			'nullable' => true,
+		],
+		self::METADATA_PREFIX . 'tmlo' => [
+			'name' => self::METADATA_PREFIX . 'tmlo',
+			'type' => 'json',
+			'nullable' => true,
+		],
+	];
+
+	/**
 	 * Get metadata columns from ObjectEntity
 	 *
 	 * @return (bool|int|string)[][]
@@ -3301,240 +3588,9 @@ class MagicMapper extends AbstractObjectMapper {
 	 *     _geo: array{name: '_geo', type: 'json', nullable: true},
 	 *     _retention: array{name: '_retention', type: 'json', nullable: true},
 	 *     _groups: array{name: '_groups', type: 'json', nullable: true}}
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
 	private function getMetadataColumns(): array {
-		return [
-			self::METADATA_PREFIX . 'id' => [
-				'name' => self::METADATA_PREFIX . 'id',
-				'type' => 'bigint',
-				'nullable' => false,
-				'autoincrement' => true,
-				'primary' => true,
-			],
-			self::METADATA_PREFIX . 'uuid' => [
-				'name' => self::METADATA_PREFIX . 'uuid',
-				'type' => 'string',
-				'length' => 40,
-				// ArchiMate identifiers are max 39 chars (id-{uuid-36}).
-				'nullable' => false,
-				'unique' => true,
-				'index' => true,
-			],
-			self::METADATA_PREFIX . 'slug' => [
-				'name' => self::METADATA_PREFIX . 'slug',
-				'type' => 'string',
-				'length' => 255,
-				'nullable' => true,
-				'index' => true,
-			],
-			self::METADATA_PREFIX . 'uri' => [
-				'name' => self::METADATA_PREFIX . 'uri',
-				'type' => 'text',
-				'nullable' => true,
-			],
-			self::METADATA_PREFIX . 'version' => [
-				'name' => self::METADATA_PREFIX . 'version',
-				'type' => 'string',
-				'length' => 50,
-				'nullable' => true,
-			],
-			self::METADATA_PREFIX . 'register' => [
-				'name' => self::METADATA_PREFIX . 'register',
-				'type' => 'string',
-				'length' => 255,
-				'nullable' => false,
-				'index' => true,
-			],
-			self::METADATA_PREFIX . 'schema' => [
-				'name' => self::METADATA_PREFIX . 'schema',
-				'type' => 'string',
-				'length' => 255,
-				'nullable' => false,
-				'index' => true,
-			],
-			self::METADATA_PREFIX . 'owner' => [
-				'name' => self::METADATA_PREFIX . 'owner',
-				'type' => 'string',
-				'length' => 64,
-				'nullable' => true,
-				'index' => true,
-			],
-			self::METADATA_PREFIX . 'organisation' => [
-				'name' => self::METADATA_PREFIX . 'organisation',
-				'type' => 'string',
-				'length' => 36,
-				'nullable' => true,
-				'index' => true,
-			],
-			self::METADATA_PREFIX . 'application' => [
-				'name' => self::METADATA_PREFIX . 'application',
-				'type' => 'string',
-				'length' => 255,
-				'nullable' => true,
-			],
-			self::METADATA_PREFIX . 'folder' => [
-				'name' => self::METADATA_PREFIX . 'folder',
-				'type' => 'string',
-				'length' => 255,
-				'nullable' => true,
-			],
-			self::METADATA_PREFIX . 'name' => [
-				'name' => self::METADATA_PREFIX . 'name',
-				'type' => 'string',
-				'length' => 255,
-				'nullable' => true,
-				'index' => true,
-			],
-			self::METADATA_PREFIX . 'description' => [
-				'name' => self::METADATA_PREFIX . 'description',
-				'type' => 'text',
-				'nullable' => true,
-			],
-			self::METADATA_PREFIX . 'summary' => [
-				'name' => self::METADATA_PREFIX . 'summary',
-				'type' => 'text',
-				// Changed from varchar(500) to text to support longer summaries.
-				'nullable' => true,
-			],
-			self::METADATA_PREFIX . 'image' => [
-				'name' => self::METADATA_PREFIX . 'image',
-				'type' => 'text',
-				'nullable' => true,
-			],
-			self::METADATA_PREFIX . 'size' => [
-				'name' => self::METADATA_PREFIX . 'size',
-				'type' => 'string',
-				'length' => 50,
-				'nullable' => true,
-			],
-			self::METADATA_PREFIX . 'schema_version' => [
-				'name' => self::METADATA_PREFIX . 'schema_version',
-				'type' => 'string',
-				'length' => 50,
-				'nullable' => true,
-			],
-			self::METADATA_PREFIX . 'created' => [
-				'name' => self::METADATA_PREFIX . 'created',
-				'type' => 'datetime',
-				'nullable' => true,
-				'index' => true,
-			],
-			self::METADATA_PREFIX . 'updated' => [
-				'name' => self::METADATA_PREFIX . 'updated',
-				'type' => 'datetime',
-				'nullable' => true,
-				'index' => true,
-			],
-			// When a person last wrote the row; `_updated` moves on every write.
-			// Retrofitted onto existing tables by addMissingColumns(), like `_frozen`.
-			self::METADATA_PREFIX . 'last_user_activity' => [
-				'name' => self::METADATA_PREFIX . 'last_user_activity',
-				'type' => 'datetime',
-				'nullable' => true,
-				'index' => true,
-			],
-			self::METADATA_PREFIX . 'expires' => [
-				'name' => self::METADATA_PREFIX . 'expires',
-				'type' => 'datetime',
-				'nullable' => true,
-				'index' => true,
-			],
-			// JSON columns for complex data.
-			self::METADATA_PREFIX . 'files' => [
-				'name' => self::METADATA_PREFIX . 'files',
-				'type' => 'json',
-				'nullable' => true,
-			],
-			self::METADATA_PREFIX . 'relations' => [
-				'name' => self::METADATA_PREFIX . 'relations',
-				'type' => 'json',
-				'nullable' => true,
-			],
-			self::METADATA_PREFIX . 'locked' => [
-				'name' => self::METADATA_PREFIX . 'locked',
-				'type' => 'json',
-				'nullable' => true,
-			],
-			self::METADATA_PREFIX . 'authorization' => [
-				'name' => self::METADATA_PREFIX . 'authorization',
-				'type' => 'json',
-				'nullable' => true,
-			],
-			self::METADATA_PREFIX . 'validation' => [
-				'name' => self::METADATA_PREFIX . 'validation',
-				'type' => 'json',
-				'nullable' => true,
-			],
-			// Platform-owned quality assessment. Lives here rather than in the
-			// object body so a schema does not have to declare `qualityScore`
-			// as an ordinary property just to be scored — which put a number
-			// field the platform overwrites on every form the schema drives.
-			self::METADATA_PREFIX . 'quality' => [
-				'name' => self::METADATA_PREFIX . 'quality',
-				'type' => 'json',
-				'nullable' => true,
-			],
-			self::METADATA_PREFIX . 'deleted' => [
-				'name' => self::METADATA_PREFIX . 'deleted',
-				'type' => 'json',
-				'nullable' => true,
-			],
-			// The archive marker. A column rather than a key inside `_retention`
-			// because the default list query has to exclude archived rows in
-			// SQL, and a JSON member cannot carry the `IS NULL` the exclusion
-			// is built on. No migration accompanies it: syncTableForRegisterSchema()
-			// retrofits a missing metadata column onto every existing magic
-			// table through addMissingColumns(), which is how `_retention` and
-			// `_tmlo` arrived.
-			self::METADATA_PREFIX . 'archived' => [
-				'name' => self::METADATA_PREFIX . 'archived',
-				'type' => 'json',
-				'nullable' => true,
-			],
-			// The freeze marker. Separate from `_archived` because the two
-			// states differ in exactly the way that matters to a query: a
-			// frozen object stays in the working list, an archived one leaves
-			// it. Collapsing them would force every caller to pick a wrong half.
-			self::METADATA_PREFIX . 'frozen' => [
-				'name' => self::METADATA_PREFIX . 'frozen',
-				'type' => 'json',
-				'nullable' => true,
-			],
-			// The explicit lifecycle status (decision 180): `draft`, `active`, or
-			// NULL for every object written before it existed, whose status is
-			// deduced from its dates as before. A column, not a JSON member,
-			// because the list query hides other people's drafts in SQL. Added
-			// to existing tables by addMissingColumns(), like `_frozen`.
-			self::METADATA_PREFIX . 'status' => [
-				'name' => self::METADATA_PREFIX . 'status',
-				'type' => 'string',
-				'length' => 16,
-				'nullable' => true,
-				'index' => true,
-			],
-			self::METADATA_PREFIX . 'geo' => [
-				'name' => self::METADATA_PREFIX . 'geo',
-				'type' => 'json',
-				'nullable' => true,
-			],
-			self::METADATA_PREFIX . 'retention' => [
-				'name' => self::METADATA_PREFIX . 'retention',
-				'type' => 'json',
-				'nullable' => true,
-			],
-			self::METADATA_PREFIX . 'groups' => [
-				'name' => self::METADATA_PREFIX . 'groups',
-				'type' => 'json',
-				'nullable' => true,
-			],
-			self::METADATA_PREFIX . 'tmlo' => [
-				'name' => self::METADATA_PREFIX . 'tmlo',
-				'type' => 'json',
-				'nullable' => true,
-			],
-		];
+		return self::METADATA_COLUMNS;
 	}//end getMetadataColumns()
 
 	/**
@@ -4183,238 +4239,33 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 * @SuppressWarnings(PHPMD.StaticAccess)          ObjectHandling::relates() is a pure enum-style helper
 	 */
 	private function createTableIndexes(string $tableName, Register $_register, Schema $_schema): void {
 		try {
 			// Add prefix for raw SQL queries.
-			$fullTableName = $this->getFullTableName(tableName: $tableName);
-
-			// Create unique index on UUID.
-			// Phpcs:ignore Generic.Files.LineLength.TooLong.
-			$this->db->executeStatement(
-				"CREATE UNIQUE INDEX IF NOT EXISTS {$tableName}_uuid_idx ON {$fullTableName} (" . self::METADATA_PREFIX . 'uuid)'
+			$run = new MagicTableIndexRun(
+				tableName: $tableName,
+				fullTableName: $this->getFullTableName(tableName: $tableName)
 			);
+			$this->createBaseIndexes(run: $run);
 
-			// Create composite index on register + schema for multitenancy.
-			$registerCol = self::METADATA_PREFIX . 'register';
-			$schemaCol = self::METADATA_PREFIX . 'schema';
-			$idxName = "{$tableName}_register_schema_idx";
-			$this->db->executeStatement(
-				"CREATE INDEX IF NOT EXISTS {$idxName} ON {$fullTableName} ({$registerCol}, {$schemaCol})"
-			);
-
-			// Create index on organisation for multitenancy.
-			$orgCol = self::METADATA_PREFIX . 'organisation';
-			$orgIdx = "{$tableName}_organisation_idx";
-			$this->db->executeStatement(
-				"CREATE INDEX IF NOT EXISTS {$orgIdx} ON {$fullTableName} ({$orgCol})"
-			);
-
-			// Create index on owner for RBAC.
-			$ownerCol = self::METADATA_PREFIX . 'owner';
-			$ownerIdx = "{$tableName}_owner_idx";
-			$this->db->executeStatement(
-				"CREATE INDEX IF NOT EXISTS {$ownerIdx} ON {$fullTableName} ({$ownerCol})"
-			);
-
-			// Create indexes on frequently filtered metadata fields.
-			// `slug` and `uri` are here because the single-object lookup ORs all
-			// four identity columns together — `_id OR _uuid OR _slug OR _uri` —
-			// and Postgres will not use an index for a disjunction unless it can
-			// use one for EVERY branch. With two of the four unindexed it fell
-			// back to a sequential scan for what is a primary-key-shaped read.
-			// Measured on the contract register (2,962 rows): 2.5ms as a Seq Scan
-			// against 0.107ms for the same row by `_uuid` alone, and that read
-			// happens on every object fetch in every sharded table.
-			$idxMetaFields = ['created', 'updated', 'name', 'slug', 'uri', 'last_user_activity'];
-			foreach ($idxMetaFields as $field) {
-				$col = self::METADATA_PREFIX . $field;
-				$idx = "{$tableName}_{$field}_idx";
-				$this->db->executeStatement(
-					"CREATE INDEX IF NOT EXISTS {$idx} ON {$fullTableName} ({$col})"
-				);
-			}
-
-			// Create GIN index on _relations for fast relationship lookups.
-			// This enables O(log n) containment queries with @> operator.
 			$platform = $this->db->getDatabasePlatform();
-			$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
-
-			if ($isPostgres === true) {
-				$relationsIdx = "{$tableName}_relations_gin_idx";
-				$this->db->executeStatement(
-					"CREATE INDEX IF NOT EXISTS {$relationsIdx} ON {$fullTableName} USING GIN (_relations)"
-				);
-
-				// PERF-5: every list/search query filters `_deleted IS NULL`, yet
-				// there was no index supporting it. Add a partial index on
-				// (_owner) restricted to live rows so the common
-				// "WHERE _owner = ? AND _deleted IS NULL" access pattern can use
-				// an index. Partial indexes are a PostgreSQL feature; MySQL/
-				// MariaDB do not support them, so this is Postgres-only.
-				$deletedCol = self::METADATA_PREFIX . 'deleted';
-				$ownerColForIdx = self::METADATA_PREFIX . 'owner';
-				$liveOwnerIdx = "{$tableName}_live_owner_idx";
-				$this->db->executeStatement(
-					"CREATE INDEX IF NOT EXISTS {$liveOwnerIdx} ON {$fullTableName} ({$ownerColForIdx}) WHERE {$deletedCol} IS NULL"
-				);
-
-				// Baseline pg_trgm GIN index on the `_name` metadata column.
-				// `_name` is unconditionally searched by
-				// MagicSearchHandler::buildSearchConditionSql() for every schema
-				// (both the always-on ILIKE path and the `_fuzzy=true` similarity()
-				// path), yet nothing indexed it — a rare-term search forced a
-				// sequential scan (measured 268ms; ~1.5ms once GIN-backed on an
-				// 81,950-row table). This index is on an EXISTING varchar/text
-				// column (no new column type is introduced), so — unlike a
-				// vector/tsvector-TYPED column — it does NOT break Doctrine
-				// introspectSchema() over oc_-prefixed tables: a functional/column
-				// GIN index is invisible to Doctrine's type system, the same reason
-				// the hybrid-document-search chunk `to_tsvector` functional GIN
-				// index is safe. Gated by pg_trgm availability and wrapped so a
-				// missing extension or incompatible column never fails table
-				// creation (matching the neighbouring index try/catch pattern).
-				if ($this->hasPgTrgmExtension() === true) {
-					$nameCol = self::METADATA_PREFIX . 'name';
-					$nameTrgmIx = "{$tableName}_name_trgm_idx";
-					try {
-						$this->db->executeStatement(
-							"CREATE INDEX IF NOT EXISTS {$nameTrgmIx} ON {$fullTableName} USING GIN ({$nameCol} gin_trgm_ops)"
-						);
-					} catch (Exception $e) {
-						$this->logger->debug(
-							message: '[MagicMapper] Skipped baseline _name trgm index',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'tableName' => $tableName,
-								'error' => $e->getMessage(),
-							]
-						);
-					}
-				}//end if
+			$run->isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
+			if ($run->isPostgres === true) {
+				$this->createPostgresIndexes(run: $run);
 			} else {
-				// MySQL/MariaDB do not support partial indexes, so the
-				// "WHERE _owner = ? AND _deleted IS NULL" access pattern is
-				// supported here with a composite (_deleted, _owner) index — the
-				// best available approximation. `CREATE INDEX IF NOT EXISTS` is
-				// not portable across older MySQL, so create it defensively and
-				// treat a duplicate-index error as a no-op (idempotent).
-				$deletedCol = self::METADATA_PREFIX . 'deleted';
-				$ownerColForIdx = self::METADATA_PREFIX . 'owner';
-				$deletedOwnerIdx = "{$tableName}_deleted_owner_idx";
-				try {
-					$this->db->executeStatement(
-						"CREATE INDEX {$deletedOwnerIdx} ON {$fullTableName} ({$deletedCol}, {$ownerColForIdx})"
-					);
-				} catch (\Throwable $e) {
-					// Index already exists (no IF NOT EXISTS on MySQL) — ignore.
-				}
-			}//end if
+				$this->createMySqlDeletedOwnerIndex(run: $run);
+			}
 
 			// Create indexes for schema-specific properties.
 			$schemaProperties = $_schema->getProperties();
-			$relationIndexes = [];
-			$facetIndexes = [];
-			$searchableIndexes = [];
-
 			if (is_array($schemaProperties) === true) {
 				foreach ($schemaProperties as $propertyName => $propertyConfig) {
-					$columnName = $this->sanitizeColumnName(name: $propertyName);
-					$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-
-					// Create indexes on relation properties (object references) for _extend queries.
-					$hasRef = isset($propertyConfig['$ref']);
-					$objectConfig = $propertyConfig['objectConfiguration'] ?? [];
-					$handling = $objectConfig['handling'] ?? null;
-					$type = $propertyConfig['type'] ?? 'string';
-
-					// Index single object references (stored as VARCHAR UUID).
-					if ($type === 'object' && $hasRef === true && ObjectHandling::relates($handling) === true) {
-						$idxName = "{$tableName}_{$columnName}_rel_idx";
-						try {
-							$this->db->executeStatement(
-								"CREATE INDEX IF NOT EXISTS {$idxName} ON {$fullTableName} ({$quotedCol})"
-							);
-							$relationIndexes[] = $columnName;
-						} catch (Exception $e) {
-							// Index may already exist or column type incompatible.
-						}
-					}
-
-					// For array of object references with inversedBy, create GIN index on PostgreSQL.
-					if ($type === 'array' && $isPostgres === true) {
-						$items = $propertyConfig['items'] ?? [];
-						$itemsRef = $items['$ref'] ?? null;
-						$inversedBy = $items['inversedBy'] ?? ($propertyConfig['inversedBy'] ?? null);
-
-						if ($itemsRef !== null || $inversedBy !== null) {
-							$idxName = "{$tableName}_{$columnName}_arr_gin_idx";
-							try {
-								$this->db->executeStatement(
-									"CREATE INDEX IF NOT EXISTS {$idxName} ON {$fullTableName} USING GIN ({$quotedCol})"
-								);
-								$relationIndexes[] = $columnName . ' (GIN)';
-							} catch (Exception $e) {
-								// Index may already exist or column type incompatible.
-							}
-						}
-					}
-
-					// Create indexes on facetable fields for efficient facet queries.
-					if (($propertyConfig['facetable'] ?? false) === true) {
-						$idxName = "{$tableName}_{$columnName}_facet_idx";
-						try {
-							$this->db->executeStatement(
-								"CREATE INDEX IF NOT EXISTS {$idxName} ON {$fullTableName} ({$quotedCol})"
-							);
-							$facetIndexes[] = $columnName;
-						} catch (Exception $e) {
-							// Index may already exist or column type incompatible.
-						}
-					}
-
-					// Opt-in `searchable: true` flag: create a pg_trgm GIN index on
-					// this property's column so fuzzy/substring (`_search` / ILIKE /
-					// similarity()) matching against it is index-backed instead of a
-					// sequential scan. Structurally identical to `facetable` above,
-					// but PostgreSQL + pg_trgm gated (the `gin_trgm_ops` operator
-					// class only exists on PostgreSQL with the extension). Like the
-					// baseline `_name` index, this indexes an EXISTING text column —
-					// no new column type — so it is Doctrine-introspection-safe. A
-					// non-string column (gin_trgm_ops requires a text-castable type)
-					// is tolerated by the try/catch below, exactly like facetable's
-					// "column type incompatible" case, and logged rather than fatal.
-					if (($propertyConfig['searchable'] ?? false) === true
-						&& $isPostgres === true
-						&& $this->hasPgTrgmExtension() === true
-					) {
-						$idxName = "{$tableName}_{$columnName}_trgm_idx";
-						try {
-							$this->db->executeStatement(
-								"CREATE INDEX IF NOT EXISTS {$idxName} ON {$fullTableName} USING GIN ({$quotedCol} gin_trgm_ops)"
-							);
-							$searchableIndexes[] = $columnName;
-						} catch (Exception $e) {
-							// Index may already exist, or the column type is
-							// incompatible with gin_trgm_ops (e.g. a non-string
-							// property incorrectly marked searchable): log a warning
-							// and continue, do not abort table creation/sync.
-							$this->logger->warning(
-								message: '[MagicMapper] Skipped searchable trgm index (incompatible column or already present)',
-								context: [
-									'file' => __FILE__,
-									'line' => __LINE__,
-									'tableName' => $tableName,
-									'column' => $columnName,
-									'error' => $e->getMessage(),
-								]
-							);
-						}//end try
-					}//end if
-				}//end foreach
-			}//end if
+					$run->column = $this->sanitizeColumnName(name: $propertyName);
+					$run->quotedColumn = $this->quoteIdentifier(name: $run->column, isPostgres: $run->isPostgres);
+					$this->createPropertyIndexes(run: $run, propertyConfig: $propertyConfig);
+				}
+			}
 
 			$this->logger->debug(
 				message: '[MagicMapper] Created table indexes',
@@ -4422,10 +4273,10 @@ class MagicMapper extends AbstractObjectMapper {
 					'file' => __FILE__,
 					'line' => __LINE__,
 					'tableName' => $tableName,
-					'baseIndexCount' => 5 + count($idxMetaFields),
-					'relationIndexes' => $relationIndexes,
-					'facetIndexes' => $facetIndexes,
-					'searchableIndexes' => $searchableIndexes,
+					'baseIndexCount' => 5 + count(self::INDEXED_METADATA_FIELDS),
+					'relationIndexes' => $run->relationIndexes,
+					'facetIndexes' => $run->facetIndexes,
+					'searchableIndexes' => $run->searchableIndexes,
 				]
 			);
 		} catch (Exception $e) {
@@ -4441,6 +4292,283 @@ class MagicMapper extends AbstractObjectMapper {
 			// Don't fail table creation if indexes fail.
 		}//end try
 	}//end createTableIndexes()
+
+	/**
+	 * Create the indexes every magic table carries: the unique UUID index, the
+	 * multitenancy and RBAC indexes and the frequently filtered metadata fields.
+	 *
+	 * @param MagicTableIndexRun $run The index-creation pass.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md
+	 */
+	private function createBaseIndexes(MagicTableIndexRun $run): void {
+		$tableName = $run->tableName;
+		$fullTableName = $run->fullTableName;
+
+		// Create unique index on UUID.
+		$this->db->executeStatement(
+			"CREATE UNIQUE INDEX IF NOT EXISTS {$tableName}_uuid_idx ON {$fullTableName} (" . self::METADATA_PREFIX . 'uuid)'
+		);
+
+		// Composite index on register + schema for multitenancy.
+		$registerCol = self::METADATA_PREFIX . 'register';
+		$schemaCol = self::METADATA_PREFIX . 'schema';
+		$this->db->executeStatement(
+			"CREATE INDEX IF NOT EXISTS {$tableName}_register_schema_idx ON {$fullTableName} ({$registerCol}, {$schemaCol})"
+		);
+
+		// Organisation for multitenancy, owner for RBAC, then the frequently
+		// filtered metadata fields.
+		foreach (array_merge(['organisation', 'owner'], self::INDEXED_METADATA_FIELDS) as $field) {
+			$col = self::METADATA_PREFIX . $field;
+			$this->db->executeStatement(
+				"CREATE INDEX IF NOT EXISTS {$tableName}_{$field}_idx ON {$fullTableName} ({$col})"
+			);
+		}
+	}//end createBaseIndexes()
+
+	/**
+	 * Create the PostgreSQL-only indexes: the GIN index on `_relations`, the
+	 * partial live-owner index and the baseline `_name` trigram index.
+	 *
+	 * @param MagicTableIndexRun $run The index-creation pass.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md
+	 */
+	private function createPostgresIndexes(MagicTableIndexRun $run): void {
+		$tableName = $run->tableName;
+		$fullTableName = $run->fullTableName;
+
+		// GIN index on _relations for fast containment (@>) relationship lookups.
+		$this->db->executeStatement(
+			"CREATE INDEX IF NOT EXISTS {$tableName}_relations_gin_idx ON {$fullTableName} USING GIN (_relations)"
+		);
+
+		// PERF-5: every list/search query filters `_deleted IS NULL`. A partial
+		// index on (_owner) restricted to live rows serves the common
+		// "WHERE _owner = ? AND _deleted IS NULL" access pattern. Partial
+		// indexes are a PostgreSQL feature, so this is Postgres-only.
+		$deletedCol = self::METADATA_PREFIX . 'deleted';
+		$ownerCol = self::METADATA_PREFIX . 'owner';
+		$this->db->executeStatement(
+			"CREATE INDEX IF NOT EXISTS {$tableName}_live_owner_idx ON {$fullTableName} ({$ownerCol}) WHERE {$deletedCol} IS NULL"
+		);
+
+		if ($this->hasPgTrgmExtension() === true) {
+			$this->createNameTrigramIndex(run: $run);
+		}
+	}//end createPostgresIndexes()
+
+	/**
+	 * Create the baseline pg_trgm GIN index on the `_name` metadata column.
+	 *
+	 * `_name` is searched for every schema by
+	 * MagicSearchHandler::buildSearchConditionSql() (the ILIKE path and the
+	 * `_fuzzy=true` similarity() path), so a rare-term search without this
+	 * index is a sequential scan (measured 268ms; ~1.5ms once GIN-backed on an
+	 * 81,950-row table). The index is on an existing varchar/text column, so it
+	 * stays invisible to Doctrine's introspectSchema(). A missing extension or
+	 * incompatible column never fails table creation.
+	 *
+	 * @param MagicTableIndexRun $run The index-creation pass.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md
+	 */
+	private function createNameTrigramIndex(MagicTableIndexRun $run): void {
+		$nameCol = self::METADATA_PREFIX . 'name';
+		try {
+			$this->db->executeStatement(
+				"CREATE INDEX IF NOT EXISTS {$run->tableName}_name_trgm_idx ON {$run->fullTableName} USING GIN ({$nameCol} gin_trgm_ops)"
+			);
+		} catch (Exception $e) {
+			$this->logger->debug(
+				message: '[MagicMapper] Skipped baseline _name trgm index',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'tableName' => $run->tableName,
+					'error' => $e->getMessage(),
+				]
+			);
+		}
+	}//end createNameTrigramIndex()
+
+	/**
+	 * Create the composite (_deleted, _owner) index on MySQL/MariaDB.
+	 *
+	 * MySQL/MariaDB have no partial indexes, so the "WHERE _owner = ? AND
+	 * _deleted IS NULL" access pattern gets the closest composite index.
+	 * `CREATE INDEX IF NOT EXISTS` is not portable across older MySQL, so a
+	 * duplicate-index error is treated as a no-op.
+	 *
+	 * @param MagicTableIndexRun $run The index-creation pass.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md
+	 */
+	private function createMySqlDeletedOwnerIndex(MagicTableIndexRun $run): void {
+		$deletedCol = self::METADATA_PREFIX . 'deleted';
+		$ownerCol = self::METADATA_PREFIX . 'owner';
+		try {
+			$this->db->executeStatement(
+				"CREATE INDEX {$run->tableName}_deleted_owner_idx ON {$run->fullTableName} ({$deletedCol}, {$ownerCol})"
+			);
+		} catch (\Throwable $e) {
+			// Index already exists (no IF NOT EXISTS on MySQL): ignore.
+		}
+	}//end createMySqlDeletedOwnerIndex()
+
+	/**
+	 * Create the indexes one schema property asks for: relation, array GIN,
+	 * facet and searchable (trigram) indexes.
+	 *
+	 * @param MagicTableIndexRun $run            The index-creation pass, positioned on the property's column.
+	 * @param array              $propertyConfig The property definition.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md
+	 */
+	private function createPropertyIndexes(MagicTableIndexRun $run, array $propertyConfig): void {
+		// Single object references (stored as VARCHAR UUID), for _extend queries.
+		if ($this->isSingleRelation(propertyConfig: $propertyConfig) === true
+			&& $this->tryCreateColumnIndex(run: $run, suffix: 'rel_idx') === true
+		) {
+			$run->relationIndexes[] = $run->column;
+		}
+
+		// Arrays of object references or inversedBy relations get a GIN index on PostgreSQL.
+		if ($this->wantsArrayGinIndex(run: $run, propertyConfig: $propertyConfig) === true
+			&& $this->tryCreateColumnIndex(run: $run, suffix: 'arr_gin_idx') === true
+		) {
+			$run->relationIndexes[] = $run->column . ' (GIN)';
+		}
+
+		// Facetable fields, for efficient facet queries.
+		if (($propertyConfig['facetable'] ?? false) === true
+			&& $this->tryCreateColumnIndex(run: $run, suffix: 'facet_idx') === true
+		) {
+			$run->facetIndexes[] = $run->column;
+		}
+
+		// Opt-in `searchable: true`: a pg_trgm GIN index so fuzzy/substring
+		// matching on the column is index-backed (PostgreSQL + pg_trgm only).
+		if (($propertyConfig['searchable'] ?? false) === true
+			&& $run->isPostgres === true
+			&& $this->hasPgTrgmExtension() === true
+		) {
+			$this->createSearchableIndex(run: $run);
+		}
+	}//end createPropertyIndexes()
+
+	/**
+	 * Whether a property is a single object reference that relates objects.
+	 *
+	 * @param array $propertyConfig The property definition.
+	 *
+	 * @return bool
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectHandling::relates() is a pure enum-style helper
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md
+	 */
+	private function isSingleRelation(array $propertyConfig): bool {
+		$handling = ($propertyConfig['objectConfiguration'] ?? [])['handling'] ?? null;
+
+		return ($propertyConfig['type'] ?? 'string') === 'object'
+			&& isset($propertyConfig['$ref']) === true
+			&& ObjectHandling::relates($handling) === true;
+	}//end isSingleRelation()
+
+	/**
+	 * Whether a property is an array of references (or an inversedBy relation)
+	 * on PostgreSQL, which gets a GIN index.
+	 *
+	 * @param MagicTableIndexRun $run            The index-creation pass.
+	 * @param array              $propertyConfig The property definition.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md
+	 */
+	private function wantsArrayGinIndex(MagicTableIndexRun $run, array $propertyConfig): bool {
+		if (($propertyConfig['type'] ?? 'string') !== 'array' || $run->isPostgres === false) {
+			return false;
+		}
+
+		$items = $propertyConfig['items'] ?? [];
+
+		return ($items['$ref'] ?? null) !== null
+			|| ($items['inversedBy'] ?? ($propertyConfig['inversedBy'] ?? null)) !== null;
+	}//end wantsArrayGinIndex()
+
+	/**
+	 * Create an index on the current property column, tolerating an index that
+	 * already exists or a column type the index does not support.
+	 *
+	 * @param MagicTableIndexRun $run    The index-creation pass, positioned on the column.
+	 * @param string             $suffix The index kind; a `gin` kind is created with USING GIN.
+	 *
+	 * @return bool Whether the index statement succeeded.
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md
+	 */
+	private function tryCreateColumnIndex(MagicTableIndexRun $run, string $suffix): bool {
+		$using = '';
+		if (str_contains($suffix, 'gin') === true) {
+			$using = 'USING GIN ';
+		}
+
+		try {
+			$this->db->executeStatement(
+				"CREATE INDEX IF NOT EXISTS {$run->columnIndexName(suffix: $suffix)} ON {$run->fullTableName} {$using}({$run->quotedColumn})"
+			);
+			return true;
+		} catch (Exception $e) {
+			// Index may already exist or column type incompatible.
+			return false;
+		}
+	}//end tryCreateColumnIndex()
+
+	/**
+	 * Create the pg_trgm GIN index of a `searchable` property column.
+	 *
+	 * A column type gin_trgm_ops does not support (a non-string property marked
+	 * searchable) or an existing index is logged as a warning; table creation
+	 * and sync continue.
+	 *
+	 * @param MagicTableIndexRun $run The index-creation pass, positioned on the column.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md
+	 */
+	private function createSearchableIndex(MagicTableIndexRun $run): void {
+		try {
+			$this->db->executeStatement(
+				"CREATE INDEX IF NOT EXISTS {$run->columnIndexName(suffix: 'trgm_idx')} ON {$run->fullTableName} USING GIN ({$run->quotedColumn} gin_trgm_ops)"
+			);
+			$run->searchableIndexes[] = $run->column;
+		} catch (Exception $e) {
+			$this->logger->warning(
+				message: '[MagicMapper] Skipped searchable trgm index (incompatible column or already present)',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'tableName' => $run->tableName,
+					'column' => $run->column,
+					'error' => $e->getMessage(),
+				]
+			);
+		}//end try
+	}//end createSearchableIndex()
 
 	/**
 	 * Save single object to register+schema-specific table
