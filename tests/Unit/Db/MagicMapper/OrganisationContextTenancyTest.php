@@ -82,11 +82,12 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses   \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
  * @uses   \OCA\OpenRegister\Db\MagicMapper\ArrayElementFilter
- * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
- * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
  * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
- * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
+ * @uses   \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\RbacFilterCall
  */
 class OrganisationContextTenancyTest extends TestCase {
 

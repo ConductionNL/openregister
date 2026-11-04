@@ -273,13 +273,5 @@ require_once __DIR__ . '/stubs/DoriathStubs.php';
 // Guarded, so a real context_chat install always wins.
 require_once __DIR__ . '/stubs/ContextChatStubs.php';
 
-// Integriq's connection-registry events (adopt-connection-registry) and its
-// opt-out decision event (opt-out-before-send). ConnectionReporter and
-// OptOutAuthority send them by class-name string so OpenRegister stays
-// installable without integriq. The stubs mirror the contract constructors
-// verbatim and load only when the real classes are absent.
-foreach (['ConnectionStatusReportedEvent', 'ConnectionRefreshRequestedEvent', 'OutboundSendDecisionRequestedEvent'] as $integriqStubEvent) {
-	if (class_exists('\\OCA\\Integriq\\Event\\' . $integriqStubEvent) === false) {
-		require_once __DIR__ . '/stubs/Integriq/Event/' . $integriqStubEvent . '.php';
-	}
-}
+// Integriq's events, sent by class-name string; see the stub file.
+require_once __DIR__ . '/stubs/IntegriqStubs.php';

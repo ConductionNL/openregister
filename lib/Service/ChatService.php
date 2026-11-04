@@ -206,10 +206,6 @@ class ChatService {
 	 *     timings: array{context: string, history: string, llm: string,
 	 *     total: string}}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Chat processing involves multiple handler coordination steps
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Many optional paths for agent, title generation, and timing
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full chat orchestration requires comprehensive step handling
-	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function processMessage(
@@ -222,130 +218,47 @@ class ChatService {
 		array $context = [],
 		?StreamYieldChannel $channel = null,
 	): array {
+		$request = new ChatMessageRequest(conversationId: $conversationId, userId: $userId, userMessage: $userMessage);
+		$request->selectedViews = $selectedViews;
+		$request->selectedTools = $selectedTools;
+		$request->ragSettings = $ragSettings;
+		$request->cnAiContext = $context;
+		$request->channel = $channel;
+		return $this->handleMessage(request: $request);
+	}//end processMessage()
+
+	/**
+	 * Answer one chat message: store it, generate the reply, store that and title the conversation.
+	 *
+	 * @param ChatMessageRequest $request The message and its options.
+	 *
+	 * @return array The processMessage() result.
+	 *
+	 * @throws Exception If processing fails; the failure is logged first.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function handleMessage(ChatMessageRequest $request): array {
 		$this->logger->info(
 			message: '[ChatService] Processing message',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'conversationId' => $conversationId,
-				'userId' => $userId,
-				'messageLength' => strlen($userMessage),
+				'conversationId' => $request->conversationId,
+				'userId' => $request->userId,
+				'messageLength' => strlen($request->userMessage),
 			]
 		);
 
 		try {
-			// Get conversation and verify access.
-			$conversation = $this->conversationMapper->find($conversationId);
-			if ($conversation->getUserId() !== $userId) {
-				throw new Exception('Access denied to conversation');
-			}
-
-			// Get agent if configured.
-			$agent = null;
-			if ($conversation->getAgentId() !== null) {
-				$agent = $this->agentMapper->find($conversation->getAgentId());
-			}
-
-			// Capture the CnAiContext snapshot under its own name before
-			// the retrieveContext() call below reuses `$context` for the
-			// RAG context object. Without this rename the snapshot would
-			// be silently overwritten and the LLM would never see it.
-			$cnAiContext = $context;
-
-			// Store user message with the CnAiContext snapshot.
-			$this->historyHandler->storeMessage(
-				conversationId: $conversationId,
-				role: Message::ROLE_USER,
-				content: $userMessage,
-				sources: null,
-				context: $cnAiContext
-			);
-
-			// Check if conversation needs summarization.
-			$this->conversationHandler->checkAndSummarize($conversation);
-
-			// Retrieve RAG context. Note: `$context` is now the RAG
-			// context shape `{text, sources}`, distinct from `$cnAiContext`.
-			$contextStartTime = microtime(true);
-			$context = $this->contextHandler->retrieveContext(
-				query: $userMessage,
-				agent: $agent,
-				selectedViews: $selectedViews,
-				ragSettings: $ragSettings
-			);
-			$contextTime = microtime(true) - $contextStartTime;
-
-			// Build message history.
-			$historyStartTime = microtime(true);
-			$messageHistory = $this->historyHandler->buildMessageHistory($conversationId);
-			$historyTime = microtime(true) - $historyStartTime;
-
-			// Generate LLM response. Forward the CnAiContext snapshot so
-			// the system prompt can include "the user is currently in
-			// {app}" — without it the model would default to generic
-			// platform-wide phrasing and pick the wrong tool family.
-			$llmStartTime = microtime(true);
-			$aiResponse = $this->responseHandler->generateResponse(
-				userMessage: $userMessage,
-				context: $context,
-				messageHistory: $messageHistory,
-				agent: $agent,
-				selectedTools: $selectedTools,
-				channel: $channel,
-				cnAiContext: $cnAiContext
-			);
-			$llmTime = microtime(true) - $llmStartTime;
-
-			// Store AI response with sources. Capture the return so we can surface
-			// the persisted assistant message's id to the caller (ChatStreamController
-			// needs it to populate the SSE `final` event's messageId field; the widget
-			// uses it as the Vue render key for the assistant bubble).
-			$assistantStored = $this->historyHandler->storeMessage(
-				conversationId: $conversationId,
-				role: Message::ROLE_ASSISTANT,
-				content: $aiResponse,
-				sources: $context['sources']
-			);
-
-			// Generate title if this is first exchange.
-			$messageCount = $this->messageMapper->countByConversation($conversationId);
-			$currentTitle = $conversation->getTitle();
-			$isNewConversation = $currentTitle === null || strpos($currentTitle, 'New Conversation') === 0;
-			$shouldGenerateTitle = $messageCount <= 2 && $isNewConversation;
-
-			if ($shouldGenerateTitle === true) {
-				$title = $this->conversationHandler->generateConversationTitle($userMessage);
-				$agentId = $conversation->getAgentId();
-				if ($agentId !== null) {
-					$title = $this->conversationHandler->ensureUniqueTitle(
-						baseTitle: $title,
-						userId: $conversation->getUserId(),
-						agentId: $agentId
-					);
-				}
-
-				$conversation->setTitle($title);
-				$conversation->setUpdated(new DateTime());
-				$this->conversationMapper->update($conversation);
-			}
-
-			$totalTime = $contextTime + $historyTime + $llmTime;
-
-			return [
-				'message' => $aiResponse,
-				// Surface the persisted assistant message id for SSE consumers
-				// (ChatStreamController + the nc-vue widget render key).
-				'messageId' => (string)($assistantStored->getId() ?? ''),
-				'sources' => $context['sources'],
-				'timings' => [
-					'context' => round($contextTime, 2) . 's',
-					'history' => round($historyTime, 3) . 's',
-					'llm' => round($llmTime, 2) . 's',
-					'total' => round($totalTime, 2) . 's',
-				],
-				// Per-run LLM token/latency usage for run-cost recording (run-analytics).
-				'usage' => $this->responseHandler->lastUsage,
-			];
+			$conversation = $this->findOwnConversation(request: $request);
+			$agent = $this->findConversationAgent(conversation: $conversation);
+			$this->recordUserMessage(request: $request, conversation: $conversation);
+			$result = $this->answerMessage(request: $request, agent: $agent);
+			$this->titleNewConversation(request: $request, conversation: $conversation);
+			// Per-run LLM token/latency usage for run-cost recording (run-analytics).
+			$result['usage'] = $this->responseHandler->lastUsage;
+			return $result;
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[ChatService] Message processing failed',
@@ -357,7 +270,173 @@ class ChatService {
 			);
 			throw $e;
 		}//end try
-	}//end processMessage()
+	}//end handleMessage()
+
+	/**
+	 * Load the request's conversation, refusing one owned by another user.
+	 *
+	 * @param ChatMessageRequest $request The message and its options.
+	 *
+	 * @return Conversation The conversation.
+	 *
+	 * @throws Exception If the conversation belongs to another user.
+	 */
+	private function findOwnConversation(ChatMessageRequest $request): Conversation {
+		$conversation = $this->conversationMapper->find($request->conversationId);
+		if ($conversation->getUserId() !== $request->userId) {
+			throw new Exception('Access denied to conversation');
+		}
+
+		return $conversation;
+	}//end findOwnConversation()
+
+	/**
+	 * The agent configured on a conversation, if any.
+	 *
+	 * @param Conversation $conversation The conversation.
+	 *
+	 * @return Agent|null The agent, or null when none is configured.
+	 */
+	private function findConversationAgent(Conversation $conversation): ?Agent {
+		if ($conversation->getAgentId() === null) {
+			return null;
+		}
+
+		return $this->agentMapper->find($conversation->getAgentId());
+	}//end findConversationAgent()
+
+	/**
+	 * Store the user's message with its CnAiContext snapshot and summarize the conversation when due.
+	 *
+	 * @param ChatMessageRequest $request      The message and its options.
+	 * @param Conversation       $conversation The conversation.
+	 *
+	 * @return void
+	 */
+	private function recordUserMessage(ChatMessageRequest $request, Conversation $conversation): void {
+		$this->historyHandler->storeMessage(
+			conversationId: $request->conversationId,
+			role: Message::ROLE_USER,
+			content: $request->userMessage,
+			sources: null,
+			context: $request->cnAiContext
+		);
+
+		$this->conversationHandler->checkAndSummarize($conversation);
+	}//end recordUserMessage()
+
+	/**
+	 * Retrieve RAG context and history, generate the reply and store it.
+	 *
+	 * The CnAiContext snapshot goes to the response handler so the system prompt can name
+	 * the app the user is in.
+	 *
+	 * @param ChatMessageRequest $request The message and its options.
+	 * @param Agent|null         $agent   The conversation's agent.
+	 *
+	 * @return array The reply, its stored message id, sources and timings.
+	 */
+	private function answerMessage(ChatMessageRequest $request, ?Agent $agent): array {
+		$started = microtime(true);
+		$context = $this->contextHandler->retrieveContext(
+			query: $request->userMessage,
+			agent: $agent,
+			selectedViews: $request->selectedViews,
+			ragSettings: $request->ragSettings
+		);
+		$contextTime = microtime(true) - $started;
+
+		$started = microtime(true);
+		$messageHistory = $this->historyHandler->buildMessageHistory($request->conversationId);
+		$historyTime = microtime(true) - $started;
+
+		$started = microtime(true);
+		$aiResponse = $this->responseHandler->generateResponse(
+			userMessage: $request->userMessage,
+			context: $context,
+			messageHistory: $messageHistory,
+			agent: $agent,
+			selectedTools: $request->selectedTools,
+			channel: $request->channel,
+			cnAiContext: $request->cnAiContext
+		);
+		$llmTime = microtime(true) - $started;
+
+		return $this->storeAnswer(
+			request: $request,
+			answer: [
+				'message' => $aiResponse,
+				'sources' => $context['sources'],
+				'times' => [$contextTime, $historyTime, $llmTime],
+			]
+		);
+	}//end answerMessage()
+
+	/**
+	 * Store the assistant's reply and shape the result.
+	 *
+	 * The stored message id lets SSE consumers (ChatStreamController and the widget's render key)
+	 * address the assistant bubble.
+	 *
+	 * @param ChatMessageRequest $request The message and its options.
+	 * @param array              $answer  Reply text, sources and the context/history/llm seconds.
+	 *
+	 * @return array The reply, its stored message id, sources and timings.
+	 */
+	private function storeAnswer(ChatMessageRequest $request, array $answer): array {
+		$assistantStored = $this->historyHandler->storeMessage(
+			conversationId: $request->conversationId,
+			role: Message::ROLE_ASSISTANT,
+			content: $answer['message'],
+			sources: $answer['sources']
+		);
+
+		[$contextTime, $historyTime, $llmTime] = $answer['times'];
+		$totalTime = $contextTime + $historyTime + $llmTime;
+
+		return [
+			'message' => $answer['message'],
+			'messageId' => (string)($assistantStored->getId() ?? ''),
+			'sources' => $answer['sources'],
+			'timings' => [
+				'context' => round($contextTime, 2) . 's',
+				'history' => round($historyTime, 3) . 's',
+				'llm' => round($llmTime, 2) . 's',
+				'total' => round($totalTime, 2) . 's',
+			],
+		];
+	}//end storeAnswer()
+
+	/**
+	 * Give a still-untitled conversation a title after its first exchange.
+	 *
+	 * @param ChatMessageRequest $request      The first user message and its options.
+	 * @param Conversation       $conversation The conversation.
+	 *
+	 * @return void
+	 */
+	private function titleNewConversation(ChatMessageRequest $request, Conversation $conversation): void {
+		$messageCount = $this->messageMapper->countByConversation($request->conversationId);
+		$currentTitle = $conversation->getTitle();
+		$isNewConversation = $currentTitle === null || strpos($currentTitle, 'New Conversation') === 0;
+		if ($messageCount > 2 || $isNewConversation === false) {
+			return;
+		}
+
+		$title = $this->conversationHandler->generateConversationTitle($request->userMessage);
+		$agentId = $conversation->getAgentId();
+		if ($agentId !== null) {
+			$title = $this->conversationHandler->ensureUniqueTitle(
+				baseTitle: $title,
+				userId: $conversation->getUserId(),
+				agentId: $agentId
+			);
+		}
+
+		$conversation->setTitle($title);
+		$conversation->setUpdated(new DateTime());
+		$this->conversationMapper->update($conversation);
+	}//end titleNewConversation()
 
 	/**
 	 * Generate conversation title from first message

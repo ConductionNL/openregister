@@ -60,10 +60,7 @@ class SelectielijstControllerTest extends TestCase {
 			$this->request,
 			$this->selectielijst,
 			$this->settingsHandler,
-			$this->userSession,
-			$this->groupManager,
-			$this->createMock(LoggerInterface::class)
-		);
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, $this->groupManager, $this->createMock(LoggerInterface::class)));
 	}
 
 	/**

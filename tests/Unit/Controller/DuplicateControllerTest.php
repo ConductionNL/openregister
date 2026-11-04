@@ -72,9 +72,7 @@ class DuplicateControllerTest extends TestCase {
 			$this->duplicates,
 			$this->dismissals,
 			$this->createMock(ObjectService::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class)
-		);
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class), $this->createMock(\Psr\Log\LoggerInterface::class)));
 	}//end setUp()
 
 	/**
@@ -327,9 +325,7 @@ class DuplicateControllerTest extends TestCase {
 			$other,
 			$this->dismissals,
 			$this->createMock(ObjectService::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class)
-		);
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class), $this->createMock(\Psr\Log\LoggerInterface::class)));
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->check('reg', 'sch')->getStatus());
 	}//end testCheckMapsFailuresLikeTheListing()

@@ -43,6 +43,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Exception\MigrationPackRefusedException;
 use OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponder;
 use OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReader;
@@ -53,10 +54,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -78,9 +76,7 @@ class MigrationPacksController extends Controller {
 	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
 	 * @param MigrationPackService $service Business logic.
-	 * @param IUserSession $userSession Current-user session.
-	 * @param IGroupManager $groupManager Group manager (admin check).
-	 * @param LoggerInterface $logger Logger for the audit lines.
+	 * @param ControllerSession $session Session, group manager and logger.
 	 * @param MigrationPackRequestReader $requestReader Reads definitions, uploads and preview input.
 	 * @param MigrationPackErrorResponder $errors Builds every error response.
 	 *
@@ -90,9 +86,7 @@ class MigrationPacksController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly MigrationPackService $service,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly LoggerInterface $logger,
+		private readonly ControllerSession $session,
 		private readonly MigrationPackRequestReader $requestReader,
 		private readonly MigrationPackErrorResponder $errors,
 	) {
@@ -105,7 +99,7 @@ class MigrationPacksController extends Controller {
 	 * @return ?string
 	 */
 	private function resolveUserId(): ?string {
-		$user = $this->userSession->getUser();
+		$user = $this->session->userSession->getUser();
 		if ($user === null) {
 			return null;
 		}
@@ -126,7 +120,7 @@ class MigrationPacksController extends Controller {
 			return $this->errors->notAuthenticated();
 		}
 
-		if ($this->groupManager->isAdmin($userId) === false) {
+		if ($this->session->groupManager->isAdmin($userId) === false) {
 			return $this->errors->adminRequired();
 		}
 
@@ -284,7 +278,7 @@ class MigrationPacksController extends Controller {
 		}
 
 		$pack = $result->pack;
-		$this->logger->info(
+		$this->session->logger->info(
 			message: '[MigrationPacksController] Migration pack "{packSlug}" (id {packId}) imported by {userId}: {outcome}',
 			context: [
 				'packSlug' => $pack->getPackSlug(),
@@ -328,7 +322,7 @@ class MigrationPacksController extends Controller {
 			return $this->errors->unexpected(action: 'create', exception: $e);
 		}
 
-		$this->logger->info(
+		$this->session->logger->info(
 			message: '[MigrationPacksController] Migration pack "{packSlug}" (id {packId}) created by {userId}',
 			context: [
 				'packSlug' => $pack->getPackSlug(),
@@ -383,7 +377,7 @@ class MigrationPacksController extends Controller {
 			return $this->errors->unexpected(action: 'update', exception: $e, context: ['id' => $id]);
 		}
 
-		$this->logger->info(
+		$this->session->logger->info(
 			message: '[MigrationPacksController] Migration pack "{packSlug}" (id {packId}) updated by {userId}',
 			context: ['packSlug' => $pack->getPackSlug(), 'packId' => $id, 'userId' => $this->resolveUserId()]
 		);
@@ -420,7 +414,7 @@ class MigrationPacksController extends Controller {
 			return $this->errors->unexpected(action: 'delete', exception: $e, context: ['id' => $id]);
 		}
 
-		$this->logger->info(
+		$this->session->logger->info(
 			message: '[MigrationPacksController] Migration pack "{packSlug}" (id {packId}) deleted by {userId}',
 			context: ['packSlug' => $pack->getPackSlug(), 'packId' => $id, 'userId' => $this->resolveUserId()]
 		);

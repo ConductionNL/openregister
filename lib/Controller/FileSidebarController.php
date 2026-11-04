@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Service\FileSidebarService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -47,26 +48,41 @@ use Psr\Log\LoggerInterface;
  */
 class FileSidebarController extends Controller {
 	/**
+	 * The logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
 	 * @param FileSidebarService $fileSidebarService File sidebar service.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ControllerSession $session Session, group manager and logger.
 	 * @param IRootFolder $rootFolder Root folder for per-user file access checks.
-	 * @param IUserSession $userSession Active user session for caller identity.
 	 * @param \OCA\OpenRegister\Service\File\FileReadScope|null $fileReadScope The object read rule for an object's file.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly FileSidebarService $fileSidebarService,
-		private readonly LoggerInterface $logger,
+		ControllerSession $session,
 		private readonly IRootFolder $rootFolder,
-		private readonly IUserSession $userSession,
 		private readonly ?\OCA\OpenRegister\Service\File\FileReadScope $fileReadScope = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+
+		$this->logger = $session->logger;
+		$this->userSession = $session->userSession;
 	}//end __construct()
 
 	/**

@@ -237,8 +237,6 @@
   <violation rule="PHPMD\Rule\ExcessivePublicCount" file="lib/Service/FileService.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/FileService.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Service/Flow/FlowEngine.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Flow/FlowEngine.php" method="run"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/Flow/FlowEngine.php" method="run"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Flow/FlowEngine.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Flow/FlowExpression.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Flow/FlowItemPlacement.php"/>
