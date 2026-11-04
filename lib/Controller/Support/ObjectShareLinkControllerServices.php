@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
 use OCP\Security\Bruteforce\IThrottler;
 use OCP\Share\IManager;
@@ -37,7 +37,7 @@ final class ObjectShareLinkControllerServices {
 	 * Bundle the services.
 	 *
 	 * @param IManager         $shareManager  Core share manager — validates the token.
-	 * @param ObjectService    $objectService Loads the addressed object.
+	 * @param ObjectOperationsInterface    $objectService Loads the addressed object.
 	 * @param AccessLinkReader $reader        Projects the object onto what an anonymous caller may read.
 	 * @param IThrottler       $throttler     Brute-force throttler for rejected tokens.
 	 *
@@ -45,7 +45,7 @@ final class ObjectShareLinkControllerServices {
 	 */
 	public function __construct(
 		public readonly IManager $shareManager,
-		public readonly ObjectService $objectService,
+		public readonly ObjectOperationsInterface $objectService,
 		public readonly AccessLinkReader $reader,
 		public readonly IThrottler $throttler,
 	) {

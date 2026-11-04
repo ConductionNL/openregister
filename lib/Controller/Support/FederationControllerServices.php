@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Db\FederatedShareMapper;
 use OCA\OpenRegister\Service\FederationShareService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\Security\Bruteforce\IThrottler;
 
 /**
@@ -37,7 +37,7 @@ final class FederationControllerServices {
 	 * Bundle the services.
 	 *
 	 * @param FederatedShareMapper   $shareMapper   Federated-share persistence.
-	 * @param ObjectService          $objectService Object read service.
+	 * @param ObjectOperationsInterface          $objectService Object read service.
 	 * @param FederationShareService $shareService  Share management (list/create/revoke).
 	 * @param IThrottler             $throttler     Brute-force throttler for rejected tokens.
 	 *
@@ -45,7 +45,7 @@ final class FederationControllerServices {
 	 */
 	public function __construct(
 		public readonly FederatedShareMapper $shareMapper,
-		public readonly ObjectService $objectService,
+		public readonly ObjectOperationsInterface $objectService,
 		public readonly FederationShareService $shareService,
 		public readonly IThrottler $throttler,
 	) {

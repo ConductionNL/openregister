@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\TimelineVisibilityService;
 use OCA\OpenRegister\Service\Timeline\TimelineWriteService;
 
@@ -37,7 +37,7 @@ final class NotesControllerServices {
 	 * Bundle the services.
 	 *
 	 * @param NoteService               $noteService   Note service for comment operations
-	 * @param ObjectService             $objectService Object service for object validation
+	 * @param ObjectOperationsInterface             $objectService Object service for object validation
 	 * @param TimelineVisibilityService $visibility    Visibility guard, filter and audit
 	 * @param TimelineWriteService      $timeline      Projects a note into the entry record, so it is searchable
 	 *
@@ -45,7 +45,7 @@ final class NotesControllerServices {
 	 */
 	public function __construct(
 		public readonly NoteService $noteService,
-		public readonly ObjectService $objectService,
+		public readonly ObjectOperationsInterface $objectService,
 		public readonly TimelineVisibilityService $visibility,
 		public readonly TimelineWriteService $timeline,
 	) {
