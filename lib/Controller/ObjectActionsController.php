@@ -49,7 +49,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -81,7 +81,7 @@ class ObjectActionsController extends Controller {
 	 *
 	 * @param string                  $appName     The app name.
 	 * @param IRequest                $request     The request.
-	 * @param ObjectService           $objects     Loads the subject.
+	 * @param ObjectOperationsInterface           $objects     Loads the subject.
 	 * @param MacroActionResolver     $macros      Loads a schema; the `next` hint after a selection.
 	 * @param ObjectActionDefinitions $definitions The schema's actions, for the selection surface rule.
 	 * @param ObjectActionList        $list        Lists the actions.
@@ -95,7 +95,7 @@ class ObjectActionsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly MacroActionResolver $macros,
 		private readonly ObjectActionDefinitions $definitions,
 		private readonly ObjectActionList $list,

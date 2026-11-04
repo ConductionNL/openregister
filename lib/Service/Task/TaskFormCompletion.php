@@ -55,7 +55,7 @@ use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserSession;
 use RuntimeException;
@@ -86,7 +86,7 @@ class TaskFormCompletion {
 	 * @param TaskServiceInterface $tasks The authorized task lifecycle.
 	 * @param TaskFormResolver $forms Resolves the task's form.
 	 * @param TransitionEngine $engine The one allowlist, and the transition write.
-	 * @param ObjectService $objects The ordinary object write, for an inline field list.
+	 * @param ObjectOperationsInterface $objects The ordinary object write, for an inline field list.
 	 * @param IUserSession $userSession The acting identity the object write authorizes.
 	 * @param FlowRunContext|null $runContext Names the run this write belongs to,
 	 *                             so the run's own lock does not refuse it.
@@ -95,7 +95,7 @@ class TaskFormCompletion {
 		private readonly TaskServiceInterface $tasks,
 		private readonly TaskFormResolver $forms,
 		private readonly TransitionEngine $engine,
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly IUserSession $userSession,
 		// Appended LAST and nullable: a new argument inserted anywhere else
 		// shifts every positional caller.

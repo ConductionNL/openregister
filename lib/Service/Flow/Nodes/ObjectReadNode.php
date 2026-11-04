@@ -75,7 +75,7 @@ use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -126,7 +126,7 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects Object reads, RBAC-enforcing.
+	 * @param ObjectOperationsInterface $objects Object reads, RBAC-enforcing.
 	 * @param RegisterMapperInterface $registers Resolves the configured register.
 	 * @param SchemaMapperInterface $schemas Resolves the configured schema.
 	 * @param IUserManager $userManager Resolves the run owner.
@@ -134,7 +134,7 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	 * @param IURLGenerator $urls For the palette icon.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly RegisterMapperInterface $registers,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly IUserManager $userManager,
