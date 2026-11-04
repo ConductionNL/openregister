@@ -61,6 +61,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource;
@@ -6662,9 +6663,6 @@ class SaveObject {
 	 *
 	 * @throws Exception If there is an error during update.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex update logic with file handling
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple update paths and file processing
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive update with file handling
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Silent flag needed for audit trail control
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
@@ -6678,23 +6676,20 @@ class SaveObject {
 		bool $silent = false,
 		?ObjectEntity $oldObject = null,
 	): ObjectEntity {
+		$run = new ObjectUpdateRun();
+		$run->silent = $silent;
+		$run->folderId = $folderId;
 
-		// Use provided oldObject or clone the existing object for audit trail.
-		// Note: If oldObject is not provided, the clone here may have modified data
-		// since prepareObjectForUpdate already modified existingObject in place.
-		// Always prefer passing oldObject from the caller (handleObjectUpdate).
-		if ($oldObject === null) {
-			$oldObject = clone $existingObject;
-		}
+		// Prefer the caller's oldObject (handleObjectUpdate): a clone taken here may
+		// already hold data prepareObjectForUpdate changed in place.
+		$run->oldObject = ($oldObject ?? clone $existingObject);
 
-		// Extract @self data if present.
-		$selfData = [];
 		if (($data['@self'] ?? null) !== null && is_array($data['@self']) === true) {
-			$selfData = $data['@self'];
+			$run->selfData = $data['@self'];
 		}
 
-		// Remove @self and id from the data before processing.
 		unset($data['@self'], $data['id']);
+		$run->data = $data;
 
 		// Resolve register and schema to entity objects if needed.
 		if (is_int($register) === true || is_string($register) === true) {
@@ -6705,69 +6700,111 @@ class SaveObject {
 			$schema = $this->schemaMapper->find(id: (int)$schema, _multitenancy: false);
 		}
 
-		// Set register ID and schema ID.
-		$registerId = $register->getId();
-		$schemaId = $schema->getId();
+		$run->register = $register;
+		$run->schema = $schema;
 
-		// Prepare the object for update using the new structure.
-		$preparedObject = $this->prepareObjectForUpdate(
-			existingObject: $existingObject,
-			schema: $schema,
-			data: $data,
-			selfData: $selfData,
-			folderId: $folderId
-		);
+		$updatedEntity = $this->persistObjectUpdate(run: $run, existingObject: $existingObject);
+		$this->flagOutdatedAfterUpdate(run: $run, updatedEntity: $updatedEntity);
+		$this->recordObjectUpdate(run: $run, updatedEntity: $updatedEntity);
+		$updatedEntity = $this->storeUpdatedFileProperties(run: $run, updatedEntity: $updatedEntity);
 
-		// Recalculate the archive action date if a source property changed.
-		$retentionService = $this->resolveRetentionService();
-		if ($retentionService !== null) {
-			try {
-				$preparedObject = $retentionService->recalculateArchiveActionDate(
-					$preparedObject,
-					$schema,
-					$oldObject->getObject()
-				);
-			} catch (\Throwable $e) {
-				$this->logger->debug('[SaveObject] Skipping archive action date recalculation: ' . $e->getMessage());
-			}
+		// Bidirectional relations; skipped in silent mode (cascaded sub-objects) for performance.
+		if ($silent === false) {
+			$this->updateInverseRelations(savedEntity: $updatedEntity, register: $register, schema: $schema);
 		}
 
-		// Update the object properties.
+		return $updatedEntity;
+	}//end updateObject()
+
+	/**
+	 * Prepare the stored object with the update and write it through the unified mapper.
+	 *
+	 * The old object goes along so events detect status changes accurately.
+	 *
+	 * @param ObjectUpdateRun $run            The update call.
+	 * @param ObjectEntity    $existingObject The stored object.
+	 *
+	 * @return ObjectEntity The updated entity.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function persistObjectUpdate(ObjectUpdateRun $run, ObjectEntity $existingObject): ObjectEntity {
+		$registerId = $run->register->getId();
+		$schemaId = $run->schema->getId();
+		$preparedObject = $this->prepareObjectForUpdate(
+			existingObject: $existingObject,
+			schema: $run->schema,
+			data: $run->data,
+			selfData: $run->selfData,
+			folderId: $run->folderId
+		);
+		$preparedObject = $this->recalculateArchiveDate(run: $run, preparedObject: $preparedObject);
+
 		$preparedObject->setRegister((string)$registerId);
 		$preparedObject->setSchema((string)$schemaId);
 		$preparedObject->setUpdated(new DateTime());
 		$this->userActivity?->stamp(object: $preparedObject);
 
-		// Log that we're about to update using MagicMapper.
 		$this->logger->debug(
 			message: '[SaveObject] Updating object using MagicMapper',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $preparedObject->getUuid(),
-			]
+			context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $preparedObject->getUuid()]
 		);
 
-		// Save the object to database using MagicMapper.
-		// This ensures proper event dispatching for magic table objects.
-		// Pass the oldObject to ensure accurate status change detection in events.
-		$updatedEntity = $this->unifiedObjectMapper->update(
+		return $this->unifiedObjectMapper->update(
 			entity: $preparedObject,
-			register: $register,
-			schema: $schema,
-			oldEntity: $oldObject
+			register: $run->register,
+			schema: $run->schema,
+			oldEntity: $run->oldObject
 		);
+	}//end persistObjectUpdate()
 
-		// I18n-source-of-truth: when a translatable property's source-language
-		// value changes, flip every derived translation row to `outdated` so
-		// editorial tooling surfaces the staleness immediately. Conservative —
-		// only triggers when the source value itself changed; per-language
-		// edits on non-source languages do NOT flip status.
+	/**
+	 * Recalculate the archive action date when a source property changed, when retention is available.
+	 *
+	 * @param ObjectUpdateRun $run            The update call.
+	 * @param ObjectEntity    $preparedObject The object prepared for the update.
+	 *
+	 * @return ObjectEntity The object with its archive action date recalculated.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function recalculateArchiveDate(ObjectUpdateRun $run, ObjectEntity $preparedObject): ObjectEntity {
+		$retentionService = $this->resolveRetentionService();
+		if ($retentionService === null) {
+			return $preparedObject;
+		}
+
+		try {
+			return $retentionService->recalculateArchiveActionDate(
+				$preparedObject,
+				$run->schema,
+				$run->oldObject->getObject()
+			);
+		} catch (\Throwable $e) {
+			$this->logger->debug('[SaveObject] Skipping archive action date recalculation: ' . $e->getMessage());
+			return $preparedObject;
+		}
+	}//end recalculateArchiveDate()
+
+	/**
+	 * Flip derived translations to outdated when a translatable source value changed.
+	 *
+	 * I18n-source-of-truth: only a change of the source-language value
+	 * triggers it; per-language edits do not. A failure is logged, never thrown.
+	 *
+	 * @param ObjectUpdateRun $run           The update call.
+	 * @param ObjectEntity    $updatedEntity The updated entity.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function flagOutdatedAfterUpdate(ObjectUpdateRun $run, ObjectEntity $updatedEntity): void {
 		try {
 			$this->flagOutdatedDerivedTranslations(
-				schema: $schema,
-				register: $register,
-				oldObject: $oldObject,
+				schema: $run->schema,
+				register: $run->register,
+				oldObject: $run->oldObject,
 				newObject: $updatedEntity
 			);
 		} catch (\Throwable $e) {
@@ -6775,10 +6812,22 @@ class SaveObject {
 				'[SaveObject] failed to flag outdated translations: ' . $e->getMessage()
 			);
 		}
+	}//end flagOutdatedAfterUpdate()
 
-		// Debug: "an object was updated" is the single most routine event this
-		// application has. At info it is not a signal, it IS the noise floor.
-		// A FAILED update is what warrants attention, and that path logs already.
+	/**
+	 * Log the update and write its audit trail, unless silent or audit trails are off.
+	 *
+	 * The log is debug: a routine update is the noise floor, and a failed
+	 * update logs on its own path.
+	 *
+	 * @param ObjectUpdateRun $run           The update call.
+	 * @param ObjectEntity    $updatedEntity The updated entity.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function recordObjectUpdate(ObjectUpdateRun $run, ObjectEntity $updatedEntity): void {
 		$this->logger->debug(
 			message: '[SaveObject] Object updated successfully',
 			context: [
@@ -6789,83 +6838,86 @@ class SaveObject {
 			]
 		);
 
-		// Create audit trail for update if audit trails are enabled and not in silent mode.
-		if ($silent === false && $this->isAuditTrailsEnabled() === true) {
-			$log = $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $updatedEntity);
+		if ($run->silent === false && $this->isAuditTrailsEnabled() === true) {
+			$log = $this->auditTrailMapper->createAuditTrail(old: $run->oldObject, new: $updatedEntity);
 			$updatedEntity->setLastLog($log->jsonSerialize());
 		}
+	}//end recordObjectUpdate()
 
-		// Handle file properties - process them and replace content with file IDs.
-		// BUG-OBJ-8: collect the names of the properties the file handler rewrote so
-		// we can overlay ONLY those file-id replacements onto the merged/prepared body
-		// below, instead of clobbering the whole object with the raw partial $data.
-		$filePropsProcessed = false;
+	/**
+	 * Store the update's file properties and write their file ids back onto the persisted object.
+	 *
+	 * BUG-OBJ-8: only the properties the file handler rewrote are overlaid
+	 * onto the MERGED object that was just persisted (computed fields,
+	 * defaults, cascaded sub-objects, stored fields absent from this request).
+	 * Overlaying the raw partial data would drop every field absent from the
+	 * request.
+	 *
+	 * @param ObjectUpdateRun $run           The update call; its data gets the file ids.
+	 * @param ObjectEntity    $updatedEntity The updated entity.
+	 *
+	 * @return ObjectEntity The entity, saved again when a file property was processed.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function storeUpdatedFileProperties(ObjectUpdateRun $run, ObjectEntity $updatedEntity): ObjectEntity {
 		$processedFileProperties = [];
-		foreach ($data as $propertyName => $value) {
+		$snapshot = $run->data;
+		foreach ($snapshot as $propertyName => $value) {
 			$isFileProperty = $this->filePropertyHandler->isFileProperty(
 				value: $value,
-				schema: $schema,
+				schema: $run->schema,
 				propertyName: $propertyName
 			);
 			if ($isFileProperty === true) {
 				$this->filePropertyHandler->handleFileProperty(
 					objectEntity: $updatedEntity,
-					object: $data,
+					object: $run->data,
 					propertyName: $propertyName,
-					schema: $schema
+					schema: $run->schema
 				);
-				$filePropsProcessed = true;
 				$processedFileProperties[] = $propertyName;
 			}
 		}
 
-		// Update the object with the modified data (file IDs instead of content).
-		if ($filePropsProcessed === true) {
-			// BUG-OBJ-8: build the post-file body from the MERGED/prepared object that
-			// was just persisted (which contains computed fields, defaults, cascaded
-			// sub-objects, null-fills, and previously-stored fields not present in this
-			// request), then overlay only the file-id replacements computed by the file
-			// handler. Using the raw partial $data here would drop every field absent
-			// from the request — data loss that depends on payload shape.
-			$mergedObject = $updatedEntity->getObject() ?? [];
-			foreach ($processedFileProperties as $fileProperty) {
-				if (array_key_exists($fileProperty, $data) === true) {
-					$mergedObject[$fileProperty] = $data[$fileProperty];
-				}
-			}
-
-			$updatedEntity->setObject($mergedObject);
-
-			// Clear image metadata if objectImageField points to a file property.
-			// This ensures the image URL is extracted from the file object during rendering.
-			$config = $schema->getConfiguration();
-			if (($config['objectImageField'] ?? null) !== null) {
-				$imageField = $config['objectImageField'];
-				$schemaProperties = $schema->getProperties() ?? [];
-
-				// Check if the image field is a file property.
-				if (($schemaProperties[$imageField] ?? null) !== null) {
-					$propertyConfig = $schemaProperties[$imageField];
-					if (($propertyConfig['type'] ?? '') === 'file') {
-						// Clear the image metadata so it will be extracted from the file object during rendering.
-						$updatedEntity->setImage(null);
-					}
-				}
-			}
-
-			// Save the updated entity with file IDs back to database.
-			$updatedEntity = $this->objectEntityMapper->update(entity: $updatedEntity, register: $register, schema: $schema);
-		}//end if
-
-		// Update inverse relations on related objects (bidirectional relationship management).
-		// This ensures that when object A references object B, object B's relations also include A.
-		// Skip for silent mode (cascaded sub-objects) to improve performance.
-		if ($silent === false) {
-			$this->updateInverseRelations(savedEntity: $updatedEntity, register: $register, schema: $schema);
+		if ($processedFileProperties === []) {
+			return $updatedEntity;
 		}
 
-		return $updatedEntity;
-	}//end updateObject()
+		$mergedObject = $updatedEntity->getObject() ?? [];
+		foreach ($processedFileProperties as $fileProperty) {
+			if (array_key_exists($fileProperty, $run->data) === true) {
+				$mergedObject[$fileProperty] = $run->data[$fileProperty];
+			}
+		}
+
+		$updatedEntity->setObject($mergedObject);
+		if (self::imageFieldIsFileProperty(schema: $run->schema) === true) {
+			// Cleared so rendering extracts the image URL from the file object.
+			$updatedEntity->setImage(null);
+		}
+
+		return $this->objectEntityMapper->update(entity: $updatedEntity, register: $run->register, schema: $run->schema);
+	}//end storeUpdatedFileProperties()
+
+	/**
+	 * Whether the schema's objectImageField points at a file property.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return bool True when the image field is a file property.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function imageFieldIsFileProperty(Schema $schema): bool {
+		$imageField = ($schema->getConfiguration()['objectImageField'] ?? null);
+		if ($imageField === null) {
+			return false;
+		}
+
+		$propertyConfig = (($schema->getProperties() ?? [])[$imageField] ?? null);
+		return $propertyConfig !== null && ($propertyConfig['type'] ?? '') === 'file';
+	}//end imageFieldIsFileProperty()
 
 	/**
 	 * Compare old vs new object values for translatable properties and flip
