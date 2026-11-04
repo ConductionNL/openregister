@@ -38,6 +38,7 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Service\ConditionMatcher
  * @uses   \OCA\OpenRegister\Service\OperatorEvaluator
+ * @uses   \OCA\OpenRegister\Service\ComparableInstants
  * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  */
 class MatchEnvelopeExpiresTest extends TestCase {
