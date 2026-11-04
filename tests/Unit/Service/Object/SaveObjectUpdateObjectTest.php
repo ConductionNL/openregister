@@ -46,6 +46,18 @@ use Stringable;
  * it stores again, the image it clears and the inverse relations it starts.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\ObjectHandling
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Service\Object\ObjectVersionHandler
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugBatch
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugClientValue
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
  */
 final class SaveObjectUpdateObjectTest extends TestCase {
 
