@@ -324,7 +324,6 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 			$permissionHandler,
 			$rbac,
 			$this->createMock(RelationHandler::class),
-			$this->createMock(AuditTrailMapper::class),
 			$registerMapper,
 			$this->createMock(LoggerInterface::class),
 			$translation,
