@@ -464,6 +464,44 @@ class AuditTrailMapper extends QBMapper {
 	}//end find()
 
 	/**
+	 * The columns findAll() filters and sorts on. A key outside this list is dropped.
+	 *
+	 * @var string[]
+	 */
+	public const QUERY_COLUMNS = [
+		'id',
+		'uuid',
+		'schema',
+		'register',
+		'object',
+		'object_uuid',
+		'action',
+		'changed',
+		'user',
+		'user_name',
+		'session',
+		'request',
+		'ip_address',
+		'version',
+		'created',
+		// Flow attribution. Absent from this allowlist a filter is
+		// not rejected — it is silently DROPPED by the `continue`
+		// in findAll(), so `?flow_run=<uuid>` would return the whole
+		// unfiltered audit trail with a 200 and read as a run that
+		// had touched everything on the instance.
+		'flow_run',
+		'flow_node',
+		'flow_step',
+		// The cause and its run. Absent from this allowlist a
+		// filter is not rejected, it is silently DROPPED by the
+		// `continue` in findAll() — so `?cause=import` would answer the
+		// WHOLE unfiltered trail with a 200 and read as a load
+		// that had touched everything on the instance.
+		'cause',
+		'cause_run',
+	];
+
+	/**
 	 * Find all audit trails with filters and sorting
 	 *
 	 * @param int|null $limit The limit of the results
@@ -506,38 +544,7 @@ class AuditTrailMapper extends QBMapper {
 			// Ensure the field is a valid column name.
 			if (in_array(
 				$field,
-				[
-					'id',
-					'uuid',
-					'schema',
-					'register',
-					'object',
-					'object_uuid',
-					'action',
-					'changed',
-					'user',
-					'user_name',
-					'session',
-					'request',
-					'ip_address',
-					'version',
-					'created',
-					// Flow attribution. Absent from this allowlist a filter is
-					// not rejected — it is silently DROPPED by the `continue`
-					// below, so `?flow_run=<uuid>` would return the whole
-					// unfiltered audit trail with a 200 and read as a run that
-					// had touched everything on the instance.
-					'flow_run',
-					'flow_node',
-					'flow_step',
-					// The cause and its run. Absent from this allowlist a
-					// filter is not rejected, it is silently DROPPED by the
-					// `continue` below — so `?cause=import` would answer the
-					// WHOLE unfiltered trail with a 200 and read as a load
-					// that had touched everything on the instance.
-					'cause',
-					'cause_run',
-				]
+				self::QUERY_COLUMNS
 			) === false
 			) {
 				continue;
@@ -593,35 +600,7 @@ class AuditTrailMapper extends QBMapper {
 			// Ensure the field is a valid column name.
 			if (in_array(
 				$field,
-				[
-					'id',
-					'uuid',
-					'schema',
-					'register',
-					'object',
-					'object_uuid',
-					'action',
-					'changed',
-					'user',
-					'user_name',
-					'session',
-					'request',
-					'ip_address',
-					'version',
-					'created',
-					// Sortable for the same reason they are filterable: a run's
-					// writes are read in step order.
-					'flow_run',
-					'flow_node',
-					'flow_step',
-					// The cause and its run. Absent from this allowlist a
-					// filter is not rejected, it is silently DROPPED by the
-					// `continue` below — so `?cause=import` would answer the
-					// WHOLE unfiltered trail with a 200 and read as a load
-					// that had touched everything on the instance.
-					'cause',
-					'cause_run',
-				]
+				self::QUERY_COLUMNS
 			) === false
 			) {
 				continue;

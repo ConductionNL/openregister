@@ -54,7 +54,9 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Service\Object\PermissionCheck
  * @uses   \OCA\OpenRegister\Service\Object\DraftCallerRule
  * @uses   \OCA\OpenRegister\Service\Object\DraftStatusPolicy
- * @uses   \OCA\OpenRegister\Service\Object\ExplicitReveal
+ * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\BulkObjectSlugs
  * @uses   \OCA\OpenRegister\Service\ConditionMatcher
  * @uses   \OCA\OpenRegister\Service\OperatorEvaluator
  * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext

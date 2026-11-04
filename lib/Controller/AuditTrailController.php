@@ -265,6 +265,9 @@ class AuditTrailController extends Controller {
 			'from',
 			'to',
 			'identifier',
+			// The scoped list's cursor is where a walk resumes, not a column.
+			'cursor',
+			'_cursor',
 		];
 
 		return array_filter(
@@ -411,9 +414,10 @@ class AuditTrailController extends Controller {
 	 * instance" rather than "what happened to this object".
 	 *
 	 * The page is cursor-based and the table is never counted. `nextCursor`
-	 * comes back null when the trail is exhausted and an offset otherwise,
-	 * including when the scan budget ran out before the page filled, so a
-	 * short page is not the end of the list.
+	 * comes back null when the trail is exhausted and a sealed cursor
+	 * otherwise, including when the scan budget ran out before the page
+	 * filled, so a short page is not the end of the list. The cursor is sealed
+	 * because the offset it holds counts rows the caller may not read.
 	 *
 	 * @return JSONResponse The scoped page, or 401 when anonymous.
 	 *
@@ -437,15 +441,13 @@ class AuditTrailController extends Controller {
 
 		$params = $this->extractRequestParameters();
 
-		$cursor = 0;
+		// Only a cursor this list handed out resumes a walk. An offset is not
+		// accepted: where a walk resumes in the raw trail is never the client's
+		// choice, because the raw trail counts rows the client may not read.
+		$cursor = null;
 		$requested = ($this->request->getParam(key: 'cursor') ?? $this->request->getParam(key: '_cursor'));
 		if ($requested !== null && $requested !== '') {
-			$cursor = (int)$requested;
-		} elseif (($params['offset'] ?? null) !== null) {
-			// An offset is accepted as a starting cursor so a client that only
-			// knows the older parameter still walks the list, rather than
-			// silently reading page one over and over.
-			$cursor = (int)$params['offset'];
+			$cursor = (string)$requested;
 		}
 
 		$page = $this->readableLister->page(
