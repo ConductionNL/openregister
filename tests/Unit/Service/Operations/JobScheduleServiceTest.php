@@ -58,6 +58,11 @@ final class JobScheduleServiceTest extends TestCase {
 				$this->stored[$key] = $value;
 			}
 		);
+		$config->method('deleteAppValue')->willReturnCallback(
+			function (string $app, string $key): void {
+				unset($this->stored[$key]);
+			}
+		);
 
 		return new JobScheduleService($config);
 	}
@@ -186,5 +191,42 @@ final class JobScheduleServiceTest extends TestCase {
 		$this->assertSame(7200, $row['intervalSeconds']);
 		$this->assertSame(22, $row['windowStartHour']);
 		$this->assertSame(6, $row['windowEndHour']);
+	}
+
+	/**
+	 * A moved job keeps the schedule administered under its old class name.
+	 *
+	 * @return void
+	 */
+	public function testAMovedJobKeepsItsSchedule(): void {
+		$service = $this->service();
+		$service->administer(self::JOB, false, 7200, 22, 6);
+
+		$service->moveSchedule('Acme\\Moved\\NightlyJob', 'Acme\\Other\\NightlyJob');
+		$service->moveSchedule(self::JOB, 'Acme\\Moved\\NightlyJob');
+
+		$row = $service->describe('Acme\\Moved\\NightlyJob');
+		$this->assertFalse($row['enabled']);
+		$this->assertSame(7200, $row['intervalSeconds']);
+		$this->assertSame(22, $row['windowStartHour']);
+		$this->assertTrue($service->describe(self::JOB)['enabled']);
+		$this->assertCount(1, $this->stored);
+	}
+
+	/**
+	 * A schedule already stored under the new name is not overwritten, and the old one is dropped.
+	 *
+	 * @return void
+	 */
+	public function testAScheduleUnderTheNewNameWins(): void {
+		$service = $this->service();
+		$service->administer(self::JOB, null, 7200);
+		$service->administer('Acme\\Moved\\NightlyJob', null, 600);
+
+		$service->moveSchedule(self::JOB, 'Acme\\Moved\\NightlyJob');
+
+		$this->assertSame(600, $service->describe('Acme\\Moved\\NightlyJob')['intervalSeconds']);
+		$this->assertSame(JobScheduleService::DEFAULT_INTERVAL_SECONDS, $service->describe(self::JOB)['intervalSeconds']);
+		$this->assertCount(1, $this->stored);
 	}
 }

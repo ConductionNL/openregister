@@ -295,35 +295,22 @@ class FilePublishingHandler {
 	 *
 	 * @psalm-return array{path: string, filename: string, size: int, mimeType: 'application/zip'}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  ZIP creation requires handling multiple file and error scenarios
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple paths for file processing and error handling
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) ZIP archive creation with file processing requires extensive code
-	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function createObjectFilesZip(ObjectEntity|string $object, ?string $zipName = null): array {
-		// If string ID provided, try to find the object entity.
-		if (is_string($object) === true) {
-			try {
-				$object = $this->objectEntityMapper->find($object);
-			} catch (Exception $e) {
-				throw new Exception('Object not found: ' . $e->getMessage());
-			}
-		}
+		$object = $this->zipSubject(object: $object);
 
 		$this->logger->debug(
 			message: '[FilePublishingHandler] Creating ZIP archive for object: ' . $object->getId(),
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
-		// Check if ZipArchive extension is available.
 		if (class_exists('ZipArchive') === false) {
 			throw new Exception('PHP ZipArchive extension is not available');
 		}
 
-		// Get all files for the object, without the restricted ones the caller is not admitted to.
+		// Only the files the caller is admitted to; restricted ones are left out.
 		$files = $this->container->get(FileRestrictionGuard::class)->readableNodes(nodes: $this->fileService->getFiles($object));
-
 		if (empty($files) === true) {
 			throw new Exception('No files found for this object');
 		}
@@ -333,103 +320,158 @@ class FilePublishingHandler {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
-		// Generate ZIP filename.
-		if ($zipName === null) {
-			$objectIdentifier = $object->getUuid() ?? (string)$object->getId();
-			$zipName = 'object_' . $objectIdentifier . '_files_' . date('Y-m-d_H-i-s') . '.zip';
-		} elseif (pathinfo($zipName, PATHINFO_EXTENSION) !== 'zip') {
-			$zipName .= '.zip';
-		}
-
-		// Create temporary file for the ZIP.
+		$zipName = $this->zipNameFor(object: $object, zipName: $zipName);
 		$tempZipPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $zipName;
 
-		// Create new ZIP archive.
 		$zip = new ZipArchive();
 		$result = $zip->open($tempZipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-
 		if ($result !== true) {
 			throw new Exception('Cannot create ZIP file: ' . $this->getZipErrorMessage(errorCode: $result));
 		}
 
 		$addedFiles = 0;
-		$skippedFiles = 0;
-
-		// Add each file to the ZIP archive.
 		foreach ($files as $file) {
-			try {
-				if ($file instanceof \OCP\Files\File === false) {
-					$this->logger->warning(
-						message: '[FilePublishingHandler] Skipping non-file node: ' . $file->getName(),
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-					$skippedFiles++;
-					continue;
-				}
-
-				// @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-				$this->fileService->checkOwnership($file);
-
-				// Get file content.
-				$fileContent = $file->getContent();
-				$fileName = $file->getName();
-
-				// Add file to ZIP with its original name.
-				$added = $zip->addFromString($fileName, $fileContent);
-
-				if ($added === false) {
-					$this->logger->error(
-						message: '[FilePublishingHandler] Failed to add file to ZIP: ' . $fileName,
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-					$skippedFiles++;
-					continue;
-				}
-
-				$addedFiles++;
-				$this->logger->debug(
-					message: '[FilePublishingHandler] Added file to ZIP: ' . $fileName,
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			} catch (Exception $e) {
-				$this->logger->error(
-					message: '[FilePublishingHandler] Error processing file ' . $file->getName() . ': ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				$skippedFiles++;
+			$entry = $this->zipEntryOf(file: $file);
+			if ($entry === null) {
 				continue;
-			}//end try
+			}
+
+			if ($zip->addFromString($entry['name'], $entry['content']) === false) {
+				$this->logger->error(
+					message: '[FilePublishingHandler] Failed to add file to ZIP: ' . $entry['name'],
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+				continue;
+			}
+
+			$addedFiles++;
+			$this->logger->debug(
+				message: '[FilePublishingHandler] Added file to ZIP: ' . $entry['name'],
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
 		}//end foreach
 
-		// Close the ZIP archive.
-		$closeResult = $zip->close();
-		if ($closeResult === false) {
+		if ($zip->close() === false) {
 			throw new Exception('Failed to finalize ZIP archive');
 		}
 
-		$zipMsg = "[FilePublishingHandler] ZIP creation completed. Added: $addedFiles files, Skipped: $skippedFiles files";
+		$skippedFiles = count($files) - $addedFiles;
 		$this->logger->debug(
-			message: $zipMsg,
+			message: "[FilePublishingHandler] ZIP creation completed. Added: $addedFiles files, Skipped: $skippedFiles files",
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
-		// Check if ZIP file was created successfully.
-		if (file_exists($tempZipPath) === false) {
+		return $this->zipResult(path: $tempZipPath, zipName: $zipName);
+	}//end createObjectFilesZip()
+
+	/**
+	 * Describe a finished archive.
+	 *
+	 * @param string $path    Where the archive was written.
+	 * @param string $zipName Its file name.
+	 *
+	 * @return array{path: string, filename: string, size: int, mimeType: 'application/zip'} The description.
+	 *
+	 * @throws Exception When the archive is missing or its size cannot be read.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function zipResult(string $path, string $zipName): array {
+		if (file_exists($path) === false) {
 			throw new Exception('ZIP file was not created successfully');
 		}
 
-		$fileSize = filesize($tempZipPath);
+		$fileSize = filesize($path);
 		if ($fileSize === false) {
 			throw new Exception('Cannot determine ZIP file size');
 		}
 
 		return [
-			'path' => $tempZipPath,
+			'path' => $path,
 			'filename' => $zipName,
 			'size' => $fileSize,
 			'mimeType' => 'application/zip',
 		];
-	}//end createObjectFilesZip()
+	}//end zipResult()
+
+	/**
+	 * The object to zip, looked up when given by id.
+	 *
+	 * @param ObjectEntity|string $object The object entity or ID.
+	 *
+	 * @return ObjectEntity The object.
+	 *
+	 * @throws Exception When no object has that id.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function zipSubject(ObjectEntity|string $object): ObjectEntity {
+		if (is_string($object) === false) {
+			return $object;
+		}
+
+		try {
+			return $this->objectEntityMapper->find($object);
+		} catch (Exception $e) {
+			throw new Exception('Object not found: ' . $e->getMessage());
+		}
+	}//end zipSubject()
+
+	/**
+	 * The archive's file name: the given name with a `.zip` extension, or one
+	 * made from the object's uuid (or id) and the current time.
+	 *
+	 * @param ObjectEntity $object  The object.
+	 * @param string|null  $zipName The requested name, if any.
+	 *
+	 * @return string The file name.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function zipNameFor(ObjectEntity $object, ?string $zipName): string {
+		if ($zipName === null) {
+			$objectIdentifier = $object->getUuid() ?? (string)$object->getId();
+			return 'object_' . $objectIdentifier . '_files_' . date('Y-m-d_H-i-s') . '.zip';
+		}
+
+		if (pathinfo($zipName, PATHINFO_EXTENSION) !== 'zip') {
+			$zipName .= '.zip';
+		}
+
+		return $zipName;
+	}//end zipNameFor()
+
+	/**
+	 * The name and content to archive for one node. A folder, or a file the
+	 * caller cannot read, is logged and skipped.
+	 *
+	 * @param mixed $file The node, a file or a folder.
+	 *
+	 * @return array{name: string, content: string}|null The entry, or null to skip the node.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function zipEntryOf($file): ?array {
+		if ($file instanceof File === false) {
+			$this->logger->warning(
+				message: '[FilePublishingHandler] Skipping non-file node: ' . $file->getName(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+
+		try {
+			// @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
+			$this->fileService->checkOwnership($file);
+			return ['name' => $file->getName(), 'content' => $file->getContent()];
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[FilePublishingHandler] Error processing file ' . $file->getName() . ': ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+	}//end zipEntryOf()
 
 	/**
 	 * Get a human-readable error message for ZipArchive error codes.

@@ -36,6 +36,9 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Flow\FlowStateHandle
  * @uses \OCA\OpenRegister\Service\Flow\FlowResumeState
  * @uses \OCA\OpenRegister\Service\Flow\FlowStepHistory
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHop
+ * @uses \OCA\OpenRegister\Service\Flow\FlowWalkHop
+ * @uses \OCA\OpenRegister\Service\Flow\FlowWalkPass
  */
 class ObjectActionSecretsTest extends TestCase {
 

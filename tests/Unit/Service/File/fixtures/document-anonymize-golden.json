@@ -1,0 +1,469 @@
+{
+    "dossier-empty": {
+        "written": [
+            {
+                "path": "letter_anonymized.txt",
+                "content": "[PERSON: 1] woont in De [ORGANIZATION: o1].\nBSN [BSN: b1], tel [PHONE: 2].\n[PERSON: 1] [UNKNOWN: x1] aan [PERSON: 3] en aan [LOCATION: l1]."
+            }
+        ],
+        "placeholders": {
+            "501": "[PERSON: 1]",
+            "300": "[PHONE: 2]",
+            "777": "[PERSON: 3]"
+        },
+        "residuals": [],
+        "trace": [
+            {
+                "findSkippedEntityValuesForFile": 42
+            },
+            {
+                "findEntityIdsByValueForFile": 42
+            },
+            {
+                "log": "debug",
+                "message": "[DocumentProcessingHandler] Words replaced in text document",
+                "context": {
+                    "originalFile": "/files/letter.txt",
+                    "outputFile": "/files/letter_anonymized.txt",
+                    "replacements": 7
+                }
+            },
+            {
+                "markAsAnonymizedWithPlaceholders": [
+                    42,
+                    {
+                        "501": "[PERSON: 1]",
+                        "300": "[PHONE: 2]",
+                        "777": "[PERSON: 3]"
+                    }
+                ]
+            }
+        ]
+    },
+    "dossier-key": {
+        "written": [
+            {
+                "path": "letter_anonymized.txt",
+                "content": "[PERSON: 2] woont in De [ORGANIZATION: o1].\nBSN [BSN: b1], tel [PHONE: 3].\n[PERSON: 2] [UNKNOWN: x1] aan [PERSON: 1] en aan [LOCATION: l1]."
+            }
+        ],
+        "placeholders": {
+            "501": "[PERSON: 2]",
+            "300": "[PHONE: 3]",
+            "777": "[PERSON: 1]"
+        },
+        "residuals": [],
+        "trace": [
+            {
+                "findSkippedEntityValuesForFile": 42
+            },
+            {
+                "findEntityIdsByValueForFile": 42
+            },
+            {
+                "getById": 99
+            },
+            {
+                "findEntityIdsByValueForFiles": [
+                    8
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[DocumentProcessingHandler] Recomputed per-dossier placeholder numbering",
+                "context": {
+                    "dossier_key": " 99 ",
+                    "folder_id": 99,
+                    "file_count": 1,
+                    "row_count": 3
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[DocumentProcessingHandler] Words replaced in text document",
+                "context": {
+                    "originalFile": "/files/letter.txt",
+                    "outputFile": "/files/letter_anonymized.txt",
+                    "replacements": 7
+                }
+            },
+            {
+                "markAsAnonymizedWithPlaceholders": [
+                    42,
+                    {
+                        "501": "[PERSON: 2]",
+                        "300": "[PHONE: 3]",
+                        "777": "[PERSON: 1]"
+                    }
+                ]
+            }
+        ]
+    },
+    "dossier-parent": {
+        "written": [
+            {
+                "path": "letter_anonymized.txt",
+                "content": "[PERSON: 2] woont in De [ORGANIZATION: o1].\nBSN [BSN: b1], tel [PHONE: 3].\n[PERSON: 2] [UNKNOWN: x1] aan [PERSON: 1] en aan [LOCATION: l1]."
+            }
+        ],
+        "placeholders": {
+            "501": "[PERSON: 2]",
+            "300": "[PHONE: 3]",
+            "777": "[PERSON: 1]"
+        },
+        "residuals": [],
+        "trace": [
+            {
+                "findSkippedEntityValuesForFile": 42
+            },
+            {
+                "findEntityIdsByValueForFile": 42
+            },
+            {
+                "findEntityIdsByValueForFiles": [
+                    42
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[DocumentProcessingHandler] Recomputed per-dossier placeholder numbering",
+                "context": {
+                    "dossier_key": null,
+                    "folder_id": 7,
+                    "file_count": 1,
+                    "row_count": 3
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[DocumentProcessingHandler] Words replaced in text document",
+                "context": {
+                    "originalFile": "/files/letter.txt",
+                    "outputFile": "/files/letter_anonymized.txt",
+                    "replacements": 7
+                }
+            },
+            {
+                "markAsAnonymizedWithPlaceholders": [
+                    42,
+                    {
+                        "501": "[PERSON: 2]",
+                        "300": "[PHONE: 3]",
+                        "777": "[PERSON: 1]"
+                    }
+                ]
+            }
+        ]
+    },
+    "mark-fails": {
+        "written": [
+            {
+                "path": "letter_anonymized.txt",
+                "content": "[PERSON: 1] woont in De [ORGANIZATION: o1].\nBSN [BSN: b1], tel [PHONE: 2].\n[PERSON: 1] [UNKNOWN: x1] aan [PERSON: 3] en aan [LOCATION: l1]."
+            }
+        ],
+        "placeholders": {
+            "501": "[PERSON: 1]",
+            "300": "[PHONE: 2]",
+            "777": "[PERSON: 3]"
+        },
+        "residuals": [],
+        "trace": [
+            {
+                "findSkippedEntityValuesForFile": 42
+            },
+            {
+                "findEntityIdsByValueForFile": 42
+            },
+            {
+                "log": "debug",
+                "message": "[DocumentProcessingHandler] Words replaced in text document",
+                "context": {
+                    "originalFile": "/files/letter.txt",
+                    "outputFile": "/files/letter_anonymized.txt",
+                    "replacements": 7
+                }
+            },
+            {
+                "markAsAnonymizedWithPlaceholders": [
+                    42,
+                    {
+                        "501": "[PERSON: 1]",
+                        "300": "[PHONE: 2]",
+                        "777": "[PERSON: 3]"
+                    }
+                ]
+            },
+            {
+                "log": "warning",
+                "message": "DocumentProcessingHandler: markAsAnonymizedWithPlaceholders failed after redaction",
+                "context": {
+                    "fileId": 42,
+                    "error": "db gone"
+                }
+            }
+        ]
+    },
+    "no-extension": {
+        "written": [
+            {
+                "path": "letter_anonymized",
+                "content": "[PERSON: p1] woont in De [ORGANIZATION: o1].\nBSN [BSN: b1], tel [PHONE: t1].\n[PERSON: p1] [UNKNOWN: x1] aan [PERSON: p2] en aan [LOCATION: l1]."
+            }
+        ],
+        "placeholders": [],
+        "residuals": [],
+        "trace": [
+            {
+                "findSkippedEntityValuesForFile": 42
+            },
+            {
+                "findEntityIdsByValueForFile": 42
+            },
+            {
+                "log": "debug",
+                "message": "[DocumentProcessingHandler] Words replaced in text document",
+                "context": {
+                    "originalFile": "/files/letter.txt",
+                    "outputFile": "/files/letter_anonymized",
+                    "replacements": 7
+                }
+            },
+            {
+                "markAsAnonymizedWithPlaceholders": [
+                    42,
+                    []
+                ]
+            }
+        ]
+    },
+    "no-file-id": {
+        "written": [
+            {
+                "path": "letter_anonymized.txt",
+                "content": "[PERSON: p1] woont in De [ORGANIZATION: o1].\nBSN [BSN: b1], tel [PHONE: t1].\n[PERSON: p1] [UNKNOWN: x1] aan [PERSON: p2] en aan [LOCATION: l1]."
+            }
+        ],
+        "placeholders": [],
+        "residuals": [],
+        "trace": [
+            {
+                "log": "debug",
+                "message": "[DocumentProcessingHandler] Words replaced in text document",
+                "context": {
+                    "originalFile": "/files/letter.txt",
+                    "outputFile": "/files/letter_anonymized.txt",
+                    "replacements": 7
+                }
+            }
+        ]
+    },
+    "nothing-to-replace": {
+        "written": [
+            {
+                "path": "letter_anonymized.txt",
+                "content": "Jan Jansen woont in De gemeente Amsterdam.\nBSN 123456789, tel 06-12345678.\nJan Jansen schreef aan Piet en aan Amsterdam."
+            }
+        ],
+        "placeholders": [],
+        "residuals": [],
+        "trace": [
+            {
+                "findSkippedEntityValuesForFile": 42
+            },
+            {
+                "findEntityIdsByValueForFile": 42
+            },
+            {
+                "log": "debug",
+                "message": "[DocumentProcessingHandler] Words replaced in text document",
+                "context": {
+                    "originalFile": "/files/letter.txt",
+                    "outputFile": "/files/letter_anonymized.txt",
+                    "replacements": 0
+                }
+            }
+        ]
+    },
+    "plain": {
+        "written": [
+            {
+                "path": "letter_anonymized.txt",
+                "content": "[PERSON: p1] woont in De [ORGANIZATION: o1].\nBSN [BSN: b1], tel [PHONE: t1].\n[PERSON: p1] [UNKNOWN: x1] aan [PERSON: p2] en aan [LOCATION: l1]."
+            }
+        ],
+        "placeholders": [],
+        "residuals": [],
+        "trace": [
+            {
+                "findSkippedEntityValuesForFile": 42
+            },
+            {
+                "findEntityIdsByValueForFile": 42
+            },
+            {
+                "log": "debug",
+                "message": "[DocumentProcessingHandler] Words replaced in text document",
+                "context": {
+                    "originalFile": "/files/letter.txt",
+                    "outputFile": "/files/letter_anonymized.txt",
+                    "replacements": 7
+                }
+            },
+            {
+                "markAsAnonymizedWithPlaceholders": [
+                    42,
+                    []
+                ]
+            }
+        ]
+    },
+    "skipped": {
+        "written": [
+            {
+                "path": "letter_anonymized.txt",
+                "content": "[PERSON: p1] woont in De [ORGANIZATION: o1].\nBSN 123456789, tel [PHONE: t1].\n[PERSON: p1] [UNKNOWN: x1] aan Piet en aan [LOCATION: l1]."
+            }
+        ],
+        "placeholders": [],
+        "residuals": [],
+        "trace": [
+            {
+                "findSkippedEntityValuesForFile": 42
+            },
+            {
+                "findEntityIdsByValueForFile": 42
+            },
+            {
+                "log": "debug",
+                "message": "[DocumentProcessingHandler] Words replaced in text document",
+                "context": {
+                    "originalFile": "/files/letter.txt",
+                    "outputFile": "/files/letter_anonymized.txt",
+                    "replacements": 5
+                }
+            },
+            {
+                "markAsAnonymizedWithPlaceholders": [
+                    42,
+                    []
+                ]
+            }
+        ]
+    },
+    "skipped-numeric-lookalike": {
+        "written": [
+            {
+                "path": "letter_anonymized.txt",
+                "content": "[PERSON: p1] woont in De [ORGANIZATION: o1].\nBSN [BSN: b1], tel [PHONE: t1].\n[PERSON: p1] [UNKNOWN: x1] aan [PERSON: p2] en aan [LOCATION: l1]."
+            }
+        ],
+        "placeholders": [],
+        "residuals": [],
+        "trace": [
+            {
+                "findSkippedEntityValuesForFile": 42
+            },
+            {
+                "findEntityIdsByValueForFile": 42
+            },
+            {
+                "log": "debug",
+                "message": "[DocumentProcessingHandler] Words replaced in text document",
+                "context": {
+                    "originalFile": "/files/letter.txt",
+                    "outputFile": "/files/letter_anonymized.txt",
+                    "replacements": 7
+                }
+            },
+            {
+                "markAsAnonymizedWithPlaceholders": [
+                    42,
+                    []
+                ]
+            }
+        ]
+    },
+    "stable-ids": {
+        "written": [
+            {
+                "path": "letter_anonymized.txt",
+                "content": "[PERSON: 1] woont in De [ORGANIZATION: o1].\nBSN [BSN: b1], tel [PHONE: 2].\n[PERSON: 1] [UNKNOWN: x1] aan [PERSON: 3] en aan [LOCATION: l1]."
+            }
+        ],
+        "placeholders": {
+            "501": "[PERSON: 1]",
+            "300": "[PHONE: 2]",
+            "777": "[PERSON: 3]"
+        },
+        "residuals": [],
+        "trace": [
+            {
+                "findSkippedEntityValuesForFile": 42
+            },
+            {
+                "findEntityIdsByValueForFile": 42
+            },
+            {
+                "log": "debug",
+                "message": "[DocumentProcessingHandler] Words replaced in text document",
+                "context": {
+                    "originalFile": "/files/letter.txt",
+                    "outputFile": "/files/letter_anonymized.txt",
+                    "replacements": 7
+                }
+            },
+            {
+                "markAsAnonymizedWithPlaceholders": [
+                    42,
+                    {
+                        "501": "[PERSON: 1]",
+                        "300": "[PHONE: 2]",
+                        "777": "[PERSON: 3]"
+                    }
+                ]
+            }
+        ]
+    },
+    "stable-ids-dutch": {
+        "written": [
+            {
+                "path": "letter_anonymized.txt",
+                "content": "[PERSON-NL: 1] woont in De [ORGANIZATION-NL: o1].\nBSN [BSN: b1], tel [PHONE-NL: 2].\n[PERSON-NL: 1] [UNKNOWN: x1] aan [PERSON-NL: 3] en aan [LOCATION-NL: l1]."
+            }
+        ],
+        "placeholders": {
+            "501": "[PERSON-NL: 1]",
+            "300": "[PHONE-NL: 2]",
+            "777": "[PERSON-NL: 3]"
+        },
+        "residuals": [],
+        "trace": [
+            {
+                "findSkippedEntityValuesForFile": 42
+            },
+            {
+                "findEntityIdsByValueForFile": 42
+            },
+            {
+                "log": "debug",
+                "message": "[DocumentProcessingHandler] Words replaced in text document",
+                "context": {
+                    "originalFile": "/files/letter.txt",
+                    "outputFile": "/files/letter_anonymized.txt",
+                    "replacements": 7
+                }
+            },
+            {
+                "markAsAnonymizedWithPlaceholders": [
+                    42,
+                    {
+                        "501": "[PERSON-NL: 1]",
+                        "300": "[PHONE-NL: 2]",
+                        "777": "[PERSON-NL: 3]"
+                    }
+                ]
+            }
+        ]
+    }
+}
