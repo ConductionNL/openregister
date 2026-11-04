@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Reference;
 
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
 use OCP\Collaboration\Reference\ADiscoverableReferenceProvider;
@@ -78,7 +78,7 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	 * Constructor for AbstractSchemaReferenceProvider.
 	 *
 	 * @param ObjectPreviewFormatter $formatter Shared preview-formatting/URL-parsing service
-	 * @param RegisterMapper $registerMapper Register mapper for slug-to-id resolution
+	 * @param RegisterMapperInterface $registerMapper Register mapper for slug-to-id resolution
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for slug-to-id resolution and the `smartPickerEnabled` flag
 	 * @param LoggerInterface $logger Logger
 	 * @param string|null $userId Current user ID (nullable for public/anonymous access)
@@ -89,7 +89,7 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	 */
 	public function __construct(
 		private readonly ObjectPreviewFormatter $formatter,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 		private readonly ?string $userId,

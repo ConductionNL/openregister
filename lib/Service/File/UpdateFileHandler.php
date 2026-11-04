@@ -84,7 +84,7 @@ class UpdateFileHandler {
 	 * @param ISystemTagManager $systemTagManager System tag manager.
 	 * @param ISystemTagObjectMapper $systemTagMapper System tag object mapper.
 	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param \OCA\OpenRegister\Db\FileMapper|null $fileMapper Optional OR-side metadata mapper for
+	 * @param \OCA\OpenRegister\Db\FileMapperInterface|null $fileMapper Optional OR-side metadata mapper for
 	 *                                                         description / category / labels writes.
 	 *                                                         Null-safe so legacy fixtures keep working.
 	 */
@@ -97,7 +97,7 @@ class UpdateFileHandler {
 		private readonly ISystemTagManager $systemTagManager,
 		private readonly ISystemTagObjectMapper $systemTagMapper,
 		private readonly LoggerInterface $logger,
-		private readonly ?\OCA\OpenRegister\Db\FileMapper $fileMapper = null,
+		private readonly ?\OCA\OpenRegister\Db\FileMapperInterface $fileMapper = null,
 	) {
 	}//end __construct()
 

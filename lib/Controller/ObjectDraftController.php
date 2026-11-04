@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Service\Object\DraftActivation;
@@ -67,7 +67,7 @@ class ObjectDraftController extends Controller {
 	 * @param string          $appName    App name.
 	 * @param IRequest        $request    Request.
 	 * @param ObjectService   $objects    Resolves the record through the RBAC boundary.
-	 * @param RegisterMapper  $registers  Resolves the register.
+	 * @param RegisterMapperInterface  $registers  Resolves the register.
 	 * @param SchemaMapperInterface    $schemas    Resolves the schema.
 	 * @param DraftActivation $activation Makes the draft definitive.
 	 * @param IUserSession    $session    The acting user, who is the asserted owner.
@@ -78,7 +78,7 @@ class ObjectDraftController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly ObjectService $objects,
-		private readonly RegisterMapper $registers,
+		private readonly RegisterMapperInterface $registers,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly DraftActivation $activation,
 		private readonly IUserSession $session,

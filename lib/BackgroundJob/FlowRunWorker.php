@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 use DateTime;
 use OCA\OpenRegister\Db\FlowClaimMapper;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Flow\FlowConsentParking;
@@ -157,7 +157,7 @@ class FlowRunWorker extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Job scheduling clock.
-	 * @param FlowRunMapper $mapper Reads and prunes runs.
+	 * @param FlowRunMapperInterface $mapper Reads and prunes runs.
 	 * @param FlowRunAdvancer $advancer Advances one run (shared with sync runs).
 	 * @param IAppConfig $appConfig Reads the retention setting.
 	 * @param LoggerInterface $logger The logger.
@@ -188,7 +188,7 @@ class FlowRunWorker extends TimedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly FlowRunMapper $mapper,
+		private readonly FlowRunMapperInterface $mapper,
 		private readonly FlowRunAdvancer $advancer,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,

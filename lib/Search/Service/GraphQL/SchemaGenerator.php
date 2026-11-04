@@ -30,7 +30,7 @@ use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Schema;
 use GraphQL\Type\SchemaConfig;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema as RegisterSchema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Service\GraphQL\Scalar\DateTimeType;
@@ -123,12 +123,12 @@ class SchemaGenerator {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registerMapper Register mapper
+	 * @param RegisterMapperInterface $registerMapper Register mapper
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper
 	 * @param IUserSession $userSession The session that says who is asking
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IUserSession $userSession,
 	) {

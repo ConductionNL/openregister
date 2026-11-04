@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Middleware;
 
 use DateTime;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -70,13 +70,13 @@ class TenantQuotaMiddleware extends Middleware {
 	/**
 	 * Constructor
 	 *
-	 * @param OrganisationService $organisationService Organisation service
+	 * @param OrganisationServiceInterface $organisationService Organisation service
 	 * @param IUserSession $userSession User session
 	 * @param IGroupManager $groupManager Group manager
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,

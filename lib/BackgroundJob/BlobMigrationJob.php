@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -102,7 +102,7 @@ class BlobMigrationJob extends TimedJob {
 		$logger = $this->container->get(LoggerInterface::class);
 		$db = $this->container->get(IDBConnection::class);
 		$appConfig = $this->container->get(IAppConfig::class);
-		$registerMapper = $this->container->get(RegisterMapper::class);
+		$registerMapper = $this->container->get(RegisterMapperInterface::class);
 		$schemaMapper = $this->container->get(SchemaMapperInterface::class);
 		$magicMapper = $this->container->get(MagicMapper::class);
 

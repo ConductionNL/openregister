@@ -88,7 +88,7 @@ class FileFormattingHandler {
 	 * @param ILockManager $lockManager Lock manager for reading file lock state.
 	 * @param IUserSession $userSession Session used to gate lock fields for authenticated callers only.
 	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param \OCA\OpenRegister\Db\FileMapper|null $fileMapper Optional OR-side metadata mapper for
+	 * @param \OCA\OpenRegister\Db\FileMapperInterface|null $fileMapper Optional OR-side metadata mapper for
 	 *                                                         description / category / labels / downloadCount
 	 *                                                         enrichment. When null (test fixtures, legacy
 	 *                                                         callers), enrichment is skipped silently.
@@ -100,7 +100,7 @@ class FileFormattingHandler {
 		private readonly ILockManager $lockManager,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly ?\OCA\OpenRegister\Db\FileMapper $fileMapper = null,
+		private readonly ?\OCA\OpenRegister\Db\FileMapperInterface $fileMapper = null,
 	) {
 	}//end __construct()
 

@@ -49,7 +49,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ProcessingLogEntry;
 use OCA\OpenRegister\Db\ProcessingLogMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
@@ -99,7 +99,7 @@ class ProcessingLogService {
 	 * @param ProcessingLogMapper $logMapper Append-only log mapper.
 	 * @param VerwerkingsactiviteitMapper $vrwMapper Activity resolver + fallback seed.
 	 * @param SchemaMapperInterface $schemaMapper Schema annotation reader.
-	 * @param RegisterMapper $registerMapper Register annotation reader (inheritance).
+	 * @param RegisterMapperInterface $registerMapper Register annotation reader (inheritance).
 	 * @param IUserSession $userSession Actor identity.
 	 * @param LoggerInterface $logger Fail-soft diagnostics.
 	 */
@@ -107,7 +107,7 @@ class ProcessingLogService {
 		private readonly ProcessingLogMapper $logMapper,
 		private readonly VerwerkingsactiviteitMapper $vrwMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {

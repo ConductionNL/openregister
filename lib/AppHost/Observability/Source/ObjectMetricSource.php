@@ -32,7 +32,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\MetricSourceInterface;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
@@ -48,13 +48,13 @@ class ObjectMetricSource implements MetricSourceInterface {
 	 * Constructor.
 	 *
 	 * @param ObjectService $objectService OR object service (aggregation).
-	 * @param RegisterMapper $registerMapper Slug → register id.
+	 * @param RegisterMapperInterface $registerMapper Slug → register id.
 	 * @param SchemaMapperInterface $schemaMapper Slug → schema id.
 	 * @param LoggerInterface $logger PSR logger.
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {

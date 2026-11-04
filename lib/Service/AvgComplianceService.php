@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ProcessingLogMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
@@ -76,7 +76,7 @@ class AvgComplianceService {
 	 *
 	 * @param IDBConnection $db DB for the GdprEntity join.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
-	 * @param RegisterMapper $registerMapper Register lookup (annotation
+	 * @param RegisterMapperInterface $registerMapper Register lookup (annotation
 	 *                                       fallback).
 	 * @param LoggerInterface $logger Logger.
 	 * @param ProcessingLogMapper|null $logMapper Read-log mapper (fallback-gap count).
@@ -85,7 +85,7 @@ class AvgComplianceService {
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly LoggerInterface $logger,
 		private readonly ?ProcessingLogMapper $logMapper = null,
 		private readonly ?VerwerkingsactiviteitMapper $vrwMapper = null,

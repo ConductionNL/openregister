@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -58,11 +58,11 @@ class ReconcileMagicTablesCommand extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registerMapper Register lookups.
+	 * @param RegisterMapperInterface $registerMapper Register lookups.
 	 * @param MagicMapper $magicMapper Magic-table sync + introspection.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly MagicMapper $magicMapper,
 	) {
 		parent::__construct();

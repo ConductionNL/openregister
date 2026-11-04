@@ -36,7 +36,7 @@ use OCA\OpenRegister\Db\Feedback;
 use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Db\MessageMapper;
 use OCA\OpenRegister\Service\ChatService;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -128,9 +128,9 @@ class ChatController extends Controller {
 	 *
 	 * Handles organisation-related operations and permissions.
 	 *
-	 * @var OrganisationService Organisation service instance
+	 * @var OrganisationServiceInterface Organisation service instance
 	 */
-	private readonly OrganisationService $organisationService;
+	private readonly OrganisationServiceInterface $organisationService;
 
 	/**
 	 * Logger
@@ -172,7 +172,7 @@ class ChatController extends Controller {
 	 * @param MessageMapper $messageMapper Message mapper for database operations
 	 * @param FeedbackMapper $feedbackMapper Feedback mapper for database operations
 	 * @param AgentMapper $agentMapper Agent mapper for database operations
-	 * @param OrganisationService $organisationService Organisation service for permissions
+	 * @param OrganisationServiceInterface $organisationService Organisation service for permissions
 	 * @param IDBConnection $db Database connection for direct queries
 	 * @param LoggerInterface $logger Logger for error tracking
 	 * @param IL10N $l10n Localization service for translations
@@ -190,7 +190,7 @@ class ChatController extends Controller {
 		MessageMapper $messageMapper,
 		FeedbackMapper $feedbackMapper,
 		AgentMapper $agentMapper,
-		OrganisationService $organisationService,
+		OrganisationServiceInterface $organisationService,
 		IDBConnection $db,
 		LoggerInterface $logger,
 		IL10N $l10n,

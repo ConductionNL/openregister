@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -56,7 +56,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/saas-multi-tenant/spec.md
  */
-class OrganisationService {
+class OrganisationService implements OrganisationServiceInterface {
 	/**
 	 * App name for user configuration storage
 	 */
@@ -134,9 +134,9 @@ class OrganisationService {
 	/**
 	 * Organisation mapper for database operations
 	 *
-	 * @var OrganisationMapper
+	 * @var OrganisationMapperInterface
 	 */
-	private OrganisationMapper $organisationMapper;
+	private OrganisationMapperInterface $organisationMapper;
 
 	/**
 	 * App config for storing user preferences
@@ -204,7 +204,7 @@ class OrganisationService {
 	/**
 	 * OrganisationService constructor
 	 *
-	 * @param OrganisationMapper $organisationMapper Organisation database mapper
+	 * @param OrganisationMapperInterface $organisationMapper Organisation database mapper
 	 * @param IUserSession $userSession User session service
 	 * @param ISession $session Session storage service for caching
 	 * @param IConfig $config Configuration service for persistent storage
@@ -215,7 +215,7 @@ class OrganisationService {
 	 * @param SettingsServiceInterface|null $settingsService Settings service (optional)
 	 */
 	public function __construct(
-		OrganisationMapper $organisationMapper,
+		OrganisationMapperInterface $organisationMapper,
 		IUserSession $userSession,
 		ISession $session,
 		IConfig $config,

@@ -37,11 +37,11 @@ namespace OCA\OpenRegister\Service\Case;
 
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
-use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -61,17 +61,17 @@ class CaseRealisationService {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskService $tasks The task lifecycle (its trusted creation path).
+	 * @param TaskServiceInterface $tasks The task lifecycle (its trusted creation path).
 	 * @param TaskMapper $taskRows The task table, for the terminal-outcome read.
-	 * @param FlowRunService $runs The one queue funnel.
-	 * @param FlowRunMapper $runRows The run table, for the terminal-outcome read.
+	 * @param FlowRunServiceInterface $runs The one queue funnel.
+	 * @param FlowRunMapperInterface $runRows The run table, for the terminal-outcome read.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		private readonly TaskService $tasks,
+		private readonly TaskServiceInterface $tasks,
 		private readonly TaskMapper $taskRows,
-		private readonly FlowRunService $runs,
-		private readonly FlowRunMapper $runRows,
+		private readonly FlowRunServiceInterface $runs,
+		private readonly FlowRunMapperInterface $runRows,
 		private readonly LoggerInterface $logger,
 	) {
 

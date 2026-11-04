@@ -96,7 +96,19 @@ class DocumentProcessingHandlerPdfTest extends TestCase {
 	 * @return string The PDF bytes.
 	 */
 	private static function buildPdf(string $bodyText, string $author): string {
-		$stream = (string)gzcompress("BT\n/F1 12 Tf\n72 720 Td\n(" . $bodyText . ") Tj\nET\n", 6);
+		return self::buildPdfWithOps(ops: "BT\n/F1 12 Tf\n72 720 Td\n(" . $bodyText . ") Tj\nET\n", author: $author);
+	}//end buildPdf()
+
+	/**
+	 * Build a minimal one-page PDF from raw content-stream operators.
+	 *
+	 * @param string $ops    The page content stream.
+	 * @param string $author The /Info Author value.
+	 *
+	 * @return string The PDF bytes.
+	 */
+	private static function buildPdfWithOps(string $ops, string $author): string {
+		$stream = (string)gzcompress($ops, 6);
 		$objects = [
 			1 => "<< /Type /Catalog /Pages 2 0 R >>",
 			2 => "<< /Type /Pages /Kids [ 3 0 R ] /Count 1 >>",
@@ -121,7 +133,7 @@ class DocumentProcessingHandlerPdfTest extends TestCase {
 		}
 
 		return $pdf . "trailer\n<< /Size 7 /Root 1 0 R /Info 6 0 R >>\nstartxref\n" . $xrefStart . "\n%%EOF\n";
-	}//end buildPdf()
+	}//end buildPdfWithOps()
 
 	/**
 	 * A PDF with a text layer is rewritten, its metadata stripped, and the
@@ -157,4 +169,110 @@ class DocumentProcessingHandlerPdfTest extends TestCase {
 		$this->assertStringContainsString('[PERSON: 1]', $text);
 		$this->assertStringNotContainsString('Jan Jansen', $text);
 	}//end testPdfIsAnonymisedAndMetadataSanitised()
+
+	/**
+	 * An /Encrypt trailer reference is refused before any parsing.
+	 *
+	 * @return void
+	 */
+	public function testEncryptedTrailerIsRejected(): void {
+		try {
+			$this->makeHandler()->replaceWords(
+				node: $this->makePdfNode(content: "%PDF-1.4\ntrailer\n<< /Size 7 /Encrypt 7 0 R >>\n%%EOF\n"),
+				replacements: ['Jan' => '[PERSON: 1]']
+			);
+			$this->fail('Expected a PdfAnonymisationException');
+		} catch (PdfAnonymisationException $e) {
+			$this->assertSame(PdfAnonymisationException::REASON_ENCRYPTED_PDF, $e->getReason());
+			$this->assertSame(['stage' => 'input.encryption_probe'], $e->getDiagnostic());
+			$this->assertNull($e->getPrevious());
+		}
+	}//end testEncryptedTrailerIsRejected()
+
+	/**
+	 * A PDF without extractable text defers to OCR.
+	 *
+	 * @return void
+	 */
+	public function testBlankTextLayerDefersToOcr(): void {
+		try {
+			$this->makeHandler()->replaceWords(
+				node: $this->makePdfNode(content: self::buildPdfWithOps(ops: "BT\n/F1 12 Tf\n72 720 Td\n( ) Tj\nET\n", author: 'x')),
+				replacements: ['Jan' => '[PERSON: 1]']
+			);
+			$this->fail('Expected a PdfAnonymisationException');
+		} catch (PdfAnonymisationException $e) {
+			$this->assertSame(PdfAnonymisationException::REASON_TEXT_LAYER_MISSING, $e->getReason());
+			$this->assertSame(['stage' => 'input.text_layer_probe'], $e->getDiagnostic());
+		}
+	}//end testBlankTextLayerDefersToOcr()
+
+	/**
+	 * Data for the lenient residual run: placeholder => expected residual record.
+	 *
+	 * @return array<string, array{0: string, 1: array<int, array<string, string>>}>
+	 */
+	public static function residualProvider(): array {
+		return [
+			'typed placeholder' => ['[PERSON: 3]', [['text' => 'Jan Jansen', 'type' => 'PERSON', 'id' => '3']]],
+			'free placeholder'  => ['XXXX', [['text' => 'Jan Jansen', 'type' => 'UNKNOWN', 'id' => '']]],
+		];
+	}//end residualProvider()
+
+	/**
+	 * A lenient run over text SAPP cannot rewrite still writes the file, replaces
+	 * an existing output, and reports the residual entity records.
+	 *
+	 * @param string                             $placeholder The substitution.
+	 * @param array<int, array<string, string>> $expected    The expected residual records.
+	 *
+	 * @dataProvider residualProvider
+	 *
+	 * @return void
+	 */
+	public function testLenientRunReportsResidualsAndReplacesOutput(string $placeholder, array $expected): void {
+		$existing = $this->createMock(originalClassName: File::class);
+		$existing->expects($this->once())->method('delete');
+		$folder = $this->createMock(originalClassName: Folder::class);
+		$folder->method('nodeExists')->with('out.pdf')->willReturn(true);
+		$folder->method('get')->with('out.pdf')->willReturn($existing);
+		$written = $this->createMock(originalClassName: File::class);
+		$folder->expects($this->once())->method('newFile')
+			->with('out.pdf', $this->stringStartsWith('%PDF-'))
+			->willReturn($written);
+
+		$node = $this->makePdfNode(
+			content: self::buildPdfWithOps(ops: "BT\n/F1 12 Tf\n72 720 Td\n(Jan) Tj\n200 0 Td\n(Jansen) Tj\nET\n", author: 'x')
+		);
+		$node->method('getParent')->willReturn($folder);
+
+		$handler = $this->makeHandler();
+		$result = $handler->replaceWords(node: $node, replacements: ['Jan Jansen' => $placeholder], outputName: 'out.pdf');
+
+		$this->assertSame($written, $result);
+		$this->assertSame($expected, $handler->getLastResidualEntities());
+		$this->assertNotNull($handler->getLastStructurePreservation());
+	}//end testLenientRunReportsResidualsAndReplacesOutput()
+
+	/**
+	 * A strict run is best-effort too: it writes the file and reports the residuals.
+	 *
+	 * @return void
+	 */
+	public function testStrictRunWithResidualStillWrites(): void {
+		$folder = $this->createMock(originalClassName: Folder::class);
+		$folder->method('nodeExists')->willReturn(false);
+		$folder->expects($this->never())->method('get');
+		$folder->expects($this->once())->method('newFile')
+			->willReturn($this->createMock(originalClassName: File::class));
+		$node = $this->makePdfNode(
+			content: self::buildPdfWithOps(ops: "BT\n/F1 12 Tf\n72 720 Td\n(Jan) Tj\n200 0 Td\n(Jansen) Tj\nET\n", author: 'x')
+		);
+		$node->method('getParent')->willReturn($folder);
+
+		$handler = $this->makeHandler();
+		$handler->replaceWords(node: $node, replacements: ['Jan Jansen' => '[PERSON: 3]'], strict: true);
+
+		$this->assertSame([['text' => 'Jan Jansen', 'type' => 'PERSON', 'id' => '3']], $handler->getLastResidualEntities());
+	}//end testStrictRunWithResidualStillWrites()
 }//end class

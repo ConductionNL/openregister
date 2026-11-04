@@ -31,7 +31,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
@@ -119,7 +119,7 @@ class SchemaDeletionService {
 	 *
 	 * @param IDBConnection $db Database connection, for phase-1 transaction control.
 	 * @param MagicMapper $magicMapper Magic-table mapper (row reads, bulk delete, table drop).
-	 * @param RegisterMapper $registerMapper Register mapper, to resolve register entities.
+	 * @param RegisterMapperInterface $registerMapper Register mapper, to resolve register entities.
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper, to resolve and delete schema entities.
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper (ADR-003 hash-chained writes).
 	 * @param LoggerInterface $logger Logger.
@@ -127,7 +127,7 @@ class SchemaDeletionService {
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly MagicMapper $magicMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,

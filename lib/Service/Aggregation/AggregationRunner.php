@@ -41,7 +41,7 @@ use DateTimeZone;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
@@ -55,7 +55,7 @@ use OCA\OpenRegister\Service\Object\DraftListLens;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Support\NullFilter;
@@ -151,14 +151,14 @@ class AggregationRunner {
 	 * Constructor.
 	 *
 	 * @param MagicMapper $magicMapper Magic-table mapper used for the PHP fallback path.
-	 * @param RegisterMapper $registerMapper Register loader.
+	 * @param RegisterMapperInterface $registerMapper Register loader.
 	 * @param SchemaMapperInterface $schemaMapper Schema loader.
 	 * @param PlaceholderResolver $placeholders Resolves dynamic placeholders inside filters.
 	 * @param IDBConnection $db Database connection for the Postgres-native fast path.
 	 * @param AggregationCacheInterface $cache 60s aggregation result cache.
 	 * @param PermissionHandler $permissionHandler RBAC verdict on the schema's `list` action.
 	 * @param IUserSession $userSession Active session, for the RBAC + cache-key user scope.
-	 * @param OrganisationService $organisationService Active-organisation lookup for the cache key.
+	 * @param OrganisationServiceInterface $organisationService Active-organisation lookup for the cache key.
 	 * @param MagicOrganizationHandler $organizationHandler Owns the organisation-boundary decision the native SQL renders.
 	 * @param TranslationHandler $translationHandler Resolves translatable group keys to the negotiated language.
 	 * @param LanguageService $languageService Request-scoped language negotiation (Accept-Language / _lang).
@@ -180,14 +180,14 @@ class AggregationRunner {
 	 */
 	public function __construct(
 		private readonly MagicMapper $magicMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PlaceholderResolver $placeholders,
 		private readonly IDBConnection $db,
 		private readonly AggregationCacheInterface $cache,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly IUserSession $userSession,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 		private readonly MagicOrganizationHandler $organizationHandler,
 		private readonly TranslationHandler $translationHandler,
 		private readonly LanguageService $languageService,

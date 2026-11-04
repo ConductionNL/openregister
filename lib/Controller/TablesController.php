@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCP\AppFramework\Controller;
@@ -62,7 +62,7 @@ class TablesController extends Controller {
 	 * @param IRequest $request Request object
 	 * @param IAppConfig $config Application config
 	 * @param MagicMapper $magicMapper Magic mapper for table operations
-	 * @param RegisterMapper $registerMapper Register mapper
+	 * @param RegisterMapperInterface $registerMapper Register mapper
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper
 	 * @param LoggerInterface $logger Logger
 	 */
@@ -71,7 +71,7 @@ class TablesController extends Controller {
 		IRequest $request,
 		private readonly IAppConfig $config,
 		private readonly MagicMapper $magicMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {

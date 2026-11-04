@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rbac\MetadataConditionFindings;
 use OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings;
@@ -46,11 +46,11 @@ class UnknownMetadataConditionsCommand extends Command {
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface   $schemaMapper   Reads every schema.
-	 * @param RegisterMapper $registerMapper Reads every register.
+	 * @param RegisterMapperInterface $registerMapper Reads every register.
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 	) {
 		parent::__construct();
 	}//end __construct()

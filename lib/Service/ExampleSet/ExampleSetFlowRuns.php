@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use Psr\Container\ContainerInterface;
@@ -213,7 +213,7 @@ class ExampleSetFlowRuns {
 				$entry['waitsOn'][$uuid] = (string) $run['node'];
 			}
 
-			$this->container->get(FlowRunMapper::class)->insert($entity);
+			$this->container->get(FlowRunMapperInterface::class)->insert($entity);
 			if (is_string($run['key'] ?? null) === true) {
 				$entry['runs'][$run['key']] = $uuid;
 			}
@@ -239,7 +239,7 @@ class ExampleSetFlowRuns {
 			return;
 		}
 
-		$mapper  = $this->container->get(FlowRunMapper::class);
+		$mapper  = $this->container->get(FlowRunMapperInterface::class);
 		$run     = $mapper->findByUuid(uuid: $runUuid);
 		$context = (array) $run->getContext();
 		$slots   = (array) ($context[FlowResumeState::CONTEXT_KEY] ?? []);

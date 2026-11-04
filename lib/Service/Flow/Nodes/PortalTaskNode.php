@@ -76,7 +76,7 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -308,7 +308,7 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			// wake never arrived — refused or lost — and the heartbeat is what
 			// recovered it. Recorded before the outcome is applied, which is
 			// identical on both paths; the user-task node makes the same call.
-			if (array_key_exists(FlowRunService::SIGNAL_CONTEXT_KEY, $context) === false) {
+			if (array_key_exists(FlowRunServiceInterface::SIGNAL_CONTEXT_KEY, $context) === false) {
 				$this->bridge->recordHeartbeatRecovery(task: $task);
 			}
 

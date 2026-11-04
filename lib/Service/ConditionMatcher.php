@@ -527,7 +527,7 @@ class ConditionMatcher {
 		}
 
 		try {
-			$organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
+			$organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationServiceInterface');
 			$activeOrg = $organisationService->getActiveOrganisation();
 
 			if ($activeOrg !== null) {

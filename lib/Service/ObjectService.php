@@ -46,7 +46,7 @@ use OCA\OpenRegister\Service\FacetableAnalyzer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
@@ -301,7 +301,7 @@ class ObjectService implements ObjectServiceInterface
      * @param ValidationHandler              $validationHandler    Handler for validation operations.
      * @param CascadingHandler               $cascadingHandler     Handler for cascading operations.
      * @param MigrationHandler               $migrationHandler     Handler for migration operations.
-     * @param RegisterMapper                 $registerMapper       Mapper for register operations.
+     * @param RegisterMapperInterface                 $registerMapper       Mapper for register operations.
      * @param SchemaMapperInterface                   $schemaMapper         Mapper for schema operations.
      * @param ViewMapperInterface                     $viewMapper           Mapper for view operations.
      * @param MagicMapper                    $objectMapper         Unified mapper for object
@@ -312,7 +312,7 @@ class ObjectService implements ObjectServiceInterface
      * @param SearchTrailService             $searchTrailService   Service for search trail operations.
      * @param IGroupManager                  $groupManager         Group manager for checking user groups.
      * @param IUserManager                   $userManager          User manager for getting user objects.
-     * @param OrganisationService            $organisationService  Service for organisation operations.
+     * @param OrganisationServiceInterface            $organisationService  Service for organisation operations.
      * @param LoggerInterface                $logger               Logger for performance monitoring.
      * @param CacheHandler                   $cacheHandler         Service for entity and query caching.
      * @param SettingsServiceInterface                $settingsService      Service for settings operations.
@@ -358,7 +358,7 @@ class ObjectService implements ObjectServiceInterface
         private readonly ValidationHandler $validationHandler,
         private readonly CascadingHandler $cascadingHandler,
         private readonly MigrationHandler $migrationHandler,
-        private readonly RegisterMapper $registerMapper,
+        private readonly RegisterMapperInterface $registerMapper,
         private readonly SchemaMapperInterface $schemaMapper,
         private readonly ViewMapperInterface $viewMapper,
         private readonly MagicMapper $objectMapper,
@@ -367,7 +367,7 @@ class ObjectService implements ObjectServiceInterface
         private readonly SearchTrailService $searchTrailService,
         private readonly IGroupManager $groupManager,
         private readonly IUserManager $userManager,
-        private readonly OrganisationService $organisationService,
+        private readonly OrganisationServiceInterface $organisationService,
         private readonly LoggerInterface $logger,
         private readonly CacheHandler $cacheHandler,
         private readonly SettingsServiceInterface $settingsService,

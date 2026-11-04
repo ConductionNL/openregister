@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\ContextChat;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
@@ -75,7 +75,7 @@ class ContentProvider implements IContentProvider {
 	 *
 	 * @param ContextChatSubmissionListener $submissionListener Shared submission logic (single object).
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param RegisterMapper $registerMapper Register lookup mapper.
+	 * @param RegisterMapperInterface $registerMapper Register lookup mapper.
 	 * @param MagicMapper $magicMapper Object lookup/walk mapper.
 	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry for `getItemUrl`.
 	 * @param IURLGenerator $urlGenerator URL generator for the fallback route.
@@ -88,7 +88,7 @@ class ContentProvider implements IContentProvider {
 	public function __construct(
 		private readonly ContextChatSubmissionListener $submissionListener,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly MagicMapper $magicMapper,
 		private readonly DeepLinkRegistryService $deepLinkRegistry,
 		private readonly IURLGenerator $urlGenerator,

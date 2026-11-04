@@ -33,7 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\OasValidationException;
@@ -81,9 +81,9 @@ class OasService {
 	 *
 	 * Handles database operations for register entities.
 	 *
-	 * @var RegisterMapper Register mapper instance
+	 * @var RegisterMapperInterface Register mapper instance
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Schema mapper
@@ -284,7 +284,7 @@ class OasService {
 	/**
 	 * Constructor for OasService
 	 *
-	 * @param RegisterMapper $registerMapper Register mapper for database operations
+	 * @param RegisterMapperInterface $registerMapper Register mapper for database operations
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for database operations
 	 * @param IURLGenerator $urlGenerator URL generator for absolute URLs
 	 * @param LoggerInterface|null $logger PSR-3 logger for surfacing validation issues
@@ -294,7 +294,7 @@ class OasService {
 	 *                                               property is withheld, which is the safe direction.
 	 */
 	public function __construct(
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		SchemaMapperInterface $schemaMapper,
 		IURLGenerator $urlGenerator,
 		?LoggerInterface $logger = null,

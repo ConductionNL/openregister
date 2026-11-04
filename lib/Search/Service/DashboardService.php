@@ -27,7 +27,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use Psr\Log\LoggerInterface;
@@ -88,9 +88,9 @@ class DashboardService {
 	 *
 	 * Handles database operations for register entities.
 	 *
-	 * @var RegisterMapper Register mapper instance
+	 * @var RegisterMapperInterface Register mapper instance
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Logger
@@ -118,7 +118,7 @@ class DashboardService {
 	 * @param MagicMapper $objectMapper Object entity mapper for object statistics
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for log statistics
 	 * @param WebhookLogMapper $webhookLogMapper Webhook log mapper for webhook statistics
-	 * @param RegisterMapper $registerMapper Register mapper for register operations
+	 * @param RegisterMapperInterface $registerMapper Register mapper for register operations
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
 	 * @param LoggerInterface $logger Logger instance for error tracking
 	 *
@@ -128,7 +128,7 @@ class DashboardService {
 		MagicMapper $objectMapper,
 		AuditTrailMapperInterface $auditTrailMapper,
 		WebhookLogMapper $webhookLogMapper,
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		SchemaMapperInterface $schemaMapper,
 		LoggerInterface $logger,
 	) {

@@ -45,7 +45,7 @@ use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Task\TaskBlockerGuard;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
-use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -87,7 +87,7 @@ class PortalTaskService {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskService $tasks The authorized lifecycle.
+	 * @param TaskServiceInterface $tasks The authorized lifecycle.
 	 * @param TaskMapper $mapper The subject-scoped finders.
 	 * @param TaskInboxService $inbox Row shaping and case context.
 	 * @param TaskTemporalProjection $temporal The clock for the row projection.
@@ -95,7 +95,7 @@ class PortalTaskService {
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
-		private readonly TaskService $tasks,
+		private readonly TaskServiceInterface $tasks,
 		private readonly TaskMapper $mapper,
 		private readonly TaskInboxService $inbox,
 		private readonly TaskTemporalProjection $temporal,

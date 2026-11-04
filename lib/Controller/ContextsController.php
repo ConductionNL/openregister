@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
@@ -53,14 +53,14 @@ class ContextsController extends Controller {
 	 *
 	 * @param string $appName The application name.
 	 * @param IRequest $request The current request.
-	 * @param RegisterMapper $registerMapper The register mapper.
+	 * @param RegisterMapperInterface $registerMapper The register mapper.
 	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
 	 * @param JsonLdContextService $contextService The JSON-LD context service.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly JsonLdContextService $contextService,
 	) {

@@ -36,7 +36,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Object\DeleteObject;
-use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
@@ -112,7 +112,7 @@ class DestructionExecutionJob extends QueuedJob {
 		$logger->info('[DestructionExecutionJob] Processing destruction list: ' . $listUuid);
 
 		try {
-			$retentionService = $this->container->get(RetentionService::class);
+			$retentionService = $this->container->get(RetentionServiceInterface::class);
 			$settingsHandler = $this->container->get(ObjectRetentionHandler::class);
 			$objectMapper = $this->container->get(MagicMapper::class);
 			$auditMapper = $this->container->get(AuditTrailMapperInterface::class);

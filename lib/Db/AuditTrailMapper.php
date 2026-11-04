@@ -1574,10 +1574,10 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		try {
 			/*
-			 * @var RegisterMapper $registerMapper
+			 * @var RegisterMapperInterface $registerMapper
 			 */
 
-			$registerMapper = $this->container->get(RegisterMapper::class);
+			$registerMapper = $this->container->get(RegisterMapperInterface::class);
 			$register = $registerMapper->find(
 				$registerId,
 				_rbac: false,

@@ -49,7 +49,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver
  * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses   \OCA\OpenRegister\Service\Rules\ConditionDialect
- * @uses   \OCA\OpenRegister\Service\Search\PlaceholderResolver
+ * @uses   \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
  */
 class MagicFacetHandlerUnionFacetsGoldenTest extends TestCase {
 	use BuildsStateFieldRuleResolver;
