@@ -85,10 +85,7 @@ class ScheduledReportsControllerTest extends TestCase {
 			$this->request,
 			$this->service,
 			$this->jobList,
-			$this->userSession,
-			$this->groupManager,
-			$this->createMock(LoggerInterface::class)
-		);
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, $this->groupManager, $this->createMock(LoggerInterface::class)));
 	}//end setUp()
 
 	private function setupUser(string $uid, bool $isAdmin): void {

@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -55,13 +56,25 @@ class ScopesController extends Controller {
 	public const ACTIONS = ['read', 'create', 'update', 'delete', 'list'];
 
 	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * The group manager.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application identifier.
 	 * @param IRequest $request Active HTTP request.
-	 * @param IUserSession $userSession Current user session.
-	 * @param IGroupManager $groupManager Group manager for admin
-	 *                                    detection.
+	 * @param ControllerSession $session Session, group manager and logger.
 	 * @param RegisterMapper $registerMapper Register lookup.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
 	 * @param PermissionHandler $permissionHandler RBAC evaluator that
@@ -70,14 +83,15 @@ class ScopesController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		ControllerSession $session,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PermissionHandler $permissionHandler,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
+		$this->userSession = $session->userSession;
+		$this->groupManager = $session->groupManager;
 	}//end __construct()
 
 	/**

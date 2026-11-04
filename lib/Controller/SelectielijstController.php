@@ -35,6 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Service\Archival\SelectielijstImportService;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Controller;
@@ -60,26 +61,47 @@ class SelectielijstController extends Controller {
 	private const ARCHIVIST_GROUP = 'archivaris';
 
 	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * The group manager.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * The logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                     $appName         The app name.
 	 * @param IRequest                   $request         The request.
 	 * @param SelectielijstImportService $selectielijst   Imports, versions and diffs a list.
 	 * @param ObjectRetentionHandler     $settingsHandler Names the version in force.
-	 * @param IUserSession               $userSession     Who is asking.
-	 * @param IGroupManager              $groupManager    Whether they may.
-	 * @param LoggerInterface            $logger          Reports an import that failed.
+	 * @param ControllerSession $session Session, group manager and logger.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly SelectielijstImportService $selectielijst,
 		private readonly ObjectRetentionHandler $settingsHandler,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly LoggerInterface $logger,
+		ControllerSession $session,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+
+		$this->userSession = $session->userSession;
+		$this->groupManager = $session->groupManager;
+		$this->logger = $session->logger;
 	}//end __construct()
 
 	/**
