@@ -136,7 +136,7 @@ trait ObjectLinkActionsTrait
 	/**
 	 * A link action that creates a named item and links it: 400 without a name, 201 with the link.
 	 *
-	 * @param Closure $create Given the object and the name, creates and links the item; returns the link.
+	 * @param Closure $create Given the object's uuid, register id, schema id and the name, creates and links the item; returns the link.
 	 *
 	 * @return Closure The action, for onLinkedObject().
 	 *
@@ -149,7 +149,8 @@ trait ObjectLinkActionsTrait
 				return new JSONResponse(['error' => 'name is required'], 400);
 			}
 
-			return new JSONResponse($create($object, $name)->jsonSerialize(), 201);
+			$link = $create($object->getUuid(), (int)$object->getRegister(), (int)$object->getSchema(), $name);
+			return new JSONResponse($link->jsonSerialize(), 201);
 		};
 	}//end namedLinkOf()
 }//end trait

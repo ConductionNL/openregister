@@ -174,14 +174,7 @@ class TimeTrackerLinksController extends Controller {
 
 		return $this->onLinkedObject(
 			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: $this->namedLinkOf(
-				create: fn (ObjectEntity $object, string $name) => $this->linkService->createAndLinkClient(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
-					$name
-				)
-			)
+			action: $this->namedLinkOf(create: $this->linkService->createAndLinkClient(...))
 		);
 	}//end createAndLink()
 
