@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\AppHost\Search;
 
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
 use OCP\IUser;
 use OCP\Search\IProvider;
@@ -87,7 +87,7 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	/**
 	 * Constructor for AbstractSchemaSearchProvider.
 	 *
-	 * @param ObjectService $objectService The object service for search operations
+	 * @param ObjectOperationsInterface $objectService The object service for search operations
 	 * @param ObjectSearchResultFormatter $resultFormatter Shared result-formatting service
 	 * @param RegisterMapperInterface $registerMapper Register mapper for slug-to-id resolution
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for slug-to-id resolution and the `smartPickerEnabled` flag
@@ -98,7 +98,7 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d3
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly ObjectSearchResultFormatter $resultFormatter,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,

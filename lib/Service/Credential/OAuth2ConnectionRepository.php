@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\Credential;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Throwable;
@@ -54,14 +54,14 @@ class OAuth2ConnectionRepository {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService Loads and writes the credential object.
+	 * @param ObjectOperationsInterface $objectService Loads and writes the credential object.
 	 * @param CredentialStore $credentialStore Deletes the stored token set on disconnect.
 	 * @param OrganisationServiceInterface $organisationService Resolves and gates organisation membership.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly CredentialStore $credentialStore,
 		private readonly OrganisationServiceInterface $organisationService,
 	) {

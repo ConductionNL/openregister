@@ -29,6 +29,7 @@
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
@@ -101,9 +102,9 @@ class ExportService implements ObjectExporterInterface {
 	/**
 	 * Object service for optimized object operations
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Cache handler for UUID-to-name resolution
@@ -146,7 +147,7 @@ class ExportService implements ObjectExporterInterface {
 	 * @param RegisterMapperInterface $registerMapper The register mapper.
 	 * @param IUserManager $_userManager The user manager (unused).
 	 * @param IGroupManager $groupManager The group manager.
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectOperationsInterface $objectService The object service.
 	 * @param CacheHandler $cacheHandler The cache handler for name resolution.
 	 * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler.
 	 * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler The translation handler.
@@ -158,7 +159,7 @@ class ExportService implements ObjectExporterInterface {
 		RegisterMapperInterface $registerMapper,
 		IUserManager $_userManager,
 		IGroupManager $groupManager,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		CacheHandler $cacheHandler,
 		PropertyRbacHandler $propertyRbacHandler,
 		\OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler,

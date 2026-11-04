@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\BulkJobMemberMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
 use OCP\IUserManager;
@@ -114,7 +114,7 @@ class BulkJobService {
 	 * @param BulkActionRegistry $registry The catalogue of registered actions.
 	 * @param BulkSelectionResolver $resolver Selection resolution.
 	 * @param BulkJobExecutor $executor The one executor.
-	 * @param ObjectService $objectService For running as the job's actor.
+	 * @param ObjectOperationsInterface $objectService For running as the job's actor.
 	 * @param IUserManager $userManager Actor lookup.
 	 * @param IJobList $jobList The background queue.
 	 * @param IAppConfig $appConfig Instance settings.
@@ -131,7 +131,7 @@ class BulkJobService {
 		private readonly BulkActionRegistry $registry,
 		private readonly BulkSelectionResolver $resolver,
 		private readonly BulkJobExecutor $executor,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly IUserManager $userManager,
 		private readonly IJobList $jobList,
 		private readonly IAppConfig $appConfig,
