@@ -142,9 +142,6 @@ class PdfTextReplacer {
 	 * @psalm-param   array<string, string> $substitutions
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   $strict forwards the fail-closed vs lenient validation policy.
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Linear load → measure → replace → re-measure → serialise →
-	 *                                                attest → validate pipeline; splitting obscures the flow
-	 *                                                (same rationale as DocumentProcessingHandler::replaceWordsInPdfDocument()).
 	 *
 	 * @spec openspec/specs/pdf-anonymisation/spec.md
 	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
@@ -169,103 +166,37 @@ class PdfTextReplacer {
 			return $pdfBytes;
 		}
 
-		// Defensive longest-first ordering. SAPP iterates the map in PHP
-		// key-insertion order (linear matcher and the cross-operator /
-		// cross-block / cross-line passes all `foreach` it directly; the
-		// cross-line claimed-range guard explicitly assumes longest-first
-		// — see Conduction/sapp PR #1). DocumentProcessingHandler already
-		// orders its map, but re-sorting here makes the overlap guarantee
-		// hold for every caller and survive future SAPP bumps. Same
-		// comparator as the caller: length desc, bytewise asc tie-break
-		// for deterministic output. Params are deliberately untyped:
-		// PHP coerces purely-numeric needle text ("2026", a spaceless
-		// BSN) to INT array keys, which would fatal a string-typed
-		// closure.
-		uksort(
-			$substitutions,
-			static function ($left, $right): int {
-				$left = (string)$left;
-				$right = (string)$right;
-				return [mb_strlen($right), $left] <=> [mb_strlen($left), $right];
-			}
-		);
-
-		try {
-			$doc = PDFDoc::from_string(buffer: $pdfBytes);
-		} catch (Throwable $e) {
-			throw new PdfAnonymisationException(
-				reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
-				message: 'Failed to load PDF via SAPP',
-				diagnostic: ['stage' => 'load'],
-				previous: $e
-			);
-		}
-
-		if ($doc === false) {
-			throw new PdfAnonymisationException(
-				reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
-				message: 'SAPP returned false on PDFDoc::from_string',
-				diagnostic: ['stage' => 'load']
-			);
-		}
+		$substitutions = self::longestFirst(substitutions: $substitutions);
+		$doc = $this->loadDocument(pdfBytes: $pdfBytes);
 
 		// Measure BEFORE any mutation, reusing this same loaded $doc — no
 		// second parse (REQ-ORTPR-001; design.md "Risks" — the extra-parse
 		// cost is avoided by inspecting the object model already in memory).
 		$tagCountBefore = $this->structureInspector->countStructElements(doc: $doc);
-		$requested = $this->resolveRequestedPreservation(preserveStructure: $preserveStructure, tagCountBefore: $tagCountBefore);
-
-		try {
-			$stats = $doc->replace_text_in_document(substitutions: $substitutions);
-		} catch (Throwable $e) {
-			throw new PdfAnonymisationException(
-				reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
-				message: 'SAPP replace_text_in_document raised an exception',
-				diagnostic: ['stage' => 'replace'],
-				previous: $e
-			);
-		}
+		$stats = $this->replaceText(doc: $doc, substitutions: $substitutions);
 
 		// Re-measure AFTER text replacement, on the SAME in-memory $doc
 		// (`replace_text_in_document` mutates content streams only; the
 		// structure-tree objects — `/StructTreeRoot`, `/MarkInfo`,
 		// `/StructElem` — are not content streams, so this reflects what
-		// `to_pdf_file_s(rebuild: true)` below will serialise). Never a
-		// silent flatten: any loss surfaces via $structureResult regardless
-		// of $preserveStructure (REQ-ORTPR-002).
-		$tagCountAfter = $this->structureInspector->countStructElements(doc: $doc);
-		$structureIntactAfter = $this->structureInspector->isTagged(doc: $doc);
+		// `to_pdf_file_s(rebuild: true)` will serialise). Never a silent
+		// flatten: any loss surfaces via $structureResult regardless of
+		// $preserveStructure (REQ-ORTPR-002).
+		$measurement = new StructureMeasurement(
+			rawOption: $preserveStructure,
+			tagCountBefore: $tagCountBefore,
+			tagCountAfter: $this->structureInspector->countStructElements(doc: $doc),
+			structureIntactAfter: $this->structureInspector->isTagged(doc: $doc),
+			streamsModified: (int)($stats['streams_modified'] ?? 0)
+		);
 
-		// Serialise with rebuild=true per the SAPP contract: incremental
-		// mode produces an unopenable PDF once _pdf_objects is populated
-		// by replace_text_in_document. `to_pdf_file_s()` is the
-		// string-returning sibling of `to_pdf_file_b()` (calls
-		// `get_raw()` on the underlying Buffer) — we use it because
-		// `Buffer::__toString()` returns a `debug_var()` dump, NOT the
-		// raw bytes.
-		$serialised = $doc->to_pdf_file_s(rebuild: true);
-		if ($serialised === false || $serialised === '') {
-			throw new PdfAnonymisationException(
-				reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
-				message: 'SAPP to_pdf_file_s returned false/empty',
-				diagnostic: ['stage' => 'serialise']
-			);
-		}
-
-		$outputBytes = $serialised;
+		$outputBytes = $this->serialise(doc: $doc);
 
 		// Attest the conservative `preserved` rule (design.md D1) and build
 		// the contracted result block (REQ-ORTPR-002/003). This never
 		// changes $outputBytes — preservation is measurement + honest
 		// degradation, not a repair the current stack can perform.
-		$structureResult = $this->attestStructurePreservation(
-			rawOption: $preserveStructure,
-			requested: $requested,
-			tagCountBefore: $tagCountBefore,
-			tagCountAfter: $tagCountAfter,
-			structureIntactAfter: $structureIntactAfter,
-			streamsModified: (int)($stats['streams_modified'] ?? 0)
-		);
+		$structureResult = $measurement->attest();
 
 		// Validation: re-extract the output and collect any residual
 		// substitution-map keys. Best-effort (no longer fails closed) — the
@@ -287,6 +218,119 @@ class PdfTextReplacer {
 
 		return $outputBytes;
 	}//end replaceInPdf()
+
+	/**
+	 * Order a substitution map longest needle first.
+	 *
+	 * SAPP iterates the map in PHP key-insertion order (linear matcher and
+	 * the cross-operator / cross-block / cross-line passes all `foreach` it
+	 * directly; the cross-line claimed-range guard explicitly assumes
+	 * longest-first, see Conduction/sapp PR #1). Re-sorting here makes the
+	 * overlap guarantee hold for every caller and survive future SAPP bumps.
+	 * Length desc, bytewise asc tie-break for deterministic output. The
+	 * comparator params are untyped: PHP coerces purely-numeric needle text
+	 * ("2026", a spaceless BSN) to INT array keys, which would fatal a
+	 * string-typed closure.
+	 *
+	 * @param array<string, string> $substitutions Map: entity-text => placeholder.
+	 *
+	 * @return array<string, string> The same map, longest needle first.
+	 */
+	private static function longestFirst(array $substitutions): array {
+		uksort(
+			$substitutions,
+			static function ($left, $right): int {
+				$left = (string)$left;
+				$right = (string)$right;
+				return [mb_strlen($right), $left] <=> [mb_strlen($left), $right];
+			}
+		);
+
+		return $substitutions;
+	}//end longestFirst()
+
+	/**
+	 * Load PDF bytes into a SAPP document.
+	 *
+	 * @param string $pdfBytes Raw input PDF bytes.
+	 *
+	 * @return PDFDoc The loaded document.
+	 *
+	 * @throws PdfAnonymisationException When SAPP cannot load the bytes.
+	 */
+	private function loadDocument(string $pdfBytes): PDFDoc {
+		try {
+			$doc = PDFDoc::from_string(buffer: $pdfBytes);
+		} catch (Throwable $e) {
+			throw new PdfAnonymisationException(
+				reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
+				message: 'Failed to load PDF via SAPP',
+				diagnostic: ['stage' => 'load'],
+				previous: $e
+			);
+		}
+
+		if ($doc === false) {
+			throw new PdfAnonymisationException(
+				reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
+				message: 'SAPP returned false on PDFDoc::from_string',
+				diagnostic: ['stage' => 'load']
+			);
+		}
+
+		return $doc;
+	}//end loadDocument()
+
+	/**
+	 * Replace the substitution map's needles in every content stream.
+	 *
+	 * @param PDFDoc $doc The loaded document, mutated in place.
+	 * @param array<string, string> $substitutions Map: entity-text => placeholder, longest first.
+	 *
+	 * @return array<string, mixed> SAPP's replacement statistics.
+	 *
+	 * @throws PdfAnonymisationException When SAPP raises during replacement.
+	 */
+	private function replaceText(PDFDoc $doc, array $substitutions): array {
+		try {
+			return $doc->replace_text_in_document(substitutions: $substitutions);
+		} catch (Throwable $e) {
+			throw new PdfAnonymisationException(
+				reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
+				message: 'SAPP replace_text_in_document raised an exception',
+				diagnostic: ['stage' => 'replace'],
+				previous: $e
+			);
+		}
+	}//end replaceText()
+
+	/**
+	 * Serialise the document with rebuild=true per the SAPP contract.
+	 *
+	 * Incremental mode produces an unopenable PDF once _pdf_objects is
+	 * populated by replace_text_in_document. `to_pdf_file_s()` is the
+	 * string-returning sibling of `to_pdf_file_b()` (calls `get_raw()` on the
+	 * underlying Buffer); `Buffer::__toString()` returns a `debug_var()`
+	 * dump, NOT the raw bytes.
+	 *
+	 * @param PDFDoc $doc The replaced document.
+	 *
+	 * @return string The PDF bytes.
+	 *
+	 * @throws PdfAnonymisationException When SAPP returns nothing.
+	 */
+	private function serialise(PDFDoc $doc): string {
+		$serialised = $doc->to_pdf_file_s(rebuild: true);
+		if ($serialised === false || $serialised === '') {
+			throw new PdfAnonymisationException(
+				reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
+				message: 'SAPP to_pdf_file_s returned false/empty',
+				diagnostic: ['stage' => 'serialise']
+			);
+		}
+
+		return $serialised;
+	}//end serialise()
 
 	/**
 	 * Re-extract the output PDF via smalot/pdfparser and surface a
@@ -495,107 +539,6 @@ class PdfTextReplacer {
 	}//end collapseAdjacentDuplicatePlaceholders()
 
 	/**
-	 * Resolve the tri-state `preserveStructure` option to an effective
-	 * boolean (design.md D3 / REQ-ORTPR-004).
-	 *
-	 * @param bool|null $preserveStructure Caller-supplied option: null = auto,
-	 *                                     true = attempt, false = skip.
-	 * @param int $tagCountBefore Structure-element count of the input,
-	 *                            used by the auto rule.
-	 *
-	 * @return bool True when preservation is in effect for this run.
-	 *
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-004
-	 */
-	private function resolveRequestedPreservation(?bool $preserveStructure, int $tagCountBefore): bool {
-		if ($preserveStructure === null) {
-			// Auto: preserve iff the input is tagged.
-			return ($tagCountBefore > 0);
-		}
-
-		return $preserveStructure;
-	}//end resolveRequestedPreservation()
-
-	/**
-	 * Apply the conservative `preserved` attestation rule and build the
-	 * `structurePreservation` result block (design.md D1 / D2, REQ-ORTPR-002).
-	 *
-	 * `preserved: true` is asserted ONLY when preservation was requested AND
-	 * the input was tagged AND `tagCountAfter === tagCountBefore` AND the
-	 * structure tree is still detected on the output AND no structured
-	 * content stream was modified by the replacement. SAPP has zero
-	 * marked-content (`/MCID`) awareness, so ANY content-stream mutation on
-	 * a tagged document means the tag→content correspondence can no longer
-	 * be guaranteed — the engine reports the degradation explicitly rather
-	 * than presenting a pass-through as a faithful preservation.
-	 *
-	 * @param bool|null $rawOption The RAW caller-supplied tri-state option (distinct from
-	 *                             $requested — needed to tell "explicit false" apart from
-	 *                             "auto resolved to false because untagged", which report
-	 *                             different `lossReasons`, design.md D3/REQ-ORTPR-005).
-	 * @param bool $requested Resolved preservation option (see {@see resolveRequestedPreservation()}).
-	 * @param int $tagCountBefore `/StructElem` count of the input.
-	 * @param int $tagCountAfter `/StructElem` count of the output.
-	 * @param bool $structureIntactAfter Whether the output is still detected as tagged.
-	 * @param int $streamsModified Count of content streams the replacement touched
-	 *                             (SAPP's `replace_text_in_document` stats).
-	 *
-	 * @return StructurePreservation The result block for this run.
-	 *
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-002
-	 */
-	private function attestStructurePreservation(
-		?bool $rawOption,
-		bool $requested,
-		int $tagCountBefore,
-		int $tagCountAfter,
-		bool $structureIntactAfter,
-		int $streamsModified,
-	): StructurePreservation {
-		if ($rawOption === false) {
-			// Explicit opt-out: no assertion of loss either, per D3 — counts
-			// are still measured for the truthful report.
-			return new StructurePreservation(
-				requested: false,
-				preserved: false,
-				tagCountBefore: $tagCountBefore,
-				tagCountAfter: $tagCountAfter,
-				lossReasons: []
-			);
-		}
-
-		if ($tagCountBefore === 0) {
-			// Preservation requested (auto or explicit true) but not
-			// applicable — the input was not tagged. $requested reflects
-			// the resolved auto/true outcome (false for auto+untagged, true
-			// for explicit true — REQ-ORTPR-004); either way the loss is
-			// reported as "not applicable", not a failure.
-			return new StructurePreservation(
-				requested: $requested,
-				preserved: false,
-				tagCountBefore: $tagCountBefore,
-				tagCountAfter: $tagCountAfter,
-				lossReasons: [StructurePreservation::LOSS_REASON_INPUT_NOT_TAGGED]
-			);
-		}
-
-		$lossReasons = [];
-		if ($tagCountAfter !== $tagCountBefore || $structureIntactAfter === false) {
-			$lossReasons[] = StructurePreservation::LOSS_REASON_STRUCTTREEROOT_DROPPED;
-		} elseif ($streamsModified > 0) {
-			$lossReasons[] = StructurePreservation::LOSS_REASON_MARKED_CONTENT_BROKEN;
-		}
-
-		return new StructurePreservation(
-			requested: true,
-			preserved: (count($lossReasons) === 0),
-			tagCountBefore: $tagCountBefore,
-			tagCountAfter: $tagCountAfter,
-			lossReasons: $lossReasons
-		);
-	}//end attestStructurePreservation()
-
-	/**
 	 * Build the `structurePreservation` block for the empty-substitutions
 	 * no-op path (REQ-ORTPR-005): output bytes are identical to the input,
 	 * so `tagCountAfter` trivially equals `tagCountBefore` and nothing was
@@ -621,16 +564,15 @@ class PdfTextReplacer {
 			$tagCountBefore = 0;
 		}
 
-		$requested = $this->resolveRequestedPreservation(preserveStructure: $preserveStructure, tagCountBefore: $tagCountBefore);
-
-		return $this->attestStructurePreservation(
+		$measurement = new StructureMeasurement(
 			rawOption: $preserveStructure,
-			requested: $requested,
 			tagCountBefore: $tagCountBefore,
 			tagCountAfter: $tagCountBefore,
 			structureIntactAfter: true,
 			streamsModified: 0
 		);
+
+		return $measurement->attest();
 	}//end measureNoOpStructurePreservation()
 
 	/**
