@@ -60,7 +60,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RetentionService;
@@ -103,9 +103,9 @@ class ArchivalRetentionTask extends TimedJob {
 	/**
 	 * Schema repository used to enumerate annotated schemas.
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Magic-table resolver used to map registers/schemas to physical tables.
@@ -159,7 +159,7 @@ class ArchivalRetentionTask extends TimedJob {
 	 * @param ITimeFactory $time Time factory for TimedJob scheduling.
 	 * @param IDBConnection $db Database connection for native SQL row scan.
 	 * @param RegisterMapper $registerMapper Register repository.
-	 * @param SchemaMapper $schemaMapper Schema repository.
+	 * @param SchemaMapperInterface $schemaMapper Schema repository.
 	 * @param MagicMapper $magicMapper Magic-table resolver.
 	 * @param ObjectService $objectService Service used to perform the sweep deletes.
 	 * @param RetentionService $retentionService Answers whether a row is under an active legal hold.
@@ -170,7 +170,7 @@ class ArchivalRetentionTask extends TimedJob {
 		ITimeFactory $time,
 		IDBConnection $db,
 		RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 		MagicMapper $magicMapper,
 		ObjectService $objectService,
 		RetentionService $retentionService,

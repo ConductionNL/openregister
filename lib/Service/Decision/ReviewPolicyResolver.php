@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Decision;
 
 use OCA\OpenRegister\Db\EntityRelation;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCP\Files\IRootFolder;
@@ -51,14 +51,14 @@ class ReviewPolicyResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper            $schemaMapper Reads the schema's declaration.
+	 * @param SchemaMapperInterface            $schemaMapper Reads the schema's declaration.
 	 * @param FileSettingsHandler     $fileSettings Holds the instance default.
 	 * @param IRootFolder             $rootFolder   Finds a relation's file.
 	 * @param ManagedFileOwnerLookup $owners        Finds the object a file belongs to.
 	 * @param LoggerInterface         $logger       Records a policy that could not be read.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly FileSettingsHandler $fileSettings,
 		private readonly IRootFolder $rootFolder,
 		private readonly ManagedFileOwnerLookup $owners,

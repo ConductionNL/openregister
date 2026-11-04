@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use Psr\Log\LoggerInterface;
@@ -42,12 +43,12 @@ class ObjectSlugBackfillLedger {
 	 * Constructor.
 	 *
 	 * @param CacheHandler     $cacheHandler Object cache, evicted after writing.
-	 * @param AuditTrailMapper $auditTrail   Records the audit entry of a run that changed slugs.
+	 * @param AuditTrailMapperInterface $auditTrail   Records the audit entry of a run that changed slugs.
 	 * @param LoggerInterface  $logger       Receives the overflow lines and the failures.
 	 */
 	public function __construct(
 		private readonly CacheHandler $cacheHandler,
-		private readonly AuditTrailMapper $auditTrail,
+		private readonly AuditTrailMapperInterface $auditTrail,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\Organisation;
@@ -34,7 +35,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks;
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
+use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetParties;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards;
@@ -57,6 +58,7 @@ use OCA\OpenRegister\Service\Timeline\TimelineKindService;
 use OCA\OpenRegister\Service\Timeline\TimelineValidationException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkStore;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapper;
@@ -97,9 +99,9 @@ use OCP\Comments\NotFoundException as CommentNotFoundException;
 use OCA\OpenRegister\Db\Watcher;
 use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Db\ViewMapper;
-use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Task\TaskService;
@@ -294,7 +296,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			TaskService::class        => $this->taskService(),
 			TaskMapper::class         => $this->taskMapper(),
 			ViewService::class        => $this->viewService(),
-			ViewMapper::class         => $this->viewMapper(),
+			ViewMapperInterface::class         => $this->viewMapper(),
 			WatcherMapper::class      => $this->watcherMapper(),
 			PartyRoleService::class   => $this->partyRoles(),
 			PartyService::class       => $this->partyService(),
@@ -310,7 +312,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			ExampleSetCollectivesStore::class => $this->collectivesStore(),
 			ExampleSetTalkStore::class => $this->talkStore(),
 			TalkLinkMapper::class     => $this->talkLinkMapper(),
-			AuditTrailMapper::class   => $this->auditTrailMapper(),
+			AuditTrailMapperInterface::class => $this->auditTrailMapper(),
 			TimelineEntryMapper::class => $this->timelineEntryMapper(),
 			TimelineKindService::class => $this->timelineKindService(),
 			DeckLinkMapper::class     => $this->deckLinkMapper(),

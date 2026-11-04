@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
@@ -70,7 +70,7 @@ class ObjectOwnershipController extends Controller {
 	 * @param IRequest $request Request.
 	 * @param ObjectService $objectService Resolves a record through the RBAC boundary.
 	 * @param RegisterMapper $registerMapper Resolves the register entity.
-	 * @param SchemaMapper $schemaMapper Resolves the schema entity.
+	 * @param SchemaMapperInterface $schemaMapper Resolves the schema entity.
 	 * @param ObjectOwnershipService $ownership Performs the checked writes.
 	 * @param LoggerInterface $logger Logger.
 	 */
@@ -79,7 +79,7 @@ class ObjectOwnershipController extends Controller {
 		IRequest $request,
 		private readonly ObjectService $objectService,
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ObjectOwnershipService $ownership,
 		private readonly LoggerInterface $logger,
 	) {

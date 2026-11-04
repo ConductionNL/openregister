@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Rules;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
 use Throwable;
 
@@ -84,7 +84,7 @@ final class RuleTrialService {
 	 * Constructor.
 	 *
 	 * @param RuleInventoryService $inventory Finds the rule as declared.
-	 * @param CalculationEvaluator $evaluator The JSON-AST evaluator.
+	 * @param CalculationEvaluatorInterface $evaluator The JSON-AST evaluator.
 	 * @param ConditionTracer $tracer Names the operand that decided.
 	 * @param RegisterMapper $registerMapper Register lookup for a named object.
 	 * @param MagicMapper $objectMapper Object lookup in the register and schema table.
@@ -94,7 +94,7 @@ final class RuleTrialService {
 	 */
 	public function __construct(
 		private readonly RuleInventoryService $inventory,
-		private readonly CalculationEvaluator $evaluator,
+		private readonly CalculationEvaluatorInterface $evaluator,
 		private readonly ConditionTracer $tracer,
 		private readonly RegisterMapper $registerMapper,
 		private readonly MagicMapper $objectMapper,

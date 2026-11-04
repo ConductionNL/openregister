@@ -31,7 +31,7 @@ use Exception;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Dto\BulkSaveOutcome;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
@@ -74,7 +74,7 @@ class BulkController extends Controller {
 	 * @param IRequest $request The request object
 	 * @param ObjectService $objectService The object service
 	 * @param RegisterMapper $registerMapper Mapper for resolving registers (RBAC gates)
-	 * @param SchemaMapper $schemaMapper Mapper for resolving schemas (RBAC gates)
+	 * @param SchemaMapperInterface $schemaMapper Mapper for resolving schemas (RBAC gates)
 	 * @param IUserSession $userSession User session for admin/manage checks
 	 * @param IGroupManager $groupManager Group manager for admin/manage checks
 	 * @param IDBConnection $db The connection an atomic batch runs its transaction on
@@ -87,7 +87,7 @@ class BulkController extends Controller {
 		IRequest $request,
 		private readonly ObjectService $objectService,
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly IDBConnection $db,

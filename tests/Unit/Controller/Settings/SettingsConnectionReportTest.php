@@ -37,7 +37,7 @@ use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransport;
 use OCA\OpenRegister\Service\Edepot\Transport\RestApiTransport;
 use OCA\OpenRegister\Service\Edepot\Transport\SftpTransport;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;

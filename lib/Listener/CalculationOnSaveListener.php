@@ -31,10 +31,10 @@ use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
@@ -67,9 +67,9 @@ class CalculationOnSaveListener implements IEventListener {
 	/**
 	 * Wire collaborators used to look up schema calculations.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
 	 * @param RegisterMapper $registerMapper Register lookup mapper (for sequence scope id).
-	 * @param CalculationEvaluator $evaluator Expression evaluator.
+	 * @param CalculationEvaluatorInterface $evaluator Expression evaluator.
 	 * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
 	 * @param SequenceService $sequences Atomic running-number reservation service.
 	 * @param RuleRunRecorder $ruleRuns Records each calculation's verdict for the rule inventory.
@@ -83,9 +83,9 @@ class CalculationOnSaveListener implements IEventListener {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapper $registerMapper,
-		private readonly CalculationEvaluator $evaluator,
+		private readonly CalculationEvaluatorInterface $evaluator,
 		private readonly CalculationPayloadBuilder $payloadBuilder,
 		private readonly SequenceService $sequences,
 		private readonly RuleRunRecorder $ruleRuns,

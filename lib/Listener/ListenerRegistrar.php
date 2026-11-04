@@ -36,6 +36,8 @@ use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCA\OpenRegister\Search\Listener\AggregationThresholdListener;
+use OCA\OpenRegister\Search\Listener\ObjectMetricsListener;
 
 /**
  * Subscribes every OpenRegister listener to its events.

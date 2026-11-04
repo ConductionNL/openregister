@@ -35,7 +35,7 @@ use DateTime;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -73,12 +73,12 @@ class AuditQueryService {
 	 *
 	 * @param ObjectService $objectService Cross-schema object search (audit entries ARE objects).
 	 * @param RegisterMapper $registerMapper Register lookup + register/schema relationship helpers.
-	 * @param SchemaMapper $schemaMapper Schema lookup.
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 
 	}//end __construct()

@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
@@ -69,7 +69,7 @@ class AuditTrailController extends Controller {
 	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
 	 * @param LogService $logService The log service
-	 * @param AuditTrailMapper $auditTrailMapper The audit trail mapper
+	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail mapper
 	 * @param AuditHashService $auditHashService The audit hash chain service
 	 * @param \OCP\IUserSession $userSession Active user session for caller identity.
 	 * @param \OCP\IGroupManager $groupManager Group manager for admin / role checks.
@@ -86,7 +86,7 @@ class AuditTrailController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly LogService $logService,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly AuditHashService $auditHashService,
 		private readonly \OCP\IUserSession $userSession,
 		private readonly \OCP\IGroupManager $groupManager,

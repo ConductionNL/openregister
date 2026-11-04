@@ -53,14 +53,14 @@ final class CalculationTrialService {
 	 * Wire the validator, the evaluator and the payload builder.
 	 *
 	 * @param CalculationAnnotationValidator $validator Declaration validator.
-	 * @param CalculationEvaluator $evaluator Pure expression evaluator.
+	 * @param CalculationEvaluatorInterface $evaluator Pure expression evaluator.
 	 * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly CalculationAnnotationValidator $validator,
-		private readonly CalculationEvaluator $evaluator,
+		private readonly CalculationEvaluatorInterface $evaluator,
 		private readonly CalculationPayloadBuilder $payloadBuilder,
 	) {
 	}//end __construct()
