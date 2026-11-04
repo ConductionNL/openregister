@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicCrossTableScan;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectLookup;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableDdl;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
 use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumn;
 use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumnSizes;
@@ -3974,130 +3975,23 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @throws Exception If table creation fails
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Table creation requires handling many column types
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complete table creation requires comprehensive column handling
 	 */
 	private function createTable(string $tableName, array $columns): void {
 		try {
 			// Build CREATE TABLE SQL manually for Nextcloud 32 compatibility.
-			$platform = $this->db->getDatabasePlatform();
-			$isPostgres = ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform);
-			$isSqlite = ($platform instanceof \Doctrine\DBAL\Platforms\SqlitePlatform);
+			$ddl = new MagicTableDdl(platform: $this->db->getDatabasePlatform(), tableName: $tableName);
 
 			// Get database table prefix from Nextcloud config.
 			$tablePrefix = $this->config->getSystemValue('dbtableprefix', 'oc_');
 			$fullTableName = $tablePrefix . $tableName;
 
-			// Build column definitions.
-			$columnDefs = [];
-			$primaryKey = null;
-			// SQLite auto-increments an INTEGER PRIMARY KEY column declared
-			// inline; when that path is taken the separate PRIMARY KEY(...)
-			// table constraint must be suppressed (one primary key only).
-			$sqliteInlinePrimaryKey = false;
-			$uniqueConstraints = [];
-
 			foreach ($columns as $column) {
-				// BUG-DB-7: route the raw column name through quoteIdentifier so
-				// embedded quote characters are escaped (doubled) rather than
-				// concatenated unescaped.
-				$colName = $this->quoteIdentifier(name: $column['name'], isPostgres: $isPostgres);
-
-				$def = $colName . ' ';
-
-				// Map type to SQL.
-				$def .= $this->mapColumnTypeToSQL(type: $column['type'], column: $column);
-
-				// NOT NULL constraint.
-				if (($column['nullable'] ?? true) === false) {
-					$def .= ' NOT NULL';
-				}
-
-				// DEFAULT value.
-				if (isset($column['default']) === true) {
-					$defaultValue = $column['default'];
-					if (is_bool($column['default']) === true) {
-						// Boolean values need special handling for SQL.
-						$defaultValue = 'FALSE';
-						if ($column['default'] === true) {
-							$defaultValue = 'TRUE';
-						}
-					} elseif (is_string($column['default']) === true) {
-						// BUG-DB-1: escape via the platform so values containing a
-						// single quote (e.g. O'Brien) do not break the DDL or allow
-						// stored-DDL injection.
-						$defaultValue = $platform->quoteStringLiteral($column['default']);
-					} elseif ($column['default'] === null) {
-						$defaultValue = 'NULL';
-					}
-
-					$def .= ' DEFAULT ' . $defaultValue;
-				}
-
-				// AUTOINCREMENT (primary key columns).
-				if (($column['autoincrement'] ?? false) === true) {
-					// MySQL uses AUTO_INCREMENT.
-					$def .= ' AUTO_INCREMENT';
-					if ($isPostgres === true) {
-						// PostgreSQL uses BIGSERIAL.
-						$def = $colName . ' BIGSERIAL';
-					} elseif ($isSqlite === true) {
-						// SQLite auto-increments an INTEGER PRIMARY KEY column
-						// declared inline; AUTO_INCREMENT is a syntax error and
-						// a separate PRIMARY KEY(...) constraint would stop the
-						// column from aliasing rowid.
-						$def = $colName . ' INTEGER PRIMARY KEY AUTOINCREMENT';
-						$sqliteInlinePrimaryKey = true;
-					}
-				}
-
-				$columnDefs[] = $def;
-
-				// Track primary key.
-				if (($column['primary'] ?? false) === true) {
-					$primaryKey = $this->quoteIdentifier(name: $column['name'], isPostgres: $isPostgres);
-				}
-
-				// Track unique constraints (required for PostgreSQL ON CONFLICT).
-				if (($column['unique'] ?? false) === true) {
-					$uniqueConstraints[] = $colName;
-				}
-			}//end foreach
-
-			// Build CREATE TABLE SQL with full table name (including prefix).
-			$tableNameQuoted = '`' . $fullTableName . '`';
-			if ($isPostgres === true) {
-				$tableNameQuoted = '"' . $fullTableName . '"';
+				$this->addColumnDefinition(ddl: $ddl, column: $column);
 			}
 
-			$sql = 'CREATE TABLE IF NOT EXISTS ' . $tableNameQuoted . ' (';
-			$sql .= implode(', ', $columnDefs);
-
-			// Add PRIMARY KEY constraint (skipped on SQLite when the
-			// autoincrement column already declared an inline PRIMARY KEY).
-			if ($primaryKey !== null && $sqliteInlinePrimaryKey === false) {
-				$sql .= ', PRIMARY KEY (' . $primaryKey . ')';
-			}
-
-			// Add UNIQUE constraints (required for PostgreSQL ON CONFLICT).
-			// Constraints are named explicitly so MySQL/MariaDB doesn't fall
-			// back to using the column name as the constraint/index name,
-			// which collides across tables (e.g. every dynamic table getting
-			// a constraint literally called `_uuid`) and breaks Nextcloud's
-			// ensureUniqueNamesConstraints check on the next app install.
-			foreach ($uniqueConstraints as $uniqueCol) {
-				$rawCol = trim($uniqueCol, '`"');
-				$constraintName = $tableName . '_' . ltrim($rawCol, '_') . '_uq';
-				$quote = '`';
-				if ($isPostgres === true) {
-					$quote = '"';
-				}
-
-				$sql .= ', CONSTRAINT ' . $quote . $constraintName . $quote . ' UNIQUE (' . $uniqueCol . ')';
-			}
-
+			$sql = 'CREATE TABLE IF NOT EXISTS ' . $ddl->quoted(name: $fullTableName) . ' (';
+			$sql .= implode(', ', $ddl->columnDefs);
+			$sql .= $this->tableConstraintsSql(ddl: $ddl);
 			$sql .= ')';
 
 			// Execute table creation.
@@ -4127,6 +4021,129 @@ class MagicMapper extends AbstractObjectMapper {
 			throw new Exception('Failed to create table ' . $tableName . ': ' . $e->getMessage(), 0, $e);
 		}//end try
 	}//end createTable()
+
+	/**
+	 * Add one column's definition to the statement, and track its primary key and unique constraint.
+	 *
+	 * @param MagicTableDdl $ddl    The statement being built.
+	 * @param array         $column The column definition.
+	 *
+	 * @return void
+	 */
+	private function addColumnDefinition(MagicTableDdl $ddl, array $column): void {
+		// BUG-DB-7: route the raw column name through quoteIdentifier so
+		// embedded quote characters are escaped (doubled) rather than
+		// concatenated unescaped.
+		$colName = $this->quoteIdentifier(name: $column['name'], isPostgres: $ddl->isPostgres);
+
+		$def = $colName . ' ' . $this->mapColumnTypeToSQL(type: $column['type'], column: $column);
+
+		if (($column['nullable'] ?? true) === false) {
+			$def .= ' NOT NULL';
+		}
+
+		if (isset($column['default']) === true) {
+			$def .= ' DEFAULT ' . $this->defaultLiteral(ddl: $ddl, value: $column['default']);
+		}
+
+		if (($column['autoincrement'] ?? false) === true) {
+			$def = ($this->autoincrementColumn(ddl: $ddl, colName: $colName) ?? $def . ' AUTO_INCREMENT');
+		}
+
+		$ddl->columnDefs[] = $def;
+
+		if (($column['primary'] ?? false) === true) {
+			$ddl->primaryKey = $colName;
+		}
+
+		// Track unique constraints (required for PostgreSQL ON CONFLICT).
+		if (($column['unique'] ?? false) === true) {
+			$ddl->uniqueConstraints[] = $colName;
+		}
+	}//end addColumnDefinition()
+
+	/**
+	 * The SQL literal of a column default.
+	 *
+	 * @param MagicTableDdl $ddl   The statement being built.
+	 * @param mixed         $value The default value, never null (a null default is not written).
+	 *
+	 * @return mixed The literal: TRUE/FALSE, a quoted string, or the value itself.
+	 */
+	private function defaultLiteral(MagicTableDdl $ddl, mixed $value): mixed {
+		if (is_bool($value) === true) {
+			if ($value === true) {
+				return 'TRUE';
+			}
+
+			return 'FALSE';
+		}
+
+		if (is_string($value) === true) {
+			// BUG-DB-1: escape via the platform so values containing a single
+			// quote (e.g. O'Brien) do not break the DDL or allow stored-DDL
+			// injection.
+			return $ddl->platform->quoteStringLiteral($value);
+		}
+
+		return $value;
+	}//end defaultLiteral()
+
+	/**
+	 * The definition of an autoincrement column on PostgreSQL or SQLite.
+	 *
+	 * PostgreSQL uses BIGSERIAL. SQLite auto-increments an INTEGER PRIMARY KEY
+	 * column declared inline; AUTO_INCREMENT is a syntax error there and a
+	 * separate PRIMARY KEY(...) constraint would stop the column from aliasing
+	 * rowid, so the inline declaration is recorded on the statement.
+	 *
+	 * @param MagicTableDdl $ddl     The statement being built.
+	 * @param string        $colName The quoted column name.
+	 *
+	 * @return string|null The definition, or null where MySQL's AUTO_INCREMENT applies.
+	 */
+	private function autoincrementColumn(MagicTableDdl $ddl, string $colName): ?string {
+		if ($ddl->isPostgres === true) {
+			return $colName . ' BIGSERIAL';
+		}
+
+		if ($ddl->isSqlite === true) {
+			$ddl->inlinePrimaryKey = true;
+			return $colName . ' INTEGER PRIMARY KEY AUTOINCREMENT';
+		}
+
+		return null;
+	}//end autoincrementColumn()
+
+	/**
+	 * The PRIMARY KEY and UNIQUE table constraints of the statement.
+	 *
+	 * The primary key is skipped on SQLite when the autoincrement column already
+	 * declared it inline. Unique constraints (required for PostgreSQL ON
+	 * CONFLICT) are named explicitly so MySQL/MariaDB doesn't fall back to using
+	 * the column name as the constraint/index name, which collides across tables
+	 * (e.g. every dynamic table getting a constraint literally called `_uuid`)
+	 * and breaks Nextcloud's ensureUniqueNamesConstraints check on the next app
+	 * install.
+	 *
+	 * @param MagicTableDdl $ddl The statement being built.
+	 *
+	 * @return string The constraints, each with a leading comma.
+	 */
+	private function tableConstraintsSql(MagicTableDdl $ddl): string {
+		$sql = '';
+		if ($ddl->primaryKey !== null && $ddl->inlinePrimaryKey === false) {
+			$sql .= ', PRIMARY KEY (' . $ddl->primaryKey . ')';
+		}
+
+		foreach ($ddl->uniqueConstraints as $uniqueCol) {
+			$rawCol = trim($uniqueCol, '`"');
+			$constraintName = $ddl->tableName . '_' . ltrim($rawCol, '_') . '_uq';
+			$sql .= ', CONSTRAINT ' . $ddl->quoted(name: $constraintName) . ' UNIQUE (' . $uniqueCol . ')';
+		}
+
+		return $sql;
+	}//end tableConstraintsSql()
 
 	/**
 	 * Map column type to SQL type string.
