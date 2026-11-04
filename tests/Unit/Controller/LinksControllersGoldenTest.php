@@ -149,6 +149,12 @@ class LinksControllersGoldenTest extends TestCase {
 			if (str_starts_with($context['scenario'], 'boom-') === true) {
 				$code = (int)substr($context['scenario'], 5);
 				$mock->method($name)->willThrowException(new Exception('boom ' . $name, $code));
+				continue;
+			}
+
+			$returns = $method->getReturnType();
+			if ($returns instanceof ReflectionNamedType && $returns->getName() === 'array') {
+				$mock->method($name)->willReturn(['results' => [], 'total' => 0]);
 			}
 		}
 
