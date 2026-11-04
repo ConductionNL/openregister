@@ -35,8 +35,8 @@ namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -51,15 +51,15 @@ class DedupeRegistersCommand extends Command {
 	/**
 	 * Wire the mappers used by the command.
 	 *
-	 * @param RegisterMapper $registerMapper Register lookup/mutation mapper.
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param RegisterMapperInterface $registerMapper Register lookup/mutation mapper.
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
 	 * @param MagicMapper $magicMapper Magic table resolver for object counts.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapper $magicMapper,
 	) {
 		parent::__construct();

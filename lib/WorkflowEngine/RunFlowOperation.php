@@ -41,7 +41,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -61,14 +61,14 @@ class RunFlowOperation implements ISpecificOperation {
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urlGenerator Icon path resolver.
 	 * @param FlowMapper $flows Resolves a flow by the name the rule configured.
-	 * @param FlowRunService $runner Queues the run.
+	 * @param FlowRunServiceInterface $runner Queues the run.
 	 * @param LoggerInterface $logger Logs skipped/failed invocations.
 	 */
 	public function __construct(
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly FlowMapper $flows,
-		private readonly FlowRunService $runner,
+		private readonly FlowRunServiceInterface $runner,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

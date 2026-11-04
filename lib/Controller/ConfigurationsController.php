@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\Support\ConfigurationsControllerServices;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -66,9 +66,9 @@ class ConfigurationsController extends Controller {
 	/**
 	 * The configuration service instance
 	 *
-	 * @var ConfigurationService
+	 * @var ConfigurationServiceInterface
 	 */
-	private readonly ConfigurationService $configurationService;
+	private readonly ConfigurationServiceInterface $configurationService;
 
 	/**
 	 * The controller's injected services.

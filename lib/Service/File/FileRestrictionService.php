@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Db\FileMapperInterface;
 use InvalidArgumentException;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -42,14 +42,14 @@ class FileRestrictionService {
 	 * @param FileRestrictionGuard $guard       Forgets its memo after a write.
 	 * @param IUserSession         $userSession Who sets it.
 	 * @param LoggerInterface      $logger      Where every change is noted.
-	 * @param FileMapper           $fileMapper  Removes the file's public link shares.
+	 * @param FileMapperInterface           $fileMapper  Removes the file's public link shares.
 	 */
 	public function __construct(
 		private readonly FileRestrictionStore $store,
 		private readonly FileRestrictionGuard $guard,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly FileMapper $fileMapper,
+		private readonly FileMapperInterface $fileMapper,
 	) {
 	}//end __construct()
 

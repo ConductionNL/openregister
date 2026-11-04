@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\BackgroundJob\TranslationProjectionJob;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
@@ -69,7 +69,7 @@ class TranslationProjectionListener implements IEventListener {
 	 * Wire the translation-projection service and the deferral contract.
 	 *
 	 * @param TranslationProjectionService $projection Projection service.
-	 * @param SchemaMapper $schemaMapper Schema lookup (request-cached) for the enqueue gate.
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup (request-cached) for the enqueue gate.
 	 * @param TranslationHandler $translationHandler Translatable-property gate.
 	 * @param ListenerDeferralService $deferral Actor-forwarding deferral service.
 	 *
@@ -79,7 +79,7 @@ class TranslationProjectionListener implements IEventListener {
 	 */
 	public function __construct(
 		private readonly TranslationProjectionService $projection,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly TranslationHandler $translationHandler,
 		private readonly ListenerDeferralService $deferral,
 	) {

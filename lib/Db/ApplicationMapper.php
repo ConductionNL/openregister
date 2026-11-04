@@ -76,9 +76,9 @@ class ApplicationMapper extends QBMapper {
 	 *
 	 * Used to get active organisation and apply organisation filters.
 	 *
-	 * @var OrganisationMapper Organisation mapper instance
+	 * @var OrganisationMapperInterface Organisation mapper instance
 	 */
-	protected OrganisationMapper $organisationMapper;
+	protected OrganisationMapperInterface $organisationMapper;
 
 	/**
 	 * User session for current user
@@ -114,7 +114,7 @@ class ApplicationMapper extends QBMapper {
 	 * for multi-tenancy, RBAC, and event dispatching.
 	 *
 	 * @param IDBConnection $db Database connection for queries
-	 * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy
+	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy
 	 * @param IUserSession $userSession User session for current user context
 	 * @param IGroupManager $groupManager Group manager for RBAC checks
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher for application events
@@ -124,7 +124,7 @@ class ApplicationMapper extends QBMapper {
 	public function __construct(
 		IDBConnection $db,
 		// REMOVED: Services should not be in mappers.
-		OrganisationMapper $organisationMapper,
+		OrganisationMapperInterface $organisationMapper,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 		IEventDispatcher $eventDispatcher,

@@ -52,7 +52,7 @@ class ConditionMatcherGapTest extends TestCase {
 		$orgServiceMock->method('getActiveOrganisation')->willReturn($orgMock);
 
 		$this->container->method('get')
-			->with('OCA\OpenRegister\Service\OrganisationService')
+			->with('OCA\OpenRegister\Service\OrganisationServiceInterface')
 			->willReturn($orgServiceMock);
 
 		$object = ['_organisation' => 'org-uuid-123'];
@@ -82,7 +82,7 @@ class ConditionMatcherGapTest extends TestCase {
 		$orgServiceMock->method('getActiveOrganisation')->willReturn($orgMock);
 
 		$this->container->method('get')
-			->with('OCA\OpenRegister\Service\OrganisationService')
+			->with('OCA\OpenRegister\Service\OrganisationServiceInterface')
 			->willReturn($orgServiceMock);
 
 		$object = ['_organisation' => 'org-uuid-456'];
@@ -102,7 +102,7 @@ class ConditionMatcherGapTest extends TestCase {
 		$orgServiceMock->method('getActiveOrganisation')->willReturn(null);
 
 		$this->container->method('get')
-			->with('OCA\OpenRegister\Service\OrganisationService')
+			->with('OCA\OpenRegister\Service\OrganisationServiceInterface')
 			->willReturn($orgServiceMock);
 
 		$object = ['_organisation' => 'some-org'];
@@ -118,7 +118,7 @@ class ConditionMatcherGapTest extends TestCase {
 	 */
 	public function testOrganisationVariableExceptionReturnsNull(): void {
 		$this->container->method('get')
-			->with('OCA\OpenRegister\Service\OrganisationService')
+			->with('OCA\OpenRegister\Service\OrganisationServiceInterface')
 			->willThrowException(new \Exception('Service unavailable'));
 
 		$this->logger->expects($this->atLeastOnce())

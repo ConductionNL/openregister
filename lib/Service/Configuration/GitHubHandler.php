@@ -554,69 +554,10 @@ class GitHubHandler implements GitHubClientInterface {
 	 */
 	public function enrichConfigurationDetails(string $owner, string $repo, string $path, string $branch = 'main'): ?array {
 		try {
-			// SEC-SVC-8: percent-encode each path segment so a crafted owner/
-			// repo/branch/path cannot inject extra path traversal, query, or
-			// host components into the raw.githubusercontent.com URL. Reject
-			// any segment containing '..' or control characters outright.
-			$encodeSegments = static function (string $value): string {
-				$segments = explode('/', $value);
-				$encoded = [];
-				foreach ($segments as $segment) {
-					if ($segment === '') {
-						continue;
-					}
-
-					if ($segment === '..' || preg_match('/[\x00-\x1f\x7f]/', $segment) === 1) {
-						throw new InvalidArgumentException('Invalid path segment.');
-					}
-
-					$encoded[] = rawurlencode($segment);
-				}
-
-				return implode('/', $encoded);
-			};
-
-			$safeOwner = $encodeSegments($owner);
-			$safeRepo = $encodeSegments($repo);
-			$safeBranch = $encodeSegments($branch);
-			$safePath = $encodeSegments($path);
-
-			// Use raw.githubusercontent.com - doesn't count against API rate limit.
-			$rawUrl = "https://raw.githubusercontent.com/{$safeOwner}/{$safeRepo}/{$safeBranch}/{$safePath}";
-
-			$this->logger->debug(
-				message: '[GitHubHandler] Enriching configuration details from raw URL',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'url' => $rawUrl,
-				]
+			$data = $this->getRawConfiguration(
+				location: new GitHubFileLocation(owner: $owner, repo: $repo, path: $path, branch: $branch)
 			);
-
-			$response = $this->client->request(
-				'GET',
-				$rawUrl,
-				[
-					'headers' => [
-						'Accept' => 'application/json',
-					],
-					'allow_redirects' => false,
-				]
-			);
-
-			$content = $response->getBody();
-			$data = json_decode($content, true);
-
-			if (json_last_error() !== JSON_ERROR_NONE) {
-				$this->logger->warning(
-					message: '[GitHubHandler] Failed to parse configuration JSON',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'url' => $rawUrl,
-						'error' => json_last_error_msg(),
-					]
-				);
+			if ($data === null) {
 				return null;
 			}
 
@@ -644,6 +585,62 @@ class GitHubHandler implements GitHubClientInterface {
 			return null;
 		}//end try
 	}//end enrichConfigurationDetails()
+
+	/**
+	 * Fetch and decode a JSON file from raw.githubusercontent.com.
+	 *
+	 * The raw host does not count against the API rate limit.
+	 *
+	 * @param GitHubFileLocation $location The file.
+	 *
+	 * @return array|null The decoded document (empty for a JSON scalar), or null when it is not valid JSON.
+	 *
+	 * @throws Exception When a segment is unsafe or the request fails.
+	 */
+	private function getRawConfiguration(GitHubFileLocation $location): ?array {
+		$rawUrl = $location->rawUrl();
+
+		$this->logger->debug(
+			message: '[GitHubHandler] Enriching configuration details from raw URL',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'url' => $rawUrl,
+			]
+		);
+
+		$response = $this->client->request(
+			'GET',
+			$rawUrl,
+			[
+				'headers' => [
+					'Accept' => 'application/json',
+				],
+				'allow_redirects' => false,
+			]
+		);
+
+		$data = json_decode($response->getBody(), true);
+		if (json_last_error() !== JSON_ERROR_NONE) {
+			$this->logger->warning(
+				message: '[GitHubHandler] Failed to parse configuration JSON',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'url' => $rawUrl,
+					'error' => json_last_error_msg(),
+				]
+			);
+			return null;
+		}
+
+		if (is_array($data) === false) {
+			return [];
+		}
+
+		return $data;
+	}//end getRawConfiguration()
+
 
 	/**
 	 * Get list of branches for a repository
@@ -953,9 +950,6 @@ class GitHubHandler implements GitHubClientInterface {
 	 *     }
 	 * >
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Repository fetch has multiple auth and error conditions
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Auth check and error handling create multiple paths
-	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function getRepositories(int $page = 1, int $perPage = 100): array {
@@ -999,17 +993,15 @@ class GitHubHandler implements GitHubClientInterface {
 
 			$repos = json_decode($response->getBody(), true);
 
-			// Format repository data for return.
 			return array_map(
-				// Map repository data to standardized format.
-				function (array $repo): array {
+				static function (array $repo): array {
 					return [
 						'id' => $repo['id'],
 						'name' => $repo['name'],
 						'full_name' => $repo['full_name'],
 						'owner' => $repo['owner']['login'],
-						'owner_type' => $repo['owner']['type'],
 						// User or Organization.
+						'owner_type' => $repo['owner']['type'],
 						'private' => $repo['private'],
 						'description' => $repo['description'] ?? '',
 						'default_branch' => $repo['default_branch'] ?? 'main',
@@ -1020,39 +1012,54 @@ class GitHubHandler implements GitHubClientInterface {
 				$repos
 			);
 		} catch (GuzzleException $e) {
-			$statusCode = null;
-			if ($e instanceof RequestException && $e->hasResponse() === true) {
-				$statusCode = $e->getResponse()->getStatusCode();
-			}
+			return $this->repositoriesFailure(exception: $e);
+		}//end try
+	}//end getRepositories()
 
-			// If authentication failed (401) or token not configured, return empty array instead of error.
-			if ($statusCode === 401 || empty($token) === true) {
-				$this->logger->info(
-					message: '[GitHubHandler] GitHub API auth failed or not configured - returning empty list',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'status_code' => $statusCode,
-						// Always true: $token is a non-empty-string by this point, so
-						// the only way into this branch is the 401.
-						'has_token' => true,
-					]
-				);
-				return [];
-			}
 
-			$this->logger->error(
-				message: '[GitHubHandler] GitHub API get repositories failed',
+	/**
+	 * Handle a failed repository listing.
+	 *
+	 * A 401 means the configured token is not accepted: logged, and the list is empty
+	 * instead of an error. Anything else is logged and rethrown.
+	 *
+	 * @param GuzzleException $exception The client failure.
+	 *
+	 * @return array An empty list for a 401.
+	 *
+	 * @throws Exception For every other failure.
+	 */
+	private function repositoriesFailure(GuzzleException $exception): array {
+		$statusCode = null;
+		if ($exception instanceof RequestException && $exception->hasResponse() === true) {
+			$statusCode = $exception->getResponse()->getStatusCode();
+		}
+
+		if ($statusCode === 401) {
+			$this->logger->info(
+				message: '[GitHubHandler] GitHub API auth failed or not configured - returning empty list',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'error' => $e->getMessage(),
 					'status_code' => $statusCode,
+					'has_token' => true,
 				]
 			);
-			throw new Exception('Failed to fetch repositories: ' . $e->getMessage());
-		}//end try
-	}//end getRepositories()
+			return [];
+		}
+
+		$this->logger->error(
+			message: '[GitHubHandler] GitHub API get repositories failed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $exception->getMessage(),
+				'status_code' => $statusCode,
+			]
+		);
+		throw new Exception('Failed to fetch repositories: ' . $exception->getMessage());
+	}//end repositoriesFailure()
+
 
 	/**
 	 * Get repository information including default branch

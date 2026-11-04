@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Exception\ManualEntityException;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Service\File\ManualEntityResult;
@@ -69,7 +69,7 @@ class FileTextController extends Controller {
 	 * @param IRequest $request Request object
 	 * @param TextExtractionService $textExtractor Text extraction service
 	 * @param FileService $fileService File service for file operations
-	 * @param EntityRelationMapper $entityRelationMapper Entity relation mapper
+	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper
 	 * @param LoggerInterface $logger Logger
 	 * @param ManualEntityService $manualEntityService Orchestrator for the manual-entity write path
 	 * @param IUserSession $userSession Session user accessor (for the manual-entity endpoint)
@@ -82,7 +82,7 @@ class FileTextController extends Controller {
 		IRequest $request,
 		private readonly TextExtractionService $textExtractor,
 		private readonly FileService $fileService,
-		private readonly EntityRelationMapper $entityRelationMapper,
+		private readonly EntityRelationMapperInterface $entityRelationMapper,
 		private readonly LoggerInterface $logger,
 		private readonly ManualEntityService $manualEntityService,
 		private readonly IUserSession $userSession,
