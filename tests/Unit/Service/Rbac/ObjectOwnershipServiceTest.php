@@ -947,4 +947,81 @@ class ObjectOwnershipServiceTest extends TestCase {
 		);
 	}//end testAnUnknownOwningGroupIsRefused()
 
+	/**
+	 * A cascade down a long chain stops at the depth cap, and the outcome nests one level per generation.
+	 *
+	 * @return void
+	 */
+	public function testACascadeStopsAtTheDepthCapWithANestedOutcome(): void {
+		$this->signIn('root', ['admin']);
+		$this->expectNotification();
+		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->registerMapper->method('find')->willReturn(new Register());
+		$this->schemaMapper->method('find')->willReturn(new Schema());
+
+		$chain = [];
+		for ($i = 0; $i < 8; $i++) {
+			$chain['uuid-'.$i] = $this->record('uuid-'.$i, 'alice');
+		}
+
+		$this->magicMapper->method('findByRelationUsingRelationsColumn')->willReturnCallback(
+			static function (string $uuid) use ($chain): array {
+				$next = 'uuid-'.((int)substr($uuid, 5) + 1);
+				return isset($chain[$next]) === true ? [$chain[$next]] : [];
+			}
+		);
+
+		$written = [];
+		$this->ownerWriter->method('writeOwner')->willReturnCallback(
+			static function ($register, $schema, string $objectUuid, string $owner) use (&$written): void {
+				$written[] = $objectUuid;
+			}
+		);
+
+		$outcome = $this->service->assign(
+			register: new Register(),
+			schema: new Schema(),
+			object: $chain['uuid-0'],
+			newOwner: 'carol',
+			cascade: true
+		);
+
+		$this->assertSame(['uuid-0', 'uuid-1', 'uuid-2', 'uuid-3', 'uuid-4', 'uuid-5'], $written);
+
+		$expected = ['uuid' => 'uuid-5', 'previousOwner' => 'alice', 'newOwner' => 'carol', 'changed' => true, 'children' => []];
+		for ($i = 4; $i >= 0; $i--) {
+			$expected = [
+				'uuid'          => 'uuid-'.$i,
+				'previousOwner' => 'alice',
+				'newOwner'      => 'carol',
+				'changed'       => true,
+				'children'      => [$expected],
+			];
+		}
+
+		$this->assertSame($expected, $outcome);
+	}//end testACascadeStopsAtTheDepthCapWithANestedOutcome()
+
+	/**
+	 * Taking a record you already own reports it unchanged with no children.
+	 *
+	 * @return void
+	 */
+	public function testAnUnchangedOutcomeHasItsFullShape(): void {
+		$this->signIn('root', ['admin']);
+		$this->ownerWriter->expects($this->never())->method('writeOwner');
+
+		$outcome = $this->service->assign(
+			register: new Register(),
+			schema: new Schema(),
+			object: $this->record('uuid-1', 'carol'),
+			newOwner: 'carol',
+			cascade: true
+		);
+
+		$this->assertSame(
+			['uuid' => 'uuid-1', 'previousOwner' => 'carol', 'newOwner' => 'carol', 'changed' => false, 'children' => []],
+			$outcome
+		);
+	}//end testAnUnchangedOutcomeHasItsFullShape()
 }//end class
