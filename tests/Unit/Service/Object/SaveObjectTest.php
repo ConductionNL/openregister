@@ -2850,9 +2850,14 @@ class SaveObjectTest extends TestCase {
 
 		$this->unifiedObjectMapper->expects($this->never())->method('update');
 
-		$result = $this->invokePrivateMethod('handleObjectUpdate', [
-			$existingObject, $register, $schema, ['name' => 'New'], [], null, false, false,
-		]);
+		$call = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall();
+		$call->flags = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags();
+		$call->register = $register;
+		$call->schema = $schema;
+		$call->data = ['name' => 'New'];
+		$call->flags->persist = false;
+		$call->flags->silent = false;
+		$result = $this->invokePrivateMethod('handleObjectUpdate', [$call, $existingObject]);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
 	}
@@ -4760,10 +4765,14 @@ class SaveObjectTest extends TestCase {
 		[$entity, $schema] = $this->slugEntity(null);
 		$register = $this->createMockRegister(id: 7);
 
-		$prepared = $this->invokePrivateMethod(
-			'handleObjectUpdate',
-			[$entity, $register, $schema, ['title' => 'Free Title'], [], null, false, true]
-		);
+		$call = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall();
+		$call->flags = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags();
+		$call->register = $register;
+		$call->schema = $schema;
+		$call->data = ['title' => 'Free Title'];
+		$call->flags->persist = false;
+		$call->flags->silent = true;
+		$prepared = $this->invokePrivateMethod('handleObjectUpdate', [$call, $entity]);
 
 		$this->assertSame('free-title', $prepared->getSlug(), 'the update path decides the slug of an object without one');
 	}

@@ -3626,17 +3626,8 @@ class SaveObject {
 	private function updateExistingForSave(ObjectSaveCall $call, ObjectEntity $existingObject): ObjectEntity {
 		$frameKey = $this->enterSaveFrame(call: $call);
 		try {
-			return $this->handleObjectUpdate(
-				existingObject: $existingObject,
-				register: $call->register,
-				schema: $call->schema,
-				data: $call->data,
-				selfData: $this->selfDataForUpdate(selfData: $call->selfData, _rbac: $call->flags->rbac),
-				folderId: $call->folderId,
-				persist: $call->flags->persist,
-				silent: $call->flags->silent,
-				currentUser: $call->flags->currentUser
-			);
+			$call->selfData = $this->selfDataForUpdate(selfData: $call->selfData, _rbac: $call->flags->rbac);
+			return $this->handleObjectUpdate(call: $call, existingObject: $existingObject);
 		} finally {
 			$this->leaveCascadeScope();
 			$this->popSaveCallFrame(key: $frameKey);
@@ -4109,37 +4100,87 @@ class SaveObject {
 	/**
 	 * Handle update of existing object.
 	 *
-	 * @param ObjectEntity $existingObject Existing object to update
-	 * @param Register $register Register entity
-	 * @param Schema $schema Schema entity
-	 * @param array $data Object data
-	 * @param array $selfData @self metadata
-	 * @param int|null $folderId Folder ID
-	 * @param bool $persist Whether to persist changes
-	 * @param bool $silent Whether to skip audit trail
-	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata)
+	 * @param ObjectSaveCall $call           The save call: register, schema, data, `@self` data and flags.
+	 * @param ObjectEntity   $existingObject Existing object to update
 	 *
 	 * @return ObjectEntity Updated object
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function handleObjectUpdate(
-		ObjectEntity $existingObject,
-		Register $register,
-		Schema $schema,
-		array $data,
-		array $selfData,
-		?int $folderId,
-		bool $persist,
-		bool $silent,
-		?IUser $currentUser = null,
-	): ObjectEntity {
-		// Check archival immutability: destroyed and transferred objects cannot be modified.
+	private function handleObjectUpdate(ObjectSaveCall $call, ObjectEntity $existingObject): ObjectEntity {
+		self::refuseArchivedUpdate(existingObject: $existingObject);
+		$this->recordUpdateUniqueHints(call: $call, existingObject: $existingObject);
+
+		// Capture the old state BEFORE prepareObjectForUpdate modifies the entity:
+		// event dispatching needs the old status, and the data array is copied to
+		// prevent reference issues.
+		$oldObjectData = $existingObject->getObject();
+		$oldObject = clone $existingObject;
+		$oldObject->setObject($oldObjectData);
+
+		$preparedObject = $this->prepareUpdatedObject(call: $call, existingObject: $existingObject);
+
+		// Decide the slug once, here: a stored one is frozen. updateObject() does
+		// not decide it again; `@self` is gone from the data there (#4037).
+		$this->decideSlug(entity: $preparedObject, schema: $call->schema, stored: $oldObject->getSlug(), sent: [$call->selfData, $call->data]);
+
+		// A record that changes its own selectielijst category (DECISIONS row 48)
+		// is refused when that category has no row, re-derived while it is still
+		// active, and refused once it has been nominated.
+		$retentionService = $this->resolveRetentionService();
+		if ($retentionService !== null) {
+			$preparedObject = $retentionService->applyClassificationOnUpdate(
+				object: $preparedObject,
+				schema: $call->schema,
+				previousData: ($oldObjectData ?? [])
+			);
+		}
+
+		// Not persisting: nothing reached storage, so for a batching caller the row changed nothing.
+		if ($call->flags->persist === false) {
+			$this->lastSaveOutcome = 'unchanged';
+			return $preparedObject;
+		}
+
+		$updatedObject = $this->updateObject(
+			register: $call->register,
+			schema: $call->schema,
+			data: $call->data,
+			existingObject: $preparedObject,
+			folderId: $call->folderId,
+			silent: $call->flags->silent,
+			oldObject: $oldObject
+		);
+
+		$this->settleOrphans(parent: (string)$preparedObject->getUuid());
+
+		// Recorded AFTER the write, so a cascade descendant saved inside
+		// updateObject() cannot leave its outcome behind as this frame's answer.
+		// The strict array comparison errs toward `updated` (a reordered property
+		// reads as a change), never toward `unchanged`, the bucket a caller acts
+		// on by skipping work.
+		$this->lastSaveOutcome = self::updateOutcome(updated: $updatedObject, old: $oldObject);
+
+		return $updatedObject;
+	}//end handleObjectUpdate()
+
+	/**
+	 * Refuse to modify a destroyed or transferred object.
+	 *
+	 * Both vocabularies are known: GAP A4 moved the stored spelling to English
+	 * and stored data is not migrated, so already-destroyed records in an
+	 * existing install still carry the Dutch value.
+	 *
+	 * @param ObjectEntity $existingObject The stored object.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception With code 409 when the archival status forbids changes.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function refuseArchivedUpdate(ObjectEntity $existingObject): void {
 		$archStatus = ($existingObject->getRetention() ?? [])['archiefstatus'] ?? null;
-		// Both vocabularies. GAP A4 moved the stored spelling to English, and
-		// stored data is not migrated, so a guard that only knew `destroyed`
-		// would let every already-destroyed record in an existing install be
-		// modified again.
 		$immutableMap = [
 			'vernietigd' => 'OBJECT_DESTROYED',
 			'destroyed' => 'OBJECT_DESTROYED',
@@ -4153,93 +4194,59 @@ class SaveObject {
 				409
 			);
 		}
+	}//end refuseArchivedUpdate()
 
-		// SOFT UNIQUENESS, the update half. The spec asks for the warning on
-		// create AND on update, and a create-only version would let every
-		// duplicate in through an edit instead. The object being written is
-		// excluded from its own matches, so re-saving a record that already
-		// holds the value is silent.
+	/**
+	 * Record the soft-uniqueness warnings of an update, excluding the object itself from its matches.
+	 *
+	 * SOFT UNIQUENESS, the update half: a create-only check would let every
+	 * duplicate in through an edit. Re-saving a record that already holds the
+	 * value stays silent.
+	 *
+	 * @param ObjectSaveCall $call           The save call.
+	 * @param ObjectEntity   $existingObject The stored object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function recordUpdateUniqueHints(ObjectSaveCall $call, ObjectEntity $existingObject): void {
 		$uniqueHints = $this->resolveUniqueHintChecker();
-		if ($uniqueHints !== null) {
-			$uniqueHints->check(
-				configuration: ($schema->getConfiguration() ?? []),
-				register: $register->getId(),
-				schema: $schema->getId(),
-				data: $data,
-				selfUuid: ((string)$existingObject->getUuid())
-			);
+		if ($uniqueHints === null) {
+			return;
 		}
 
-		// IMPORTANT: Capture the old state BEFORE prepareObjectForUpdate modifies the entity.
-		// This is critical for event dispatching - the old status must be captured here,
-		// not after preparation when the entity has already been modified.
-		$oldObjectData = $existingObject->getObject();
-		$oldObject = clone $existingObject;
-		// Deep clone the object data array to prevent reference issues.
-		$oldObject->setObject($oldObjectData);
+		$uniqueHints->check(
+			configuration: ($call->schema->getConfiguration() ?? []),
+			register: $call->register->getId(),
+			schema: $call->schema->getId(),
+			data: $call->data,
+			selfUuid: ((string)$existingObject->getUuid())
+		);
+	}//end recordUpdateUniqueHints()
 
-		// Prepare the object for update.
+	/**
+	 * Prepare the stored object with the update, after dropping orphans a previous pass queued for it.
+	 *
+	 * @param ObjectSaveCall $call           The save call.
+	 * @param ObjectEntity   $existingObject The stored object.
+	 *
+	 * @return ObjectEntity The prepared object.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function prepareUpdatedObject(ObjectSaveCall $call, ObjectEntity $existingObject): ObjectEntity {
 		unset($this->pendingOrphans[(string)$existingObject->getUuid()]);
-		$preparedObject = $this->prepareObjectForUpdate(
+
+		return $this->prepareObjectForUpdate(
 			existingObject: $existingObject,
-			schema: $schema,
-			data: $data,
-			selfData: $selfData,
-			folderId: $folderId,
-			currentUser: $currentUser
+			schema: $call->schema,
+			data: $call->data,
+			selfData: $call->selfData,
+			folderId: $call->folderId,
+			currentUser: $call->flags->currentUser
 		);
-
-		// Decide the slug once, here: a stored one is frozen. updateObject() does
-		// not decide it again; `@self` is gone from $data there (#4037).
-		$this->decideSlug(entity: $preparedObject, schema: $schema, stored: $oldObject->getSlug(), sent: [$selfData, $data]);
-
-		// A record that changes its own selectielijst category (DECISIONS row
-		// 48) is refused when that category has no row, re-derived while it is
-		// still active, and refused once it has been nominated.
-		$retentionService = $this->resolveRetentionService();
-		if ($retentionService !== null) {
-			$preparedObject = $retentionService->applyClassificationOnUpdate(
-				object: $preparedObject,
-				schema: $schema,
-				previousData: ($oldObjectData ?? [])
-			);
-		}
-
-		// If not persisting, return the prepared object. Nothing reached
-		// storage, so from a batching caller's point of view the row changed
-		// nothing.
-		if ($persist === false) {
-			$this->lastSaveOutcome = 'unchanged';
-			return $preparedObject;
-		}
-
-		// Update the object, passing the captured old state.
-		$updatedObject = $this->updateObject(
-			register: $register,
-			schema: $schema,
-			data: $data,
-			existingObject: $preparedObject,
-			folderId: $folderId,
-			silent: $silent,
-			oldObject: $oldObject
-		);
-
-		$this->settleOrphans(parent: (string)$preparedObject->getUuid());
-
-		// Record the verdict AFTER the write, so a cascade descendant saved
-		// inside updateObject() cannot leave its own outcome behind as this
-		// frame's answer.
-		//
-		// STRICT comparison, and the asymmetry is the point. `===` on arrays
-		// also requires the same key ORDER, so a property merely reordered by
-		// normalisation reads as a change. That errs toward `updated`, never
-		// toward `unchanged` — the bucket a caller acts on by SKIPPING work.
-		// Over-reporting a change costs a redundant downstream refresh;
-		// under-reporting one would let a real edit be silently ignored.
-		$this->lastSaveOutcome = self::updateOutcome(updated: $updatedObject, old: $oldObject);
-
-		return $updatedObject;
-	}//end handleObjectUpdate()
+	}//end prepareUpdatedObject()
 
 	/**
 	 * The verdict of a persisted update.
