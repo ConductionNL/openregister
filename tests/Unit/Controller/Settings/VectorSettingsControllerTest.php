@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use OCA\OpenRegister\Controller\Settings\VectorSettingsController;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

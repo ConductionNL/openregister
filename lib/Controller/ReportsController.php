@@ -38,7 +38,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
-use OCA\OpenRegister\Service\Reporting\ReportRenderService;
+use OCA\OpenRegister\Search\Service\Reporting\ReportRenderService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;

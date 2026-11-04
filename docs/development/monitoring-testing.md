@@ -36,7 +36,7 @@ This document outlines the monitoring infrastructure and testing framework imple
 
 ### MetricsService
 
-**Location**: `lib/Service/MetricsService.php`
+**Location**: `lib/Search/Service/MetricsService.php`
 
 **Key Methods**:
 
@@ -82,7 +82,7 @@ cleanOldMetrics(int $retentionDays = 90): int
 **File**: `lib/AppInfo/Application.php`
 
 ```php
-use OCA\OpenRegister\Service\MetricsService;
+use OCA\OpenRegister\Search\Service\MetricsService;
 
 // In register() method:
 $context->registerService(

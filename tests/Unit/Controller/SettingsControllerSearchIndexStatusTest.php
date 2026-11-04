@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\SettingsController;
-use OCA\OpenRegister\Service\Search\SearchIndexMaintenance;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;

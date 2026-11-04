@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Service;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Reporting\ReportRenderService;
+use OCA\OpenRegister\Search\Service\Reporting\ReportRenderService;
 use PHPUnit\Framework\TestCase;
 
 /**

@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Controller\Settings;
 use Exception;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IDBConnection;
@@ -51,7 +51,7 @@ class LlmSettingsController extends Controller {
 	 * @param IDBConnection $db Database connection.
 	 * @param ContainerInterface $container DI container.
 	 * @param AppSettingsInterface $settingsService Settings service.
-	 * @param VectorizationService $vectorizationService Vectorization service.
+	 * @param VectorizationServiceInterface $vectorizationService Vectorization service.
 	 * @param LoggerInterface $logger Logger.
 	 * @param ConnectionReporter $connectionReporter Reports the saved provider to integriq's connection registry.
 	 */
@@ -61,7 +61,7 @@ class LlmSettingsController extends Controller {
 		private readonly IDBConnection $db,
 		private readonly ContainerInterface $container,
 		private readonly AppSettingsInterface $settingsService,
-		private readonly VectorizationService $vectorizationService,
+		private readonly VectorizationServiceInterface $vectorizationService,
 		private readonly LoggerInterface $logger,
 		private readonly ConnectionReporter $connectionReporter,
 	) {

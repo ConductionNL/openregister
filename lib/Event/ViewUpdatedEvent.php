@@ -23,7 +23,7 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Search\Db\View;
 use OCP\EventDispatcher\Event;
 
 /**
