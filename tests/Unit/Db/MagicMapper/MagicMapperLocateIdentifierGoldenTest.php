@@ -54,6 +54,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableHandler
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicCrossTableHit
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicIdentifierProbe
  * @uses   \OCA\OpenRegister\Service\Query\PropertyReadGuard
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowAccess
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier

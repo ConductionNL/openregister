@@ -61,7 +61,22 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Query\PropertyReadGuard
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowAccess
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
- * @uses   \OCA\OpenRegister\Service\QueryLimit
+ * @uses   \OCA\OpenRegister\Support\QueryLimit
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\DeletedLens
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\NestedPathFilter
+ * @uses   \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile
+ * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses   \OCA\OpenRegister\Service\Object\DraftListLens
+ * @uses   \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses   \OCA\OpenRegister\Service\OrganisationContext
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
+ * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses   \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses   \OCA\OpenRegister\Service\Search\SearchTermParser
+ * @uses   \OCA\OpenRegister\Service\SystemOperationContext
  */
 class MagicMapperUnionBatchGoldenTest extends TestCase {
 
