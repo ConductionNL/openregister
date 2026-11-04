@@ -199,7 +199,7 @@ class AppRegisterImportRunner {
 	/**
 	 * Whether a service has a method of the given forced shape.
 	 *
-	 * @param object      $service The app's SettingsService.
+	 * @param object      $service The app's SettingsServiceInterface.
 	 * @param string      $method  The method name.
 	 * @param string|null $force   The force parameter's name, or null for a method taking none.
 	 *

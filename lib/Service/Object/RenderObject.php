@@ -36,13 +36,13 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
 use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
@@ -211,7 +211,7 @@ class RenderObject {
 	 * @param FileMapper $fileMapper File mapper for database operations.
 	 * @param MagicMapper $objectEntityMapper Object entity mapper for database operations.
 	 * @param RegisterMapper $registerMapper Register mapper for database operations.
-	 * @param SchemaMapper $schemaMapper Schema mapper for database operations.
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper for database operations.
 	 * @param ISystemTagManager $systemTagManager System tag manager for file tags.
 	 * @param ISystemTagObjectMapper $systemTagMapper System tag object mapper for file tags.
 	 * @param CacheHandler $cacheHandler Cache service for performance optimization.
@@ -222,7 +222,7 @@ class RenderObject {
 	 * @param ComputedFieldHandler $computedFieldHandler Handler for computed field evaluation.
 	 * @param TranslationHandler $translationHandler Handler for translatable property resolution.
 	 * @param LinkedEntityEnricher $linkedEntityEnricher Enricher for linked entity metadata.
-	 * @param CalculationEvaluator $calculationEvaluator Evaluator for derived/computed properties.
+	 * @param CalculationEvaluatorInterface $calculationEvaluator Evaluator for derived/computed properties.
 	 * @param UrnService $urnService URN resolver for register/schema/object identifiers.
 	 * @param TranslationStatusService $translationStatusService Service exposing per-object translation status metadata.
 	 * @param TranslationMapper $translationMapper Translation mapper for database operations.
@@ -250,7 +250,7 @@ class RenderObject {
 		private readonly FileMapper $fileMapper,
 		private readonly MagicMapper $objectEntityMapper,
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ISystemTagManager $systemTagManager,
 		private readonly ISystemTagObjectMapper $systemTagMapper,
 		private readonly CacheHandler $cacheHandler,
@@ -261,7 +261,7 @@ class RenderObject {
 		private readonly ComputedFieldHandler $computedFieldHandler,
 		private readonly TranslationHandler $translationHandler,
 		private readonly LinkedEntityEnricher $linkedEntityEnricher,
-		private readonly CalculationEvaluator $calculationEvaluator,
+		private readonly CalculationEvaluatorInterface $calculationEvaluator,
 		private readonly UrnService $urnService,
 		private readonly TranslationStatusService $translationStatusService,
 		private readonly TranslationMapper $translationMapper,
@@ -5250,153 +5250,201 @@ class RenderObject {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): array {
-		// Convert extend to array if it's a string.
 		if (is_string($_extend) === true) {
 			$_extend = explode(',', $_extend);
 		}
 
-		$_extend = $_extend ?? [];
+		$page = new PageRender();
+		$page->extend = ($_extend ?? []);
+		$page->fields = self::trimmedList(value: $_fields);
+		$page->filter = self::trimmedList(value: $_filter);
+		$page->unset = self::trimmedList(value: $_unset);
+		$page->rbac = $_rbac;
+		$page->multitenancy = $_multitenancy;
 
-		// Convert _fields to array if it's a string.
-		if (is_string($_fields) === true) {
-			$_fields = array_filter(array_map('trim', explode(',', $_fields)));
-		}
-
-		// Convert _filter to array if it's a string.
-		if (is_string($_filter) === true) {
-			$_filter = array_filter(array_map('trim', explode(',', $_filter)));
-		}
-
-		// Convert _unset to array if it's a string.
-		if (is_string($_unset) === true) {
-			$_unset = array_filter(array_map('trim', explode(',', $_unset)));
-		}
-
-		// **PERFORMANCE OPTIMIZATION**: Batch preload ALL related objects BEFORE rendering.
-		// This prevents N+1 query problem when extending relations across multiple entities.
 		// Debug level: this fires on EVERY extended list render (hot path).
 		$this->logger->debug(
 			message: '[RenderObject] [BATCH_PRELOAD] Starting batch preload check',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'extendParam' => $_extend,
+				'extendParam' => $page->extend,
 				'entityCount' => count($entities),
 			]
 		);
 
-		if (empty($_extend) === false && empty($entities) === false) {
-			$allUuidsToPreload = [];
-
-			// Collect ALL UUIDs from ALL entities that need to be extended.
-			foreach ($entities as $entity) {
-				if ($entity instanceof \OCA\OpenRegister\Db\ObjectEntity === false) {
-					continue;
-				}
-
-				$objectData = $entity->getObject();
-				if (is_array($objectData) === false) {
-					continue;
-				}
-
-				// Use the existing collectUuidsForExtend method to extract UUIDs.
-				$entityUuids = $this->collectUuidsForExtend(objectData: $objectData, extend: $_extend);
-				$allUuidsToPreload = array_merge($allUuidsToPreload, $entityUuids);
-			}
-
-			// Remove duplicates and batch preload ALL related objects in ONE query.
-			$allUuidsToPreload = array_unique($allUuidsToPreload);
-
-			$this->logger->debug(
-				message: '[RenderObject] [BATCH_PRELOAD] UUIDs collected',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuidCount' => count($allUuidsToPreload),
-					'sampleUuids' => array_slice($allUuidsToPreload, 0, 3),
-				]
-			);
-
-			if (empty($allUuidsToPreload) === false) {
-				$preloadedObjects = $this->objectCacheService->preloadObjects(
-					identifiers: $allUuidsToPreload,
-					registerId: $this->sharedRegisterIdOf(entities: $entities)
-				);
-
-				// Add preloaded objects to local cache for immediate access during rendering.
-				foreach ($preloadedObjects as $object) {
-					$this->objectsCache[$object->getUuid()] = $object;
-					$this->objectsCache[$object->getId()] = $object;
-				}
-
-				$this->logger->debug(
-					message: '[RenderObject] Batch preloaded objects for renderEntities',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'entityCount' => count($entities),
-						'requestedUuids' => count($allUuidsToPreload),
-						'loadedObjects' => count($preloadedObjects),
-					]
-				);
-			}
-
-			// **INVERSE RELATIONSHIP OPTIMIZATION**: Batch preload objects that REFERENCE our entities.
-			// This prevents N+1 queries when extending inverse properties like 'contactpersonen'.
-			$this->preloadInverseRelationships(entities: $entities, extend: $_extend);
-		}//end if
-
-		// Batch-prefetch lightweight @self.files IDs once for the entire page so that
-		// renderEntity does not issue one FileMapper query per row when extend does
-		// NOT cover @self.files. When extend opts in to full file metadata, the
-		// per-entity renderFiles() runs instead and this cache is unused.
-		if (self::shouldExtendFiles(extend: $_extend) === false && empty($entities) === false) {
-			$uuids = [];
-			foreach ($entities as $entity) {
-				if ($entity instanceof ObjectEntity === true) {
-					$uuid = $entity->getUuid();
-					if ($uuid !== null) {
-						$uuids[] = $uuid;
-					}
-				}
-			}
-
-			if (empty($uuids) === false) {
-				$this->batchFileIdsCache = $this->fileMapper->getFileIdsForObjects($uuids);
-			}
+		// Batch preload ALL related objects BEFORE rendering, to prevent N+1 queries.
+		if (empty($page->extend) === false && empty($entities) === false) {
+			$this->preloadExtendedRelations(entities: $entities, extend: $page->extend);
 		}
+
+		$this->prefetchPageFileIds(entities: $entities, extend: $page->extend);
 
 		// PERF-1: batch-prefetch full file objects + tags for every file-typed property
 		// value across the whole page, so renderFileProperties()/getFileObject() do not
-		// issue 1+ queries per file per row. This turns a 20-row x 3-file page from ~120
-		// queries into ~3 (one IN(...) files query + one batched tag-id query + one tag
-		// resolve). Caches are request-scoped and cleared in the finally below.
+		// issue 1+ queries per file per row. Caches are request-scoped and cleared in
+		// the finally of renderPage().
 		$this->batchPreloadFileObjects(entities: $entities);
 
+		return $this->renderPage(page: $page, entities: $entities);
+	}//end renderEntities()
+
+	/**
+	 * A comma-separated option as a list of trimmed, non-empty names; any other value as it is.
+	 *
+	 * @param array|string|null $value The option.
+	 *
+	 * @return array|null The list.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function trimmedList(array|string|null $value): ?array {
+		if (is_string($value) === true) {
+			return array_filter(array_map('trim', explode(',', $value)));
+		}
+
+		return $value;
+	}//end trimmedList()
+
+	/**
+	 * Preload, in one query, every object the page's rows reference through an extended property, and the inverse relations.
+	 *
+	 * @param array $entities The page of entities.
+	 * @param array $extend   The relations to extend.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function preloadExtendedRelations(array $entities, array $extend): void {
+		$allUuidsToPreload = [];
+		foreach ($entities as $entity) {
+			if ($entity instanceof ObjectEntity === true && is_array($entity->getObject()) === true) {
+				$allUuidsToPreload = array_merge(
+					$allUuidsToPreload,
+					$this->collectUuidsForExtend(objectData: $entity->getObject(), extend: $extend)
+				);
+			}
+		}
+
+		$allUuidsToPreload = array_unique($allUuidsToPreload);
+		$this->logger->debug(
+			message: '[RenderObject] [BATCH_PRELOAD] UUIDs collected',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuidCount' => count($allUuidsToPreload),
+				'sampleUuids' => array_slice($allUuidsToPreload, 0, 3),
+			]
+		);
+
+		if (empty($allUuidsToPreload) === false) {
+			$this->cachePreloadedObjects(entities: $entities, uuids: $allUuidsToPreload);
+		}
+
+		// Batch preload objects that REFERENCE our entities, so extending inverse
+		// properties like 'contactpersonen' does not query per row.
+		$this->preloadInverseRelationships(entities: $entities, extend: $extend);
+	}//end preloadExtendedRelations()
+
+	/**
+	 * Load the given objects in one query and keep them in the local cache by UUID and id.
+	 *
+	 * @param array $entities The page of entities, for the register they share.
+	 * @param array $uuids    The UUIDs to load.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cachePreloadedObjects(array $entities, array $uuids): void {
+		$preloadedObjects = $this->objectCacheService->preloadObjects(
+			identifiers: $uuids,
+			registerId: $this->sharedRegisterIdOf(entities: $entities)
+		);
+
+		foreach ($preloadedObjects as $object) {
+			$this->objectsCache[$object->getUuid()] = $object;
+			$this->objectsCache[$object->getId()] = $object;
+		}
+
+		$this->logger->debug(
+			message: '[RenderObject] Batch preloaded objects for renderEntities',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'entityCount' => count($entities),
+				'requestedUuids' => count($uuids),
+				'loadedObjects' => count($preloadedObjects),
+			]
+		);
+	}//end cachePreloadedObjects()
+
+	/**
+	 * Batch-prefetch the lightweight @self.files ids of the whole page.
+	 *
+	 * Without it renderEntity issues one FileMapper query per row when extend
+	 * does NOT cover @self.files. When extend opts in to full file metadata,
+	 * the per-entity renderFiles() runs instead and this cache is unused.
+	 *
+	 * @param array $entities The page of entities.
+	 * @param array $extend   The relations to extend.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function prefetchPageFileIds(array $entities, array $extend): void {
+		if (self::shouldExtendFiles(extend: $extend) === true || empty($entities) === true) {
+			return;
+		}
+
+		$uuids = [];
+		foreach ($entities as $entity) {
+			if ($entity instanceof ObjectEntity === true && $entity->getUuid() !== null) {
+				$uuids[] = $entity->getUuid();
+			}
+		}
+
+		if (empty($uuids) === false) {
+			$this->batchFileIdsCache = $this->fileMapper->getFileIdsForObjects($uuids);
+		}
+	}//end prefetchPageFileIds()
+
+	/**
+	 * Render every row of a page with warm caches, then drop the page's request-scoped caches.
+	 *
+	 * The source is removed from `@self` in list responses; only a single
+	 * object response carries it.
+	 *
+	 * @param PageRender $page     The page's render options.
+	 * @param array      $entities The page of entities.
+	 *
+	 * @return ObjectEntity[] The rendered rows.
+	 *
+	 * @psalm-return list<ObjectEntity>
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function renderPage(PageRender $page, array $entities): array {
 		$renderedEntities = [];
 
 		// PERF-8: mark a page render so extendObject() skips per-row re-preloading.
 		$this->pageRenderActive = true;
 
 		try {
-			// Render each entity (now using warm cache for forward relations).
 			foreach ($entities as $entity) {
 				$renderedEntity = $this->renderEntity(
 					entity: $entity,
-					_extend: $_extend,
+					_extend: $page->extend,
 					depth: 0,
-					filter: $_filter,
-					fields: $_fields,
-					unset: $_unset,
-					_rbac: $_rbac,
-					_multitenancy: $_multitenancy
+					filter: $page->filter,
+					fields: $page->fields,
+					unset: $page->unset,
+					_rbac: $page->rbac,
+					_multitenancy: $page->multitenancy
 				);
-
-				// Remove source from @self in list responses.
-				// The source property is only included in individual object responses,
-				// not in collection/list responses for cleaner output.
 				$renderedEntity->setSource(null);
-
 				$renderedEntities[] = $renderedEntity;
 			}
 		} finally {
@@ -5409,7 +5457,7 @@ class RenderObject {
 		}//end try
 
 		return $renderedEntities;
-	}//end renderEntities()
+	}//end renderPage()
 
 	/**
 	 * Batch-preload formatted file objects + tags for an entire page of entities (PERF-1).

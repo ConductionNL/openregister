@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -85,7 +85,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
- * @uses \OCA\OpenRegister\Db\View
+ * @uses \OCA\OpenRegister\Search\Db\View
  * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  * @uses \OCA\OpenRegister\Service\Object\ObjectFindRequest
  * @uses \OCA\OpenRegister\Service\Object\ObjectFindScope

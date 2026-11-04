@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Service\Configuration;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
 
 /**
@@ -46,10 +46,10 @@ class RegisterBundleBinding {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Reads the schemas of the register.
+	 * @param SchemaMapperInterface $schemaMapper Reads the schemas of the register.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 

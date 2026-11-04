@@ -20,11 +20,12 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
 use OCA\OpenRegister\BackgroundJob\ChunkVectorizationJob;
 use OCA\OpenRegister\Db\Chunk;
 use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Service\Vectorization\Handlers\VectorStorageHandler;
-use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
+use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -74,7 +75,7 @@ class ChunkVectorizationJobTest extends TestCase {
 		$this->registerService(EmbeddingGeneratorInterface::class, function () {
 			return $this->embeddings;
 		});
-		$this->registerService(VectorStorageHandler::class, function () {
+		$this->registerService(VectorStorageHandlerInterface::class, function () {
 			return $this->storageHandler;
 		});
 

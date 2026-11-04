@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Service\ObjectSource;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -66,7 +66,7 @@ class TablesSchemaSyncService {
 	 * Constructor.
 	 *
 	 * @param RegisterMapper $registerMapper Register data mapper.
-	 * @param SchemaMapper $schemaMapper Schema data mapper.
+	 * @param SchemaMapperInterface $schemaMapper Schema data mapper.
 	 * @param TablesColumnMapper $columnMapper Column → schema-property projection.
 	 * @param LoggerInterface $logger Logger for reconcile diagnostics.
 	 *
@@ -74,7 +74,7 @@ class TablesSchemaSyncService {
 	 */
 	public function __construct(
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly TablesColumnMapper $columnMapper,
 		private readonly LoggerInterface $logger,
 	) {

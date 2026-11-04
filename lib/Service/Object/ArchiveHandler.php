@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -62,7 +62,7 @@ class ArchiveHandler {
 	 * Constructor.
 	 *
 	 * @param MagicMapper $magicMapper Object lookup and persistence.
-	 * @param AuditTrailMapper $auditTrailMapper Audit entries for each transition.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit entries for each transition.
 	 * @param PermissionHandler $permissionHandler The `update` gate.
 	 * @param IUserSession $userSession The acting user.
 	 * @param LoggerInterface $logger PSR-3 logger.
@@ -71,7 +71,7 @@ class ArchiveHandler {
 	 */
 	public function __construct(
 		private readonly MagicMapper $magicMapper,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,

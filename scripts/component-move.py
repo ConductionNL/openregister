@@ -19,8 +19,8 @@ file are moved. The script:
    pointing at the same file, and refuses frozen classes (events, Workflow
    Engine operations, migrations, the classes kept at their name);
 5. adds an entry per moved class to appinfo/class-aliases.json: `eager` when
-   other apps reference the class (column `fleet_refs`), `service` when other apps
-   reference it or it is a controller or a background job.
+   other apps reference the class (column `fleet_refs`), `service` for every class, so the
+   container returns one shared instance under both names.
 
 The approved map is scripts/component-map.csv. A class added after the map was
 made gets a row with the target of the class it was split from.
@@ -221,9 +221,6 @@ def tracked_text_files():
             yield path
 
 
-def is_controller_or_job(src):
-    return re.search(r'\bextends\s+(\\?[\w\\]*Controller|\\?[\w\\]*(TimedJob|QueuedJob|Job))\b', src) is not None
-
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -322,11 +319,12 @@ def main():
     # Step 4: alias map.
     data = json.load(open(ALIAS_FILE)) if os.path.isfile(ALIAS_FILE) else {'aliases': {}}
     for old, new in sorted(new_of.items()):
-        src = open(os.path.join(lib, moves[all_classes[old]]), encoding='utf-8').read()
         data['aliases'][old] = {
             'class': new,
             'eager': fleet[old] > 0,
-            'service': fleet[old] > 0 or is_controller_or_job(src),
+            # Every moved class is also a container alias: fetching it by its old
+            # name must return the instance the new name returns, not a second one.
+            'service': True,
         }
     with open(ALIAS_FILE, 'w') as handle:
         json.dump(data, handle, indent='\t', sort_keys=False)

@@ -44,7 +44,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RunObjectLock;
@@ -62,13 +62,13 @@ class RunLockRegistry {
 	 *
 	 * @param RunObjectLockMapper $registry The run-lock rows.
 	 * @param MagicMapper $magicMapper Resolves and mutates the objects themselves.
-	 * @param AuditTrailMapper $auditTrailMapper Records the releases.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Records the releases.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
 		private readonly RunObjectLockMapper $registry,
 		private readonly MagicMapper $magicMapper,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 	) {
 

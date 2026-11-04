@@ -53,7 +53,7 @@ use DateTime;
 use OCA\OpenRegister\ContextChat\ContentProvider;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
@@ -67,6 +67,7 @@ use OCP\IUserManager;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Search\Listener\ObjectMetricsListener;
 
 /**
  * Submit/remove object content on the object lifecycle events.
@@ -109,7 +110,7 @@ class ContextChatSubmissionListener implements IEventListener {
 	 * as those servers do; see the fleet note in ContextChatReindexCommand.
 	 *
 	 * @param ContainerInterface $container Container, for the lazy IContentManager resolve.
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
 	 * @param PermissionHandler $permissionHandler RBAC evaluator, used for the publication predicate + audience.
 	 * @param IUserManager $userManager User manager, for the broadcast-audience fallback.
 	 * @param LoggerInterface $logger PSR logger.
@@ -120,7 +121,7 @@ class ContextChatSubmissionListener implements IEventListener {
 	 */
 	public function __construct(
 		private readonly ContainerInterface $container,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly IUserManager $userManager,
 		private readonly LoggerInterface $logger,

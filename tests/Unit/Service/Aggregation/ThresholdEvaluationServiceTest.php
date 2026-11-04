@@ -7,7 +7,7 @@ namespace Unit\Service\Aggregation;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-use OCA\OpenRegister\Service\Aggregation\ThresholdEvaluationService;
+use OCA\OpenRegister\Search\Service\Aggregation\ThresholdEvaluationService;
 use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
 use OCP\ICache;
 use OCP\ICacheFactory;

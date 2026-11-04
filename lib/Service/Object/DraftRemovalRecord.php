@@ -35,7 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -77,11 +77,11 @@ class DraftRemovalRecord {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapper $auditTrail Writes the hash-chained entry.
+	 * @param AuditTrailMapperInterface $auditTrail Writes the hash-chained entry.
 	 * @param LoggerInterface  $logger     Keeps the facts when the entry cannot be written.
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $auditTrail,
+		private readonly AuditTrailMapperInterface $auditTrail,
 		private readonly LoggerInterface $logger,
 	) {
 

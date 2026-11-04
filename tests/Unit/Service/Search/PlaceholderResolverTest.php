@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Unit\Service\Search;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;

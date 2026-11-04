@@ -19,7 +19,7 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
  * Handles utility operations for ObjectService.
@@ -43,13 +43,13 @@ class UtilityHandler {
 	 * Constructor for UtilityHandler.
 	 *
 	 * @param RegisterMapper $registerMapper Mapper for register entities.
-	 * @param SchemaMapper $schemaMapper Mapper for schema entities.
+	 * @param SchemaMapperInterface $schemaMapper Mapper for schema entities.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 

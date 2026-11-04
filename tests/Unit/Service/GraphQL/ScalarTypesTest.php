@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Unit\Service\GraphQL;
 
 use GraphQL\Error\Error;
-use OCA\OpenRegister\Service\GraphQL\Scalar\DateTimeType;
-use OCA\OpenRegister\Service\GraphQL\Scalar\EmailType;
-use OCA\OpenRegister\Service\GraphQL\Scalar\JsonType;
-use OCA\OpenRegister\Service\GraphQL\Scalar\UploadType;
-use OCA\OpenRegister\Service\GraphQL\Scalar\UriType;
-use OCA\OpenRegister\Service\GraphQL\Scalar\UuidType;
+use OCA\OpenRegister\Search\Service\GraphQL\Scalar\DateTimeType;
+use OCA\OpenRegister\Search\Service\GraphQL\Scalar\EmailType;
+use OCA\OpenRegister\Search\Service\GraphQL\Scalar\JsonType;
+use OCA\OpenRegister\Search\Service\GraphQL\Scalar\UploadType;
+use OCA\OpenRegister\Search\Service\GraphQL\Scalar\UriType;
+use OCA\OpenRegister\Search\Service\GraphQL\Scalar\UuidType;
 use PHPUnit\Framework\TestCase;
 
 class ScalarTypesTest extends TestCase {

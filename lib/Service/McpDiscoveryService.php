@@ -31,7 +31,7 @@ use OCA\OpenRegister\Kernel\Contracts\McpCatalogueInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\IURLGenerator;
 
 /**
@@ -655,9 +655,9 @@ class McpDiscoveryService implements McpCatalogueInterface {
 	/**
 	 * Schema mapper for fetching live schema data
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * URL generator for building absolute URLs
@@ -670,12 +670,12 @@ class McpDiscoveryService implements McpCatalogueInterface {
 	 * Constructor
 	 *
 	 * @param RegisterMapper $registerMapper Register mapper instance
-	 * @param SchemaMapper $schemaMapper Schema mapper instance
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper instance
 	 * @param IURLGenerator $urlGenerator URL generator instance
 	 */
 	public function __construct(
 		RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 		IURLGenerator $urlGenerator,
 	) {
 		$this->registerMapper = $registerMapper;

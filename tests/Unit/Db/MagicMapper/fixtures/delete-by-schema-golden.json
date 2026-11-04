@@ -1,0 +1,165 @@
+{
+    "hard delete": {
+        "events": [
+            {
+                "log": "info",
+                "message": "[MagicMapper] Deleting all objects from magic table for schema",
+                "context": {
+                    "registerId": 3,
+                    "schemaId": 7,
+                    "tableName": "openregister_table_3_7",
+                    "hardDelete": true
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Hard deleted objects from magic table",
+                "context": {
+                    "deletedCount": 1,
+                    "registerId": 3,
+                    "schemaId": 7,
+                    "tableName": "openregister_table_3_7"
+                }
+            }
+        ],
+        "queries": [
+            "#1 delete(openregister_table_3_7, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(_register, :p1, NULL)",
+            "#1 where(eq(_register, :p1, NULL))",
+            "#1 param :p2 = 7, 1",
+            "#1 expr.eq(_schema, :p2, NULL)",
+            "#1 andWhere(eq(_schema, :p2, NULL))",
+            "#1 executeStatement()"
+        ],
+        "count": 1
+    },
+    "soft delete / signed in": {
+        "events": [
+            {
+                "log": "info",
+                "message": "[MagicMapper] Deleting all objects from magic table for schema",
+                "context": {
+                    "registerId": 3,
+                    "schemaId": 7,
+                    "tableName": "openregister_table_3_7",
+                    "hardDelete": false
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Soft deleted objects in magic table",
+                "context": {
+                    "deletedCount": 1,
+                    "registerId": 3,
+                    "schemaId": 7,
+                    "tableName": "openregister_table_3_7"
+                }
+            }
+        ],
+        "queries": [
+            "#1 update(openregister_table_3_7, NULL)",
+            "#1 param :p1 = {\"time\":\"TIME\",\"user\":\"alice\",\"reason\":\"Bulk soft delete via deleteObjectsBySchema\",\"retention\":30}, 2",
+            "#1 set(_deleted, :p1)",
+            "#1 param :p2 = 3, 1",
+            "#1 expr.eq(_register, :p2, NULL)",
+            "#1 where(eq(_register, :p2, NULL))",
+            "#1 param :p3 = 7, 1",
+            "#1 expr.eq(_schema, :p3, NULL)",
+            "#1 andWhere(eq(_schema, :p3, NULL))",
+            "#1 expr.isNull(_deleted)",
+            "#1 andWhere(isNull(_deleted))",
+            "#1 executeStatement()"
+        ],
+        "count": 1
+    },
+    "soft delete / anonymous": {
+        "events": [
+            {
+                "log": "info",
+                "message": "[MagicMapper] Deleting all objects from magic table for schema",
+                "context": {
+                    "registerId": 3,
+                    "schemaId": 7,
+                    "tableName": "openregister_table_3_7",
+                    "hardDelete": false
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Soft deleted objects in magic table",
+                "context": {
+                    "deletedCount": 1,
+                    "registerId": 3,
+                    "schemaId": 7,
+                    "tableName": "openregister_table_3_7"
+                }
+            }
+        ],
+        "queries": [
+            "#1 update(openregister_table_3_7, NULL)",
+            "#1 param :p1 = {\"time\":\"TIME\",\"user\":\"system\",\"reason\":\"Bulk soft delete via deleteObjectsBySchema\",\"retention\":30}, 2",
+            "#1 set(_deleted, :p1)",
+            "#1 param :p2 = 3, 1",
+            "#1 expr.eq(_register, :p2, NULL)",
+            "#1 where(eq(_register, :p2, NULL))",
+            "#1 param :p3 = 7, 1",
+            "#1 expr.eq(_schema, :p3, NULL)",
+            "#1 andWhere(eq(_schema, :p3, NULL))",
+            "#1 expr.isNull(_deleted)",
+            "#1 andWhere(isNull(_deleted))",
+            "#1 executeStatement()"
+        ],
+        "count": 1
+    },
+    "hard delete / no table": {
+        "events": [
+            {
+                "log": "info",
+                "message": "[MagicMapper] Deleting all objects from magic table for schema",
+                "context": {
+                    "registerId": 3,
+                    "schemaId": 7,
+                    "tableName": "openregister_table_3_7",
+                    "hardDelete": true
+                }
+            },
+            {
+                "log": "warning",
+                "message": "[MagicMapper] Cannot delete from magic table - table does not exist",
+                "context": {
+                    "registerId": 3,
+                    "schemaId": 7,
+                    "tableName": "openregister_table_3_7"
+                }
+            }
+        ],
+        "queries": [],
+        "count": 0
+    },
+    "soft delete / no table": {
+        "events": [
+            {
+                "log": "info",
+                "message": "[MagicMapper] Deleting all objects from magic table for schema",
+                "context": {
+                    "registerId": 3,
+                    "schemaId": 7,
+                    "tableName": "openregister_table_3_7",
+                    "hardDelete": false
+                }
+            },
+            {
+                "log": "warning",
+                "message": "[MagicMapper] Cannot delete from magic table - table does not exist",
+                "context": {
+                    "registerId": 3,
+                    "schemaId": 7,
+                    "tableName": "openregister_table_3_7"
+                }
+            }
+        ],
+        "queries": [],
+        "count": 0
+    }
+}

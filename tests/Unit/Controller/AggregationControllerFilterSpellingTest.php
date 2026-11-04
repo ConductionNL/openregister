@@ -24,10 +24,10 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\AggregationController;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Aggregation\AggregationCache;
-use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-use OCA\OpenRegister\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\ICache;
 use OCP\ICacheFactory;

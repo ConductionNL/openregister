@@ -37,11 +37,11 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Middleware\AnonymousEnvelopeMiddleware;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-use OCA\OpenRegister\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
-use OCA\OpenRegister\Service\GraphQL\SchemaGenerator;
+use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -71,7 +71,7 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Middleware\AnonymousEnvelopeMiddleware
- * @covers \OCA\OpenRegister\Service\GraphQL\SchemaGenerator
+ * @covers \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator
  * @uses   \OCA\OpenRegister\Service\Rbac\AnonymousEnvelope
  * @uses   \OCA\OpenRegister\Controller\FederationController
  * @uses   \OCA\OpenRegister\Controller\ObjectsController
@@ -79,16 +79,16 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
- * @uses   \OCA\OpenRegister\Service\Aggregation\TimeseriesRequestValidator
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator
  * @uses   \OCA\OpenRegister\Service\GraphQL\GraphQLResolver
- * @uses   \OCA\OpenRegister\Service\GraphQL\Scalar\DateTimeType
- * @uses   \OCA\OpenRegister\Service\GraphQL\Scalar\UuidType
- * @uses   \OCA\OpenRegister\Service\GraphQL\SchemaGenerator\CompositionHandler
- * @uses   \OCA\OpenRegister\Service\GraphQL\SchemaGenerator\TypeMapperHandler
+ * @uses   \OCA\OpenRegister\Search\Service\GraphQL\Scalar\DateTimeType
+ * @uses   \OCA\OpenRegister\Search\Service\GraphQL\Scalar\UuidType
+ * @uses   \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\CompositionHandler
+ * @uses   \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\TypeMapperHandler
  * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses   \OCA\OpenRegister\Service\WriteCause
- * @uses   \OCA\OpenRegister\Service\GraphQL\SchemaGenerator\AggregationTypes
+ * @uses   \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\AggregationTypes
  * @uses   \OCA\OpenRegister\Service\Rbac\AggregateVisibility
  * @uses   \OCA\OpenRegister\Support\FilterParams
  */

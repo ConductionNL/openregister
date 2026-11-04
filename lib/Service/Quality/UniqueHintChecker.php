@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
 
 /**
  * Warns when a nominated property's value is already held elsewhere.

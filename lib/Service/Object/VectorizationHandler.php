@@ -26,7 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -50,14 +50,14 @@ class VectorizationHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param VectorizationService $vectorizationService Vectorization service
+	 * @param VectorizationServiceInterface $vectorizationService Vectorization service
 	 * @param MagicMapper $objectEntityMapper Object entity mapper
 	 * @param LoggerInterface $logger PSR-3 logger
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly VectorizationService $vectorizationService,
+		private readonly VectorizationServiceInterface $vectorizationService,
 		private readonly MagicMapper $objectEntityMapper,
 		private readonly LoggerInterface $logger,
 	) {

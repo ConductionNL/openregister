@@ -94,9 +94,9 @@ class RegisterMapper extends QBMapper {
 	 *
 	 * Used for finding schemas associated with registers.
 	 *
-	 * @var SchemaMapper Schema mapper instance
+	 * @var SchemaMapperInterface Schema mapper instance
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * User session for multi-tenancy (from trait)
@@ -167,7 +167,7 @@ class RegisterMapper extends QBMapper {
 	 * for multi-tenancy, RBAC, and event dispatching.
 	 *
 	 * @param IDBConnection $db Database connection for queries
-	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher for register events
 	 * @param \Psr\Container\ContainerInterface $container Container for lazy MagicMapper resolution
 	 * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy
@@ -194,7 +194,7 @@ class RegisterMapper extends QBMapper {
 	 */
 	public function __construct(
 		IDBConnection $db,
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 		IEventDispatcher $eventDispatcher,
 		\Psr\Container\ContainerInterface $container,
 		OrganisationMapper $organisationMapper,
