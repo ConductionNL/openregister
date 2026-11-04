@@ -284,14 +284,20 @@ class SchemasToolProvider implements IMcpToolProvider {
 		}
 
 		$change = new CrossOrganisationMarkerChange();
-		$data['authorization'] = $change->asStored(authorization: $data['authorization']);
-		if ($change->widens(old: $old, new: $data['authorization']) === true && $this->rights->isAdmin() === false) {
+		$stored = $change->asStored(authorization: $data['authorization']);
+		if ($change->widens(old: $old, new: $stored) === true && $this->rights->isAdmin() === false) {
 			throw new RuntimeException('Only an administrator may let a rule read across organisations (crossOrganisation: true)');
 		}
 
-		if (is_array($data['authorization']) === true && (new ExternalGrantGuard())->refusalFor($data['authorization']) !== null) {
+		if (is_array($stored) === false) {
+			return $data;
+		}
+
+		if ((new ExternalGrantGuard())->refusalFor($stored) !== null) {
 			throw new RuntimeException('An external grant needs an end date');
 		}
+
+		$data['authorization'] = $stored;
 
 		return $data;
 	}//end checkedBody()
