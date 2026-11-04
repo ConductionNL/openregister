@@ -115,7 +115,7 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 		$this->assertArrayNotHasKey('completedAt', $this->taskImports[1]['data']);
 		$done = $this->engineTasks['task-2'];
 		$this->assertSame('completed', $done->getState());
-		$this->assertSame('2026-09-30 10:00', $done->getCompletedAt()->format('Y-m-d H:i'));
+		$this->assertSame(expected: '2026-09-30 10:00', actual: $this->local(moment: $done->getCompletedAt()));
 		$this->assertSame('esra.demir', $done->getCompletedBy());
 
 		$again = $this->installer->install(plan: $plan, today: $this->today());
@@ -237,7 +237,7 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$import = $this->taskImports[0]['data'];
 		$this->assertSame(expected: 'sanne.devries', actual: $import['requester']);
-		$this->assertSame(expected: '2026-10-22 17:00', actual: (new \DateTime($import['expiresAt']))->format('Y-m-d H:i'));
+		$this->assertSame(expected: '2026-10-22 17:00', actual: $this->local(moment: new \DateTime($import['expiresAt'])));
 	}//end testATaskKeepsItsRequesterAndExpiry()
 
 	public function testATaskThatDisappearedIsReportedMissing(): void {

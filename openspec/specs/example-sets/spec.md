@@ -280,6 +280,15 @@ A change MAY name `object: <key>` of an object declared earlier in the same frag
 - **WHEN** the set is installed
 - **THEN** the case SHALL point at the result, and remove SHALL leave neither
 
+### Requirement: A moment placeholder keeps its local time once stored
+
+`{{datetime:<n> HH:MM}}` SHALL fill the moment's UTC instant (`2026-10-12T07:12:00+00:00` for 09:12 in Amsterdam in summer time). A datetime column keeps the wall time without its offset and Nextcloud reads it back as UTC, so a moment filled in any other offset SHALL NOT be written.
+
+#### Scenario: A claim at 09:05 reads 09:05
+- **GIVEN** a fragment's task with `claimedAt` `{{datetime:-1 09:05}}` and a set whose time zone is Europe/Amsterdam
+- **WHEN** the set is installed and the task's audit is read
+- **THEN** the claim SHALL read 09:05 in Amsterdam, in summer and in winter time, not 10:05 or 11:05
+
 ### Requirement: A date may be pinned to a weekday (REQ-EXS-019)
 
 `{{date:<n>@<mon..sun>}}` and `{{datetime:<n>@<mon..sun> HH:MM}}` SHALL fill the first given weekday on or after the day n days from the install day, so a council meeting stays on a Thursday.
