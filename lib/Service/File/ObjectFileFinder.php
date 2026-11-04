@@ -25,7 +25,6 @@ namespace OCA\OpenRegister\Service\File;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\File;
-use OCP\Files\Folder;
 use OCP\Files\Node;
 use OCP\Files\NotFoundException;
 use Psr\Log\LoggerInterface;
@@ -181,13 +180,13 @@ final class ObjectFileFinder
 	 *
 	 * @param ObjectFileLookup $lookup The lookup.
 	 *
-	 * @return Folder The object's folder.
+	 * @return \OCP\Files\Folder The object's folder.
 	 *
 	 * @throws \Exception When the object has no folder.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	private function objectFolder(ObjectFileLookup $lookup): Folder {
+	private function objectFolder(ObjectFileLookup $lookup): \OCP\Files\Folder {
 		$objectFolder = $this->fileService->getObjectFolder($lookup->object);
 		if ($objectFolder === null) {
 			$objectId = $lookup->object->getId();
