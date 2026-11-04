@@ -31,6 +31,9 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Service\ChatService
  * @uses   \OCA\OpenRegister\Service\ChatMessageRequest
+ * @uses   \OCA\OpenRegister\Db\Conversation
+ * @uses   \OCA\OpenRegister\Db\Message
+ * @uses   \OCA\OpenRegister\Db\Agent
  */
 class ChatServiceProcessMessageGoldenTest extends TestCase {
 
