@@ -243,7 +243,47 @@ nothing. An entry whose object cannot be resolved, or whose schema cannot be
 resolved, SHALL be absent rather than present, so that every failure to decide
 hides a row instead of showing it. The scoped list SHALL be cursor paginated,
 SHALL NOT count the table, and SHALL bound the number of rows it inspects per
-request.
+request. The page SHALL NOT say how many rows were inspected, and the cursor it
+hands out SHALL be sealed, because the raw-trail offset it holds counts rows the
+caller may not read. The cursor SHALL be sealed together with the caller and a
+hash of the filters and search it was walked under, and SHALL resume a walk only
+under that same caller, filters and search; no client-chosen offset SHALL be
+accepted, so every walk without such a cursor starts at the top of the trail.
+The scope SHALL hash only the filter columns the trail query applies, so the
+cursor parameter itself and any column the query drops do not change it. A walk
+whose caller, filters or search cannot be encoded SHALL have no scope: it is
+handed no cursor and no cursor resumes it.
+The doelbinding guard SHALL be decided once per register
+and schema within a request, so a list over many objects of a purpose-bound
+schema records one refusal, not one per object.
+
+#### Scenario: an unreadable object's entries leave no count in the page
+
+- **GIVEN** a caller filtering the scoped list on an object they may not read
+- **WHEN** that object has entries, and when it has none
+- **THEN** both pages are identical: no rows, no count of inspected rows, and the same cursor
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
+
+#### Scenario: the cursor carries no offset
+
+- **GIVEN** a page that filled before the trail was exhausted
+- **WHEN** the caller reads `nextCursor`
+- **THEN** it is a sealed token that holds no number, it resumes after the rows already walked, and a token the list did not hand out starts at the top
+
+#### Scenario: a cursor or an offset cannot be steered
+
+- **GIVEN** a cursor handed out under one filter, and a caller sending a plain offset
+- **WHEN** the cursor is sent back under another filter, search or caller, or the plain offset is sent as the cursor or as `offset`
+- **THEN** the walk starts at the top of the trail, so neither tells where in the raw trail the caller's rows lie
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php and ReadableAuditCursorTest.php}
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php and ReadableAuditCursorTest.php}
+
+#### Scenario: a purpose-bound schema is refused once a request
+
+- **GIVEN** a list that walks several objects of a schema that asks for a purpose, and no purpose named
+- **WHEN** the caller lists the scoped audit trail
+- **THEN** one refusal entry is recorded and every object of that schema stays absent
+- @e2e exclude {asserted with the real PurposeGuard in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
 
 #### Scenario: a handler sees only the entries of objects they may read
 
@@ -309,7 +349,18 @@ The doelbinding guard of the object GET SHALL apply to the history as well. An
 anonymous caller SHALL receive 401. An administrator SHALL read the history as
 before. The instance-wide and register-wide listings (`GET /api/audit-trails`,
 `GET /api/audit-trails/{id}`, `GET /api/audit-trails/statistics`,
-`GET /api/audit-trails/export`) SHALL stay admin-only.
+`GET /api/audit-trails/export`) SHALL stay admin-only. Every other surface that
+shows one object's entries, such as the audit-trail integration leaf
+(`GET /api/objects/{register}/{schema}/{id}/integrations/audit-trail`) and the
+merged activity feed, SHALL read them through this reader path, for every caller.
+
+#### Scenario: the integration leaf shows the history as the reader path gives it
+
+- **GIVEN** a caller who may read an object, and an entry on it whose change set holds a property behind a read rule the caller does not meet, with a session and an IP address
+- **WHEN** they list the object's audit-trail integration leaf
+- **THEN** the entry carries no value of that property and no `session`, `request` or `ipAddress`
+- **AND** a caller who may not read the object, or whose read the doelbinding guard refuses, gets no entries
+- @e2e exclude {asserted with the real HistoryEntryRedactor in tests/Unit/Service/Integration/AuditTrailProviderReaderPathTest.php}
 
 #### Scenario: a reader of the object gets its history
 

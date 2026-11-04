@@ -314,7 +314,7 @@ Individual fields within a type MUST respect the property-level authorization de
 
 ### Requirement: GraphQL MUST log operations to the audit trail
 
-All GraphQL mutations MUST produce audit trail entries using the existing `AuditTrailMapper`, matching the same detail level as REST API operations. Query audit trails MUST be available through a dedicated `_auditTrail` field on every object type.
+All GraphQL mutations MUST produce audit trail entries using the existing `AuditTrailMapper`, matching the same detail level as REST API operations. Every object type carries a dedicated `_auditTrail` field. That field MUST give out an object's entries only through the reader path of the object's history (`ObjectHistoryForReaders`), so that the object read, the doelbinding guard and the property redaction apply as on the REST history. Until a resolver is wired through that path, the field MUST answer null.
 
 #### Scenario: Mutation creates audit trail entry
 - **GIVEN** a user executes `createMelding(input: { title: "Wateroverlast", status: "nieuw" })`
@@ -331,11 +331,12 @@ All GraphQL mutations MUST produce audit trail entries using the existing `Audit
 - **AND** a user executes `updateMelding(id: "melding-1", input: { status: "in_behandeling" })`
 - **THEN** the audit trail `changed` field MUST contain only modified fields: `{ "status": { "old": "nieuw", "new": "in_behandeling" } }`
 
-#### Scenario: Queryable audit trail on objects
+#### Scenario: The audit trail field gives out nothing outside the reader path
 - **GIVEN** a user has access to object `melding-1`
 - **WHEN** they query `melding(id: "melding-1") { _auditTrail(last: 5) { action user changed created } }`
-- **THEN** `GraphQLResolver.resolveAuditTrail()` MUST call `AuditTrailMapper.findAll()` with filter `object_uuid = melding-1`, limit 5, ordered by `created DESC`
+- **THEN** the field answers null, even when the resolved object carries an `_auditTrail` key
 - **AND** the `AuditTrailEntry` type MUST include fields: `action`, `user`, `userName`, `changed` (JSON), `created` (DateTime), `ipAddress`, `processingActivityId`, `confidentiality`, `retentionPeriod`
+- @e2e exclude {asserted in tests/Unit/Service/GraphQL/SchemaGeneratorTest.php}
 
 #### Scenario: GraphQL operation name in audit metadata
 - **GIVEN** a named GraphQL operation: `mutation MarkUrgent($id: ID!) { updateMelding(id: $id, input: { priority: "urgent" }) { id } }`
@@ -734,7 +735,7 @@ type GroupBucket {
 - **Fully implemented -- controller and routes**: `GraphQLController` (`lib/Controller/GraphQLController.php`) exposes `POST /api/graphql` (public+CORS), `GET /api/graphql/explorer` (authenticated), and `GET /api/graphql/subscribe` (authenticated+CORS).
 - **Fully implemented -- RBAC integration**: Schema-level via `PermissionHandler.checkPermission()`, property-level via `PropertyRbacHandler.filterReadableProperties()` and `getUnauthorizedProperties()`.
 - **Fully implemented -- JSON Schema composition**: `CompositionHandler` handles `allOf` (merged fields), `oneOf` (UnionType), `anyOf` (InterfaceType).
-- **Fully implemented -- audit trail integration**: `_auditTrail` field on every object type, delegating to `AuditTrailMapper.findAll()`.
+- **Partially implemented -- audit trail integration**: `_auditTrail` field on every object type, answering null until it is wired through `ObjectHistoryForReaders`.
 - **Fully implemented -- multi-tenancy**: `resolveList()` passes `_multitenancy: true` to `searchObjectsPaginated()`.
 - **Tests present**: Unit tests in `tests/Unit/Service/GraphQL/` (SchemaGeneratorTest, GraphQLErrorFormatterTest, QueryComplexityAnalyzerTest, ScalarTypesTest) and integration test in `tests/Service/GraphQLIntegrationTest.php`. Postman collection at `tests/integration/openregister-graphql-tests.postman_collection.json`.
 

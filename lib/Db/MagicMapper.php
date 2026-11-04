@@ -325,6 +325,18 @@ class MagicMapper extends AbstractObjectMapper {
 	private ?ObjectEntity $replacedByLastInsert = null;
 
 	/**
+	 * Writes that may only land on a live row, by uuid, with the refusal to throw when they cannot.
+	 *
+	 * A refused create that is carried out as an update of the stored row may not
+	 * bring a deleted object back, also when the delete lands after the check, for
+	 * instance in an ObjectUpdatingEvent listener. While a uuid is listed here, the
+	 * table write updates only a row whose `_deleted` is empty and never inserts.
+	 *
+	 * @var array<string, HookStoppedException>
+	 */
+	private array $liveRowOnlyWrites = [];
+
+	/**
 	 * Number of magic tables probed per UNION ALL query in the locate phase.
 	 *
 	 * `findAcrossAllMagicTables` used to issue one `SELECT *` per magic table,
@@ -5447,6 +5459,12 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @return int The generated `_id` of the inserted row.
 	 */
 	private function insertObjectInRegisterSchemaTable(array $data, string $tableName): int {
+		// A write that may only land on a live row never inserts: the row it was meant for is gone.
+		$refusal = ($this->liveRowOnlyWrites[(string)($data[self::METADATA_PREFIX . 'uuid'] ?? '')] ?? null);
+		if ($refusal !== null) {
+			throw $refusal;
+		}
+
 		$qb = $this->db->getQueryBuilder();
 		$qb->insert($tableName);
 
@@ -5566,6 +5584,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param string      $tableName      The table name
 	 * @param string|null $onlyFromStatus When set, the row is only changed while its stored `_status` is this (compare-and-swap).
 	 *
+	 * @throws HookStoppedException When the write may only land on a live row and the row is deleted.
 	 * @throws Exception If update fails
 	 *
 	 * @return int The number of rows changed.
@@ -5592,7 +5611,17 @@ class MagicMapper extends AbstractObjectMapper {
 			$qb->andWhere($qb->expr()->eq(self::METADATA_PREFIX . 'status', $qb->createNamedParameter($onlyFromStatus)));
 		}
 
-		return (int)$qb->executeStatement();
+		$liveOnly = ($this->liveRowOnlyWrites[$uuid] ?? null);
+		if ($liveOnly !== null) {
+			$qb->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
+		}
+
+		$changed = (int)$qb->executeStatement();
+		if ($liveOnly !== null && $changed === 0) {
+			throw $liveOnly;
+		}
+
+		return $changed;
 	}//end updateObjectInRegisterSchemaTable()
 
 	/**
@@ -9276,25 +9305,11 @@ class MagicMapper extends AbstractObjectMapper {
 		bool $dispatchEvents = true,
 		bool $failIfExists = false,
 	): ObjectEntity {
-		// Dispatch creating event (pre-save hook).
+		// Dispatch creating event (pre-save hook). A refusal is held until the write knows whether
+		// this is a create at all: over a taken identifier it is an update, judged by the update guards.
+		$refusal = null;
 		if ($dispatchEvents === true) {
-			$creatingEvent = new ObjectCreatingEvent(object: $entity);
-			$this->eventDispatcher->dispatchTyped($creatingEvent);
-
-			// Check if a hook stopped propagation (reject mode).
-			if ($creatingEvent->isPropagationStopped() === true) {
-				throw new HookStoppedException(
-					message: (string)($creatingEvent->getErrors()['message'] ?? 'Object creation rejected by hook'),
-					errors: $creatingEvent->getErrors()
-				);
-			}
-
-			// Merge modified data from hooks if any.
-			$modifiedData = $creatingEvent->getModifiedData();
-			if (empty($modifiedData) === false) {
-				$objectData = $entity->getObject() ?? [];
-				$entity->setObject(array_merge($objectData, $modifiedData));
-			}
+			$refusal = $this->runCreatingHooks(entity: $entity);
 		}
 
 		// Ensure table exists.
@@ -9334,7 +9349,14 @@ class MagicMapper extends AbstractObjectMapper {
 		// Save to table, learning the generated `_id` from the INSERT itself.
 		[$uuid, $insertedId] = $this->writeClaimingIdentifier(
 			entity: $entity,
-			write: ['data' => $objectArray, 'register' => $register, 'schema' => $schema, 'table' => $tableName, 'failIfExists' => $failIfExists]
+			write: [
+				'data' => $objectArray,
+				'register' => $register,
+				'schema' => $schema,
+				'table' => $tableName,
+				'failIfExists' => $failIfExists,
+				'refusal' => $refusal,
+			]
 		);
 
 		// Update entity UUID if it was generated.
@@ -9408,6 +9430,10 @@ class MagicMapper extends AbstractObjectMapper {
 	private function writeClaimingIdentifier(ObjectEntity $entity, array $write): array {
 		// Reset here, after the creating listeners ran, so an insert nested in one of them cannot leave its flag behind.
 		$this->replacedByLastInsert = null;
+		if (($write['refusal'] ?? null) !== null) {
+			return [$this->updateRefusedCreate(entity: $entity, write: $write), null];
+		}
+
 		$insertedId = null;
 		try {
 			$uuid = $this->saveObjectToRegisterSchemaTable(
@@ -9430,6 +9456,81 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end writeClaimingIdentifier()
 
 	/**
+	 * Dispatch ObjectCreatingEvent and merge what the hooks set; the refusal when a hook stopped it.
+	 *
+	 * @param ObjectEntity $entity The object being created.
+	 *
+	 * @return HookStoppedException|null The refusal to throw unless the write turns out to be an update.
+	 *
+	 * @spec openspec/changes/create-over-taken-identifier-runs-update-path/specs/object-lifecycle/spec.md#requirement-a-refused-create-over-a-taken-identifier-is-judged-as-an-update
+	 */
+	private function runCreatingHooks(ObjectEntity $entity): ?HookStoppedException {
+		$creatingEvent = new ObjectCreatingEvent(object: $entity);
+		$this->eventDispatcher->dispatchTyped($creatingEvent);
+		if ($creatingEvent->isPropagationStopped() === true) {
+			return new HookStoppedException(
+				message: (string)($creatingEvent->getErrors()['message'] ?? 'Object creation rejected by hook'),
+				errors: $creatingEvent->getErrors()
+			);
+		}
+
+		$modifiedData = $creatingEvent->getModifiedData();
+		if (empty($modifiedData) === false) {
+			$entity->setObject(array_merge(($entity->getObject() ?? []), $modifiedData));
+		}
+
+		return null;
+	}//end runCreatingHooks()
+
+	/**
+	 * A create its creating hooks refused: an update when its identifier names a live row, else the refusal.
+	 *
+	 * The refusal judged a create. When the caller did not ask to fail on a taken
+	 * identifier and a live row exists, the write is an update of that row, so the
+	 * update guards judge it instead. A soft-deleted row keeps the refusal: writing
+	 * over it would bring the object back without the create rules.
+	 *
+	 * @param ObjectEntity $entity The object being created.
+	 * @param array        $write  `table`, `register`, `schema`, `failIfExists` and the `refusal`.
+	 *
+	 * @return string The uuid written.
+	 *
+	 * @throws HookStoppedException The creating refusal, when this is a create after all.
+	 *
+	 * @spec openspec/changes/create-over-taken-identifier-runs-update-path/specs/object-lifecycle/spec.md#requirement-a-refused-create-over-a-taken-identifier-is-judged-as-an-update
+	 */
+	private function updateRefusedCreate(ObjectEntity $entity, array $write): string {
+		$stored = null;
+		if ($write['failIfExists'] === false) {
+			$stored = $this->storedRowOf(entity: $entity, target: $write);
+		}
+
+		if ($stored === null || empty($stored->getDeleted()) === false) {
+			throw $write['refusal'];
+		}
+
+		// The row is read again right before the write in updateTakenIdentifier(), so a row that went away in between is not written.
+		return $this->updateTakenIdentifier(entity: $entity, target: $write);
+	}//end updateRefusedCreate()
+
+	/**
+	 * The stored row a create's identifier names, read raw (a soft-deleted row counts too), or null.
+	 *
+	 * @param ObjectEntity                                           $entity The object being created.
+	 * @param array{register: Register, schema: Schema, table: string} $target Where it is written.
+	 *
+	 * @return ObjectEntity|null
+	 */
+	private function storedRowOf(ObjectEntity $entity, array $target): ?ObjectEntity {
+		$row = $this->findObjectInRegisterSchemaTable(uuid: (string)$entity->getUuid(), tableName: $target['table']);
+		if ($row === null) {
+			return null;
+		}
+
+		return $this->convertRowToObjectEntity(row: $row, _register: $target['register'], _schema: $target['schema']);
+	}//end storedRowOf()
+
+	/**
 	 * Write a create whose identifier is already taken as an update of the stored row.
 	 *
 	 * The stored row is read raw (a soft-deleted row counts too, as it did for the
@@ -9437,28 +9538,40 @@ class MagicMapper extends AbstractObjectMapper {
 	 * the real transition. A stopped event throws HookStoppedException and the row
 	 * stays as stored.
 	 *
-	 * @param ObjectEntity                                           $entity The object being created.
-	 * @param array{register: Register, schema: Schema, table: string} $target Where it is written.
+	 * @param ObjectEntity $entity The object being created.
+	 * @param array        $target Where it is written (`register`, `schema`, `table`), and the creating
+	 *                             `refusal` when the create was refused: then the row must still be live.
 	 *
 	 * @return string The uuid written.
 	 *
-	 * @throws HookStoppedException When a listener stops the update.
+	 * @throws HookStoppedException When a listener stops the update, or the refused create's row is no longer live.
 	 *
 	 * @spec openspec/changes/insert-race-runs-update-guard/specs/object-lifecycle/spec.md#requirement-a-create-that-finds-its-identifier-taken-runs-the-update-guard
 	 */
 	private function updateTakenIdentifier(ObjectEntity $entity, array $target): string {
-		$stored = null;
-		$row    = $this->findObjectInRegisterSchemaTable(uuid: (string)$entity->getUuid(), tableName: $target['table']);
-		if ($row !== null) {
-			$stored = $this->convertRowToObjectEntity(row: $row, _register: $target['register'], _schema: $target['schema']);
+		$stored = $this->storedRowOf(entity: $entity, target: $target);
+
+		// A refused create may only update a row that is still live when it is written.
+		$refusal = ($target['refusal'] ?? null);
+		if ($refusal !== null && ($stored === null || empty($stored->getDeleted()) === false)) {
+			throw $refusal;
 		}
 
-		$updated = $this->updateObjectEntity(
-			entity: $entity,
-			register: $target['register'],
-			schema: $target['schema'],
-			oldEntity: $stored
-		);
+		$uuid = (string)$entity->getUuid();
+		if ($refusal !== null) {
+			$this->liveRowOnlyWrites[$uuid] = $refusal;
+		}
+
+		try {
+			$updated = $this->updateObjectEntity(
+				entity: $entity,
+				register: $target['register'],
+				schema: $target['schema'],
+				oldEntity: $stored
+			);
+		} finally {
+			unset($this->liveRowOnlyWrites[$uuid]);
+		}
 
 		$this->replacedByLastInsert = ($stored ?? clone $entity);
 		return (string)$updated->getUuid();
@@ -9573,6 +9686,33 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end updateObjectEntity()
 
 	/**
+	 * Ask the delete guards whether an object may be deleted.
+	 *
+	 * Dispatches the stoppable ObjectDeletingEvent, on which the frozen, the
+	 * working-calendar and the concept guards listen. Both the permanent and
+	 * the soft delete ask it before they write.
+	 *
+	 * @param ObjectEntity $entity The object about to be deleted.
+	 *
+	 * @return void
+	 *
+	 * @throws HookStoppedException When a listener stops the delete.
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-frozen-record-cannot-be-deleted
+	 */
+	public function assertDeletable(ObjectEntity $entity): void {
+		$deletingEvent = new ObjectDeletingEvent(object: $entity);
+		$this->eventDispatcher->dispatchTyped($deletingEvent);
+
+		if ($deletingEvent->isPropagationStopped() === true) {
+			throw new HookStoppedException(
+				message: (string)($deletingEvent->getErrors()['message'] ?? 'Object deletion rejected by hook'),
+				errors: $deletingEvent->getErrors()
+			);
+		}
+	}//end assertDeletable()
+
+	/**
 	 * Delete ObjectEntity from register+schema table.
 	 *
 	 * Supports both soft delete (sets _deleted field) and hard delete (removes from table).
@@ -9596,18 +9736,8 @@ class MagicMapper extends AbstractObjectMapper {
 		bool $hardDelete = false,
 		bool $dispatchEvents = true,
 	): ObjectEntity {
-		// Dispatch deleting event (pre-save hook).
 		if ($dispatchEvents === true) {
-			$deletingEvent = new ObjectDeletingEvent(object: $entity);
-			$this->eventDispatcher->dispatchTyped($deletingEvent);
-
-			// Check if a hook stopped propagation (reject mode).
-			if ($deletingEvent->isPropagationStopped() === true) {
-				throw new HookStoppedException(
-					message: (string)($deletingEvent->getErrors()['message'] ?? 'Object deletion rejected by hook'),
-					errors: $deletingEvent->getErrors()
-				);
-			}
+			$this->assertDeletable(entity: $entity);
 		}
 
 		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);

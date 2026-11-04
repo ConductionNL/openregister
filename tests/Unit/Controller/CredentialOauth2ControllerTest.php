@@ -70,6 +70,9 @@ class CredentialOauth2ControllerTest extends TestCase {
 	/** @var array<int, array<string, mixed>> Every local disable performed. */
 	private array $disables = [];
 
+	/** @var array<int, string|null> The credential each upstream revoke was asked for. */
+	private array $revokedFor = [];
+
 	/** @var array<int, array{0: string, 1: string}> Every minted client credential a failed start removed, with its scope. */
 	private array $discards = [];
 
@@ -86,6 +89,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 		$this->attempts = 0;
 		$this->completions = 0;
 		$this->disables = [];
+		$this->revokedFor = [];
 		$this->discards = [];
 		$this->issuedClaims = [];
 		$this->withdrawals = [];
@@ -405,6 +409,31 @@ class CredentialOauth2ControllerTest extends TestCase {
 		$this->assertSame('', $this->disables[0]['lastError']);
 	}
 
+	public function testDisconnectWritesTheGuardedRowByItsUuid(): void {
+		$controller = $this->makeController(
+			params: [],
+			manageable: ['provider' => 'mastodon', 'scope' => 'personal', 'owner' => 'alice'],
+			storedUuid: 'cred-uuid'
+		);
+
+		$controller->disconnect(id: 'cred-slug');
+
+		$this->assertSame('cred-uuid', $this->disables[0]['credentialId']);
+		$this->assertSame(['cred-uuid'], $this->revokedFor);
+	}
+
+	public function testDisconnectRefusesARowWithoutUuid(): void {
+		$controller = $this->makeController(
+			params: [],
+			manageable: ['provider' => 'mastodon', 'scope' => 'personal', 'owner' => 'alice'],
+			storedUuid: ''
+		);
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $controller->disconnect(id: 'cred-1')->getStatus());
+		$this->assertSame([], $this->disables);
+		$this->assertSame([], $this->revokedFor);
+	}
+
 	public function testAnUnreachableProviderStillDisconnectsLocally(): void {
 		// The branch that matters. A provider that cannot be reached must never keep a
 		// tenant connected: the alternative is a credential nobody can switch off
@@ -483,6 +512,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 		?string $mintsClient = null,
 		bool $discardFails = false,
 		bool $withdrawFails = false,
+		string $storedUuid = 'cred-1',
 	): CredentialOauth2Controller {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(
@@ -567,7 +597,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 			$connections->method('findManageable')->willReturn(null);
 		} else {
 			$entity = new ObjectEntity();
-			$entity->setUuid('cred-1');
+			$entity->setUuid($storedUuid);
 			$entity->setObject($manageable);
 			$connections->method('findManageable')->willReturn($entity);
 		}
@@ -622,7 +652,8 @@ class CredentialOauth2ControllerTest extends TestCase {
 			$connections->method('gatedOrganisation')->willThrowException($startThrows['gatedOrganisation']);
 		}
 		$connect->method('revokeUpstream')->willReturnCallback(
-			function () use ($revokeResult): string {
+			function (...$args) use ($revokeResult): string {
+				$this->revokedFor[] = ($args['credentialId'] ?? $args[2] ?? null);
 				if ($revokeResult === null) {
 					throw new RuntimeException('the provider is unreachable');
 				}

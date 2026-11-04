@@ -384,7 +384,10 @@ class CredentialOauth2Controller extends Controller {
 		}
 
 		$entity = $this->connections->findManageable(credentialId: $id, uid: $uid);
-		if ($entity === null) {
+		// Written by the uuid of the row the guard found, not by the identifier as
+		// sent; a row without a uuid is refused like one the caller may not manage.
+		$uuid = (string) ($entity?->getUuid() ?? '');
+		if ($uuid === '') {
 			return new JSONResponse(['message' => 'Request not permitted'], Http::STATUS_FORBIDDEN);
 		}
 
@@ -396,7 +399,7 @@ class CredentialOauth2Controller extends Controller {
 			$lastError = $this->connect->revokeUpstream(
 				provider: $this->connect->oauth2Provider(providerId: (string)($data['provider'] ?? '')),
 				credential: $data,
-				credentialId: $id,
+				credentialId: $uuid,
 				scope: (string)($data['scope'] ?? 'personal')
 			);
 		} catch (Throwable $failure) {
@@ -405,7 +408,7 @@ class CredentialOauth2Controller extends Controller {
 		}
 
 		try {
-			$this->connections->disable(credentialId: $id, data: $data, lastError: $lastError);
+			$this->connections->disable(credentialId: $uuid, data: $data, lastError: $lastError);
 		} catch (Throwable $failure) {
 			return new JSONResponse(['message' => 'Unable to disconnect'], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}

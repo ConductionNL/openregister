@@ -207,6 +207,22 @@ class SchemaGeneratorTest extends TestCase {
 		$this->assertArrayHasKey('_usedBy', $fields);
 	}
 
+	public function testTheAuditTrailFieldGivesNothingEvenWhenTheObjectCarriesTheKey(): void {
+		$schema = $this->createSchema(1, 'items', [
+			'name' => ['type' => 'string'],
+		]);
+
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
+		$this->registerMapper->method('findAll')->willReturn([]);
+
+		$this->generator->generate();
+		$field = $this->generator->getObjectType($schema)->getField('_auditTrail');
+
+		$this->assertIsCallable($field->resolveFn);
+		$root = ['_uuid' => 'obj-1', '_auditTrail' => [['action' => 'update', 'ipAddress' => '203.0.113.9']]];
+		$this->assertNull(($field->resolveFn)($root, ['last' => 10], null, null));
+	}
+
 	// ── Register query ──
 
 	public function testGeneratesRegisterQuery(): void {
