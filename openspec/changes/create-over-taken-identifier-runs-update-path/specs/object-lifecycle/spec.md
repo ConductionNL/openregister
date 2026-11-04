@@ -31,3 +31,17 @@ and write nothing. Data a refusing hook set SHALL NOT be written.
 - **THEN** it is refused with the creating hook's message, the object stays deleted, and nothing is written
 - @e2e exclude {covered by `MagicMapperInsertRaceGuardTest::testARefusedCreateOverASoftDeletedRowStaysRefused`}
 
+#### Scenario: the row is deleted between the check and the update
+
+- **GIVEN** a live stored object when a refused create checks it, which is soft-deleted before the update is written
+- **WHEN** the update path reads the row again
+- **THEN** the creating refusal is thrown and nothing is written
+- @e2e exclude {needs a concurrent delete; covered by `MagicMapperInsertRaceGuardTest::testARefusedCreateIsNotWrittenWhenItsRowIsDeletedBeforeTheUpdate`}
+
+#### Scenario: a listener deletes the row while the update runs
+
+- **GIVEN** a refused create carried out as an update of a live row, and an `ObjectUpdatingEvent` listener that soft-deletes or hard-deletes that row
+- **WHEN** the update is written
+- **THEN** the write changes only a row whose `_deleted` is empty and never inserts, so nothing is written and the creating refusal is thrown; a lost claim without a refusal is written as before
+- @e2e exclude {covered by `MagicMapperInsertRaceGuardTest::testARefusedCreateIsNotWrittenWhenAnUpdatingListenerSoftDeletesItsRow`, `...HardDeletesItsRow`, `testALostClaimIsWrittenEvenWhenAnUpdatingListenerDeletesItsRow` and `MagicMapperLiveRowWriteTest`}
+

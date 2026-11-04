@@ -128,6 +128,20 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 	private array $rowQueue = [];
 
 	/**
+	 * Whether the stored row was soft-deleted after it was read, as the write would find it.
+	 *
+	 * @var bool
+	 */
+	private bool $deletedNow = false;
+
+	/**
+	 * The mapper under test, for the table-write stub to read its live-row-only writes.
+	 *
+	 * @var MagicMapper|null
+	 */
+	private ?MagicMapper $liveMapper = null;
+
+	/**
 	 * Run once inside the next ObjectCreatingEvent, before it is recorded.
 	 *
 	 * @var callable|null
@@ -216,10 +230,21 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 			)
 			->getMock();
 
+		$this->liveMapper = $mapper;
+		$this->deletedNow = false;
 		$mapper->method('ensureTableForRegisterSchema')->willReturn(true);
 		$mapper->method('getTableNameForRegisterSchema')->willReturn('openregister_table_3_7');
 		$mapper->method('saveObjectToRegisterSchemaTable')->willReturnCallback(
 			function (array $objectData, Register $register, Schema $schema, string $tableName, bool $failIfExists = false, ?int &$insertedId = null): string {
+				$liveOnly = null;
+				if (property_exists(MagicMapper::class, 'liveRowOnlyWrites') === true) {
+					$liveOnly = ((new \ReflectionProperty(MagicMapper::class, 'liveRowOnlyWrites'))->getValue($this->liveMapper)[self::UUID] ?? null);
+				}
+
+				if ($liveOnly !== null && ($this->taken === false || $this->deletedNow === true)) {
+					throw $liveOnly;
+				}
+
 				$this->writes[] = $failIfExists;
 				$this->writtenData[] = $objectData;
 				if ($this->taken === true && $failIfExists === true) {
@@ -237,12 +262,12 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 			fn (): ?array => ($this->rowQueue !== [] ? array_shift($this->rowQueue) : ($this->taken === true ? ['_id' => 5, '_uuid' => self::UUID] : null))
 		);
 		$mapper->method('convertRowToObjectEntity')->willReturnCallback(
-			function (): ObjectEntity {
+			function (array $row): ObjectEntity {
 				$stored = new ObjectEntity();
 				$stored->setId(5);
 				$stored->setUuid(self::UUID);
 				$stored->setObject(['status' => 'open']);
-				if ($this->storedDeleted === true) {
+				if ($this->storedDeleted === true || empty($row['_deleted']) === false) {
 					$stored->setDeleted(['deletedBy' => 'agent']);
 				}
 
@@ -531,11 +556,98 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 		try {
 			$mapper->insert(entity: $this->entity('archived'), register: $register, schema: $schema);
 			$this->fail('A refused create whose row went away must not be written.');
-		} catch (\Throwable $e) {
-			$this->assertNotInstanceOf(\PHPUnit\Framework\AssertionFailedError::class, $e);
+		} catch (HookStoppedException $e) {
+			$this->assertSame(self::NOT_INITIAL, $e->getMessage());
 		}
 
 		$this->assertSame([], $this->writes);
 	}//end testARefusedCreateIsNotWrittenWhenItsRowGoesAway()
+
+	public function testARefusedCreateIsNotWrittenWhenItsRowIsDeletedBeforeTheUpdate(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		$this->rowQueue = [
+			['_id' => 5, '_uuid' => self::UUID],
+			['_id' => 5, '_uuid' => self::UUID, '_deleted' => ['deletedBy' => 'agent']],
+		];
+
+		try {
+			$mapper->insert(entity: $this->entity('archived'), register: $register, schema: $schema);
+			$this->fail('A refused create must not write over a row deleted before the update.');
+		} catch (HookStoppedException $e) {
+			$this->assertSame(self::NOT_INITIAL, $e->getMessage());
+		}
+
+		$this->assertSame([], $this->writes);
+		$this->assertSame([ObjectCreatingEvent::class], $this->eventClasses());
+	}//end testARefusedCreateIsNotWrittenWhenItsRowIsDeletedBeforeTheUpdate()
+
+	public function testALostClaimStillUpdatesASoftDeletedRow(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		$this->storedDeleted = true;
+
+		$mapper->insert(entity: $this->entity('closed'), register: $register, schema: $schema);
+
+		$this->assertSame([true, false], $this->writes);
+	}//end testALostClaimStillUpdatesASoftDeletedRow()
+
+	public function testARefusedCreateIsNotWrittenWhenAnUpdatingListenerSoftDeletesItsRow(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		$this->onUpdating = function (): void {
+			$this->deletedNow = true;
+		};
+
+		try {
+			$mapper->insert(entity: $this->entity('archived'), register: $register, schema: $schema);
+			$this->fail('A refused create must not write over a row deleted during its update.');
+		} catch (HookStoppedException $e) {
+			$this->assertSame(self::NOT_INITIAL, $e->getMessage());
+		}
+
+		$this->assertSame([], $this->writes);
+	}//end testARefusedCreateIsNotWrittenWhenAnUpdatingListenerSoftDeletesItsRow()
+
+	public function testARefusedCreateIsNotWrittenWhenAnUpdatingListenerHardDeletesItsRow(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		$this->onUpdating = function (): void {
+			$this->taken = false;
+		};
+
+		try {
+			$mapper->insert(entity: $this->entity('archived'), register: $register, schema: $schema);
+			$this->fail('A refused create must not re-insert a row deleted during its update.');
+		} catch (HookStoppedException $e) {
+			$this->assertSame(self::NOT_INITIAL, $e->getMessage());
+		}
+
+		$this->assertSame([], $this->writes);
+	}//end testARefusedCreateIsNotWrittenWhenAnUpdatingListenerHardDeletesItsRow()
+
+	public function testALostClaimIsWrittenEvenWhenAnUpdatingListenerDeletesItsRow(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		$this->onUpdating = function (): void {
+			$this->deletedNow = true;
+		};
+
+		$mapper->insert(entity: $this->entity('closed'), register: $register, schema: $schema);
+
+		$this->assertSame([true, false], $this->writes);
+	}//end testALostClaimIsWrittenEvenWhenAnUpdatingListenerDeletesItsRow()
+
+	public function testALiveRowOnlyWriteEndsWithItsUpdate(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		$mapper->insert(entity: $this->entity('archived'), register: $register, schema: $schema);
+
+		$this->writes     = [];
+		$this->deletedNow = true;
+		$mapper->insert(entity: $this->entity('closed'), register: $register, schema: $schema);
+
+		$this->assertSame([true, false], $this->writes);
+	}//end testALiveRowOnlyWriteEndsWithItsUpdate()
 
 }//end class

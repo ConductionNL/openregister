@@ -325,6 +325,18 @@ class MagicMapper extends AbstractObjectMapper {
 	private ?ObjectEntity $replacedByLastInsert = null;
 
 	/**
+	 * Writes that may only land on a live row, by uuid, with the refusal to throw when they cannot.
+	 *
+	 * A refused create that is carried out as an update of the stored row may not
+	 * bring a deleted object back, also when the delete lands after the check, for
+	 * instance in an ObjectUpdatingEvent listener. While a uuid is listed here, the
+	 * table write updates only a row whose `_deleted` is empty and never inserts.
+	 *
+	 * @var array<string, HookStoppedException>
+	 */
+	private array $liveRowOnlyWrites = [];
+
+	/**
 	 * Number of magic tables probed per UNION ALL query in the locate phase.
 	 *
 	 * `findAcrossAllMagicTables` used to issue one `SELECT *` per magic table,
@@ -5447,6 +5459,12 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @return int The generated `_id` of the inserted row.
 	 */
 	private function insertObjectInRegisterSchemaTable(array $data, string $tableName): int {
+		// A write that may only land on a live row never inserts: the row it was meant for is gone.
+		$refusal = ($this->liveRowOnlyWrites[(string)($data[self::METADATA_PREFIX . 'uuid'] ?? '')] ?? null);
+		if ($refusal !== null) {
+			throw $refusal;
+		}
+
 		$qb = $this->db->getQueryBuilder();
 		$qb->insert($tableName);
 
@@ -5566,6 +5584,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param string      $tableName      The table name
 	 * @param string|null $onlyFromStatus When set, the row is only changed while its stored `_status` is this (compare-and-swap).
 	 *
+	 * @throws HookStoppedException When the write may only land on a live row and the row is deleted.
 	 * @throws Exception If update fails
 	 *
 	 * @return int The number of rows changed.
@@ -5592,7 +5611,17 @@ class MagicMapper extends AbstractObjectMapper {
 			$qb->andWhere($qb->expr()->eq(self::METADATA_PREFIX . 'status', $qb->createNamedParameter($onlyFromStatus)));
 		}
 
-		return (int)$qb->executeStatement();
+		$liveOnly = ($this->liveRowOnlyWrites[$uuid] ?? null);
+		if ($liveOnly !== null) {
+			$qb->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
+		}
+
+		$changed = (int)$qb->executeStatement();
+		if ($liveOnly !== null && $changed === 0) {
+			throw $liveOnly;
+		}
+
+		return $changed;
 	}//end updateObjectInRegisterSchemaTable()
 
 	/**
@@ -9509,24 +9538,40 @@ class MagicMapper extends AbstractObjectMapper {
 	 * the real transition. A stopped event throws HookStoppedException and the row
 	 * stays as stored.
 	 *
-	 * @param ObjectEntity                                           $entity The object being created.
-	 * @param array{register: Register, schema: Schema, table: string} $target Where it is written.
+	 * @param ObjectEntity $entity The object being created.
+	 * @param array        $target Where it is written (`register`, `schema`, `table`), and the creating
+	 *                             `refusal` when the create was refused: then the row must still be live.
 	 *
 	 * @return string The uuid written.
 	 *
-	 * @throws HookStoppedException When a listener stops the update.
+	 * @throws HookStoppedException When a listener stops the update, or the refused create's row is no longer live.
 	 *
 	 * @spec openspec/changes/insert-race-runs-update-guard/specs/object-lifecycle/spec.md#requirement-a-create-that-finds-its-identifier-taken-runs-the-update-guard
 	 */
 	private function updateTakenIdentifier(ObjectEntity $entity, array $target): string {
 		$stored = $this->storedRowOf(entity: $entity, target: $target);
 
-		$updated = $this->updateObjectEntity(
-			entity: $entity,
-			register: $target['register'],
-			schema: $target['schema'],
-			oldEntity: $stored
-		);
+		// A refused create may only update a row that is still live when it is written.
+		$refusal = ($target['refusal'] ?? null);
+		if ($refusal !== null && ($stored === null || empty($stored->getDeleted()) === false)) {
+			throw $refusal;
+		}
+
+		$uuid = (string)$entity->getUuid();
+		if ($refusal !== null) {
+			$this->liveRowOnlyWrites[$uuid] = $refusal;
+		}
+
+		try {
+			$updated = $this->updateObjectEntity(
+				entity: $entity,
+				register: $target['register'],
+				schema: $target['schema'],
+				oldEntity: $stored
+			);
+		} finally {
+			unset($this->liveRowOnlyWrites[$uuid]);
+		}
 
 		$this->replacedByLastInsert = ($stored ?? clone $entity);
 		return (string)$updated->getUuid();
