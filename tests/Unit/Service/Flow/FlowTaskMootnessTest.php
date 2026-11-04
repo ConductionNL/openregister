@@ -15,6 +15,7 @@ use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowTaskMootness;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -35,7 +36,7 @@ class FlowTaskMootnessTest extends TestCase {
 	protected function setUp(): void {
 		$this->tasks = $this->createMock(TaskService::class);
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(TaskService::class)->willReturn($this->tasks);
+		$container->method('get')->with(TaskServiceInterface::class)->willReturn($this->tasks);
 
 		$this->mootness = new FlowTaskMootness($container, new NullLogger());
 	}//end setUp()

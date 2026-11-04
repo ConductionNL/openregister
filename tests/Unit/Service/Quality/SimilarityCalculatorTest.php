@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Quality;
 
-use OCA\OpenRegister\Service\Quality\SimilarityCalculator;
+use OCA\OpenRegister\Search\Service\Quality\SimilarityCalculator;
 use PHPUnit\Framework\TestCase;
 
 class SimilarityCalculatorTest extends TestCase {

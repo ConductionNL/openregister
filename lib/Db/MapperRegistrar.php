@@ -52,7 +52,7 @@ final class MapperRegistrar {
 					db: $container->get('OCP\IDBConnection'),
 					eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
 					validator: $container->get(PropertyValidatorHandler::class),
-					organisationMapper: $container->get(OrganisationMapper::class),
+					organisationMapper: $container->get(OrganisationMapperInterface::class),
 					userSession: $container->get('OCP\IUserSession'),
 					groupManager: $container->get('OCP\IGroupManager'),
 					appConfig: $container->get('OCP\IAppConfig'),
@@ -66,10 +66,10 @@ final class MapperRegistrar {
 			function (ContainerInterface $container) {
 				return new RegisterMapper(
 					db: $container->get('OCP\IDBConnection'),
-					schemaMapper: $container->get(SchemaMapper::class),
+					schemaMapper: $container->get(SchemaMapperInterface::class),
 					eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
 					container: $container,
-					organisationMapper: $container->get(OrganisationMapper::class),
+					organisationMapper: $container->get(OrganisationMapperInterface::class),
 					userSession: $container->get('OCP\IUserSession'),
 					groupManager: $container->get('OCP\IGroupManager'),
 					appConfig: $container->get('OCP\IAppConfig'),
@@ -87,7 +87,7 @@ final class MapperRegistrar {
 			function (ContainerInterface $container) {
 				return new WebhookMapper(
 					db: $container->get('OCP\IDBConnection'),
-					organisationMapper: $container->get(OrganisationMapper::class),
+					organisationMapper: $container->get(OrganisationMapperInterface::class),
 					userSession: $container->get('OCP\IUserSession'),
 					groupManager: $container->get('OCP\IGroupManager'),
 					appConfig: $container->get('OCP\IAppConfig')
@@ -100,8 +100,8 @@ final class MapperRegistrar {
 			function (ContainerInterface $container) {
 				return new MagicMapper(
 					db: $container->get('OCP\IDBConnection'),
-					schemaMapper: $container->get(SchemaMapper::class),
-					registerMapper: $container->get(RegisterMapper::class),
+					schemaMapper: $container->get(SchemaMapperInterface::class),
+					registerMapper: $container->get(RegisterMapperInterface::class),
 					config: $container->get('OCP\IConfig'),
 					eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
 					userSession: $container->get('OCP\IUserSession'),
@@ -126,7 +126,7 @@ final class MapperRegistrar {
 			function (ContainerInterface $container) {
 				return new EntityRelationMapper(
 					db: $container->get('OCP\IDBConnection'),
-					auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+					auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
 					userSession: $container->get('OCP\IUserSession'),
 					eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
 					logger: $container->get('Psr\Log\LoggerInterface')

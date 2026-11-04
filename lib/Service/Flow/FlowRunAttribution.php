@@ -288,7 +288,7 @@ class FlowRunAttribution {
 	 */
 	private function activeOrganisation(): ?string {
 		try {
-			$organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
+			$organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationServiceInterface');
 			$uuid = $organisationService->getActiveOrganisation()?->getUuid();
 		} catch (Throwable $e) {
 			$this->logger->debug(

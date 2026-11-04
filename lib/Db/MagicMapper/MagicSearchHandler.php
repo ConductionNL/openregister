@@ -59,7 +59,7 @@ use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\DraftListLens;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
-use OCA\OpenRegister\Service\Search\PropertySearchProfile;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\Search\SearchTermNode;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\Search\SearchTermSqlCompiler;

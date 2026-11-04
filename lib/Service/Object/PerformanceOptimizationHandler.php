@@ -19,7 +19,7 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -127,13 +127,13 @@ class PerformanceOptimizationHandler {
 	/**
 	 * Constructor for PerformanceOptimizationHandler.
 	 *
-	 * @param OrganisationService $organisationService Organisation service for context.
+	 * @param OrganisationServiceInterface $organisationService Organisation service for context.
 	 * @param LoggerInterface $logger Logger for debugging.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

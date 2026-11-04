@@ -26,8 +26,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\Object\ViewScopeApplier;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

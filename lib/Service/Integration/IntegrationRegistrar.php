@@ -179,7 +179,7 @@ final class IntegrationRegistrar {
 					registry: $container->get(IntegrationRegistry::class),
 					logger: $container->get('Psr\Log\LoggerInterface'),
 					objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
-					schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
+					schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapperInterface::class),
 					visibility: $container->get(\OCA\OpenRegister\Service\TimelineVisibilityService::class)
 				);
 			}

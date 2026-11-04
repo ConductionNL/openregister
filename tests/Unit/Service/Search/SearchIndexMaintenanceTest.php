@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Search\SearchIndexMaintenance;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
 use OCP\IAppConfig;

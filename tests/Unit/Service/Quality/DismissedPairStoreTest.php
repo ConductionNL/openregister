@@ -26,7 +26,7 @@ namespace Unit\Service\Quality;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Quality\DismissedPairStore;
+use OCA\OpenRegister\Search\Service\Quality\DismissedPairStore;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

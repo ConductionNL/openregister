@@ -26,8 +26,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
@@ -61,16 +61,16 @@ class DecisionTableValidationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper           $schemas   Tells a decision-table row from any other.
+	 * @param SchemaMapperInterface           $schemas   Tells a decision-table row from any other.
 	 * @param DecisionTableValidator $validator The validator the inline step uses.
 	 * @param ObjectService          $objects   Finds a table already carrying the key.
-	 * @param RegisterMapper         $registers Tells the decision-tables register from another app's.
+	 * @param RegisterMapperInterface         $registers Tells the decision-tables register from another app's.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly DecisionTableValidator $validator,
 		private readonly ObjectService $objects,
-		private readonly RegisterMapper $registers,
+		private readonly RegisterMapperInterface $registers,
 	) {
 	}//end __construct()
 

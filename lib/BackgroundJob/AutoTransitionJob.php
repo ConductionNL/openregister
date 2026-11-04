@@ -33,7 +33,7 @@ use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -72,7 +72,7 @@ class AutoTransitionJob extends ActorForwardedJob {
 	 * @param ITimeFactory $time Time factory for the parent job class.
 	 * @param IUserSession $userSession Session to impersonate on / restore.
 	 * @param IUserManager $userManager Resolver for the captured user id, and the disabled check.
-	 * @param OrganisationService $organisation Active-organisation resolver.
+	 * @param OrganisationServiceInterface $organisation Active-organisation resolver.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param DeferredEntryObjectResolver $resolver Stale-safe entry re-fetch.
 	 * @param TransitionEngine $engine The one path every automatic move goes through.
@@ -84,7 +84,7 @@ class AutoTransitionJob extends ActorForwardedJob {
 		ITimeFactory $time,
 		IUserSession $userSession,
 		private readonly IUserManager $userManager,
-		OrganisationService $organisation,
+		OrganisationServiceInterface $organisation,
 		LoggerInterface $logger,
 		private readonly DeferredEntryObjectResolver $resolver,
 		private readonly TransitionEngine $engine,

@@ -38,9 +38,9 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCP\IDBConnection;
@@ -120,16 +120,16 @@ class MagicStatisticsHandler {
 	 *
 	 * @param IDBConnection $db Database connection for table discovery
 	 * @param LoggerInterface $logger Logger for debugging and error reporting
-	 * @param RegisterMapper $registerMapper Mapper for register lookups
-	 * @param SchemaMapper $schemaMapper Mapper for schema lookups
+	 * @param RegisterMapperInterface $registerMapper Mapper for register lookups
+	 * @param SchemaMapperInterface $schemaMapper Mapper for schema lookups
 	 * @param DateTimeNormalizer $dateTimeNormalizer Normaliser for user-supplied datetime values
 	 * @param SchemaTypeConverter $schemaTypeConverter Schema-driven type converter for row values
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly DateTimeNormalizer $dateTimeNormalizer,
 		private readonly SchemaTypeConverter $schemaTypeConverter,
 	) {

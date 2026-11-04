@@ -35,9 +35,9 @@ namespace OCA\OpenRegister\Service\Relation;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
@@ -106,8 +106,8 @@ class ObjectTreeService {
 	 * @param HierarchyDescender     $descender      Reads one level of children from a magic table.
 	 * @param HierarchyGrantExpander $hierarchies    Reads a schema's hierarchy declaration.
 	 * @param MagicMapper            $objectMapper   Loads objects and filters them by read access.
-	 * @param RegisterMapper         $registerMapper Resolves the root's register.
-	 * @param SchemaMapper           $schemaMapper   Resolves the root's schema.
+	 * @param RegisterMapperInterface         $registerMapper Resolves the root's register.
+	 * @param SchemaMapperInterface           $schemaMapper   Resolves the root's schema.
 	 * @param RelationGraphService   $graphs         Holds the instance's node cap.
 	 * @param RenderObject           $renderer       Strips what the caller may not read from the properties a node carries.
 	 * @param LoggerInterface        $logger         The logger.
@@ -116,8 +116,8 @@ class ObjectTreeService {
 		private readonly HierarchyDescender $descender,
 		private readonly HierarchyGrantExpander $hierarchies,
 		private readonly MagicMapper $objectMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RelationGraphService $graphs,
 		private readonly RenderObject $renderer,
 		private readonly LoggerInterface $logger,

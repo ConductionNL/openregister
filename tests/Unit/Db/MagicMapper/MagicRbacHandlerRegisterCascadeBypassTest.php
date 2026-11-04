@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -124,7 +125,7 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 					return $permissionHandler;
 				}
 
-				if ($service === RegisterMapper::class) {
+				if ($service === RegisterMapperInterface::class) {
 					return $this->registerMapper;
 				}
 

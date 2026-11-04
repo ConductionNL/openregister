@@ -35,7 +35,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Service\SequenceService;
 use OCP\IUserSession;

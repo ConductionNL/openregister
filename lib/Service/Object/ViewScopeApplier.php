@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -60,11 +60,11 @@ class ViewScopeApplier {
 	/**
 	 * Constructor.
 	 *
-	 * @param ViewMapper      $viewMapper Mapper for view operations.
+	 * @param ViewMapperInterface      $viewMapper Mapper for view operations.
 	 * @param LoggerInterface $logger     Logger for debug and failure reporting.
 	 */
 	public function __construct(
-		private readonly ViewMapper $viewMapper,
+		private readonly ViewMapperInterface $viewMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
