@@ -53,13 +53,13 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\FlowNodeRunControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowUnattributed;
 use OCA\OpenRegister\Service\Flow\IFlowDirectlyInvokable;
@@ -135,9 +135,9 @@ class FlowNodeRunController extends Controller {
 	/**
 	 * Queues and executes the one node.
 	 *
-	 * @var FlowRunService
+	 * @var FlowRunServiceInterface
 	 */
-	private readonly FlowRunService $runner;
+	private readonly FlowRunServiceInterface $runner;
 
 	/**
 	 * Loads the subject, scoped to the CALLER's
@@ -149,9 +149,9 @@ class FlowNodeRunController extends Controller {
 	/**
 	 * Resolves the subject's
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private readonly SchemaMapper $schemas;
+	private readonly SchemaMapperInterface $schemas;
 
 	/**
 	 * The SAME object-RBAC evaluator the

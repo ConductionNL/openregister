@@ -33,7 +33,7 @@ use OCA\OpenRegister\Controller\Support\RulesControllerServices;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rules\RuleEnablementService;
 use OCA\OpenRegister\Service\Rules\RuleCeilingException;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
@@ -70,9 +70,9 @@ class RulesController extends Controller {
 	/**
 	 * Resolves the schema a rule is declared on.
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Derives the rule list.

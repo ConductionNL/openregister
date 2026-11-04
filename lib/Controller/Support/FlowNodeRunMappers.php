@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
  * The mappers and repositories of the flow node run API.
@@ -33,12 +33,12 @@ final class FlowNodeRunMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param SchemaMapper $schemas Resolves the subject's
+	 * @param SchemaMapperInterface $schemas Resolves the subject's
 	 *
 	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
 	 */
 	public function __construct(
-		public readonly SchemaMapper $schemas,
+		public readonly SchemaMapperInterface $schemas,
 	) {
 	}//end __construct()
 }//end class

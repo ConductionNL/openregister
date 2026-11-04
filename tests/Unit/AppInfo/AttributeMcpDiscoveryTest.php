@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppInfo;
 
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AnnotationFixtureService;
 use OCP\IL10N;
 use OCA\OpenRegister\AppHost\AppContainerLocator;
@@ -244,7 +245,7 @@ class AttributeMcpDiscoveryTest extends TestCase {
 		$bindings = array_merge(
 			[
 				'OCP\App\IAppManager' => $appManager,
-				AuditTrailMapper::class => $this->createMock(AuditTrailMapper::class),
+				AuditTrailMapperInterface::class => $this->createMock(AuditTrailMapper::class),
 			],
 			$extra
 		);

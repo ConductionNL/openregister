@@ -44,10 +44,10 @@ use OCA\OpenRegister\Controller\Support\EntityRelationsControllerServices;
 use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Service\Decision\DecisionOwnedException;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
@@ -72,9 +72,9 @@ class EntityRelationsController extends Controller {
 	/**
 	 * Relation mapper.
 	 *
-	 * @var EntityRelationMapper
+	 * @var EntityRelationMapperInterface
 	 */
-	private readonly EntityRelationMapper $entityRelationMapper;
+	private readonly EntityRelationMapperInterface $entityRelationMapper;
 
 	/**
 	 * Session user accessor.
@@ -107,16 +107,16 @@ class EntityRelationsController extends Controller {
 	/**
 	 * Schema loader (for hasPermission inputs).
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Register loader (for object lookup disambiguation).
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * EmailLink loader (for email-bound authz indirection).

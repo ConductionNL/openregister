@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
-use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -57,9 +57,9 @@ class SyncConfigurationsJob extends TimedJob {
 	/**
 	 * Configuration service instance.
 	 *
-	 * @var ConfigurationService The configuration service instance.
+	 * @var ConfigurationServiceInterface The configuration service instance.
 	 */
-	private ConfigurationService $configurationService;
+	private ConfigurationServiceInterface $configurationService;
 
 	/**
 	 * GitHub service instance.
@@ -94,7 +94,7 @@ class SyncConfigurationsJob extends TimedJob {
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling
 	 * @param ConfigurationMapper $configurationMapper Configuration mapper
-	 * @param ConfigurationService $configurationService Configuration service
+	 * @param ConfigurationServiceInterface $configurationService Configuration service
 	 * @param GitHubClientInterface $githubService GitHub service
 	 * @param GitLabHandler $gitlabService GitLab service
 	 * @param Client $httpClient HTTP client
@@ -105,7 +105,7 @@ class SyncConfigurationsJob extends TimedJob {
 	public function __construct(
 		ITimeFactory $time,
 		ConfigurationMapper $configurationMapper,
-		ConfigurationService $configurationService,
+		ConfigurationServiceInterface $configurationService,
 		GitHubClientInterface $githubService,
 		GitLabHandler $gitlabService,
 		Client $httpClient,

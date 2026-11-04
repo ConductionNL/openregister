@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Federation;
 
 use OCA\OpenRegister\Db\FederatedShare;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\Rbac\SchemaManageGate;
 use OCP\IUserSession;
 
@@ -45,13 +45,13 @@ class ShareGrantor {
 	 * Constructor.
 	 *
 	 * @param IUserSession        $userSession         The caller.
-	 * @param OrganisationService $organisationService The caller's active organisation.
+	 * @param OrganisationServiceInterface $organisationService The caller's active organisation.
 	 * @param SchemaManageGate    $manageGate          Who may manage a schema or register.
 	 * @param ShareTargets        $targets             The share's targets, as serving resolves them.
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 		private readonly SchemaManageGate $manageGate,
 		private readonly ShareTargets $targets,
 	) {

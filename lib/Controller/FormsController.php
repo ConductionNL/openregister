@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\FormsControllerServices;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
@@ -100,9 +100,9 @@ class FormsController extends Controller {
 	/**
 	 * Resolves a destination schema.
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private readonly SchemaMapper $schemas;
+	private readonly SchemaMapperInterface $schemas;
 
 	/**
 	 * The signed-in subject, if any.

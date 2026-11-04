@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
  * The mappers and repositories of the forms API.
@@ -33,12 +33,12 @@ final class FormsMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param SchemaMapper $schemas Resolves a destination schema.
+	 * @param SchemaMapperInterface $schemas Resolves a destination schema.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
 	public function __construct(
-		public readonly SchemaMapper $schemas,
+		public readonly SchemaMapperInterface $schemas,
 	) {
 	}//end __construct()
 }//end class

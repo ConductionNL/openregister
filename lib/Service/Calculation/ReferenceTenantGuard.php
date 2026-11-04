@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Calculation;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -58,7 +58,7 @@ class ReferenceTenantGuard {
 	/**
 	 * Wire the organisation hierarchy and the shared-master-data resolver.
 	 *
-	 * @param OrganisationMapper $organisations Reads an organisation's parent chain.
+	 * @param OrganisationMapperInterface $organisations Reads an organisation's parent chain.
 	 * @param SharedMasterDataService $sharedMasterData Reads declared master-data shares.
 	 * @param LoggerInterface $logger PSR logger for refused references.
 	 *
@@ -67,7 +67,7 @@ class ReferenceTenantGuard {
 	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
 	 */
 	public function __construct(
-		private readonly OrganisationMapper $organisations,
+		private readonly OrganisationMapperInterface $organisations,
 		private readonly SharedMasterDataService $sharedMasterData,
 		private readonly LoggerInterface $logger,
 	) {

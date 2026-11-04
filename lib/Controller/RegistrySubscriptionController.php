@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -57,7 +57,7 @@ class RegistrySubscriptionController extends Controller {
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param ObjectService $objectService Resolves the target object.
-	 * @param SchemaMapper $schemaMapper Resolves the object's schema.
+	 * @param SchemaMapperInterface $schemaMapper Resolves the object's schema.
 	 * @param PermissionHandler $permissionHandler The per-object `update` guard.
 	 * @param IUserSession $userSession The session user.
 	 * @param RegistrySubscriptionService $subscriptions Owns the subscription lifecycle.
@@ -67,7 +67,7 @@ class RegistrySubscriptionController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly ObjectService $objectService,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly RegistrySubscriptionService $subscriptions,
