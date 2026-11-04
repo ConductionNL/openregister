@@ -42,6 +42,7 @@ use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
+use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
@@ -1960,16 +1961,8 @@ class SchemasController extends Controller {
 			return $refusal;
 		}
 
-		if ($id !== null) {
-			unset($phpArray['id'], $phpArray['organisation'], $phpArray['owner'], $phpArray['created']);
-		}
-
-		if (empty($phpArray['title']) === true) {
-			$phpArray['title'] = 'New Schema';
-		}
-
 		try {
-			return new JSONResponse(data: $this->saveUploadedSchema(schema: $schema, document: $phpArray));
+			return new JSONResponse(data: $this->saveUploadedSchema(schema: $schema, document: $this->uploadDocument(document: $phpArray, id: $id)));
 		} catch (Exception $e) {
 			return $this->schemaWriteErrorResponse(
 				e: $e,
@@ -1977,6 +1970,27 @@ class SchemasController extends Controller {
 			);
 		}
 	}//end upload()
+
+	/**
+	 * The uploaded body as it is saved: an update keeps the stored identity and
+	 * ownership, and a body without a title gets a default one.
+	 *
+	 * @param array<string, mixed> $document The uploaded body.
+	 * @param int|null             $id       The schema being updated, or null for a new one.
+	 *
+	 * @return array<string, mixed> The body to save.
+	 */
+	private function uploadDocument(array $document, ?int $id): array {
+		if ($id !== null) {
+			unset($document['id'], $document['organisation'], $document['owner'], $document['created']);
+		}
+
+		if (empty($document['title']) === true) {
+			$document['title'] = 'New Schema';
+		}
+
+		return $document;
+	}//end uploadDocument()
 
 	/**
 	 * The body with its authorization in the form the schema will store, so
@@ -2696,49 +2710,18 @@ class SchemasController extends Controller {
 	 * @param Schema $schema The schema to check manage permission for.
 	 *
 	 * @return bool True if the current user may manage this schema.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	private function checkSchemaManagePermission(Schema $schema): bool {
 		try {
-			$user = $this->container->get(\OCP\IUserSession::class)->getUser();
-			if ($user === null) {
-				return false;
-			}
+			$rights = new DefinitionWriteRights(
+				userSession: $this->container->get(\OCP\IUserSession::class),
+				groupManager: $this->container->get(\OCP\IGroupManager::class)
+			);
 
-			$groupManager = $this->container->get(\OCP\IGroupManager::class);
-
-			// Admins always pass.
-			if ($groupManager->isAdmin($user->getUID()) === true) {
-				return true;
-			}
-
-			$authorization = $schema->getAuthorization();
-
-			// Default-secure: no manage rule defined → admin-only (already failed above).
-			if (empty($authorization) === true || isset($authorization['manage']) === false) {
-				return false;
-			}
-
-			$userGroups = $groupManager->getUserGroupIds($user);
-			$manageRules = $authorization['manage'];
-			foreach ($userGroups as $groupId) {
-				foreach ($manageRules as $entry) {
-					if (is_string($entry) === true && $entry === $groupId) {
-						return true;
-					}
-
-					if (is_array($entry) === true && isset($entry['group']) === true && $entry['group'] === $groupId) {
-						return true;
-					}
-				}
-			}
+			return $rights->mayManage(authorization: $schema->getAuthorization());
 		} catch (\Throwable $e) {
 			return false;
-		}//end try
-
-		return false;
+		}
 	}//end checkSchemaManagePermission()
 
 	/**

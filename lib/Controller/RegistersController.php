@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
+use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\Lifecycle\KeepLifecycleStatesScope;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
@@ -2261,65 +2262,17 @@ class RegistersController extends Controller {
 	 * @param Register $register The register to check manage permission for.
 	 *
 	 * @return bool True if user has manage permission.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Permission resolution must handle four distinct
-	 *   cases: no authorization config, admin bypass, group-string rules, and group-object rules —
-	 *   each is a real runtime path, not artificial branching.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Consequence of the four-case permission decision tree
-	 *   above; see CyclomaticComplexity note.
 	 */
 	private function checkRegisterManagePermission(Register $register): bool {
-		$authorization = $register->getAuthorization();
-
-		// If no authorization configured, only admins can manage (default secure).
-		// Check if manage action is defined.
-		if (empty($authorization) === true || isset($authorization['manage']) === false) {
-			// Fall back: only admin users can manage if no manage rules are defined.
-			$user = $this->userSession->getUser();
-			if ($user === null) {
-				return false;
-			}
-
-			try {
-				$groupManager = $this->container->get(\OCP\IGroupManager::class);
-				$userGroups = $groupManager->getUserGroupIds($user);
-				return in_array('admin', $userGroups, true);
-			} catch (\Throwable $e) {
-				return false;
-			}
-		}
-
-		// Use PermissionHandler logic via a schema-like check.
-		// Create a minimal check using the register's authorization directly.
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
 		try {
-			$userGroups = $this->groupManager->getUserGroupIds($user);
+			$rights = new DefinitionWriteRights(
+				userSession: $this->userSession,
+				groupManager: $this->container->get(\OCP\IGroupManager::class)
+			);
 
-			// Admin bypass.
-			if (in_array('admin', $userGroups, true) === true) {
-				return true;
-			}
-
-			$manageRules = $authorization['manage'];
-			foreach ($userGroups as $groupId) {
-				foreach ($manageRules as $entry) {
-					if (is_string($entry) === true && $entry === $groupId) {
-						return true;
-					}
-
-					if (is_array($entry) === true && isset($entry['group']) === true && $entry['group'] === $groupId) {
-						return true;
-					}
-				}
-			}
+			return $rights->mayManage(authorization: $register->getAuthorization());
 		} catch (\Throwable $e) {
 			return false;
-		}//end try
-
-		return false;
+		}
 	}//end checkRegisterManagePermission()
 }//end class
