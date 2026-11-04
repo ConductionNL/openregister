@@ -6572,4 +6572,130 @@ class RenderObjectTest extends TestCase {
 		);
 	}//end testResolveTranslationsForRowsKeepsRawMapWhenTranslationsAll()
 
+	// =========================================================================
+	// handleInversedProperties — uncached fallback path
+	// =========================================================================
+
+	/**
+	 * The objects of the fallback path: the referencing rows for an entity, plus the extra-field match.
+	 *
+	 * @param string $uuid The rendered entity's UUID.
+	 *
+	 * @return array{0: ObjectEntity[], 1: ObjectEntity}
+	 */
+	private function inverseFallbackRows(string $uuid): array {
+		$row = function (int $id, string $rowUuid, string $schema, array $data): ObjectEntity {
+			$entity = $this->createObjectEntity($id, $rowUuid, $data);
+			$entity->setSchema($schema);
+			$entity->setRegister(1);
+			return $entity;
+		};
+		$rows = [
+			$row(11, 'c1000000-0000-0000-0000-000000000001', '2', ['org' => $uuid]),
+			$row(12, 'c1000000-0000-0000-0000-000000000002', '2', ['org' => ['x', $uuid]]),
+			$row(13, 'c1000000-0000-0000-0000-000000000003', '3', ['org' => $uuid]),
+			$row(14, 'c1000000-0000-0000-0000-000000000004', '2', ['lead' => 'https://h/objects/' . $uuid]),
+			$row(15, 'c1000000-0000-0000-0000-000000000005', '2', ['lead' => ['value' => $uuid]]),
+			$row(16, 'c1000000-0000-0000-0000-000000000006', '2', ['lead' => 'other']),
+			$row(17, 'c1000000-0000-0000-0000-000000000007', '2', ['org' => ['value' => ['y', $uuid]]]),
+		];
+		$nameless = $row(19, 'c1000000-0000-0000-0000-000000000009', '2', ['org' => 'none']);
+		$nameless->setUuid(null);
+		$rows[] = $nameless;
+		$extra = $row(18, 'c1000000-0000-0000-0000-000000000008', '2', ['alsoOrg' => ['value' => $uuid]]);
+		return [$rows, $extra];
+	}
+
+	/**
+	 * With a cold cache and a failing batch preload, inverse properties come from the cross-table lookup.
+	 *
+	 * @return void
+	 */
+	public function testHandleInversedPropertiesFallsBackToTheCrossTableLookup(): void {
+		$uuid = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+		$entity = $this->createBasicEntity(1, $uuid, ['name' => 'Test']);
+		$schema = $this->createSchema(1, 'org-schema');
+		$schema->setProperties([
+			'contacts' => ['type' => 'array', 'items' => ['inversedBy' => ['org', 'alsoOrg'], '$ref' => '2']],
+			'lead' => ['type' => 'object', 'inversedBy' => 'lead', '$ref' => '2'],
+			'leads' => ['type' => 'array', 'inversedBy' => 'lead', '$ref' => '2'],
+			'own' => ['type' => 'object', 'inversedBy' => 'org'],
+			'plain' => ['type' => 'string'],
+		]);
+		$target = $this->createSchema(2, 'contact-schema');
+		$this->schemaMapper->method('find')->willReturnCallback(
+			static fn ($id) => ((string)$id === '2') ? $target : $schema
+		);
+
+		[$rows, $extra] = $this->inverseFallbackRows($uuid);
+		$crossTableCalls = 0;
+		$this->objectMapper->method('findByRelation')->willReturnCallback(
+			function (string $search) use ($uuid, $rows, &$crossTableCalls): array {
+				$this->assertSame($uuid, $search);
+				$crossTableCalls++;
+				return $rows;
+			}
+		);
+		$extraCalls = [];
+		$this->objectMapper->method('findByRelationBatchInSchema')->willReturnCallback(
+			function (...$args) use (&$crossTableCalls, &$extraCalls, $extra, $rows): array {
+				if ($crossTableCalls === 0) {
+					throw new Exception('batch preload down');
+				}
+
+				$extraCalls[] = $args;
+				return [$extra, $rows[0]];
+			}
+		);
+
+		$result = $this->invokePrivate('handleInversedProperties', [$entity, ['name' => 'Test', 'own' => 'kept'], 0]);
+
+		$ids = static fn (array $rendered): array => array_map(static fn (array $one) => $one['@self']['id'] ?? $one['id'] ?? null, $rendered);
+		$this->assertSame(1, $crossTableCalls);
+		$this->assertSame([[[$uuid], 2, 1, 'org', ['alsoOrg']]], $extraCalls);
+		$this->assertSame('Test', $result['name']);
+		$this->assertSame(
+			[
+				'c1000000-0000-0000-0000-000000000001', 'c1000000-0000-0000-0000-000000000002',
+				'c1000000-0000-0000-0000-000000000007', 'c1000000-0000-0000-0000-000000000008',
+			],
+			$ids($result['contacts'])
+		);
+		$this->assertSame('c1000000-0000-0000-0000-000000000005', $result['lead']['@self']['id'] ?? $result['lead']['id'] ?? null);
+		$this->assertSame(
+			['c1000000-0000-0000-0000-000000000004', 'c1000000-0000-0000-0000-000000000005'],
+			$ids($result['leads'])
+		);
+		$this->assertNull($result['own']);
+		$this->assertArrayNotHasKey('plain', $result);
+
+		$cache = (new ReflectionClass($this->handler))->getProperty('objectsCache');
+		$cache->setAccessible(true);
+		$cached = array_keys($cache->getValue($this->handler));
+		$this->assertSame(
+			[
+				'c1000000-0000-0000-0000-000000000001', 'c1000000-0000-0000-0000-000000000002',
+				'c1000000-0000-0000-0000-000000000003', 'c1000000-0000-0000-0000-000000000004',
+				'c1000000-0000-0000-0000-000000000005', 'c1000000-0000-0000-0000-000000000006',
+				'c1000000-0000-0000-0000-000000000007', 'c1000000-0000-0000-0000-000000000008',
+			],
+			array_slice($cached, 0, 8)
+		);
+		$this->assertNotContains('', $cached);
+	}
+
+	/**
+	 * An entity whose schema has no inverse properties keeps its data and asks nothing.
+	 *
+	 * @return void
+	 */
+	public function testHandleInversedPropertiesWithoutInverseConfigurationAsksNothing(): void {
+		$entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', ['name' => 'Test']);
+		$schema = $this->createSchema(1, 'plain-schema');
+		$schema->setProperties(['name' => ['type' => 'string']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->objectMapper->expects($this->never())->method('findByRelation');
+
+		$this->assertSame(['name' => 'Test'], $this->invokePrivate('handleInversedProperties', [$entity, ['name' => 'Test'], 0]));
+	}
 }
