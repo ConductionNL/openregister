@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
@@ -36,7 +36,7 @@ final class PartyDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ObjectService       $objects    Object service, to resolve the object a party sits on.
+	 * @param ObjectOperationsInterface       $objects    Object service, to resolve the object a party sits on.
 	 * @param PartyRoleService    $roles      The parties on an object.
 	 * @param PartyService        $parties    The party records.
 	 * @param PartyIndicatorGuard $indicators The declared effects.
@@ -44,7 +44,7 @@ final class PartyDomain {
 	 * @spec openspec/specs/party-model/spec.md
 	 */
 	public function __construct(
-		public readonly ObjectService $objects,
+		public readonly ObjectOperationsInterface $objects,
 		public readonly PartyRoleService $roles,
 		public readonly PartyService $parties,
 		public readonly PartyIndicatorGuard $indicators,
