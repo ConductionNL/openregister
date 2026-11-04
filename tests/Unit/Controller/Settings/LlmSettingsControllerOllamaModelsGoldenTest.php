@@ -11,7 +11,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Settings\LlmSettingsController;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\IDBConnection;
 use OCP\IRequest;
 use PHPUnit\Framework\Attributes\DataProvider;

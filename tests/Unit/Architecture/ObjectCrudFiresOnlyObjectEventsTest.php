@@ -115,7 +115,7 @@ class ObjectCrudFiresOnlyObjectEventsTest extends TestCase {
 	 */
 	private function objectListeners(): array {
 		$listeners = [];
-		foreach ($this->phpFiles(['lib/Listener']) as $file) {
+		foreach ($this->phpFiles(['lib/Listener', 'lib/Search/Listener']) as $file) {
 			if (preg_match('/instanceof\s+Object(?:Created|Updated|Deleted|Creating|Updating|Deleting)Event/', (string)file_get_contents($file)) === 1) {
 				$listeners[] = $file;
 			}

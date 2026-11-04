@@ -27,7 +27,7 @@ namespace Unit\Service\Aggregation;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use PHPUnit\Framework\TestCase;
 
 /**

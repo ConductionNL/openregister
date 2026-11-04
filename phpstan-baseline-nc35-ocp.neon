@@ -45,7 +45,7 @@ parameters:
 			message: "#^Dead catch \\- OCP\\\\Files\\\\NotFoundException is never thrown in the try block\\.$#"
 			identifier: catch.neverThrown
 			count: 1
-			path: lib/BackgroundJob/ReportRenderJob.php
+			path: lib/Search/BackgroundJob/ReportRenderJob.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Source, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: non\\-empty\\-string\\}, array\\{\\}\\>\\.$#"
