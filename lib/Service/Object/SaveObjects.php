@@ -532,15 +532,7 @@ class SaveObjects {
 	 */
 	private function prepareBulkObjects(BulkSaveRun $run, array $objects): array {
 		$prepareStart = microtime(true);
-		if ($run->schema !== null) {
-			[$processedObjects, $run->schemaCache, $prepInvalidObjs] = $this->prepareSingleSchemaObjectsOptimized(
-				objects: $objects,
-				register: $run->register,
-				schema: $run->schema
-			);
-		} else {
-			[$processedObjects, $run->schemaCache, $prepInvalidObjs] = $this->prepareObjectsForBulkSave(objects: $objects);
-		}
+		[$processedObjects, $run->schemaCache, $prepInvalidObjs] = $this->prepareByPath(run: $run, objects: $objects);
 
 		$run->prepareMs = round((microtime(true) - $prepareStart) * 1000, 2);
 
@@ -552,6 +544,28 @@ class SaveObjects {
 
 		return $processedObjects;
 	}//end prepareBulkObjects()
+
+	/**
+	 * Prepare rows by the single-schema fast path when the call names a schema, else by the mixed-schema path.
+	 *
+	 * @param BulkSaveRun $run     The bulk save call.
+	 * @param array       $objects The rows that passed the safeguards.
+	 *
+	 * @return array The prepared rows, the schema cache and the rows that failed preparation.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function prepareByPath(BulkSaveRun $run, array $objects): array {
+		if ($run->schema === null) {
+			return $this->prepareObjectsForBulkSave(objects: $objects);
+		}
+
+		return $this->prepareSingleSchemaObjectsOptimized(
+			objects: $objects,
+			register: $run->register,
+			schema: $run->schema
+		);
+	}//end prepareByPath()
 
 	/**
 	 * Save one chunk and merge its outcome, counts and timings into the run's result.
