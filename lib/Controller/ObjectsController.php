@@ -941,229 +941,57 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse Search results from multiple tables.
 	 *
-	 * @psalm-suppress UnusedParam Params are used in foreach loops and method calls.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse {
 		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
-		$registerMapper = $this->registerMapper;
-		$schemaMapper = $this->schemaMapper;
-
-		// PERF-14: resolve each register and schema exactly once up front instead of
-		// re-running find() for every register×schema combination in the inner loop.
-		$registerEntities = [];
-		foreach (array_unique($registers) as $registerId) {
-			try {
-				$registerEntities[(string)$registerId] = $registerMapper->find(id: $registerId, _multitenancy: false, _rbac: false);
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					message: '[ObjectsController] Invalid register in cross-table search',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'register' => $registerId, 'error' => $e->getMessage()]
-				);
-			}
-		}
-
-		$schemaEntities = [];
-		foreach (array_unique($schemas) as $schemaId) {
-			try {
-				$schemaEntities[(string)$schemaId] = $schemaMapper->find(id: $schemaId, _multitenancy: false, _rbac: false);
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					message: '[ObjectsController] Invalid schema in cross-table search',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $schemaId, 'error' => $e->getMessage()]
-				);
-			}
-		}
-
-		// Build register+schema pairs from the pre-resolved entities.
-		$pairs = [];
-		foreach ($registerEntities as $registerEntity) {
-			foreach ($schemaEntities as $schemaEntity) {
-				// Check if magic mapping is enabled for this combination.
-				// Uses Register::isMagicMappingEnabledForSchema() which supports both
-				// new format {"schemas": {"slug": {"magicMapping": true}}} and
-				// legacy format {"enableMagicMapping": true, "magicMappingSchemas": [...]}.
-				if ($registerEntity->isMagicMappingEnabledForSchema(
-					schemaId: $schemaEntity->getId(),
-					schemaSlug: $schemaEntity->getSlug()
-				) === true
-				) {
-					$pairs[] = [
-						'register' => $registerEntity,
-						'schema' => $schemaEntity,
-					];
-				}
-			}//end foreach
-		}//end foreach
-
+		$pairs       = $this->crossTablePairs(registers: $registers, schemas: $schemas);
 		if (empty($pairs) === true) {
 			return new JSONResponse(
-				data: [
-					'message' => 'No valid magic-mapped register+schema combinations found',
-					'results' => [],
-					'total' => 0,
-				],
+				data: ['message' => 'No valid magic-mapped register+schema combinations found', 'results' => [], 'total' => 0],
 				statusCode: 404
 			);
 		}
 
 		// DOELBINDING, BEFORE ANY ROW IS FETCHED.
 		//
-		// index() reaches this method by returning early, twenty lines BEFORE
-		// its own purpose check, whenever the request names more than one schema
-		// or register. So `?schemas={bound},anythingElse` returned in full the
-		// rows that `GET /objects/{register}/{bound}` refuses with 403 - one
-		// extra, even unrelated, schema id defeated an AVG purpose-binding
-		// control.
+		// index() reaches this method by returning early, BEFORE its own purpose
+		// check, whenever the request names more than one schema or register. So
+		// `?schemas={bound},anythingElse` would return in full the rows that
+		// `GET /objects/{register}/{bound}` refuses with 403.
 		//
-		// The guard belongs here rather than at that call site: this method IS
-		// the fan-out, and a check on the caller would have to be repeated,
-		// correctly, by every future caller. objects() is the second one today.
+		// The guard belongs here rather than at a call site: this method IS the
+		// fan-out, and objects() is a second caller.
 		//
 		// Refused when ANY pair is refused. A purpose-bound schema must not be
 		// launderable by listing it alongside one that is not.
 		foreach ($pairs as $pair) {
 			$refusal = $this->refuseUnboundPurpose(
-				resolved: [
-					'registerEntity' => $pair['register'],
-					'schemaEntity' => $pair['schema'],
-				]
+				resolved: ['registerEntity' => $pair['register'], 'schemaEntity' => $pair['schema']]
 			);
 			if ($refusal !== null) {
 				return $refusal;
 			}
 		}
 
-		// Build search query WITHOUT register/schema to avoid filtering.
-		// Cross-table search handles multiple register+schema pairs internally.
-		$query = $objectService->buildSearchQuery(requestParams: $this->request->getParams());
-
-		// SEC-CTRL-1: This path does NOT read rbac/multi from the request, so the
-		// request-controlled bypass does not apply here. Derive the posture from
-		// admin status for completeness and forward it on the query.
-		//
-		// SEC-CTRL-1 IS CLOSED, and the note is kept because the flags below only
-		// mean something now that the builders honour them. Both cross-table
-		// builders read these flags: the sequential one always did (it goes
-		// through searchObjectsInRegisterSchemaTable), and the UNION one carried
-		// the RBAC half and NOT the organisation half — so a non-admin's
-		// cross-table search returned rows from other organisations. That half is
-		// wired in MagicSearchHandler::buildWhereConditionsSql(), which now takes
-		// the same multitenancy decision as the QueryBuilder path and renders it
-		// for the string-built arms.
-		$isAdmin = $this->isCurrentUserAdmin();
-		$query['_rbac'] = ($isAdmin === false);
-		$query['_multitenancy'] = ($isAdmin === false);
-
-		// Remove all register/schema context from query to prevent filtering.
-		unset(
-			$query['_register'],
-			$query['_schema'],
-			$query['register'],
-			$query['schema'],
-			$query['schemas'],
-			$query['registers'],
-			$query['@self']
-		);
-
-		// Perform cross-table search.
+		$query   = $this->crossTableQuery(objectService: $objectService);
 		$results = $magicMapper->searchAcrossMultipleTables(query: $query, registerSchemaPairs: $pairs);
-
-		// Redact write-only secrets before serialising (openregister#380, ocon#147): this
-		// direct-magic-mapper path bypasses renderEntity, so without this the read returns
-		// write-only fields in cleartext. redactWriteOnlyFromRows resolves each row's schema
-		// individually, so the cross-schema result set is handled correctly.
-		//
-		// `_rbac` is forwarded only to gate the property `authorization.read` strip. It does
-		// NOT gate the writeOnly strip (#460): `$query['_rbac']` is false for an ADMIN here,
-		// and an admin is not exempt from the writeOnly render boundary (#389).
-		// No `?? true` fallback: this method sets $query['_rbac'] unconditionally
-		// a few lines above, so the key is always present here.
-		$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
-		// No `?? true` on THIS path: `_rbac` is assigned unconditionally above and
-		// the unset() in between does not remove it, so the fallback was dead --
-		// and had it ever fired it would have forced the RBAC strip on exactly the
-		// admin case the comment above says is false. The sibling call further down
-		// keeps its `??` because there `$query` comes straight from
-		// buildSearchQuery() with no `_rbac` assignment.
-		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac']);
-
-		// Same bypass, same gap for lenses: renderEntity is where a schema's
-		// declared lenses are resolved.
-		$renderHandler->applyLensesToRows(rows: $results, _rbac: $query['_rbac']);
-
-		// Same bypass, same gap for translatable properties: renderEntity is
-		// where a `{"nl":...}` map projects to the negotiated language.
-		$renderHandler->resolveTranslationsForRows(rows: $results);
-
-		// Every list row must carry @self.files (file IDs), as on the QueryHandler cheap path.
-		$renderHandler->attachLightweightFilesToRows(rows: $results);
-
-		// Serialize results.
-		$serializedResults = [];
-		foreach ($results as $entity) {
-			$serializedResults[] = $entity->jsonSerialize();
-		}
-
-		// Strip empty values from results unless _empty=true is set.
-		$params = $this->request->getParams();
-		$includeEmpty = filter_var(
-			value: $params['_empty'] ?? false,
-			filter: FILTER_VALIDATE_BOOLEAN
-		);
-		if ($includeEmpty === false) {
-			$serializedResults = array_map(
-				callback: [$this, 'stripEmptyValues'],
-				array: $serializedResults
-			);
-		}
-
-		// Calculate pagination.
-		$limit = (int)($query['_limit'] ?? 20);
-		$offset = (int)($query['_offset'] ?? 0);
-
-		// PERF-6: the sequential per-table merge can return up to limit×tableCount
-		// rows, so cap the page at _limit. The mapper already applied _offset (the
-		// UNION in SQL, the sequential path per table); applying it again here
-		// emptied every page after the first.
-		if ($limit > 0) {
-			$serializedResults = array_slice($serializedResults, 0, $limit);
-		}
+		$rows    = $this->crossTableRows(results: $results, query: $query);
 
 		// PERF-10: allow callers to skip the total when not needed. The total is
 		// every match across the tables, counted by the mapper on the search's
 		// own path, never the size of this page (a pager would show one page).
-		$wantTotal = filter_var($params['_count'] ?? true, FILTER_VALIDATE_BOOLEAN);
-		if ($wantTotal === true) {
+		$total = null;
+		if (filter_var($this->request->getParams()['_count'] ?? true, FILTER_VALIDATE_BOOLEAN) === true) {
 			$total = $magicMapper->countAcrossMultipleTables(query: $query, registerSchemaPairs: $pairs);
-		} else {
-			$total = null;
 		}
 
-		$pages = 1;
-		$page = 1;
-		if ($limit > 0) {
-			if ($total !== null) {
-				$pages = (int)ceil($total / $limit);
-			}
-
-			$page = (int)floor($offset / $limit) + 1;
-		}
-
-		$responseData = [
-			'results' => $serializedResults,
-			'total' => $total,
-			'pages' => $pages,
-			'page' => $page,
-			'limit' => $limit,
+		$responseData = ['results' => $rows] + $this->crossTablePagination(query: $query, total: $total) + [
 			'@self' => [
-				'source' => 'cross_table_magic_mapper',
-				'table_count' => count($pairs),
+				'source'         => 'cross_table_magic_mapper',
+				'table_count'    => count($pairs),
 				'register_count' => count($registers),
-				'schema_count' => count($schemas),
+				'schema_count'   => count($schemas),
 			],
 		];
 
@@ -1175,6 +1003,165 @@ class ObjectsController extends Controller {
 
 		return new JSONResponse(data: $responseData);
 	}//end crossTableSearch()
+
+	/**
+	 * The magic-mapped register+schema pairs of a cross-table search.
+	 *
+	 * PERF-14: each register and schema is resolved once up front, not per combination.
+	 * Register::isMagicMappingEnabledForSchema() reads both the new and the legacy
+	 * magic-mapping configuration.
+	 *
+	 * @param array $registers Register IDs/slugs.
+	 * @param array $schemas   Schema IDs/slugs.
+	 *
+	 * @return array<int, array{register: Register, schema: Schema}> The pairs.
+	 */
+	private function crossTablePairs(array $registers, array $schemas): array {
+		$registerEntities = $this->crossTableEntities(ids: $registers, kind: 'register');
+		$schemaEntities   = $this->crossTableEntities(ids: $schemas, kind: 'schema');
+		$pairs            = [];
+		foreach ($registerEntities as $registerEntity) {
+			foreach ($schemaEntities as $schemaEntity) {
+				if ($registerEntity->isMagicMappingEnabledForSchema(
+					schemaId: $schemaEntity->getId(),
+					schemaSlug: $schemaEntity->getSlug()
+				) === true
+				) {
+					$pairs[] = ['register' => $registerEntity, 'schema' => $schemaEntity];
+				}
+			}
+		}
+
+		return $pairs;
+	}//end crossTablePairs()
+
+	/**
+	 * Resolve the registers or schemas of a cross-table search, skipping (and logging) invalid ones.
+	 *
+	 * @param array  $ids  Register or schema IDs/slugs.
+	 * @param string $kind 'register' or 'schema'.
+	 *
+	 * @return array<string, Register|Schema> The entities by id.
+	 */
+	private function crossTableEntities(array $ids, string $kind): array {
+		$entities = [];
+		foreach (array_unique($ids) as $entityId) {
+			try {
+				$entities[(string)$entityId] = match ($kind) {
+					'register' => $this->registerMapper->find(id: $entityId, _multitenancy: false, _rbac: false),
+					default => $this->schemaMapper->find(id: $entityId, _multitenancy: false, _rbac: false),
+				};
+			} catch (\Exception $e) {
+				$this->logger->warning(
+					message: '[ObjectsController] Invalid ' . $kind . ' in cross-table search',
+					context: ['file' => __FILE__, 'line' => __LINE__, $kind => $entityId, 'error' => $e->getMessage()]
+				);
+			}
+		}
+
+		return $entities;
+	}//end crossTableEntities()
+
+	/**
+	 * The search query of a cross-table search, without register or schema context.
+	 *
+	 * SEC-CTRL-1: this path does not read rbac/multi from the request, so the
+	 * request-controlled bypass does not apply; the posture follows admin status.
+	 * Both cross-table builders honour these flags (MagicSearchHandler::buildWhereConditionsSql()
+	 * renders the multitenancy decision for the UNION arms).
+	 *
+	 * @param ObjectService $objectService Object service that builds the query.
+	 *
+	 * @return array<string, mixed> The query.
+	 */
+	private function crossTableQuery(ObjectService $objectService): array {
+		$query   = $objectService->buildSearchQuery(requestParams: $this->request->getParams());
+		$isAdmin = $this->isCurrentUserAdmin();
+		$query['_rbac']         = ($isAdmin === false);
+		$query['_multitenancy'] = ($isAdmin === false);
+
+		unset(
+			$query['_register'],
+			$query['_schema'],
+			$query['register'],
+			$query['schema'],
+			$query['schemas'],
+			$query['registers'],
+			$query['@self']
+		);
+
+		return $query;
+	}//end crossTableQuery()
+
+	/**
+	 * The rendered, serialised page of cross-table search results.
+	 *
+	 * This direct magic-mapper path bypasses renderEntity, so the write-only redaction
+	 * (openregister#380, ocon#147), lenses, translations and lightweight files are applied
+	 * here per row. `_rbac` gates only the `authorization.read` strip, never the writeOnly
+	 * strip (#460, #389); it is always set by crossTableQuery(). Empty values are stripped
+	 * unless _empty=true. PERF-6: the sequential per-table merge can return up to
+	 * limit x tableCount rows, so the page is capped at _limit; the mapper already applied _offset.
+	 *
+	 * @param array $results The entities found.
+	 * @param array $query   The search query.
+	 *
+	 * @return array<int, array> The rows.
+	 */
+	private function crossTableRows(array $results, array $query): array {
+		$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac']);
+		$renderHandler->applyLensesToRows(rows: $results, _rbac: $query['_rbac']);
+		$renderHandler->resolveTranslationsForRows(rows: $results);
+		$renderHandler->attachLightweightFilesToRows(rows: $results);
+
+		$serializedResults = [];
+		foreach ($results as $entity) {
+			$serializedResults[] = $entity->jsonSerialize();
+		}
+
+		$includeEmpty = filter_var(
+			value: $this->request->getParams()['_empty'] ?? false,
+			filter: FILTER_VALIDATE_BOOLEAN
+		);
+		if ($includeEmpty === false) {
+			$serializedResults = array_map(
+				callback: [$this, 'stripEmptyValues'],
+				array: $serializedResults
+			);
+		}
+
+		$limit = (int)($query['_limit'] ?? 20);
+		if ($limit > 0) {
+			$serializedResults = array_slice($serializedResults, 0, $limit);
+		}
+
+		return $serializedResults;
+	}//end crossTableRows()
+
+	/**
+	 * The pagination fields of a cross-table search response.
+	 *
+	 * @param array    $query The search query.
+	 * @param int|null $total Every match across the tables, null when not counted.
+	 *
+	 * @return array{total: int|null, pages: int, page: int, limit: int} The fields.
+	 */
+	private function crossTablePagination(array $query, ?int $total): array {
+		$limit  = (int)($query['_limit'] ?? 20);
+		$offset = (int)($query['_offset'] ?? 0);
+		$pages  = 1;
+		$page   = 1;
+		if ($limit > 0) {
+			if ($total !== null) {
+				$pages = (int)ceil($total / $limit);
+			}
+
+			$page = (int)floor($offset / $limit) + 1;
+		}
+
+		return ['total' => $total, 'pages' => $pages, 'page' => $page, 'limit' => $limit];
+	}//end crossTablePagination()
 
 	/**
 	 * Refuse a read that has to name a purpose and does not.

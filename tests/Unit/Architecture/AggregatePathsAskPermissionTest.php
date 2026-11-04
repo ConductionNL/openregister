@@ -89,25 +89,6 @@ class AggregatePathsAskPermissionTest extends TestCase {
 	];
 
 	/**
-	 * Facet handlers that match the shape's spirit but are never instantiated.
-	 *
-	 * 🔑 THESE ARE AN ASSERTION, NOT A NOTE. Listing them as "allowed" would
-	 * have excused them from a check they are not subject to, and an allowlist
-	 * entry nothing matches is dead weight that hides drift. So instead the
-	 * suite asserts they remain UNINSTANTIATED: the day one of them is wired up
-	 * it becomes a live aggregate path and has to answer the question, and this
-	 * test is what says so.
-	 *
-	 * @var array<int, string>
-	 */
-	private const DEAD_FACET_HANDLERS = [
-		'lib/Db/ObjectHandlers/HyperFacetHandler.php',
-		'lib/Db/ObjectHandlers/MariaDbFacetHandler.php',
-		'lib/Db/ObjectHandlers/MetaDataFacetHandler.php',
-		'lib/Db/ObjectHandlers/OptimizedFacetHandler.php',
-	];
-
-	/**
 	 * The repository root.
 	 *
 	 * @return string The path.
@@ -269,52 +250,6 @@ class AggregatePathsAskPermissionTest extends TestCase {
 			);
 		}
 	}//end testEveryAllowlistEntryIsStillMatchedByTheShape()
-
-	/**
-	 * The dead facet handlers are still dead.
-	 *
-	 * The day one is wired up it becomes a live aggregate path and owes the
-	 * read question. This is what says so.
-	 *
-	 * @return void
-	 */
-	public function testTheDeadFacetHandlersAreStillDead(): void {
-		$root = $this->root();
-
-		foreach (self::DEAD_FACET_HANDLERS as $path) {
-			$this->assertFileExists($root . '/' . $path);
-
-			$class = basename($path, '.php');
-			$references = 0;
-
-			$iterator = new RecursiveIteratorIterator(
-				new RecursiveDirectoryIterator($root . '/lib', FilesystemIterator::SKIP_DOTS)
-			);
-
-			foreach ($iterator as $file) {
-				if ($file->isFile() === false || $file->getExtension() !== 'php') {
-					continue;
-				}
-
-				if (str_ends_with($file->getPathname(), $path) === true) {
-					continue;
-				}
-
-				$source = (string)file_get_contents($file->getPathname());
-				if (str_contains($source, 'new ' . $class . '(') === true
-					|| str_contains($source, $class . '::class') === true
-				) {
-					$references++;
-				}
-			}
-
-			$this->assertSame(
-				0,
-				$references,
-				$class . ' is now instantiated, so it is a live aggregate path and owes the read question.'
-			);
-		}
-	}//end testTheDeadFacetHandlersAreStillDead()
 
 	/**
 	 * Every allowlist entry still names a file that exists.

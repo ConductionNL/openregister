@@ -2365,17 +2365,7 @@ class RenderObject {
 			return $objectData;
 		}
 
-		return $this->handleInversedProperties(
-			entity: $entity,
-			objectData: $objectData,
-			_depth: $context->depth,
-			_filter: $context->filter,
-			_fields: $context->fields,
-			_unset: $context->unset,
-			_registers: $context->registers,
-			_schemas: $context->schemas,
-			_objects: $context->objects
-		);
+		return $this->handleInversedProperties(entity: $entity, objectData: $objectData);
 	}//end applyInversedProperties()
 
 	/**
@@ -3649,9 +3639,6 @@ class RenderObject {
 	 *
 	 * @throws \OCP\DB\Exception
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex extension handling with multiple data types
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Many extension scenarios create multiple code paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive dot notation handling requires extensive logic
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   All flag controls extension behavior
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
@@ -3666,188 +3653,230 @@ class RenderObject {
 	): array {
 		$data = $this->handleWildcardExtends(objectData: $data, _extend: $_extend, depth: $depth + 1);
 
-		$dataDot = new Dot($data);
+		$run = new ExtendDotRun();
+		$run->data = new Dot($data);
+		$run->depth = $depth;
+		$run->allFlag = $allFlag;
+		$run->visitedIds = $visitedIds;
 
 		foreach ($_extend as $override => $key) {
-			// Skip if the key does not have to be extended.
-			if ($dataDot->has(keys: $key) === false) {
+			// Skip keys that are absent, and special '@' fields.
+			if ($run->data->has(keys: $key) === false || str_starts_with($key, '@') === true) {
 				continue;
 			}
 
-			// Skip if the key starts with '@' (special fields).
-			if (str_starts_with($key, '@') === true) {
-				continue;
-			}
-
-			// Get sub-keys for nested extension.
-			$keyExtends = array_map(
+			$run->override = $override;
+			$run->key = $key;
+			$run->descriptor = ($exposures[$key] ?? null);
+			$run->keyExtends = array_map(
 				fn (string $extendedKey) => substr(string: $extendedKey, offset: strlen($key) + 1),
 				array_filter(
 					$_extend,
 					fn (string $singleKey) => str_starts_with(haystack: $singleKey, needle: $key . '.')
 				)
 			);
+			$this->extendDotKey(run: $run);
+		}
 
-			$value = $dataDot->get(key: $key);
-
-			// Make sure arrays are arrays.
-			if ($value instanceof Dot) {
-				$value = $value->jsonSerialize();
-			}
-
-			// Skip if the value is null.
-			if ($value === null) {
-				continue;
-			}
-
-			// Extend the subobject(s).
-			if (is_array($value) === true) {
-				// Filter out null values and values starting with '@' before mapping.
-				$value = array_filter(
-					$value,
-					fn ($v) => $v !== null
-						&& (is_string($v) === false || str_starts_with(haystack: $v, needle: '@') === false)
-				);
-				$descriptor = ($exposures[$key] ?? null);
-				$renderedValue = array_map(
-					function ($identifier) use ($depth, $keyExtends, $allFlag, $visitedIds, $descriptor) {
-						// If already an extended object (has 'id' and '@self' keys), return as-is.
-						// This prevents double-processing when extend is called multiple times.
-						if (is_array($identifier) === true) {
-							if (isset($identifier['id']) === true || isset($identifier['@self']) === true) {
-								// Already extended, by the wildcard pass above or by an
-								// earlier call. The exposure still applies: an extend that
-								// arrives here pre-rendered is the same far record reached
-								// through the same link, and skipping the projection because
-								// somebody else did the loading would be a control that any
-								// caller can step around by asking for the wildcard form.
-								// Projecting twice is harmless, a withheld field stays
-								// withheld.
-								return $this->applyLinkExposure(rendered: $identifier, descriptor: $descriptor);
-							}
-
-							return null;
-						}
-
-						// **PERFORMANCE OPTIMIZATION**: Use preloaded cache instead of individual queries.
-						$object = $this->getObject(id: $identifier);
-						if ($object === null) {
-							// Object not found - preserve the original UUID instead of returning null.
-							// This keeps the reference data intact even when the referenced object
-							// doesn't exist (e.g., data imported from CSV with external references).
-							$this->logger->debug(
-								message: '[RenderObject] Object not found in preloaded cache - preserving original UUID',
-								context: [
-									'file' => __FILE__,
-									'line' => __LINE__,
-									'identifier' => $identifier,
-									'context' => 'extend_array_processing',
-								]
-							);
-							return $identifier;
-						}
-
-						if (in_array($object->getUuid(), $visitedIds, true) === true) {
-							return ['@circular' => true, 'id' => $object->getUuid()];
-						}
-
-						$subExtend = $keyExtends;
-						if ($allFlag === true) {
-							$subExtend = array_merge(['all'], $keyExtends);
-						}
-
-						$rendered = $this->renderEntity(
-							entity: $object,
-							_extend: $subExtend,
-							depth: $depth + 1,
-							filter: [],
-							fields: [],
-							unset: [],
-							visitedIds: $visitedIds
-						)->jsonSerialize();
-
-						return $this->applyLinkExposure(rendered: $rendered, descriptor: $descriptor);
-					},
-					$value
-				);
-
-				// Filter out any null values that might have been returned from the mapping.
-				$renderedValue = array_filter($renderedValue, fn ($v) => $v !== null);
-
-				if (is_numeric($override) === false) {
-					// Reset array keys.
-					$dataDot->set(keys: $override, value: array_values($renderedValue));
-					continue;
-				}
-
-				// Reset array keys.
-				$dataDot->set(keys: $key, value: array_values($renderedValue));
-				continue;
-			}//end if
-
-			// Skip if the value starts with '@' or '_'.
-			if (is_string($value) === true
-				&& ((str_starts_with(haystack: $value, needle: '@') === true)
-				|| (str_starts_with(haystack: $value, needle: '_') === true)) === true
-			) {
-				continue;
-			}
-
-			if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
-				$path = parse_url($value, PHP_URL_PATH);
-				$pathExploded = explode('/', $path);
-				$value = end($pathExploded);
-			}
-
-			// **PERFORMANCE OPTIMIZATION**: Use preloaded cache instead of individual queries.
-			$object = $this->getObject(id: $value);
-
-			if ($object === null) {
-				// If not in cache, this object wasn't preloaded - skip it to prevent N+1.
-				$this->logger->debug(
-					message: '[RenderObject] Single object not found in preloaded cache - skipping to prevent N+1 query',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'identifier' => $value,
-						'context' => 'extend_single_processing',
-					]
-				);
-				continue;
-			}
-
-			$subExtend = $keyExtends;
-			if ($allFlag === true) {
-				$subExtend = array_merge(['all'], $keyExtends);
-			}
-
-			$rendered = $this->applyLinkExposure(
-				rendered: $this->renderEntity(
-					entity: $object,
-					_extend: $subExtend,
-					depth: $depth + 1,
-					filter: [],
-					fields: [],
-					unset: [],
-					visitedIds: $visitedIds
-				)->jsonSerialize(),
-				descriptor: ($exposures[$key] ?? null)
-			);
-
-			if (in_array($object->getUuid(), $visitedIds, true) === true) {
-				$rendered = ['@circular' => true, 'id' => $object->getUuid()];
-			}
-
-			if (is_numeric($override) === false) {
-				$dataDot->set(keys: $override, value: $rendered);
-				continue;
-			}
-
-			$dataDot->set(keys: $key, value: $rendered);
-		}//end foreach
-
-		return $dataDot->jsonSerialize();
+		return $run->data->jsonSerialize();
 	}//end handleExtendDot()
+
+	/**
+	 * Extend the value at the run's key: a list of references or a single one.
+	 *
+	 * @param ExtendDotRun $run The extend pass, on one key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function extendDotKey(ExtendDotRun $run): void {
+		$value = $run->data->get(key: $run->key);
+
+		// Make sure arrays are arrays.
+		if ($value instanceof Dot) {
+			$value = $value->jsonSerialize();
+		}
+
+		if ($value === null) {
+			return;
+		}
+
+		if (is_array($value) === true) {
+			$this->extendDotList(run: $run, value: $value);
+			return;
+		}
+
+		$this->extendDotSingle(run: $run, value: $value);
+	}//end extendDotKey()
+
+	/**
+	 * Put an extended value where the run's extend entry sends it: its non-numeric list key, else the dot path.
+	 *
+	 * @param ExtendDotRun $run   The extend pass, on one key.
+	 * @param mixed        $value The extended value.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function storeExtended(ExtendDotRun $run, mixed $value): void {
+		if (is_numeric($run->override) === false) {
+			$run->data->set(keys: $run->override, value: $value);
+			return;
+		}
+
+		$run->data->set(keys: $run->key, value: $value);
+	}//end storeExtended()
+
+	/**
+	 * Extend a list of references, skipping nulls and '@' values, and reset its keys.
+	 *
+	 * @param ExtendDotRun $run   The extend pass, on one key.
+	 * @param array        $value The list at the key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function extendDotList(ExtendDotRun $run, array $value): void {
+		$value = array_filter(
+			$value,
+			fn ($v) => $v !== null
+				&& (is_string($v) === false || str_starts_with(haystack: $v, needle: '@') === false)
+		);
+		$renderedValue = array_map(
+			fn ($identifier) => $this->extendDotListItem(run: $run, identifier: $identifier),
+			$value
+		);
+
+		self::storeExtended(run: $run, value: array_values(array_filter($renderedValue, fn ($v) => $v !== null)));
+	}//end extendDotList()
+
+	/**
+	 * Extend one entry of a list of references.
+	 *
+	 * An entry that is already an extended object (it has 'id' or '@self')
+	 * still gets the link exposure: an extend that arrives pre-rendered is the
+	 * same far record reached through the same link, and skipping the
+	 * projection would be a control any caller can step around by asking for
+	 * the wildcard form. Projecting twice is harmless. A reference whose object
+	 * is not found keeps its original identifier, so imported external
+	 * references stay intact.
+	 *
+	 * @param ExtendDotRun $run        The extend pass, on one key.
+	 * @param mixed        $identifier The list entry.
+	 *
+	 * @return mixed The rendered entry, the kept identifier, or null to drop it.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function extendDotListItem(ExtendDotRun $run, mixed $identifier): mixed {
+		if (is_array($identifier) === true) {
+			if (isset($identifier['id']) === true || isset($identifier['@self']) === true) {
+				return $this->applyLinkExposure(rendered: $identifier, descriptor: $run->descriptor);
+			}
+
+			return null;
+		}
+
+		$object = $this->getObject(id: $identifier);
+		if ($object === null) {
+			$this->logger->debug(
+				message: '[RenderObject] Object not found in preloaded cache - preserving original UUID',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'identifier' => $identifier,
+					'context' => 'extend_array_processing',
+				]
+			);
+			return $identifier;
+		}
+
+		if (in_array($object->getUuid(), $run->visitedIds, true) === true) {
+			return ['@circular' => true, 'id' => $object->getUuid()];
+		}
+
+		return $this->renderExtendedObject(run: $run, object: $object);
+	}//end extendDotListItem()
+
+	/**
+	 * Render an extended object one level deeper, with the key's nested extends and link exposure.
+	 *
+	 * @param ExtendDotRun $run    The extend pass, on one key.
+	 * @param ObjectEntity $object The object to render.
+	 *
+	 * @return array The rendered object.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function renderExtendedObject(ExtendDotRun $run, ObjectEntity $object): array {
+		$subExtend = $run->keyExtends;
+		if ($run->allFlag === true) {
+			$subExtend = array_merge(['all'], $run->keyExtends);
+		}
+
+		$rendered = $this->renderEntity(
+			entity: $object,
+			_extend: $subExtend,
+			depth: $run->depth + 1,
+			filter: [],
+			fields: [],
+			unset: [],
+			visitedIds: $run->visitedIds
+		)->jsonSerialize();
+
+		return $this->applyLinkExposure(rendered: $rendered, descriptor: $run->descriptor);
+	}//end renderExtendedObject()
+
+	/**
+	 * Extend a single reference, by UUID or by URL ending in it.
+	 *
+	 * Values starting with '@' or '_' are left alone. An object that was not
+	 * preloaded is skipped rather than queried, to prevent N+1 queries.
+	 *
+	 * @param ExtendDotRun $run   The extend pass, on one key.
+	 * @param mixed        $value The value at the key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function extendDotSingle(ExtendDotRun $run, mixed $value): void {
+		if (is_string($value) === true
+			&& (str_starts_with(haystack: $value, needle: '@') === true || str_starts_with(haystack: $value, needle: '_') === true)
+		) {
+			return;
+		}
+
+		if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
+			$pathExploded = explode('/', parse_url($value, PHP_URL_PATH));
+			$value = end($pathExploded);
+		}
+
+		$object = $this->getObject(id: $value);
+		if ($object === null) {
+			$this->logger->debug(
+				message: '[RenderObject] Single object not found in preloaded cache - skipping to prevent N+1 query',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'identifier' => $value,
+					'context' => 'extend_single_processing',
+				]
+			);
+			return;
+		}
+
+		// A single reference is rendered even when it closes a cycle; the cycle marker then replaces it.
+		$rendered = $this->renderExtendedObject(run: $run, object: $object);
+		if (in_array($object->getUuid(), $run->visitedIds, true) === true) {
+			$rendered = ['@circular' => true, 'id' => $object->getUuid()];
+		}
+
+		self::storeExtended(run: $run, value: $rendered);
+	}//end extendDotSingle()
 
 
 	/**
@@ -4702,36 +4731,14 @@ class RenderObject {
 	/**
 	 * Handles inversed properties for an object
 	 *
-	 * @param ObjectEntity $entity The entity to process
-	 * @param array $objectData The current object data
-	 * @param int $_depth Current depth level
-	 * @param array|null $_filter Filters to apply
-	 * @param array|null $_fields Fields to include
-	 * @param array|null $_unset Properties to remove from the rendered entity
-	 * @param array|null $_registers Preloaded registers
-	 * @param array|null $_schemas Preloaded schemas
-	 * @param array|null $_objects Preloaded objects
+	 * @param ObjectEntity $entity     The entity to process
+	 * @param array        $objectData The current object data
 	 *
 	 * @return array The updated object data with inversed properties
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex inversed relationship resolution
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple relationship types create many paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive relationship handling requires extensive logic
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function handleInversedProperties(
-		ObjectEntity $entity,
-		array $objectData,
-		int $_depth,
-		?array $_filter = [],
-		?array $_fields = [],
-		?array $_unset = [],
-		?array $_registers = [],
-		?array $_schemas = [],
-		?array $_objects = [],
-	): array {
+	private function handleInversedProperties(ObjectEntity $entity, array $objectData): array {
 		// Get the schema for this object.
 		$schema = $this->getSchema(id: $entity->getSchema());
 		if ($schema === null) {
@@ -4744,29 +4751,6 @@ class RenderObject {
 			return $objectData;
 		}
 
-		// **PERFORMANCE OPTIMIZATION**: Check if we have preloaded cache for this entity.
-		// If yes, we can skip the expensive findByRelation call entirely.
-		$entityUuid = $entity->getUuid();
-		$hasCache = false;
-		$propertyNames = array_keys($inversedProperties);
-
-		foreach ($propertyNames as $propName) {
-			$cacheKey = $entityUuid . '_' . $propName;
-			if (isset($this->inverseRelationCache[$cacheKey]) === true) {
-				$hasCache = true;
-				break;
-			}
-		}
-
-		// If we have preloaded cache, use it directly instead of querying.
-		if ($hasCache === true) {
-			return $this->handleInversedPropertiesFromCache(
-				entity: $entity,
-				objectData: $objectData,
-				inversedProperties: $inversedProperties
-			);
-		}
-
 		// Single-entity render (e.g. show()): the batch preload only runs on the
 		// list path (renderEntities), so the cache is cold here. Route this read
 		// through the SAME schema-targeted batched machinery the list path uses
@@ -4776,19 +4760,15 @@ class RenderObject {
 		// the extended ones — because a single read has always resolved every
 		// inverse property once any one of them is extended; preloading a subset
 		// would silently empty the others (consumer-visible response shape).
-		$this->preloadInverseRelationships(
-			entities: [$entity],
-			extend: $propertyNames
-		);
-
-		foreach ($propertyNames as $propName) {
-			if (isset($this->inverseRelationCache[$entityUuid . '_' . $propName]) === true) {
-				$hasCache = true;
-				break;
-			}
+		$propertyNames = array_keys($inversedProperties);
+		if ($this->hasCachedInverse(entity: $entity, propertyNames: $propertyNames) === false) {
+			$this->preloadInverseRelationships(
+				entities: [$entity],
+				extend: $propertyNames
+			);
 		}
 
-		if ($hasCache === true) {
+		if ($this->hasCachedInverse(entity: $entity, propertyNames: $propertyNames) === true) {
 			return $this->handleInversedPropertiesFromCache(
 				entity: $entity,
 				objectData: $objectData,
@@ -4796,206 +4776,286 @@ class RenderObject {
 			);
 		}
 
-		// Fallback: Query for referencing objects (original slower cross-table path).
+		// Fallback: query for referencing objects (the slower cross-table path).
 		// Only reached when the batched preload could not populate the cache
 		// (e.g. unresolvable target schema reference or batch query failure).
-		$referencingObjects = $this->objectEntityMapper->findByRelation($entityUuid);
-
-		// For multi-field inversedBy, also search columns directly since _relations
-		// may not contain UUIDs stored in object-format fields (e.g., {"value": "uuid"}).
-		foreach ($inversedProperties as $propName => $propConfig) {
-			$inversedByValue = $propConfig['items']['inversedBy'] ?? $propConfig['inversedBy'] ?? null;
-			if (is_array($inversedByValue) === true && count($inversedByValue) > 1) {
-				$targetSchemaRef = $propConfig['items']['$ref'] ?? $propConfig['$ref'] ?? null;
-				if ($targetSchemaRef === null) {
-					continue;
-				}
-
-				$targetSchemaId = $this->resolveSchemaReference(schemaRef: $targetSchemaRef);
-				if (empty($targetSchemaId) === true) {
-					continue;
-				}
-
-				$additionalFields = array_slice($inversedByValue, 1);
-				$additionalResults = $this->objectEntityMapper->findByRelationBatchInSchema(
-					uuids: [$entityUuid],
-					schemaId: (int)$targetSchemaId,
-					registerId: (int)$entity->getRegister(),
-					fieldName: $inversedByValue[0],
-					additionalFieldNames: $additionalFields
-				);
-				// Merge results, deduplicating by UUID.
-				$existingUuids = array_map(fn (ObjectEntity $obj) => $obj->getUuid(), $referencingObjects);
-				foreach ($additionalResults as $obj) {
-					if (in_array($obj->getUuid(), $existingUuids, true) === false) {
-						$referencingObjects[] = $obj;
-						$existingUuids[] = $obj->getUuid();
-					}
-				}
-			}//end if
-		}//end foreach
-
-		// Set all found objects to the objectsCache.
-		$ids = array_map(
-			function (ObjectEntity $object) {
-				return $object->getUuid();
-			},
-			$referencingObjects
+		$lookup = new InverseLookup();
+		$lookup->entity = $entity;
+		$lookup->inversedProperties = $inversedProperties;
+		$lookup->referencingObjects = $this->findInverseReferencingObjects(
+			entity: $entity,
+			inversedProperties: $inversedProperties
 		);
+		$this->cacheReferencingObjects(objects: $lookup->referencingObjects);
 
-		// Filter out null IDs before combining arrays.
-		$validIds = [];
-		$validObjects = [];
-		foreach ($ids as $index => $id) {
-			if ($id !== null) {
-				$validIds[] = $id;
-				$validObjects[] = $referencingObjects[$index];
+		return $this->applyInverseLookup(lookup: $lookup, objectData: $objectData);
+	}//end handleInversedProperties()
+
+	/**
+	 * Whether the inverse relation cache holds an entry for any of the given properties of an entity.
+	 *
+	 * @param ObjectEntity $entity        The entity being rendered.
+	 * @param array        $propertyNames The inverse property names.
+	 *
+	 * @return bool True when at least one property is cached.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function hasCachedInverse(ObjectEntity $entity, array $propertyNames): bool {
+		$entityUuid = $entity->getUuid();
+		foreach ($propertyNames as $propName) {
+			if (isset($this->inverseRelationCache[$entityUuid . '_' . $propName]) === true) {
+				return true;
 			}
 		}
 
-		$objectsToCache = array_combine(keys: $validIds, values: $validObjects);
+		return false;
+	}//end hasCachedInverse()
+
+	/**
+	 * The objects that reference an entity, through _relations and through every extra inversedBy field.
+	 *
+	 * For multi-field inversedBy, columns are also searched directly, since
+	 * _relations may not contain UUIDs stored in object-format fields
+	 * (e.g., {"value": "uuid"}).
+	 *
+	 * @param ObjectEntity $entity             The entity being rendered.
+	 * @param array        $inversedProperties The inverse property configurations by name.
+	 *
+	 * @return ObjectEntity[] The referencing objects, deduplicated by UUID.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function findInverseReferencingObjects(ObjectEntity $entity, array $inversedProperties): array {
+		$referencingObjects = $this->objectEntityMapper->findByRelation($entity->getUuid());
+		foreach ($inversedProperties as $propConfig) {
+			$additionalResults = $this->findByExtraInverseFields(entity: $entity, propConfig: $propConfig);
+			// Merge results, deduplicating by UUID.
+			$existingUuids = array_map(fn (ObjectEntity $obj) => $obj->getUuid(), $referencingObjects);
+			foreach ($additionalResults as $obj) {
+				if (in_array($obj->getUuid(), $existingUuids, true) === false) {
+					$referencingObjects[] = $obj;
+					$existingUuids[] = $obj->getUuid();
+				}
+			}
+		}
+
+		return $referencingObjects;
+	}//end findInverseReferencingObjects()
+
+	/**
+	 * The objects that reference an entity through the second and later fields of a multi-field inversedBy.
+	 *
+	 * @param ObjectEntity $entity     The entity being rendered.
+	 * @param array        $propConfig One inverse property configuration.
+	 *
+	 * @return ObjectEntity[] The referencing objects, empty for a single-field inversedBy.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function findByExtraInverseFields(ObjectEntity $entity, array $propConfig): array {
+		$inversedByValue = $propConfig['items']['inversedBy'] ?? $propConfig['inversedBy'] ?? null;
+		if (is_array($inversedByValue) === false || count($inversedByValue) <= 1) {
+			return [];
+		}
+
+		$targetSchemaRef = $propConfig['items']['$ref'] ?? $propConfig['$ref'] ?? null;
+		if ($targetSchemaRef === null) {
+			return [];
+		}
+
+		$targetSchemaId = $this->resolveSchemaReference(schemaRef: $targetSchemaRef);
+		if (empty($targetSchemaId) === true) {
+			return [];
+		}
+
+		return $this->objectEntityMapper->findByRelationBatchInSchema(
+			uuids: [$entity->getUuid()],
+			schemaId: (int)$targetSchemaId,
+			registerId: (int)$entity->getRegister(),
+			fieldName: $inversedByValue[0],
+			additionalFieldNames: array_slice($inversedByValue, 1)
+		);
+	}//end findByExtraInverseFields()
+
+	/**
+	 * Put referencing objects with a UUID into the objects cache, ahead of what it already holds.
+	 *
+	 * @param ObjectEntity[] $objects The referencing objects.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cacheReferencingObjects(array $objects): void {
+		$objectsToCache = [];
+		foreach ($objects as $object) {
+			if ($object->getUuid() !== null) {
+				$objectsToCache[$object->getUuid()] = $object;
+			}
+		}
+
 		$this->objectsCache = array_merge($objectsToCache, $this->objectsCache);
+	}//end cacheReferencingObjects()
 
-		// Process each inversed property.
-		// For a property like 'deelnemers' with inversedBy='deelnames':
-		// - Keep the original 'deelnemers' values (forward references to other orgs)
-		// - Find objects that have our UUID in THEIR 'deelnemers' field.
-		// - Put those objects' UUIDs in OUR 'deelnames' field (inverse references).
-		foreach ($inversedProperties as $propertyName => $propertyConfig) {
-			// Extract inversedBy configuration based on property structure.
-			// Check if this is an array property with inversedBy in items.
-			$inversedByProperty = null;
-			$targetSchema = null;
-			$isArray = false;
-
-			if (($propertyConfig['type'] ?? null) !== null
-				&& ($propertyConfig['type'] === 'array') === true
-				&& (($propertyConfig['items']['inversedBy'] ?? null) !== null) === true
-			) {
-				$inversedByProperty = $propertyConfig['items']['inversedBy'];
-				$targetSchema = $propertyConfig['items']['$ref'] ?? null;
-				$isArray = true;
-			} elseif (($propertyConfig['inversedBy'] ?? null) !== null) {
-				// Check if this is a direct object property with inversedBy.
-				$inversedByProperty = $propertyConfig['inversedBy'];
-				$targetSchema = $propertyConfig['$ref'] ?? null;
-
-				// Fallback for misconfigured arrays.
-				if ($propertyConfig['type'] === 'array') {
-					$isArray = true;
-				}
-			}
-
-			// Skip if no inversedBy configuration found.
-			if ($inversedByProperty === null) {
+	/**
+	 * Fill every inverse property of the object data from the referencing objects of a lookup.
+	 *
+	 * For a property like 'deelnemers' with inversedBy='deelnames', the objects
+	 * that hold our UUID in THEIR 'deelnames' field land in OUR 'deelnemers'.
+	 *
+	 * @param InverseLookup $lookup     The entity, its inverse properties and its referencing objects.
+	 * @param array         $objectData The current object data.
+	 *
+	 * @return array The object data with its inverse properties filled.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function applyInverseLookup(InverseLookup $lookup, array $objectData): array {
+		foreach ($lookup->inversedProperties as $propertyName => $propertyConfig) {
+			$target = $this->inverseTarget(entity: $lookup->entity, propertyConfig: $propertyConfig);
+			if ($target === null) {
 				continue;
 			}
 
-			// Normalize inversedBy to an array to support multi-field inverse relations.
-			$inversedByProperties = [$inversedByProperty];
-			if (is_array($inversedByProperty) === true) {
-				$inversedByProperties = $inversedByProperty;
-			}
-
-			// Resolve schema reference to actual schema ID.
-			$schemaId = $entity->getSchema();
-			// Use current schema if no target specified.
-			if ($targetSchema !== null) {
-				$schemaId = $this->resolveSchemaReference(schemaRef: $targetSchema);
-			}
-
-			// Always use $propertyName as the target property to populate.
-			// This is the property being extended (e.g., 'standaardVersies').
-			// The $inversedByProperty fields (e.g., ['moduleA', 'moduleB']) are the fields
-			// on related objects that point back to this entity.
-			$targetProperty = $propertyName;
-
-			// Initialize the target property if not already set to preserve any existing values.
-			if (isset($objectData[$targetProperty]) === false) {
-				$defaultValue = null;
-				if ($isArray === true) {
-					$defaultValue = [];
-				}
-
-				$objectData[$targetProperty] = $defaultValue;
-			}
-
-			// Find objects that have our UUID in ANY of their inversedBy fields.
-			// Supports multiple field names for cases like koppelingen where the entity
-			// can appear as either moduleA or moduleB.
-			$inversedObjects = array_values(
-				array_filter(
-					$referencingObjects,
-					function (ObjectEntity $object) use ($inversedByProperties, $schemaId, $entity) {
-						$data = $object->getObject();
-
-						// Check each inversedBy field — match if ANY field contains our UUID.
-						foreach ($inversedByProperties as $fieldToCheck) {
-							if (isset($data[$fieldToCheck]) === false) {
-								continue;
-							}
-
-							$referenceValue = $data[$fieldToCheck];
-
-							// Handle object references with {"value": "uuid"} format.
-							if (is_array($referenceValue) === true && isset($referenceValue['value']) === true) {
-								$referenceValue = $referenceValue['value'];
-							}
-
-							// Handle both array and single value references.
-							if (is_array($referenceValue) === true) {
-								if (in_array($entity->getUuid(), $referenceValue, true) === true
-									&& $object->getSchema() === $schemaId
-								) {
-									return true;
-								}
-
-								continue;
-							}
-
-							// Check if the reference value matches the current entity's UUID.
-							if (str_ends_with(haystack: $referenceValue, needle: $entity->getUuid()) === true
-								&& $object->getSchema() === $schemaId
-							) {
-								return true;
-							}
-						}//end foreach
-
-						return false;
-					}
-				)
-			);
-
-			// Render each inversed object to get full object data (not just UUIDs).
-			// This makes inversedBy behave like regular _extend - returning full objects.
+			// Render each inversed object to its full data, as a regular _extend does.
 			$renderedObjects = array_map(
-				function (ObjectEntity $object) {
-					return $this->renderEntity(
-						entity: $object,
-						_extend: [],
-						depth: 1,
-						filter: [],
-						fields: [],
-						unset: []
-					)->jsonSerialize();
-				},
-				$inversedObjects
+				fn (ObjectEntity $object) => $this->renderEntity(
+					entity: $object,
+					_extend: [],
+					depth: 1,
+					filter: [],
+					fields: [],
+					unset: []
+				)->jsonSerialize(),
+				$this->matchingInverseObjects(lookup: $lookup, target: $target)
 			);
 
-			// Set the target property value based on whether it's an array or single value.
-			if ($isArray === true) {
-				$objectData[$targetProperty] = $renderedObjects;
+			if ($target->isArray === true) {
+				$objectData[$propertyName] = $renderedObjects;
 				continue;
 			}
 
-			$objectData[$targetProperty] = null;
+			$objectData[$propertyName] = null;
 			if (empty($renderedObjects) === false) {
-				$objectData[$targetProperty] = end($renderedObjects);
+				$objectData[$propertyName] = end($renderedObjects);
 			}
 		}//end foreach
 
 		return $objectData;
-	}//end handleInversedProperties()
+	}//end applyInverseLookup()
+
+	/**
+	 * Where one inverse property looks: the fields that point back, the schema they live in, and its cardinality.
+	 *
+	 * @param ObjectEntity $entity         The entity being rendered.
+	 * @param array        $propertyConfig One inverse property configuration.
+	 *
+	 * @return InverseTarget|null The target, or null when the property has no inversedBy.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function inverseTarget(ObjectEntity $entity, array $propertyConfig): ?InverseTarget {
+		$target = new InverseTarget();
+		$inversedByProperty = null;
+		$targetSchema = null;
+
+		if (($propertyConfig['type'] ?? null) !== null
+			&& ($propertyConfig['type'] === 'array') === true
+			&& (($propertyConfig['items']['inversedBy'] ?? null) !== null) === true
+		) {
+			$inversedByProperty = $propertyConfig['items']['inversedBy'];
+			$targetSchema = $propertyConfig['items']['$ref'] ?? null;
+			$target->isArray = true;
+		} elseif (($propertyConfig['inversedBy'] ?? null) !== null) {
+			// A direct object property with inversedBy.
+			$inversedByProperty = $propertyConfig['inversedBy'];
+			$targetSchema = $propertyConfig['$ref'] ?? null;
+
+			// Fallback for misconfigured arrays.
+			if ($propertyConfig['type'] === 'array') {
+				$target->isArray = true;
+			}
+		}
+
+		if ($inversedByProperty === null) {
+			return null;
+		}
+
+		// Normalize inversedBy to an array to support multi-field inverse relations.
+		$target->fields = [$inversedByProperty];
+		if (is_array($inversedByProperty) === true) {
+			$target->fields = $inversedByProperty;
+		}
+
+		// Use the current schema if no target is specified.
+		$target->schemaId = $entity->getSchema();
+		if ($targetSchema !== null) {
+			$target->schemaId = $this->resolveSchemaReference(schemaRef: $targetSchema);
+		}
+
+		return $target;
+	}//end inverseTarget()
+
+	/**
+	 * The referencing objects that hold the entity's UUID in ANY of the target's fields and live in its schema.
+	 *
+	 * Supports multiple field names, for cases like koppelingen where the
+	 * entity can appear as either moduleA or moduleB.
+	 *
+	 * @param InverseLookup $lookup The entity and its referencing objects.
+	 * @param InverseTarget $target The fields and schema to match.
+	 *
+	 * @return ObjectEntity[] The matching objects, reindexed.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function matchingInverseObjects(InverseLookup $lookup, InverseTarget $target): array {
+		$entityUuid = $lookup->entity->getUuid();
+		return array_values(
+			array_filter(
+				$lookup->referencingObjects,
+				function (ObjectEntity $object) use ($target, $entityUuid) {
+					$data = $object->getObject();
+					foreach ($target->fields as $fieldToCheck) {
+						if (isset($data[$fieldToCheck]) === true
+							&& self::referencePointsAt(referenceValue: $data[$fieldToCheck], uuid: $entityUuid) === true
+							&& $object->getSchema() === $target->schemaId
+						) {
+							return true;
+						}
+					}
+
+					return false;
+				}
+			)
+		);
+	}//end matchingInverseObjects()
+
+	/**
+	 * Whether a stored reference value points at a UUID.
+	 *
+	 * Handles object references in {"value": "uuid"} format, arrays of
+	 * references, and single values that end in the UUID (such as a URL).
+	 *
+	 * @param mixed       $referenceValue The stored reference value.
+	 * @param string|null $uuid           The UUID to look for.
+	 *
+	 * @return bool True when the value references the UUID.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function referencePointsAt(mixed $referenceValue, ?string $uuid): bool {
+		if (is_array($referenceValue) === true && isset($referenceValue['value']) === true) {
+			$referenceValue = $referenceValue['value'];
+		}
+
+		if (is_array($referenceValue) === true) {
+			return in_array($uuid, $referenceValue, true);
+		}
+
+		return str_ends_with(haystack: $referenceValue, needle: (string)$uuid);
+	}//end referencePointsAt()
 
 	/**
 	 * Handle inversed properties using the preloaded cache.
@@ -5364,71 +5424,16 @@ class RenderObject {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function batchPreloadFileObjects(array $entities): void {
-		if (empty($entities) === true) {
-			return;
-		}
-
 		// 1) Collect all file ids referenced by file-typed properties across the page.
 		$allFileIds = [];
 		foreach ($entities as $entity) {
-			if ($entity instanceof ObjectEntity === false) {
-				continue;
+			if ($entity instanceof ObjectEntity === true) {
+				$allFileIds += $this->referencedFileIds(entity: $entity);
 			}
-
-			$schema = $this->getSchema(id: $entity->getSchema());
-			if ($schema === null) {
-				continue;
-			}
-
-			$schemaProperties = $schema->getProperties() ?? [];
-			$objectData = $entity->getObject();
-			if (is_array($objectData) === false) {
-				continue;
-			}
-
-			foreach ($schemaProperties as $propertyName => $propertyConfig) {
-				if (is_array($propertyConfig) === false
-					|| $this->isFilePropertyConfig(propertyConfig: $propertyConfig) === false
-				) {
-					continue;
-				}
-
-				$value = ($objectData[$propertyName] ?? null);
-				if ($value === null) {
-					continue;
-				}
-
-				// Base64-format properties read content, not the formatted file
-				// object/tags, so they are not part of this prefetch.
-				$isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
-				$fileConfig = $propertyConfig;
-				if ($isArrayProperty === true) {
-					$fileConfig = ($propertyConfig['items'] ?? []);
-				}
-
-				if (($fileConfig['format'] ?? '') === 'base64') {
-					continue;
-				}
-
-				$candidates = $value;
-				if (is_array($value) === false) {
-					$candidates = [$value];
-				}
-
-				foreach ($candidates as $candidate) {
-					if (is_numeric($candidate) === true
-						|| (is_string($candidate) === true && ctype_digit($candidate) === true)
-					) {
-						$allFileIds[(int)$candidate] = (int)$candidate;
-					}
-				}
-			}//end foreach
-		}//end foreach
+		}
 
 		if (empty($allFileIds) === true) {
 			return;
@@ -5440,59 +5445,12 @@ class RenderObject {
 			// 2) Batch-load all files in one query.
 			$filesById = $this->fileMapper->getFilesByIds(fileIds: $fileIds);
 
-			// 3) Batch-load all tag ids for all files in one query.
-			$stringFileIds = array_map(static fn ($id) => (string)$id, $fileIds);
-
-			// Numeric-string keys are coerced to int by PHP — see the longer
-			// note on the other getTagIdsForObjects() call in this class.
-			// phpcs:ignore Squiz.Commenting.InlineComment.DocBlock -- PHPStan only reads @var from a /** */ block.
-			/** @var array<int|string, list<string>> $allTagIdsPerFile */
-			$allTagIdsPerFile = $this->systemTagMapper->getTagIdsForObjects(
-				objIds: $stringFileIds,
-				objectType: 'files'
-			);
-
-			// Resolve all unique tag ids to names in one call.
-			$uniqueTagIds = [];
-			foreach ($allTagIdsPerFile as $fileTagIds) {
-				foreach ($fileTagIds as $tagId) {
-					$uniqueTagIds[$tagId] = true;
-				}
-			}
-
-			$tagNameMap = [];
-			if (empty($uniqueTagIds) === false) {
-				$tags = $this->systemTagManager->getTagsByIds(tagIds: array_keys($uniqueTagIds));
-				foreach ($tags as $tag) {
-					$name = $tag->getName();
-					if (str_starts_with($name, 'object:') === false) {
-						$tagNameMap[$tag->getId()] = $name;
-					}
-				}
-			}
-
-			// 4) Populate the request-scoped tag cache for every requested file id.
-			foreach ($stringFileIds as $fileIdStr) {
-				$labels = [];
-				foreach (($allTagIdsPerFile[$fileIdStr] ?? []) as $tagId) {
-					if (isset($tagNameMap[$tagId]) === true) {
-						$labels[] = $tagNameMap[$tagId];
-					}
-				}
-
-				$this->fileTagsCache[$fileIdStr] = $labels;
-			}
+			// 3) and 4) Batch-load and cache the tags of every requested file.
+			$this->cacheFileTags(fileIds: $fileIds);
 
 			// 5) Populate the request-scoped file-object cache (null for missing files).
 			foreach ($fileIds as $fileId) {
-				$fileIdStr = (string)$fileId;
-				$record = ($filesById[$fileIdStr] ?? null);
-				if ($record === null) {
-					$this->fileObjectCache[$fileIdStr] = null;
-					continue;
-				}
-
-				$this->fileObjectCache[$fileIdStr] = $this->formatFileRecord(fileRecord: $record);
+				$this->cacheFileObject(fileIdStr: (string)$fileId, record: ($filesById[(string)$fileId] ?? null));
 			}
 		} catch (Exception $e) {
 			// A prefetch failure must never break rendering — per-row paths will simply
@@ -5503,4 +5461,159 @@ class RenderObject {
 			);
 		}//end try
 	}//end batchPreloadFileObjects()
+
+	/**
+	 * The file ids an entity references through its file-typed properties, keyed by id.
+	 *
+	 * @param ObjectEntity $entity The entity about to be rendered.
+	 *
+	 * @return array<int, int> The file ids, keyed by themselves.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function referencedFileIds(ObjectEntity $entity): array {
+		$schema = $this->getSchema(id: $entity->getSchema());
+		$objectData = $entity->getObject();
+		if ($schema === null || is_array($objectData) === false) {
+			return [];
+		}
+
+		$fileIds = [];
+		foreach (($schema->getProperties() ?? []) as $propertyName => $propertyConfig) {
+			if (is_array($propertyConfig) === true
+				&& $this->isFilePropertyConfig(propertyConfig: $propertyConfig) === true
+			) {
+				$fileIds += self::fileIdsOfValue(propertyConfig: $propertyConfig, value: ($objectData[$propertyName] ?? null));
+			}
+		}
+
+		return $fileIds;
+	}//end referencedFileIds()
+
+	/**
+	 * The numeric file ids in one file property's value, keyed by id.
+	 *
+	 * Base64-format properties read content, not the formatted file
+	 * object/tags, so they are not part of the prefetch.
+	 *
+	 * @param array $propertyConfig The file property's configuration.
+	 * @param mixed $value          The property's value.
+	 *
+	 * @return array<int, int> The file ids, keyed by themselves.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function fileIdsOfValue(array $propertyConfig, mixed $value): array {
+		$fileConfig = $propertyConfig;
+		if (($propertyConfig['type'] ?? '') === 'array') {
+			$fileConfig = ($propertyConfig['items'] ?? []);
+		}
+
+		if ($value === null || ($fileConfig['format'] ?? '') === 'base64') {
+			return [];
+		}
+
+		$candidates = $value;
+		if (is_array($value) === false) {
+			$candidates = [$value];
+		}
+
+		$fileIds = [];
+		foreach ($candidates as $candidate) {
+			if (is_numeric($candidate) === true
+				|| (is_string($candidate) === true && ctype_digit($candidate) === true)
+			) {
+				$fileIds[(int)$candidate] = (int)$candidate;
+			}
+		}
+
+		return $fileIds;
+	}//end fileIdsOfValue()
+
+	/**
+	 * Load the tags of the given files in one batch and put their visible names in the request-scoped tag cache.
+	 *
+	 * @param int[] $fileIds The requested file ids.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cacheFileTags(array $fileIds): void {
+		$stringFileIds = array_map(static fn ($id) => (string)$id, $fileIds);
+
+		// Numeric-string keys are coerced to int by PHP — see the longer
+		// note on the other getTagIdsForObjects() call in this class.
+		// phpcs:ignore Squiz.Commenting.InlineComment.DocBlock -- PHPStan only reads @var from a /** */ block.
+		/** @var array<int|string, list<string>> $allTagIdsPerFile */
+		$allTagIdsPerFile = $this->systemTagMapper->getTagIdsForObjects(
+			objIds: $stringFileIds,
+			objectType: 'files'
+		);
+
+		$tagNameMap = $this->visibleTagNames(tagIdsPerFile: $allTagIdsPerFile);
+		foreach ($stringFileIds as $fileIdStr) {
+			$labels = [];
+			foreach (($allTagIdsPerFile[$fileIdStr] ?? []) as $tagId) {
+				if (isset($tagNameMap[$tagId]) === true) {
+					$labels[] = $tagNameMap[$tagId];
+				}
+			}
+
+			$this->fileTagsCache[$fileIdStr] = $labels;
+		}
+	}//end cacheFileTags()
+
+	/**
+	 * The names of the tags used by the given files, by tag id, without the internal `object:` tags.
+	 *
+	 * All unique tag ids are resolved to names in one call.
+	 *
+	 * @param array $tagIdsPerFile The tag ids per file id.
+	 *
+	 * @return array<string, string> The tag names, by tag id.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function visibleTagNames(array $tagIdsPerFile): array {
+		$uniqueTagIds = [];
+		foreach ($tagIdsPerFile as $fileTagIds) {
+			foreach ($fileTagIds as $tagId) {
+				$uniqueTagIds[$tagId] = true;
+			}
+		}
+
+		if (empty($uniqueTagIds) === true) {
+			return [];
+		}
+
+		$tagNameMap = [];
+		foreach ($this->systemTagManager->getTagsByIds(tagIds: array_keys($uniqueTagIds)) as $tag) {
+			$name = $tag->getName();
+			if (str_starts_with($name, 'object:') === false) {
+				$tagNameMap[$tag->getId()] = $name;
+			}
+		}
+
+		return $tagNameMap;
+	}//end visibleTagNames()
+
+	/**
+	 * Put one file's formatted object in the request-scoped file-object cache, or null for a missing file.
+	 *
+	 * @param string     $fileIdStr The file id.
+	 * @param array|null $record    The file record, or null when the file is missing.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cacheFileObject(string $fileIdStr, ?array $record): void {
+		if ($record === null) {
+			$this->fileObjectCache[$fileIdStr] = null;
+			return;
+		}
+
+		$this->fileObjectCache[$fileIdStr] = $this->formatFileRecord(fileRecord: $record);
+	}//end cacheFileObject()
 }//end class

@@ -2696,51 +2696,6 @@ parameters:
 			path: lib/Db/ObjectEntity.php
 
 		-
-			message: "#^Constant OCA\\\\OpenRegister\\\\Db\\\\ObjectHandlers\\\\HyperFacetHandler\\:\\:FRAGMENT_CACHE_TTL is unused\\.$#"
-			count: 1
-			path: lib/Db/ObjectHandlers/HyperFacetHandler.php
-
-		-
-			message: "#^Constant OCA\\\\OpenRegister\\\\Db\\\\ObjectHandlers\\\\HyperFacetHandler\\:\\:SCHEMA_FACET_TTL is unused\\.$#"
-			count: 1
-			path: lib/Db/ObjectHandlers/HyperFacetHandler.php
-
-		-
-			message: "#^PHPDoc tag @return with type React\\\\Promise\\\\PromiseInterface is not subtype of native type React\\\\Promise\\\\Promise\\.$#"
-			count: 1
-			path: lib/Db/ObjectHandlers/HyperFacetHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\ObjectHandlers\\\\HyperFacetHandler\\:\\:\\$cardinalityCache \\(OCP\\\\IMemcache\\|null\\) does not accept OCP\\\\ICache\\.$#"
-			count: 2
-			path: lib/Db/ObjectHandlers/HyperFacetHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\ObjectHandlers\\\\HyperFacetHandler\\:\\:\\$facetCache \\(OCP\\\\IMemcache\\|null\\) does not accept OCP\\\\ICache\\.$#"
-			count: 2
-			path: lib/Db/ObjectHandlers/HyperFacetHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\ObjectHandlers\\\\HyperFacetHandler\\:\\:\\$fragmentCache \\(OCP\\\\IMemcache\\|null\\) does not accept OCP\\\\ICache\\.$#"
-			count: 2
-			path: lib/Db/ObjectHandlers/HyperFacetHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\ObjectHandlers\\\\HyperFacetHandler\\:\\:\\$fragmentCache is never read, only written\\.$#"
-			count: 1
-			path: lib/Db/ObjectHandlers/HyperFacetHandler.php
-
-		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\ObjectHandlers\\\\MariaDbFacetHandler\\:\\:analyzeObjectFields\\(\\) is unused\\.$#"
-			count: 1
-			path: lib/Db/ObjectHandlers/MariaDbFacetHandler.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between 0\\|1\\|false and true will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Db/ObjectHandlers/MariaDbFacetHandler.php
-
-		-
 			message: "#^Call to an undefined static method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setActive\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/Organisation.php

@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\FileExtractionListing;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Service\RiskLevelService;
@@ -153,122 +154,96 @@ class FileExtractionController extends Controller {
 	 */
 	public function index(): JSONResponse {
 		try {
-			$limit = (int)($this->request->getParam('limit', 50));
-			$offset = (int)($this->request->getParam('offset', 0));
-			$search = $this->request->getParam('search');
-			$status = $this->request->getParam('status');
-			$riskLevel = $this->request->getParam('riskLevel');
-			$sort = $this->request->getParam('sort', 'extractedAt');
-			$order = $this->request->getParam('order', 'DESC');
+			$listing = new FileExtractionListing(request: $this->request);
 
 			// All chunked files are "completed" — if filtering for another status, return empty.
-			if (in_array($status, [null, '', 'completed'], true) === false) {
-				return new JSONResponse(
-					data: [
-						'success' => true,
-						'data' => [],
-						'count' => 0,
-					]
-				);
+			if (in_array($listing->status, [null, '', 'completed'], true) === false) {
+				return new JSONResponse(data: ['success' => true, 'data' => [], 'count' => 0]);
 			}
 
-			$searchTerm = null;
-			if ($search !== null && $search !== '') {
-				$searchTerm = $search;
-			}
+			$listing->restrict(restricted: $this->isCurrentUserAdmin() === false);
+			$page       = $this->extractionSummaries(listing: $listing);
+			$data       = $this->extractionRows(summaries: $page['summaries']);
+			$totalCount = $page['total'];
 
-			// For riskLevel/entityCount sorting, fetch all then sort in PHP.
-			// A non-admin sees only the files they can open, so the page is cut in PHP too.
-			$phpSort = in_array($sort, ['riskLevel', 'entityCount'], true);
-			$restricted = ($this->isCurrentUserAdmin() === false);
-			$cutInPhp = ($phpSort === true || $restricted === true);
-			$dbLimit = $limit;
-			$dbOffset = $offset;
-			$dbSort = $sort;
-			if ($phpSort === true) {
-				$dbSort = 'extractedAt';
-			}
-
-			if ($cutInPhp === true) {
-				$dbLimit = null;
-				$dbOffset = null;
-			}
-
-			$summaries = $this->chunkMapper->getFileSourceSummaries($dbLimit, $dbOffset, $searchTerm, $dbSort, $order);
-			$totalCount = $this->chunkMapper->countFileSourceSummaries($searchTerm);
-			if ($restricted === true) {
-				$summaries = array_values(
-					array_filter($summaries, fn ($summary) => $this->hasFileAccess(fileId: (int)$summary['sourceId']))
-				);
-			}
-
-			$data = [];
-			foreach ($summaries as $summary) {
-				$entityCount = count($this->entityRelationMapper->findByFileId($summary['sourceId']));
-				$fileRisk = $this->riskLevelService->getRiskLevel($summary['sourceId']);
-
-				$data[] = [
-					'id' => $summary['sourceId'],
-					'fileName' => $summary['fileName'],
-					'mimeType' => $summary['mimeType'],
-					'fileSize' => $summary['fileSize'],
-					'extractionStatus' => 'completed',
-					'chunkCount' => $summary['chunkCount'],
-					'extractedAt' => $summary['lastExtracted'],
-					'extractionError' => null,
-					'entityCount' => $entityCount,
-					'riskLevel' => $fileRisk,
-				];
-			}
-
-			// Filter by risk level if requested.
+			$riskLevel = $listing->riskLevel;
 			if (in_array($riskLevel, [null, ''], true) === false) {
-				$data = array_values(array_filter($data, fn ($f) => $f['riskLevel'] === $riskLevel));
+				$data       = array_values(array_filter($data, fn ($f) => $f['riskLevel'] === $riskLevel));
 				$totalCount = count($data);
 			}
 
-			// PHP-side sorting for fields not in the DB query.
-			if ($phpSort === true) {
-				$riskOrder = ['none' => 0, 'low' => 1, 'medium' => 2, 'high' => 3, 'very_high' => 4];
-				usort(
-					$data,
-					function ($a, $b) use ($sort, $order, $riskOrder) {
-						$cmp = ($a[$sort] ?? 0) <=> ($b[$sort] ?? 0);
-						if ($sort === 'riskLevel') {
-							$cmp = ($riskOrder[$a['riskLevel']] ?? 0) <=> ($riskOrder[$b['riskLevel']] ?? 0);
-						}
-
-						if ($order === 'ASC') {
-							return $cmp;
-						}
-
-						return -$cmp;
-					}
-				);
-			}//end if
-
-			if ($cutInPhp === true) {
-				$totalCount = count($data);
-				$data = array_slice($data, $offset, $limit);
+			if ($listing->sortsInPhp() === true) {
+				$data = $listing->sortRows(rows: $data);
 			}
 
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'data' => $data,
-					'count' => $totalCount,
-				]
-			);
+			if ($listing->cutsInPhp() === true) {
+				$totalCount = count($data);
+				$data       = array_slice($data, $listing->offset, $listing->limit);
+			}
+
+			return new JSONResponse(data: ['success' => true, 'data' => $data, 'count' => $totalCount]);
 		} catch (\Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return new JSONResponse(data: ['success' => false, 'error' => $e->getMessage()], statusCode: 500);
 		}//end try
 	}//end index()
+
+	/**
+	 * The chunked-file summaries of one listing, and their total, cut to what the caller may open.
+	 *
+	 * When the page is cut in PHP every summary is fetched.
+	 *
+	 * @param FileExtractionListing $listing The list parameters.
+	 *
+	 * @return array{summaries: array, total: int} The summaries and the database total.
+	 */
+	private function extractionSummaries(FileExtractionListing $listing): array {
+		$dbLimit  = $listing->limit;
+		$dbOffset = $listing->offset;
+		if ($listing->cutsInPhp() === true) {
+			$dbLimit  = null;
+			$dbOffset = null;
+		}
+
+		$summaries  = $this->chunkMapper->getFileSourceSummaries($dbLimit, $dbOffset, $listing->searchTerm, $listing->databaseSort(), $listing->order);
+		$totalCount = $this->chunkMapper->countFileSourceSummaries($listing->searchTerm);
+		if ($listing->isRestricted() === true) {
+			$summaries = array_values(
+				array_filter($summaries, fn ($summary) => $this->hasFileAccess(fileId: (int)$summary['sourceId']))
+			);
+		}
+
+		return ['summaries' => $summaries, 'total' => $totalCount];
+	}//end extractionSummaries()
+
+	/**
+	 * The overview rows of chunked-file summaries, with entity count and risk level.
+	 *
+	 * @param array $summaries The summaries.
+	 *
+	 * @return array<int, array<string, mixed>> The rows.
+	 */
+	private function extractionRows(array $summaries): array {
+		$data = [];
+		foreach ($summaries as $summary) {
+			$entityCount = count($this->entityRelationMapper->findByFileId($summary['sourceId']));
+			$fileRisk    = $this->riskLevelService->getRiskLevel($summary['sourceId']);
+
+			$data[] = [
+				'id'               => $summary['sourceId'],
+				'fileName'         => $summary['fileName'],
+				'mimeType'         => $summary['mimeType'],
+				'fileSize'         => $summary['fileSize'],
+				'extractionStatus' => 'completed',
+				'chunkCount'       => $summary['chunkCount'],
+				'extractedAt'      => $summary['lastExtracted'],
+				'extractionError'  => null,
+				'entityCount'      => $entityCount,
+				'riskLevel'        => $fileRisk,
+			];
+		}
+
+		return $data;
+	}//end extractionRows()
 
 	/**
 	 * Get a single file's extraction information by ID.

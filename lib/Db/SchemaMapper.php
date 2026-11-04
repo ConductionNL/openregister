@@ -382,6 +382,8 @@ class SchemaMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
 	 * @SuppressWarnings(PHPMD.StaticAccess)          Schema::fromRow is a standard entity factory pattern
+	 *
+	 * @spec openspec/specs/register-slug-resolution/spec.md
 	 */
 	public function find(
 		string|int $id,
@@ -389,48 +391,111 @@ class SchemaMapper extends QBMapper {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): Schema {
-		// Check request-scoped cache to avoid redundant DB queries for the same schema.
-		$rbacFlag = '0';
-		if ($_rbac === true) {
-			$rbacFlag = '1';
-		}
-
-		$mtFlag = '0';
-		if ($_multitenancy === true) {
-			$mtFlag = '1';
-		}
-
-		$cacheSuffix = ':' . $rbacFlag . ':' . $mtFlag;
+		// Request-scoped cache, keyed by identifier and both flags.
+		$cacheSuffix = ':' . (int)$_rbac . ':' . (int)$_multitenancy;
 		$cacheKey = strtolower((string)$id) . $cacheSuffix;
 		if (isset($this->findCache[$cacheKey]) === true) {
 			return $this->findCache[$cacheKey];
 		}
 
-		// Verify RBAC permission to read if RBAC is enabled.
-		if ($_rbac === true) {
-			// $this->verifyRbacPermission('read', 'schema');
-		}
-
 		$this->traceRead(method: 'find');
 		\OCA\OpenRegister\Service\WritePhaseProbe::count(event: 'schema.db.read');
 
+		$qb = $this->buildFindByIdentifierQuery(id: $id);
+
+		// Set $_multitenancy=false to bypass the organisation filter (e.g. when expanding schemas for registers).
+		$this->applyOrganisationFilter(
+			qb: $qb,
+			columnName: 'organisation',
+			allowNullOrg: true,
+			multiTenancyEnabled: $_multitenancy
+		);
+
+		// Two rows, not one: enough to KNOW the identifier was ambiguous, which
+		// a capped single-row fetch can never tell you.
+		$qb->setMaxResults(2);
+
+		$result = $qb->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+
+		if ($rows === []) {
+			throw new DoesNotExistException(
+				sprintf(
+					'Schema not found (id=%s, multitenancy=%s, rbac=%s)',
+					var_export($id, true),
+					var_export($_multitenancy, true),
+					var_export($_rbac, true)
+				)
+			);
+		}
+
+		$this->warnAboutAmbiguousIdentifier(id: $id, rows: $rows);
+
+		// Resolve schema composition if present (allOf, oneOf, anyOf).
+		$schema = $this->resolveSchemaExtension(schema: Schema::fromRow($rows[0]));
+
+		// BUG-DB-10: cache writes reuse the read-side suffix so they stay consistent.
+		$this->findCache[$cacheKey] = $schema;
+		$this->cacheSchemaByIdentifiers(schema: $schema, cacheSuffix: $cacheSuffix);
+
+		return $schema;
+	}//end find()
+
+	/**
+	 * Cache a found schema under its id, uuid and slug, so a later lookup by
+	 * any of them is answered without a query.
+	 *
+	 * @param Schema $schema      The found schema.
+	 * @param string $cacheSuffix The flag suffix of the lookup.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/register-slug-resolution/spec.md
+	 */
+	private function cacheSchemaByIdentifiers(Schema $schema, string $cacheSuffix): void {
+		$this->findCache[(string)$schema->getId() . $cacheSuffix] = $schema;
+
+		// BUG-DB-10: guard against a null uuid before strtolower().
+		$schemaUuid = $schema->getUuid();
+		if ($schemaUuid !== null) {
+			$this->findCache[strtolower($schemaUuid) . $cacheSuffix] = $schema;
+		}
+
+		if ($schema->getSlug() !== null) {
+			$this->findCache[strtolower($schema->getSlug()) . $cacheSuffix] = $schema;
+		}
+	}//end cacheSchemaByIdentifiers()
+
+	/**
+	 * A query for the schema whose uuid, slug (case-insensitive) or, for a
+	 * numeric identifier, id matches, in tie-break order.
+	 *
+	 * BUG-DB-10: a numeric identifier could be a primary key or a numeric
+	 * uuid/slug, so an exact `id` hit is ordered first; a row whose slug is
+	 * "5" never shadows the row with id 5. The id comparison is left out for
+	 * a non-numeric identifier because PostgreSQL types it strictly.
+	 *
+	 * @param int|string $id The identifier.
+	 *
+	 * @return IQueryBuilder The query, without the organisation filter.
+	 *
+	 * @spec openspec/specs/register-slug-resolution/spec.md
+	 */
+	private function buildFindByIdentifierQuery(string|int $id): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from('openregister_schemas');
 
-		// Build OR conditions for matching against id, uuid, or slug.
-		// Note: Only include id comparison if $id is actually numeric (PostgreSQL strict typing).
-		// Slug comparison is case-insensitive using LOWER() function.
-		$lowerId = strtolower((string)$id);
-		// Default: match by uuid or slug only.
 		$orConditions = $qb->expr()->orX(
 			$qb->expr()->eq('uuid', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR)),
 			$qb->expr()->eq(
 				$qb->func()->lower('slug'),
-				$qb->createNamedParameter(value: $lowerId, type: IQueryBuilder::PARAM_STR)
+				$qb->createNamedParameter(value: strtolower((string)$id), type: IQueryBuilder::PARAM_STR)
 			)
 		);
 
+		$idParam = null;
 		if (is_numeric($id) === true) {
 			$idParam = $qb->createNamedParameter(value: (int)$id, type: IQueryBuilder::PARAM_INT);
 			$orConditions->add(
@@ -440,11 +505,7 @@ class SchemaMapper extends QBMapper {
 
 		$qb->where($orConditions);
 
-		// BUG-DB-10: when the identifier is numeric it is ambiguous (it could be a
-		// primary key id OR a numeric uuid/slug). Prefer the exact primary-key
-		// match by ordering an `id = ?` hit first, so a row whose slug happens to
-		// be "5" never shadows the row with id 5.
-		if (is_numeric($id) === true) {
+		if ($idParam !== null) {
 			$qb->addOrderBy(
 				$qb->createFunction(
 					'CASE WHEN id = ' . $idParam . ' THEN 0 ELSE 1 END'
@@ -488,25 +549,21 @@ class SchemaMapper extends QBMapper {
 		);
 		$qb->addOrderBy('id', 'ASC');
 
-		// Apply organisation filter.
-		// Set $_multitenancy=false to bypass organization filter (e.g., when expanding schemas for registers).
-		$this->applyOrganisationFilter(
-			qb: $qb,
-			columnName: 'organisation',
-			allowNullOrg: true,
-			multiTenancyEnabled: $_multitenancy
-		);
+		return $qb;
+	}//end buildFindByIdentifierQuery()
 
-		// Two rows, not one: enough to KNOW the identifier was ambiguous, which
-		// a capped single-row fetch can never tell you. Silence is what let the
-		// agentflow collision run for as long as it did.
-		$qb->setMaxResults(2);
-
-		$result = $qb->executeQuery();
-		$rows = $result->fetchAll();
-		$result->closeCursor();
-
-		$row = ($rows[0] ?? false);
+	/**
+	 * Warn when an identifier matched more than one schema, naming every
+	 * candidate and the one it resolved to.
+	 *
+	 * @param int|string                      $id   The identifier.
+	 * @param array<int, array<string, mixed>> $rows The matched rows, in tie-break order.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/register-slug-resolution/spec.md
+	 */
+	private function warnAboutAmbiguousIdentifier(string|int $id, array $rows): void {
 		if (count($rows) > 1) {
 			$this->logger->warning(
 				message: sprintf(
@@ -535,41 +592,7 @@ class SchemaMapper extends QBMapper {
 				]
 			);
 		}//end if
-
-		if ($row === false) {
-			// Include diagnostic info in exception message for debugging.
-			$debugInfo = sprintf(
-				'Schema not found (id=%s, multitenancy=%s, rbac=%s)',
-				var_export($id, true),
-				var_export($_multitenancy, true),
-				var_export($_rbac, true)
-			);
-			throw new DoesNotExistException($debugInfo);
-		}
-
-		$schema = Schema::fromRow($row);
-
-		// Resolve schema composition if present (allOf, oneOf, anyOf).
-		$schema = $this->resolveSchemaExtension(schema: $schema);
-
-		// Cache by all possible identifiers to handle lookups by id, uuid, or slug.
-		// BUG-DB-10: reuse the exact same suffix (rbac + multitenancy + published)
-		// as the read-side key so cache writes and reads stay consistent.
-		$this->findCache[$cacheKey] = $schema;
-		$this->findCache[(string)$schema->getId() . $cacheSuffix] = $schema;
-
-		// BUG-DB-10: guard against a null uuid before strtolower().
-		$schemaUuid = $schema->getUuid();
-		if ($schemaUuid !== null) {
-			$this->findCache[strtolower($schemaUuid) . $cacheSuffix] = $schema;
-		}
-
-		if ($schema->getSlug() !== null) {
-			$this->findCache[strtolower($schema->getSlug()) . $cacheSuffix] = $schema;
-		}
-
-		return $schema;
-	}//end find()
+	}//end warnAboutAmbiguousIdentifier()
 
 	/**
 	 * Resolve a schema by slug, scoped to a single owning application.
@@ -756,49 +779,11 @@ class SchemaMapper extends QBMapper {
 
 		$this->traceRead(method: 'findInIds');
 
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from('openregister_schemas');
-
-		// Same identifier forms as find(): uuid, case-insensitive slug, and —
-		// only when numeric (PostgreSQL strict typing) — the primary key id.
-		$orConditions = $qb->expr()->orX(
-			$qb->expr()->eq('uuid', $qb->createNamedParameter(value: (string)$id, type: IQueryBuilder::PARAM_STR)),
-			$qb->expr()->eq(
-				$qb->func()->lower('slug'),
-				$qb->createNamedParameter(value: strtolower((string)$id), type: IQueryBuilder::PARAM_STR)
-			)
+		// Same identifier forms and tie-breaks as find(), narrowed to the id set.
+		$qb = $this->buildFindByIdentifierQuery(id: (string)$id);
+		$qb->andWhere(
+			$qb->expr()->in('id', $qb->createNamedParameter(value: $ids, type: IQueryBuilder::PARAM_INT_ARRAY))
 		);
-
-		$idParam = null;
-		if (is_numeric($id) === true) {
-			$idParam = $qb->createNamedParameter(value: (int)$id, type: IQueryBuilder::PARAM_INT);
-			$orConditions->add(
-				$qb->expr()->eq('id', $idParam)
-			);
-		}
-
-		$qb->where($orConditions)
-			->andWhere(
-				$qb->expr()->in('id', $qb->createNamedParameter(value: $ids, type: IQueryBuilder::PARAM_INT_ARRAY))
-			);
-
-		// Same tie-breaks as find(): an exact primary-key hit first, then rows an
-		// app owns over unattributed leftovers, then the lowest id.
-		if ($idParam !== null) {
-			$qb->addOrderBy(
-				$qb->createFunction(
-					'CASE WHEN id = ' . $idParam . ' THEN 0 ELSE 1 END'
-				),
-				'ASC'
-			);
-		}
-
-		$qb->addOrderBy(
-			$qb->createFunction("CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END"),
-			'ASC'
-		);
-		$qb->addOrderBy('id', 'ASC');
 		$qb->setMaxResults(1);
 
 		$result = $qb->executeQuery();
