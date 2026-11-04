@@ -2356,7 +2356,9 @@ class OasService {
 			return;
 		}
 
-		$validAllOfItems = array_values(array_filter($schema['allOf'], fn ($item): bool => $this->isUsableAllOfItem(item: $item)));
+		$validAllOfItems = array_values(
+			array_filter($schema['allOf'], fn ($item): bool => is_array($item) === true && $this->isUsableAllOfItem(item: $item))
+		);
 		if (empty($validAllOfItems) === false) {
 			$schema['allOf'] = $validAllOfItems;
 			return;
@@ -2373,14 +2375,14 @@ class OasService {
 	/**
 	 * Whether an allOf item carries a non-empty string $ref, a type or properties.
 	 *
-	 * @param mixed $item The allOf item.
+	 * @param array<int|string, mixed> $item The allOf item.
 	 *
 	 * @return bool
 	 *
 	 * @spec openspec/specs/oas-validation/spec.md
 	 */
-	private function isUsableAllOfItem(mixed $item): bool {
-		if (is_array($item) === false || empty($item) === true) {
+	private function isUsableAllOfItem(array $item): bool {
+		if (empty($item) === true) {
 			return false;
 		}
 
