@@ -40,7 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -60,7 +60,7 @@ class DeferredObjectEventJob extends QueuedJob {
 	 *
 	 * @param ITimeFactory $time Clock for the job base class.
 	 * @param MagicMapper $objectMapper Re-reads the object at run time.
-	 * @param RegisterMapper $registerMapper Resolves the register to scope the read.
+	 * @param RegisterMapperInterface $registerMapper Resolves the register to scope the read.
 	 * @param SchemaMapperInterface $schemaMapper Resolves the schema to scope the read.
 	 * @param IEventDispatcher $eventDispatcher Dispatches the event.
 	 * @param IUserSession $userSession Restores the acting user for the dispatch.
@@ -70,7 +70,7 @@ class DeferredObjectEventJob extends QueuedJob {
 	public function __construct(
 		ITimeFactory $time,
 		private readonly MagicMapper $objectMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly IUserSession $userSession,

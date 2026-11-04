@@ -130,7 +130,7 @@ class UserService {
 	 * @param IGroupManager $groupManager The group manager service
 	 * @param IAccountManager $accountManager The account manager service
 	 * @param LoggerInterface $logger The logger interface
-	 * @param OrganisationService $organisationService The organisation service
+	 * @param OrganisationServiceInterface $organisationService The organisation service
 	 * @param IEventDispatcher $eventDispatcher The event dispatcher service
 	 * @param IAvatarManager $avatarManager The avatar manager service
 	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail mapper
@@ -147,7 +147,7 @@ class UserService {
 		private readonly IGroupManager $groupManager,
 		private readonly IAccountManager $accountManager,
 		private readonly LoggerInterface $logger,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly IAvatarManager $avatarManager,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,

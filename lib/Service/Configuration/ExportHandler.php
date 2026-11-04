@@ -31,7 +31,7 @@ use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
@@ -60,9 +60,9 @@ class ExportHandler {
 	/**
 	 * Register mapper instance for handling register operations.
 	 *
-	 * @var RegisterMapper The register mapper instance.
+	 * @var RegisterMapperInterface The register mapper instance.
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Object mapper instance for handling object operations.
@@ -130,7 +130,7 @@ class ExportHandler {
 	 * Constructor for ExportHandler.
 	 *
 	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
-	 * @param RegisterMapper $registerMapper The register mapper.
+	 * @param RegisterMapperInterface $registerMapper The register mapper.
 	 * @param MagicMapper $objectEntityMapper The object entity mapper.
 	 * @param ConfigurationMapper $configurationMapper The configuration mapper.
 	 * @param MappingMapper $mappingMapper The mapping mapper.
@@ -138,7 +138,7 @@ class ExportHandler {
 	 */
 	public function __construct(
 		SchemaMapperInterface $schemaMapper,
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		MagicMapper $objectEntityMapper,
 		ConfigurationMapper $configurationMapper,
 		MappingMapper $mappingMapper,

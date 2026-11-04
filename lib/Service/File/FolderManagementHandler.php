@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterFolderRecorder;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -90,7 +90,7 @@ class FolderManagementHandler {
 	 *
 	 * @param IRootFolder $rootFolder Root folder for file operations.
 	 * @param MagicMapper $objectEntityMapper Mapper for object entities.
-	 * @param RegisterMapper $registerMapper Mapper for registers.
+	 * @param RegisterMapperInterface $registerMapper Mapper for registers.
 	 * @param IUserSession $userSession User session for user context.
 	 * @param IGroupManager $groupManager Group manager for group operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
@@ -107,7 +107,7 @@ class FolderManagementHandler {
 	public function __construct(
 		private readonly IRootFolder $rootFolder,
 		private readonly MagicMapper $objectEntityMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,

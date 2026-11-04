@@ -48,7 +48,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -128,7 +128,7 @@ class NotifyPushListener implements IEventListener {
 	 * @param ContainerInterface $container DI container for lazy IQueue resolution.
 	 * @param PermissionHandler $permissionHandler RBAC handler for reader-list resolution.
 	 * @param IAppConfig $appConfig App config for push_available flag.
-	 * @param RegisterMapper $registerMapper Mapper for resolving register slugs.
+	 * @param RegisterMapperInterface $registerMapper Mapper for resolving register slugs.
 	 * @param SchemaMapperInterface $schemaMapper Mapper for resolving schema slugs.
 	 *
 	 * @spec openspec/changes/add-live-updates/tasks.md#task-4
@@ -139,7 +139,7 @@ class NotifyPushListener implements IEventListener {
 		private readonly ContainerInterface $container,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly IAppConfig $appConfig,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()

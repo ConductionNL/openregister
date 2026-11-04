@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Db\FileMapperInterface;
 use OCP\Files\Node;
 use OCP\Files\NotPermittedException;
 use OCP\IUser;
@@ -119,13 +119,13 @@ class FileValidationHandler {
 	/**
 	 * Constructor for FileValidationHandler.
 	 *
-	 * @param FileMapper $fileMapper File mapper for ownership operations.
+	 * @param FileMapperInterface $fileMapper File mapper for ownership operations.
 	 * @param IUserSession $userSession User session for user context.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param ExecutableContentDetector $executableDetector Shared executable-content detection.
 	 */
 	public function __construct(
-		private readonly FileMapper $fileMapper,
+		private readonly FileMapperInterface $fileMapper,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 		private readonly ExecutableContentDetector $executableDetector = new ExecutableContentDetector(),

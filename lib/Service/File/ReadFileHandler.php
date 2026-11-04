@@ -67,7 +67,7 @@ class ReadFileHandler {
 	 * @param FileOwnershipHandler $fileOwnershipHandler File ownership handler.
 	 * @param MagicMapper $objectMapper Object mapper for magic table operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param \OCA\OpenRegister\Db\FileMapper|null $fileMapper Optional OR-side metadata mapper for
+	 * @param \OCA\OpenRegister\Db\FileMapperInterface|null $fileMapper Optional OR-side metadata mapper for
 	 *                                                         category-based filtering. Null-safe so legacy
 	 *                                                         fixtures keep working.
 	 */
@@ -78,7 +78,7 @@ class ReadFileHandler {
 		private readonly FileOwnershipHandler $fileOwnershipHandler,
 		private readonly MagicMapper $objectMapper,
 		private readonly LoggerInterface $logger,
-		private readonly ?\OCA\OpenRegister\Db\FileMapper $fileMapper = null,
+		private readonly ?\OCA\OpenRegister\Db\FileMapperInterface $fileMapper = null,
 	) {
 	}//end __construct()
 

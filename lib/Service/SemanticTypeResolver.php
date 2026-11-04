@@ -47,7 +47,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
@@ -85,7 +85,7 @@ final class SemanticTypeResolver {
 	 * registration needed, matching RegisterResolverService).
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Cross-register, org/RBAC-scoped schema enumeration.
-	 * @param RegisterMapper $registerMapper Register enumeration for register/app resolution + tie-break.
+	 * @param RegisterMapperInterface $registerMapper Register enumeration for register/app resolution + tie-break.
 	 * @param JsonLdContextService $jsonLdContextService Computes a schema's implemented semantic types.
 	 * @param LoggerInterface $logger Logger for ambiguity WARN.
 	 * @param IAppManager|null $appManager App manager used to treat a provider whose owning
@@ -94,7 +94,7 @@ final class SemanticTypeResolver {
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly JsonLdContextService $jsonLdContextService,
 		private readonly LoggerInterface $logger,
 		private readonly ?IAppManager $appManager = null,

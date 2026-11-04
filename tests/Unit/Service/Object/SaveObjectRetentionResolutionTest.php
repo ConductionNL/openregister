@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\TranslationProjectionService;
@@ -170,7 +171,7 @@ class SaveObjectRetentionResolutionTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->expects($this->once())
 			->method('get')
-			->with(RetentionService::class)
+			->with(RetentionServiceInterface::class)
 			->willReturn($retention);
 
 		$this->assertSame($retention, $this->resolve($this->buildHandler($container)));
@@ -226,7 +227,7 @@ class SaveObjectRetentionResolutionTest extends TestCase {
 			});
 
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(RetentionService::class)->willReturn($retention);
+		$container->method('get')->with(RetentionServiceInterface::class)->willReturn($retention);
 
 		$handler = $this->buildHandler($container);
 

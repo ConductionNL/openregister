@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Service\Vocabulary;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\VocabularyImportService;
 use Throwable;
@@ -94,12 +94,12 @@ class ConceptRepository {
 	 * Constructor.
 	 *
 	 * @param MagicMapper $objects Reads objects out of a register/schema table.
-	 * @param RegisterMapper $registers Resolves the vocabulary register.
+	 * @param RegisterMapperInterface $registers Resolves the vocabulary register.
 	 * @param SchemaMapperInterface $schemas Resolves the conceptScheme and concept schemas.
 	 */
 	public function __construct(
 		private readonly MagicMapper $objects,
-		private readonly RegisterMapper $registers,
+		private readonly RegisterMapperInterface $registers,
 		private readonly SchemaMapperInterface $schemas,
 	) {
 

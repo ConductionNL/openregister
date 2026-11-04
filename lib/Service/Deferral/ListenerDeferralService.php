@@ -35,7 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Deferral;
 
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
 use OCP\IUserSession;
@@ -141,7 +141,7 @@ class ListenerDeferralService {
 	 * Wire collaborators.
 	 *
 	 * @param IUserSession $userSession Session used to capture the acting user.
-	 * @param OrganisationService $organisation Resolver for the active organisation.
+	 * @param OrganisationServiceInterface $organisation Resolver for the active organisation.
 	 * @param IJobList $jobList Job list the chunk jobs are enqueued on.
 	 * @param IAppConfig $appConfig App config holding the kill switch.
 	 * @param LoggerInterface $logger PSR logger.
@@ -151,7 +151,7 @@ class ListenerDeferralService {
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
-		private readonly OrganisationService $organisation,
+		private readonly OrganisationServiceInterface $organisation,
 		private readonly IJobList $jobList,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,

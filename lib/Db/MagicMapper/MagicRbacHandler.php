@@ -1613,8 +1613,6 @@ class MagicRbacHandler {
 	 *
 	 * @return bool True if user has permission
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity) Inlined dispatch keeps the ConditionMatcher delegation in one place.
-	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
 	public function hasPermission(
@@ -1625,29 +1623,20 @@ class MagicRbacHandler {
 		?array $objectAuthorization = null,
 		?string $objectUuid = null,
 	): bool {
-		$user = $this->userSession->getUser();
-		$userId = $user?->getUID();
-
-		// Get user groups.
-		$userGroups = [];
-		if ($user !== null) {
-			$userGroups = $this->groupManager->getUserGroupIds($user);
-		}
+		$check = $this->permissionCheckFor(schema: $schema, action: $action)
+			->onObject(objectData: $objectData, objectAuthorization: $objectAuthorization)
+			->identifiedBy(objectUuid: $objectUuid);
 
 		// Admin users have all permissions.
-		if (in_array('admin', $userGroups, true) === true) {
+		if ($check->callerIsAdmin() === true) {
 			return true;
 		}
 
-		// The cascaded block, resolved ONCE for the deny pass and the scope
-		// below. It was resolved inside the scope branch before the deny pass
-		// existed; hoisting it keeps one call and one fail-closed path rather
-		// than two that could drift.
-		$cascaded = null;
+		// The cascaded block, resolved ONCE for the deny pass, the scope and the
+		// rule chain, with one fail-closed path.
 		try {
-			$cascaded = $this->resolveSchemaAuthorization(schema: $schema);
+			$check->cascaded = $this->resolveSchemaAuthorization(schema: $schema);
 		} catch (AuthorizationUnresolvableException $e) {
-			// Fail closed, exactly as both emitters do.
 			return false;
 		}
 
@@ -1658,154 +1647,185 @@ class MagicRbacHandler {
 		// {@see \OCA\OpenRegister\Service\Object\PermissionHandler::denialFor()}
 		// gives: an access model that can deny its own administration away is
 		// recoverable only from the database.
-		if ($this->deniesHere(
-			cascaded: $cascaded,
-			objectAuthorization: $objectAuthorization,
-			action: $action,
-			userId: $userId,
-			userGroups: $userGroups,
-			objectData: $objectData
-		) === true
+		if ($this->deniesHere(check: $check) === true) {
+			return false;
+		}
+
+		if ($check->callerOwns(objectOwner: $objectOwner) === true) {
+			return true;
+		}
+
+		if ($this->privateObjectRefuses(check: $check) === true) {
+			return false;
+		}
+
+		return $this->rulesGrant(check: $check);
+	}//end hasPermission()
+
+	/**
+	 * Start a permission check for the current caller.
+	 *
+	 * @param Schema $schema The schema checked.
+	 * @param string $action The CRUD action checked.
+	 *
+	 * @return RbacPermissionCheck The check, carrying the caller's user ID and groups.
+	 */
+	private function permissionCheckFor(Schema $schema, string $action): RbacPermissionCheck {
+		$user = $this->userSession->getUser();
+		$userId = $user?->getUID();
+
+		$userGroups = [];
+		if ($user !== null) {
+			$userGroups = $this->groupManager->getUserGroupIds($user);
+		}
+
+		return (new RbacPermissionCheck(schema: $schema, action: $action))->forCaller(userId: $userId, userGroups: $userGroups);
+	}//end permissionCheckFor()
+
+	/**
+	 * Whether the `private` scope refuses the object to this caller.
+	 *
+	 * Owner and administrators both returned before this point, so a private
+	 * object refuses anything reaching here unless a per-object grant admits
+	 * the caller; the rule chain then still decides, because the schema stays
+	 * the CEILING (design D3b). The scope is read from the cascaded block, the
+	 * same one both list emitters use. Only an object can be private: without
+	 * object data this is a schema-level check.
+	 *
+	 * @param RbacPermissionCheck $check The permission check.
+	 *
+	 * @return bool True when the object is private and the caller holds no grant.
+	 */
+	private function privateObjectRefuses(RbacPermissionCheck $check): bool {
+		if ($check->objectData === null) {
+			return false;
+		}
+
+		if ($this->objectScope()->isPrivate(
+			objectAuthorization: $check->objectAuthorization,
+			schemaAuthorization: $check->cascaded
+		) === false
 		) {
 			return false;
 		}
 
-		// Object owner has all permissions.
-		if ($userId !== null && $objectOwner !== null && $objectOwner === $userId) {
+		return $this->objectGrants()?->isGranted(
+			userId: $check->userId,
+			objectUuid: $check->objectUuid,
+			action: $check->action
+		) !== true;
+	}//end privateObjectRefuses()
+
+	/**
+	 * Whether the rule chain of the cascaded block grants the action.
+	 *
+	 * The cascaded block (schema-level, else the register's block with its roles
+	 * expanded, with the `mcp` scope stripped) is the same block both list
+	 * emitters filter on. An empty block is open to everyone; a non-empty block
+	 * that does not list the action denies it (consistent with PermissionHandler).
+	 *
+	 * Conditional match evaluation is delegated to the shared
+	 * {@see \OCA\OpenRegister\Service\ConditionMatcher} (ADR-011), which also
+	 * serves PermissionHandler and PropertyRbacHandler; the SQL emitter handles
+	 * the row-level path.
+	 *
+	 * @param RbacPermissionCheck $check The permission check.
+	 *
+	 * @return bool True when a rule grants the action.
+	 */
+	private function rulesGrant(RbacPermissionCheck $check): bool {
+		if (empty($check->cascaded) === true) {
 			return true;
 		}
 
-		// The `private` scope. Owner and administrators both returned above,
-		// unconditionally, so a private object denies anything reaching here.
-		//
-		// The scope is read through resolveSchemaAuthorization(), so the
-		// SCHEMA DEFAULT is resolved through the same register cascade both
-		// list emitters use. The rule chain below reads the same block.
-		//
-		// Gated on $objectData because that is this method's signal that an
-		// object is in play at all — a schema-level check has nothing to be
-		// private.
-		if ($objectData !== null) {
-			if ($this->objectScope()->isPrivate(
-				objectAuthorization: $objectAuthorization,
-				schemaAuthorization: $cascaded
-			) === true
-			) {
-				// A grant makes a private object behave, for this caller, as an
-				// ordinary one — and the rule chain below then decides, because
-				// the schema stays the CEILING (design D3b). Without a grant a
-				// private object denies here.
-				if ($this->objectGrants()?->isGranted(userId: $userId, objectUuid: $objectUuid, action: $action) !== true) {
-					return false;
-				}
-			}
-		}//end if
-
-		// Get schema authorization. The `mcp` scope is stripped first: it
-		// DESCRIBES what may be offered to an agent and must not participate in
-		// a verdict — neither granting (a real group can be named `mcp`) nor
-		// revoking (a non-empty block is fail-closed, so an mcp-only annotation
-		// would deny every action it did not mention). Same transform as
-		// PermissionHandler so the two interpreters cannot disagree.
-		//
-		// The rules are the CASCADED block resolved above (schema-level, else
-		// the register's block with its roles expanded), the same block both
-		// list emitters filter on. Reading the schema's own block here treated
-		// every schema that inherits its register's rules as open, so a related
-		// or globally searched object was shown to a caller the list refused.
-		$authorization = $cascaded;
-
-		// If no authorization configured, everyone has access.
-		if (empty($authorization) === true) {
-			return true;
-		}
-
-		// Get authorization rules for this action.
-		$rules = $authorization[$action] ?? [];
-
-		// Fail-closed: a non-empty authorization block that does not list this
-		// action denies it (consistent with PermissionHandler). The empty-block
-		// open-default above and the admin/owner bypasses still apply.
+		$rules = ($check->cascaded[$check->action] ?? []);
 		if (empty($rules) === true) {
 			return false;
 		}
 
-		// Process each rule.
-		//
-		// Deduplication note (ADR-011):
-		// Conditional match evaluation is delegated to the shared
-		// {@see \OCA\OpenRegister\Service\ConditionMatcher}. The SQL emitter
-		// (applyRbacFilters → buildMatchConditions → buildPropertyCondition)
-		// handles the row-level path; ConditionMatcher handles the PHP-side
-		// path for this method and for PermissionHandler/PropertyRbacHandler.
-		// Resolve whether authenticated users inherit `public` rights once;
+		// Whether authenticated users inherit `public` rights, resolved once;
 		// anonymous users always qualify for `public`.
-		$inheritFromPublic = $this->authenticatedInheritsPublic(schema: $schema);
+		$check->inheritFromPublic = $this->authenticatedInheritsPublic(schema: $check->schema);
 
 		foreach ($rules as $rule) {
-			// Simple string rule: direct group match, `authenticated`, or a
-			// `user:<uid>` override.
-			if (is_string($rule) === true) {
-				if (($rule === 'public' && $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $inheritFromPublic) === true)
-					|| ($rule === 'authenticated' && $userId !== null)
-					|| $this->matchesUserOverride(rule: $rule, userId: $userId) === true
-					|| in_array($rule, $userGroups, true) === true
-				) {
-					return true;
-				}
-
-				continue;
+			if ($this->ruleGrants(check: $check, rule: $rule) === true) {
+				return true;
 			}
-
-			// Conditional rule: array with 'group' (or 'user' override) and optional 'match'.
-			if (is_array($rule) === true && (isset($rule['group']) === true || isset($rule['user']) === true)) {
-				if (isset($rule['user']) === true && is_string($rule['user']) === true) {
-					$userQualifies = $this->matchesUserOverride(rule: 'user:' . $rule['user'], userId: $userId);
-				} else {
-					$group = ($rule['group'] ?? null);
-					$qualifiesPublic = ($group === 'public'
-						&& $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $inheritFromPublic) === true);
-					// The `authenticated` pseudo-group: any logged-in user
-					// qualifies, independent of real group membership (a user
-					// with NO groups still matches). Both SQL emitters —
-					// processConditionalRule() and processConditionalRuleSql() —
-					// already honour it, and PermissionHandler honours it with a
-					// comment saying the paths must agree. This method did NOT,
-					// so a rule like {"group":"authenticated","match":{…}} was
-					// GRANTED by the list query and DENIED here: `authenticated`
-					// is not `public`, and no user is ever a member of a real
-					// group by that name, so it fell through to deny. Reachable
-					// in production through RelationHandler, which resolves
-					// related-object visibility with this method.
-					$qualifiesAuth = ($group === 'authenticated' && $userId !== null);
-					$userQualifies = ($qualifiesPublic === true
-						|| $qualifiesAuth === true
-						|| ($group !== null && in_array($group, $userGroups, true) === true));
-				}//end if
-
-				if ($userQualifies === false) {
-					continue;
-				}
-
-				$match = ($rule['match'] ?? null);
-				// No match conditions or no object data: group match alone is sufficient.
-				if ($match === null || empty($match) === true || $objectData === null) {
-					return true;
-				}
-
-				// Delegate conditional evaluation to the shared ConditionMatcher.
-				if ($this->conditionMatcher->objectMatchesConditions(
-					object: $objectData,
-					match: $match
-				) === true
-				) {
-					return true;
-				}
-			}//end if
-		}//end foreach
+		}
 
 		return false;
-	}//end hasPermission()
+	}//end rulesGrant()
+
+	/**
+	 * Whether one rule of the chain grants the action.
+	 *
+	 * A string rule is a direct group match, `public`, `authenticated` or a
+	 * `user:<uid>` override. A conditional rule is an array with a `group` (or
+	 * `user`) and an optional `match`, which must select the object when object
+	 * data is supplied.
+	 *
+	 * @param RbacPermissionCheck $check The permission check.
+	 * @param mixed               $rule  The rule.
+	 *
+	 * @return bool True when the rule grants the action.
+	 */
+	private function ruleGrants(RbacPermissionCheck $check, mixed $rule): bool {
+		if (is_string($rule) === true) {
+			return $this->stringRuleGrants(check: $check, rule: $rule);
+		}
+
+		if (is_array($rule) === false || (isset($rule['group']) === false && isset($rule['user']) === false)) {
+			return false;
+		}
+
+		if ($this->qualifiesForConditionalRule(check: $check, rule: $rule) === false) {
+			return false;
+		}
+
+		$match = ($rule['match'] ?? null);
+		if ($match === null || empty($match) === true || $check->objectData === null) {
+			return true;
+		}
+
+		return $this->conditionMatcher->objectMatchesConditions(object: $check->objectData, match: $match) === true;
+	}//end ruleGrants()
+
+	/**
+	 * Whether a string rule names the caller.
+	 *
+	 * @param RbacPermissionCheck $check The permission check.
+	 * @param string              $rule  The rule.
+	 *
+	 * @return bool True when the caller qualifies.
+	 */
+	private function stringRuleGrants(RbacPermissionCheck $check, string $rule): bool {
+		return ($rule === 'public' && $this->qualifiesForPublic(userId: $check->userId, inheritFromPublic: $check->inheritFromPublic) === true)
+			|| ($rule === 'authenticated' && $check->userId !== null)
+			|| $this->matchesUserOverride(rule: $rule, userId: $check->userId) === true
+			|| in_array($rule, $check->userGroups, true) === true;
+	}//end stringRuleGrants()
+
+	/**
+	 * Whether the caller is the subject of a conditional rule.
+	 *
+	 * The `authenticated` pseudo-group admits any logged-in user, independent
+	 * of real group membership, as both SQL emitters and PermissionHandler do.
+	 *
+	 * @param RbacPermissionCheck $check The permission check.
+	 * @param array               $rule  The conditional rule.
+	 *
+	 * @return bool True when the caller qualifies for the rule.
+	 */
+	private function qualifiesForConditionalRule(RbacPermissionCheck $check, array $rule): bool {
+		if (isset($rule['user']) === true && is_string($rule['user']) === true) {
+			return $this->matchesUserOverride(rule: 'user:' . $rule['user'], userId: $check->userId);
+		}
+
+		$group = ($rule['group'] ?? null);
+		return ($group === 'public' && $this->qualifiesForPublic(userId: $check->userId, inheritFromPublic: $check->inheritFromPublic) === true)
+			|| ($group === 'authenticated' && $check->userId !== null)
+			|| ($group !== null && in_array($group, $check->userGroups, true) === true);
+	}//end qualifiesForConditionalRule()
 
 	/**
 	 * Whether a deny rule removes this verb from this caller, for this row.
@@ -1818,25 +1838,13 @@ class MagicRbacHandler {
 	 * The two levels UNION rather than override: an object block that replaced
 	 * the schema's deny would let an object undo a deny written above it.
 	 *
-	 * @param array|null  $cascaded            The schema/register block.
-	 * @param array|null  $objectAuthorization The row's own `_authorization`.
-	 * @param string      $action              The verb being decided.
-	 * @param string|null $userId              The caller.
-	 * @param string[]    $userGroups          The caller's group IDs.
-	 * @param array|null  $objectData          The row's data, for a conditional denial.
+	 * @param RbacPermissionCheck $check The caller, the verb, the row and the schema/register block.
 	 *
 	 * @return bool True when the verb is denied here.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function deniesHere(
-		?array $cascaded,
-		?array $objectAuthorization,
-		string $action,
-		?string $userId,
-		array $userGroups,
-		?array $objectData,
-	): bool {
+	private function deniesHere(RbacPermissionCheck $check): bool {
 		// Staging (D15). The mode is read here as well as in the two emitters,
 		// through the same switch, because this is the third of the four
 		// enforcement paths and a path that kept enforcing while the others
@@ -1848,27 +1856,27 @@ class MagicRbacHandler {
 		$resolver = $this->denyResolver();
 
 		$merged = $resolver->mergeDeny(
-			baseline: $resolver->denyBlock(authorization: $cascaded),
-			override: $resolver->denyBlock(authorization: $objectAuthorization)
+			baseline: $resolver->denyBlock(authorization: $check->cascaded),
+			override: $resolver->denyBlock(authorization: $check->objectAuthorization)
 		);
 		if ($merged === []) {
 			return false;
 		}
 
 		$block = [DenyResolver::DENY_KEY => $merged];
-		$principals = $resolver->principalsFor(userId: $userId, userGroups: $userGroups);
+		$principals = $resolver->principalsFor(userId: $check->userId, userGroups: $check->userGroups);
 
-		if ($resolver->unconditionalDenial(authorization: $block, action: $action, principals: $principals) !== null) {
+		if ($resolver->unconditionalDenial(authorization: $block, action: $check->action, principals: $principals) !== null) {
 			return true;
 		}
 
-		if ($objectData === null) {
+		if ($check->objectData === null) {
 			return false;
 		}
 
 		foreach ($resolver->conditionalDenials(
 			authorization: $block,
-			action: $action,
+			action: $check->action,
 			principals: $principals
 		) as $denial) {
 			$rule = $denial['rule'];
@@ -1876,7 +1884,7 @@ class MagicRbacHandler {
 				continue;
 			}
 
-			if ($this->denialSelects(match: $rule['match'], objectData: $objectData) === true) {
+			if ($this->denialSelects(match: $rule['match'], objectData: $check->objectData) === true) {
 				return true;
 			}
 		}
@@ -3362,12 +3370,12 @@ class MagicRbacHandler {
 	 * Matches the lazy-load pattern already in use elsewhere in this class
 	 * (see e.g. line 415) — avoids constructor-level circular DI dependencies.
 	 *
-	 * @return \OCA\OpenRegister\Service\OrganisationService|null The service or
+	 * @return \OCA\OpenRegister\Service\OrganisationServiceInterface|null The service or
 	 *                                                            null if the container cannot resolve it (defensive).
 	 */
-	private function resolveOrganisationService(): ?\OCA\OpenRegister\Service\OrganisationService {
+	private function resolveOrganisationService(): ?\OCA\OpenRegister\Service\OrganisationServiceInterface {
 		try {
-			return $this->container->get(\OCA\OpenRegister\Service\OrganisationService::class);
+			return $this->container->get(\OCA\OpenRegister\Service\OrganisationServiceInterface::class);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				message: '[MagicRbacHandler] OrganisationService unavailable - skipping system-owner carve-out',

@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\McpCatalogueInterface;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\IURLGenerator;
@@ -648,9 +648,9 @@ class McpDiscoveryService implements McpCatalogueInterface {
 	/**
 	 * Register mapper for fetching live register data
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Schema mapper for fetching live schema data
@@ -669,12 +669,12 @@ class McpDiscoveryService implements McpCatalogueInterface {
 	/**
 	 * Constructor
 	 *
-	 * @param RegisterMapper $registerMapper Register mapper instance
+	 * @param RegisterMapperInterface $registerMapper Register mapper instance
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper instance
 	 * @param IURLGenerator $urlGenerator URL generator instance
 	 */
 	public function __construct(
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		SchemaMapperInterface $schemaMapper,
 		IURLGenerator $urlGenerator,
 	) {

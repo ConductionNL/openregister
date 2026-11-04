@@ -50,6 +50,8 @@ use OCA\OpenRegister\Db\MagicMapper\MagicCrossTableHit;
 use OCA\OpenRegister\Db\MagicMapper\MagicCrossTableScan;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectLookup;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableDdl;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
 use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumn;
 use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumnSizes;
@@ -613,7 +615,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @param IDBConnection $db Database connection for table operations
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schema operations
-	 * @param RegisterMapper $registerMapper Mapper for register operations
+	 * @param RegisterMapperInterface $registerMapper Mapper for register operations
 	 * @param IConfig $config Nextcloud config for settings
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher for audit trail events
 	 * @param IUserSession $userSession User session for authentication context
@@ -629,7 +631,7 @@ class MagicMapper extends AbstractObjectMapper {
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly IConfig $config,
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly IUserSession $userSession,
@@ -3987,130 +3989,23 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @throws Exception If table creation fails
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Table creation requires handling many column types
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complete table creation requires comprehensive column handling
 	 */
 	private function createTable(string $tableName, array $columns): void {
 		try {
 			// Build CREATE TABLE SQL manually for Nextcloud 32 compatibility.
-			$platform = $this->db->getDatabasePlatform();
-			$isPostgres = ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform);
-			$isSqlite = ($platform instanceof \Doctrine\DBAL\Platforms\SqlitePlatform);
+			$ddl = new MagicTableDdl(platform: $this->db->getDatabasePlatform(), tableName: $tableName);
 
 			// Get database table prefix from Nextcloud config.
 			$tablePrefix = $this->config->getSystemValue('dbtableprefix', 'oc_');
 			$fullTableName = $tablePrefix . $tableName;
 
-			// Build column definitions.
-			$columnDefs = [];
-			$primaryKey = null;
-			// SQLite auto-increments an INTEGER PRIMARY KEY column declared
-			// inline; when that path is taken the separate PRIMARY KEY(...)
-			// table constraint must be suppressed (one primary key only).
-			$sqliteInlinePrimaryKey = false;
-			$uniqueConstraints = [];
-
 			foreach ($columns as $column) {
-				// BUG-DB-7: route the raw column name through quoteIdentifier so
-				// embedded quote characters are escaped (doubled) rather than
-				// concatenated unescaped.
-				$colName = $this->quoteIdentifier(name: $column['name'], isPostgres: $isPostgres);
-
-				$def = $colName . ' ';
-
-				// Map type to SQL.
-				$def .= $this->mapColumnTypeToSQL(type: $column['type'], column: $column);
-
-				// NOT NULL constraint.
-				if (($column['nullable'] ?? true) === false) {
-					$def .= ' NOT NULL';
-				}
-
-				// DEFAULT value.
-				if (isset($column['default']) === true) {
-					$defaultValue = $column['default'];
-					if (is_bool($column['default']) === true) {
-						// Boolean values need special handling for SQL.
-						$defaultValue = 'FALSE';
-						if ($column['default'] === true) {
-							$defaultValue = 'TRUE';
-						}
-					} elseif (is_string($column['default']) === true) {
-						// BUG-DB-1: escape via the platform so values containing a
-						// single quote (e.g. O'Brien) do not break the DDL or allow
-						// stored-DDL injection.
-						$defaultValue = $platform->quoteStringLiteral($column['default']);
-					} elseif ($column['default'] === null) {
-						$defaultValue = 'NULL';
-					}
-
-					$def .= ' DEFAULT ' . $defaultValue;
-				}
-
-				// AUTOINCREMENT (primary key columns).
-				if (($column['autoincrement'] ?? false) === true) {
-					// MySQL uses AUTO_INCREMENT.
-					$def .= ' AUTO_INCREMENT';
-					if ($isPostgres === true) {
-						// PostgreSQL uses BIGSERIAL.
-						$def = $colName . ' BIGSERIAL';
-					} elseif ($isSqlite === true) {
-						// SQLite auto-increments an INTEGER PRIMARY KEY column
-						// declared inline; AUTO_INCREMENT is a syntax error and
-						// a separate PRIMARY KEY(...) constraint would stop the
-						// column from aliasing rowid.
-						$def = $colName . ' INTEGER PRIMARY KEY AUTOINCREMENT';
-						$sqliteInlinePrimaryKey = true;
-					}
-				}
-
-				$columnDefs[] = $def;
-
-				// Track primary key.
-				if (($column['primary'] ?? false) === true) {
-					$primaryKey = $this->quoteIdentifier(name: $column['name'], isPostgres: $isPostgres);
-				}
-
-				// Track unique constraints (required for PostgreSQL ON CONFLICT).
-				if (($column['unique'] ?? false) === true) {
-					$uniqueConstraints[] = $colName;
-				}
-			}//end foreach
-
-			// Build CREATE TABLE SQL with full table name (including prefix).
-			$tableNameQuoted = '`' . $fullTableName . '`';
-			if ($isPostgres === true) {
-				$tableNameQuoted = '"' . $fullTableName . '"';
+				$this->addColumnDefinition(ddl: $ddl, column: $column);
 			}
 
-			$sql = 'CREATE TABLE IF NOT EXISTS ' . $tableNameQuoted . ' (';
-			$sql .= implode(', ', $columnDefs);
-
-			// Add PRIMARY KEY constraint (skipped on SQLite when the
-			// autoincrement column already declared an inline PRIMARY KEY).
-			if ($primaryKey !== null && $sqliteInlinePrimaryKey === false) {
-				$sql .= ', PRIMARY KEY (' . $primaryKey . ')';
-			}
-
-			// Add UNIQUE constraints (required for PostgreSQL ON CONFLICT).
-			// Constraints are named explicitly so MySQL/MariaDB doesn't fall
-			// back to using the column name as the constraint/index name,
-			// which collides across tables (e.g. every dynamic table getting
-			// a constraint literally called `_uuid`) and breaks Nextcloud's
-			// ensureUniqueNamesConstraints check on the next app install.
-			foreach ($uniqueConstraints as $uniqueCol) {
-				$rawCol = trim($uniqueCol, '`"');
-				$constraintName = $tableName . '_' . ltrim($rawCol, '_') . '_uq';
-				$quote = '`';
-				if ($isPostgres === true) {
-					$quote = '"';
-				}
-
-				$sql .= ', CONSTRAINT ' . $quote . $constraintName . $quote . ' UNIQUE (' . $uniqueCol . ')';
-			}
-
+			$sql = 'CREATE TABLE IF NOT EXISTS ' . $ddl->quoted(name: $fullTableName) . ' (';
+			$sql .= implode(', ', $ddl->columnDefs);
+			$sql .= $this->tableConstraintsSql(ddl: $ddl);
 			$sql .= ')';
 
 			// Execute table creation.
@@ -4140,6 +4035,129 @@ class MagicMapper extends AbstractObjectMapper {
 			throw new Exception('Failed to create table ' . $tableName . ': ' . $e->getMessage(), 0, $e);
 		}//end try
 	}//end createTable()
+
+	/**
+	 * Add one column's definition to the statement, and track its primary key and unique constraint.
+	 *
+	 * @param MagicTableDdl $ddl    The statement being built.
+	 * @param array         $column The column definition.
+	 *
+	 * @return void
+	 */
+	private function addColumnDefinition(MagicTableDdl $ddl, array $column): void {
+		// BUG-DB-7: route the raw column name through quoteIdentifier so
+		// embedded quote characters are escaped (doubled) rather than
+		// concatenated unescaped.
+		$colName = $this->quoteIdentifier(name: $column['name'], isPostgres: $ddl->isPostgres);
+
+		$def = $colName . ' ' . $this->mapColumnTypeToSQL(type: $column['type'], column: $column);
+
+		if (($column['nullable'] ?? true) === false) {
+			$def .= ' NOT NULL';
+		}
+
+		if (isset($column['default']) === true) {
+			$def .= ' DEFAULT ' . $this->defaultLiteral(ddl: $ddl, value: $column['default']);
+		}
+
+		if (($column['autoincrement'] ?? false) === true) {
+			$def = ($this->autoincrementColumn(ddl: $ddl, colName: $colName) ?? $def . ' AUTO_INCREMENT');
+		}
+
+		$ddl->columnDefs[] = $def;
+
+		if (($column['primary'] ?? false) === true) {
+			$ddl->primaryKey = $colName;
+		}
+
+		// Track unique constraints (required for PostgreSQL ON CONFLICT).
+		if (($column['unique'] ?? false) === true) {
+			$ddl->uniqueConstraints[] = $colName;
+		}
+	}//end addColumnDefinition()
+
+	/**
+	 * The SQL literal of a column default.
+	 *
+	 * @param MagicTableDdl $ddl   The statement being built.
+	 * @param mixed         $value The default value, never null (a null default is not written).
+	 *
+	 * @return mixed The literal: TRUE/FALSE, a quoted string, or the value itself.
+	 */
+	private function defaultLiteral(MagicTableDdl $ddl, mixed $value): mixed {
+		if (is_bool($value) === true) {
+			if ($value === true) {
+				return 'TRUE';
+			}
+
+			return 'FALSE';
+		}
+
+		if (is_string($value) === true) {
+			// BUG-DB-1: escape via the platform so values containing a single
+			// quote (e.g. O'Brien) do not break the DDL or allow stored-DDL
+			// injection.
+			return $ddl->platform->quoteStringLiteral($value);
+		}
+
+		return $value;
+	}//end defaultLiteral()
+
+	/**
+	 * The definition of an autoincrement column on PostgreSQL or SQLite.
+	 *
+	 * PostgreSQL uses BIGSERIAL. SQLite auto-increments an INTEGER PRIMARY KEY
+	 * column declared inline; AUTO_INCREMENT is a syntax error there and a
+	 * separate PRIMARY KEY(...) constraint would stop the column from aliasing
+	 * rowid, so the inline declaration is recorded on the statement.
+	 *
+	 * @param MagicTableDdl $ddl     The statement being built.
+	 * @param string        $colName The quoted column name.
+	 *
+	 * @return string|null The definition, or null where MySQL's AUTO_INCREMENT applies.
+	 */
+	private function autoincrementColumn(MagicTableDdl $ddl, string $colName): ?string {
+		if ($ddl->isPostgres === true) {
+			return $colName . ' BIGSERIAL';
+		}
+
+		if ($ddl->isSqlite === true) {
+			$ddl->inlinePrimaryKey = true;
+			return $colName . ' INTEGER PRIMARY KEY AUTOINCREMENT';
+		}
+
+		return null;
+	}//end autoincrementColumn()
+
+	/**
+	 * The PRIMARY KEY and UNIQUE table constraints of the statement.
+	 *
+	 * The primary key is skipped on SQLite when the autoincrement column already
+	 * declared it inline. Unique constraints (required for PostgreSQL ON
+	 * CONFLICT) are named explicitly so MySQL/MariaDB doesn't fall back to using
+	 * the column name as the constraint/index name, which collides across tables
+	 * (e.g. every dynamic table getting a constraint literally called `_uuid`)
+	 * and breaks Nextcloud's ensureUniqueNamesConstraints check on the next app
+	 * install.
+	 *
+	 * @param MagicTableDdl $ddl The statement being built.
+	 *
+	 * @return string The constraints, each with a leading comma.
+	 */
+	private function tableConstraintsSql(MagicTableDdl $ddl): string {
+		$sql = '';
+		if ($ddl->primaryKey !== null && $ddl->inlinePrimaryKey === false) {
+			$sql .= ', PRIMARY KEY (' . $ddl->primaryKey . ')';
+		}
+
+		foreach ($ddl->uniqueConstraints as $uniqueCol) {
+			$rawCol = trim($uniqueCol, '`"');
+			$constraintName = $ddl->tableName . '_' . ltrim($rawCol, '_') . '_uq';
+			$sql .= ', CONSTRAINT ' . $ddl->quoted(name: $constraintName) . ' UNIQUE (' . $uniqueCol . ')';
+		}
+
+		return $sql;
+	}//end tableConstraintsSql()
 
 	/**
 	 * Map column type to SQL type string.
@@ -6939,27 +6957,12 @@ class MagicMapper extends AbstractObjectMapper {
 		bool $_multitenancy = true,
 		bool $includeDeleted = false,
 	): ObjectEntity {
-		// Ensure table exists if magic mapping is enabled.
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			$isMagicEnabled = $register->isMagicMappingEnabledForSchema(
-				schemaId: $schema->getId(),
-				schemaSlug: $schema->getSlug()
-			);
-			if ($isMagicEnabled === true) {
-				$this->logger->debug(
-					message: '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'registerId' => $register->getId(),
-						'schemaId' => $schema->getId(),
-					]
-				);
-				$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
-			}
-		}
+		$this->ensureTableWhenMagicEnabled(register: $register, schema: $schema);
 
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$lookup = (new MagicObjectLookup(register: $register, schema: $schema))->lookingFor(
+			identifier: $identifier,
+			tableName: $this->getTableNameForRegisterSchema(register: $register, schema: $schema)
+		);
 
 		$this->logger->debug(
 			message: '[MagicMapper] Finding object in register+schema table',
@@ -6967,20 +6970,91 @@ class MagicMapper extends AbstractObjectMapper {
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'identifier' => $identifier,
-				'tableName' => $tableName,
+				'tableName' => $lookup->tableName,
 				'rbac' => $_rbac,
 				'multitenancy' => $_multitenancy,
 			]
 		);
 
-		$qb = $this->db->getQueryBuilder();
-		// Use the table alias `t` so the shared access-control filters
-		// (which reference t._organisation / t._owner) can be applied — the
-		// single-object read path MUST enforce the same isolation as the list
-		// path (cross-org IDOR fix). See applyAccessControlToQuery() below.
-		$qb->select('*')->from($tableName, 't');
+		$qb = $this->identifierLookupQuery(lookup: $lookup);
 
-		// Build identifier conditions (ID, UUID, slug, or URI).
+		// Exclude deleted objects by default (unless includeDeleted is true).
+		if ($includeDeleted === false) {
+			$qb->andWhere($qb->expr()->isNull('t.' . self::METADATA_PREFIX . 'deleted'));
+		}
+
+		// SECURITY (cross-org IDOR fix): apply the SAME multitenancy + RBAC
+		// access-control filters the list/search path uses, through the search
+		// handler's shared logic, which:
+		// - drops the org filter for `public`-read schemas (published reads,
+		// including anonymous, keep working),
+		// - lets admins (rbac/multitenancy disabled by the controller) and
+		// in-org / owner reads through,
+		// - filters out other-org rows → no row → DoesNotExistException → 404
+		// (existence is not leaked).
+		if ($_rbac === true || OrganisationContext::multitenancy(requested: $_multitenancy) === true) {
+			$this->searchHandler->applyAccessControlToQuery(
+				qb: $qb,
+				schema: $schema,
+				_rbac: $_rbac,
+				_multitenancy: $_multitenancy,
+				registerId: $register->getId(),
+				tableName: $lookup->tableName
+			);
+		}
+
+		return $this->fetchSingleObject(qb: $qb, lookup: $lookup);
+	}//end findInRegisterSchemaTable()
+
+	/**
+	 * Create the register+schema table when it is missing and magic mapping is enabled for the schema.
+	 *
+	 * @param Register $register The register context.
+	 * @param Schema   $schema   The schema context.
+	 *
+	 * @return void
+	 */
+	private function ensureTableWhenMagicEnabled(Register $register, Schema $schema): void {
+		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === true) {
+			return;
+		}
+
+		$isMagicEnabled = $register->isMagicMappingEnabledForSchema(
+			schemaId: $schema->getId(),
+			schemaSlug: $schema->getSlug()
+		);
+		if ($isMagicEnabled === false) {
+			return;
+		}
+
+		$this->logger->debug(
+			message: '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'registerId' => $register->getId(),
+				'schemaId' => $schema->getId(),
+			]
+		);
+		$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
+	}//end ensureTableWhenMagicEnabled()
+
+	/**
+	 * The query selecting the rows whose ID, UUID, slug or URI is the identifier, key matches first.
+	 *
+	 * The table alias `t` lets the shared access-control filters (which reference
+	 * t._organisation / t._owner) apply, so the single-object read enforces the
+	 * same isolation as the list path.
+	 *
+	 * @param MagicObjectLookup $lookup The lookup.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function identifierLookupQuery(MagicObjectLookup $lookup): IQueryBuilder {
+		$identifier = $lookup->identifier;
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')->from($lookup->tableName, 't');
+
 		$idParam = ($this->identifierAsId(identifier: $identifier) ?? -1);
 
 		$idCol = 't.' . self::METADATA_PREFIX . 'id';
@@ -7000,33 +7074,21 @@ class MagicMapper extends AbstractObjectMapper {
 
 		$this->orderKeyMatchesFirst(qb: $qb, keys: [$idCol => $idNamed, $uuidCol => $uuidNamed]);
 
-		// Exclude deleted objects by default (unless includeDeleted is true).
-		if ($includeDeleted === false) {
-			$qb->andWhere($qb->expr()->isNull('t.' . self::METADATA_PREFIX . 'deleted'));
-		}
+		return $qb;
+	}//end identifierLookupQuery()
 
-		// SECURITY (cross-org IDOR fix): apply the SAME multitenancy + RBAC
-		// access-control filters the list/search path uses. Previously the
-		// single-object read skipped org filtering, so a non-admin in org B
-		// could read an org-A object by id. We now delegate to the search
-		// handler's shared logic, which:
-		// - drops the org filter for `public`-read schemas (published reads,
-		// including anonymous, keep working),
-		// - lets admins (rbac/multitenancy disabled by the controller) and
-		// in-org / owner reads through,
-		// - filters out other-org rows → no row → DoesNotExistException → 404
-		// (existence is not leaked).
-		if ($_rbac === true || OrganisationContext::multitenancy(requested: $_multitenancy) === true) {
-			$this->searchHandler->applyAccessControlToQuery(
-				qb: $qb,
-				schema: $schema,
-				_rbac: $_rbac,
-				_multitenancy: $_multitenancy,
-				registerId: $register->getId(),
-				tableName: $tableName
-			);
-		}
-
+	/**
+	 * Run the lookup query and convert its single row to an object.
+	 *
+	 * @param IQueryBuilder     $qb     The lookup query.
+	 * @param MagicObjectLookup $lookup The lookup.
+	 *
+	 * @throws DoesNotExistException If no row matches, or the query or conversion fails.
+	 * @throws MultipleObjectsReturnedException If the identifier is ambiguous.
+	 *
+	 * @return ObjectEntity The found object.
+	 */
+	private function fetchSingleObject(IQueryBuilder $qb, MagicObjectLookup $lookup): ObjectEntity {
 		try {
 			$rows = $this->fetchRows(result: $qb->executeQuery());
 			if ($rows === []) {
@@ -7034,9 +7096,9 @@ class MagicMapper extends AbstractObjectMapper {
 			}
 
 			// Several rows: a key match wins, otherwise the identifier is ambiguous (#4037).
-			$row = $this->singleRow(rows: $rows, identifier: $identifier, register: $register, schema: $schema);
+			$row = $this->singleRow(rows: $rows, identifier: $lookup->identifier, register: $lookup->register, schema: $lookup->schema);
 
-			$objectEntity = $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
+			$objectEntity = $this->convertRowToObjectEntity(row: $row, _register: $lookup->register, _schema: $lookup->schema);
 
 			if ($objectEntity === null) {
 				throw new DoesNotExistException('Failed to convert row to ObjectEntity');
@@ -7051,15 +7113,15 @@ class MagicMapper extends AbstractObjectMapper {
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'identifier' => $identifier,
-					'tableName' => $tableName,
+					'identifier' => $lookup->identifier,
+					'tableName' => $lookup->tableName,
 					'error' => $e->getMessage(),
 				]
 			);
 
 			throw new DoesNotExistException($e->getMessage());
 		}//end try
-	}//end findInRegisterSchemaTable()
+	}//end fetchSingleObject()
 
 	/**
 	 * The object id an identifier names, when it is a canonical non-negative integer.

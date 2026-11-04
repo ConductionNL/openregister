@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Reference;
 
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\MdiIconRenderer;
@@ -161,9 +161,9 @@ final class ObjectPreviewFormatter {
 	/**
 	 * Register mapper for resolving register names
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Logger for debugging
@@ -180,7 +180,7 @@ final class ObjectPreviewFormatter {
 	 * @param ObjectService $objectService The object service
 	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper
-	 * @param RegisterMapper $registerMapper Register mapper
+	 * @param RegisterMapperInterface $registerMapper Register mapper
 	 * @param LoggerInterface $logger Logger
 	 *
 	 * @return void
@@ -193,7 +193,7 @@ final class ObjectPreviewFormatter {
 		ObjectService $objectService,
 		DeepLinkRegistryService $deepLinkRegistry,
 		SchemaMapperInterface $schemaMapper,
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		LoggerInterface $logger,
 	) {
 		$this->urlGenerator = $urlGenerator;
