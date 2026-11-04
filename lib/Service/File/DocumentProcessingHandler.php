@@ -380,124 +380,29 @@ class DocumentProcessingHandler {
 			$fileId = $candidate;
 		}
 
-		// Defensive filter — per the `entity-relation-grondslagen` change,
-		// the DI anonymise path MUST honour the operator's skip decisions
-		// even when the caller's entities[] array includes flagged
-		// occurrences. The OR contract is "skipped relations are never
-		// redacted, full stop", regardless of caller filtering behaviour.
+		// Skipped relations are never redacted, whatever the caller passes
+		// (entity-relation-grondslagen). The file's entity rows give stable
+		// `[<TYPE>: <entity_id>]` placeholders, so a re-run is idempotent.
 		$skippedValues = [];
+		$entityRows = [];
 		if ($fileId > 0) {
 			$skippedValues = $this->entityRelationMapper->findSkippedEntityValuesForFile($fileId);
+			$entityRows = $this->entityRelationMapper->findEntityIdsByValueForFile($fileId);
 		}
 
-		// Resolve the existing entity-id map for this file so substitutions
-		// use the stable `[<TYPE>: <entity_id>]` placeholder format —
-		// matches what DocuDesk's grondslagen-summary report shows and
-		// makes re-runs of anonymise on the same document idempotent
-		// (the previous UUID-prefix fallback produced a fresh placeholder
-		// per call, so re-anonymising the same file produced byte-divergent
-		// output despite identical inputs).
-		$entityIdMap = [];
-		if ($fileId > 0) {
-			$entityIdMap = $this->entityRelationMapper->findEntityIdsByValueForFile($fileId);
-		}
-
-		// Scope-local placeholder numbering (Decision 1 + 3): translate the
-		// internal global `e.id` to a number that is local to this scope, so
-		// the emitted `[<TYPE>: <number>]` never links a person across
-		// documents/publications. Per-document (default) numbers lazily by
-		// first appearance; per-dossier seeds the translator with a map
-		// deterministically recomputed from the whole dossier's stored rows,
-		// so the same person is the same number across every file in the
-		// folder.
+		// Scope-local placeholder numbering (Decision 1 + 3): per document by
+		// first appearance, or per dossier from the whole folder's stored rows,
+		// so the same person is the same number across the dossier.
 		$translator = PlaceholderIdTranslator::perDocument();
 		if ($scope === 'dossier') {
 			$translator = $this->recomputeFileTranslator(node: $node, fileKey: $fileKey);
 		}
 
-		// Build replacements array from entities.
-		$replacements = [];
-		foreach ($entities as $entity) {
-			$originalText = $entity['text'] ?? '';
-			$entityType = $entity['entityType'] ?? 'UNKNOWN';
-
-			if (empty($originalText) === true
-				|| in_array($originalText, $skippedValues, true) === true
-			) {
-				continue;
-			}
-
-			// The needle actually matched/replaced in the document is the
-			// trimmed text: some recognition backends (and the regex pass)
-			// capture entity spans with surrounding whitespace (e.g.
-			// "06-12345678 "), which the document's content stream never
-			// contains verbatim — leaving the value unredacted while the
-			// (whitespace-normalising) validation gate still flags it as
-			// residual. Trim for the map KEY; keep $originalText for the
-			// skip-list and stable-id lookups (those are keyed by the stored
-			// value).
-			$needle = trim($originalText);
-			if ($needle === '') {
-				continue;
-			}
-
-			// Prefer stable per-entity placeholder. Fall back to the
-			// legacy UUID-prefix only when there is no matching entity
-			// row on the file (shouldn't happen in the normal
-			// extract → review → anonymise flow, but defensive against
-			// direct DI callers that bypass extraction).
-			// Localise the TYPE label to the acting user's language
-			// (Decision 6): PERSON → PERSOON on a Dutch instance. Unknown
-			// types fall back to the raw label.
-			$localizedType = $this->localizeEntityType(entityType: $entityType);
-
-			$key = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
-			$replacements[$needle] = '[' . $localizedType . ': ' . $key . ']';
-			if (isset($entityIdMap[$originalText]) === true) {
-				// Translate the internal `e.id` to the scope-local number.
-				$localNumber = $translator->translate(entityId: $entityIdMap[$originalText]['id']);
-				$replacements[$needle] = '[' . $localizedType . ': ' . $localNumber . ']';
-				// Record the EXACT emitted placeholder against the global e.id
-				// so consumers (DocuDesk's grondslagen-summary) can render the
-				// same string (scope-local number + localized label) instead of
-				// re-deriving from the global id.
-				$this->lastPlaceholderMap[(string)$entityIdMap[$originalText]['id']] = $replacements[$needle];
-			}
-		}//end foreach
-
-		// Order needles longest-first so overlapping entities cannot clobber
-		// each other: with insertion order, a bare "Amsterdam" [LOCATION]
-		// earlier in the map rewrites "De gemeente Amsterdam" to
-		// "De gemeente [LOCATION: …]" before the longer needle
-		// "gemeente Amsterdam" gets a chance to match, leaving it
-		// unmatched and mis-typed. Longest-first guarantees every needle
-		// sees the still-untouched text it was detected in for the
-		// str_ireplace branches (docx/odt/txt), which consume the map in
-		// insertion order; the PDF branch re-asserts the same ordering
-		// inside PdfTextReplacer::replaceInPdf so the guarantee survives
-		// SAPP-side changes. Equal lengths tie-break bytewise for
-		// deterministic (idempotent re-run) output. Params deliberately
-		// untyped: PHP coerces purely-numeric needle text ("2026", a
-		// spaceless BSN) to INT array keys, which would fatal a
-		// string-typed closure.
-		uksort(
-			$replacements,
-			static function ($left, $right): int {
-				$left = (string)$left;
-				$right = (string)$right;
-				return [mb_strlen($right), $left] <=> [mb_strlen($left), $right];
-			}
+		$replacements = $this->replacementsFor(
+			entities: $entities,
+			lookup: new PlaceholderLookup(skippedValues: $skippedValues, entityRows: $entityRows, translator: $translator)
 		);
-
-		// Generate anonymized file name.
-		$fileName = $node->getName();
-		$fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
-		$fileBaseName = pathinfo($fileName, PATHINFO_FILENAME);
-
-		$anonymizedFileName = $fileBaseName . '_anonymized';
-		if (empty($fileExtension) === false) {
-			$anonymizedFileName .= '.' . $fileExtension;
-		}
+		$anonymizedFileName = $this->anonymizedNameFor(node: $node);
 
 		// Office (DOCX / ODT) documents carry PII in non-text structures the
 		// walker cannot reach (comments, tracked changes, metadata, custom XML,
@@ -537,19 +442,7 @@ class DocumentProcessingHandler {
 		// re-anonymise, gone on delete). Relations whose entity is absent from
 		// the map keep the legacy "[REDACTED]" marker.
 		if ($fileId > 0 && empty($replacements) === false) {
-			try {
-				$this->entityRelationMapper->markAsAnonymizedWithPlaceholders($fileId, $this->lastPlaceholderMap);
-			} catch (\Throwable $e) {
-				// Persistence-side failure on the audit flag MUST NOT mask
-				// the successful redaction; the file is already written.
-				// Surface via warning log; downstream summary reports
-				// simply won't see this file until the next anonymise
-				// call retries the mark.
-				$this->logger->warning(
-					'DocumentProcessingHandler: markAsAnonymizedWithPlaceholders failed after redaction',
-					['fileId' => $fileId, 'error' => $e->getMessage()]
-				);
-			}
+			$this->markAnonymized(fileId: $fileId);
 		}
 
 		// Persist a per-run anonymisation log row carrying the sanitisation
@@ -565,6 +458,124 @@ class DocumentProcessingHandler {
 
 		return $anonymizedFile;
 	}//end anonymizeDocument()
+
+	/**
+	 * The replacement map of an anonymisation: trimmed entity text to its
+	 * placeholder, longest needle first.
+	 *
+	 * Empty and skipped values are left out. The needle is the trimmed text,
+	 * because recognisers capture spans with surrounding whitespace the
+	 * document never contains verbatim. Longest-first ordering keeps a short
+	 * needle ("Amsterdam") from rewriting a longer one ("gemeente Amsterdam")
+	 * before it matches; equal lengths tie-break bytewise so a re-run is
+	 * identical. The comparator is untyped because PHP turns numeric needles
+	 * ("2026", a BSN) into int keys.
+	 *
+	 * @param array<int, array{text?: string, entityType?: string, key?: string}> $entities The detected entities.
+	 * @param PlaceholderLookup                                                   $lookup   Skips, entity rows and numbering.
+	 *
+	 * @return array<string, string> Needle to placeholder.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function replacementsFor(array $entities, PlaceholderLookup $lookup): array {
+		$replacements = [];
+		foreach ($entities as $entity) {
+			$originalText = $entity['text'] ?? '';
+			if (empty($originalText) === true || $lookup->isSkipped(text: $originalText) === true) {
+				continue;
+			}
+
+			$needle = trim($originalText);
+			if ($needle === '') {
+				continue;
+			}
+
+			$replacements[$needle] = $this->placeholderFor(entity: $entity, lookup: $lookup);
+		}
+
+		uksort(
+			$replacements,
+			static function ($left, $right): int {
+				$left = (string)$left;
+				$right = (string)$right;
+				return [mb_strlen($right), $left] <=> [mb_strlen($left), $right];
+			}
+		);
+
+		return $replacements;
+	}//end replacementsFor()
+
+	/**
+	 * The placeholder for one entity, its TYPE label localised (Decision 6).
+	 *
+	 * An entity with a stable row on the file gets its scope-local number,
+	 * recorded in the placeholder map against the global entity id; any other
+	 * entity gets its key, or a random UUID prefix when it has none.
+	 *
+	 * @param array{text?: string, entityType?: string, key?: string} $entity The entity.
+	 * @param PlaceholderLookup                                       $lookup Entity rows and numbering.
+	 *
+	 * @return string The placeholder, e.g. `[PERSOON: 3]`.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function placeholderFor(array $entity, PlaceholderLookup $lookup): string {
+		$localizedType = $this->localizeEntityType(entityType: ($entity['entityType'] ?? 'UNKNOWN'));
+		$row = $lookup->rowFor(text: ($entity['text'] ?? ''));
+		if ($row === null) {
+			$key = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
+			return '[' . $localizedType . ': ' . $key . ']';
+		}
+
+		$placeholder = '[' . $localizedType . ': ' . $lookup->translator->translate(entityId: $row['id']) . ']';
+		$this->lastPlaceholderMap[(string)$row['id']] = $placeholder;
+
+		return $placeholder;
+	}//end placeholderFor()
+
+	/**
+	 * The output name of an anonymised copy: `<name>_anonymized.<ext>`.
+	 *
+	 * @param Node $node The source file.
+	 *
+	 * @return string The output name.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function anonymizedNameFor(Node $node): string {
+		$fileName = $node->getName();
+		$fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+
+		$anonymizedFileName = pathinfo($fileName, PATHINFO_FILENAME) . '_anonymized';
+		if (empty($fileExtension) === false) {
+			$anonymizedFileName .= '.' . $fileExtension;
+		}
+
+		return $anonymizedFileName;
+	}//end anonymizedNameFor()
+
+	/**
+	 * Flip the source's entity relations to anonymised, each with the exact
+	 * placeholder emitted for it (skip-aware). A failure here must not mask
+	 * the redaction, which is already written, so it is only logged.
+	 *
+	 * @param int $fileId The source file id.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function markAnonymized(int $fileId): void {
+		try {
+			$this->entityRelationMapper->markAsAnonymizedWithPlaceholders($fileId, $this->lastPlaceholderMap);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'DocumentProcessingHandler: markAsAnonymizedWithPlaceholders failed after redaction',
+				['fileId' => $fileId, 'error' => $e->getMessage()]
+			);
+		}
+	}//end markAnonymized()
 
 	/**
 	 * Localise an entity-type label to the acting user's language for the

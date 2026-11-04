@@ -58,7 +58,6 @@ use OCA\OpenRegister\Service\Archival\SelectionListSeeder;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\TaskService;
-use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -127,23 +126,6 @@ class ImportHandler {
 		// link, so the damage surfaces layers away with nothing pointing back here.
 		'failed' => ['schemas' => [], 'objects' => []],
 	];
-
-	/**
-	 * Guard flag to prevent recursive dependency checking.
-	 *
-	 * When an app is enabled as a dependency, it may boot and load its own configuration,
-	 * which could trigger another dependency check. This flag prevents infinite recursion.
-	 *
-	 * @var boolean
-	 */
-	private static bool $depCheckActive = false;
-
-	/**
-	 * Guard flag used by ensureDependenciesForSeedData() to prevent recursive dependency checking.
-	 *
-	 * @var boolean
-	 */
-	private static bool $isDependCheckActive = false;
 
 	/**
 	 * Schema mapper instance for handling schema operations.
@@ -394,7 +376,6 @@ class ImportHandler {
 	 * @param UploadHandler $uploadHandler The upload handler.
 	 * @param ObjectService $objectService The object service.
 	 * @param ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator Optional schema-shape validator used at import time.
-	 * @param ?IAppManager $appManager App manager for the seed-data app dependency check; null skips that check.
 	 * @param ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard Optional
 	 *        guard that keeps local changes to an app-shipped schema.
 	 * @param ?AppImportJobRecorder $importJobRecorder Stamps each app import with an import job id and
@@ -415,7 +396,6 @@ class ImportHandler {
 		UploadHandler $uploadHandler,
 		ObjectService $objectService,
 		private readonly ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator = null,
-		private readonly ?IAppManager $appManager = null,
 		private readonly ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard = null,
 		private readonly ?AppImportJobRecorder $importJobRecorder = null,
 		private readonly ?SchemaImportInstaller $schemaInstaller = null,
@@ -5982,8 +5962,6 @@ class ImportHandler {
 			]
 		);
 
-		// Dependencies are not ensured here: ensureDependenciesForSeedData() hangs on a
-		// circular dependency when apps load their configurations at boot.
 		foreach ($seedData['objects'] as $schemaSlug => $objects) {
 			$seed->schemaSlug = $schemaSlug;
 			$seed->objects = $objects;
@@ -6747,182 +6725,6 @@ class ImportHandler {
 
 		return $created;
 	}//end seedRelatedTasks()
-
-	/**
-	 * Ensure Nextcloud app dependencies are met for seedData import.
-	 *
-	 * This method is called ONLY when importing seedData (lazy resolution) to avoid
-	 * circular dependency issues. It uses a guard flag to prevent recursive calls
-	 * when enabled apps load their own configurations.
-	 *
-	 * @param array $configData The configuration data.
-	 *
-	 * @return void
-	 *
-	 * @psalm-suppress UndefinedClass OC_App is a Nextcloud server internal with no OCP equivalent for loadApp()
-	 */
-	private function ensureDependenciesForSeedData(array $configData): void {
-		// GUARD: Prevent recursive dependency checking.
-		// When we enable an app, it may boot and load its own config, which would
-		// trigger this method again. The guard prevents infinite recursion.
-		if (self::$isDependCheckActive === true) {
-			$this->logger->debug(
-				message: '[ImportHandler] Skipping recursive dependency check (guard flag active)',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return;
-		}
-
-		$dependencies = $configData['x-openregister']['dependencies'] ?? [];
-		if (empty($dependencies) === true) {
-			return;
-		}
-
-		$this->logger->debug(
-			message: '[ImportHandler] Ensuring Nextcloud app dependencies for seedData',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'count' => count($dependencies),
-			]
-		);
-
-		// Set guard flag before processing.
-		self::$isDependCheckActive = true;
-
-		try {
-			foreach ($dependencies as $dependency) {
-				$type = $dependency['type'] ?? null;
-
-				// Only handle Nextcloud app dependencies.
-				if ($type !== 'nextcloud-app') {
-					continue;
-				}
-
-				$appId = $dependency['app'] ?? null;
-				$required = $dependency['required'] ?? false;
-				$reason = $dependency['reason'] ?? 'Required for seedData import';
-
-				if ($appId === null) {
-					$this->logger->warning(
-						message: '[ImportHandler] Nextcloud app dependency missing app ID - skipping',
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-					continue;
-				}
-
-				$this->logger->debug(
-					message: "[ImportHandler] Checking Nextcloud app dependency: {$appId}",
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'required' => $required,
-						'reason' => $reason,
-					]
-				);
-
-				if ($this->appManager === null) {
-					$this->logger->debug(
-						message: "[ImportHandler] No app manager injected; skipping the dependency check for '{$appId}'",
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-					continue;
-				}
-
-				try {
-					$appManager = $this->appManager;
-
-					// First check if app is installed.
-					if ($appManager->isInstalled($appId) === false) {
-						$msg = "Nextcloud app '{$appId}' is not installed";
-						$this->logger->warning(
-							message: '[ImportHandler] ' . $msg,
-							context: ['file' => __FILE__, 'line' => __LINE__]
-						);
-
-						if ($required === true) {
-							throw new Exception($msg . ' - cannot enable required app for seedData');
-						}
-
-						continue;
-					}
-
-					if ($appManager->isEnabledForUser($appId) === true) {
-						$this->logger->debug(
-							message: "[ImportHandler] Nextcloud app '{$appId}' is already enabled",
-							context: ['file' => __FILE__, 'line' => __LINE__]
-						);
-						continue;
-					}
-
-					$this->logger->debug(
-						message: "[ImportHandler] Nextcloud app '{$appId}' is not enabled - enabling now",
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-
-					try {
-						$appManager->enableApp($appId);
-						$this->logger->debug(
-							message: "[ImportHandler] Successfully enabled Nextcloud app '{$appId}'",
-							context: ['file' => __FILE__, 'line' => __LINE__]
-						);
-
-						// Load the app to ensure its services are available.
-						//
-						// OC_App is a Nextcloud server internal with no OCP
-						// equivalent for this call, so psalm cannot see the class
-						// (suppressed on this method's docblock). It exists
-						// whenever this branch can run: the branch is only
-						// reachable through an injected IAppManager, which only a
-						// booted server supplies.
-						\OC_App::loadApp($appId);
-						$this->logger->debug(
-							message: "[ImportHandler] Successfully loaded Nextcloud app '{$appId}'",
-							context: ['file' => __FILE__, 'line' => __LINE__]
-						);
-					} catch (Exception $e) {
-						$msg = "Failed to enable Nextcloud app '{$appId}': {$e->getMessage()}";
-						if ($required === true) {
-							throw new Exception($msg);
-						}
-
-						$this->logger->warning(
-							message: '[ImportHandler] ' . $msg,
-							context: ['file' => __FILE__, 'line' => __LINE__]
-						);
-					}//end try
-				} catch (Exception $e) {
-					$msg = "Error checking/enabling Nextcloud app '{$appId}': {$e->getMessage()}";
-					if ($required === true) {
-						throw new Exception($msg);
-					}
-
-					$this->logger->warning(
-						message: '[ImportHandler] ' . $msg,
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-				}//end try
-			}//end foreach
-		} finally {
-			// Always reset guard flag, even if exception occurred.
-			self::$isDependCheckActive = false;
-		}//end try
-	}//end ensureDependenciesForSeedData()
-
-	/**
-	 * Handle Nextcloud app dependencies.
-	 *
-	 * @param array $configData The configuration data.
-	 *
-	 * @return void
-	 *
-	 * @deprecated Use ensureDependenciesForSeedData() instead. This method is kept for backwards compatibility.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Kept for backwards compatibility
-	 */
-	private function handleNextcloudAppDependencies(array $configData): void {
-		$this->ensureDependenciesForSeedData(configData: $configData);
-	}//end handleNextcloudAppDependencies()
 
 	/**
 	 * Minimal meta-schema describing the structural shape an OR schema
