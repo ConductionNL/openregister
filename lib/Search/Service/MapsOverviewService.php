@@ -55,7 +55,7 @@ use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use OCA\OpenRegister\Service\AnalyticsSeriesService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
 /**
  * MapsOverviewService — page-level multi-object map render surface.
@@ -95,7 +95,7 @@ class MapsOverviewService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService Canonical RBAC-scoped object read facade.
+	 * @param ObjectOperationsInterface $objectService Canonical RBAC-scoped object read facade.
 	 * @param GeoFeatureCollectionBuilder $geoBuilder Extracts geometry from object rows.
 	 * @param IntegrationRegistry $registry Registry for the page-widget surface.
 	 * @param IUserSession $userSession Current user (RBAC / write guard).
@@ -104,7 +104,7 @@ class MapsOverviewService {
 	 * @return void
 	 */
 	public function __construct(
-		private ObjectService $objectService,
+		private ObjectOperationsInterface $objectService,
 		private GeoFeatureCollectionBuilder $geoBuilder,
 		private IntegrationRegistry $registry,
 		private IUserSession $userSession,

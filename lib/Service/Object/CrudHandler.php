@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -59,13 +59,13 @@ class CrudHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param ObjectService $objectService Object service for save/search operations
+	 * @param ObjectOperationsInterface $objectService Object service for save/search operations
 	 * @param LoggerInterface $logger PSR-3 logger
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

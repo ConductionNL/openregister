@@ -51,7 +51,7 @@ namespace OCA\OpenRegister\Command;
 use DateTime;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -110,7 +110,7 @@ class AdoptLeafOrganisationsCommand extends Command {
 	 * Wire the mappers and the object reader.
 	 *
 	 * @param OrganisationMapperInterface $organisationMapper The Organisation mapper.
-	 * @param ObjectService      $objectService      Reader for the leaf objects.
+	 * @param ObjectOperationsInterface      $objectService      Reader for the leaf objects.
 	 * @param LoggerInterface    $logger             Logger.
 	 *
 	 * @return void
@@ -119,7 +119,7 @@ class AdoptLeafOrganisationsCommand extends Command {
 	 */
 	public function __construct(
 		private readonly OrganisationMapperInterface $organisationMapper,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct();

@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Timeline\ReferenceService;
 use OCA\OpenRegister\Service\Timeline\TimelineEntrySearchService;
 use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
@@ -69,7 +69,7 @@ class TimelineEntriesController extends Controller {
 	 *
 	 * @param string                     $appName    App name.
 	 * @param IRequest                   $request    Request.
-	 * @param ObjectService              $objects    Resolves an object through the RBAC boundary.
+	 * @param ObjectOperationsInterface              $objects    Resolves an object through the RBAC boundary.
 	 * @param TimelineEntryService       $entries    The record.
 	 * @param TimelineWriteService       $writer     Writing an entry end to end.
 	 * @param TimelineEntrySearchService $search     Entries searched across objects.
@@ -82,7 +82,7 @@ class TimelineEntriesController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly TimelineEntryService $entries,
 		private readonly TimelineWriteService $writer,
 		private readonly TimelineEntrySearchService $search,

@@ -35,7 +35,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\MdiIconRenderer;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Collaboration\Reference\IReference;
 use OCP\Collaboration\Reference\Reference;
@@ -140,9 +140,9 @@ final class ObjectPreviewFormatter {
 	/**
 	 * The object service for fetching objects
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Deep link registry for consuming-app URL resolution
@@ -177,7 +177,7 @@ final class ObjectPreviewFormatter {
 	 *
 	 * @param IURLGenerator $urlGenerator The URL generator
 	 * @param IL10N $l10n The localization service
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper
 	 * @param RegisterMapperInterface $registerMapper Register mapper
@@ -190,7 +190,7 @@ final class ObjectPreviewFormatter {
 	public function __construct(
 		IURLGenerator $urlGenerator,
 		IL10N $l10n,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		DeepLinkRegistryService $deepLinkRegistry,
 		SchemaMapperInterface $schemaMapper,
 		RegisterMapperInterface $registerMapper,

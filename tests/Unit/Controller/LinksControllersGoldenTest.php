@@ -123,7 +123,7 @@ class LinksControllersGoldenTest extends TestCase {
 			return $mock;
 		}
 
-		if ($class === ObjectService::class) {
+		if (in_array($class, [ObjectService::class, \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class], true) === true) {
 			if ($context['scenario'] === 'missing') {
 				$mock->method('getObject')->willReturn(null);
 			} else if ($context['scenario'] === 'notfound') {

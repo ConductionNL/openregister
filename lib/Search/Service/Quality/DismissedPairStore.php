@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Search\Service\Quality;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -72,13 +72,13 @@ class DismissedPairStore {
 	/**
 	 * Wire collaborators.
 	 *
-	 * @param ObjectService $objectService Object read/write path (RBAC + tenant scoped, audited).
+	 * @param ObjectOperationsInterface $objectService Object read/write path (RBAC + tenant scoped, audited).
 	 * @param LoggerInterface $logger PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

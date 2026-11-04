@@ -45,7 +45,7 @@ namespace OCA\OpenRegister\Service\Credential;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;
@@ -111,7 +111,7 @@ class OAuth2RefreshService {
 	 * Constructor.
 	 *
 	 * @param CredentialStore $credentialStore Holds the token set; the only place it is ever written.
-	 * @param ObjectService $objectService Updates the credential's non-secret metadata.
+	 * @param ObjectOperationsInterface $objectService Updates the credential's non-secret metadata.
 	 * @param CredentialLock $lock Excludes a second concurrent rotation of one credential.
 	 * @param OAuth2ClientResolver $clients Resolves the client id and secret for the token request.
 	 * @param IClientService $clientService NC HTTP client factory for the token request.
@@ -122,7 +122,7 @@ class OAuth2RefreshService {
 	 */
 	public function __construct(
 		private readonly CredentialStore $credentialStore,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly CredentialLock $lock,
 		private readonly OAuth2ClientResolver $clients,
 		private readonly IClientService $clientService,
