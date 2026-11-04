@@ -1091,9 +1091,8 @@ class DocumentProcessingHandler {
 
 		// Run text replacement first; metadata sanitisation operates on
 		// the result so /Info / XMP changes survive the rebuild.
-		// Best-effort: replaceInPdf no longer fails closed on residual entity
-		// text — it returns the residual needles so we can produce the file
-		// and warn instead of discarding it.
+		// A strict run throws on residual entity text before anything is
+		// written; a lenient run returns the residual needles for review.
 		$residualNeedles = [];
 		$structureResult = null;
 		$replacedBytes = $replacer->replaceInPdf(

@@ -255,24 +255,29 @@ class DocumentProcessingHandlerPdfTest extends TestCase {
 	}//end testLenientRunReportsResidualsAndReplacesOutput()
 
 	/**
-	 * A strict run is best-effort too: it writes the file and reports the residuals.
+	 * A strict run with residual entity text refuses: it writes no file, leaves
+	 * an existing output alone, and fails with REASON_VALIDATION_FAILED.
 	 *
 	 * @return void
 	 */
-	public function testStrictRunWithResidualStillWrites(): void {
+	public function testStrictRunWithResidualRefusesAndWritesNothing(): void {
 		$folder = $this->createMock(originalClassName: Folder::class);
-		$folder->method('nodeExists')->willReturn(false);
+		$folder->expects($this->never())->method('nodeExists');
 		$folder->expects($this->never())->method('get');
-		$folder->expects($this->once())->method('newFile')
-			->willReturn($this->createMock(originalClassName: File::class));
+		$folder->expects($this->never())->method('newFile');
 		$node = $this->makePdfNode(
 			content: self::buildPdfWithOps(ops: "BT\n/F1 12 Tf\n72 720 Td\n(Jan) Tj\n200 0 Td\n(Jansen) Tj\nET\n", author: 'x')
 		);
 		$node->method('getParent')->willReturn($folder);
 
 		$handler = $this->makeHandler();
-		$handler->replaceWords(node: $node, replacements: ['Jan Jansen' => '[PERSON: 3]'], strict: true);
-
-		$this->assertSame([['text' => 'Jan Jansen', 'type' => 'PERSON', 'id' => '3']], $handler->getLastResidualEntities());
-	}//end testStrictRunWithResidualStillWrites()
+		try {
+			$handler->replaceWords(node: $node, replacements: ['Jan Jansen' => '[PERSON: 3]'], strict: true);
+			$this->fail('Expected a PdfAnonymisationException');
+		} catch (PdfAnonymisationException $e) {
+			$this->assertSame(PdfAnonymisationException::REASON_VALIDATION_FAILED, $e->getReason());
+			$this->assertSame(1, $e->getDiagnostic()['residual_count']);
+			$this->assertStringNotContainsString('Jan', $e->getMessage());
+		}
+	}//end testStrictRunWithResidualRefusesAndWritesNothing()
 }//end class

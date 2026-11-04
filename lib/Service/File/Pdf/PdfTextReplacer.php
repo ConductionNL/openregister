@@ -198,9 +198,8 @@ class PdfTextReplacer {
 		$structureResult = $measurement->attest(streamsModified: (int)($stats['streams_modified'] ?? 0));
 
 		// Validation: re-extract the output and collect any residual
-		// substitution-map keys. Best-effort (no longer fails closed) — the
-		// residual needles are returned to the caller so the anonymisation
-		// flow can write the file and surface a warning.
+		// substitution-map keys. A strict run throws here, so the output is
+		// never returned; a lenient run returns the residual needles.
 		$residualEntities = $this->validateOutput(outputBytes: $outputBytes, substitutions: $substitutions, replaceStats: $stats, strict: $strict);
 
 		$this->logger->info(
@@ -335,13 +334,11 @@ class PdfTextReplacer {
 	 * Re-extract the output PDF via smalot/pdfparser and surface a
 	 * PII-free diagnostic when substitution-map keys remain.
 	 *
-	 * Aligned with the docx path (`replaceWordsInWordDocument`), which
-	 * also returns a partially-anonymised document silently when
-	 * `str_ireplace` cannot reach text split across `<w:r>` runs.
-	 * Failing closed here would make PDF noticeably stricter than docx;
-	 * instead we log a structural warning and let the caller surface a
-	 * partial-success result. Re-extraction failures (parser threw) are
-	 * still treated as a hard internal error.
+	 * A lenient run matches the docx path (`replaceWordsInWordDocument`):
+	 * it logs a structural warning and returns the residual needles so the
+	 * caller can surface a partial result. A strict run fails closed on
+	 * residual entity text. When the parser cannot re-read the output the
+	 * check is skipped and logged in both modes.
 	 *
 	 * @param string $outputBytes Serialised output PDF bytes.
 	 * @param array $substitutions The original substitution map.
@@ -354,7 +351,7 @@ class PdfTextReplacer {
 	 *                     (ad-hoc replace, docx-parity default) it is
 	 *                     logged as a partial-anonymisation warning.
 	 *
-	 * @return void
+	 * @return string[] The residual needles (lenient runs only).
 	 *
 	 * @throws PdfAnonymisationException When $strict and residual entity text remains.
 	 *
@@ -489,15 +486,19 @@ class PdfTextReplacer {
 				message: '[PdfTextReplacer] Partial anonymisation — residual entity text in output',
 				context: $diagnostic
 			);
+
+			if ($strict === true) {
+				throw new PdfAnonymisationException(
+					reason: PdfAnonymisationException::REASON_VALIDATION_FAILED,
+					message: 'PDF anonymisation refused: entity text remains in the output, so no file was written',
+					diagnostic: $diagnostic
+				);
+			}
 		}//end if
 
-		// Best-effort policy (was: fail closed in strict mode). The
-		// anonymisation flow no longer discards a partially-redacted file —
-		// it writes the output and surfaces a warning listing the residual
-		// entities so the operator can iterate (manual entities, skip
-		// unselected occurrences). The residual NEEDLES are returned to the
-		// caller; logs stay PII-free per ADR-005, while the authenticated
-		// anonymise response carries the values for the review UI.
+		// Lenient run: the residual NEEDLES are returned to the caller, which
+		// writes the output and surfaces them for review. Logs stay PII-free
+		// per ADR-005.
 		return $residual;
 	}//end validateOutput()
 

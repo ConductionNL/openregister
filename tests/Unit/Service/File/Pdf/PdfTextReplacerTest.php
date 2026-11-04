@@ -282,27 +282,30 @@ class PdfTextReplacerTest extends TestCase {
 	}//end testValidateOutputLogsWarningOnResidualWithoutThrowing()
 
 	/**
-	 * Best-effort policy ($strict = true, entity anonymisation): residual entity
-	 * text no longer fails closed. validateOutput RETURNS the residual needles
-	 * (and logs a PII-free warning) so the caller can still produce the file and
-	 * surface a warning for the operator to iterate on. (Previously this threw
-	 * `PdfAnonymisationException(REASON_VALIDATION_FAILED)`.)
+	 * Strict run ($strict = true, entity anonymisation): residual entity text
+	 * fails closed with REASON_VALIDATION_FAILED, and the diagnostic carries
+	 * the residual count but never the entity text.
 	 *
 	 * @return void
 	 */
-	public function testValidateOutputReturnsResidualsWhenStrict(): void {
+	public function testValidateOutputFailsClosedWhenStrict(): void {
 		$pdfContainingNeedle = self::buildFixture(bodyText: 'De heer Jansen bezocht het loket.');
 
-		$residuals = $this->replacer->validateOutput(
-			outputBytes: $pdfContainingNeedle,
-			substitutions: ['Jansen' => '[PERSON: 1]'],
-			replaceStats: [],
-			strict: true
-		);
-
-		// The unredacted needle is reported back (no exception thrown).
-		self::assertContains(needle: 'Jansen', haystack: $residuals);
-	}//end testValidateOutputReturnsResidualsWhenStrict()
+		try {
+			$this->replacer->validateOutput(
+				outputBytes: $pdfContainingNeedle,
+				substitutions: ['Jansen' => '[PERSON: 1]'],
+				replaceStats: [],
+				strict: true
+			);
+			self::fail('Expected a PdfAnonymisationException');
+		} catch (PdfAnonymisationException $e) {
+			self::assertSame(expected: PdfAnonymisationException::REASON_VALIDATION_FAILED, actual: $e->getReason());
+			self::assertSame(expected: 1, actual: $e->getDiagnostic()['residual_count']);
+			self::assertStringNotContainsString(needle: 'Jansen', haystack: $e->getMessage());
+			self::assertStringNotContainsString(needle: 'Jansen', haystack: (string)json_encode($e->getDiagnostic()));
+		}
+	}//end testValidateOutputFailsClosedWhenStrict()
 
 	/**
 	 * Validation gate passes silently when the PDF contains only the
