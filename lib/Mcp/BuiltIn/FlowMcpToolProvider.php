@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use OCA\OpenRegister\Exception\FlowRunRefused;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
@@ -50,7 +50,7 @@ class FlowMcpToolProvider implements IMcpToolProvider {
 	 * Constructor.
 	 *
 	 * @param FlowRunServiceInterface $runner Queues a flow run.
-	 * @param FlowRunMapper $mapper Reads recent runs (for listing / status).
+	 * @param FlowRunMapperInterface $mapper Reads recent runs (for listing / status).
 	 * @param FlowService $flows Authors flows, with the organisation scoping.
 	 * @param FlowNodePreflight $preflight Reports what a saved document is missing.
 	 * @param IUserSession $userSession The invoking session — an MCP tool call
@@ -59,7 +59,7 @@ class FlowMcpToolProvider implements IMcpToolProvider {
 	 */
 	public function __construct(
 		private readonly FlowRunServiceInterface $runner,
-		private readonly FlowRunMapper $mapper,
+		private readonly FlowRunMapperInterface $mapper,
 		private readonly FlowService $flows,
 		private readonly FlowNodePreflight $preflight,
 		private readonly IUserSession $userSession,

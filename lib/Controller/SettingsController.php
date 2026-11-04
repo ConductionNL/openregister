@@ -185,12 +185,12 @@ class SettingsController extends Controller {
 	/**
 	 * Attempts to retrieve the Configuration service from the container.
 	 *
-	 * @return \OCA\OpenRegister\Service\ConfigurationService|null The Configuration service if available, null otherwise.
+	 * @return \OCA\OpenRegister\Service\ConfigurationServiceInterface|null The Configuration service if available, null otherwise.
 	 * @throws \RuntimeException If the service is not available.
 	 *
 	 * @spec exclude DI service accessor (not a routed endpoint): returns the ConfigurationService from the container.
 	 */
-	public function getConfigurationService(): ?\OCA\OpenRegister\Service\ConfigurationService {
+	public function getConfigurationService(): ?\OCA\OpenRegister\Service\ConfigurationServiceInterface {
 		// Check if the 'openregister' app is installed.
 		if (in_array(needle: 'openregister', haystack: $this->appManager->getInstalledApps()) === true) {
 			// Retrieve the ConfigurationService from the container.

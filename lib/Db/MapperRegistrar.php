@@ -101,7 +101,7 @@ final class MapperRegistrar {
 				return new MagicMapper(
 					db: $container->get('OCP\IDBConnection'),
 					schemaMapper: $container->get(SchemaMapperInterface::class),
-					registerMapper: $container->get(RegisterMapper::class),
+					registerMapper: $container->get(RegisterMapperInterface::class),
 					config: $container->get('OCP\IConfig'),
 					eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
 					userSession: $container->get('OCP\IUserSession'),

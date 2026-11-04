@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailMapper;
@@ -68,7 +68,7 @@ class SearchTrailService {
 	 * Sets retention period and self-clearing flag if provided.
 	 *
 	 * @param SearchTrailMapper $searchTrailMapper Mapper for search trail database operations
-	 * @param RegisterMapper $registerMapper Mapper for register database operations
+	 * @param RegisterMapperInterface $registerMapper Mapper for register database operations
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schema database operations
 	 * @param int|null $retentionDays Optional retention period in days (default: 365)
 	 * @param bool|null $selfClearing Optional flag to enable/disable self-clearing
@@ -78,7 +78,7 @@ class SearchTrailService {
 	 */
 	public function __construct(
 		private readonly SearchTrailMapper $searchTrailMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		?int $retentionDays = null,
 		?bool $selfClearing = null,

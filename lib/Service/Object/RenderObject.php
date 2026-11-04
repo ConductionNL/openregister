@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
@@ -210,7 +210,7 @@ class RenderObject {
 	 *
 	 * @param FileMapperInterface $fileMapper File mapper for database operations.
 	 * @param MagicMapper $objectEntityMapper Object entity mapper for database operations.
-	 * @param RegisterMapper $registerMapper Register mapper for database operations.
+	 * @param RegisterMapperInterface $registerMapper Register mapper for database operations.
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for database operations.
 	 * @param ISystemTagManager $systemTagManager System tag manager for file tags.
 	 * @param ISystemTagObjectMapper $systemTagMapper System tag object mapper for file tags.
@@ -249,7 +249,7 @@ class RenderObject {
 	public function __construct(
 		private readonly FileMapperInterface $fileMapper,
 		private readonly MagicMapper $objectEntityMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ISystemTagManager $systemTagManager,
 		private readonly ISystemTagObjectMapper $systemTagMapper,

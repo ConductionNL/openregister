@@ -75,7 +75,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class RegisterMapper extends QBMapper {
+class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	use MultiTenancyTrait;
 
 	/**

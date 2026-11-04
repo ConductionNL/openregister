@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\ConfigurationValueMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Service\Configuration\CacheHandler as ConfigurationCacheHandler;
@@ -138,7 +138,7 @@ final class ConfigurationServiceRegistrar {
 			function (ContainerInterface $container): ConfigurationExportHandler {
 				$exportHandler = new ConfigurationExportHandler(
 					schemaMapper: $container->get(SchemaMapperInterface::class),
-					registerMapper: $container->get(RegisterMapper::class),
+					registerMapper: $container->get(RegisterMapperInterface::class),
 					objectEntityMapper: $container->get(MagicMapper::class),
 					configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
 					mappingMapper: $container->get(MappingMapper::class),
@@ -157,7 +157,7 @@ final class ConfigurationServiceRegistrar {
 
 				return new ConfigurationService(
 					schemaMapper: $container->get(SchemaMapperInterface::class),
-					registerMapper: $container->get(RegisterMapper::class),
+					registerMapper: $container->get(RegisterMapperInterface::class),
 					configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
 					appManager: $container->get('OCP\App\IAppManager'),
 					container: $container,
@@ -235,7 +235,7 @@ final class ConfigurationServiceRegistrar {
 
 		$importHandler = new ConfigurationImportHandler(
 			schemaMapper: $container->get(SchemaMapperInterface::class),
-			registerMapper: $container->get(RegisterMapper::class),
+			registerMapper: $container->get(RegisterMapperInterface::class),
 			objectEntityMapper: $container->get(MagicMapper::class),
 			configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
 			mappingMapper: $container->get(MappingMapper::class),

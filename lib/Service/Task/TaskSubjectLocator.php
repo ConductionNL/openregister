@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
@@ -61,13 +61,13 @@ class TaskSubjectLocator {
 	 * Constructor.
 	 *
 	 * @param MagicMapper $objects The magic-table object mapper.
-	 * @param RegisterMapper $registers Loads a located subject's register.
+	 * @param RegisterMapperInterface $registers Loads a located subject's register.
 	 * @param SchemaMapperInterface $schemas Loads a located subject's schema.
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
 		private readonly MagicMapper $objects,
-		private readonly RegisterMapper $registers,
+		private readonly RegisterMapperInterface $registers,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly LoggerInterface $logger,
 	) {

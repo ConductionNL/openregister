@@ -123,7 +123,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
@@ -358,7 +358,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * Constructor.
 	 *
 	 * @param ObjectService $objects Performs every write, with all its ordinary semantics.
-	 * @param RegisterMapper $registers Resolves the configured register (id, uuid or slug).
+	 * @param RegisterMapperInterface $registers Resolves the configured register (id, uuid or slug).
 	 * @param SchemaMapperInterface $schemas Resolves the configured schema (id, uuid or slug).
 	 * @param IUserManager $userManager Resolves the run owner to an account.
 	 * @param IAppConfig $appConfig Holds the instance-wide write-cap default.
@@ -368,7 +368,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
-		private readonly RegisterMapper $registers,
+		private readonly RegisterMapperInterface $registers,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly IUserManager $userManager,
 		private readonly IAppConfig $appConfig,

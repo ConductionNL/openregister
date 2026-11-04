@@ -41,7 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Authorization;
 
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -103,13 +103,13 @@ class GrantableRightsIndex {
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface    $schemaMapper   Source of the schemas to walk.
-	 * @param RegisterMapper  $registerMapper Source of register → schema membership.
+	 * @param RegisterMapperInterface  $registerMapper Source of register → schema membership.
 	 * @param ICacheFactory   $cacheFactory   Distributed cache for the built index.
 	 * @param LoggerInterface $logger         Diagnostics.
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
 	) {

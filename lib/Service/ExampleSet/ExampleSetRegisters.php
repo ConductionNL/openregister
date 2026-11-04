@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -75,7 +75,7 @@ class ExampleSetRegisters {
 	 */
 	public function exists(string $slug): bool {
 		try {
-			$this->container->get(RegisterMapper::class)->find(id: $slug, _rbac: false, _multitenancy: false);
+			$this->container->get(RegisterMapperInterface::class)->find(id: $slug, _rbac: false, _multitenancy: false);
 		} catch (Throwable) {
 			return false;
 		}

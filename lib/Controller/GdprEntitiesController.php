@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
@@ -68,7 +68,7 @@ class GdprEntitiesController extends Controller {
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param GdprEntityMapper $entityMapper GDPR entity mapper
-	 * @param EntityRelationMapper $entityRelationMapper Entity relation mapper
+	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper
 	 * @param IDBConnection $db Database connection
 	 * @param LoggerInterface $logger Logger
 	 * @param IUserSession $userSession Current user (admin gate)
@@ -80,7 +80,7 @@ class GdprEntitiesController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly GdprEntityMapper $entityMapper,
-		private readonly EntityRelationMapper $entityRelationMapper,
+		private readonly EntityRelationMapperInterface $entityRelationMapper,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,

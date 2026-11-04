@@ -48,7 +48,7 @@ use Psr\Log\LoggerInterface;
  *
  * @template-extends QBMapper<EntityRelation>
  */
-class EntityRelationMapper extends QBMapper {
+class EntityRelationMapper extends QBMapper implements EntityRelationMapperInterface {
 	/**
 	 * The optional fields buildRelationFromRow() sets from a row, in order:
 	 * [setter, cast, whether a null value leaves the field unset].

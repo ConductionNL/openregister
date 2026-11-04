@@ -24,7 +24,7 @@ use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Integration\TimeProvider as IntegrationTimeProvider;
@@ -288,7 +288,7 @@ final class ServiceRegistrar {
 	 */
 	private static function buildRegisterSlugResolver(ContainerInterface $container): RegisterSlugResolver {
 			return new RegisterSlugResolver(
-				registerMapper: $container->get(RegisterMapper::class),
+				registerMapper: $container->get(RegisterMapperInterface::class),
 				logger: $container->get(LoggerInterface::class)
 			);
 	}//end buildRegisterSlugResolver()
@@ -373,7 +373,7 @@ final class ServiceRegistrar {
 				cacheFactory: $container->get('OCP\ICacheFactory'),
 				userSession: $container->get('OCP\IUserSession'),
 				container: $container,
-				registerMapper: $container->get(RegisterMapper::class),
+				registerMapper: $container->get(RegisterMapperInterface::class),
 				schemaMapper: $container->get(SchemaMapperInterface::class),
 				db: $container->get('OCP\IDBConnection')
 			);
@@ -390,7 +390,7 @@ final class ServiceRegistrar {
 			return new FolderManagementHandler(
 				rootFolder: $container->get('OCP\Files\IRootFolder'),
 				objectEntityMapper: $container->get(MagicMapper::class),
-				registerMapper: $container->get(RegisterMapper::class),
+				registerMapper: $container->get(RegisterMapperInterface::class),
 				userSession: $container->get('OCP\IUserSession'),
 				groupManager: $container->get('OCP\IGroupManager'),
 				logger: $container->get('Psr\Log\LoggerInterface'),

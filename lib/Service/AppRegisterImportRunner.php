@@ -95,14 +95,14 @@ class AppRegisterImportRunner {
 	 *
 	 * @param IAppManager          $appManager           Resolves the app's namespace and path.
 	 * @param AppContainerLocator  $containers           Reaches the app's own DI container.
-	 * @param ConfigurationService $configurationService Imports on the fallback path.
+	 * @param ConfigurationServiceInterface $configurationService Imports on the fallback path.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IAppManager $appManager,
 		private readonly AppContainerLocator $containers,
-		private readonly ConfigurationService $configurationService,
+		private readonly ConfigurationServiceInterface $configurationService,
 	) {
 	}//end __construct()
 

@@ -33,7 +33,7 @@ use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\AppendOnlyException;
@@ -154,7 +154,7 @@ class ObjectsController extends Controller {
 	 * @param IAppConfig $config The app configuration object
 	 * @param IAppManager $appManager The app manager
 	 * @param ContainerInterface $container The DI container
-	 * @param RegisterMapper $registerMapper The register mapper
+	 * @param RegisterMapperInterface $registerMapper The register mapper
 	 * @param SchemaMapperInterface $schemaMapper The schema mapper
 	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail mapper
 	 * @param ObjectService $objectService The object service
@@ -188,7 +188,7 @@ class ObjectsController extends Controller {
 		private readonly IAppConfig $config,
 		private readonly IAppManager $appManager,
 		private readonly ContainerInterface $container,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly ObjectService $objectService,

@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
@@ -91,7 +91,7 @@ class TransitionEngine {
 	 * @param IEventDispatcher $eventDispatcher Dispatcher used to fire ObjectTransitionedEvent.
 	 * @param IUserSession $userSession Current user session, for actor attribution.
 	 * @param PermissionHandler $permissionHandler RBAC verdict on the object's `update`/`read` actions (F03).
-	 * @param RegisterMapper $registerMapper Mapper used to resolve the register slug.
+	 * @param RegisterMapperInterface $registerMapper Mapper used to resolve the register slug.
 	 * @param IAppConfig $appConfig App config, for the slug-contract opt-in.
 	 * @param LoggerInterface $logger Logger for post-commit listener failures.
 	 * @param LifecycleWriteBoundary $writeBoundary Names the transition for the listeners and wraps
@@ -113,7 +113,7 @@ class TransitionEngine {
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly IUserSession $userSession,
 		private readonly PermissionHandler $permissionHandler,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 		private readonly LifecycleWriteBoundary $writeBoundary,

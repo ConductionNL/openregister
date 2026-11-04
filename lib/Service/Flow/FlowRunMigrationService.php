@@ -44,7 +44,7 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowTimerMapper;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use Psr\Log\LoggerInterface;
@@ -77,14 +77,14 @@ class FlowRunMigrationService {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapper               $runs         The run store.
+	 * @param FlowRunMapperInterface               $runs         The run store.
 	 * @param FlowRunMigrationValidator   $validator    Whether a run fits the target version.
 	 * @param FlowTimerMapper             $timers       Open timers of a run.
 	 * @param FlowTimerService            $timerService Supersession.
 	 * @param LoggerInterface             $logger       The logger.
 	 */
 	public function __construct(
-		private readonly FlowRunMapper $runs,
+		private readonly FlowRunMapperInterface $runs,
 		private readonly FlowRunMigrationValidator $validator,
 		private readonly FlowTimerMapper $timers,
 		private readonly FlowTimerService $timerService,

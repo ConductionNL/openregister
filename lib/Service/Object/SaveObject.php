@@ -37,7 +37,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ReferenceValidatedEvent;
@@ -347,7 +347,7 @@ class SaveObject {
 	 * @param IUserSession $userSession User session service
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for logging changes
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
-	 * @param RegisterMapper $registerMapper Register mapper for register operations
+	 * @param RegisterMapperInterface $registerMapper Register mapper for register operations
 	 * @param IURLGenerator $urlGenerator URL generator service
 	 * @param OrganisationServiceInterface $organisationService Service for organisation operations
 	 * @param CacheHandler $cacheHandler Object entity and query cache
@@ -384,7 +384,7 @@ class SaveObject {
 		private readonly IUserSession $userSession,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly OrganisationServiceInterface $organisationService,
 		private readonly CacheHandler $cacheHandler,
@@ -600,18 +600,18 @@ class SaveObject {
 	 * MagicMapper -> SettingsService -> ValidationOperationsHandler -> ValidateObject
 	 * cycle. That cycle ate 19 GB in a unit-test run on 2026-09-08.
 	 *
-	 * @return \OCA\OpenRegister\Service\RetentionService|null The service, or null when unavailable
+	 * @return \OCA\OpenRegister\Service\RetentionServiceInterface|null The service, or null when unavailable
 	 *
 	 * @spec openspec/specs/retention-management/spec.md#requirement-objects-must-carry-mdto-compliant-archival-metadata-in-the-retention-field
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-calculate-archiefactiedatum-using-configurable-afleidingswijzen
 	 */
-	private function resolveRetentionService(): ?\OCA\OpenRegister\Service\RetentionService {
+	private function resolveRetentionService(): ?\OCA\OpenRegister\Service\RetentionServiceInterface {
 		if ($this->container === null) {
 			return null;
 		}
 
 		try {
-			$service = $this->container->get(\OCA\OpenRegister\Service\RetentionService::class);
+			$service = $this->container->get(\OCA\OpenRegister\Service\RetentionServiceInterface::class);
 		} catch (\Throwable $e) {
 			$this->logger->debug('[SaveObject] RetentionService not available: ' . $e->getMessage());
 			return null;
@@ -915,9 +915,7 @@ class SaveObject {
 		try {
 			// RegisterMapper->find() supports id, uuid, and slug via orX().
 			$register = $this->registerMapper->find(id: $slug, _rbac: false, _multitenancy: false);
-			if ($register !== null) {
-				return (string)$register->getId();
-			}
+			return (string)$register->getId();
 		} catch (Exception $e) {
 			// Register not found.
 		}

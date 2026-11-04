@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
@@ -83,9 +83,9 @@ class LogService {
 	 *
 	 * Reserved for future use in log filtering and validation.
 	 *
-	 * @var RegisterMapper Register mapper instance
+	 * @var RegisterMapperInterface Register mapper instance
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Schema mapper
@@ -111,7 +111,7 @@ class LogService {
 	 *
 	 * @param AuditTrailMapperInterface $auditTrailMapper Mapper for audit trail database operations.
 	 * @param MagicMapper $unifiedObjectMapper Mapper for unified object database operations.
-	 * @param RegisterMapper $registerMapper Mapper for register database operations.
+	 * @param RegisterMapperInterface $registerMapper Mapper for register database operations.
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schema database operations.
 	 *
 	 * @return void
@@ -119,7 +119,7 @@ class LogService {
 	public function __construct(
 		AuditTrailMapperInterface $auditTrailMapper,
 		MagicMapper $unifiedObjectMapper,
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		SchemaMapperInterface $schemaMapper,
 	) {
 		$this->auditTrailMapper = $auditTrailMapper;

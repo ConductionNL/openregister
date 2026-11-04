@@ -47,7 +47,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
-use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -71,7 +71,7 @@ class ErasurePreviewService {
 	 *
 	 * @param DataSubjectRequestService $subjects       Cross-register discovery.
 	 * @param ArchivalRetentionGuard    $archivalGuard  Retention and legal-hold refusal, with its wording.
-	 * @param RetentionService          $retention      Immutable archival status.
+	 * @param RetentionServiceInterface          $retention      Immutable archival status.
 	 * @param DestructionScopeService   $scopeService   What goes with an object.
 	 * @param SchemaMapperInterface              $schemaMapper   Schema resolution for the scope.
 	 * @param SubjectPartyCounter       $parties        Party records naming the subject.
@@ -83,7 +83,7 @@ class ErasurePreviewService {
 	public function __construct(
 		private readonly DataSubjectRequestService $subjects,
 		private readonly ArchivalRetentionGuard $archivalGuard,
-		private readonly RetentionService $retention,
+		private readonly RetentionServiceInterface $retention,
 		private readonly DestructionScopeService $scopeService,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly SubjectPartyCounter $parties,

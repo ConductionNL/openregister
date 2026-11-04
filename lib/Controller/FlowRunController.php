@@ -32,7 +32,7 @@ use DateTime;
 use DateTimeZone;
 use OCA\OpenRegister\Db\AuditFlowAttribution;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Exception\FlowSignalRefused;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
@@ -85,7 +85,7 @@ class FlowRunController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param FlowRunMapper $mapper Reads runs.
+	 * @param FlowRunMapperInterface $mapper Reads runs.
 	 * @param FlowRunServiceInterface $runner Retries, requeues and runs.
 	 * @param FlowLocator $resolvers Resolves a flow id to its document.
 	 * @param IUserSession $userSession Attributes a retried run to the caller.
@@ -123,7 +123,7 @@ class FlowRunController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly FlowRunMapper $mapper,
+		private readonly FlowRunMapperInterface $mapper,
 		private readonly FlowRunServiceInterface $runner,
 		private readonly FlowLocator $resolvers,
 		private readonly IUserSession $userSession,

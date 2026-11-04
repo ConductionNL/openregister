@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 use Closure;
 use Exception;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use Psr\Log\LoggerInterface;
 
@@ -67,13 +67,13 @@ class BulkObjectSlugs {
 	 * Constructor.
 	 *
 	 * @param ObjectSlugHandler $slugHandler    The slug rules.
-	 * @param RegisterMapper    $registerMapper Resolves a group's register when the caller did not pass it.
+	 * @param RegisterMapperInterface    $registerMapper Resolves a group's register when the caller did not pass it.
 	 * @param LoggerInterface   $logger         Receives the unresolved-group warnings.
 	 * @param Closure           $schemaOf       fn(string $schemaId): Schema — the bulk save's cached schema lookup.
 	 */
 	public function __construct(
 		private readonly ObjectSlugHandler $slugHandler,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly LoggerInterface $logger,
 		private readonly Closure $schemaOf,
 	) {

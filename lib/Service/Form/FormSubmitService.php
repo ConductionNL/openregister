@@ -43,7 +43,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
@@ -113,7 +113,7 @@ class FormSubmitService {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper       $registers Resolves a destination's register.
+	 * @param RegisterMapperInterface       $registers Resolves a destination's register.
 	 * @param SchemaMapperInterface         $schemas   Resolves a destination's schema.
 	 * @param ValidateObject       $validator The destination schema's full validator.
 	 * @param ObjectService        $objects   Creates, re-reads and (to compensate) deletes objects.
@@ -129,7 +129,7 @@ class FormSubmitService {
 	 * (resolve, validate, save, find, findings, keys, uploads, receipt) plus translations and logging.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registers,
+		private readonly RegisterMapperInterface $registers,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly ValidateObject $validator,
 		private readonly ObjectService $objects,

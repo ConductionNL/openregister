@@ -67,7 +67,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
@@ -193,7 +193,7 @@ class SaveObjects {
 	 *
 	 * @param MagicMapper $objectEntityMapper Mapper for object entity database operations
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schema operations
-	 * @param RegisterMapper $registerMapper Mapper for register operations
+	 * @param RegisterMapperInterface $registerMapper Mapper for register operations
 	 * @param SaveObject $saveHandler Handler for individual object operations
 	 * @param IUserSession $userSession User session for getting current user
 	 * @param OrganisationServiceInterface $organisationService Service for organisation operations
@@ -214,7 +214,7 @@ class SaveObjects {
 	public function __construct(
 		private readonly MagicMapper $objectEntityMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SaveObject $saveHandler,
 		private readonly IUserSession $userSession,
 		private readonly OrganisationServiceInterface $organisationService,

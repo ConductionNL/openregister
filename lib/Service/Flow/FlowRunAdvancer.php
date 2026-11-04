@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use Psr\Log\LoggerInterface;
 use stdClass;
 use Throwable;
@@ -46,13 +46,13 @@ class FlowRunAdvancer {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapper $mapper Persists a run that cannot proceed.
+	 * @param FlowRunMapperInterface $mapper Persists a run that cannot proceed.
 	 * @param FlowRunServiceInterface $runner Executes the run.
 	 * @param FlowLocator $resolvers Resolves the flow and its subject.
 	 * @param LoggerInterface $logger Records failures.
 	 */
 	public function __construct(
-		private readonly FlowRunMapper $mapper,
+		private readonly FlowRunMapperInterface $mapper,
 		private readonly FlowRunServiceInterface $runner,
 		private readonly FlowLocator $resolvers,
 		private readonly LoggerInterface $logger,

@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Service\Case;
 
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
@@ -64,14 +64,14 @@ class CaseRealisationService {
 	 * @param TaskServiceInterface $tasks The task lifecycle (its trusted creation path).
 	 * @param TaskMapper $taskRows The task table, for the terminal-outcome read.
 	 * @param FlowRunServiceInterface $runs The one queue funnel.
-	 * @param FlowRunMapper $runRows The run table, for the terminal-outcome read.
+	 * @param FlowRunMapperInterface $runRows The run table, for the terminal-outcome read.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
 		private readonly TaskServiceInterface $tasks,
 		private readonly TaskMapper $taskRows,
 		private readonly FlowRunServiceInterface $runs,
-		private readonly FlowRunMapper $runRows,
+		private readonly FlowRunMapperInterface $runRows,
 		private readonly LoggerInterface $logger,
 	) {
 

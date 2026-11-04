@@ -31,11 +31,11 @@ use JsonException;
 use OCA\OpenRegister\Db\Chunk;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\TextExtraction\EmlParser;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
@@ -142,10 +142,10 @@ class TextExtractionService {
 	 * @param LoggerInterface $logger Logger
 	 * @param MagicMapper $objectEntityMapper Mapper for object entities
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schemas
-	 * @param RegisterMapper $registerMapper Mapper for registers
+	 * @param RegisterMapperInterface $registerMapper Mapper for registers
 	 * @param EntityRecognitionHandler $entityHandler Handler for entity recognition
 	 * @param GdprEntityMapper $entityMapper Mapper for GDPR entities
-	 * @param EntityRelationMapper $entityRelationMapper Mapper for entity relations
+	 * @param EntityRelationMapperInterface $entityRelationMapper Mapper for entity relations
 	 * @param SettingsServiceInterface $settingsService Settings service
 	 * @param RiskLevelService $riskLevelService Risk level computation service
 	 * @param EmlParser $emlParser EML message-parser (used for message/rfc822
@@ -167,10 +167,10 @@ class TextExtractionService {
 		private readonly LoggerInterface $logger,
 		private readonly MagicMapper $objectEntityMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly EntityRecognitionHandler $entityHandler,
 		private readonly GdprEntityMapper $entityMapper,
-		private readonly EntityRelationMapper $entityRelationMapper,
+		private readonly EntityRelationMapperInterface $entityRelationMapper,
 		private readonly SettingsServiceInterface $settingsService,
 		private readonly RiskLevelService $riskLevelService,
 		private readonly EmlParser $emlParser,

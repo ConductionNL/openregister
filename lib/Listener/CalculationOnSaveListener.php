@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Listener;
 
 use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
@@ -68,7 +68,7 @@ class CalculationOnSaveListener implements IEventListener {
 	 * Wire collaborators used to look up schema calculations.
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param RegisterMapper $registerMapper Register lookup mapper (for sequence scope id).
+	 * @param RegisterMapperInterface $registerMapper Register lookup mapper (for sequence scope id).
 	 * @param CalculationEvaluatorInterface $evaluator Expression evaluator.
 	 * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
 	 * @param SequenceService $sequences Atomic running-number reservation service.
@@ -84,7 +84,7 @@ class CalculationOnSaveListener implements IEventListener {
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly CalculationEvaluatorInterface $evaluator,
 		private readonly CalculationPayloadBuilder $payloadBuilder,
 		private readonly SequenceService $sequences,

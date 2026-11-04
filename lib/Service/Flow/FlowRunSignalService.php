@@ -45,7 +45,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Exception\FlowSignalRefused;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCP\IGroupManager;
@@ -61,7 +61,7 @@ class FlowRunSignalService {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapper $mapper Resolves a run uuid to the run.
+	 * @param FlowRunMapperInterface $mapper Resolves a run uuid to the run.
 	 * @param FlowRunServiceInterface $runner Owns the unguarded delivery primitive.
 	 * @param LoggerInterface|null $logger Audits a refusal. Nullable so the
 	 *                                     controller can build this seam on
@@ -86,7 +86,7 @@ class FlowRunSignalService {
 	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
 	 */
 	public function __construct(
-		private readonly FlowRunMapper $mapper,
+		private readonly FlowRunMapperInterface $mapper,
 		private readonly FlowRunServiceInterface $runner,
 		private readonly ?LoggerInterface $logger = null,
 		private readonly ?IGroupManager $groupManager = null,

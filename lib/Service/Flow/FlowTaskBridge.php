@@ -43,7 +43,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
@@ -99,13 +99,13 @@ class FlowTaskBridge {
 	 * Constructor.
 	 *
 	 * @param TaskServiceInterface $tasks The task lifecycle.
-	 * @param FlowRunMapper $runs Reads the run for its version pin, and to wake it.
+	 * @param FlowRunMapperInterface $runs Reads the run for its version pin, and to wake it.
 	 * @param ContainerInterface $container Lazily resolves the run service and advancer.
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
 		private readonly TaskServiceInterface $tasks,
-		private readonly FlowRunMapper $runs,
+		private readonly FlowRunMapperInterface $runs,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
 	) {

@@ -46,7 +46,7 @@ use OCA\OpenRegister\Service\FacetableAnalyzer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\ViewMapper;
@@ -300,7 +300,7 @@ class ObjectService implements ObjectServiceInterface
      * @param ValidationHandler              $validationHandler    Handler for validation operations.
      * @param CascadingHandler               $cascadingHandler     Handler for cascading operations.
      * @param MigrationHandler               $migrationHandler     Handler for migration operations.
-     * @param RegisterMapper                 $registerMapper       Mapper for register operations.
+     * @param RegisterMapperInterface                 $registerMapper       Mapper for register operations.
      * @param SchemaMapperInterface                   $schemaMapper         Mapper for schema operations.
      * @param ViewMapper                     $viewMapper           Mapper for view operations.
      * @param MagicMapper                    $objectMapper         Unified mapper for object
@@ -357,7 +357,7 @@ class ObjectService implements ObjectServiceInterface
         private readonly ValidationHandler $validationHandler,
         private readonly CascadingHandler $cascadingHandler,
         private readonly MigrationHandler $migrationHandler,
-        private readonly RegisterMapper $registerMapper,
+        private readonly RegisterMapperInterface $registerMapper,
         private readonly SchemaMapperInterface $schemaMapper,
         private readonly ViewMapper $viewMapper,
         private readonly MagicMapper $objectMapper,

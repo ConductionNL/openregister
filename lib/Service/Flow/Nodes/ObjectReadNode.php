@@ -66,7 +66,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
@@ -127,7 +127,7 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	 * Constructor.
 	 *
 	 * @param ObjectService $objects Object reads, RBAC-enforcing.
-	 * @param RegisterMapper $registers Resolves the configured register.
+	 * @param RegisterMapperInterface $registers Resolves the configured register.
 	 * @param SchemaMapperInterface $schemas Resolves the configured schema.
 	 * @param IUserManager $userManager Resolves the run owner.
 	 * @param IL10N $l10n Translations.
@@ -135,7 +135,7 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
-		private readonly RegisterMapper $registers,
+		private readonly RegisterMapperInterface $registers,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly IUserManager $userManager,
 		private readonly IL10N $l10n,

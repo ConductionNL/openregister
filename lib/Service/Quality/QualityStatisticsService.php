@@ -46,7 +46,7 @@ namespace OCA\OpenRegister\Service\Quality;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
@@ -111,7 +111,7 @@ class QualityStatisticsService {
 	 *
 	 * @param ObjectService $objectService Object query path (RBAC + tenant scoped).
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup for the quality annotation.
-	 * @param RegisterMapper $registerMapper Register lookup — the boundary the schema resolves inside.
+	 * @param RegisterMapperInterface $registerMapper Register lookup — the boundary the schema resolves inside.
 	 * @param QualityScorer $scorer Reused for status() bucketing — never reimplemented.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
@@ -122,7 +122,7 @@ class QualityStatisticsService {
 	public function __construct(
 		private readonly ObjectService $objectService,
 		SchemaMapperInterface $schemaMapper,
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		private readonly QualityScorer $scorer,
 		private readonly LoggerInterface $logger,
 	) {

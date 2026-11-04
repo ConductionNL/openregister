@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
@@ -70,7 +70,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.TooManyFields)            Configuration service coordinates many handler classes
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class ConfigurationService {
+class ConfigurationService implements ConfigurationServiceInterface {
 
 	/**
 	 * Schema mapper instance for handling schema operations.
@@ -82,9 +82,9 @@ class ConfigurationService {
 	/**
 	 * Register mapper instance for handling register operations.
 	 *
-	 * @var RegisterMapper The register mapper instance.
+	 * @var RegisterMapperInterface The register mapper instance.
 	 */
-	private RegisterMapper $registerMapper;
+	private RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Configuration mapper instance for handling configuration operations.
@@ -203,7 +203,7 @@ class ConfigurationService {
 	 * Initializes service with required dependencies for configuration operations.
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
-	 * @param RegisterMapper $registerMapper Register mapper for register operations
+	 * @param RegisterMapperInterface $registerMapper Register mapper for register operations
 	 * @param ConfigurationMapper $configurationMapper Configuration mapper for configuration operations
 	 * @param IAppManager $appManager App manager for checking installed apps
 	 * @param ContainerInterface $container Container for lazy service loading
@@ -225,7 +225,7 @@ class ConfigurationService {
 	 */
 	public function __construct(
 		SchemaMapperInterface $schemaMapper,
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		ConfigurationMapper $configurationMapper,
 		IAppManager $appManager,
 		ContainerInterface $container,

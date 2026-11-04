@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\IDBConnection;
@@ -63,9 +63,9 @@ class RegisterService {
 	 *
 	 * Handles database operations for register entities.
 	 *
-	 * @var RegisterMapper Register mapper instance
+	 * @var RegisterMapperInterface Register mapper instance
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Schema mapper
@@ -138,7 +138,7 @@ class RegisterService {
 	 *
 	 * Initializes service with required dependencies for register operations.
 	 *
-	 * @param RegisterMapper $registerMapper Register mapper for database operations
+	 * @param RegisterMapperInterface $registerMapper Register mapper for database operations
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
 	 * @param IDBConnection $db Database connection for custom queries
 	 * @param FileService $fileService File service for file operations
@@ -149,7 +149,7 @@ class RegisterService {
 	 * @return void
 	 */
 	public function __construct(
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		SchemaMapperInterface $schemaMapper,
 		IDBConnection $db,
 		FileService $fileService,

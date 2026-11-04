@@ -35,7 +35,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Object\SaveObject;
-use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -60,7 +60,7 @@ class RetentionController extends Controller {
 	 *
 	 * @param string $appName App name
 	 * @param IRequest $request Request
-	 * @param RetentionService $retentionService Retention service
+	 * @param RetentionServiceInterface $retentionService Retention service
 	 * @param ObjectRetentionHandler $settingsHandler Settings handler
 	 * @param SaveObject $saveObject Save object service
 	 * @param MagicMapper $objectMapper Object mapper
@@ -76,7 +76,7 @@ class RetentionController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly RetentionService $retentionService,
+		private readonly RetentionServiceInterface $retentionService,
 		private readonly ObjectRetentionHandler $settingsHandler,
 		private readonly SaveObject $saveObject,
 		private readonly MagicMapper $objectMapper,

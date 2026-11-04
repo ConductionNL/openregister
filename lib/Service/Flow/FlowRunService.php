@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunStep;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
@@ -118,7 +118,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapper $mapper Persists runs.
+	 * @param FlowRunMapperInterface $mapper Persists runs.
 	 * @param FlowStateMapper $stateMapper Persists state that outlives a run.
 	 * @param FlowEngine $engine Walks the graph.
 	 * @param FlowNodeRegistry $registry Resolves step types.
@@ -141,7 +141,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *                                   default applies.
 	 */
 	public function __construct(
-		private readonly FlowRunMapper $mapper,
+		private readonly FlowRunMapperInterface $mapper,
 		FlowStateMapper $stateMapper,
 		private readonly FlowEngine $engine,
 		private readonly FlowNodeRegistry $registry,

@@ -41,7 +41,7 @@ use DateTimeZone;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
@@ -147,7 +147,7 @@ class AggregationRunner {
 	 * Constructor.
 	 *
 	 * @param MagicMapper $magicMapper Magic-table mapper used for the PHP fallback path.
-	 * @param RegisterMapper $registerMapper Register loader.
+	 * @param RegisterMapperInterface $registerMapper Register loader.
 	 * @param SchemaMapperInterface $schemaMapper Schema loader.
 	 * @param PlaceholderResolver $placeholders Resolves dynamic placeholders inside filters.
 	 * @param IDBConnection $db Database connection for the Postgres-native fast path.
@@ -176,7 +176,7 @@ class AggregationRunner {
 	 */
 	public function __construct(
 		private readonly MagicMapper $magicMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PlaceholderResolver $placeholders,
 		private readonly IDBConnection $db,
