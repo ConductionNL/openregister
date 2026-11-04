@@ -12711,14 +12711,12 @@ class MagicMapper extends AbstractObjectMapper {
 		// unified-search work; this entry point never did.
 		if ($this->namesSeveral(registerRaw: $registerRaw, schemaRaw: $schemaRaw) === true) {
 			$result = $this->searchObjectsPaginatedMultiSchema(
-				search: new MultiSchemaSearch(
+				search: (new MultiSchemaSearch(
 					searchQuery: $query,
 					countQuery: $query,
 					registerIds: $this->identifierList(value: $registerRaw),
-					schemaIds: $this->identifierList(value: $schemaRaw),
-					rbac: $_rbac,
-					multitenancy: $_multitenancy
-				)
+					schemaIds: $this->identifierList(value: $schemaRaw)
+				))->securedBy(rbac: $_rbac, multitenancy: $_multitenancy)
 			);
 
 			return ($result['results'] ?? []);
@@ -12790,14 +12788,12 @@ class MagicMapper extends AbstractObjectMapper {
 		// for register 1 is the same defect wearing a different return type.
 		if ($this->namesSeveral(registerRaw: $registerRaw, schemaRaw: $schemaRaw) === true) {
 			$result = $this->searchObjectsPaginatedMultiSchema(
-				search: new MultiSchemaSearch(
+				search: (new MultiSchemaSearch(
 					searchQuery: $query,
 					countQuery: $query,
 					registerIds: $this->identifierList(value: $registerRaw),
-					schemaIds: $this->identifierList(value: $schemaRaw),
-					rbac: $_rbac,
-					multitenancy: $_multitenancy
-				)
+					schemaIds: $this->identifierList(value: $schemaRaw)
+				))->securedBy(rbac: $_rbac, multitenancy: $_multitenancy)
 			);
 
 			return (int)($result['total'] ?? 0);
@@ -12986,14 +12982,12 @@ class MagicMapper extends AbstractObjectMapper {
 		}
 
 		return $this->searchObjectsPaginatedMultiSchema(
-			search: new MultiSchemaSearch(
+			search: (new MultiSchemaSearch(
 				searchQuery: $request['search'],
 				countQuery: $request['count'],
 				registerIds: $this->multiSchemaRegisterIds(scope: $scope),
-				schemaIds: $scope['schemaIds'],
-				rbac: $request['rbac'],
-				multitenancy: $request['multitenancy']
-			)
+				schemaIds: $scope['schemaIds']
+			))->securedBy(rbac: $request['rbac'], multitenancy: $request['multitenancy'])
 		);
 	}//end searchMultiSchema()
 

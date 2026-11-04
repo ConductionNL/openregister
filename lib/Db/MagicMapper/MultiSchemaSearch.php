@@ -72,24 +72,48 @@ final class MultiSchemaSearch {
 	public int $total = 0;
 
 	/**
+	 * Whether RBAC applies.
+	 *
+	 * @var boolean
+	 */
+	private bool $rbac = true;
+
+	/**
+	 * Whether multitenancy applies.
+	 *
+	 * @var boolean
+	 */
+	private bool $multitenancy = true;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param array $searchQuery  The search query.
-	 * @param array $countQuery   The count query.
-	 * @param array $registerIds  Registers to search; empty means every schema's owning register.
-	 * @param array $schemaIds    Schemas to search.
-	 * @param bool  $rbac         Whether RBAC applies.
-	 * @param bool  $multitenancy Whether multitenancy applies.
+	 * @param array $searchQuery The search query.
+	 * @param array $countQuery  The count query.
+	 * @param array $registerIds Registers to search; empty means every schema's owning register.
+	 * @param array $schemaIds   Schemas to search.
 	 */
 	public function __construct(
 		public readonly array $searchQuery,
 		public readonly array $countQuery,
 		public readonly array $registerIds,
 		public readonly array $schemaIds,
-		public readonly bool $rbac = true,
-		public readonly bool $multitenancy = true,
 	) {
 	}//end __construct()
+
+	/**
+	 * Set the security filters the search applies.
+	 *
+	 * @param bool $rbac         Whether RBAC applies.
+	 * @param bool $multitenancy Whether multitenancy applies.
+	 *
+	 * @return self This search.
+	 */
+	public function securedBy(bool $rbac, bool $multitenancy): self {
+		$this->rbac         = $rbac;
+		$this->multitenancy = $multitenancy;
+		return $this;
+	}//end securedBy()
 
 	/**
 	 * A query with this search's RBAC and multitenancy flags set.

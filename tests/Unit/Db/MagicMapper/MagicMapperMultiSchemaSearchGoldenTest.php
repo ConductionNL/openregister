@@ -95,7 +95,7 @@ class MagicMapperMultiSchemaSearchGoldenTest extends TestCase {
 
 	private function search(MagicMapper $mapper, array $queries, array $flags): array {
 		$method = new ReflectionMethod(MagicMapper::class, 'searchObjectsPaginatedMultiSchema');
-		return $method->invoke($mapper, new MultiSchemaSearch($queries[0], $queries[1], $queries[2], $queries[3], $flags[0], $flags[1]));
+		return $method->invoke($mapper, (new MultiSchemaSearch($queries[0], $queries[1], $queries[2], $queries[3]))->securedBy($flags[0], $flags[1]));
 	}//end search()
 
 	private function makeMapper(?string $fail): MagicMapper {
