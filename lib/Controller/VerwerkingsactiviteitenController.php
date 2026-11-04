@@ -39,7 +39,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -79,7 +79,7 @@ class VerwerkingsactiviteitenController extends Controller {
 	 * @param VerwerkingsactiviteitMapper $vrwMapper Mapper for the catalog.
 	 * @param ControllerSession $session Session, group manager and logger.
 	 * @param IDBConnection $db DB for the verantwoording aggregation.
-	 * @param OrganisationService $organisationService Org-scoping helper.
+	 * @param OrganisationServiceInterface $organisationService Org-scoping helper.
 	 */
 	public function __construct(
 		string $appName,
@@ -87,7 +87,7 @@ class VerwerkingsactiviteitenController extends Controller {
 		private readonly VerwerkingsactiviteitMapper $vrwMapper,
 		ControllerSession $session,
 		private readonly IDBConnection $db,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 

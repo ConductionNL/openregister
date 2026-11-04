@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ObjectService;
 
 /**
@@ -37,17 +37,17 @@ final class ObjectStore {
 	 * Bundle the services.
 	 *
 	 * @param ObjectService    $objectService    The object service.
-	 * @param RegisterMapper   $registerMapper   The register mapper.
-	 * @param SchemaMapper     $schemaMapper     The schema mapper.
-	 * @param AuditTrailMapper $auditTrailMapper The audit trail mapper.
+	 * @param RegisterMapperInterface   $registerMapper   The register mapper.
+	 * @param SchemaMapperInterface     $schemaMapper     The schema mapper.
+	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail mapper.
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function __construct(
 		public readonly ObjectService $objectService,
-		public readonly RegisterMapper $registerMapper,
-		public readonly SchemaMapper $schemaMapper,
-		public readonly AuditTrailMapper $auditTrailMapper,
+		public readonly RegisterMapperInterface $registerMapper,
+		public readonly SchemaMapperInterface $schemaMapper,
+		public readonly AuditTrailMapperInterface $auditTrailMapper,
 	) {
 	}//end __construct()
 }//end class

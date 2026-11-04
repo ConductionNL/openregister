@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\UploadService;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -37,7 +37,7 @@ final class SchemaPlatform {
 	 * Bundle the services.
 	 *
 	 * @param UploadService       $uploadService       The upload service.
-	 * @param OrganisationService $organisationService The organisation service.
+	 * @param OrganisationServiceInterface $organisationService The organisation service.
 	 * @param LoggerInterface     $logger              The logger.
 	 * @param ContainerInterface  $container           The DI container.
 	 *
@@ -45,7 +45,7 @@ final class SchemaPlatform {
 	 */
 	public function __construct(
 		public readonly UploadService $uploadService,
-		public readonly OrganisationService $organisationService,
+		public readonly OrganisationServiceInterface $organisationService,
 		public readonly LoggerInterface $logger,
 		public readonly ContainerInterface $container,
 	) {

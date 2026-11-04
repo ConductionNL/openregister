@@ -523,16 +523,6 @@ class ContactService {
 	 * @throws Exception If the contact does not exist.
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Single switch on upsert state — extracting a sub-method
-	 *                                                doesn't add clarity and would split the vCard hydration
-	 *                                                from the DB write that consumes it.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       insert vs update branches plus optional role/schemaId
-	 * null-checks plus best-effort persist error path expand NPath; each path serves a distinct upsert
-	 * variant in the idempotent link contract.
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) linkContact() covers card lookup, user auth, vCard
-	 * hydration, existence check, and insert-or-update in sequence; splitting would scatter the
-	 * idempotent upsert contract across multiple methods.
 	 */
 	public function linkContact(
 		string $objectUuid,
@@ -542,7 +532,6 @@ class ContactService {
 		?string $role = null,
 		?int $schemaId = null,
 	): ContactLink {
-		// Verify the contact exists.
 		$card = $this->cardDavBackend->getCard($addressbookId, $contactUri);
 		if ($card === false) {
 			throw new Exception('Contact not found', 404);
@@ -553,33 +542,17 @@ class ContactService {
 			throw new Exception('No user logged in');
 		}
 
-		// Parse vCard for cached fields.
 		$vcard = Reader::read($card['carddata']);
-		$contactUid = '';
-		if (isset($vcard->UID) === true) {
-			$contactUid = (string)$vcard->UID;
-		}
+		$contactUid = $this->vcardText(vcard: $vcard, property: 'UID') ?? '';
 
-		$displayName = null;
-		if (isset($vcard->FN) === true) {
-			$displayName = (string)$vcard->FN;
-		}
-
-		$email = null;
-		if (isset($vcard->EMAIL) === true) {
-			$email = (string)$vcard->EMAIL;
-		}
-
-		// Tier-2: extract the widened payload (phone / org / avatar) so
-		// the row can serve future list calls without round-tripping
-		// CardDAV.
+		// Tier-2: the widened payload (phone / org / avatar) lets the row serve
+		// future list calls without round-tripping CardDAV.
 		$vfields = $this->extractVcardFields(
 			addressbookId: $addressbookId,
 			contactUri: $contactUri,
 			contactUid: $contactUid
 		);
 
-		// Add X-OPENREGISTER-* properties to the vCard.
 		$vcard->add('X-OPENREGISTER-OBJECT', $objectUuid);
 		if ($role !== null) {
 			$vcard->add('X-OPENREGISTER-ROLE', $role);
@@ -587,49 +560,17 @@ class ContactService {
 
 		$this->cardDavBackend->updateCard($addressbookId, $contactUri, $vcard->serialize());
 
-		// Upsert: if a row already exists for this (objectUuid, contactUid)
-		// pair, refresh its cached fields + role instead of inserting.
-		$existing = null;
-		if ($contactUid !== '') {
-			$existing = $this->contactLinkMapper->findByObjectAndContact(
-				objectUuid: $objectUuid,
-				contactUid: $contactUid
-			);
-		}
-
-		if ($existing !== null) {
-			$existing->setRegisterId($registerId);
-			if ($schemaId !== null) {
-				$existing->setSchemaId($schemaId);
-			}
-
-			$existing->setAddressbookId($addressbookId);
-			$existing->setContactUri($contactUri);
-			$existing->setDisplayName($displayName);
-			$existing->setEmail($email);
-			$existing->setPhone($vfields['phone']);
-			$existing->setOrg($vfields['org']);
-			$existing->setAvatarUrl($vfields['avatarUrl']);
-			$existing->setRole($role);
-			$existing->setLinkedBy($user->getUID());
-			$existing->setLinkedAt(new DateTime());
-
-			return $this->contactLinkMapper->update($existing);
-		}
-
-		// Create DB record.
-		$link = new ContactLink();
-		$link->setObjectUuid($objectUuid);
+		$existing = $this->existingLink(objectUuid: $objectUuid, contactUid: $contactUid);
+		$link = $existing ?? $this->newLink(objectUuid: $objectUuid, contactUid: $contactUid);
 		$link->setRegisterId($registerId);
 		if ($schemaId !== null) {
 			$link->setSchemaId($schemaId);
 		}
 
-		$link->setContactUid($contactUid);
 		$link->setAddressbookId($addressbookId);
 		$link->setContactUri($contactUri);
-		$link->setDisplayName($displayName);
-		$link->setEmail($email);
+		$link->setDisplayName($this->vcardText(vcard: $vcard, property: 'FN'));
+		$link->setEmail($this->vcardText(vcard: $vcard, property: 'EMAIL'));
 		$link->setPhone($vfields['phone']);
 		$link->setOrg($vfields['org']);
 		$link->setAvatarUrl($vfields['avatarUrl']);
@@ -637,8 +578,59 @@ class ContactService {
 		$link->setLinkedBy($user->getUID());
 		$link->setLinkedAt(new DateTime());
 
+		if ($existing !== null) {
+			return $this->contactLinkMapper->update($link);
+		}
+
 		return $this->contactLinkMapper->insert($link);
 	}//end linkContact()
+
+	/**
+	 * The text of a vCard property, or null when the card does not have it.
+	 *
+	 * @param Document $vcard    The parsed vCard.
+	 * @param string   $property The property name, such as FN or EMAIL.
+	 *
+	 * @return string|null The first value of the property.
+	 */
+	private function vcardText(Document $vcard, string $property): ?string {
+		if (isset($vcard->$property) === false) {
+			return null;
+		}
+
+		return (string) $vcard->$property;
+	}//end vcardText()
+
+	/**
+	 * The link row of a contact on an object, when the contact has a UID and is linked already.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 * @param string $contactUid The vCard UID, empty when the card has none.
+	 *
+	 * @return ContactLink|null The existing link.
+	 */
+	private function existingLink(string $objectUuid, string $contactUid): ?ContactLink {
+		if ($contactUid === '') {
+			return null;
+		}
+
+		return $this->contactLinkMapper->findByObjectAndContact(objectUuid: $objectUuid, contactUid: $contactUid);
+	}//end existingLink()
+
+	/**
+	 * A new, unsaved link of a contact to an object.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 * @param string $contactUid The vCard UID.
+	 *
+	 * @return ContactLink The link.
+	 */
+	private function newLink(string $objectUuid, string $contactUid): ContactLink {
+		$link = new ContactLink();
+		$link->setObjectUuid($objectUuid);
+		$link->setContactUid($contactUid);
+		return $link;
+	}//end newLink()
 
 	/**
 	 * Create a new contact and link it to an object.

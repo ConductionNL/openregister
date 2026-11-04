@@ -82,8 +82,8 @@ final class RbacRegistrar {
 			static function ($c) {
 				return new HierarchyDescender(
 					db: $c->get(\OCP\IDBConnection::class),
-					schemaMapper: $c->get(\OCA\OpenRegister\Db\SchemaMapper::class),
-					registerMapper: $c->get(\OCA\OpenRegister\Db\RegisterMapper::class),
+					schemaMapper: $c->get(\OCA\OpenRegister\Db\SchemaMapperInterface::class),
+					registerMapper: $c->get(\OCA\OpenRegister\Db\RegisterMapperInterface::class),
 					logger: $c->get(\Psr\Log\LoggerInterface::class),
 				);
 			}

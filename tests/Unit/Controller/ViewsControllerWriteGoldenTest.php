@@ -10,11 +10,11 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\ViewsController;
-use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
-use OCA\OpenRegister\Service\ViewPresentationService;
-use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Search\Service\ViewPresentationService;
+use OCA\OpenRegister\Search\Service\ViewService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -33,7 +33,7 @@ use Psr\Log\LoggerInterface;
  * as a different recorded uid. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\ViewsController
- * @uses \OCA\OpenRegister\Db\View
+ * @uses \OCA\OpenRegister\Search\Db\View
  * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
  * @uses \OCA\OpenRegister\Service\View\ViewAlert
  * @uses \OCA\OpenRegister\Exception\InvalidViewAlertException

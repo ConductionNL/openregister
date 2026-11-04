@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IConfig;
 use Psr\Container\ContainerInterface;
@@ -269,9 +269,9 @@ class ExampleSetInstance {
 	/**
 	 * OpenRegister's organisation mapper.
 	 *
-	 * @return OrganisationMapper
+	 * @return OrganisationMapperInterface
 	 */
-	private function mapper(): OrganisationMapper {
-		return $this->container->get(OrganisationMapper::class);
+	private function mapper(): OrganisationMapperInterface {
+		return $this->container->get(OrganisationMapperInterface::class);
 	}//end mapper()
 }//end class

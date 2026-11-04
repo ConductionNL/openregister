@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Export;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -61,13 +61,13 @@ class ExportAuditRecorder {
 	/**
 	 * Wire the ledger.
 	 *
-	 * @param AuditTrailMapper $auditTrailMapper The hash-chained audit trail.
+	 * @param AuditTrailMapperInterface $auditTrailMapper The hash-chained audit trail.
 	 * @param LoggerInterface  $logger           PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

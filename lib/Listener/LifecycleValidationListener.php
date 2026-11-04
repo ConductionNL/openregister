@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Lifecycle\GuardResult;
 use OCA\OpenRegister\Lifecycle\LifecycleGuardContext;
@@ -80,7 +80,7 @@ class LifecycleValidationListener implements IEventListener {
 	/**
 	 * Wire collaborators used to validate transitions and run guards.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
 	 * @param LifecycleGuardRegistry $guardRegistry Registry resolving guard ids to instances.
 	 * @param IUserSession $userSession Current user session.
 	 * @param PermissionHandler $permissionHandler RBAC handler used to evaluate declarative per-transition authorization.
@@ -95,7 +95,7 @@ class LifecycleValidationListener implements IEventListener {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LifecycleGuardRegistry $guardRegistry,
 		private readonly IUserSession $userSession,
 		private readonly PermissionHandler $permissionHandler,

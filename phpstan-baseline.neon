@@ -33,27 +33,27 @@ parameters:
 		-
 			message: "#^Call to an undefined method OCP\\\\Files\\\\Node\\:\\:get\\(\\)\\.$#"
 			count: 1
-			path: lib/BackgroundJob/ReportRenderJob.php
+			path: lib/Search/BackgroundJob/ReportRenderJob.php
 
 		-
 			message: "#^Call to an undefined method OCP\\\\Files\\\\Node\\:\\:newFile\\(\\)\\.$#"
 			count: 1
-			path: lib/BackgroundJob/ReportRenderJob.php
+			path: lib/Search/BackgroundJob/ReportRenderJob.php
 
 		-
 			message: "#^Call to an undefined method OCP\\\\Files\\\\Node\\:\\:nodeExists\\(\\)\\.$#"
 			count: 1
-			path: lib/BackgroundJob/ReportRenderJob.php
+			path: lib/Search/BackgroundJob/ReportRenderJob.php
 
 		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
-			path: lib/BackgroundJob/ReportRenderJob.php
+			path: lib/Search/BackgroundJob/ReportRenderJob.php
 
 		-
 			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
-			path: lib/BackgroundJob/ReportRenderJob.php
+			path: lib/Search/BackgroundJob/ReportRenderJob.php
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
@@ -2943,52 +2943,52 @@ parameters:
 		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getOrganisation\\(\\)\\.$#"
 			count: 1
-			path: lib/Db/ViewMapper.php
+			path: lib/Search/Db/ViewMapper.php
 
 		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getUuid\\(\\)\\.$#"
 			count: 1
-			path: lib/Db/ViewMapper.php
+			path: lib/Search/Db/ViewMapper.php
 
 		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setCreated\\(\\)\\.$#"
 			count: 1
-			path: lib/Db/ViewMapper.php
+			path: lib/Search/Db/ViewMapper.php
 
 		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setOrganisation\\(\\)\\.$#"
 			count: 2
-			path: lib/Db/ViewMapper.php
+			path: lib/Search/Db/ViewMapper.php
 
 		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setUpdated\\(\\)\\.$#"
 			count: 2
-			path: lib/Db/ViewMapper.php
+			path: lib/Search/Db/ViewMapper.php
 
 		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setUuid\\(\\)\\.$#"
 			count: 1
-			path: lib/Db/ViewMapper.php
+			path: lib/Search/Db/ViewMapper.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\ViewMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\View\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\View\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Db\\\\ViewMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\View\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Search\\\\Db\\\\View\\>\\.$#"
 			count: 1
-			path: lib/Db/ViewMapper.php
+			path: lib/Search/Db/ViewMapper.php
 
 		-
-			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\View\\>\\:\\:delete\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\View, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
+			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Search\\\\Db\\\\View\\>\\:\\:delete\\(\\) expects OCA\\\\OpenRegister\\\\Search\\\\Db\\\\View, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
 			count: 1
-			path: lib/Db/ViewMapper.php
+			path: lib/Search/Db/ViewMapper.php
 
 		-
-			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\View\\>\\:\\:insert\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\View, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
+			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Search\\\\Db\\\\View\\>\\:\\:insert\\(\\) expects OCA\\\\OpenRegister\\\\Search\\\\Db\\\\View, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
 			count: 1
-			path: lib/Db/ViewMapper.php
+			path: lib/Search/Db/ViewMapper.php
 
 		-
-			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\View\\>\\:\\:update\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\View, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
+			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Search\\\\Db\\\\View\\>\\:\\:update\\(\\) expects OCA\\\\OpenRegister\\\\Search\\\\Db\\\\View, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
 			count: 1
-			path: lib/Db/ViewMapper.php
+			path: lib/Search/Db/ViewMapper.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\WebhookLogMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\WebhookLog\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\WebhookLog\\>\\.$#"
@@ -3207,12 +3207,12 @@ parameters:
 		-
 			message: "#^Result of \\|\\| is always false\\.$#"
 			count: 1
-			path: lib/Service/Aggregation/AggregationQuery.php
+			path: lib/Search/Service/Aggregation/AggregationQuery.php
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
 			count: 2
-			path: lib/Service/Aggregation/AggregationQuery.php
+			path: lib/Search/Service/Aggregation/AggregationQuery.php
 
 		-
 			message: "#^Empty array passed to foreach\\.$#"
@@ -3812,12 +3812,12 @@ parameters:
 		-
 			message: "#^Offset 'total' on array\\{total\\: int, successful\\: int, failed\\: int\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
-			path: lib/Service/DashboardService.php
+			path: lib/Search/Service/DashboardService.php
 
 		-
 			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\AuditTrailMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
-			path: lib/Service/DashboardService.php
+			path: lib/Search/Service/DashboardService.php
 
 		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\DeckLinkMapper\\:\\:find\\(\\)\\.$#"
@@ -4307,12 +4307,12 @@ parameters:
 		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
-			path: lib/Service/GraphQL/SchemaGenerator.php
+			path: lib/Search/Service/GraphQL/SchemaGenerator.php
 
 		-
 			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
-			path: lib/Service/GraphQL/SchemaGenerator.php
+			path: lib/Search/Service/GraphQL/SchemaGenerator.php
 
 
 
@@ -4581,7 +4581,7 @@ parameters:
 		-
 			message: "#^Unreachable statement \\- code above always terminates\\.$#"
 			count: 1
-			path: lib/Service/MetricsService.php
+			path: lib/Search/Service/MetricsService.php
 
 		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\MigrationService\\:\\:\\$db is never read, only written\\.$#"
@@ -5231,12 +5231,12 @@ parameters:
 		-
 			message: "#^Variable \\$output on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
-			path: lib/Service/Reporting/PdfReportWriter.php
+			path: lib/Search/Service/Reporting/PdfReportWriter.php
 
 		-
 			message: "#^Unreachable statement \\- code above always terminates\\.$#"
 			count: 1
-			path: lib/Service/Reporting/ReportRenderService.php
+			path: lib/Search/Service/Reporting/ReportRenderService.php
 
 		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\:\\:getTitle\\(\\)\\.$#"
@@ -5346,12 +5346,12 @@ parameters:
 		-
 			message: "#^Variable \\$sign might not be defined\\.$#"
 			count: 1
-			path: lib/Service/Search/PlaceholderResolver.php
+			path: lib/Search/Service/Search/PlaceholderResolver.php
 
 		-
 			message: "#^Variable \\$unit might not be defined\\.$#"
 			count: 1
-			path: lib/Service/Search/PlaceholderResolver.php
+			path: lib/Search/Service/Search/PlaceholderResolver.php
 
 		-
 			message: "#^Offset 1 on array\\{string, non\\-empty\\-string\\} on left side of \\?\\? always exists and is not nullable\\.$#"
@@ -5686,17 +5686,17 @@ parameters:
 		-
 			message: "#^Comparison operation \"\\>\" between \\(array\\|float\\|int\\) and 0 results in an error\\.$#"
 			count: 1
-			path: lib/Service/Vectorization/Handlers/VectorSearchHandler.php
+			path: lib/Search/Service/Vectorization/Handlers/VectorSearchHandler.php
 
 		-
-			message: "#^Parameter \\#1 \\$limit of method OCA\\\\OpenRegister\\\\Db\\\\ViewMapper\\:\\:findAll\\(\\) expects int\\|null, string given\\.$#"
+			message: "#^Parameter \\#1 \\$limit of method OCA\\\\OpenRegister\\\\Search\\\\Db\\\\ViewMapper\\:\\:findAll\\(\\) expects int\\|null, string given\\.$#"
 			count: 1
-			path: lib/Service/ViewService.php
+			path: lib/Search/Service/ViewService.php
 
 		-
-			message: "#^Unknown parameter \\$owner in call to method OCA\\\\OpenRegister\\\\Db\\\\ViewMapper\\:\\:findAll\\(\\)\\.$#"
+			message: "#^Unknown parameter \\$owner in call to method OCA\\\\OpenRegister\\\\Search\\\\Db\\\\ViewMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
-			path: lib/Service/ViewService.php
+			path: lib/Search/Service/ViewService.php
 
 		-
 			message: "#^Dead catch \\- OCA\\\\OpenRegister\\\\Exception\\\\ProviderUnavailableException is never thrown in the try block\\.$#"

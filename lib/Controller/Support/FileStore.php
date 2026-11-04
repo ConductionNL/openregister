@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Db\FileMapperInterface;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Files\IRootFolder;
@@ -39,7 +39,7 @@ final class FileStore {
 	 * @param FileService   $fileService   The file service.
 	 * @param ObjectService $objectService The object service.
 	 * @param IRootFolder   $rootFolder    The root folder.
-	 * @param ?FileMapper   $fileMapper    The file mapper, null when absent.
+	 * @param ?FileMapperInterface   $fileMapper    The file mapper, null when absent.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -47,7 +47,7 @@ final class FileStore {
 		public readonly FileService $fileService,
 		public readonly ObjectService $objectService,
 		public readonly IRootFolder $rootFolder,
-		public readonly ?FileMapper $fileMapper = null,
+		public readonly ?FileMapperInterface $fileMapper = null,
 	) {
 	}//end __construct()
 }//end class

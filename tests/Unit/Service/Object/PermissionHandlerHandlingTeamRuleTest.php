@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -149,7 +150,7 @@ class PermissionHandlerHandlingTeamRuleTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static function (string $class) use ($registerMapper) {
-				if ($class === RegisterMapper::class) {
+				if ($class === RegisterMapperInterface::class) {
 					return $registerMapper;
 				}
 

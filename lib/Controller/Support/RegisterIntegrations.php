@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
-use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\OasService;
 use Psr\Container\ContainerInterface;
 
@@ -36,7 +36,7 @@ final class RegisterIntegrations {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ConfigurationService  $configurationService The configuration service.
+	 * @param ConfigurationServiceInterface  $configurationService The configuration service.
 	 * @param GitHubClientInterface $githubService        The GitHub client.
 	 * @param OasService            $oasService           The OpenAPI service.
 	 * @param ContainerInterface    $container            The DI container.
@@ -44,7 +44,7 @@ final class RegisterIntegrations {
 	 * @spec openspec/specs/register-service-extensions/spec.md
 	 */
 	public function __construct(
-		public readonly ConfigurationService $configurationService,
+		public readonly ConfigurationServiceInterface $configurationService,
 		public readonly GitHubClientInterface $githubService,
 		public readonly OasService $oasService,
 		public readonly ContainerInterface $container,

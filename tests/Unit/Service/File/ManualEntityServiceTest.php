@@ -551,4 +551,85 @@ class ManualEntityServiceTest extends TestCase {
 		}
 
 	}//end testAuditFailureRollsBack()
+
+	/**
+	 * Both audit rows carry the exact payloads, the acting UID and one shared timestamp.
+	 *
+	 * @return void
+	 */
+	public function testAuditPayloadsArePinned(): void {
+		$fileId = 42;
+		$actor = $this->setupWritableFile(fileId: $fileId);
+
+		$this->chunkMapper->method('findBySource')->willReturn(
+			value: [$this->makeChunk(id: 100, text: 'Jan Jansen en Jan Jansen.')]
+		);
+		$this->gdprMapper->method('findOneByValueAndType')->willReturn(value: null);
+		$inserted = new GdprEntity();
+		$inserted->setId(7);
+		$inserted->setCategory('personal_data');
+		$this->gdprMapper->method('insert')->willReturn(value: $inserted);
+
+		$this->relationMapper->method('existsForFileAtPosition')->willReturnOnConsecutiveCalls(true, false);
+		$relation = new EntityRelation();
+		$relation->setId(201);
+		$this->relationMapper->method('insertBatch')->willReturn(value: [$relation]);
+
+		$rows = [];
+		$this->auditMapper->expects($this->exactly(count: 2))
+			->method('insert')
+			->willReturnCallback(
+				callback: function ($row) use (&$rows) {
+					$rows[] = $row;
+					return $row;
+				}
+			);
+
+		$result = $this->service->addManualEntity(
+			fileId: $fileId,
+			value: 'Jan Jansen',
+			type: 'PERSON',
+			wholeWord: true,
+			caseSensitive: true,
+			actor: $actor
+		);
+
+		$this->assertSame(expected: 2, actual: $result->matchCount);
+		$this->assertSame(expected: 1, actual: $result->matchesSkipped);
+		$this->assertSame(expected: 'entity_create', actual: $rows[0]->getAction());
+		$this->assertSame(expected: 'entity_relations_batch_create', actual: $rows[1]->getAction());
+		foreach ($rows as $row) {
+			$this->assertSame(expected: 'op1', actual: $row->getUser());
+			$this->assertNull(actual: $row->getUserName());
+			$this->assertMatchesRegularExpression(pattern: '/^[0-9a-f-]{36}$/', string: $row->getUuid());
+		}
+
+		$this->assertSame(expected: $rows[0]->getCreated(), actual: $rows[1]->getCreated());
+		$this->assertNotSame(expected: $rows[0]->getUuid(), actual: $rows[1]->getUuid());
+		$this->assertSame(
+			expected: [
+				'subjectType' => 'openregister_entities',
+				'subjectId'   => 7,
+				'fields'      => ['value' => 'Jan Jansen', 'type' => 'PERSON', 'category' => 'personal_data'],
+			],
+			actual: $rows[0]->getChanged()
+		);
+		$this->assertSame(
+			expected: [
+				'subjectType' => 'openregister_files',
+				'subjectId'   => 42,
+				'fields'      => [
+					'value'           => 'Jan Jansen',
+					'type'            => 'PERSON',
+					'fileId'          => 42,
+					'detectionMethod' => DetectionMethod::MANUAL,
+					'matchCount'      => 2,
+					'matchesSkipped'  => 1,
+					'relationIds'     => [201],
+				],
+			],
+			actual: $rows[1]->getChanged()
+		);
+
+	}//end testAuditPayloadsArePinned()
 }//end class
