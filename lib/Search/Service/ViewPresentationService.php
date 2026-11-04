@@ -34,7 +34,7 @@ use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 use OCA\OpenRegister\Search\Db\View;
 use OCP\AppFramework\Db\Entity;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
 /**
  * Derives kanban board data and calendar date-range results for a view's
@@ -58,9 +58,9 @@ class ViewPresentationService {
 	/**
 	 * Object service, used to run the existing paginated/faceted object query.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Logger.
@@ -73,7 +73,7 @@ class ViewPresentationService {
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for enum/property discovery
-	 * @param ObjectService $objectService Object service for the paginated object query
+	 * @param ObjectOperationsInterface $objectService Object service for the paginated object query
 	 * @param LoggerInterface $logger Logger for error tracking
 	 * @param PropertyRbacHandler|null $propertyRbac Judges whether the caller may group on a governed property.
 	 *                                               Nullable and last so no construction site shifts; absent, a
@@ -83,7 +83,7 @@ class ViewPresentationService {
 	 */
 	public function __construct(
 		SchemaMapperInterface $schemaMapper,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		LoggerInterface $logger,
 		// LAST AND NULLABLE so every existing construction keeps working. The
 		// container always supplies it; null happens only in a hand-built test,

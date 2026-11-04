@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 
 /**
@@ -53,10 +53,10 @@ class ObjectsToolProvider implements IMcpToolProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param ObjectService $objectService Object service facade
+	 * @param ObjectOperationsInterface $objectService Object service facade
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 	) {
 	}//end __construct()
 

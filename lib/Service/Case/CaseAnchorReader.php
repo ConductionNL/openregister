@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Case;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -44,11 +44,11 @@ class CaseAnchorReader {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects The ordinary object read path.
+	 * @param ObjectOperationsInterface $objects The ordinary object read path.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly LoggerInterface $logger,
 	) {
 

@@ -52,7 +52,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IUserManager;
 use RuntimeException;
 
@@ -66,12 +66,12 @@ class FlowRunAsScope {
 	 * Constructor.
 	 *
 	 * @param IUserManager $userManager Resolves the named identity to a real account.
-	 * @param ObjectService $objectService Owns the session-scoping seam every
+	 * @param ObjectOperationsInterface $objectService Owns the session-scoping seam every
 	 *                                     RBAC and organisation predicate reads.
 	 */
 	public function __construct(
 		private readonly IUserManager $userManager,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 	) {
 
 	}//end __construct()

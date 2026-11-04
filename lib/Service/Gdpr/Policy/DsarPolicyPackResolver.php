@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Gdpr\Policy;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -83,11 +83,11 @@ class DsarPolicyPackResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService RBAC + tenant scoped object store (pack read).
+	 * @param ObjectOperationsInterface $objectService RBAC + tenant scoped object store (pack read).
 	 * @param LoggerInterface $logger Logger for pack-read diagnostics.
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

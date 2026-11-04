@@ -29,7 +29,7 @@ use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Throwable;
 
@@ -90,12 +90,12 @@ class ObjectFileAccess {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService     $objectService     Reads objects under the caller's RBAC.
+	 * @param ObjectOperationsInterface     $objectService     Reads objects under the caller's RBAC.
 	 * @param PermissionHandler $permissionHandler Decides the update rule on one object.
 	 * @param SchemaMapperInterface      $schemaMapper      Resolves the object's schema, which carries the rule.
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly SchemaMapperInterface $schemaMapper,
 	) {

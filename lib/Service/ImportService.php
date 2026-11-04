@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use DateTimeZone;
 use Exception;
 use InvalidArgumentException;
@@ -97,9 +98,9 @@ class ImportService implements ObjectImporterInterface {
 	/**
 	 * Object service instance
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Default chunk size for processing
@@ -161,7 +162,7 @@ class ImportService implements ObjectImporterInterface {
 	 * Constructor for the ImportService
 	 *
 	 * @param SchemaMapperInterface $schemaMapper The schema mapper
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 * @param LoggerInterface $logger The logger interface
 	 * @param IGroupManager $groupManager The group manager
 	 * @param \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec Translation CSV codec
@@ -173,7 +174,7 @@ class ImportService implements ObjectImporterInterface {
 	 */
 	public function __construct(
 		SchemaMapperInterface $schemaMapper,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		LoggerInterface $logger,
 		IGroupManager $groupManager,
 		\OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec,
