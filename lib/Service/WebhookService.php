@@ -676,11 +676,6 @@ class WebhookService {
 	 *
 	 * @return bool Success status
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex delivery with retry and error handling
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple exception handling paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive webhook delivery with logging
-	 * Fallback for connection errors without response
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	public function deliverWebhook(
@@ -690,226 +685,298 @@ class WebhookService {
 		int $attempt = 1,
 		?int $timeoutCapSeconds = null,
 	): bool {
+		$skipReason = $this->deliverySkipReason(webhook: $webhook, payload: $payload);
+		if ($skipReason !== null) {
+			$this->logger->debug(
+				message: $skipReason,
+				context: ['file' => __FILE__, 'line' => __LINE__, 'webhook_id' => $webhook->getId(), 'event' => $eventName]
+			);
+			return false;
+		}
+
+		$webhookPayload = $this->buildPayload(webhook: $webhook, eventName: $eventName, payload: $payload, attempt: $attempt);
+		$webhookLog = $this->startDeliveryLog(webhook: $webhook, webhookPayload: $webhookPayload);
+		$webhookLog->setEventClass($eventName);
+		$webhookLog->setAttempt($attempt);
+		$delivery = new WebhookDeliveryAttempt(webhook: $webhook, log: $webhookLog, payload: $payload);
+
+		try {
+			$response = $this->sendRequest(webhook: $webhook, payload: $webhookPayload, timeoutCapSeconds: $timeoutCapSeconds);
+			return $this->recordResponse(delivery: $delivery, response: $response);
+		} catch (RequestException $e) {
+			return $this->recordRequestFailure(delivery: $delivery, exception: $e);
+		} catch (\Exception $e) {
+			return $this->recordUnexpectedFailure(delivery: $delivery, exception: $e);
+		}
+	}//end deliverWebhook()
+
+	/**
+	 * Why a delivery is skipped: the webhook is disabled or its filters do not match.
+	 *
+	 * @param Webhook $webhook Webhook configuration
+	 * @param array   $payload Event payload
+	 *
+	 * @return string|null The log message for the skip, or null when the delivery goes ahead
+	 */
+	private function deliverySkipReason(Webhook $webhook, array $payload): ?string {
 		if ($webhook->getEnabled() === false) {
-			$this->logger->debug(
-				message: '[WebhookService] Webhook is disabled, skipping delivery',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'webhook_id' => $webhook->getId(),
-					'event' => $eventName,
-				]
-			);
-			return false;
+			return '[WebhookService] Webhook is disabled, skipping delivery';
 		}
 
-		// Apply filters if configured.
 		if ($this->passesFilters(webhook: $webhook, payload: $payload) === false) {
-			$this->logger->debug(
-				message: '[WebhookService] Webhook filters did not match, skipping delivery',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'webhook_id' => $webhook->getId(),
-					'event' => $eventName,
-				]
-			);
-			return false;
+			return '[WebhookService] Webhook filters did not match, skipping delivery';
 		}
 
-		$webhookPayload = $this->buildPayload(
-			webhook: $webhook,
-			eventName: $eventName,
-			payload: $payload,
-			attempt: $attempt
-		);
+		return null;
+	}//end deliverySkipReason()
 
-		// Create webhook log entry.
+	/**
+	 * A new log entry for a delivery to the webhook's target.
+	 *
+	 * @param Webhook $webhook        Webhook configuration
+	 * @param array   $webhookPayload The payload that is sent
+	 *
+	 * @return WebhookLog
+	 */
+	private function startDeliveryLog(Webhook $webhook, array $webhookPayload): WebhookLog {
 		$webhookLog = new WebhookLog();
 		$webhookLog->setWebhook($webhook->getId());
-		$webhookLog->setEventClass($eventName);
 		$webhookLog->setPayloadArray($webhookPayload);
 		$webhookLog->setUrl($webhook->getUrl());
 		$webhookLog->setMethod($webhook->getMethod());
-		$webhookLog->setAttempt($attempt);
+
+		return $webhookLog;
+	}//end startDeliveryLog()
+
+	/**
+	 * Record the response of a sent request: a 2xx is a delivery, anything else a failure.
+	 *
+	 * The Guzzle client has http_errors disabled, so a 4xx/5xx response does not throw
+	 * and is judged here.
+	 *
+	 * @param WebhookDeliveryAttempt $delivery The delivery
+	 * @param array                  $response Status code and body from sendRequest()
+	 *
+	 * @return bool True when delivered
+	 */
+	private function recordResponse(WebhookDeliveryAttempt $delivery, array $response): bool {
+		$statusCode = (int)$response['status_code'];
+		if ($statusCode < 200 || $statusCode >= 300) {
+			return $this->recordRejectedStatus(delivery: $delivery, response: $response);
+		}
+
+		$webhook = $delivery->webhook;
+		$delivery->log->setSuccess(true);
+		$delivery->log->setStatusCode($response['status_code']);
+		$delivery->log->setResponseBody($response['body']);
+
+		$this->logger->info(
+			message: '[WebhookService] Webhook delivered successfully',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'webhook_id' => $webhook->getId(),
+				'webhook_name' => $webhook->getName(),
+				'event' => $delivery->log->getEventClass(),
+				'status_code' => $response['status_code'],
+				'attempt' => $delivery->log->getAttempt(),
+			]
+		);
+
+		$this->webhookMapper->updateStatistics(webhook: $webhook, success: true);
+		$this->webhookLogMapper->insert($delivery->log);
+
+		return true;
+	}//end recordResponse()
+
+	/**
+	 * Record a response with a non-2xx status as a failed delivery.
+	 *
+	 * @param WebhookDeliveryAttempt $delivery The delivery
+	 * @param array                  $response Status code and body from sendRequest()
+	 *
+	 * @return bool Always false
+	 */
+	private function recordRejectedStatus(WebhookDeliveryAttempt $delivery, array $response): bool {
+		$statusCode = (int)$response['status_code'];
+		$webhook = $delivery->webhook;
+		$webhookLog = $delivery->log;
+		$webhookLog->setSuccess(false);
+		$webhookLog->setStatusCode($statusCode);
+		$webhookLog->setResponseBody($this->capResponseBody(body: (string)$response['body']));
+		$webhookLog->setErrorMessage('Webhook endpoint returned non-2xx status: ' . $statusCode);
+		$webhookLog->setRequestBody($webhookLog->getPayload());
+
+		$this->logger->error(
+			message: '[WebhookService] Webhook delivery failed with non-2xx status',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'webhook_id' => $webhook->getId(),
+				'webhook_name' => $webhook->getName(),
+				'event' => $webhookLog->getEventClass(),
+				'status_code' => $statusCode,
+				'attempt' => $webhookLog->getAttempt(),
+				'max_retries' => $webhook->getMaxRetries(),
+			]
+		);
+
+		return $this->finishFailedDelivery(delivery: $delivery);
+	}//end recordRejectedStatus()
+
+	/**
+	 * Record a request that Guzzle failed (connection error, timeout or error response).
+	 *
+	 * @param WebhookDeliveryAttempt $delivery  The delivery
+	 * @param RequestException       $exception The Guzzle failure
+	 *
+	 * @return bool Always false
+	 */
+	private function recordRequestFailure(WebhookDeliveryAttempt $delivery, RequestException $exception): bool {
+		$webhook = $delivery->webhook;
+		$webhookLog = $delivery->log;
+		$errorDetails = $this->requestErrorDetails(delivery: $delivery, exception: $exception);
+		$errorDetails['request_url'] = $webhook->getUrl();
+		$errorDetails['request_method'] = $webhook->getMethod();
+		$errorDetails['timeout'] = $webhook->getTimeout();
+
+		// The request body is stored only on failure, for the retry.
+		$webhookLog->setRequestBody($webhookLog->getPayload());
+		$webhookLog->setSuccess(false);
+
+		$this->logger->error(
+			message: '[WebhookService] Webhook delivery failed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'webhook_id' => $webhook->getId(),
+				'webhook_name' => $webhook->getName(),
+				'event' => $webhookLog->getEventClass(),
+				'error' => $webhookLog->getErrorMessage(),
+				'error_details' => $errorDetails,
+				'attempt' => $webhookLog->getAttempt(),
+				'max_retries' => $webhook->getMaxRetries(),
+				'exception_class' => get_class($exception),
+				'exception_code' => $exception->getCode(),
+				'trace' => $exception->getTraceAsString(),
+			]
+		);
+
+		return $this->finishFailedDelivery(delivery: $delivery);
+	}//end recordRequestFailure()
+
+	/**
+	 * The error details of a failed request; sets the error message, status and body on the log.
+	 *
+	 * @param WebhookDeliveryAttempt $delivery  The delivery
+	 * @param RequestException       $exception The Guzzle failure
+	 *
+	 * @return array Connection error and code, or status code and a response body preview
+	 */
+	private function requestErrorDetails(WebhookDeliveryAttempt $delivery, RequestException $exception): array {
+		$delivery->log->setErrorMessage($exception->getMessage());
+		if ($exception->hasResponse() !== true) {
+			$errorDetails = ['connection_error' => true];
+			if ($exception->getCode() !== 0) {
+				$errorDetails['error_code'] = $exception->getCode();
+			}
+
+			return $errorDetails;
+		}
+
+		$response = $exception->getResponse();
+		$statusCode = $response->getStatusCode();
+		$delivery->log->setStatusCode($statusCode);
+		$errorDetails = ['status_code' => $statusCode];
 
 		try {
-			$response = $this->sendRequest(
+			$responseBody = (string)$response->getBody();
+			// The stored body is capped so a hostile endpoint cannot bloat log storage; the
+			// preview echoed into structured logs is shorter still and redacted for
+			// internal/private targets (see previewResponseBody()).
+			$delivery->log->setResponseBody($this->capResponseBody(body: $responseBody));
+			$errorDetails['response_body'] = $this->previewResponseBody(body: $responseBody, url: $delivery->webhook->getUrl());
+			$delivery->log->setErrorMessage($exception->getMessage() . $this->responseErrorSuffix(body: $responseBody));
+		} catch (\Exception $bodyException) {
+			// Ignore body reading errors.
+		}
+
+		return $errorDetails;
+	}//end requestErrorDetails()
+
+	/**
+	 * The `message` or `error` of a JSON error response, as a suffix for the error message.
+	 *
+	 * @param string $body Response body
+	 *
+	 * @return string ": <message>", or an empty string when the body carries neither
+	 */
+	private function responseErrorSuffix(string $body): string {
+		$jsonResponse = json_decode($body, true);
+		if ($jsonResponse !== null && (($jsonResponse['message'] ?? null) !== null)) {
+			return ': ' . $jsonResponse['message'];
+		}
+
+		if ($jsonResponse !== null && (($jsonResponse['error'] ?? null) !== null)) {
+			return ': ' . $jsonResponse['error'];
+		}
+
+		return '';
+	}//end responseErrorSuffix()
+
+	/**
+	 * Close a failed delivery: count it, schedule a retry while retries remain, and save the log.
+	 *
+	 * @param WebhookDeliveryAttempt $delivery The delivery
+	 *
+	 * @return bool Always false
+	 */
+	private function finishFailedDelivery(WebhookDeliveryAttempt $delivery): bool {
+		$webhook = $delivery->webhook;
+		$attempt = $delivery->log->getAttempt();
+		$this->webhookMapper->updateStatistics(webhook: $webhook, success: false);
+
+		if ($attempt < $webhook->getMaxRetries()) {
+			$delivery->log->setNextRetryAt($this->calculateNextRetryTime(webhook: $webhook, attempt: $attempt));
+			$this->scheduleRetry(
 				webhook: $webhook,
-				payload: $webhookPayload,
-				timeoutCapSeconds: $timeoutCapSeconds
+				eventName: $delivery->log->getEventClass(),
+				_payload: $delivery->payload,
+				attempt: $attempt + 1
 			);
+		}
 
-			// BUG-SVC-1: http_errors is disabled on the Guzzle client, so a 4xx/5xx
-			// response does NOT throw — it lands here. Treat any non-2xx status as a
-			// delivery failure (log it, record failed statistics, schedule a retry)
-			// instead of silently recording it as a successful delivery.
-			$statusCode = (int)$response['status_code'];
-			if ($statusCode < 200 || $statusCode >= 300) {
-				$webhookLog->setSuccess(false);
-				$webhookLog->setStatusCode($statusCode);
-				$webhookLog->setResponseBody($this->capResponseBody(body: (string)$response['body']));
-				$webhookLog->setErrorMessage('Webhook endpoint returned non-2xx status: ' . $statusCode);
-				$webhookLog->setRequestBody(json_encode($webhookPayload));
+		$this->webhookLogMapper->insert($delivery->log);
 
-				$this->logger->error(
-					message: '[WebhookService] Webhook delivery failed with non-2xx status',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'webhook_id' => $webhook->getId(),
-						'webhook_name' => $webhook->getName(),
-						'event' => $eventName,
-						'status_code' => $statusCode,
-						'attempt' => $attempt,
-						'max_retries' => $webhook->getMaxRetries(),
-					]
-				);
+		return false;
+	}//end finishFailedDelivery()
 
-				$this->webhookMapper->updateStatistics(webhook: $webhook, success: false);
+	/**
+	 * Record an unexpected error during delivery.
+	 *
+	 * @param WebhookDeliveryAttempt $delivery  The delivery
+	 * @param \Exception             $exception The error
+	 *
+	 * @return bool Always false
+	 */
+	private function recordUnexpectedFailure(WebhookDeliveryAttempt $delivery, \Exception $exception): bool {
+		$delivery->log->setSuccess(false);
+		$delivery->log->setErrorMessage($exception->getMessage());
+		$this->webhookLogMapper->insert($delivery->log);
 
-				// Schedule retry if within retry limit.
-				if ($attempt < $webhook->getMaxRetries()) {
-					$nextRetryAt = $this->calculateNextRetryTime(webhook: $webhook, attempt: $attempt);
-					$webhookLog->setNextRetryAt($nextRetryAt);
-					$this->scheduleRetry(webhook: $webhook, eventName: $eventName, _payload: $payload, attempt: $attempt + 1);
-				}
+		$this->logger->error(
+			message: '[WebhookService] Unexpected error during webhook delivery',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'webhook_id' => $delivery->webhook->getId(),
+				'event' => $delivery->log->getEventClass(),
+				'error' => $exception->getMessage(),
+			]
+		);
 
-				$this->webhookLogMapper->insert($webhookLog);
-
-				return false;
-			}//end if
-
-			// Log success.
-			$webhookLog->setSuccess(true);
-			$webhookLog->setStatusCode($response['status_code']);
-			$webhookLog->setResponseBody($response['body']);
-
-			$this->logger->info(
-				message: '[WebhookService] Webhook delivered successfully',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'webhook_id' => $webhook->getId(),
-					'webhook_name' => $webhook->getName(),
-					'event' => $eventName,
-					'status_code' => $response['status_code'],
-					'attempt' => $attempt,
-				]
-			);
-
-			$this->webhookMapper->updateStatistics(webhook: $webhook, success: true);
-			$this->webhookLogMapper->insert($webhookLog);
-
-			return true;
-		} catch (RequestException $e) {
-			// Build detailed error message from Guzzle exception.
-			$errorMessage = $e->getMessage();
-			$errorDetails = [];
-
-			// Get status code from exception if available.
-			if ($e->hasResponse() !== true) {
-				// Connection error or timeout.
-				$errorDetails['connection_error'] = true;
-				if ($e->getCode() !== 0) {
-					$errorDetails['error_code'] = $e->getCode();
-				}
-			}
-
-			if ($e->hasResponse() === true) {
-				$response = $e->getResponse();
-				$statusCode = $response->getStatusCode();
-				$webhookLog->setStatusCode($statusCode);
-				$errorDetails['status_code'] = $statusCode;
-
-				try {
-					$responseBody = (string)$response->getBody();
-					// Cap the body before persisting it in the webhook log so
-					// a hostile endpoint can't bloat log storage. The version
-					// we echo into structured logs is shorter still and is
-					// redacted when the target is an internal/private IP — see
-					// previewResponseBody().
-					$webhookLog->setResponseBody($this->capResponseBody(body: $responseBody));
-					$errorDetails['response_body'] = $this->previewResponseBody(
-						body: $responseBody,
-						url: $webhook->getUrl()
-					);
-
-					// Try to parse JSON response for better error message.
-					$jsonResponse = json_decode($responseBody, true);
-					if ($jsonResponse !== null && (($jsonResponse['message'] ?? null) !== null)) {
-						$errorMessage .= ': ' . $jsonResponse['message'];
-					} elseif ($jsonResponse !== null && (($jsonResponse['error'] ?? null) !== null)) {
-						$errorMessage .= ': ' . $jsonResponse['error'];
-					}
-				} catch (\Exception $bodyException) {
-					// Ignore body reading errors.
-				}//end try
-			}//end if
-
-			// Add request details to error message.
-			$errorDetails['request_url'] = $webhook->getUrl();
-			$errorDetails['request_method'] = $webhook->getMethod();
-			$errorDetails['timeout'] = $webhook->getTimeout();
-
-			// Store request body as JSON for retry purposes (only on failure).
-			$webhookLog->setRequestBody(json_encode($webhookPayload));
-
-			// Log failure with detailed context.
-			$webhookLog->setSuccess(false);
-			$webhookLog->setErrorMessage($errorMessage);
-
-			$this->logger->error(
-				message: '[WebhookService] Webhook delivery failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'webhook_id' => $webhook->getId(),
-					'webhook_name' => $webhook->getName(),
-					'event' => $eventName,
-					'error' => $errorMessage,
-					'error_details' => $errorDetails,
-					'attempt' => $attempt,
-					'max_retries' => $webhook->getMaxRetries(),
-					'exception_class' => get_class($e),
-					'exception_code' => $e->getCode(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			$this->webhookMapper->updateStatistics(webhook: $webhook, success: false);
-
-			// Schedule retry if within retry limit.
-			if ($attempt < $webhook->getMaxRetries()) {
-				$nextRetryAt = $this->calculateNextRetryTime(webhook: $webhook, attempt: $attempt);
-				$webhookLog->setNextRetryAt($nextRetryAt);
-				$this->scheduleRetry(webhook: $webhook, eventName: $eventName, _payload: $payload, attempt: $attempt + 1);
-			}
-
-			// Save log entry.
-			$this->webhookLogMapper->insert($webhookLog);
-
-			return false;
-		} catch (\Exception $e) {
-			// Log unexpected errors.
-			$webhookLog->setSuccess(false);
-			$webhookLog->setErrorMessage($e->getMessage());
-			$this->webhookLogMapper->insert($webhookLog);
-
-			$this->logger->error(
-				message: '[WebhookService] Unexpected error during webhook delivery',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'webhook_id' => $webhook->getId(),
-					'event' => $eventName,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return false;
-		}//end try
-	}//end deliverWebhook()
+		return false;
+	}//end recordUnexpectedFailure()
 
 	/**
 	 * Check if payload passes webhook filters
