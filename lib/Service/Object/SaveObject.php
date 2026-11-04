@@ -60,6 +60,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\InverseRelationWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource;
@@ -2307,7 +2308,7 @@ class SaveObject {
 	/**
 	 * Store related-object references in the parent: the identifiers passed through plus the ones just created.
 	 *
-	 * cascadeMultipleObjects() returns only newly created UUIDs, so existing
+	 * The cascade of a list returns only newly created UUIDs, so existing
 	 * identifiers (standard, dashless, prefixed or numeric) are kept from the
 	 * incoming data. Stored references that are no longer held are queued as
 	 * orphans.
@@ -2360,7 +2361,7 @@ class SaveObject {
 			&& $definition['writeBack'] === true;
 		$itemsWriteBack = isset($definition['items']['writeBack'])
 			&& $definition['items']['writeBack'] === true;
-		if ($defWriteBack || $itemsWriteBack) {
+		if ($defWriteBack === true || $itemsWriteBack === true) {
 			$run->data[$run->property] = $createdUuids;
 			return;
 		}
@@ -3214,19 +3215,20 @@ class SaveObject {
 		);
 
 		$call = new ObjectSaveCall();
+		$call->flags = new ObjectSaveFlags();
 		$call->data = $data;
 		$call->selfData = $selfData;
 		$call->uuid = $uuid;
 		$call->folderId = $folderId;
-		$call->rbac = $_rbac;
-		$call->multitenancy = $_multitenancy;
-		$call->persist = $persist;
-		$call->silent = $silent;
-		$call->currentUser = $currentUser;
-		$call->failIfExists = $failIfExists;
-		$call->unowned = $_unowned;
-		$call->dedupOverride = $_dedupOverride;
-		$call->owner = $_owner;
+		$call->flags->rbac = $_rbac;
+		$call->flags->multitenancy = $_multitenancy;
+		$call->flags->persist = $persist;
+		$call->flags->silent = $silent;
+		$call->flags->currentUser = $currentUser;
+		$call->flags->failIfExists = $failIfExists;
+		$call->flags->unowned = $_unowned;
+		$call->flags->dedupOverride = $_dedupOverride;
+		$call->flags->owner = $_owner;
 		$this->takeDedupOverrideFromBody(call: $call);
 
 		// Resolve schema and register to entity objects.
@@ -3264,7 +3266,7 @@ class SaveObject {
 		}
 
 		if (filter_var($call->data[DedupCreatePolicy::OVERRIDE_KEY], FILTER_VALIDATE_BOOLEAN) === true) {
-			$call->dedupOverride = true;
+			$call->flags->dedupOverride = true;
 		}
 
 		unset($call->data[DedupCreatePolicy::OVERRIDE_KEY]);
@@ -3286,7 +3288,7 @@ class SaveObject {
 		// schema this organisation only CONSUMES is read-only to it. It is a
 		// property of the RESOURCE being written, decided before anything is
 		// prepared, validated or persisted.
-		if ($call->persist === true && OrganisationContext::multitenancy(requested: $call->multitenancy) === true) {
+		if ($call->flags->persist === true && OrganisationContext::multitenancy(requested: $call->flags->multitenancy) === true) {
 			$this->refuseSharedMasterDataWrite(registerId: $call->registerId, schemaId: $call->schemaId, uuid: $call->uuid);
 		}
 
@@ -3295,14 +3297,14 @@ class SaveObject {
 		// in to write-through (dbal-virtual-registers-crud), which re-verifies
 		// its backing source's writable flag live and fails closed.
 		$objectSource = $call->schema->getObjectSource();
-		if ($call->persist === true && $objectSource !== null) {
+		if ($call->flags->persist === true && $objectSource !== null) {
 			return $this->delegateObjectSourceWrite(
 				register: $call->register,
 				schema: $call->schema,
 				objectSource: $objectSource,
 				data: $call->data,
 				uuid: $call->uuid,
-				silent: $call->silent
+				silent: $call->flags->silent
 			);
 		}
 
@@ -3314,7 +3316,7 @@ class SaveObject {
 		);
 
 		// Skip when _rbac is false (internal/system calls bypass all authorization).
-		if ($call->rbac === true && $call->schema->hasPropertyAuthorization() === true) {
+		if ($call->flags->rbac === true && $call->schema->hasPropertyAuthorization() === true) {
 			$this->refuseUnauthorizedProperties(call: $call);
 		}
 
@@ -3373,7 +3375,7 @@ class SaveObject {
 	 */
 	private function storedMatchEnvelope(ObjectSaveCall $call): ?array {
 		try {
-			// find() throws DoesNotExistException rather than returning null.
+			// The mapper's find() throws DoesNotExistException rather than returning null.
 			return $this->unifiedObjectMapper->find(
 				identifier: $call->uuid,
 				register: $call->register,
@@ -3485,7 +3487,7 @@ class SaveObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function refuseExistingWhenInsertOnly(ObjectSaveCall $call, ObjectEntity $existingObject): void {
-		if ($call->failIfExists === true) {
+		if ($call->flags->failIfExists === true) {
 			$this->logger->debug(
 				message: '[SaveObject] Existing object found and failIfExists is set, refusing the write',
 				context: [
@@ -3532,7 +3534,7 @@ class SaveObject {
 			uuid: (string)$call->uuid,
 			register: self::frameRegister(register: $call->register)
 		);
-		$this->enterCascadeScope(_rbac: $call->rbac);
+		$this->enterCascadeScope(_rbac: $call->flags->rbac);
 
 		return $frameKey;
 	}//end enterSaveFrame()
@@ -3555,11 +3557,11 @@ class SaveObject {
 				register: $call->register,
 				schema: $call->schema,
 				data: $call->data,
-				selfData: $this->selfDataForUpdate(selfData: $call->selfData, _rbac: $call->rbac),
+				selfData: $this->selfDataForUpdate(selfData: $call->selfData, _rbac: $call->flags->rbac),
 				folderId: $call->folderId,
-				persist: $call->persist,
-				silent: $call->silent,
-				currentUser: $call->currentUser
+				persist: $call->flags->persist,
+				silent: $call->flags->silent,
+				currentUser: $call->flags->currentUser
 			);
 		} finally {
 			$this->leaveCascadeScope();
@@ -3593,7 +3595,7 @@ class SaveObject {
 				register: $call->registerId,
 				schema: $call->schemaId,
 				data: $call->data,
-				overrideRequested: $call->dedupOverride
+				overrideRequested: $call->flags->dedupOverride
 			);
 		}
 
@@ -3605,7 +3607,7 @@ class SaveObject {
 
 			// An override is only on record once the object it overrode for
 			// exists, so this runs after the write and never before it.
-			if ($dedupPolicy !== null && count($dedupOverriddenMatches) > 0 && $call->persist === true) {
+			if ($dedupPolicy !== null && count($dedupOverriddenMatches) > 0 && $call->flags->persist === true) {
 				$dedupPolicy->recordOverride(object: $created, matches: $dedupOverriddenMatches);
 			}
 
@@ -3661,13 +3663,13 @@ class SaveObject {
 			selfData: $call->selfData,
 			uuid: $call->uuid,
 			folderId: $call->folderId,
-			persist: $call->persist,
-			silent: $call->silent,
-			_multitenancy: $call->multitenancy,
-			currentUser: $call->currentUser,
-			failIfExists: $call->failIfExists,
-			_unowned: $call->unowned,
-			_owner: $call->owner
+			persist: $call->flags->persist,
+			silent: $call->flags->silent,
+			_multitenancy: $call->flags->multitenancy,
+			currentUser: $call->flags->currentUser,
+			failIfExists: $call->flags->failIfExists,
+			_unowned: $call->flags->unowned,
+			_owner: $call->flags->owner
 		);
 	}//end createObjectForSave()
 

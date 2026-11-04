@@ -24,7 +24,6 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCP\IUser;
 
 /**
  * The state of one SaveObject::saveObject() call once its register and schema are resolved.
@@ -41,11 +40,11 @@ final class ObjectSaveCall {
 	public ?Register $register = null;
 
 	/**
-	 * The register id, once resolved.
+	 * The register id, once resolved; null when the save names no register.
 	 *
-	 * @var integer
+	 * @var mixed
 	 */
-	public int $registerId = 0;
+	public mixed $registerId = null;
 
 	/**
 	 * The schema the object is saved against, once resolved.
@@ -57,9 +56,9 @@ final class ObjectSaveCall {
 	/**
 	 * The schema id, once resolved.
 	 *
-	 * @var integer
+	 * @var mixed
 	 */
-	public int $schemaId = 0;
+	public mixed $schemaId = null;
 
 	/**
 	 * The object data to save.
@@ -90,65 +89,9 @@ final class ObjectSaveCall {
 	public ?int $folderId = null;
 
 	/**
-	 * Whether RBAC checks apply.
+	 * How the save runs: rights, tenancy, persistence and ownership.
 	 *
-	 * @var boolean
+	 * @var ObjectSaveFlags
 	 */
-	public bool $rbac = true;
-
-	/**
-	 * Whether multitenancy filtering applies.
-	 *
-	 * @var boolean
-	 */
-	public bool $multitenancy = true;
-
-	/**
-	 * Whether the object is persisted.
-	 *
-	 * @var boolean
-	 */
-	public bool $persist = true;
-
-	/**
-	 * Whether audit trail and events are skipped.
-	 *
-	 * @var boolean
-	 */
-	public bool $silent = false;
-
-	/**
-	 * The explicit acting user, or null for the session user.
-	 *
-	 * @var IUser|null
-	 */
-	public ?IUser $currentUser = null;
-
-	/**
-	 * Whether an existing identifier refuses the write.
-	 *
-	 * @var boolean
-	 */
-	public bool $failIfExists = false;
-
-	/**
-	 * Whether the system identity is stamped even when a session exists.
-	 *
-	 * @var boolean
-	 */
-	public bool $unowned = false;
-
-	/**
-	 * Whether the caller asks to save through a blocking duplicate match.
-	 *
-	 * @var boolean
-	 */
-	public bool $dedupOverride = false;
-
-	/**
-	 * An explicit owner for a new object.
-	 *
-	 * @var string|null
-	 */
-	public ?string $owner = null;
+	public ObjectSaveFlags $flags;
 }//end class
