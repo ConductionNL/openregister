@@ -30,137 +30,6 @@ use OCA\OpenRegister\Search\Service\Vectorization\Strategies\VectorizationStrate
 interface VectorizationServiceInterface {
 
 	/**
-	 * Register a vectorization strategy for an entity type
-	 *
-	 * @param string $entityType Entity type identifier
-	 * @param VectorizationStrategyInterface $strategy Strategy implementation
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/vector-embeddings/spec.md
-	 */
-	public function registerStrategy(string $entityType, VectorizationStrategyInterface $strategy): void;
-
-	/**
-	 * Vectorize entities in batch
-	 *
-	 * Generic batch vectorization that works for any entity type.
-	 * Delegates entity-specific logic to registered strategy.
-	 *
-	 * @param string $entityType Entity type ('object', 'file', etc)
-	 * @param array $options Strategy-specific options
-	 *
-	 * @return array Vectorization result with success, stats, and optional errors.
-	 *
-	 * @throws \Exception If strategy not found or vectorization fails.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex batch processing with error handling
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple processing paths with exceptions
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive batch processing with progress tracking
-	 *
-	 * @spec openspec/specs/vector-embeddings/spec.md
-	 */
-	public function vectorizeBatch(string $entityType, array $options = []): array;
-
-	/**
-	 * Generate embedding for a single text
-	 *
-	 * Delegates to VectorEmbeddings.
-	 *
-	 * @param string $text Text to embed
-	 * @param string|null $provider Embedding provider (null = use default from settings)
-	 *
-	 * @return (float[]|int|string)[] Embedding data
-	 *
-	 * @throws \Exception If embedding generation fails
-	 *
-	 * @psalm-return array{embedding: array<float>, model: string, dimensions: int<0, max>}
-	 *
-	 * @spec openspec/specs/vector-embeddings/spec.md
-	 */
-	public function generateEmbedding(string $text, ?string $provider = null): array;
-
-	/**
-	 * Perform semantic similarity search
-	 *
-	 * Delegates to VectorEmbeddings.
-	 *
-	 * @param string $query Query text to search for
-	 * @param int $limit Maximum number of results
-	 * @param array $filters Additional filters (entity_type, etc.)
-	 * @param string|null $provider Embedding provider
-	 *
-	 * @return array<int,array<string,mixed>> Search results
-	 *
-	 * @throws \Exception If search fails
-	 *
-	 * @spec exclude One-line facade delegation to VectorEmbeddings::semanticSearch; no logic of its own.
-	 */
-	public function semanticSearch(
-		string $query,
-		int $limit = 10,
-		array $filters = [],
-		?string $provider = null,
-	): array;
-
-	/**
-	 * Perform hybrid search combining keyword and semantic (vector) results
-	 *
-	 * Delegates to VectorEmbeddings. Caller supplies keyword search results;
-	 * vector search runs against the PostgreSQL database.
-	 *
-	 * @param string $query Query text
-	 * @param array $keywordResults Pre-fetched keyword search results to fuse
-	 * @param int $limit Maximum results
-	 * @param array $weights Weights for each search type ['keyword' => 0.5, 'vector' => 0.5]
-	 * @param string|null $provider Embedding provider
-	 *
-	 * @return array Hybrid search results with combined scores and source breakdown.
-	 *
-	 * @throws \Exception If hybrid search fails.
-	 *
-	 * @spec exclude One-line facade delegation to VectorEmbeddings::hybridSearch; no logic of its own.
-	 */
-	public function hybridSearch(
-		string $query,
-		array $keywordResults = [],
-		int $limit = 20,
-		array $weights = ['keyword' => 0.5, 'vector' => 0.5],
-		?string $provider = null,
-	): array;
-
-	/**
-	 * Get vector statistics
-	 *
-	 * Delegates to VectorEmbeddings.
-	 *
-	 * @return array Vector statistics with totals and breakdowns by type and model.
-	 *
-	 * @spec openspec/specs/vector-embeddings/spec.md
-	 */
-	public function getVectorStats(): array;
-
-	/**
-	 * Test embedding generation with custom configuration
-	 *
-	 * Delegates to VectorEmbeddings.
-	 *
-	 * @param string $provider Provider name ('openai', 'fireworks', 'ollama')
-	 * @param array $config Provider-specific configuration
-	 * @param string $testText Optional test text to embed
-	 *
-	 * @return ((float[]|int|mixed|string)[]|bool|string)[] Test results
-	 *
-	 * @psalm-return array{success: bool, error?: string, message: string,
-	 *     data?: array{provider: string, model: 'unknown'|mixed,
-	 *     vectorLength: int<0, max>, sampleValues: array<float>,
-	 *     testText: string}}
-	 *
-	 * @spec openspec/specs/vector-embeddings/spec.md
-	 */
-	public function testEmbedding(string $provider, array $config, string $testText = 'Test.'): array;
-
-	/**
 	 * Check if embedding model has changed since vectors were created
 	 *
 	 * Delegates to VectorEmbeddings.
@@ -188,4 +57,109 @@ interface VectorizationServiceInterface {
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
 	public function clearAllEmbeddings(): array;
+
+	/**
+	 * Get vector statistics
+	 *
+	 * Delegates to VectorEmbeddings.
+	 *
+	 * @return array Vector statistics with totals and breakdowns by type and model.
+	 *
+	 * @spec openspec/specs/vector-embeddings/spec.md
+	 */
+	public function getVectorStats(): array;
+
+	/**
+	 * Perform hybrid search combining keyword and semantic (vector) results
+	 *
+	 * Delegates to VectorEmbeddings. Caller supplies keyword search results;
+	 * vector search runs against the PostgreSQL database.
+	 *
+	 * @param string $query Query text
+	 * @param array $keywordResults Pre-fetched keyword search results to fuse
+	 * @param int $limit Maximum results
+	 * @param array $weights Weights for each search type ['keyword' => 0.5, 'vector' => 0.5]
+	 * @param string|null $provider Embedding provider
+	 *
+	 * @return array Hybrid search results with combined scores and source breakdown.
+	 *
+	 * @throws \Exception If hybrid search fails.
+	 *
+	 * @spec exclude One-line facade delegation to VectorEmbeddings::hybridSearch; no logic of its own.
+	 */
+	public function hybridSearch(
+		string $query, array $keywordResults = [], int $limit = 20, array $weights = ['keyword' => 0.5, 'vector' => 0.5],
+		?string $provider = null
+	): array;
+
+	/**
+	 * Register a vectorization strategy for an entity type
+	 *
+	 * @param string $entityType Entity type identifier
+	 * @param VectorizationStrategyInterface $strategy Strategy implementation
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/vector-embeddings/spec.md
+	 */
+	public function registerStrategy(string $entityType, VectorizationStrategyInterface $strategy): void;
+
+	/**
+	 * Perform semantic similarity search
+	 *
+	 * Delegates to VectorEmbeddings.
+	 *
+	 * @param string $query Query text to search for
+	 * @param int $limit Maximum number of results
+	 * @param array $filters Additional filters (entity_type, etc.)
+	 * @param string|null $provider Embedding provider
+	 *
+	 * @return array<int,array<string,mixed>> Search results
+	 *
+	 * @throws \Exception If search fails
+	 *
+	 * @spec exclude One-line facade delegation to VectorEmbeddings::semanticSearch; no logic of its own.
+	 */
+	public function semanticSearch(string $query, int $limit = 10, array $filters = [], ?string $provider = null): array;
+
+	/**
+	 * Test embedding generation with custom configuration
+	 *
+	 * Delegates to VectorEmbeddings.
+	 *
+	 * @param string $provider Provider name ('openai', 'fireworks', 'ollama')
+	 * @param array $config Provider-specific configuration
+	 * @param string $testText Optional test text to embed
+	 *
+	 * @return ((float[]|int|mixed|string)[]|bool|string)[] Test results
+	 *
+	 * @psalm-return array{success: bool, error?: string, message: string,
+	 *     data?: array{provider: string, model: 'unknown'|mixed,
+	 *     vectorLength: int<0, max>, sampleValues: array<float>,
+	 *     testText: string}}
+	 *
+	 * @spec openspec/specs/vector-embeddings/spec.md
+	 */
+	public function testEmbedding(string $provider, array $config, string $testText = 'Test.'): array;
+
+	/**
+	 * Vectorize entities in batch
+	 *
+	 * Generic batch vectorization that works for any entity type.
+	 * Delegates entity-specific logic to registered strategy.
+	 *
+	 * @param string $entityType Entity type ('object', 'file', etc)
+	 * @param array $options Strategy-specific options
+	 *
+	 * @return array Vectorization result with success, stats, and optional errors.
+	 *
+	 * @throws \Exception If strategy not found or vectorization fails.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex batch processing with error handling
+	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple processing paths with exceptions
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive batch processing with progress tracking
+	 *
+	 * @spec openspec/specs/vector-embeddings/spec.md
+	 */
+	public function vectorizeBatch(string $entityType, array $options = []): array;
 }//end interface

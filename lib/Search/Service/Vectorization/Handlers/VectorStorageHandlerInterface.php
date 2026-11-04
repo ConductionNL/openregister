@@ -51,15 +51,8 @@ interface VectorStorageHandlerInterface {
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
 	public function storeVector(
-		string $entityType,
-		string $entityId,
-		array $embedding,
-		string $model,
-		int $dimensions,
-		int $chunkIndex = 0,
-		int $totalChunks = 1,
-		?string $chunkText = null,
-		array $metadata = [],
+		string $entityType, string $entityId, array $embedding, string $model, int $dimensions, int $chunkIndex = 0, int $totalChunks = 1,
+		?string $chunkText = null, array $metadata = []
 	): int;
 
 	/**

@@ -111,15 +111,8 @@ interface VectorEmbeddingsInterface {
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
 	public function storeVector(
-		string $entityType,
-		string $entityId,
-		array $embedding,
-		string $model,
-		int $dimensions,
-		int $chunkIndex = 0,
-		int $totalChunks = 1,
-		?string $chunkText = null,
-		array $metadata = [],
+		string $entityType, string $entityId, array $embedding, string $model, int $dimensions, int $chunkIndex = 0, int $totalChunks = 1,
+		?string $chunkText = null, array $metadata = []
 	): int;
 
 	/**
@@ -136,12 +129,7 @@ interface VectorEmbeddingsInterface {
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function semanticSearch(
-		string $query,
-		int $limit = 10,
-		array $filters = [],
-		?string $provider = null,
-	): array;
+	public function semanticSearch(string $query, int $limit = 10, array $filters = [], ?string $provider = null): array;
 
 	/**
 	 * Perform hybrid search combining keyword and semantic (vector) results
@@ -162,11 +150,8 @@ interface VectorEmbeddingsInterface {
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
 	public function hybridSearch(
-		string $query,
-		array $keywordResults = [],
-		int $limit = 20,
-		array $weights = ['keyword' => 0.5, 'vector' => 0.5],
-		?string $provider = null,
+		string $query, array $keywordResults = [], int $limit = 20, array $weights = ['keyword' => 0.5, 'vector' => 0.5],
+		?string $provider = null
 	): array;
 
 	/**
