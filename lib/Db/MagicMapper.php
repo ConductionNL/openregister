@@ -50,6 +50,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicCrossTableHit;
 use OCA\OpenRegister\Db\MagicMapper\MagicCrossTableScan;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectLookup;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
 use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumn;
 use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumnSizes;
@@ -6925,27 +6926,12 @@ class MagicMapper extends AbstractObjectMapper {
 		bool $_multitenancy = true,
 		bool $includeDeleted = false,
 	): ObjectEntity {
-		// Ensure table exists if magic mapping is enabled.
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			$isMagicEnabled = $register->isMagicMappingEnabledForSchema(
-				schemaId: $schema->getId(),
-				schemaSlug: $schema->getSlug()
-			);
-			if ($isMagicEnabled === true) {
-				$this->logger->debug(
-					message: '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'registerId' => $register->getId(),
-						'schemaId' => $schema->getId(),
-					]
-				);
-				$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
-			}
-		}
+		$this->ensureTableWhenMagicEnabled(register: $register, schema: $schema);
 
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$lookup = (new MagicObjectLookup(register: $register, schema: $schema))->lookingFor(
+			identifier: $identifier,
+			tableName: $this->getTableNameForRegisterSchema(register: $register, schema: $schema)
+		);
 
 		$this->logger->debug(
 			message: '[MagicMapper] Finding object in register+schema table',
@@ -6953,20 +6939,91 @@ class MagicMapper extends AbstractObjectMapper {
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'identifier' => $identifier,
-				'tableName' => $tableName,
+				'tableName' => $lookup->tableName,
 				'rbac' => $_rbac,
 				'multitenancy' => $_multitenancy,
 			]
 		);
 
-		$qb = $this->db->getQueryBuilder();
-		// Use the table alias `t` so the shared access-control filters
-		// (which reference t._organisation / t._owner) can be applied — the
-		// single-object read path MUST enforce the same isolation as the list
-		// path (cross-org IDOR fix). See applyAccessControlToQuery() below.
-		$qb->select('*')->from($tableName, 't');
+		$qb = $this->identifierLookupQuery(lookup: $lookup);
 
-		// Build identifier conditions (ID, UUID, slug, or URI).
+		// Exclude deleted objects by default (unless includeDeleted is true).
+		if ($includeDeleted === false) {
+			$qb->andWhere($qb->expr()->isNull('t.' . self::METADATA_PREFIX . 'deleted'));
+		}
+
+		// SECURITY (cross-org IDOR fix): apply the SAME multitenancy + RBAC
+		// access-control filters the list/search path uses, through the search
+		// handler's shared logic, which:
+		// - drops the org filter for `public`-read schemas (published reads,
+		// including anonymous, keep working),
+		// - lets admins (rbac/multitenancy disabled by the controller) and
+		// in-org / owner reads through,
+		// - filters out other-org rows → no row → DoesNotExistException → 404
+		// (existence is not leaked).
+		if ($_rbac === true || OrganisationContext::multitenancy(requested: $_multitenancy) === true) {
+			$this->searchHandler->applyAccessControlToQuery(
+				qb: $qb,
+				schema: $schema,
+				_rbac: $_rbac,
+				_multitenancy: $_multitenancy,
+				registerId: $register->getId(),
+				tableName: $lookup->tableName
+			);
+		}
+
+		return $this->fetchSingleObject(qb: $qb, lookup: $lookup);
+	}//end findInRegisterSchemaTable()
+
+	/**
+	 * Create the register+schema table when it is missing and magic mapping is enabled for the schema.
+	 *
+	 * @param Register $register The register context.
+	 * @param Schema   $schema   The schema context.
+	 *
+	 * @return void
+	 */
+	private function ensureTableWhenMagicEnabled(Register $register, Schema $schema): void {
+		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === true) {
+			return;
+		}
+
+		$isMagicEnabled = $register->isMagicMappingEnabledForSchema(
+			schemaId: $schema->getId(),
+			schemaSlug: $schema->getSlug()
+		);
+		if ($isMagicEnabled === false) {
+			return;
+		}
+
+		$this->logger->debug(
+			message: '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'registerId' => $register->getId(),
+				'schemaId' => $schema->getId(),
+			]
+		);
+		$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
+	}//end ensureTableWhenMagicEnabled()
+
+	/**
+	 * The query selecting the rows whose ID, UUID, slug or URI is the identifier, key matches first.
+	 *
+	 * The table alias `t` lets the shared access-control filters (which reference
+	 * t._organisation / t._owner) apply, so the single-object read enforces the
+	 * same isolation as the list path.
+	 *
+	 * @param MagicObjectLookup $lookup The lookup.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function identifierLookupQuery(MagicObjectLookup $lookup): IQueryBuilder {
+		$identifier = $lookup->identifier;
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')->from($lookup->tableName, 't');
+
 		$idParam = ($this->identifierAsId(identifier: $identifier) ?? -1);
 
 		$idCol = 't.' . self::METADATA_PREFIX . 'id';
@@ -6986,33 +7043,21 @@ class MagicMapper extends AbstractObjectMapper {
 
 		$this->orderKeyMatchesFirst(qb: $qb, keys: [$idCol => $idNamed, $uuidCol => $uuidNamed]);
 
-		// Exclude deleted objects by default (unless includeDeleted is true).
-		if ($includeDeleted === false) {
-			$qb->andWhere($qb->expr()->isNull('t.' . self::METADATA_PREFIX . 'deleted'));
-		}
+		return $qb;
+	}//end identifierLookupQuery()
 
-		// SECURITY (cross-org IDOR fix): apply the SAME multitenancy + RBAC
-		// access-control filters the list/search path uses. Previously the
-		// single-object read skipped org filtering, so a non-admin in org B
-		// could read an org-A object by id. We now delegate to the search
-		// handler's shared logic, which:
-		// - drops the org filter for `public`-read schemas (published reads,
-		// including anonymous, keep working),
-		// - lets admins (rbac/multitenancy disabled by the controller) and
-		// in-org / owner reads through,
-		// - filters out other-org rows → no row → DoesNotExistException → 404
-		// (existence is not leaked).
-		if ($_rbac === true || OrganisationContext::multitenancy(requested: $_multitenancy) === true) {
-			$this->searchHandler->applyAccessControlToQuery(
-				qb: $qb,
-				schema: $schema,
-				_rbac: $_rbac,
-				_multitenancy: $_multitenancy,
-				registerId: $register->getId(),
-				tableName: $tableName
-			);
-		}
-
+	/**
+	 * Run the lookup query and convert its single row to an object.
+	 *
+	 * @param IQueryBuilder     $qb     The lookup query.
+	 * @param MagicObjectLookup $lookup The lookup.
+	 *
+	 * @throws DoesNotExistException If no row matches, or the query or conversion fails.
+	 * @throws MultipleObjectsReturnedException If the identifier is ambiguous.
+	 *
+	 * @return ObjectEntity The found object.
+	 */
+	private function fetchSingleObject(IQueryBuilder $qb, MagicObjectLookup $lookup): ObjectEntity {
 		try {
 			$rows = $this->fetchRows(result: $qb->executeQuery());
 			if ($rows === []) {
@@ -7020,9 +7065,9 @@ class MagicMapper extends AbstractObjectMapper {
 			}
 
 			// Several rows: a key match wins, otherwise the identifier is ambiguous (#4037).
-			$row = $this->singleRow(rows: $rows, identifier: $identifier, register: $register, schema: $schema);
+			$row = $this->singleRow(rows: $rows, identifier: $lookup->identifier, register: $lookup->register, schema: $lookup->schema);
 
-			$objectEntity = $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
+			$objectEntity = $this->convertRowToObjectEntity(row: $row, _register: $lookup->register, _schema: $lookup->schema);
 
 			if ($objectEntity === null) {
 				throw new DoesNotExistException('Failed to convert row to ObjectEntity');
@@ -7037,15 +7082,15 @@ class MagicMapper extends AbstractObjectMapper {
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'identifier' => $identifier,
-					'tableName' => $tableName,
+					'identifier' => $lookup->identifier,
+					'tableName' => $lookup->tableName,
 					'error' => $e->getMessage(),
 				]
 			);
 
 			throw new DoesNotExistException($e->getMessage());
 		}//end try
-	}//end findInRegisterSchemaTable()
+	}//end fetchSingleObject()
 
 	/**
 	 * The object id an identifier names, when it is a canonical non-negative integer.
