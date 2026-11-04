@@ -1212,6 +1212,20 @@ A fragment's task MAY declare `requester` and `expiresAt`. The check SHALL refus
 - **WHEN** the set is checked
 - **THEN** the check SHALL refuse the task and write nothing
 
+### Requirement: A fragment's task may carry the moment it was created
+
+A fragment's task MAY declare `createdAt`. The check SHALL refuse a `createdAt` that is not a date or lies in the future, and a `claimedAt` or `completedAt` before it. Install SHALL write the task with that moment as its creation, and its create audit entry with the same moment, since the audit cannot be changed afterwards. A task created over HTTP SHALL NOT name its creation moment.
+
+#### Scenario: A hearing task made two days before the install day
+- **GIVEN** a fragment declares task "Hoorzitting inplannen" with `createdAt` `{{datetime:-2 16:20}}` and `claimedAt` `{{datetime:-1 09:05}}`
+- **WHEN** the set is installed
+- **THEN** the task SHALL read as created two days before the install day at 16:20, and its history SHALL list the create entry before the claim
+
+#### Scenario: A claim before the task existed
+- **GIVEN** a fragment's task declares a `claimedAt` that lies before its `createdAt`
+- **WHEN** the set is checked
+- **THEN** the check SHALL refuse the task and write nothing
+
 ### Requirement: The record lets go of a held entry the set no longer declares
 
 When a fragment is installed, the record SHALL let go of every change and every engine row (task, view, watcher, party, note, read state, flow and the other parts) of that fragment's app that the fragment no longer declares. The proof and remove SHALL leave what such an entry wrote alone, and the install report SHALL name each entry under "Left as it is". An entry of an app whose fragment is not in the plan SHALL stay in the record.

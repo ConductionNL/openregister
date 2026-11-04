@@ -59,6 +59,7 @@ use OCA\OpenRegister\Db\FlowRun;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskChecklist
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskDates
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTimelineEntries
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
  * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
