@@ -207,7 +207,7 @@ class SaveObjectCoverageTest extends TestCase {
 			$this->logger,
 			$this->createMock(TmloService::class),
 			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			$this->createMock(PermissionHandler::class)
+			$this->orphanPermissions()
 		);
 
 		$this->reflection = new ReflectionClass($this->saveObject);
@@ -777,12 +777,40 @@ class SaveObjectCoverageTest extends TestCase {
 	// =========================================================================
 
 	/**
+	 * A permission handler that grants every action.
+	 *
+	 * @return PermissionHandler
+	 */
+	private function orphanPermissions(): PermissionHandler {
+		$permissions = $this->createMock(PermissionHandler::class);
+		$permissions->method('hasPermission')->willReturn(true);
+
+		return $permissions;
+	}//end orphanPermissions()
+
+	/**
+	 * An orphan scope whose rows name parent `p-1` through `incident`, within the caller's organisations.
+	 *
+	 * @return array
+	 */
+	private function orphanScope(): array {
+		$this->objectEntityMapper->method('callerOrganisationsHold')->willReturn(true);
+
+		$guard = $this->createMock(\OCA\OpenRegister\Service\Object\OrphanDeletionGuard::class);
+		$guard->method('allows')->willReturn(true);
+		(new \ReflectionProperty(SaveObject::class, 'orphanGuard'))->setValue($this->saveObject, $guard);
+
+		return ['register' => new Register(), 'schema' => new Schema(), 'inverse' => 'incident', 'parent' => 'p-1'];
+	}//end orphanScope()
+
+	/**
 	 * Test deleteOrphanedRelatedObjects soft-deletes found objects.
 	 *
 	 * @return void
 	 */
 	public function testDeleteOrphanedRelatedObjectsSoftDeletes(): void {
 		$orphan = $this->createObjectEntity(10, 'aaaaaaaa-bbbb-cccc-dddd-111111111111');
+		$orphan->setObject(['incident' => 'p-1']);
 
 		$this->objectEntityMapper->method('find')
 			->willReturn($orphan);
@@ -796,31 +824,7 @@ class SaveObjectCoverageTest extends TestCase {
 
 		$this->invokePrivate('deleteOrphanedRelatedObjects', [
 			['aaaaaaaa-bbbb-cccc-dddd-111111111111'],
-			null,
-			null,
-		]);
-	}
-
-	/**
-	 * Test deleteOrphanedRelatedObjects uses system user when no session user.
-	 *
-	 * @return void
-	 */
-	public function testDeleteOrphanedRelatedObjectsSystemUser(): void {
-		$orphan = $this->createObjectEntity(10, 'aaaaaaaa-bbbb-cccc-dddd-111111111111');
-
-		$this->objectEntityMapper->method('find')
-			->willReturn($orphan);
-
-		$this->userSession->method('getUser')->willReturn(null);
-
-		$this->objectEntityMapper->expects($this->once())
-			->method('update');
-
-		$this->invokePrivate('deleteOrphanedRelatedObjects', [
-			['aaaaaaaa-bbbb-cccc-dddd-111111111111'],
-			null,
-			null,
+			$this->orphanScope(),
 		]);
 	}
 
@@ -836,8 +840,7 @@ class SaveObjectCoverageTest extends TestCase {
 		// Should not throw.
 		$this->invokePrivate('deleteOrphanedRelatedObjects', [
 			['aaaaaaaa-bbbb-cccc-dddd-111111111111'],
-			null,
-			null,
+			$this->orphanScope(),
 		]);
 
 		$this->assertTrue(true);
@@ -858,8 +861,7 @@ class SaveObjectCoverageTest extends TestCase {
 		// Should not throw.
 		$this->invokePrivate('deleteOrphanedRelatedObjects', [
 			['aaaaaaaa-bbbb-cccc-dddd-111111111111'],
-			null,
-			null,
+			$this->orphanScope(),
 		]);
 	}
 

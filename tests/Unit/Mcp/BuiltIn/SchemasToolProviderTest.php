@@ -361,4 +361,20 @@ class SchemasToolProviderTest extends TestCase {
 		$this->provider->invokeTool(SchemasToolProvider::TOOL_ID, []);
 
 	}//end testMissingActionThrows()
+
+	public function testAnMcpUpdateByANonAdministratorMayNotSetOrphanCleanup(): void {
+		$this->schemaMapper->method('find')->willReturn($this->storedSchema());
+		$this->schemaMapper->expects($this->never())->method('updateFromArray');
+
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessage('orphanCleanup');
+		$this->providerFor(groups: ['beheer'])->invokeTool('schemas', ['action' => 'update', 'id' => 1, 'data' => ['configuration' => ['orphanCleanup' => true]]]);
+	}
+
+	public function testAnMcpCreateByANonAdministratorMayNotSetOrphanCleanup(): void {
+		$this->schemaMapper->expects($this->never())->method('createFromArray');
+
+		$this->expectException(\RuntimeException::class);
+		$this->providerFor(groups: [])->invokeTool('schemas', ['action' => 'create', 'data' => ['configuration' => ['orphanCleanup' => true]]]);
+	}
 }//end class

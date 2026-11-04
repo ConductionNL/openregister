@@ -32,7 +32,7 @@ use Psr\Log\NullLogger;
 use ReflectionClass;
 
 /**
- * Recorded on the code before the identifier test and the orphan scope were extracted.
+ * Recorded on the code before the identifier test and the orphan scope were extracted; orphan cleanup of pointers later dropped.
  * Set UPDATE_GOLDEN=1 to rewrite the fixture, then run again without it.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
@@ -146,7 +146,8 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 		$schema->setId(1);
 		$schema->setProperties($properties);
 
-		$answer = (new ReflectionClass(SaveObject::class))->getMethod($method)->invoke($handler, $parent, $schema, $data);
+		$extra = $method === 'cascadeObjects' ? [$stored] : [];
+		$answer = (new ReflectionClass(SaveObject::class))->getMethod($method)->invoke($handler, $parent, $schema, $data, ...$extra);
 
 		return ['answer' => $answer, 'trace' => $this->trace];
 	}//end run()
@@ -165,10 +166,10 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 		$mixed = array_merge(self::IDS, [['text' => 'new'], ['id' => ''], [], 7]);
 
 		return [
-			'related ids kept and orphans deleted' => $this->runOnParent(method: 'cascadeObjects', properties: $related, data: ['notes' => $mixed], stored: $old),
-			'related list emptied deletes every orphan' => $this->runOnParent(method: 'cascadeObjects', properties: $related, data: ['notes' => []], stored: $old),
+			'related ids kept and plain pointers stay' => $this->runOnParent(method: 'cascadeObjects', properties: $related, data: ['notes' => $mixed], stored: $old),
+			'related list emptied keeps plain pointers' => $this->runOnParent(method: 'cascadeObjects', properties: $related, data: ['notes' => []], stored: $old),
 			'related with no stored list' => $this->runOnParent(method: 'cascadeObjects', properties: $related, data: ['notes' => self::IDS]),
-			'cascade list emptied deletes every orphan' => $this->runOnParent(method: 'cascadeObjects', properties: $cascade, data: ['notes' => []], stored: $old),
+			'cascade list emptied keeps plain pointers' => $this->runOnParent(method: 'cascadeObjects', properties: $cascade, data: ['notes' => []], stored: $old),
 			'cascade ids only' => $this->runOnParent(method: 'cascadeObjects', properties: $cascade, data: ['notes' => self::IDS], stored: $old),
 			'cascade objects created' => $this->runOnParent(method: 'cascadeObjects', properties: $cascade, data: ['notes' => $mixed], stored: $old),
 			'write-back to valid ids' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: $writeBack, data: ['tags' => $mixed]),

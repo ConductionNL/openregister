@@ -290,6 +290,20 @@ class SaveObject {
 	private array $cascadeScopes = [];
 
 	/**
+	 * Orphans found while a parent is prepared, per parent uuid, settled after its write.
+	 *
+	 * @var array<string, list<array{0: string[], 1: array}>>
+	 */
+	private array $pendingOrphans = [];
+
+	/**
+	 * Decides whether orphan cleanup may delete a row; built on first use.
+	 *
+	 * @var OrphanDeletionGuard|null
+	 */
+	private ?OrphanDeletionGuard $orphanGuard = null;
+
+	/**
 	 * Stack of `(targetSchemaSlug, uuid)` entries currently being saved.
 	 *
 	 * Pushed when `saveObject()` enters, popped when it exits. Each
@@ -1987,6 +2001,7 @@ class SaveObject {
 	 * @param ObjectEntity $objectEntity The parent object entity
 	 * @param Schema $schema The schema of the parent object
 	 * @param array $data The object data to process
+	 * @param array $stored The parent's stored data when its schema opted into orphan cleanup, else empty
 	 *
 	 * @return array The processed data with cascaded objects removed
 	 *
@@ -1996,7 +2011,7 @@ class SaveObject {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function cascadeObjects(ObjectEntity $objectEntity, Schema $schema, array $data): array {
+	private function cascadeObjects(ObjectEntity $objectEntity, Schema $schema, array $data, array $stored): array {
 		try {
 			$schemaObject = $schema->getSchemaObject($this->urlGenerator);
 			$properties = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
@@ -2127,13 +2142,11 @@ class SaveObject {
 			$isRelatedObject = ObjectHandling::relates($objHandling) === true || ObjectHandling::relates($itemsHandling) === true;
 			$isCascade = $objHandling === 'cascade' || $itemsHandling === 'cascade';
 
-			// Capture old UUIDs from the existing object for orphan detection.
-			// This must happen BEFORE cascading modifies anything.
+			// Only what the stored parent referenced can become an orphan.
 			$oldUuids = [];
 			if ($isRelatedObject === true || $isCascade === true) {
-				$oldObjectData = $objectEntity->getObject();
-				if (isset($oldObjectData[$property]) === true && is_array($oldObjectData[$property]) === true) {
-					$oldUuids = array_values(array_filter($oldObjectData[$property], 'is_string'));
+				if (isset($stored[$property]) === true && is_array($stored[$property]) === true) {
+					$oldUuids = array_values(array_filter($stored[$property], 'is_string'));
 				}
 			}
 
@@ -2141,12 +2154,10 @@ class SaveObject {
 			$propIsEmpty = empty($data[$property]) === true;
 			if ($propIsEmpty === true) {
 				if (($isRelatedObject === true || $isCascade === true) && empty($oldUuids) === false) {
-					[$subRegister, $subSchema] = $this->orphanScope(objectEntity: $objectEntity, definition: $definition);
-					$this->deleteOrphanedRelatedObjects(
-						orphanedUuids: $oldUuids,
-						register: $subRegister,
-						schema: $subSchema
-					);
+					$this->pendingOrphans[(string)$objectEntity->getUuid()][] = [
+						$oldUuids,
+						$this->orphanScope(objectEntity: $objectEntity, definition: $definition),
+					];
 				}//end if
 
 				$data[$property] = [];
@@ -2183,14 +2194,12 @@ class SaveObject {
 
 					// Delete orphaned related objects (present in old data but not in new).
 					if (empty($oldUuids) === false) {
-						$orphanedUuids = array_diff($oldUuids, $data[$property]);
+						$orphanedUuids = self::removedReferences(old: $oldUuids, kept: $data[$property]);
 						if (empty($orphanedUuids) === false) {
-							[$subRegister, $subSchema] = $this->orphanScope(objectEntity: $objectEntity, definition: $definition);
-							$this->deleteOrphanedRelatedObjects(
-								orphanedUuids: array_values($orphanedUuids),
-								register: $subRegister,
-								schema: $subSchema
-							);
+							$this->pendingOrphans[(string)$objectEntity->getUuid()][] = [
+								$orphanedUuids,
+								$this->orphanScope(objectEntity: $objectEntity, definition: $definition),
+							];
 						}//end if
 					}//end if
 				}//end if
@@ -2378,12 +2387,12 @@ class SaveObject {
 	}//end isObjectIdentifier()
 
 	/**
-	 * The register and schema of the sub-objects a cascading property holds.
+	 * Where the sub-objects of a cascading property live, and how one names its parent.
 	 *
 	 * @param ObjectEntity $objectEntity The parent object.
 	 * @param array        $definition   The property definition.
 	 *
-	 * @return array{0: Register|null, 1: Schema|null} The register and schema, null when unresolved.
+	 * @return array{register: Register|null, schema: Schema|null, inverse: string|null, parent: string|null} Null when unresolved.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
@@ -2404,7 +2413,12 @@ class SaveObject {
 			$subRegister = $this->getCachedRegister(registerId: $objectEntity->getRegister());
 		}
 
-		return [$subRegister, $subSchema];
+		return [
+			'register' => $subRegister,
+			'schema' => $subSchema,
+			'inverse' => $definition['items']['inversedBy'] ?? $definition['inversedBy'] ?? null,
+			'parent' => $objectEntity->getUuid(),
+		];
 	}//end orphanScope()
 
 	/**
@@ -2515,23 +2529,25 @@ class SaveObject {
 	/**
 	 * Deletes orphaned related objects that are no longer referenced by the parent.
 	 *
-	 * When a parent object's array property (with related-object or cascade handling)
-	 * is updated and some sub-objects are removed, those orphaned sub-objects should
-	 * be deleted from the database since they are "owned" by the parent.
+	 * When a schema sets `orphanCleanup` and a parent stops referencing some
+	 * sub-objects, the sub-objects the parent owns are soft-deleted. A property without
+	 * an inverse relation holds plain pointers, so nothing is deleted for it, and a
+	 * row that may not be deleted only loses the reference.
 	 *
-	 * @param string[] $orphanedUuids Array of UUIDs of orphaned objects to delete.
-	 * @param Register|null $register Optional register to scope the lookup.
-	 * @param Schema|null $schema Optional schema to scope the lookup.
+	 * @param string[] $orphanedUuids References the stored parent held and no longer holds.
+	 * @param array $scope The scope orphanScope() answers.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function deleteOrphanedRelatedObjects(
-		array $orphanedUuids,
-		?Register $register = null,
-		?Schema $schema = null,
-	): void {
+	private function deleteOrphanedRelatedObjects(array $orphanedUuids, array $scope): void {
+		$register = $scope['register'];
+		$schema = $scope['schema'];
+		if ($register === null || $schema === null || $scope['inverse'] === null) {
+			return;
+		}
+
 		foreach ($orphanedUuids as $uuid) {
 			try {
 				$orphanedObject = $this->objectEntityMapper->find(
@@ -2543,15 +2559,14 @@ class SaveObject {
 					_multitenancy: false
 				);
 
-				// Soft delete: set deletion metadata and update (consistent with DeleteObject).
-				$user = $this->userSession->getUser();
-				$userId = 'system';
-				if ($user !== null) {
-					$userId = $user->getUID();
+				if ($this->orphanMayBeDeleted(orphan: $orphanedObject, scope: $scope + ['uuid' => $uuid]) === false) {
+					continue;
 				}
 
+				// Soft delete: set deletion metadata and update (consistent with DeleteObject).
+				// The guard admits only a signed-in caller.
 				$deletionData = [
-					'deletedBy' => $userId,
+					'deletedBy' => $this->userSession->getUser()?->getUID(),
 					'deletedAt' => (new DateTime())->format(DateTime::ATOM),
 					'objectId' => $orphanedObject->getUuid(),
 					'reason' => 'orphaned-related-object',
@@ -2588,6 +2603,86 @@ class SaveObject {
 			}//end try
 		}//end foreach
 	}//end deleteOrphanedRelatedObjects()
+
+	/**
+	 * Soft-delete what a parent's save left orphaned, once the parent is saved.
+	 *
+	 * @param string $parent The parent's uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function settleOrphans(string $parent): void {
+		foreach (($this->pendingOrphans[$parent] ?? []) as [$orphanedUuids, $scope]) {
+			$this->deleteOrphanedRelatedObjects(orphanedUuids: $orphanedUuids, scope: $scope);
+		}
+
+		unset($this->pendingOrphans[$parent]);
+	}//end settleOrphans()
+
+	/**
+	 * The stored references a save no longer keeps, compared in one normal form.
+	 *
+	 * @param string[] $old  The stored references.
+	 * @param array    $kept The references the save keeps.
+	 *
+	 * @return string[] The removed references.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private static function removedReferences(array $old, array $kept): array {
+		$keptKeys = array_map(self::referenceKey(...), array_filter($kept, 'is_string'));
+
+		return array_values(
+			array_filter($old, static fn (string $uuid): bool => in_array(self::referenceKey(reference: $uuid), $keptKeys, true) === false)
+		);
+	}//end removedReferences()
+
+	/**
+	 * One normal form of a uuid reference: lower case, no dashes, no `id-` style prefix.
+	 *
+	 * @param string $reference The reference.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private static function referenceKey(string $reference): string {
+		$pattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/';
+
+		return str_replace('-', '', preg_replace($pattern, '$1', strtolower($reference)));
+	}//end referenceKey()
+
+	/**
+	 * Whether a row the parent stopped referencing is its own and may be deleted.
+	 *
+	 * The row must be the referenced uuid itself (the lookup also matches slugs and
+	 * uris) and must name the parent through the inverse property, otherwise the
+	 * reference was a plain pointer to a row with a life of its own.
+	 *
+	 * @param ObjectEntity $orphan The row that was found.
+	 * @param array        $scope  The orphan scope, plus the referenced `uuid`.
+	 *
+	 * @return bool True when the row may be soft-deleted.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function orphanMayBeDeleted(ObjectEntity $orphan, array $scope): bool {
+		$namesParent = (array)($orphan->getObject()[$scope['inverse']] ?? []);
+		if ($orphan->getUuid() !== $scope['uuid'] || in_array($scope['parent'], $namesParent, true) === false) {
+			return false;
+		}
+
+		$this->orphanGuard ??= new OrphanDeletionGuard(
+			objectMapper: $this->objectEntityMapper,
+			permissionHandler: $this->permissionHandler,
+			userSession: $this->userSession,
+			container: $this->container
+		);
+
+		return $this->orphanGuard->allows(row: $orphan, register: $scope['register'], schema: $scope['schema']);
+	}//end orphanMayBeDeleted()
 
 	/**
 	 * Fills in missing schema properties with null for an object being updated.
@@ -3782,6 +3877,7 @@ class SaveObject {
 		$oldObject->setObject($oldObjectData);
 
 		// Prepare the object for update.
+		unset($this->pendingOrphans[(string)$existingObject->getUuid()]);
 		$preparedObject = $this->prepareObjectForUpdate(
 			existingObject: $existingObject,
 			schema: $schema,
@@ -3826,6 +3922,8 @@ class SaveObject {
 			oldObject: $oldObject
 		);
 
+		$this->settleOrphans(parent: (string)$preparedObject->getUuid());
+
 		// Record the verdict AFTER the write, so a cascade descendant saved
 		// inside updateObject() cannot leave its own outcome behind as this
 		// frame's answer.
@@ -3836,13 +3934,26 @@ class SaveObject {
 		// toward `unchanged` — the bucket a caller acts on by SKIPPING work.
 		// Over-reporting a change costs a redundant downstream refresh;
 		// under-reporting one would let a real edit be silently ignored.
-		$this->lastSaveOutcome = 'updated';
-		if ($updatedObject->getObject() === $oldObject->getObject()) {
-			$this->lastSaveOutcome = 'unchanged';
-		}
+		$this->lastSaveOutcome = self::updateOutcome(updated: $updatedObject, old: $oldObject);
 
 		return $updatedObject;
 	}//end handleObjectUpdate()
+
+	/**
+	 * The verdict of a persisted update.
+	 *
+	 * @param ObjectEntity $updated The object after the write.
+	 * @param ObjectEntity $old     The object before the write.
+	 *
+	 * @return string `unchanged` or `updated`.
+	 */
+	private static function updateOutcome(ObjectEntity $updated, ObjectEntity $old): string {
+		if ($updated->getObject() === $old->getObject()) {
+			return 'unchanged';
+		}
+
+		return 'updated';
+	}//end updateOutcome()
 
 	/**
 	 * Handle creation of new object.
@@ -6145,6 +6256,13 @@ class SaveObject {
 			throw new Exception($errorMessage, 0, $e);
 		}
 
+		// Removed references are only cleaned up when the schema opts in. Read before
+		// the pre-cache below overwrites the entity's data with the incoming data.
+		$stored = [];
+		if (($schema->getConfiguration()['orphanCleanup'] ?? false) === true) {
+			$stored = ($objectEntity->getObject() ?? []);
+		}
+
 		// Pre-populate the name cache with the parent object's name before cascading.
 		// This ensures that when sub-objects (e.g., koppelingen) resolve relation fields
 		// (e.g., {{ moduleA }}) via the name template, they can find the parent's name
@@ -6153,7 +6271,7 @@ class SaveObject {
 		$this->preCacheParentName(objectEntity: $objectEntity, schema: $schema, data: $data);
 
 		// Apply cascading operations.
-		$data = $this->cascadeObjects(objectEntity: $objectEntity, schema: $schema, data: $data);
+		$data = $this->cascadeObjects(objectEntity: $objectEntity, schema: $schema, data: $data, stored: $stored);
 		$data = $this->handleInverseRelationsWriteBack(objectEntity: $objectEntity, schema: $schema, data: $data);
 
 		// Apply default values (including slug generation).

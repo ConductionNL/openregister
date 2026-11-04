@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Rbac\OrphanCleanupFlag;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
 use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
@@ -216,8 +217,9 @@ class SchemasToolProvider implements IMcpToolProvider {
 	private function updateSchema(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
 		$this->requireParam(arguments: $arguments, param: 'data');
-		$old  = $this->manageableSchema(id: $arguments['id'])->getAuthorization();
-		$data = $this->checkedBody(data: $arguments['data'], old: $old);
+		$stored = $this->manageableSchema(id: $arguments['id']);
+		$this->refuseOrphanCleanupChange(schema: $stored, document: $arguments['data']);
+		$data = $this->checkedBody(data: $arguments['data'], old: $stored->getAuthorization());
 		unset($data['id'], $data['organisation'], $data['owner'], $data['created']);
 		$schema = $this->schemaMapper->updateFromArray(
 			id: $arguments['id'],
@@ -225,6 +227,24 @@ class SchemasToolProvider implements IMcpToolProvider {
 		);
 		return $schema->jsonSerialize();
 	}//end updateSchema()
+
+	/**
+	 * Refuse a non-administrator's change of `orphanCleanup`, as the schema routes do.
+	 *
+	 * @param Schema               $schema   The schema as stored, or a new one.
+	 * @param array<string, mixed> $document The incoming fields.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the caller may not change the flag.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function refuseOrphanCleanupChange(Schema $schema, array $document): void {
+		if ((new OrphanCleanupFlag())->changedBy(schema: $schema, document: $document) === true && $this->rights->isAdmin() === false) {
+			throw new InvalidArgumentException('Only an administrator can change orphanCleanup on a schema');
+		}
+	}//end refuseOrphanCleanupChange()
 
 	/**
 	 * Delete a schema.
