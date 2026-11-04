@@ -29,7 +29,7 @@ use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -51,13 +51,13 @@ class McpResourcesService {
 	 *
 	 * @param RegisterMapperInterface $registerMapper Register database mapper
 	 * @param SchemaMapperInterface $schemaMapper Schema database mapper
-	 * @param ObjectService $objectService Object service facade
+	 * @param ObjectOperationsInterface $objectService Object service facade
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

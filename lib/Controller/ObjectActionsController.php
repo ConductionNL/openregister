@@ -50,7 +50,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -80,9 +80,9 @@ class ObjectActionsController extends Controller {
 	/**
 	 * Loads the subject.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objects;
+	private readonly ObjectOperationsInterface $objects;
 
 	/**
 	 * Loads a schema; the `next` hint after a selection.

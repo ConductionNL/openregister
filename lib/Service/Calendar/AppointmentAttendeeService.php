@@ -36,7 +36,7 @@ use DateTime;
 use DateTimeInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 
 /**
@@ -96,10 +96,10 @@ class AppointmentAttendeeService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects The object read and write path.
+	 * @param ObjectOperationsInterface $objects The object read and write path.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 	) {
 
 	}//end __construct()

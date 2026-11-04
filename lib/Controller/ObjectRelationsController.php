@@ -42,7 +42,7 @@ use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ObjectTreeService;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
@@ -83,9 +83,9 @@ class ObjectRelationsController extends Controller {
 	/**
 	 * Reads and writes objects, with RBAC.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * The export verb, checked before the graph leaves.

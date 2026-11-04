@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Service\Config\Types;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Throwable;
 
 /**
@@ -54,7 +54,7 @@ class GenericObjectShareableConfigType implements IShareableConfigType {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService Reads and writes the objects.
+	 * @param ObjectOperationsInterface $objectService Reads and writes the objects.
 	 * @param string $id The type id (e.g. `procest.casetype`).
 	 * @param string $name The display name.
 	 * @param string $topic The discovery topic.
@@ -62,7 +62,7 @@ class GenericObjectShareableConfigType implements IShareableConfigType {
 	 * @param string $schema The schema slug the objects are of.
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly string $id,
 		private readonly string $name,
 		private readonly string $topic,
