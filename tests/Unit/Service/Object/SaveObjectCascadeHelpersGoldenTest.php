@@ -148,8 +148,9 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 
 		$extra = $method === 'cascadeObjects' ? [$stored] : [];
 		$answer = (new ReflectionClass(SaveObject::class))->getMethod($method)->invoke($handler, $parent, $schema, $data, ...$extra);
+		$orphans = (new ReflectionClass(SaveObject::class))->getProperty('pendingOrphans')->getValue($handler);
 
-		return ['answer' => $answer, 'trace' => $this->trace];
+		return ['answer' => $answer, 'trace' => $this->trace, 'orphans' => $orphans];
 	}//end run()
 
 	/**
@@ -163,6 +164,9 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 		$writeBack = ['tags' => ['type' => 'array', 'items' => ['$ref' => 'note', 'inversedBy' => 'incidents', 'writeBack' => true]]];
 		$single = ['note' => ['type' => 'object', '$ref' => 'note', 'inversedBy' => 'incidents', 'writeBack' => true]];
 		$old = ['notes' => ['old-1', self::IDS[0], 'old-2', 7]];
+		$singleCascade = ['lead' => ['type' => 'object', '$ref' => 'note', 'objectConfiguration' => ['handling' => 'cascade']]];
+		$singleInverse = ['lead' => ['type' => 'object', '$ref' => 'note', 'inversedBy' => 'incidents']];
+		$listInverse = ['kids' => ['type' => 'array', 'items' => ['$ref' => 'note', 'inversedBy' => 'incidents']]];
 		$mixed = array_merge(self::IDS, [['text' => 'new'], ['id' => ''], [], 7]);
 
 		return [
@@ -172,6 +176,16 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 			'cascade list emptied keeps plain pointers' => $this->runOnParent(method: 'cascadeObjects', properties: $cascade, data: ['notes' => []], stored: $old),
 			'cascade ids only' => $this->runOnParent(method: 'cascadeObjects', properties: $cascade, data: ['notes' => self::IDS], stored: $old),
 			'cascade objects created' => $this->runOnParent(method: 'cascadeObjects', properties: $cascade, data: ['notes' => $mixed], stored: $old),
+			'single cascade stores the created id' => $this->runOnParent(method: 'cascadeObjects', properties: $singleCascade, data: ['lead' => ['text' => 'new'], 'keep' => 1]),
+			'single cascade of an object value' => $this->runOnParent(method: 'cascadeObjects', properties: $singleCascade, data: ['lead' => (object)['text' => 'new']]),
+			'single cascade skips an effectively empty object' => $this->runOnParent(method: 'cascadeObjects', properties: $singleCascade, data: ['lead' => ['text' => '', 'list' => []]]),
+			'single cascade skips a scalar' => $this->runOnParent(method: 'cascadeObjects', properties: $singleCascade, data: ['lead' => 'abc']),
+			'single inversedBy drops the property' => $this->runOnParent(method: 'cascadeObjects', properties: $singleInverse, data: ['lead' => ['text' => 'new']]),
+			'single write-back is left to the write-back pass' => $this->runOnParent(method: 'cascadeObjects', properties: $single, data: ['note' => ['text' => 'new']]),
+			'list write-back is left to the write-back pass' => $this->runOnParent(method: 'cascadeObjects', properties: $writeBack, data: ['tags' => [['text' => 'new']]]),
+			'list inversedBy drops the property' => $this->runOnParent(method: 'cascadeObjects', properties: $listInverse, data: ['kids' => [['text' => 'new']]], stored: ['kids' => ['old-1']]),
+			'list inversedBy emptied' => $this->runOnParent(method: 'cascadeObjects', properties: $listInverse, data: ['kids' => []], stored: ['kids' => ['old-1']]),
+			'list without a value' => $this->runOnParent(method: 'cascadeObjects', properties: $listInverse, data: ['kids' => 'old-1']),
 			'write-back to valid ids' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: $writeBack, data: ['tags' => $mixed]),
 			'write-back single id' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: $single, data: ['note' => '42']),
 			'write-back single non-id' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: $single, data: ['note' => 'not-an-id']),
