@@ -135,7 +135,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodePreview;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -357,7 +357,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects Performs every write, with all its ordinary semantics.
+	 * @param ObjectOperationsInterface $objects Performs every write, with all its ordinary semantics.
 	 * @param RegisterMapperInterface $registers Resolves the configured register (id, uuid or slug).
 	 * @param SchemaMapperInterface $schemas Resolves the configured schema (id, uuid or slug).
 	 * @param IUserManager $userManager Resolves the run owner to an account.
@@ -367,7 +367,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @param FlowRunSubjectRecorder|null $subjects Records a written object under the declared role.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly RegisterMapperInterface $registers,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly IUserManager $userManager,

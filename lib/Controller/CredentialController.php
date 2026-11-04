@@ -45,7 +45,7 @@ use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\CredentialUpdateRequest;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use OCA\OpenRegister\Service\WriteCause;
@@ -91,7 +91,7 @@ class CredentialController extends Controller {
 	 * @param IRequest $request Current request.
 	 * @param IUserSession $userSession Current session (owner identity).
 	 * @param IGroupManager $groupManager Group manager (admin check for app registration).
-	 * @param ObjectService $objectService OR object CRUD for credential metadata.
+	 * @param ObjectOperationsInterface $objectService OR object CRUD for credential metadata.
 	 * @param CredentialStore $credentialStore Secret store leaf (vault).
 	 * @param ProviderCatalogue $catalogue Read-only provider catalogue (validation).
 	 * @param CredentialBrokerService $broker The guarded outbound broker.
@@ -110,7 +110,7 @@ class CredentialController extends Controller {
 		IRequest $request,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly CredentialStore $credentialStore,
 		private readonly ProviderCatalogue $catalogue,
 		private readonly CredentialBrokerService $broker,

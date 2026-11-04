@@ -49,7 +49,7 @@ use OCA\OpenRegister\Db\SchemaRunEntry;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 
@@ -82,7 +82,7 @@ class SchemaMigrationService {
 	 * @param SchemaRunMapper $runMapper Run persistence.
 	 * @param SchemaRunEntryMapper $runEntryMapper Per-object run entries.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
-	 * @param ObjectService $objectService Object read/save pipeline.
+	 * @param ObjectOperationsInterface $objectService Object read/save pipeline.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
@@ -90,7 +90,7 @@ class SchemaMigrationService {
 		private readonly SchemaRunMapper $runMapper,
 		private readonly SchemaRunEntryMapper $runEntryMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 

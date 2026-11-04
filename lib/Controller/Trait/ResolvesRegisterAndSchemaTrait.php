@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Controller\Trait;
 
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -61,7 +61,7 @@ trait ResolvesRegisterAndSchemaTrait {
 	 *
 	 * @param string        $register      Register slug, uuid or numeric id.
 	 * @param string        $schema        Schema slug, uuid or numeric id.
-	 * @param ObjectService $objectService The request's object service.
+	 * @param ObjectOperationsInterface $objectService The request's object service.
 	 *
 	 * @return array{register: mixed, schema: mixed, registerEntity: mixed, schemaEntity: mixed}
 	 *
@@ -73,7 +73,7 @@ trait ResolvesRegisterAndSchemaTrait {
 	protected function resolveRegisterAndSchema(
 		string $register,
 		string $schema,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): array {
 		// (1) Drop anything an earlier caller left on the shared service.
 		$objectService->clearCurrents();

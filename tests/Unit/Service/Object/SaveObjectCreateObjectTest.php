@@ -220,7 +220,7 @@ final class SaveObjectCreateObjectTest extends TestCase {
 			return $object;
 		});
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->willReturnCallback(static fn (string $id): object => ($id === RetentionService::class) ? $retention : throw new \RuntimeException('no ' . $id));
+		$container->method('get')->willReturnCallback(static fn (string $id): object => ($id === \OCA\OpenRegister\Service\RetentionServiceInterface::class) ? $retention : throw new \RuntimeException('no ' . $id));
 		$folders = $this->createMock(FolderManagementHandler::class);
 		$translations = $this->createMock(TranslationHandler::class);
 		$translations->method('normalizeTranslationsForSave')->willReturnCallback(static fn (array $objectData): array => $objectData);

@@ -34,7 +34,7 @@ use OCA\OpenRegister\Mcp\BuiltIn\RegistersToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemasToolProvider;
 use OCA\OpenRegister\Service\Mcp\McpToolsService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -175,7 +175,7 @@ class McpProviderDiscovery {
 					appId: $appId,
 					schemaEntries: $schemaEntries,
 					suppressedIds: $suppressedIds,
-					objectService: $container->get(ObjectService::class),
+					objectService: $container->get(ObjectOperationsInterface::class),
 					auditTrailMapper: $container->get(AuditTrailMapperInterface::class),
 					logger: $logger
 				);

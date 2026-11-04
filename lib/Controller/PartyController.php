@@ -31,7 +31,7 @@ use OCA\OpenRegister\Controller\Support\PartyControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartySearchService;
@@ -56,9 +56,9 @@ class PartyController extends Controller {
 	/**
 	 * Object service, to resolve the object a party sits on.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objects;
+	private readonly ObjectOperationsInterface $objects;
 
 	/**
 	 * The parties on an object.
