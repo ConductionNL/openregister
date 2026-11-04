@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\ConfigurationService;
@@ -45,6 +46,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
+use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\RetentionService;
@@ -81,6 +83,7 @@ final class HubClassesAreReachedThroughInterfacesTest extends TestCase {
 		FileMapper::class => FileMapperInterface::class,
 		FlowRunMapper::class => FlowRunMapperInterface::class,
 		FlowRunService::class => FlowRunServiceInterface::class,
+		ObjectService::class => ObjectOperationsInterface::class,
 		OrganisationMapper::class => OrganisationMapperInterface::class,
 		OrganisationService::class => OrganisationServiceInterface::class,
 		RegisterMapper::class => RegisterMapperInterface::class,

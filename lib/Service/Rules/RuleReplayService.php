@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Rules;
 use OCA\OpenRegister\BulkAction\ApplyRuleAction;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Throwable;
 
 /**
@@ -81,7 +81,7 @@ final class RuleReplayService {
 	 * @param RuleInventoryService $inventory Finds the rule as declared.
 	 * @param RuleCeilingService $ceiling Refuses a run above the rule's ceiling.
 	 * @param BulkJobService $jobs Creates and previews the background job.
-	 * @param ObjectService $objects Counts the selection before anything is written.
+	 * @param ObjectOperationsInterface $objects Counts the selection before anything is written.
 	 *
 	 * @return void
 	 */
@@ -89,7 +89,7 @@ final class RuleReplayService {
 		private readonly RuleInventoryService $inventory,
 		private readonly RuleCeilingService $ceiling,
 		private readonly BulkJobService $jobs,
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 	) {
 	}//end __construct()
 

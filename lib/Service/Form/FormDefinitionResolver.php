@@ -35,7 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Form;
 
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IL10N;
 use Throwable;
 
@@ -49,11 +49,11 @@ class FormDefinitionResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects Reads the form object.
+	 * @param ObjectOperationsInterface $objects Reads the form object.
 	 * @param IL10N         $l10n    Translations.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly IL10N $l10n,
 	) {
 

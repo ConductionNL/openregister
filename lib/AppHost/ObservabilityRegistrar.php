@@ -96,7 +96,7 @@ final class ObservabilityRegistrar {
 			\OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource::class,
 			function (ContainerInterface $container) {
 				return new ObjectMetricSource(
-					objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
+					objectService: $container->get(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class),
 					registerMapper: $container->get(RegisterMapperInterface::class),
 					schemaMapper: $container->get(SchemaMapperInterface::class),
 					logger: $container->get('Psr\Log\LoggerInterface')

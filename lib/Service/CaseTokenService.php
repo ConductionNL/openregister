@@ -42,6 +42,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\CaseToken;
 use OCA\OpenRegister\Db\CaseTokenMapper;
@@ -92,7 +93,7 @@ class CaseTokenService {
 	 * @param IUserSession $userSession Current user (minter).
 	 * @param IURLGenerator $urlGenerator Public URL builder.
 	 * @param LoggerInterface $logger Logger.
-	 * @param ContainerInterface $container App container the ObjectService is resolved from on demand.
+	 * @param ContainerInterface $container App container the ObjectOperationsInterface is resolved from on demand.
 	 *
 	 * @return void
 	 */
@@ -373,7 +374,7 @@ class CaseTokenService {
 	/**
 	 * Resolve the ObjectService from the active container.
 	 *
-	 * @return object|null The ObjectService, or null when unresolvable.
+	 * @return object|null The ObjectOperationsInterface, or null when unresolvable.
 	 */
 	private function resolveObjectService(): ?object {
 		try {

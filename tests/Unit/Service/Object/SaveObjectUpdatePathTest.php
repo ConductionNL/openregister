@@ -243,7 +243,7 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		$hints->method('check')->willReturnCallback(function (array $configuration, $register, $schema, array $data, ?string $selfUuid = null): void {
 			$this->trace[] = ['hints', $register, $schema, $selfUuid];
 		});
-		$services = [RetentionService::class => $retention, \OCA\OpenRegister\Service\Quality\UniqueHintChecker::class => $hints];
+		$services = [\OCA\OpenRegister\Service\RetentionServiceInterface::class => $retention, \OCA\OpenRegister\Service\Quality\UniqueHintChecker::class => $hints];
 		$container->method('get')->willReturnCallback(static fn (string $id): object => $services[$id] ?? throw new \RuntimeException('no ' . $id));
 		$folders = $this->createMock(FolderManagementHandler::class);
 		$translations = $this->createMock(TranslationHandler::class);
