@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCA\OpenRegister\Service\EmailService;
 use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
 /**
  * The domain services of the relations API.
@@ -36,7 +36,7 @@ final class RelationsRecords {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ObjectService                $objectService Object service
+	 * @param ObjectOperationsInterface                $objectService Object service
 	 * @param NoteService                  $noteService   Note service
 	 * @param ObjectCalendarTasksInterface $taskService   Task service
 	 * @param EmailService                 $emailService  Email service
@@ -44,7 +44,7 @@ final class RelationsRecords {
 	 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-1
 	 */
 	public function __construct(
-		public readonly ObjectService $objectService,
+		public readonly ObjectOperationsInterface $objectService,
 		public readonly NoteService $noteService,
 		public readonly ObjectCalendarTasksInterface $taskService,
 		public readonly EmailService $emailService,

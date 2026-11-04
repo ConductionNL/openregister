@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
 /**
  * The domain services of the credential API.
@@ -36,7 +36,7 @@ final class CredentialVault {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ObjectService           $objectService   OR object CRUD for credential metadata.
+	 * @param ObjectOperationsInterface           $objectService   OR object CRUD for credential metadata.
 	 * @param CredentialStore         $credentialStore Secret store leaf (vault).
 	 * @param ProviderCatalogue       $catalogue       Read-only provider catalogue (validation).
 	 * @param CredentialBrokerService $broker          The guarded outbound broker.
@@ -44,7 +44,7 @@ final class CredentialVault {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	public function __construct(
-		public readonly ObjectService $objectService,
+		public readonly ObjectOperationsInterface $objectService,
 		public readonly CredentialStore $credentialStore,
 		public readonly ProviderCatalogue $catalogue,
 		public readonly CredentialBrokerService $broker,
