@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Export\ExportGate;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
 
@@ -38,7 +38,7 @@ final class ObjectRelationsGraph {
 	 *
 	 * @param ObjectRelationService $relations     The relation row service.
 	 * @param RelationGraphService  $graphs        The bounded graph walk.
-	 * @param ObjectService         $objectService Reads and writes objects, with RBAC.
+	 * @param ObjectOperationsInterface         $objectService Reads and writes objects, with RBAC.
 	 * @param ExportGate            $exportGate    The export verb, checked before the graph leaves.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
@@ -46,7 +46,7 @@ final class ObjectRelationsGraph {
 	public function __construct(
 		public readonly ObjectRelationService $relations,
 		public readonly RelationGraphService $graphs,
-		public readonly ObjectService $objectService,
+		public readonly ObjectOperationsInterface $objectService,
 		public readonly ExportGate $exportGate,
 	) {
 	}//end __construct()

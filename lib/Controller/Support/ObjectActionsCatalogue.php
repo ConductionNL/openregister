@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
 /**
  * The domain services of the object actions API.
@@ -36,7 +36,7 @@ final class ObjectActionsCatalogue {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ObjectService           $objects     Loads the subject.
+	 * @param ObjectOperationsInterface           $objects     Loads the subject.
 	 * @param MacroActionResolver     $macros      Loads a schema; the `next` hint after a selection.
 	 * @param ObjectActionDefinitions $definitions The schema's actions, for the selection surface rule.
 	 * @param ObjectActionList        $list        Lists the actions.
@@ -44,7 +44,7 @@ final class ObjectActionsCatalogue {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-the-actions-a-user-may-run-on-an-object-are-listed-in-one-place
 	 */
 	public function __construct(
-		public readonly ObjectService $objects,
+		public readonly ObjectOperationsInterface $objects,
 		public readonly MacroActionResolver $macros,
 		public readonly ObjectActionDefinitions $definitions,
 		public readonly ObjectActionList $list,
