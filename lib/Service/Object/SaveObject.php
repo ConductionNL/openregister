@@ -3266,7 +3266,13 @@ class SaveObject {
 			return $value;
 		}
 
-		return array_map(fn ($item): mixed => $item === '' ? null : $item, $value);
+		foreach ($value as $index => $item) {
+			if ($item === '') {
+				$value[$index] = null;
+			}
+		}
+
+		return $value;
 	}//end withoutEmptyStrings()
 
 	/**
