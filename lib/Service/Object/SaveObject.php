@@ -1017,11 +1017,7 @@ class SaveObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function scanListForRelations(RelationScanRun $scan, array $value): void {
-		$propertyConfig = $scan->schemaProperties[$scan->key] ?? null;
-		$isArrayOfObjects = $propertyConfig
-			&& ($propertyConfig['type'] ?? '') === 'array'
-			&& isset($propertyConfig['items']['type'])
-			&& $propertyConfig['items']['type'] === 'object';
+		$isArrayOfObjects = self::isArrayOfObjectsProperty(propertyConfig: ($scan->schemaProperties[$scan->key] ?? null));
 
 		foreach ($value as $index => $item) {
 			$itemPath = $scan->path . '.' . $index;
@@ -1044,6 +1040,22 @@ class SaveObject {
 			}
 		}//end foreach
 	}//end scanListForRelations()
+
+	/**
+	 * Whether a property definition is an array of objects.
+	 *
+	 * @param mixed $propertyConfig The property definition, or null.
+	 *
+	 * @return bool True for an array whose items are objects.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function isArrayOfObjectsProperty(mixed $propertyConfig): bool {
+		return $propertyConfig
+			&& ($propertyConfig['type'] ?? '') === 'array'
+			&& isset($propertyConfig['items']['type'])
+			&& $propertyConfig['items']['type'] === 'object';
+	}//end isArrayOfObjectsProperty()
 
 	/**
 	 * Record a string value as a relation when its schema property declares one, or when it looks like a reference.
@@ -5402,26 +5414,51 @@ class SaveObject {
 			return;
 		}
 
-		if ($run->oldData !== null && array_key_exists($run->propertyName, $run->oldData) === true
-			&& $run->oldData[$run->propertyName] === $value
-		) {
+		if (self::referenceUnchanged(run: $run, value: $value) === true) {
 			return;
 		}
 
 		$run->ref = $ref;
 		$run->targetRegister = $property['register'] ?? $run->register;
-
-		$uuidsToValidate = [$value];
-		if (isset($property['type']) === true && $property['type'] === 'array' && is_array($value) === true) {
-			$uuidsToValidate = $value;
-		}
-
-		foreach ($uuidsToValidate as $uuid) {
+		foreach (self::referenceValues(property: $property, value: $value) as $uuid) {
 			if (empty($uuid) === false) {
 				$this->validateOneReference(run: $run, uuid: $uuid);
 			}
 		}
 	}//end validatePropertyReferences()
+
+	/**
+	 * Whether an update leaves the run's property at the value it already had.
+	 *
+	 * @param ReferencePropertyRun $run   The validation pass, on one property.
+	 * @param mixed                $value The incoming value.
+	 *
+	 * @return bool True when the stored value is the same.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function referenceUnchanged(ReferencePropertyRun $run, mixed $value): bool {
+		return $run->oldData !== null && array_key_exists($run->propertyName, $run->oldData) === true
+			&& $run->oldData[$run->propertyName] === $value;
+	}//end referenceUnchanged()
+
+	/**
+	 * The reference values of a property: the list of an array property, else the single value.
+	 *
+	 * @param array $property The property definition.
+	 * @param mixed $value    The value.
+	 *
+	 * @return array The values to validate.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function referenceValues(array $property, mixed $value): array {
+		if (isset($property['type']) === true && $property['type'] === 'array' && is_array($value) === true) {
+			return $value;
+		}
+
+		return [$value];
+	}//end referenceValues()
 
 	/**
 	 * Validate one reference value: URL syntax for a cross-app URL, else existence and the picker filter.
