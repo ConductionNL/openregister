@@ -2052,56 +2052,8 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			$object['hardValidation'] = true;
 		}
 
-		// Fold top-level `x-openregister-*` annotation blocks (e.g. the
-		// OpenAPI seed's sibling-of-properties `x-openregister-lifecycle`
-		// declaration) into the `configuration` array BEFORE the per-key
-		// setter loop runs. Without this the keys fall through to a
-		// non-existent `setXOpenregisterLifecycle()` setter, the silent-
-		// catch below swallows the call, and the annotation is dropped on
-		// the floor — so OR's TransitionEngine never sees a state machine
-		// and every transition 422s ("schema does not declare
-		// x-openregister-lifecycle"; openregister#1520).
-		$existingConfig = ($object['configuration'] ?? []);
-		if (is_array($existingConfig) === false) {
-			$existingConfig = [];
-		}
-
-		$annotationsFolded = false;
-		foreach ($object as $key => $value) {
-			if (is_string($key) === true && str_starts_with($key, 'x-openregister-') === true) {
-				$existingConfig[$key] = $value;
-				$annotationsFolded = true;
-				unset($object[$key]);
-			}
-		}
-
-		// Fold a schema-LEVEL top-level `x-schema-org` marker into
-		// `configuration['x-schema-org']` the same way (ADR-048). Fleet
-		// schemas declare the canonical schema.org CURIE (e.g.
-		// `"x-schema-org": "schema:Organization"`) as a sibling of
-		// `properties`, NOT inside `configuration`; without this fold the
-		// marker falls through to a non-existent `setXSchemaOrg()` setter,
-		// is swallowed by the silent-catch below, and the live schema loses
-		// its semantic type — so SemanticTypeResolver can never discover the
-		// provider. Folding it into the configuration column (which is in the
-		// passThrough allowlist and read by
-		// JsonLdContextService::getImplementedTypes) makes the marker survive
-		// save/import. An explicit `configuration['x-schema-org']` already
-		// supplied by the caller wins over the top-level convenience form.
-		if (array_key_exists('x-schema-org', $object) === true) {
-			if (array_key_exists('x-schema-org', $existingConfig) === false) {
-				$existingConfig['x-schema-org'] = $object['x-schema-org'];
-				$annotationsFolded = true;
-			}
-
-			unset($object['x-schema-org']);
-		}
-
-		if ($annotationsFolded === true) {
-			$object['configuration'] = $existingConfig;
-		}
-
-		$object = $this->foldTopLevelExportable(object: $object);
+		$object = $this->foldTopLevelAnnotations(object: $object);
+		$object = $this->withExactKeysOnly(object: $this->foldTopLevelExportable(object: $object));
 
 		foreach ($object as $key => $value) {
 			// Special handling for 'required' field - must always be an array, never NULL.
@@ -2898,6 +2850,85 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 
 		return null;
 	}//end parseConfigurationInput()
+
+	/**
+	 * Fold top-level annotation blocks into the `configuration` array.
+	 *
+	 * @param array<string, mixed> $object The hydrate input.
+	 *
+	 * @return array<string, mixed> The input with its annotation blocks folded.
+	 */
+	private function foldTopLevelAnnotations(array $object): array {
+		// Fold top-level `x-openregister-*` annotation blocks (e.g. the
+		// OpenAPI seed's sibling-of-properties `x-openregister-lifecycle`
+		// declaration) into the `configuration` array BEFORE the per-key
+		// setter loop runs. Without this the keys fall through to a
+		// non-existent `setXOpenregisterLifecycle()` setter, the silent-
+		// catch below swallows the call, and the annotation is dropped on
+		// the floor — so OR's TransitionEngine never sees a state machine
+		// and every transition 422s ("schema does not declare
+		// x-openregister-lifecycle"; openregister#1520).
+		$existingConfig = ($object['configuration'] ?? []);
+		if (is_array($existingConfig) === false) {
+			$existingConfig = [];
+		}
+
+		$annotationsFolded = false;
+		foreach ($object as $key => $value) {
+			if (is_string($key) === true && str_starts_with($key, 'x-openregister-') === true) {
+				$existingConfig[$key] = $value;
+				$annotationsFolded = true;
+				unset($object[$key]);
+			}
+		}
+
+		// Fold a schema-LEVEL top-level `x-schema-org` marker into
+		// `configuration['x-schema-org']` the same way (ADR-048). Fleet
+		// schemas declare the canonical schema.org CURIE (e.g.
+		// `"x-schema-org": "schema:Organization"`) as a sibling of
+		// `properties`, NOT inside `configuration`; without this fold the
+		// marker falls through to a non-existent `setXSchemaOrg()` setter,
+		// is swallowed by the silent-catch below, and the live schema loses
+		// its semantic type — so SemanticTypeResolver can never discover the
+		// provider. Folding it into the configuration column (which is in the
+		// passThrough allowlist and read by
+		// JsonLdContextService::getImplementedTypes) makes the marker survive
+		// save/import. An explicit `configuration['x-schema-org']` already
+		// supplied by the caller wins over the top-level convenience form.
+		if (array_key_exists('x-schema-org', $object) === true) {
+			if (array_key_exists('x-schema-org', $existingConfig) === false) {
+				$existingConfig['x-schema-org'] = $object['x-schema-org'];
+				$annotationsFolded = true;
+			}
+
+			unset($object['x-schema-org']);
+		}
+
+		if ($annotationsFolded === true) {
+			$object['configuration'] = $existingConfig;
+		}
+
+		return $object;
+	}//end foldTopLevelAnnotations()
+
+	/**
+	 * Drop every key that is not the exact name of a property.
+	 *
+	 * The setter call below resolves `Authorization` to setAuthorization() too,
+	 * and every check on a schema body reads the exact key, so another spelling
+	 * would be stored unchecked.
+	 *
+	 * @param array<int|string, mixed> $object The hydrate input.
+	 *
+	 * @return array<string, mixed> The input with only exact property names as keys.
+	 */
+	private function withExactKeysOnly(array $object): array {
+		return array_filter(
+			$object,
+			fn (int|string $key): bool => is_string($key) === true && property_exists($this, $key) === true,
+			ARRAY_FILTER_USE_KEY
+		);
+	}//end withExactKeysOnly()
 
 	/**
 	 * Fold a top-level `exportable` into `configuration.exportable`.

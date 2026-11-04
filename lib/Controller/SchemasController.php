@@ -42,6 +42,8 @@ use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
+use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
+use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
@@ -1250,8 +1252,12 @@ class SchemasController extends Controller {
 			);
 		}
 
+		$data = $this->withAuthorizationAsStored(document: $data);
+
 		// Validated after the permission check, so an unauthorized caller cannot probe it.
-		$invalid = ($this->orphanCleanupRefusal(schema: $existingSchema, document: $data) ?? $this->validateSchemaBody(data: $data));
+		$invalid = ($this->orphanCleanupRefusal(schema: $existingSchema, document: $data)
+			?? $this->validateSchemaBody(data: $data)
+			?? $this->crossOrganisationRefusal(old: $existingSchema->getAuthorization(), document: $data));
 		if ($invalid !== null) {
 			return $invalid;
 		}
@@ -1942,10 +1948,17 @@ class SchemasController extends Controller {
 			return $dialectResult;
 		}
 
-		$phpArray = $dialectResult;
-		$denied = $this->orphanCleanupRefusal(schema: $schema, document: $phpArray);
-		if ($denied !== null) {
-			return $denied;
+		$phpArray = $this->withAuthorizationAsStored(document: $dialectResult);
+		$old      = $schema->getAuthorization();
+		$refusal  = ($this->crossOrganisationRefusal(old: $old, document: $phpArray)
+			?? $this->externalGrantRefusal(data: $phpArray)
+			?? $this->orphanCleanupRefusal(schema: $schema, document: $phpArray));
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		if ($id !== null) {
+			unset($phpArray['id'], $phpArray['organisation'], $phpArray['owner'], $phpArray['created']);
 		}
 
 		if (empty($phpArray['title']) === true) {
@@ -1961,6 +1974,51 @@ class SchemasController extends Controller {
 			);
 		}
 	}//end upload()
+
+	/**
+	 * The body with its authorization in the form the schema will store, so
+	 * every check on it judges that form.
+	 *
+	 * @param array<string, mixed> $document The schema body being written.
+	 *
+	 * @return array<string, mixed> The body with a JSON text block decoded; any other text stays for the write to judge.
+	 */
+	private function withAuthorizationAsStored(array $document): array {
+		$stored = (new CrossOrganisationMarkerChange())->asStored(authorization: ($document['authorization'] ?? null));
+		if (is_array($stored) === true) {
+			$document['authorization'] = $stored;
+		}
+
+		return $document;
+	}//end withAuthorizationAsStored()
+
+	/**
+	 * Refuse a write by a non-administrator that lets a rule cross
+	 * organisations it did not cross before. A schema manager may change the
+	 * rest of the authorization, and remove a marker, but adding or widening
+	 * `crossOrganisation: true` gives every holder of that rule other
+	 * organisations' rows, so it is for administrators only.
+	 *
+	 * @param mixed                $old      The authorization before the write.
+	 * @param array<string, mixed> $document The schema body being written.
+	 *
+	 * @return JSONResponse|null A 403, or null when the write may go ahead.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	private function crossOrganisationRefusal(mixed $old, array $document): ?JSONResponse {
+		if (array_key_exists('authorization', $document) === false
+			|| (new CrossOrganisationMarkerChange())->widens(old: $old, new: $document['authorization']) === false
+			|| $this->isCurrentUserAdmin() === true
+		) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: ['error' => 'Only an administrator may let a rule read across organisations (crossOrganisation: true)'],
+			statusCode: Http::STATUS_FORBIDDEN
+		);
+	}//end crossOrganisationRefusal()
 
 	/**
 	 * Refuse a schema write by a non-administrator that sets or changes `orphanCleanup`.
@@ -2658,49 +2716,18 @@ class SchemasController extends Controller {
 	 * @param Schema $schema The schema to check manage permission for.
 	 *
 	 * @return bool True if the current user may manage this schema.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	private function checkSchemaManagePermission(Schema $schema): bool {
 		try {
-			$user = $this->container->get(\OCP\IUserSession::class)->getUser();
-			if ($user === null) {
-				return false;
-			}
+			$rights = new DefinitionWriteRights(
+				userSession: $this->container->get(\OCP\IUserSession::class),
+				groupManager: $this->container->get(\OCP\IGroupManager::class)
+			);
 
-			$groupManager = $this->container->get(\OCP\IGroupManager::class);
-
-			// Admins always pass.
-			if ($groupManager->isAdmin($user->getUID()) === true) {
-				return true;
-			}
-
-			$authorization = $schema->getAuthorization();
-
-			// Default-secure: no manage rule defined → admin-only (already failed above).
-			if (empty($authorization) === true || isset($authorization['manage']) === false) {
-				return false;
-			}
-
-			$userGroups = $groupManager->getUserGroupIds($user);
-			$manageRules = $authorization['manage'];
-			foreach ($userGroups as $groupId) {
-				foreach ($manageRules as $entry) {
-					if (is_string($entry) === true && $entry === $groupId) {
-						return true;
-					}
-
-					if (is_array($entry) === true && isset($entry['group']) === true && $entry['group'] === $groupId) {
-						return true;
-					}
-				}
-			}
+			return $rights->mayManage(authorization: $schema->getAuthorization());
 		} catch (\Throwable $e) {
 			return false;
-		}//end try
-
-		return false;
+		}
 	}//end checkSchemaManagePermission()
 
 	/**
