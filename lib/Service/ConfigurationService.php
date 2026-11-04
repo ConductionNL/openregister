@@ -671,19 +671,59 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 * @return string|null The remote version, or null if check failed
 	 * @throws GuzzleException If HTTP request fails
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Version check has multiple error and validation conditions
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-7
 	 */
 	public function checkRemoteVersion(Configuration $configuration): ?string {
-		// Only check remote sources.
+		$sourceUrl = $this->remoteSourceUrl(configuration: $configuration);
+		if ($sourceUrl === null) {
+			return null;
+		}
+
+		try {
+			$remoteVersion = $this->fetchRemoteVersion(sourceUrl: $sourceUrl);
+			if ($remoteVersion === null) {
+				return null;
+			}
+
+			$configuration->setRemoteVersion($remoteVersion);
+			$configuration->setLastChecked(new DateTime());
+			$this->configurationMapper->update($configuration);
+
+			$configId = $configuration->getId();
+			$this->logger->info(
+				message: "[ConfigurationService] Checked remote version for configuration {$configId}: {$remoteVersion}",
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+
+			return $remoteVersion;
+		} catch (GuzzleException $e) {
+			$configId = $configuration->getId();
+			$this->logger->error(
+				message: "[ConfigurationService] Failed to check remote version for configuration {$configId}: {$e->getMessage()}",
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			throw $e;
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[ConfigurationService] Unexpected error checking remote version: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}//end try
+	}//end checkRemoteVersion()
+
+	/**
+	 * The source URL of a remote configuration, or null (logged) when it has none to check.
+	 *
+	 * @param Configuration $configuration The configuration.
+	 *
+	 * @return string|null The source URL.
+	 */
+	private function remoteSourceUrl(Configuration $configuration): ?string {
 		if ($configuration->isRemoteSource() === false) {
 			$this->logger->info(
 				message: '[ConfigurationService] Configuration is not from a remote source, skipping version check',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return null;
 		}
@@ -692,81 +732,41 @@ class ConfigurationService implements ConfigurationServiceInterface {
 		if (empty($sourceUrl) === true) {
 			$this->logger->warning(
 				message: '[ConfigurationService] Configuration has no source URL, cannot check remote version',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return null;
 		}
 
-		try {
-			// Fetch the remote configuration.
-			$remoteData = $this->getJSONfromURL(url: $sourceUrl);
+		return $sourceUrl;
+	}//end remoteSourceUrl()
 
-			if ($remoteData instanceof JSONResponse) {
-				$this->logger->error(
-					message: '[ConfigurationService] Failed to fetch remote configuration',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'error' => $remoteData->getData(),
-					]
-				);
-				return null;
-			}
-
-			// Extract version from remote data.
-			$remoteVersion = $remoteData['version'] ?? $remoteData['info']['version'] ?? null;
-
-			if ($remoteVersion === null) {
-				$this->logger->warning(
-					message: '[ConfigurationService] Remote configuration does not contain a version field',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-					]
-				);
-				return null;
-			}
-
-			// Update the configuration with remote version and last checked time.
-			$configuration->setRemoteVersion($remoteVersion);
-			$configuration->setLastChecked(new DateTime());
-			$this->configurationMapper->update($configuration);
-
-			$configId = $configuration->getId();
-			$this->logger->info(
-				message: "[ConfigurationService] Checked remote version for configuration {$configId}: {$remoteVersion}",
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-				]
-			);
-
-			return $remoteVersion;
-		} catch (GuzzleException $e) {
-			$configId = $configuration->getId();
-			$errorMsg = $e->getMessage();
+	/**
+	 * Fetch a remote configuration and read its version: `version`, else `info.version`.
+	 *
+	 * @param string $sourceUrl The configuration's URL.
+	 *
+	 * @return mixed The version, or null (logged) when the fetch failed or there is none.
+	 */
+	private function fetchRemoteVersion(string $sourceUrl): mixed {
+		$remoteData = $this->getJSONfromURL(url: $sourceUrl);
+		if ($remoteData instanceof JSONResponse) {
 			$this->logger->error(
-				message: "[ConfigurationService] Failed to check remote version for configuration {$configId}: {$errorMsg}",
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-				]
-			);
-			throw $e;
-		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[ConfigurationService] Unexpected error checking remote version: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-				]
+				message: '[ConfigurationService] Failed to fetch remote configuration',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $remoteData->getData()]
 			);
 			return null;
-		}//end try
-	}//end checkRemoteVersion()
+		}
+
+		$remoteVersion = $remoteData['version'] ?? $remoteData['info']['version'] ?? null;
+		if ($remoteVersion === null) {
+			$this->logger->warning(
+				message: '[ConfigurationService] Remote configuration does not contain a version field',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+
+		return $remoteVersion;
+	}//end fetchRemoteVersion()
 
 	/**
 	 * Compare versions and get update status
