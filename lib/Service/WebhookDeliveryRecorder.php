@@ -71,6 +71,8 @@ final class WebhookDeliveryRecorder {
 	 * @param array   $webhookPayload The payload that is sent
 	 *
 	 * @return WebhookLog
+	 *
+	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	public function startDeliveryLog(Webhook $webhook, array $webhookPayload): WebhookLog {
 		$webhookLog = new WebhookLog();
@@ -92,6 +94,8 @@ final class WebhookDeliveryRecorder {
 	 * @param array                  $response Status code and body from sendRequest()
 	 *
 	 * @return bool True when delivered
+	 *
+	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	public function recordResponse(WebhookDeliveryAttempt $delivery, array $response): bool {
 		$statusCode = (int)$response['status_code'];
@@ -165,6 +169,8 @@ final class WebhookDeliveryRecorder {
 	 * @param RequestException       $exception The Guzzle failure
 	 *
 	 * @return bool Always false
+	 *
+	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	public function recordRequestFailure(WebhookDeliveryAttempt $delivery, RequestException $exception): bool {
 		$webhook = $delivery->webhook;
@@ -287,6 +293,8 @@ final class WebhookDeliveryRecorder {
 	 * @param \Exception             $exception The error
 	 *
 	 * @return bool Always false
+	 *
+	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	public function recordUnexpectedFailure(WebhookDeliveryAttempt $delivery, \Exception $exception): bool {
 		$delivery->log->setSuccess(false);
@@ -392,6 +400,8 @@ final class WebhookDeliveryRecorder {
 	 * @param string $body Raw response body.
 	 *
 	 * @return string Body limited to the response-body cap.
+	 *
+	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	public function capResponseBody(string $body): string {
 		if (strlen($body) <= self::MAX_RESPONSE_BODY_BYTES) {
