@@ -246,6 +246,30 @@ class FileExtractionControllerTest extends TestCase {
 		$this->assertTrue($data['success']);
 	}
 
+	public function testIndexTreatsAnEmptySearchAsNone(): void {
+		$this->request->method('getParam')
+			->willReturnMap([
+				['limit', 50, 50],
+				['offset', 0, 0],
+				['search', null, ''],
+				['status', null, null],
+				['riskLevel', null, null],
+				['sort', 'extractedAt', 'extractedAt'],
+				['order', 'DESC', 'DESC'],
+			]);
+
+		$this->chunkMapper->expects($this->once())
+			->method('getFileSourceSummaries')
+			->with(50, 0, $this->identicalTo(null), 'extractedAt', 'DESC')
+			->willReturn([]);
+		$this->chunkMapper->expects($this->once())
+			->method('countFileSourceSummaries')
+			->with($this->identicalTo(null))
+			->willReturn(0);
+
+		$this->assertEquals(200, $this->controller->index()->getStatus());
+	}
+
 	public function testIndexWithSearchTerm(): void {
 		$this->request->method('getParam')
 			->willReturnMap([
