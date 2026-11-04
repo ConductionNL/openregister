@@ -218,18 +218,13 @@ class ChatService {
 		array $context = [],
 		?StreamYieldChannel $channel = null,
 	): array {
-		return $this->handleMessage(
-			request: new ChatMessageRequest(
-				conversationId: $conversationId,
-				userId: $userId,
-				userMessage: $userMessage,
-				selectedViews: $selectedViews,
-				selectedTools: $selectedTools,
-				ragSettings: $ragSettings,
-				cnAiContext: $context,
-				channel: $channel
-			)
-		);
+		$request = new ChatMessageRequest(conversationId: $conversationId, userId: $userId, userMessage: $userMessage);
+		$request->selectedViews = $selectedViews;
+		$request->selectedTools = $selectedTools;
+		$request->ragSettings = $ragSettings;
+		$request->cnAiContext = $context;
+		$request->channel = $channel;
+		return $this->handleMessage(request: $request);
 	}//end processMessage()
 
 	/**

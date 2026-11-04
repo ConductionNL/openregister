@@ -27,25 +27,54 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
 
 /**
- * The input of ChatService::processMessage() as one value.
+ * The input of ChatService::processMessage() as one value: the message, then the options
+ * that shape the answer.
  *
  * @spec openspec/specs/chat-ai/spec.md
- *
- * @psalm-immutable
  */
 final class ChatMessageRequest {
 
 	/**
+	 * View filters for retrieval.
+	 *
+	 * @var array
+	 */
+	public array $selectedViews = [];
+
+	/**
+	 * Tool UUIDs the model may use.
+	 *
+	 * @var array
+	 */
+	public array $selectedTools = [];
+
+	/**
+	 * Retrieval setting overrides.
+	 *
+	 * @var array
+	 */
+	public array $ragSettings = [];
+
+	/**
+	 * CnAiContext snapshot from the frontend.
+	 *
+	 * @var array
+	 */
+	public array $cnAiContext = [];
+
+	/**
+	 * Streaming channel, null for blocking callers.
+	 *
+	 * @var StreamYieldChannel|null
+	 */
+	public ?StreamYieldChannel $channel = null;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param int                     $conversationId Conversation ID.
-	 * @param string                  $userId         User sending the message.
-	 * @param string                  $userMessage    Message text.
-	 * @param array                   $selectedViews  View filters for retrieval.
-	 * @param array                   $selectedTools  Tool UUIDs the model may use.
-	 * @param array                   $ragSettings    Retrieval setting overrides.
-	 * @param array                   $cnAiContext    CnAiContext snapshot from the frontend.
-	 * @param StreamYieldChannel|null $channel        Streaming channel, null for blocking callers.
+	 * @param int    $conversationId Conversation ID.
+	 * @param string $userId         User sending the message.
+	 * @param string $userMessage    Message text.
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
@@ -53,11 +82,6 @@ final class ChatMessageRequest {
 		public readonly int $conversationId,
 		public readonly string $userId,
 		public readonly string $userMessage,
-		public readonly array $selectedViews,
-		public readonly array $selectedTools,
-		public readonly array $ragSettings,
-		public readonly array $cnAiContext,
-		public readonly ?StreamYieldChannel $channel,
 	) {
 	}//end __construct()
 }//end class
