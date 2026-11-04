@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Decision;
 
 use OCA\OpenRegister\Db\Decision;
 use OCA\OpenRegister\Db\EntityRelation;
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DecisionConflictException;
 use OCP\IDBConnection;
@@ -65,14 +65,14 @@ class RelationDecisionService {
 	/**
 	 * Constructor.
 	 *
-	 * @param EntityRelationMapper $relationMapper The relation store and its audited decision write.
+	 * @param EntityRelationMapperInterface $relationMapper The relation store and its audited decision write.
 	 * @param DecisionService      $decisions      Records decision objects.
 	 * @param DecisionOwnership    $ownership      The ownership rule.
 	 * @param ReviewPolicyResolver $policies       The relation's policy.
 	 * @param IDBConnection        $db             One transaction for the write and its decision.
 	 */
 	public function __construct(
-		private readonly EntityRelationMapper $relationMapper,
+		private readonly EntityRelationMapperInterface $relationMapper,
 		private readonly DecisionService $decisions,
 		private readonly DecisionOwnership $ownership,
 		private readonly ReviewPolicyResolver $policies,

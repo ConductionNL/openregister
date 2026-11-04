@@ -176,9 +176,9 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 *
 	 * Used to get active organisation and apply organisation filters.
 	 *
-	 * @var OrganisationMapper Organisation mapper instance
+	 * @var OrganisationMapperInterface Organisation mapper instance
 	 */
-	protected readonly OrganisationMapper $organisationMapper;
+	protected readonly OrganisationMapperInterface $organisationMapper;
 
 	/**
 	 * App configuration for multi-tenancy settings
@@ -257,7 +257,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @param IDBConnection $db Database connection for queries
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher for schema events
 	 * @param PropertyValidatorHandler $validator Schema property validator for validation
-	 * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy
+	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy
 	 * @param IUserSession $userSession User session for current user context
 	 * @param IGroupManager $groupManager Group manager for RBAC checks
 	 * @param IAppConfig $appConfig App configuration for multitenancy settings
@@ -270,7 +270,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		IDBConnection $db,
 		IEventDispatcher $eventDispatcher,
 		PropertyValidatorHandler $validator,
-		OrganisationMapper $organisationMapper,
+		OrganisationMapperInterface $organisationMapper,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 		IAppConfig $appConfig,

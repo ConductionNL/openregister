@@ -6994,4 +6994,115 @@ class RenderObjectTest extends TestCase {
 			$calls[0]['args']
 		);
 	}
+
+	// =========================================================================
+	// extendObjectSourceRefs — references into object-source schemas
+	// =========================================================================
+
+	/**
+	 * Extended references into an object-source schema resolve through its provider and leave the extend list.
+	 *
+	 * @return void
+	 */
+	public function testExtendObjectSourceRefsResolvesThroughTheProvider(): void {
+		[$objectData, $extend, $asked] = $this->runSourceRefExtend();
+		$name = static fn ($rendered) => is_array($rendered) ? ($rendered['name'] ?? $rendered) : $rendered;
+		$this->assertSame('Org 1', $name($objectData['org']));
+		$this->assertSame(['Org 2', 9, ['x' => 1]], array_map($name, $objectData['orgs']));
+		$this->assertSame(['id' => 'kept', 'name' => 'Embedded'], $objectData['emb']);
+		$this->assertSame('p-1', $objectData['plain']);
+		$this->assertSame(['plain', 'blank', 'other'], $extend);
+		$this->assertSame([[1, 38, '1', ['table' => 't']], [1, 38, '2', ['table' => 't']], [1, 38, '9', ['table' => 't']]], $asked);
+	}
+
+	/**
+	 * A disabled provider resolves nothing and leaves the extend list alone.
+	 *
+	 * @return void
+	 */
+	public function testExtendObjectSourceRefsSkipsADisabledProvider(): void {
+		$this->sourceEnabled = false;
+		[$objectData, $extend, $asked] = $this->runSourceRefExtend();
+		$this->assertSame(1, $objectData['org']);
+		$this->assertSame(['org', 'orgs', 'emb', 'org.sub', 'plain', 'blank', 'other'], $extend);
+		$this->assertSame([], $asked);
+	}
+
+	/** Whether the object-source provider of the source-ref fixture is enabled. */
+	private bool $sourceEnabled = true;
+
+	/**
+	 * Run extendObjectSourceRefs() over the source-ref fixture.
+	 *
+	 * @return array{0: array, 1: array, 2: array} The object data, the remaining extends and the provider calls.
+	 */
+	private function runSourceRefExtend(): array {
+		$own = $this->createSchema(1, 'people');
+		$own->setProperties([
+			'org' => ['type' => 'object', '$ref' => 38],
+			'orgs' => ['type' => 'array', 'items' => ['$ref' => 'orgs-slug']],
+			'emb' => ['type' => 'object', '$ref' => 38],
+			'plain' => ['type' => 'object', '$ref' => 2],
+			'blank' => ['type' => 'object', '$ref' => ''],
+			'odd' => 'not-a-definition',
+		]);
+		$source = $this->createSchema(38, 'orgs-slug');
+		$source->setConfiguration(['x-openregister-object-source' => ['provider' => 'org-source', 'config' => ['table' => 't']]]);
+		$native = $this->createSchema(2, 'native');
+		$this->schemaMapper->method('find')->willReturnCallback(
+			static fn ($id) => match ((string)$id) { '1' => $own, '38', 'orgs-slug' => $source, '2' => $native, default => throw new Exception('none') }
+		);
+		$register = $this->createRegister(1, 'reg');
+		$this->registerMapper->method('find')->willReturn($register);
+
+		$asked = [];
+		$provider = $this->createMock(\OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider::class);
+		$provider->method('isEnabled')->willReturn($this->sourceEnabled);
+		$provider->method('find')->willReturnCallback(function ($reg, $schema, string $id, array $config = []) use (&$asked): ?ObjectEntity {
+			$asked[] = [$reg->getId(), $schema->getId(), $id, $config];
+			if ($id === '9') {
+				return null;
+			}
+
+			$row = $this->createObjectEntity((int)$id, 'row-' . $id, ['name' => 'Org ' . $id]);
+			$row->setSchema(38);
+			$row->setRegister(1);
+			return $row;
+		});
+		$registry = $this->createMock(\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry::class);
+		$registry->method('get')->willReturnCallback(static fn (string $name) => ($name === 'org-source') ? $provider : null);
+		$handler = (new ReflectionClass(RenderObject::class))->newInstanceWithoutConstructor();
+		$values = ['objectSourceRegistry' => $registry];
+		foreach ((new ReflectionClass(RenderObject::class))->getProperties() as $prop) {
+			if ($prop->isStatic() === false && $prop->isInitialized($this->handler) === true && $prop->getName() !== 'objectSourceRegistry') {
+				$values[$prop->getName()] = $prop->getValue($this->handler);
+			}
+		}
+
+		\Closure::bind(function (array $values): void {
+			foreach ($values as $name => $value) {
+				$this->$name = $value;
+			}
+		}, $handler, RenderObject::class)($values);
+		$this->handler = $handler;
+
+		$entity = $this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001');
+		$data = ['org' => 1, 'orgs' => [2, 9, ['x' => 1]], 'emb' => ['id' => 'kept', 'name' => 'Embedded'], 'plain' => 'p-1', 'blank' => 'b'];
+		[$objectData, $extend] = $this->invokePrivate(
+			'extendObjectSourceRefs',
+			[$entity, ['org', 'orgs', 'emb', 'org.sub', 'plain', 'blank', 'other'], $data, 0, ['visited']]
+		);
+
+		return [$objectData, $extend, $asked];
+	}
+
+	/**
+	 * Without a registry, or with nothing to extend, the data and extend list pass unchanged.
+	 *
+	 * @return void
+	 */
+	public function testExtendObjectSourceRefsWithoutARegistryChangesNothing(): void {
+		$entity = $this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001');
+		$this->assertSame([['org' => 1], ['org']], $this->invokePrivate('extendObjectSourceRefs', [$entity, ['org'], ['org' => 1], 0, []]));
+	}
 }

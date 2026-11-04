@@ -5,6 +5,7 @@ namespace Unit\Service;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeepLinkRegistration;
@@ -48,7 +49,7 @@ class DeepLinkRegistryServiceTest extends TestCase {
 
 		$this->container = $this->createMock(ContainerInterface::class);
 		$this->container->method('get')->willReturnCallback(function (string $class) {
-			if ($class === RegisterMapper::class) {
+			if ($class === RegisterMapperInterface::class) {
 				return $this->registerMapper;
 			}
 			if ($class === SchemaMapperInterface::class) {

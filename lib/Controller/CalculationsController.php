@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationTrialService;
@@ -50,7 +50,7 @@ class CalculationsController extends Controller {
 	 * @param IRequest $request Request.
 	 * @param OperatorCatalogue $catalogue The published operator catalogue.
 	 * @param CalculationTrialService $trials Dry-run evaluation of an unsaved declaration.
-	 * @param RegisterMapper $registerMapper Register lookup, scoped to the caller.
+	 * @param RegisterMapperInterface $registerMapper Register lookup, scoped to the caller.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup, scoped to the caller.
 	 * @param MagicMapper $objectMapper Object lookup, scoped to the caller by RBAC and tenancy.
 	 *
@@ -61,7 +61,7 @@ class CalculationsController extends Controller {
 		IRequest $request,
 		private readonly OperatorCatalogue $catalogue,
 		private readonly CalculationTrialService $trials,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapper $objectMapper,
 	) {

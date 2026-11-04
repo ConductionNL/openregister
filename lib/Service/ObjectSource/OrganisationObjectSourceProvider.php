@@ -75,10 +75,10 @@ namespace OCA\OpenRegister\Service\ObjectSource;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -120,11 +120,11 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	/**
 	 * Wire the mapper and the acting-user services.
 	 *
-	 * @param OrganisationMapper  $organisationMapper  The organisation mapper.
+	 * @param OrganisationMapperInterface  $organisationMapper  The organisation mapper.
 	 * @param IUserSession        $userSession         The acting user's session.
 	 * @param IGroupManager       $groupManager        Group manager, for the admin check.
 	 * @param LoggerInterface     $logger              Logger.
-	 * @param OrganisationService $organisationService The organisation lifecycle,
+	 * @param OrganisationServiceInterface $organisationService The organisation lifecycle,
 	 *                                                 which owns slug generation,
 	 *                                                 owner assignment and the
 	 *                                                 admin-group RBAC grant.
@@ -132,11 +132,11 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly OrganisationMapper $organisationMapper,
+		private readonly OrganisationMapperInterface $organisationMapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 	) {
 	}//end __construct()
 

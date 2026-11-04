@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Controller;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Exception;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Dto\BulkSaveOutcome;
@@ -73,7 +73,7 @@ class BulkController extends Controller {
 	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
 	 * @param ObjectService $objectService The object service
-	 * @param RegisterMapper $registerMapper Mapper for resolving registers (RBAC gates)
+	 * @param RegisterMapperInterface $registerMapper Mapper for resolving registers (RBAC gates)
 	 * @param SchemaMapperInterface $schemaMapper Mapper for resolving schemas (RBAC gates)
 	 * @param IUserSession $userSession User session for admin/manage checks
 	 * @param IGroupManager $groupManager Group manager for admin/manage checks
@@ -86,7 +86,7 @@ class BulkController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly ObjectService $objectService,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,

@@ -127,7 +127,7 @@ class FilesController extends Controller {
 	 * @param IRootFolder $rootFolder Root folder for file access
 	 * @param IUserManager $userManager User manager for user lookups
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher for file events
-	 * @param \OCA\OpenRegister\Db\FileMapper|null $fileMapper OR-side metadata mapper. Null-safe.
+	 * @param \OCA\OpenRegister\Db\FileMapperInterface|null $fileMapper OR-side metadata mapper. Null-safe.
 	 * @param \OCA\OpenRegister\Service\File\FileAuditHandler|null $fileAuditHandler Audit-trail writer. Null-safe.
 	 * @param IUserSession|null $userSession Session for auth gating.
 	 * @param IL10N|null $l10n Localization service for error
@@ -152,7 +152,7 @@ class FilesController extends Controller {
 		private readonly IRootFolder $rootFolder,
 		private readonly IUserManager $userManager,
 		private readonly IEventDispatcher $eventDispatcher,
-		private readonly ?\OCA\OpenRegister\Db\FileMapper $fileMapper = null,
+		private readonly ?\OCA\OpenRegister\Db\FileMapperInterface $fileMapper = null,
 		private readonly ?\OCA\OpenRegister\Service\File\FileAuditHandler $fileAuditHandler = null,
 		private readonly ?IUserSession $userSession = null,
 		private readonly ?IL10N $l10n = null,

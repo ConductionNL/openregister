@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
@@ -43,12 +43,12 @@ class CountedRegisterImport {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper               $registerMapper Reads the registers.
+	 * @param RegisterMapperInterface               $registerMapper Reads the registers.
 	 * @param SchemaMapperInterface                 $schemaMapper   Reads the schemas a re-import touched.
 	 * @param ShippedAuthorizationDecision $decision       The administrator's decision, shared with the guard.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ShippedAuthorizationDecision $decision,
 	) {
