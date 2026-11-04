@@ -129,6 +129,8 @@ class ManualEntityService {
 	 *
 	 * @throws ManualEntityException For orchestration-layer failures (file not extracted,
 	 *                               regex compile failure, audit-write failure, etc.).
+	 *
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function addManualEntity(
 		int $fileId,
@@ -138,14 +140,8 @@ class ManualEntityService {
 		bool $caseSensitive,
 		IUser $actor,
 	): ManualEntityResult {
-		$request = new ManualEntityRequest(
-			fileId: $fileId,
-			value: $value,
-			type: $type,
-			wholeWord: $wholeWord,
-			caseSensitive: $caseSensitive,
-			actor: $actor
-		);
+		$request = (new ManualEntityRequest(fileId: $fileId, value: $value, type: $type, actor: $actor))
+			->withMatching(wholeWord: $wholeWord, caseSensitive: $caseSensitive);
 		$this->assertFileWriteAccess(fileId: $fileId, actor: $actor);
 
 		// Run the matcher BEFORE opening the transaction: a regex compile
@@ -191,8 +187,8 @@ class ManualEntityService {
 			return $this->matcher->match(
 				chunks: $chunks,
 				needle: $request->value,
-				wholeWord: $request->wholeWord,
-				caseSensitive: $request->caseSensitive,
+				wholeWord: $request->wholeWord(),
+				caseSensitive: $request->caseSensitive(),
 				chunkOverlap: $chunkOverlap
 			);
 		} catch (ChunkMatcherException $e) {

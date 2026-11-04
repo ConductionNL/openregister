@@ -186,8 +186,7 @@ class PdfTextReplacer {
 			rawOption: $preserveStructure,
 			tagCountBefore: $tagCountBefore,
 			tagCountAfter: $this->structureInspector->countStructElements(doc: $doc),
-			structureIntactAfter: $this->structureInspector->isTagged(doc: $doc),
-			streamsModified: (int)($stats['streams_modified'] ?? 0)
+			structureIntactAfter: $this->structureInspector->isTagged(doc: $doc)
 		);
 
 		$outputBytes = $this->serialise(doc: $doc);
@@ -196,7 +195,7 @@ class PdfTextReplacer {
 		// the contracted result block (REQ-ORTPR-002/003). This never
 		// changes $outputBytes — preservation is measurement + honest
 		// degradation, not a repair the current stack can perform.
-		$structureResult = $measurement->attest();
+		$structureResult = $measurement->attest(streamsModified: (int)($stats['streams_modified'] ?? 0));
 
 		// Validation: re-extract the output and collect any residual
 		// substitution-map keys. Best-effort (no longer fails closed) — the
@@ -568,11 +567,10 @@ class PdfTextReplacer {
 			rawOption: $preserveStructure,
 			tagCountBefore: $tagCountBefore,
 			tagCountAfter: $tagCountBefore,
-			structureIntactAfter: true,
-			streamsModified: 0
+			structureIntactAfter: true
 		);
 
-		return $measurement->attest();
+		return $measurement->attest(streamsModified: 0);
 	}//end measureNoOpStructurePreservation()
 
 	/**

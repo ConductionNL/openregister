@@ -35,14 +35,32 @@ use OCP\Files\File;
  */
 final class DocumentReplacement {
 	/**
+	 * Strict (entity anonymisation) validation of PDF output.
+	 *
+	 * @var boolean
+	 */
+	private bool $strict = false;
+
+	/**
+	 * Tri-state PDF structure-preservation option.
+	 *
+	 * @var boolean|null
+	 */
+	private ?bool $preserveStructure = null;
+
+	/**
+	 * Sanitised temp copy to read instead of the source.
+	 *
+	 * @var string|null
+	 */
+	private ?string $sanitizedSourcePath = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param File $node The source file.
 	 * @param array<string, string> $replacements Map: original text => replacement.
 	 * @param string $outputName Name of the output file next to the source.
-	 * @param bool $strict Strict (entity anonymisation) validation of PDF output.
-	 * @param bool|null $preserveStructure Tri-state PDF structure-preservation option.
-	 * @param string|null $sanitizedSourcePath Sanitised temp copy to read instead of the source.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -50,12 +68,27 @@ final class DocumentReplacement {
 		public readonly File $node,
 		public readonly array $replacements,
 		public readonly string $outputName,
-		public readonly bool $strict,
-		public readonly ?bool $preserveStructure,
-		public readonly ?string $sanitizedSourcePath = null,
 	) {
 
 	}//end __construct()
+
+	/**
+	 * The same run with the PDF validation options.
+	 *
+	 * @param bool $strict Strict (entity anonymisation) validation of PDF output.
+	 * @param bool|null $preserveStructure Tri-state structure-preservation option.
+	 *
+	 * @return self The new run description.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function withPdfOptions(bool $strict, ?bool $preserveStructure): self {
+		$copy = clone $this;
+		$copy->strict = $strict;
+		$copy->preserveStructure = $preserveStructure;
+		return $copy;
+
+	}//end withPdfOptions()
 
 	/**
 	 * The same run, reading from a sanitised temp copy.
@@ -67,14 +100,45 @@ final class DocumentReplacement {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function withSanitizedSource(string $path): self {
-		return new self(
-			node: $this->node,
-			replacements: $this->replacements,
-			outputName: $this->outputName,
-			strict: $this->strict,
-			preserveStructure: $this->preserveStructure,
-			sanitizedSourcePath: $path
-		);
+		$copy = clone $this;
+		$copy->sanitizedSourcePath = $path;
+		return $copy;
 
 	}//end withSanitizedSource()
+
+	/**
+	 * Whether residual entity text in PDF output is validated strictly.
+	 *
+	 * @return bool True for strict validation.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function isStrict(): bool {
+		return $this->strict;
+
+	}//end isStrict()
+
+	/**
+	 * The tri-state PDF structure-preservation option.
+	 *
+	 * @return bool|null Null for auto.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function preserveStructure(): ?bool {
+		return $this->preserveStructure;
+
+	}//end preserveStructure()
+
+	/**
+	 * The sanitised temp copy to read, if any.
+	 *
+	 * @return string|null The path, or null to read the source.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function sanitizedSourcePath(): ?string {
+		return $this->sanitizedSourcePath;
+
+	}//end sanitizedSourcePath()
 }//end class

@@ -42,8 +42,6 @@ final class StructureMeasurement {
 	 * @param int $tagCountBefore `/StructElem` count of the input.
 	 * @param int $tagCountAfter `/StructElem` count of the output.
 	 * @param bool $structureIntactAfter Whether the output is still detected as tagged.
-	 * @param int $streamsModified Count of content streams the replacement touched
-	 *                             (SAPP's `replace_text_in_document` stats).
 	 *
 	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-002
 	 */
@@ -52,7 +50,6 @@ final class StructureMeasurement {
 		public readonly int $tagCountBefore,
 		public readonly int $tagCountAfter,
 		public readonly bool $structureIntactAfter,
-		public readonly int $streamsModified,
 	) {
 
 	}//end __construct()
@@ -88,11 +85,14 @@ final class StructureMeasurement {
 	 * be guaranteed: the degradation is reported explicitly rather than
 	 * presenting a pass-through as a faithful preservation.
 	 *
+	 * @param int $streamsModified Count of content streams the replacement touched
+	 *                             (SAPP's `replace_text_in_document` stats).
+	 *
 	 * @return StructurePreservation The result block for this run.
 	 *
 	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-002
 	 */
-	public function attest(): StructurePreservation {
+	public function attest(int $streamsModified): StructurePreservation {
 		if ($this->rawOption === false) {
 			// Explicit opt-out: no assertion of loss either, per D3; counts
 			// are still measured for the truthful report.
@@ -114,7 +114,7 @@ final class StructureMeasurement {
 		$lossReasons = [];
 		if ($this->tagCountAfter !== $this->tagCountBefore || $this->structureIntactAfter === false) {
 			$lossReasons[] = StructurePreservation::LOSS_REASON_STRUCTTREEROOT_DROPPED;
-		} elseif ($this->streamsModified > 0) {
+		} elseif ($streamsModified > 0) {
 			$lossReasons[] = StructurePreservation::LOSS_REASON_MARKED_CONTENT_BROKEN;
 		}
 

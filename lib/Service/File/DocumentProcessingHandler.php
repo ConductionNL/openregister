@@ -308,13 +308,8 @@ class DocumentProcessingHandler {
 			}
 		}
 
-		$job = new DocumentReplacement(
-			node: $node,
-			replacements: $replacements,
-			outputName: $outputName,
-			strict: $strict,
-			preserveStructure: $preserveStructure
-		);
+		$job = (new DocumentReplacement(node: $node, replacements: $replacements, outputName: $outputName))
+			->withPdfOptions(strict: $strict, preserveStructure: $preserveStructure);
 
 		// Process based on file type.
 		if (in_array($fileExtension, ['doc', 'docx'], true) === true) {
@@ -424,13 +419,7 @@ class DocumentProcessingHandler {
 			&& $this->sanitizer->isSanitizable($node->getMimeType()) === true
 		) {
 			$anonymizedFile = $this->anonymizeSanitizableDocument(
-				job: new DocumentReplacement(
-					node: $node,
-					replacements: $replacements,
-					outputName: $anonymizedFileName,
-					strict: true,
-					preserveStructure: $preserveStructure
-				)
+				job: new DocumentReplacement(node: $node, replacements: $replacements, outputName: $anonymizedFileName)
 			);
 		}
 
@@ -875,7 +864,7 @@ class DocumentProcessingHandler {
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
 	private function replaceWordsInOfficeContainer(DocumentReplacement $job): File {
-		$sanitizedSourcePath = (string)$job->sanitizedSourcePath;
+		$sanitizedSourcePath = (string)$job->sanitizedSourcePath();
 		$zip = new ZipArchive();
 		if ($zip->open($sanitizedSourcePath) !== true) {
 			throw new Exception('Failed to open sanitised Office container');
@@ -957,9 +946,9 @@ class DocumentProcessingHandler {
 		}
 
 		try {
-			if ($job->sanitizedSourcePath === null) {
+			if ($job->sanitizedSourcePath() === null) {
 				$this->copyNodeTo(node: $job->node, target: $tempFile);
-			} elseif (copy($job->sanitizedSourcePath, $tempFile) === false) {
+			} elseif (copy($job->sanitizedSourcePath(), $tempFile) === false) {
 				throw new Exception('Failed to copy sanitised source for processing');
 			}
 
@@ -1110,9 +1099,9 @@ class DocumentProcessingHandler {
 		$replacedBytes = $replacer->replaceInPdf(
 			pdfBytes: $content,
 			substitutions: $job->replacements,
-			strict: $job->strict,
+			strict: $job->isStrict(),
 			residualEntities: $residualNeedles,
-			preserveStructure: $job->preserveStructure,
+			preserveStructure: $job->preserveStructure(),
 			structureResult: $structureResult
 		);
 
