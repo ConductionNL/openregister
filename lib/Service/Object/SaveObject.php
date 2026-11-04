@@ -67,6 +67,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceCheck;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanRun;
+use OCA\OpenRegister\Service\Object\SaveObject\StreamRun;
 use OCA\OpenRegister\Service\Object\SaveObject\WriteBackSettings;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog;
@@ -6159,8 +6160,6 @@ class SaveObject {
 	 *
 	 * @return BatchOperationStatus
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function saveObjectsStreaming(
@@ -6172,130 +6171,169 @@ class SaveObject {
 		$status ??= new BatchOperationStatus();
 		$status->start();
 
+		$run = new StreamRun();
+		$run->register = $register;
+		$run->schema = $schema;
+		$run->status = $status;
+
 		// Position in the submitted batch. A failed create has no UUID yet, so
 		// this is the only thing that lets a caller identify the row it lost
 		// (issue #2778). Counted rather than read from the key because $rows is
 		// an iterable and may be a generator.
-		$rowIndex = -1;
-
 		foreach ($rows as $row) {
-			$rowIndex++;
+			$run->rowIndex++;
+			$run->row = $row;
 			$cacheBefore = count($this->referenceValidationCache);
-
-			try {
-				$rowData = [];
-				if (is_array($row) === true) {
-					$rowData = $row;
-				}
-
-				// Clear the slot first. Without this, a row that reaches neither
-				// terminal path would be classified with the PREVIOUS row's
-				// verdict — a stale answer that reads exactly like a real one,
-				// where a null falls through to the fallback and is at least
-				// derived from this row.
-				$this->lastSaveOutcome = null;
-
-				$entity = $this->saveObject(
-					register: $register,
-					schema: $schema,
-					data: $rowData
-				);
-
-				$uuid = ((string)$entity->getUuid());
-
-				// Outcome bucket — from the save path's own verdict, not from
-				// the shape of the input. This used to guess: "the row carried a
-				// uuid, so it must be an update". The guess is wrong in both
-				// directions. A row supplying a uuid for an object that does not
-				// exist yet is a CREATE counted as an update, and a write that
-				// changed nothing is an UPDATE counted as a change — which is
-				// why `unchanged` was described here as a future enhancement
-				// needing "a deep diff against the previous state". No such diff
-				// is needed: handleObjectUpdate() already clones the pre-update
-				// state for the audit trail and handleObjectCreation() already
-				// has the mapper's write action, so both paths know the answer
-				// and now record it.
-				//
-				// The fallback is the old heuristic, kept for the one case that
-				// can still leave the verdict unset — a `persist: false` prepare
-				// reaching neither terminal path — so a null can never be
-				// silently dropped from the totals.
-				$outcome = $this->consumeLastSaveOutcome();
-				if ($outcome === null) {
-					$hadUuid = (
-						is_array($row) === true
-						&& (isset($row['@self']['id']) === true
-						|| isset($row['id']) === true
-						|| isset($row['uuid']) === true)
-					);
-					$outcome = 'created';
-					if ($hadUuid === true) {
-						$outcome = 'updated';
-					}
-				}
-
-				if ($outcome === 'created') {
-					$status->recordCreated(uuid: $uuid);
-				}
-
-				if ($outcome === 'updated') {
-					$status->recordUpdated(uuid: $uuid);
-				}
-
-				if ($outcome === 'unchanged') {
-					$status->recordUnchanged(uuid: $uuid);
-				}
-			} catch (Exception $e) {
-				$rowUuid = null;
-				if (is_array($row) === true) {
-					$rowUuid = (
-						$row['@self']['id'] ?? $row['id'] ?? $row['uuid'] ?? null
-					);
-					if (is_string($rowUuid) === false) {
-						$rowUuid = null;
-					}
-				}
-
-				$status->recordFailed(
-					uuid: $rowUuid,
-					message: $e->getMessage(),
-					exceptionClass: $e::class,
-					index: $rowIndex
-				);
-
-				$this->logger->warning(
-					message: '[SaveObject] saveObjectsStreaming row failed',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $rowUuid,
-						'index' => $rowIndex,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-
-			// Each row's reference checks either grew the cache (miss)
-			// or hit existing entries (hit). Comparing cache size
-			// before/after the row gives us a cheap proxy: any growth
-			// is a miss; rows that didn't grow the cache resolved
-			// their references via existing entries (hit).
-			$cacheAfter = count($this->referenceValidationCache);
-			$delta = ($cacheAfter - $cacheBefore);
-			if ($delta > 0) {
-				for ($i = 0; $i < $delta; $i++) {
-					$status->recordReferenceCacheMiss();
-				}
-			}
-
-			if ($delta <= 0) {
-				$status->recordReferenceCacheHit();
-			}
-		}//end foreach
+			$this->saveStreamRow(run: $run);
+			$this->recordReferenceCacheUse(status: $status, cacheBefore: $cacheBefore);
+		}
 
 		$status->complete();
 		return $status;
 	}//end saveObjectsStreaming()
+
+	/**
+	 * Save one streamed row and record its outcome, or its failure without stopping the batch.
+	 *
+	 * @param StreamRun $run The batch, on one row.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function saveStreamRow(StreamRun $run): void {
+		try {
+			$rowData = [];
+			if (is_array($run->row) === true) {
+				$rowData = $run->row;
+			}
+
+			// Clear the slot first: a row that reaches neither terminal path must
+			// not be classified with the PREVIOUS row's verdict.
+			$this->lastSaveOutcome = null;
+			$entity = $this->saveObject(register: $run->register, schema: $run->schema, data: $rowData);
+			$this->recordStreamOutcome(run: $run, uuid: (string)$entity->getUuid());
+		} catch (Exception $e) {
+			$rowUuid = self::streamRowUuid(row: $run->row);
+			$run->status->recordFailed(
+				uuid: $rowUuid,
+				message: $e->getMessage(),
+				exceptionClass: $e::class,
+				index: $run->rowIndex
+			);
+
+			$this->logger->warning(
+				message: '[SaveObject] saveObjectsStreaming row failed',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'uuid' => $rowUuid,
+					'index' => $run->rowIndex,
+					'error' => $e->getMessage(),
+				]
+			);
+		}//end try
+	}//end saveStreamRow()
+
+	/**
+	 * Record a saved row as created, updated or unchanged, from the save path's own verdict.
+	 *
+	 * The verdict is not guessed from the input: a row supplying a uuid for an
+	 * object that does not exist yet is a create, and a write that changed
+	 * nothing is unchanged. Only when the verdict is unset (a `persist: false`
+	 * prepare reaching neither terminal path) does the old heuristic apply,
+	 * so a row is never dropped from the totals.
+	 *
+	 * @param StreamRun $run  The batch, on one row.
+	 * @param string    $uuid The saved object's UUID.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function recordStreamOutcome(StreamRun $run, string $uuid): void {
+		$outcome = ($this->consumeLastSaveOutcome() ?? self::guessedStreamOutcome(row: $run->row));
+		if ($outcome === 'created') {
+			$run->status->recordCreated(uuid: $uuid);
+		}
+
+		if ($outcome === 'updated') {
+			$run->status->recordUpdated(uuid: $uuid);
+		}
+
+		if ($outcome === 'unchanged') {
+			$run->status->recordUnchanged(uuid: $uuid);
+		}
+	}//end recordStreamOutcome()
+
+	/**
+	 * The outcome guessed from a row's shape: updated when it carries an identifier, else created.
+	 *
+	 * @param mixed $row The input row.
+	 *
+	 * @return string The guessed outcome.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function guessedStreamOutcome(mixed $row): string {
+		$hadUuid = (
+			is_array($row) === true
+			&& (isset($row['@self']['id']) === true
+			|| isset($row['id']) === true
+			|| isset($row['uuid']) === true)
+		);
+		if ($hadUuid === true) {
+			return 'updated';
+		}
+
+		return 'created';
+	}//end guessedStreamOutcome()
+
+	/**
+	 * The identifier a failed row carries, or null when it carries no string identifier.
+	 *
+	 * @param mixed $row The input row.
+	 *
+	 * @return string|null The identifier.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function streamRowUuid(mixed $row): ?string {
+		if (is_array($row) === false) {
+			return null;
+		}
+
+		$rowUuid = ($row['@self']['id'] ?? $row['id'] ?? $row['uuid'] ?? null);
+		if (is_string($rowUuid) === false) {
+			return null;
+		}
+
+		return $rowUuid;
+	}//end streamRowUuid()
+
+	/**
+	 * Count a row's reference checks as cache misses (the cache grew) or one hit (it did not).
+	 *
+	 * Comparing the cache size before and after the row is a cheap proxy.
+	 *
+	 * @param BatchOperationStatus $status      The batch status.
+	 * @param int                  $cacheBefore The reference cache size before the row.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function recordReferenceCacheUse(BatchOperationStatus $status, int $cacheBefore): void {
+		$delta = (count($this->referenceValidationCache) - $cacheBefore);
+		if ($delta <= 0) {
+			$status->recordReferenceCacheHit();
+			return;
+		}
+
+		for ($i = 0; $i < $delta; $i++) {
+			$status->recordReferenceCacheMiss();
+		}
+	}//end recordReferenceCacheUse()
 
 	/**
 	 * Push an in-flight save onto the call stack used for circular
