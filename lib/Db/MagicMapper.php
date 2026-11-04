@@ -2458,7 +2458,7 @@ class MagicMapper extends AbstractObjectMapper {
 			return '0 AS _search_score';
 		}
 
-		// quote() adds the quotes itself.
+		// The connection quote() adds the quotes itself.
 		$quotedTerm = $this->db->getQueryBuilder()->getConnection()->quote($searchTerm);
 		$likePattern = "'%" . trim($quotedTerm, "'") . "%'";
 		$hasTrgm = $this->hasPgTrgmExtension();
