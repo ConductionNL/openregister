@@ -25,10 +25,10 @@ namespace OCA\OpenRegister\Search\Service;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -70,9 +70,9 @@ class DashboardService {
 	 *
 	 * Handles database operations for audit trail entries.
 	 *
-	 * @var AuditTrailMapper Audit trail mapper instance
+	 * @var AuditTrailMapperInterface Audit trail mapper instance
 	 */
-	private readonly AuditTrailMapper $auditTrailMapper;
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * Webhook log mapper
@@ -106,9 +106,9 @@ class DashboardService {
 	 *
 	 * Handles database operations for schema entities.
 	 *
-	 * @var SchemaMapper Schema mapper instance
+	 * @var SchemaMapperInterface Schema mapper instance
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Constructor for DashboardService
@@ -116,20 +116,20 @@ class DashboardService {
 	 * Initializes service with required mappers and logger for dashboard operations.
 	 *
 	 * @param MagicMapper $objectMapper Object entity mapper for object statistics
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for log statistics
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for log statistics
 	 * @param WebhookLogMapper $webhookLogMapper Webhook log mapper for webhook statistics
 	 * @param RegisterMapper $registerMapper Register mapper for register operations
-	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
 	 * @param LoggerInterface $logger Logger instance for error tracking
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		MagicMapper $objectMapper,
-		AuditTrailMapper $auditTrailMapper,
+		AuditTrailMapperInterface $auditTrailMapper,
 		WebhookLogMapper $webhookLogMapper,
 		RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 		LoggerInterface $logger,
 	) {
 		// Store dependencies for use in service methods.

@@ -32,14 +32,14 @@ namespace OCA\OpenRegister\Service\Object;
 use Adbar\Dot;
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ReferenceValidatedEvent;
 use OCA\OpenRegister\Event\ReferenceValidationFailedEvent;
 use OCA\OpenRegister\Exception\CircularReferenceException;
@@ -81,7 +81,7 @@ use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCA\OpenRegister\Service\TenantLogRedactor;
 use OCA\OpenRegister\Service\TmloService;
@@ -353,13 +353,13 @@ class SaveObject {
 	 * @param FilePropertyHandler $filePropertyHandler Handler for file property operations
 	 * @param LinkedEntityPropertyHandler $linkedEntityHandler Linked entity property handler
 	 * @param IUserSession $userSession User session service
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for logging changes
-	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for logging changes
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
 	 * @param RegisterMapper $registerMapper Register mapper for register operations
 	 * @param IURLGenerator $urlGenerator URL generator service
 	 * @param OrganisationService $organisationService Service for organisation operations
 	 * @param CacheHandler $cacheHandler Object entity and query cache
-	 * @param SettingsService $settingsService Settings service for trail settings
+	 * @param SettingsServiceInterface $settingsService Settings service for trail settings
 	 * @param PropertyRbacHandler $propertyRbacHandler Property-level RBAC handler
 	 * @param ComputedFieldHandler $computedFieldHandler Handler for computed field evaluation
 	 * @param TranslationHandler $translationHandler Handler for translation operations
@@ -390,13 +390,13 @@ class SaveObject {
 		private readonly FilePropertyHandler $filePropertyHandler,
 		private readonly LinkedEntityPropertyHandler $linkedEntityHandler,
 		private readonly IUserSession $userSession,
-		private readonly AuditTrailMapper $auditTrailMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapper $registerMapper,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly OrganisationService $organisationService,
 		private readonly CacheHandler $cacheHandler,
-		private readonly SettingsService $settingsService,
+		private readonly SettingsServiceInterface $settingsService,
 		private readonly PropertyRbacHandler $propertyRbacHandler,
 		private readonly ComputedFieldHandler $computedFieldHandler,
 		private readonly TranslationHandler $translationHandler,

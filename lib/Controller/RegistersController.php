@@ -26,12 +26,12 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
@@ -115,9 +115,9 @@ class RegistersController extends Controller {
 	/**
 	 * Audit trail mapper for fetching log statistics
 	 *
-	 * @var AuditTrailMapper
+	 * @var AuditTrailMapperInterface
 	 */
-	private readonly AuditTrailMapper $auditTrailMapper;
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * Export service for handling data exports
@@ -136,9 +136,9 @@ class RegistersController extends Controller {
 	/**
 	 * Schema mapper for handling schema operations
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Register mapper for handling register operations
@@ -182,10 +182,10 @@ class RegistersController extends Controller {
 	 * @param LoggerInterface $logger Logger for error tracking
 	 * @param IUserSession $userSession User session service
 	 * @param ConfigurationService $configurationService Configuration service for import/export
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for log statistics
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for log statistics
 	 * @param ObjectExporterInterface $exportService Export service for data exports
 	 * @param ObjectImporterInterface $importService Import service for data imports
-	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
 	 * @param RegisterMapper $registerMapper Register mapper for database operations
 	 * @param GitHubClientInterface $githubService GitHub service for publishing
 	 * @param IAppManager $appManager App manager for app version
@@ -209,10 +209,10 @@ class RegistersController extends Controller {
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
 		ConfigurationService $configurationService,
-		AuditTrailMapper $auditTrailMapper,
+		AuditTrailMapperInterface $auditTrailMapper,
 		ObjectExporterInterface $exportService,
 		ObjectImporterInterface $importService,
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 		RegisterMapper $registerMapper,
 		GitHubClientInterface $githubService,
 		IAppManager $appManager,

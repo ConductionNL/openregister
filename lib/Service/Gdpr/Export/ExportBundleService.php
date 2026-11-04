@@ -33,7 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Gdpr\Export;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
 use Psr\Log\LoggerInterface;
@@ -51,7 +51,7 @@ class ExportBundleService {
 	 * @param CaseObjectAccessor $accessor RBAC-scoped, audited case load/save.
 	 * @param PadesSigner $signer Swappable signing seam.
 	 * @param OneTimeDownloadTokenStore $tokenStore Single-use download-token store.
-	 * @param AuditTrailMapper $auditTrailMapper Immutable trail reader for the dossier history.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Immutable trail reader for the dossier history.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
@@ -65,7 +65,7 @@ class ExportBundleService {
 		// RFC-3161 TSA URL.
 		private readonly PadesSigner $signer,
 		private readonly OneTimeDownloadTokenStore $tokenStore,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

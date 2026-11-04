@@ -36,7 +36,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ActionEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
@@ -298,7 +298,7 @@ class PermissionHandler {
 	 * @param IUserSession $userSession User session for getting current user.
 	 * @param IUserManager $userManager User manager for getting user objects.
 	 * @param IGroupManager $groupManager Group manager for checking user groups.
-	 * @param SchemaMapper $schemaMapper Mapper for schema operations.
+	 * @param SchemaMapperInterface $schemaMapper Mapper for schema operations.
 	 * @param MagicMapper $objectEntityMapper Mapper for object entity operations.
 	 * @param ConditionMatcher $conditionMatcher Shared PHP-side match evaluator (ADR-011).
 	 * @param IAppConfig $appConfig App config for the inheritFromPublic tenant default and
@@ -326,7 +326,7 @@ class PermissionHandler {
 		private readonly IUserSession $userSession,
 		private readonly IUserManager $userManager,
 		private readonly IGroupManager $groupManager,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapper $objectEntityMapper,
 		private readonly ConditionMatcher $conditionMatcher,
 		private readonly IAppConfig $appConfig,

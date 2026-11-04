@@ -2,6 +2,7 @@
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -50,7 +51,7 @@ class DeepLinkRegistryServiceTest extends TestCase {
 			if ($class === RegisterMapper::class) {
 				return $this->registerMapper;
 			}
-			if ($class === SchemaMapper::class) {
+			if ($class === SchemaMapperInterface::class) {
 				return $this->schemaMapper;
 			}
 			return null;

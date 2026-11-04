@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use Psr\Log\LoggerInterface;
@@ -46,12 +46,12 @@ class ActionDateFollower {
 	 * Constructor.
 	 *
 	 * @param ArchiveActionDateCalculator $calculator  Calculates the archiefactiedatum
-	 * @param AuditTrailMapper            $auditMapper Records a removed date
+	 * @param AuditTrailMapperInterface            $auditMapper Records a removed date
 	 * @param LoggerInterface             $logger      Logger
 	 */
 	public function __construct(
 		private readonly ArchiveActionDateCalculator $calculator,
-		private readonly AuditTrailMapper $auditMapper,
+		private readonly AuditTrailMapperInterface $auditMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

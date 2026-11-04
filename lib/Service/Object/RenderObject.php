@@ -36,13 +36,13 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
 use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
@@ -211,7 +211,7 @@ class RenderObject {
 	 * @param FileMapper $fileMapper File mapper for database operations.
 	 * @param MagicMapper $objectEntityMapper Object entity mapper for database operations.
 	 * @param RegisterMapper $registerMapper Register mapper for database operations.
-	 * @param SchemaMapper $schemaMapper Schema mapper for database operations.
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper for database operations.
 	 * @param ISystemTagManager $systemTagManager System tag manager for file tags.
 	 * @param ISystemTagObjectMapper $systemTagMapper System tag object mapper for file tags.
 	 * @param CacheHandler $cacheHandler Cache service for performance optimization.
@@ -222,7 +222,7 @@ class RenderObject {
 	 * @param ComputedFieldHandler $computedFieldHandler Handler for computed field evaluation.
 	 * @param TranslationHandler $translationHandler Handler for translatable property resolution.
 	 * @param LinkedEntityEnricher $linkedEntityEnricher Enricher for linked entity metadata.
-	 * @param CalculationEvaluator $calculationEvaluator Evaluator for derived/computed properties.
+	 * @param CalculationEvaluatorInterface $calculationEvaluator Evaluator for derived/computed properties.
 	 * @param UrnService $urnService URN resolver for register/schema/object identifiers.
 	 * @param TranslationStatusService $translationStatusService Service exposing per-object translation status metadata.
 	 * @param TranslationMapper $translationMapper Translation mapper for database operations.
@@ -250,7 +250,7 @@ class RenderObject {
 		private readonly FileMapper $fileMapper,
 		private readonly MagicMapper $objectEntityMapper,
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ISystemTagManager $systemTagManager,
 		private readonly ISystemTagObjectMapper $systemTagMapper,
 		private readonly CacheHandler $cacheHandler,
@@ -261,7 +261,7 @@ class RenderObject {
 		private readonly ComputedFieldHandler $computedFieldHandler,
 		private readonly TranslationHandler $translationHandler,
 		private readonly LinkedEntityEnricher $linkedEntityEnricher,
-		private readonly CalculationEvaluator $calculationEvaluator,
+		private readonly CalculationEvaluatorInterface $calculationEvaluator,
 		private readonly UrnService $urnService,
 		private readonly TranslationStatusService $translationStatusService,
 		private readonly TranslationMapper $translationMapper,

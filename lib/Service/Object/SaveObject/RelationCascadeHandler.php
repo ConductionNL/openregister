@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -60,7 +60,7 @@ class RelationCascadeHandler {
 	 * Constructor for RelationCascadeHandler.
 	 *
 	 * @param MagicMapper $objectEntityMapper Object entity data mapper.
-	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations.
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations.
 	 * @param RegisterMapper $registerMapper Register mapper for register operations.
 	 * @param LoggerInterface $logger Logger interface for logging operations.
 	 *
@@ -68,7 +68,7 @@ class RelationCascadeHandler {
 	 */
 	public function __construct(
 		private readonly MagicMapper $objectEntityMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapper $registerMapper,
 		private readonly LoggerInterface $logger,
 	) {

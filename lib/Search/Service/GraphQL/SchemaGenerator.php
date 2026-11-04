@@ -32,7 +32,7 @@ use GraphQL\Type\SchemaConfig;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema as RegisterSchema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Service\GraphQL\Scalar\DateTimeType;
 use OCA\OpenRegister\Search\Service\GraphQL\Scalar\EmailType;
 use OCA\OpenRegister\Search\Service\GraphQL\Scalar\JsonType;
@@ -124,12 +124,12 @@ class SchemaGenerator {
 	 * Constructor.
 	 *
 	 * @param RegisterMapper $registerMapper Register mapper
-	 * @param SchemaMapper $schemaMapper Schema mapper
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper
 	 * @param IUserSession $userSession The session that says who is asking
 	 */
 	public function __construct(
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IUserSession $userSession,
 	) {
 	}//end __construct()

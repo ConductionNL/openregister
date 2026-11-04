@@ -84,7 +84,7 @@ class EntityRelationMapper extends QBMapper {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db Database connection.
-	 * @param AuditTrailMapper $auditTrailMapper Audit-trail persistence (used by updateDecisionMetadata).
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit-trail persistence (used by updateDecisionMetadata).
 	 * @param IUserSession $userSession Session user lookup for audit-trail actor.
 	 * @param IEventDispatcher $eventDispatcher Symfony event dispatcher (used by updateDecisionMetadata
 	 *                                          to notify listeners after a decision-metadata write).
@@ -92,7 +92,7 @@ class EntityRelationMapper extends QBMapper {
 	 */
 	public function __construct(
 		IDBConnection $db,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IUserSession $userSession,
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly LoggerInterface $logger,
