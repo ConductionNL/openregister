@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Rbac;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditTrailControllerFactory;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -56,6 +57,11 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Service\LogService
  * @covers \OCA\OpenRegister\Controller\AuditTrailController
+ * @uses \OCA\OpenRegister\Controller\Support\AuditTrailMappers
+ * @uses \OCA\OpenRegister\Controller\Support\AuditTrailLog
+ * @uses \OCA\OpenRegister\Controller\Support\AuditTrailReaders
+ * @uses \OCA\OpenRegister\Controller\Support\AuditTrailPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\AuditTrailControllerServices
  * @covers \OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker
  * @uses \OCA\OpenRegister\Db\AuditTrail
@@ -142,7 +148,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 		$groups = $this->createMock(originalClassName: IGroupManager::class);
 		$groups->method('isAdmin')->willReturn(true);
 
-		$controller = new AuditTrailController(
+		$controller = AuditTrailControllerFactory::create(
 			'openregister',
 			$this->createMock(originalClassName: IRequest::class),
 			$logService,
@@ -223,7 +229,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 		$groups = $this->createMock(originalClassName: IGroupManager::class);
 		$groups->method('isAdmin')->willReturn(true);
 
-		return new AuditTrailController(
+		return AuditTrailControllerFactory::create(
 			'openregister',
 			($request ?? $this->createMock(originalClassName: IRequest::class)),
 			$logService,
