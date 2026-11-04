@@ -498,7 +498,7 @@ abstract class ExampleSetTestCase extends TestCase {
 	 */
 	private function taskService(): TaskService {
 		$service = $this->createMock(TaskService::class);
-		$service->method('import')->willReturnCallback(function (array $data, ?string $actor): Task {
+		$service->method('import')->willReturnCallback(function (array $data, ?string $actor, ?callable $blocker = null, ?\DateTime $at = null): Task {
 			foreach ($this->engineTasks as $held) {
 				if ($held->getTaskKey() === (string) $data['key']) {
 					// The task key is unique in the engine (or_tasks_key_uniq).
@@ -506,7 +506,7 @@ abstract class ExampleSetTestCase extends TestCase {
 				}
 			}
 
-			$this->taskImports[] = ['data' => $data, 'actor' => $actor];
+			$this->taskImports[] = ['data' => $data, 'actor' => $actor, 'at' => $at];
 			$state = TaskState::normalise(value: (string) ($data['state'] ?? Task::STATE_AVAILABLE))['state'];
 			$task  = new Task();
 			$task->setUuid('task-'.count($this->taskImports));
