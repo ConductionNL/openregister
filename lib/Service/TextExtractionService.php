@@ -300,6 +300,31 @@ class TextExtractionService {
 			payload: $payload
 		);
 
+		if ($this->extractFileEntities(fileId: $fileId, entityTypes: $entityTypes) === false) {
+			return;
+		}
+
+		$this->logger->debug(
+			message: '[TextExtractionService] File extraction complete',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'fileId' => $fileId,
+				'chunkCount' => count($chunks) + 1,
+			]
+		);
+	}//end indexFilePayload()
+
+	/**
+	 * Run entity recognition over a file's stored chunks when it is enabled, then update the
+	 * file's risk level. A failure is logged, not thrown.
+	 *
+	 * @param int        $fileId      The file id.
+	 * @param array|null $entityTypes Entity types to detect, or null for all.
+	 *
+	 * @return bool False when entity recognition is disabled.
+	 */
+	private function extractFileEntities(int $fileId, ?array $entityTypes): bool {
 		// Extract entities from chunks.
 		try {
 			// Get entity recognition settings.
@@ -312,7 +337,7 @@ class TextExtractionService {
 					message: '[TextExtractionService] Entity recognition disabled, skipping',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
 				);
-				return;
+				return false;
 			}
 
 			$entityOptions = [
@@ -341,20 +366,7 @@ class TextExtractionService {
 			);
 
 			// Compute and persist risk level based on detected entities.
-			try {
-				$riskLevel = $this->riskLevelService->updateRiskLevel(fileId: $fileId);
-				// Info: a risk level changing is a compliance-relevant state
-				// change on the document, not a step in extracting it.
-				$this->logger->info(
-					'[TextExtractionService] Risk level updated',
-					['fileId' => $fileId, 'riskLevel' => $riskLevel]
-				);
-			} catch (Exception $e) {
-				$this->logger->warning(
-					'[TextExtractionService] Failed to update risk level',
-					['fileId' => $fileId, 'error' => $e->getMessage()]
-				);
-			}
+			$this->updateFileRiskLevel(fileId: $fileId);
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[TextExtractionService] Entity extraction failed',
@@ -367,16 +379,32 @@ class TextExtractionService {
 			);
 		}//end try
 
-		$this->logger->debug(
-			message: '[TextExtractionService] File extraction complete',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'fileId' => $fileId,
-				'chunkCount' => count($chunks) + 1,
-			]
-		);
-	}//end indexFilePayload()
+		return true;
+	}//end extractFileEntities()
+
+	/**
+	 * Compute and store a file's risk level from its detected entities; a failure is logged as a warning.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return void
+	 */
+	private function updateFileRiskLevel(int $fileId): void {
+		try {
+			$riskLevel = $this->riskLevelService->updateRiskLevel(fileId: $fileId);
+			// Info: a risk level changing is a compliance-relevant state
+			// change on the document, not a step in extracting it.
+			$this->logger->info(
+				'[TextExtractionService] Risk level updated',
+				['fileId' => $fileId, 'riskLevel' => $riskLevel]
+			);
+		} catch (Exception $e) {
+			$this->logger->warning(
+				'[TextExtractionService] Failed to update risk level',
+				['fileId' => $fileId, 'error' => $e->getMessage()]
+			);
+		}
+	}//end updateFileRiskLevel()
 
 	/**
 	 * The text extracted from a file, read back from its stored chunks.
