@@ -62,6 +62,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
+use OCA\OpenRegister\Service\Object\SaveObject\ReferenceCheck;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource;
@@ -5849,185 +5850,223 @@ class SaveObject {
 		string $schemaRef,
 		?string $register,
 	): void {
-		// Circular reference short-circuit: if the UUID we're about
-		// to validate is already on the in-flight save call stack,
-		// we have a cycle (A -> B -> A). Reject before hitting the
-		// database — a cycle on otherwise-valid UUIDs would silently
-		// pass the existence check, but cascading the save would
-		// recurse forever.
-		$cycle = $this->detectCircularReference(uuid: $uuid);
-		if ($cycle !== null) {
-			$this->logger->warning(
-				message: '[SaveObject] Circular reference detected during validation',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'property' => $propertyName,
-					'uuid' => $uuid,
-					'targetSchema' => $schemaRef,
-					'cycleDepth' => count($cycle),
-				]
-			);
+		$check = new ReferenceCheck();
+		$check->propertyName = $propertyName;
+		$check->uuid = $uuid;
+		$check->schemaRef = $schemaRef;
+		$check->register = $register;
+		$this->refuseCircularReference(check: $check);
 
-			throw new CircularReferenceException(
-				referencedUuid: $uuid,
-				targetSchemaSlug: $schemaRef,
-				cycle: array_map(
-					static fn (array $frame): array => [
-						'schema' => $frame['schemaSlug'],
-						'uuid' => $frame['uuid'],
-						'register' => $frame['register'],
-					],
-					$cycle
-				),
-				code: 422
-			);
-		}//end if
-
-		// Resolve the target schema ID.
 		$targetSchemaId = $this->resolveSchemaReference(reference: $schemaRef);
 		if ($targetSchemaId === null) {
 			$this->logger->warning(
 				message: '[SaveObject] Could not resolve schema reference for reference validation',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'property' => $propertyName,
-					'ref' => $schemaRef,
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $propertyName, 'ref' => $schemaRef]
 			);
 			return;
 		}
 
-		// Request-scoped cache short-circuit: if we already validated this
-		// (targetSchemaId, uuid) pair during this request — typically
-		// during a bulk import or cascade save — skip the database round
-		// trip and replay the verdict. We still raise/return without
-		// re-emitting events so listeners observe each unique reference
-		// exactly once per request.
-		$cacheKey = $targetSchemaId . ':' . $uuid;
-		if (array_key_exists($cacheKey, $this->referenceValidationCache) === true) {
-			if ($this->referenceValidationCache[$cacheKey] === true) {
-				return;
-			}
-
-			// Cached negative verdict — re-raise without dispatching the
-			// failure event again (already dispatched on first miss).
-			throw new ReferenceValidationException(
-				propertyName: $propertyName,
-				referencedUuid: $uuid,
-				targetSchemaSlug: $schemaRef,
-				targetRegister: $register,
-				code: 422
-			);
+		$check->cacheKey = $targetSchemaId . ':' . $uuid;
+		if ($this->replayReferenceVerdict(check: $check) === true) {
+			return;
 		}
 
-		// Get the target schema for the error message.
-		$targetSchemaSlug = $schemaRef;
+		$this->resolveReferenceTarget(check: $check, targetSchemaId: $targetSchemaId);
+		if ($register !== null && $this->resolveReferenceRegister(check: $check) === false) {
+			return;
+		}
+
+		if ($this->referencedObjectFound(check: $check) === false) {
+			return;
+		}
+
+		// Cache the positive verdict so later checks of the same (target schema,
+		// UUID) in this request (bulk imports, cascading saves) skip the database.
+		$this->referenceValidationCache[$check->cacheKey] = true;
+
+		// Lets listeners hook into accepted references without changing the save flow.
+		$this->dispatchReferenceValidatedEvent(
+			propertyName: $propertyName,
+			referencedUuid: $uuid,
+			targetSchemaSlug: $check->targetSchemaSlug,
+			targetRegister: $register
+		);
+	}//end validateReferenceExists()
+
+	/**
+	 * Refuse a reference whose UUID is already on the in-flight save call stack.
+	 *
+	 * A cycle (A -> B -> A) on otherwise valid UUIDs would pass the existence
+	 * check, but cascading the save would recurse forever, so it is refused
+	 * before the database is asked.
+	 *
+	 * @param ReferenceCheck $check The reference being checked.
+	 *
+	 * @return void
+	 *
+	 * @throws CircularReferenceException When the reference closes a cycle.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function refuseCircularReference(ReferenceCheck $check): void {
+		$cycle = $this->detectCircularReference(uuid: $check->uuid);
+		if ($cycle === null) {
+			return;
+		}
+
+		$this->logger->warning(
+			message: '[SaveObject] Circular reference detected during validation',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'property' => $check->propertyName,
+				'uuid' => $check->uuid,
+				'targetSchema' => $check->schemaRef,
+				'cycleDepth' => count($cycle),
+			]
+		);
+
+		throw new CircularReferenceException(
+			referencedUuid: $check->uuid,
+			targetSchemaSlug: $check->schemaRef,
+			cycle: array_map(
+				static fn (array $frame): array => [
+					'schema' => $frame['schemaSlug'],
+					'uuid' => $frame['uuid'],
+					'register' => $frame['register'],
+				],
+				$cycle
+			),
+			code: 422
+		);
+	}//end refuseCircularReference()
+
+	/**
+	 * Replay a verdict already reached for this (target schema, uuid) in this request.
+	 *
+	 * A cached refusal is raised again without dispatching the failure event a
+	 * second time, so listeners see each unique reference once per request.
+	 *
+	 * @param ReferenceCheck $check The reference being checked.
+	 *
+	 * @return bool True when a cached acceptance settles the check, false when nothing is cached.
+	 *
+	 * @throws ReferenceValidationException When the cached verdict is a refusal.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function replayReferenceVerdict(ReferenceCheck $check): bool {
+		if (array_key_exists($check->cacheKey, $this->referenceValidationCache) === false) {
+			return false;
+		}
+
+		if ($this->referenceValidationCache[$check->cacheKey] === true) {
+			return true;
+		}
+
+		throw new ReferenceValidationException(
+			propertyName: $check->propertyName,
+			referencedUuid: $check->uuid,
+			targetSchemaSlug: $check->schemaRef,
+			targetRegister: $check->register,
+			code: 422
+		);
+	}//end replayReferenceVerdict()
+
+	/**
+	 * Record the target schema of a reference and the slug its refusal names.
+	 *
+	 * @param ReferenceCheck $check          The reference being checked.
+	 * @param int|string     $targetSchemaId The resolved target schema id.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function resolveReferenceTarget(ReferenceCheck $check, int|string $targetSchemaId): void {
+		$check->targetSchemaSlug = $check->schemaRef;
 		try {
-			$targetSchema = $this->getCachedSchema(schemaId: $targetSchemaId);
-			$targetSchemaSlug = $targetSchema->getSlug() ?? $schemaRef;
+			$check->targetSchema = $this->getCachedSchema(schemaId: $targetSchemaId);
+			$check->targetSchemaSlug = $check->targetSchema->getSlug() ?? $check->schemaRef;
 		} catch (DoesNotExistException $e) {
-			// Use the raw reference as the slug in the error message.
+			// The raw reference stays the slug in the error message.
 		}
+	}//end resolveReferenceTarget()
 
-		// Resolve register and schema to entity objects for MagicMapper.
-		$registerEntity = null;
-		if ($register !== null) {
-			try {
-				$registerEntity = $this->getCachedRegister(registerId: $register);
-			} catch (DoesNotExistException $e) {
-				$this->logger->warning(
-					message: '[SaveObject] Could not resolve register for reference validation',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'property' => $propertyName,
-						'register' => $register,
-					]
-				);
-				return;
-			}
+	/**
+	 * Resolve the register a reference names; an unknown register skips the check.
+	 *
+	 * @param ReferenceCheck $check The reference being checked.
+	 *
+	 * @return bool False when the register does not resolve.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function resolveReferenceRegister(ReferenceCheck $check): bool {
+		try {
+			$check->registerEntity = $this->getCachedRegister(registerId: $check->register);
+			return true;
+		} catch (DoesNotExistException $e) {
+			$this->logger->warning(
+				message: '[SaveObject] Could not resolve register for reference validation',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $check->propertyName, 'register' => $check->register]
+			);
+			return false;
 		}
+	}//end resolveReferenceRegister()
 
-		$targetSchemaEntity = $targetSchema ?? null;
-
-		// Check if the object exists.
-		// Explicitly pass `includeDeleted: false` so soft-deleted target
-		// objects are treated as nonexistent — closes the spec's
-		// "Soft-deleted references treated as nonexistent" requirement.
-		// The MagicMapper default is already `false`, but pinning it
-		// here keeps the validation contract local + survives mapper
-		// signature changes.
+	/**
+	 * Whether the referenced object exists; a missing one is refused, a failing lookup skips the check.
+	 *
+	 * Soft-deleted objects count as nonexistent (`includeDeleted: false` is
+	 * pinned here, not left to the mapper default). A refusal is cached and
+	 * announced through the failure event before it is thrown, as a
+	 * ReferenceValidationException that existing 422 handlers route.
+	 *
+	 * @param ReferenceCheck $check The reference being checked.
+	 *
+	 * @return bool True when found, false when the lookup itself failed.
+	 *
+	 * @throws ReferenceValidationException When the reference resolves to no stored object.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function referencedObjectFound(ReferenceCheck $check): bool {
 		try {
 			$this->unifiedObjectMapper->find(
-				identifier: $uuid,
-				register: $registerEntity,
-				schema: $targetSchemaEntity,
+				identifier: $check->uuid,
+				register: $check->registerEntity,
+				schema: $check->targetSchema,
 				includeDeleted: false,
 				_rbac: false,
 				_multitenancy: false
 			);
+			return true;
 		} catch (DoesNotExistException $e) {
-			// Cache the negative verdict before the throw so subsequent
-			// checks for the same UUID short-circuit cheaply (and don't
-			// re-dispatch the failure event).
-			$this->referenceValidationCache[$cacheKey] = false;
-
-			// Side-channel notification for monitoring / extensibility.
-			// Dispatched BEFORE the exception so listeners observe every
-			// failure regardless of whether the controller layer
-			// recovers or surfaces the 422.
+			$this->referenceValidationCache[$check->cacheKey] = false;
 			$this->dispatchReferenceValidationFailedEvent(
-				propertyName: $propertyName,
-				referencedUuid: $uuid,
-				targetSchemaSlug: $targetSchemaSlug,
-				targetRegister: $register
+				propertyName: $check->propertyName,
+				referencedUuid: $check->uuid,
+				targetSchemaSlug: $check->targetSchemaSlug,
+				targetRegister: $check->register
 			);
-
-			// Throw a structured exception so API clients can render
-			// actionable error UI without parsing the message string —
-			// closes the spec's "structured diagnostic information"
-			// requirement. Subclasses ValidationException so existing
-			// 422 handlers route it correctly.
 			throw new ReferenceValidationException(
-				propertyName: $propertyName,
-				referencedUuid: $uuid,
-				targetSchemaSlug: $targetSchemaSlug,
-				targetRegister: $register,
+				propertyName: $check->propertyName,
+				referencedUuid: $check->uuid,
+				targetSchemaSlug: $check->targetSchemaSlug,
+				targetRegister: $check->register,
 				code: 422,
 				previous: $e
 			);
 		} catch (Exception $e) {
-			// Non-existence errors (e.g., database errors) — log warning but don't block.
+			// Errors other than non-existence (e.g. database errors) are logged, never blocking.
 			$this->logger->warning(
 				message: '[SaveObject] Reference validation lookup failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'property' => $propertyName,
-					'uuid' => $uuid,
-					'error' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $check->propertyName, 'uuid' => $check->uuid, 'error' => $e->getMessage()]
 			);
-			return;
+			return false;
 		}//end try
-
-		// Cache the positive verdict so subsequent checks for the same
-		// (target schema, UUID) inside the same request — bulk imports,
-		// cascading saves — skip the database round trip.
-		$this->referenceValidationCache[$cacheKey] = true;
-
-		// Lookup succeeded — emit a success event so listeners can hook
-		// into accepted references (analytics, cache warming, etc.)
-		// without changing the save flow.
-		$this->dispatchReferenceValidatedEvent(
-			propertyName: $propertyName,
-			referencedUuid: $uuid,
-			targetSchemaSlug: $targetSchemaSlug,
-			targetRegister: $register
-		);
-	}//end validateReferenceExists()
+	}//end referencedObjectFound()
 
 	/**
 	 * Clear the request-scoped reference-existence cache.
