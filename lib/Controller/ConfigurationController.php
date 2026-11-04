@@ -26,6 +26,7 @@ use DateTime;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Controller\Support\ConfigurationControllerServices;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
@@ -110,42 +111,42 @@ class ConfigurationController extends Controller {
 	private IAppManager $appManager;
 
 	/**
+	 * User session for admin checks
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for admin checks
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor
 	 *
 	 * @param string $appName The app name
 	 * @param IRequest $request The request object
-	 * @param ConfigurationMapper $configurationMapper Configuration mapper
-	 * @param ConfigurationService $configurationService Configuration service
-	 * @param NotificationService $notificationService Notification service
-	 * @param GitHubClientInterface $githubHandler GitHub handler
-	 * @param GitLabHandler $gitlabHandler GitLab handler
-	 * @param IAppManager $appManager App manager
-	 * @param LoggerInterface $logger Logger
-	 * @param IUserSession $userSession User session for admin checks
-	 * @param IGroupManager $groupManager Group manager for admin checks
+	 * @param ConfigurationControllerServices $services The configuration controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		ConfigurationMapper $configurationMapper,
-		ConfigurationService $configurationService,
-		NotificationService $notificationService,
-		GitHubClientInterface $githubHandler,
-		GitLabHandler $gitlabHandler,
-		IAppManager $appManager,
-		LoggerInterface $logger,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		ConfigurationControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->userSession = $services->session->userSession;
+		$this->groupManager = $services->session->groupManager;
 
-		$this->configurationMapper = $configurationMapper;
-		$this->configurationService = $configurationService;
-		$this->notificationService = $notificationService;
-		$this->githubHandler = $githubHandler;
-		$this->gitlabHandler = $gitlabHandler;
-		$this->appManager = $appManager;
-		$this->logger = $logger;
+		$this->configurationMapper = $services->mappers->configurationMapper;
+		$this->configurationService = $services->domain->configurationService;
+		$this->notificationService = $services->domain->notificationService;
+		$this->githubHandler = $services->domain->githubHandler;
+		$this->gitlabHandler = $services->domain->gitlabHandler;
+		$this->appManager = $services->platform->appManager;
+		$this->logger = $services->session->logger;
 	}//end __construct()
 
 	/**
