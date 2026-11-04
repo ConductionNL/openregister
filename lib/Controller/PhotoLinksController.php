@@ -34,11 +34,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PhotoLinkService;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
@@ -49,6 +50,8 @@ use OCP\IRequest;
  * @package  OCA\OpenRegister\Controller
  */
 class PhotoLinksController extends Controller {
+	use ObjectLinkActionsTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -82,31 +85,13 @@ class PhotoLinksController extends Controller {
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
 		if ($this->photoLinkService->isPhotosAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC Photos app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'NC Photos');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$results = $this->photoLinkService->getLinkedAlbums($object->getUuid());
-
-			return new JSONResponse(
-				[
-					'results' => $results,
-					'total' => count($results),
-				]
-			);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
-		}//end try
+		return $this->listLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->photoLinkService->getLinkedAlbums($object->getUuid()))
+		);
 	}//end index()
 
 	/**
@@ -127,36 +112,27 @@ class PhotoLinksController extends Controller {
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
 		if ($this->photoLinkService->isPhotosAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC Photos app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'NC Photos');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: function (ObjectEntity $object): JSONResponse {
+				$albumId = (int)$this->request->getParam('albumId', 0);
+				if ($albumId === 0) {
+					return new JSONResponse(['error' => 'albumId is required'], 400);
+				}
+
+				$link = $this->photoLinkService->linkAlbum(
+					$object->getUuid(),
+					(int)$object->getRegister(),
+					(int)$object->getSchema(),
+					$albumId
+				);
+
+				return new JSONResponse($link->jsonSerialize(), 201);
 			}
-
-			$albumId = (int)$this->request->getParam('albumId', 0);
-			if ($albumId === 0) {
-				return new JSONResponse(['error' => 'albumId is required'], 400);
-			}
-
-			$link = $this->photoLinkService->linkAlbum(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$albumId
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		);
 	}//end link()
 
 	/**
@@ -177,36 +153,13 @@ class PhotoLinksController extends Controller {
 	 */
 	public function createAndLink(string $register, string $schema, string $id): JSONResponse {
 		if ($this->photoLinkService->isPhotosAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC Photos app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'NC Photos');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$name = (string)$this->request->getParam('name', '');
-			if (trim($name) === '') {
-				return new JSONResponse(['error' => 'name is required'], 400);
-			}
-
-			$link = $this->photoLinkService->createAndLinkAlbum(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$name
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: $this->namedLinkOf(create: $this->photoLinkService->createAndLinkAlbum(...))
+		);
 	}//end createAndLink()
 
 	/**
@@ -226,26 +179,17 @@ class PhotoLinksController extends Controller {
 	 */
 	public function destroy(string $register, string $schema, string $id, string $albumId): JSONResponse {
 		if ($this->photoLinkService->isPhotosAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC Photos app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'NC Photos');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: function (ObjectEntity $object) use ($albumId): JSONResponse {
+				$this->photoLinkService->unlinkAlbum($object->getUuid(), (int)$albumId);
+
+				return new JSONResponse(['success' => true]);
 			}
-
-			$this->photoLinkService->unlinkAlbum($object->getUuid(), (int)$albumId);
-
-			return new JSONResponse(['success' => true]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		);
 	}//end destroy()
 
 	/**
@@ -263,10 +207,7 @@ class PhotoLinksController extends Controller {
 	 */
 	public function available(): JSONResponse {
 		if ($this->photoLinkService->isPhotosAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC Photos app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'NC Photos');
 		}
 
 		$search = $this->request->getParam('search');
@@ -277,28 +218,6 @@ class PhotoLinksController extends Controller {
 		$albums = $this->photoLinkService->getAvailableAlbums($search);
 		return new JSONResponse(['results' => $albums, 'total' => count($albums)]);
 	}//end available()
-
-	/**
-	 * Resolve an OR object from register/schema/id.
-	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object id.
-	 *
-	 * @return ObjectEntity|null
-	 *
-	 * @throws DoesNotExistException When no such object exists. Deliberately propagated rather
-	 *                               than caught: every call site already wraps this helper and translates it to a 404.
-	 *                               Swallowing it here would collapse "no such object" into the same null this method
-	 *                               returns for other reasons, which the caller could no longer tell apart.
-	 */
-	private function validateObject(string $register, string $schema, string $id): ?ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
-
-		return $this->objectService->getObject();
-	}//end validateObject()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.
@@ -315,7 +234,7 @@ class PhotoLinksController extends Controller {
 	 *
 	 * @return JSONResponse
 	 */
-	private function mapException(Exception $exception): JSONResponse {
+	protected function mapException(Exception $exception): JSONResponse {
 		$code = $exception->getCode();
 		if (in_array($code, [400, 401, 404, 409, 503], true) === true) {
 			return new JSONResponse(['error' => $exception->getMessage()], $code);

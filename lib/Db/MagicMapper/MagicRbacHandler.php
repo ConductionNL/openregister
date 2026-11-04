@@ -576,10 +576,6 @@ class MagicRbacHandler {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function applyRbacFilters(
@@ -591,30 +587,29 @@ class MagicRbacHandler {
 		$user = $this->userSession->getUser();
 		$userId = $user?->getUID();
 
-		// Get user groups.
 		$userGroups = [];
 		if ($user !== null) {
 			$userGroups = $this->groupManager->getUserGroupIds($user);
 		}
 
-		// Admin users bypass all RBAC checks.
 		if (in_array('admin', $userGroups, true) === true) {
 			return;
 		}
 
-		// A userless system caller (occ, repair steps, cron, background
-		// calculations, or code inside ObjectService::runAsSystem()) bypasses
-		// RBAC filtering. See isTrustedSystemCaller().
 		if ($this->isTrustedSystemCaller(user: $user) === true) {
 			return;
 		}
 
-		// Get effective authorization (schema-level, or register cascade).
-		// Fail-closed: an unresolvable authorization clamps the query to the
-		// IMPOSSIBLE predicate rather than falling through to the open default.
+		$call = new RbacFilterCall(qb: $qb, schema: $schema);
+		$call->action = $action;
+		$call->tableName = $tableName;
+		$call->userId = $userId;
+		$call->userGroups = $userGroups;
+
 		try {
-			$authorization = $this->resolveSchemaAuthorization(schema: $schema);
+			$call->authorization = $this->resolveSchemaAuthorization(schema: $schema);
 		} catch (AuthorizationUnresolvableException $e) {
+			// Fail closed: a schema whose authorization cannot be resolved reads nothing.
 			$this->logger->error(
 				message: '[MagicRbacHandler] Authorization unresolvable; clamping query to deny-all (fail-closed)',
 				context: [
@@ -625,40 +620,17 @@ class MagicRbacHandler {
 					'error' => $e->getMessage(),
 				]
 			);
-			$qb->andWhere($qb->expr()->eq($qb->createNamedParameter(1), $qb->createNamedParameter(0)));
+			$call->denyAll();
 			return;
 		}
 
-		// The DENY term, ANDed onto the whole query before any branch below runs.
-		// Every exit path from here on carries it, which is what makes the list
-		// and the per-object read agree: a denied row that still appeared in a
-		// list would show the caller the identifier and then refuse the read.
-		$denyTerm = $this->denyFilterSqlFor(
-			authorization: $authorization,
-			action: $action,
-			userId: $userId,
-			userGroups: $userGroups,
-			columnName: 't._authorization',
-			columns: new RuleColumns(schema: $schema, prefix: 't.')
-		);
-		if ($denyTerm === false) {
-			$qb->andWhere($qb->expr()->eq($qb->createNamedParameter(1), $qb->createNamedParameter(0)));
+		if ($this->applyDenyRules(call: $call) === false) {
 			return;
 		}
 
-		// Null means the instance is not enforcing denies yet (D15). No
-		// predicate is added at all, rather than a predicate that is always
-		// true: a staged deny must cost the list nothing, the plan included.
-		if ($denyTerm !== null) {
-			$qb->andWhere($qb->createFunction($denyTerm));
-		}
-
-		// The "not private" row predicate. Resolved once here and used by every
-		// branch below, so the scope cannot be honoured on one exit path and
-		// missed on another.
 		$notPrivate = $qb->createFunction(
 			$this->reachableRowSqlFor(
-				authorization: $authorization,
+				authorization: $call->authorization,
 				columnName: 't._authorization',
 				uuidColumn: 't._uuid',
 				userId: $userId,
@@ -669,39 +641,9 @@ class MagicRbacHandler {
 			)
 		);
 
-		// The owner-admits conditions, which apply whatever the scope says.
-		$ownerAdmits = [];
-		if ($userId !== null) {
-			$ownerAdmits[] = $qb->expr()->eq('t._owner', $qb->createNamedParameter($userId));
-		}
+		$ownerAdmits = $this->ownerAdmits(call: $call);
 
-		if ($this->shouldGrantSystemRowVisibility(userGroups: $userGroups) === true) {
-			$ownerAdmits[] = $qb->expr()->eq(
-				't._owner',
-				$qb->createNamedParameter($this->getSystemUserId())
-			);
-		}
-
-		// The owning group, admitted on the same terms as the named owner. Added
-		// to BOTH emitters' owner-admit lists, because this one is written inline
-		// here while the raw-SQL emitter builds its list in
-		// ownerAdmitConditionsSql(); honouring the group in one of them would hide
-		// a record from a list on one code path and show it on the other.
-		$ownedByMyGroup = $this->objectScope()->ownedByMyGroupSql(
-			authColumn: 't._authorization',
-			isPostgres: $this->isPostgres(),
-			quotedUserGroups: $this->quotedCallerGroups()
-		);
-		if ($ownedByMyGroup !== null) {
-			$ownerAdmits[] = $qb->createFunction($ownedByMyGroup);
-		}
-
-		// If no authorization is configured, the schema is open to all — but an
-		// individual OBJECT may still declare itself private, so the query is
-		// still clamped to non-private rows plus the caller's own. Skipping the
-		// predicate here would leak private objects on exactly the schemas that
-		// configure nothing and are therefore watched least.
-		if (empty($authorization) === true) {
+		if (empty($call->authorization) === true) {
 			$this->logger->debug(
 				message: '[MagicRbacHandler] No authorization configured, schema is open to non-private rows',
 				context: ['file' => __FILE__, 'line' => __LINE__]
@@ -710,58 +652,8 @@ class MagicRbacHandler {
 			return;
 		}
 
-		// Get authorization rules for this action.
-		$rules = $authorization[$action] ?? [];
+		$conditions = array_merge($ownerAdmits, $this->ruleConditions(call: $call, notPrivate: $notPrivate));
 
-		// Fail-closed: a non-empty authorization block that does not list this
-		// action no longer opens the table. Flow falls through to the owner
-		// condition below and, when nothing matches, the existing `1 = 0`
-		// deny-all — so an omitted action yields owner-only rows (or none),
-		// consistent with PermissionHandler/hasPermission. Admins already
-		// returned earlier; the empty-block open-default above is unchanged.
-		if (empty($rules) === true) {
-			$this->logger->debug(
-				message: '[MagicRbacHandler] Action not configured on a non-empty authorization block — failing closed',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'action' => $action]
-			);
-		}
-
-		// Build the RBAC filter conditions. The owner conditions come first and
-		// are never qualified by the scope — an owner reaches their own object
-		// whatever it declares (openregister#1617 covers the system-owner one).
-		$conditions = $ownerAdmits;
-
-		// Resolve whether authenticated users inherit `public` rights once.
-		$caller = [
-			'groups'            => $userGroups,
-			'userId'            => $userId,
-			'inheritFromPublic' => $this->authenticatedInheritsPublic(schema: $schema),
-			'columns'           => new RuleColumns(schema: $schema, prefix: 't.'),
-		];
-
-		// Process each authorization rule.
-		foreach ($rules as $rule) {
-			$ruleCondition = $this->processAuthorizationRule(qb: $qb, rule: $rule, caller: $caller);
-
-			if ($ruleCondition === true) {
-				// Unconditional access via this rule. That grant reaches every
-				// NON-private row; a private one still answers only to its owner
-				// and to administrators, who returned long before this point. So
-				// this is no longer an unfiltered early return — no later rule
-				// can widen past "everything not private", hence the break.
-				$conditions[] = $notPrivate;
-				break;
-			}
-
-			if ($ruleCondition !== null && $ruleCondition !== false) {
-				// A schema rule only ever decides a NON-private row. Suppressing
-				// the schema's rules for a private object is the entire point of
-				// the scope, and AND-ing here is what suppresses them per row.
-				$conditions[] = $qb->expr()->andX($notPrivate, $ruleCondition);
-			}
-		}//end foreach
-
-		// If no conditions were added, deny all access.
 		if (empty($conditions) === true) {
 			$this->logger->debug(
 				message: '[MagicRbacHandler] No access conditions met, denying all',
@@ -772,14 +664,128 @@ class MagicRbacHandler {
 					'action' => $action,
 				]
 			);
-			// Add impossible condition to return no results.
-			$qb->andWhere($qb->expr()->eq($qb->createNamedParameter(1), $qb->createNamedParameter(0)));
+			$call->denyAll();
 			return;
 		}
 
-		// Apply OR of all conditions (access granted if ANY condition matches).
+		// Access is granted if ANY condition matches.
 		$qb->andWhere($qb->expr()->orX(...$conditions));
 	}//end applyRbacFilters()
+
+	/**
+	 * Apply the schema's deny rules to the query.
+	 *
+	 * @param RbacFilterCall $call The filter application.
+	 *
+	 * @return bool False when a deny rule refuses the caller everything and the query was clamped to no rows.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function applyDenyRules(RbacFilterCall $call): bool {
+		$denyTerm = $this->denyFilterSqlFor(
+			authorization: $call->authorization,
+			action: $call->action,
+			userId: $call->userId,
+			userGroups: $call->userGroups,
+			columnName: 't._authorization',
+			columns: new RuleColumns(schema: $call->schema, prefix: 't.')
+		);
+		if ($denyTerm === false) {
+			$call->denyAll();
+			return false;
+		}
+
+		if ($denyTerm !== null) {
+			$call->qb->andWhere($call->qb->createFunction($denyTerm));
+		}
+
+		return true;
+	}//end applyDenyRules()
+
+	/**
+	 * The conditions under which the caller reaches a row as its owner: the
+	 * caller's own rows, system-owned rows when the caller may see them, and
+	 * rows owned by one of the caller's groups.
+	 *
+	 * @param RbacFilterCall $call The filter application.
+	 *
+	 * @return array The conditions.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function ownerAdmits(RbacFilterCall $call): array {
+		$qb = $call->qb;
+		$ownerAdmits = [];
+		if ($call->userId !== null) {
+			$ownerAdmits[] = $qb->expr()->eq('t._owner', $qb->createNamedParameter($call->userId));
+		}
+
+		if ($this->shouldGrantSystemRowVisibility(userGroups: $call->userGroups) === true) {
+			$ownerAdmits[] = $qb->expr()->eq(
+				't._owner',
+				$qb->createNamedParameter($this->getSystemUserId())
+			);
+		}
+
+		$ownedByMyGroup = $this->objectScope()->ownedByMyGroupSql(
+			authColumn: 't._authorization',
+			isPostgres: $this->isPostgres(),
+			quotedUserGroups: $this->quotedCallerGroups()
+		);
+		if ($ownedByMyGroup !== null) {
+			$ownerAdmits[] = $qb->createFunction($ownedByMyGroup);
+		}
+
+		return $ownerAdmits;
+	}//end ownerAdmits()
+
+	/**
+	 * The conditions the schema's rules for the action grant.
+	 *
+	 * An unconditional grant reaches every non-private row, so no later rule
+	 * can widen past it. A conditional grant decides only non-private rows: a
+	 * private row answers to its owner and administrators alone, which is
+	 * why each rule condition is AND-ed with the not-private predicate. An
+	 * action missing from a non-empty authorization block grants nothing.
+	 *
+	 * @param RbacFilterCall $call       The filter application.
+	 * @param mixed          $notPrivate The predicate that a row is not private to someone else.
+	 *
+	 * @return array The conditions.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function ruleConditions(RbacFilterCall $call, mixed $notPrivate): array {
+		$rules = $call->authorization[$call->action] ?? [];
+		if (empty($rules) === true) {
+			$this->logger->debug(
+				message: '[MagicRbacHandler] Action not configured on a non-empty authorization block — failing closed',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'action' => $call->action]
+			);
+		}
+
+		$caller = [
+			'groups'            => $call->userGroups,
+			'userId'            => $call->userId,
+			'inheritFromPublic' => $this->authenticatedInheritsPublic(schema: $call->schema),
+			'columns'           => new RuleColumns(schema: $call->schema, prefix: 't.'),
+		];
+
+		$conditions = [];
+		foreach ($rules as $rule) {
+			$ruleCondition = $this->processAuthorizationRule(qb: $call->qb, rule: $rule, caller: $caller);
+			if ($ruleCondition === true) {
+				$conditions[] = $notPrivate;
+				break;
+			}
+
+			if ($ruleCondition !== null && $ruleCondition !== false) {
+				$conditions[] = $call->qb->expr()->andX($notPrivate, $ruleCondition);
+			}
+		}
+
+		return $conditions;
+	}//end ruleConditions()
 
 	/**
 	 * Resolve whether authenticated users inherit `public` group rights for a schema.
