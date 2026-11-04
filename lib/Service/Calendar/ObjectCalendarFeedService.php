@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IDateTimeZone;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -75,7 +75,7 @@ class ObjectCalendarFeedService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects The object search path, RBAC included.
+	 * @param ObjectOperationsInterface $objects The object search path, RBAC included.
 	 * @param SchemaMapperInterface $schemas The schema store.
 	 * @param ViewMapperInterface $views The saved-view store.
 	 * @param IUserManager $userManager Resolves the principal a token names.
@@ -85,7 +85,7 @@ class ObjectCalendarFeedService {
 	 * @param LoggerInterface $logger PSR logger.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly ViewMapperInterface $views,
 		private readonly IUserManager $userManager,

@@ -1904,6 +1904,24 @@ class SaveObjectTest extends TestCase {
 	// sanitizeEmptyStringsForObjectProperties (private)
 	// =========================================================================
 
+	public function testSanitizeEmptyStringsClearsOptionalScalarsOfEveryScalarType(): void {
+		$schemaObject = new \stdClass();
+		$schemaObject->properties = [
+			'flag' => ['type' => 'boolean'],
+			'count' => ['type' => 'integer'],
+			'mandatory' => ['type' => 'boolean', 'required' => true],
+			'list' => ['type' => 'array'],
+			'loose' => ['type' => ['string', 'null']],
+		];
+		$schemaObject->required = [];
+		$schema = $this->createSchemaWithSchemaObject($schemaObject);
+
+		$data = ['flag' => '', 'count' => '', 'mandatory' => '', 'list' => ['a' => '', 'b' => 'x'], 'loose' => ''];
+		$result = $this->invokePrivateMethod('sanitizeEmptyStringsForObjectProperties', [$data, $schema]);
+
+		$this->assertSame(['flag' => null, 'count' => null, 'mandatory' => '', 'list' => ['a' => null, 'b' => 'x'], 'loose' => ''], $result);
+	}
+
 	public function testSanitizeEmptyStringsForObjectPropertiesWithObjectProperty(): void {
 		$schemaObject = new \stdClass();
 		$schemaObject->properties = [

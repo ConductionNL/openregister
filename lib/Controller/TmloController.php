@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\Export\ExportGate;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCA\OpenRegister\Service\TmloService;
 use OCP\AppFramework\Controller;
@@ -79,9 +79,9 @@ class TmloController extends Controller {
 	/**
 	 * Object service for querying objects
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Register mapper

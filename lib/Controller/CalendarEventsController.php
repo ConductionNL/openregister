@@ -28,7 +28,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Service\CalendarLinkService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -61,9 +61,9 @@ class CalendarEventsController extends Controller {
 	/**
 	 * Object service for object validation.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Constructor.
@@ -72,7 +72,7 @@ class CalendarEventsController extends Controller {
 	 * @param IRequest $request HTTP request object
 	 * @param ObjectCalendarEventsInterface $calendarEventService Calendar event service (legacy)
 	 * @param CalendarLinkService $calendarLinkService Calendar link service (Tier-2)
-	 * @param ObjectService $objectService Object service
+	 * @param ObjectOperationsInterface $objectService Object service
 	 *
 	 * @return void
 	 */
@@ -81,7 +81,7 @@ class CalendarEventsController extends Controller {
 		IRequest $request,
 		ObjectCalendarEventsInterface $calendarEventService,
 		CalendarLinkService $calendarLinkService,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 

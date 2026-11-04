@@ -29,7 +29,7 @@ use OCA\OpenRegister\Controller\Support\TasksControllerServices;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Exception\TaskValidationException;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskState;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
@@ -70,9 +70,9 @@ class TasksController extends Controller {
 	/**
 	 * Object service for object validation.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * The engine inbox the aggregate answers from;
