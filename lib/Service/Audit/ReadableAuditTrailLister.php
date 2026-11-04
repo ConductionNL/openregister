@@ -109,14 +109,15 @@ class ReadableAuditTrailLister {
 	 *
 	 * @param AuditTrailMapper        $auditTrailMapper Reads the candidate rows.
 	 * @param MagicMapper             $objectMapper     Locates an entry's object across the magic tables.
-	 * @param ObjectHistoryForReaders $history          Reads each object and redacts its entries as its history does.
-	 * @param ReadEventVisibility     $readEvents       Whether the caller may see who read an object.
+	 * @param ObjectHistoryForReaders $history          Reads each object and redacts its entries as its history does,
+	 *                                                  and holds the rule on who may see read entries.
+	 * @param ReadableAuditCursor     $cursors          Seals the raw-trail offset a client is handed.
 	 */
 	public function __construct(
 		private readonly AuditTrailMapper $auditTrailMapper,
 		private readonly MagicMapper $objectMapper,
 		private readonly ObjectHistoryForReaders $history,
-		private readonly ReadEventVisibility $readEvents,
+		private readonly ReadableAuditCursor $cursors,
 	) {
 	}//end __construct()
 
@@ -124,32 +125,34 @@ class ReadableAuditTrailLister {
 	 * One page of the audit trail, as far as this caller may read.
 	 *
 	 * The cursor is an offset into the RAW trail, not into the filtered
-	 * result, because the filter is decided per row and not in SQL. A client
-	 * hands back the `nextCursor` it was given and never has to know how many
-	 * rows were skipped to fill its page.
+	 * result, because the filter is decided per row and not in SQL. That
+	 * offset counts rows the caller may not read, so it is handed out sealed
+	 * to the caller, filters and search it was walked under, no client-chosen
+	 * offset is accepted, and no count of the walked rows is returned: a
+	 * client hands back the `nextCursor` it was given and is never told how
+	 * many rows were skipped to fill its page.
 	 *
-	 * @param string|null $userId  The caller, or null when anonymous.
-	 * @param int         $limit   How many readable rows the caller asked for.
-	 * @param int         $cursor  Where in the raw trail to resume.
-	 * @param array       $filters Column filters, as `AuditTrailMapper::findAll()` takes them.
-	 * @param string|null $search  Optional free-text term.
+	 * @param string|null     $userId  The caller, or null when anonymous.
+	 * @param int             $limit   How many readable rows the caller asked for.
+	 * @param int|string|null $cursor  A sealed cursor this list handed out under the same caller, filters and search.
+	 * @param array           $filters Column filters, as `AuditTrailMapper::findAll()` takes them.
+	 * @param string|null     $search  Optional free-text term.
 	 *
-	 * @return array{results: array<int, array>, limit: int, cursor: int, nextCursor: int|null, scanned: int}
-	 *     The page. `nextCursor` is null when the trail was exhausted, and an
-	 *     offset when there may be more — including when the scan budget ran
-	 *     out before the page filled.
+	 * @return array{results: array<int, array>, limit: int, cursor: int|string|null, nextCursor: string|null}
+	 *     The page. `nextCursor` is null when the trail was exhausted, and a
+	 *     sealed cursor when there may be more, including when the scan budget
+	 *     ran out before the page filled.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
 	 */
 	public function page(
 		?string $userId,
 		int $limit = 20,
-		int $cursor = 0,
+		int|string|null $cursor = null,
 		array $filters = [],
 		?string $search = null,
 	): array {
 		$limit = max(1, min($limit, self::MAX_LIMIT));
-		$cursor = max(0, $cursor);
 
 		// An anonymous caller holds no readable scope, and asking the mapper
 		// for candidates it would then drop is work done to reach the same
@@ -160,7 +163,6 @@ class ReadableAuditTrailLister {
 				'limit' => $limit,
 				'cursor' => $cursor,
 				'nextCursor' => null,
-				'scanned' => 0,
 			];
 		}
 
@@ -168,14 +170,15 @@ class ReadableAuditTrailLister {
 		// is matched against what the caller is given, after redaction: matched
 		// in SQL on the stored `changed`, it would tell the caller whether a
 		// hidden property ever held the term.
-		$this->withReads = $this->readEvents->maySeeReadEvents(userId: $userId);
+		$this->withReads = $this->history->readEvents()->maySeeReadEvents(userId: $userId);
 		$this->search = trim((string)$search);
-		$filters = $this->history->readerColumns(columns: $filters);
+		$filters = $this->appliedFilters(filters: $filters);
 
 		$results = [];
 		$found = 0;
 		$scanned = 0;
-		$rawOffset = $cursor;
+		$scope = $this->cursors->scope(userId: $userId, query: ['filters' => $filters, 'search' => $this->search]);
+		$rawOffset = $this->cursors->open(cursor: $cursor, scope: $scope);
 		$exhausted = false;
 
 		while ($found < $limit && $scanned < self::SCAN_BUDGET) {
@@ -213,9 +216,9 @@ class ReadableAuditTrailLister {
 			}
 		}//end while
 
-		$nextCursor = $rawOffset;
-		if ($exhausted === true) {
-			$nextCursor = null;
+		$nextCursor = null;
+		if ($exhausted === false) {
+			$nextCursor = $this->sealedCursor(offset: $rawOffset, scope: $scope);
 		}
 
 		return [
@@ -223,9 +226,42 @@ class ReadableAuditTrailLister {
 			'limit' => $limit,
 			'cursor' => $cursor,
 			'nextCursor' => $nextCursor,
-			'scanned' => $scanned,
 		];
 	}//end page()
+
+	/**
+	 * The filters the trail query applies and a reader may use.
+	 *
+	 * A key the query drops would make two walks over the same rows look like
+	 * different scopes, and a cursor parameter echoed into the filters would
+	 * make every page a new one.
+	 *
+	 * @param array $filters Column filters from the request.
+	 *
+	 * @return array The filters that reach the query and the cursor's scope.
+	 */
+	private function appliedFilters(array $filters): array {
+		return array_intersect_key(
+			$this->history->readerColumns(columns: $filters),
+			array_flip(AuditTrailMapper::QUERY_COLUMNS)
+		);
+	}//end appliedFilters()
+
+	/**
+	 * The cursor to resume at an offset, or none when the walk has no scope to seal it to.
+	 *
+	 * @param int         $offset The raw-trail offset to resume at.
+	 * @param string|null $scope  The scope of the walk.
+	 *
+	 * @return string|null The sealed cursor, or null.
+	 */
+	private function sealedCursor(int $offset, ?string $scope): ?string {
+		if ($scope === null) {
+			return null;
+		}
+
+		return $this->cursors->seal(offset: $offset, scope: $scope);
+	}//end sealedCursor()
 
 	/**
 	 * Append the readable rows of one batch, up to the room left on the page.
@@ -277,7 +313,7 @@ class ReadableAuditTrailLister {
 			return false;
 		}
 
-		if ($this->withReads === false && $this->readEvents->isReadAction(action: $entry->getAction()) === true) {
+		if ($this->withReads === false && $this->history->readEvents()->isReadAction(action: $entry->getAction()) === true) {
 			return false;
 		}
 

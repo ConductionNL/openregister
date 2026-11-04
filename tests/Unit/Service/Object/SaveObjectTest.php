@@ -41,7 +41,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
  * Unit tests for SaveObject
@@ -122,7 +122,7 @@ class SaveObjectTest extends TestCase {
 		$this->propertyRbacHandler = $this->createMock(PropertyRbacHandler::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$arrayLoader = new ArrayLoader();
+		$permissionHandler = $this->createMock(PermissionHandler::class);
 
 		$this->runContext = new \OCA\OpenRegister\Service\Flow\FlowRunContext();
 		$this->handler = new SaveObject(
@@ -147,7 +147,7 @@ class SaveObjectTest extends TestCase {
 			$this->logger,
 			$this->createMock(\OCA\OpenRegister\Service\TmloService::class),
 			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			$arrayLoader,
+			$permissionHandler,
 			null,
 			null,
 			null,
@@ -1578,7 +1578,7 @@ class SaveObjectTest extends TestCase {
 			logger: $this->logger,
 			tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
 			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			arrayLoader: new \Twig\Loader\ArrayLoader(),
+			permissionHandler: $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class),
 			groupManager: $groupManager
 		);
 

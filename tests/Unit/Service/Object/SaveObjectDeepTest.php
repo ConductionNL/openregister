@@ -47,7 +47,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
  * Deep coverage tests for SaveObject
@@ -120,7 +120,7 @@ class SaveObjectDeepTest extends TestCase {
 		$this->propertyRbacHandler = $this->createMock(PropertyRbacHandler::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$arrayLoader = new ArrayLoader();
+		$permissionHandler = $this->createMock(PermissionHandler::class);
 
 		$this->handler = new SaveObject(
 			$this->objectEntityMapper,
@@ -144,7 +144,7 @@ class SaveObjectDeepTest extends TestCase {
 			$this->logger,
 			$this->createMock(TmloService::class),
 			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			$arrayLoader
+			$permissionHandler
 		);
 	}
 

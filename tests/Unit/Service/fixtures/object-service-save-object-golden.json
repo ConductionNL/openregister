@@ -124,6 +124,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -135,6 +141,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "logger.debug",
@@ -469,6 +479,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -480,6 +496,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -807,6 +827,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -818,6 +844,10 @@
                     "u-new",
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -1155,6 +1185,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -1167,6 +1203,10 @@
                     "chosen-2",
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -1540,6 +1580,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -1551,6 +1597,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -1873,6 +1923,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -1884,6 +1940,10 @@
                     "u-1",
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -2210,6 +2270,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -2221,6 +2287,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -2427,6 +2497,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -2438,6 +2514,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -2709,6 +2789,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -2721,6 +2807,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -3048,6 +3138,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -3060,6 +3156,10 @@
                     "chosen-1",
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -3345,6 +3445,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -3356,6 +3462,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "logger.debug",
@@ -3693,6 +3803,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -3705,6 +3821,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "logger.debug",
@@ -4039,6 +4159,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -4050,6 +4176,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -4354,6 +4484,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -4366,6 +4502,10 @@
                     "u-9",
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -4710,6 +4850,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    false
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -4721,6 +4867,10 @@
                     "u-1",
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -5041,6 +5191,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -5052,6 +5208,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "logger.debug",
@@ -5415,6 +5575,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -5426,6 +5592,10 @@
                     "u-1",
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -5755,6 +5925,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    false
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -5766,6 +5942,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "logger.debug",
@@ -6092,6 +6272,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -6103,6 +6289,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -6243,6 +6433,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -6254,6 +6450,10 @@
                     "u-1",
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -6327,6 +6527,16 @@
             [
                 "files.resetFolderAccessRevalidationCache",
                 []
+            ],
+            [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ]
         ],
         "after": {
@@ -6362,6 +6572,16 @@
                     true,
                     true
                 ]
+            ],
+            [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ]
         ],
         "after": {
@@ -6417,6 +6637,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -6428,6 +6654,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -6697,6 +6927,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -6708,6 +6944,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -6973,6 +7213,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -6984,6 +7230,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -7109,6 +7359,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -7120,6 +7376,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "logger.debug",
@@ -7475,6 +7735,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -7486,6 +7752,10 @@
                     "3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e",
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -7805,6 +8075,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -7816,6 +8092,10 @@
                     "3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e",
                     null
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -8103,6 +8383,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -8114,6 +8400,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -8312,6 +8602,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -8323,6 +8619,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -8584,6 +8884,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -8595,6 +8901,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -8735,6 +9045,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -8746,6 +9062,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -8950,6 +9270,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -8961,6 +9287,10 @@
                     null,
                     5
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -9276,6 +9606,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -9290,6 +9626,10 @@
                     "sid-1",
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -9587,6 +9927,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -9598,6 +9944,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -9951,6 +10301,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -9962,6 +10318,10 @@
                     "u-1",
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -10299,6 +10659,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -10311,6 +10677,10 @@
                     "u-1",
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
@@ -10732,6 +11102,12 @@
                 ]
             ],
             [
+                "saveHandler.enterCascadeScope",
+                [
+                    true
+                ]
+            ],
+            [
                 "cascading.handlePreValidationCascading",
                 [
                     {
@@ -10744,6 +11120,10 @@
                     null,
                     4
                 ]
+            ],
+            [
+                "saveHandler.leaveCascadeScope",
+                []
             ],
             [
                 "saveHandler.applyAlwaysDefaults",
