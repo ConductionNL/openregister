@@ -1044,15 +1044,13 @@ class ObjectsController extends Controller {
 	 * @return array<string, Register|Schema> The entities by id.
 	 */
 	private function crossTableEntities(array $ids, string $kind): array {
-		$mapper = $this->schemaMapper;
-		if ($kind === 'register') {
-			$mapper = $this->registerMapper;
-		}
-
 		$entities = [];
 		foreach (array_unique($ids) as $entityId) {
 			try {
-				$entities[(string)$entityId] = $mapper->find(id: $entityId, _multitenancy: false, _rbac: false);
+				$entities[(string)$entityId] = match ($kind) {
+					'register' => $this->registerMapper->find(id: $entityId, _multitenancy: false, _rbac: false),
+					default => $this->schemaMapper->find(id: $entityId, _multitenancy: false, _rbac: false),
+				};
 			} catch (\Exception $e) {
 				$this->logger->warning(
 					message: '[ObjectsController] Invalid ' . $kind . ' in cross-table search',
