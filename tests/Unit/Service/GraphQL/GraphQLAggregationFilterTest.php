@@ -32,7 +32,6 @@ declare(strict_types=1);
 
 namespace Unit\Service\GraphQL;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -104,7 +103,6 @@ final class GraphQLAggregationFilterTest extends TestCase {
 			$permissionHandler,
 			$this->createMock(PropertyRbacHandler::class),
 			$this->createMock(RelationHandler::class),
-			$this->createMock(AuditTrailMapper::class),
 			$registerMapper,
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(TranslationHandler::class),

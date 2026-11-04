@@ -19,6 +19,52 @@
   ],
   "item": [
     {
+      "name": "setup — an agent the chat can fall back to",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "OCS-APIREQUEST",
+            "value": "true"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\":\"newman-chat-streaming\",\"provider\":\"ollama\",\"model\":\"newman-stub\",\"prompt\":\"Answer in one sentence.\",\"active\":true}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/agents",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "agents"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// A fresh instance has no agent, and a stream with no agent ends in a missing_agent error.",
+              "pm.test('agent created', () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set('chatAgentId', String(pm.response.json().id || ''));"
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "GET /api/chat/health — public, returns 200 or 503 (never 401)",
       "request": {
         "method": "GET",
@@ -101,6 +147,16 @@
         }
       },
       "event": [{
+        "listen": "prerequest",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "// Earlier authenticated requests leave a session cookie in newman's jar; sent along, it",
+            "// authenticates this request (and trips the CSRF check) instead of leaving it anonymous.",
+            "pm.cookies.jar().clear(pm.variables.replaceIn('{{base_url}}'), () => {});"
+          ]
+        }
+      }, {
         "listen": "test",
         "script": {
           "type": "text/javascript",
@@ -188,6 +244,43 @@
           ]
         }
       }]
+    },
+    {
+      "name": "teardown — remove the agent",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIREQUEST",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/agents/{{chatAgentId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "agents",
+            "{{chatAgentId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('agent removed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+            ]
+          }
+        }
+      ]
     }
   ]
 }

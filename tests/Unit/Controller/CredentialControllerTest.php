@@ -65,9 +65,13 @@ class CredentialControllerTest extends TestCase {
 	/** @var array<int, array{message: string, context: array<string, mixed>}> Every error the controller logged. */
 	private array $errors = [];
 
+	/** @var array<int, string|null> The uuid of every save and delete of the credential object. */
+	private array $writtenUuids = [];
+
 	protected function setUp(): void {
 		$this->saves = 0;
 		$this->errors = [];
+		$this->writtenUuids = [];
 	}
 	/**
 	 * The github catalogue entry used across the happy-path tests.
@@ -121,6 +125,7 @@ class CredentialControllerTest extends TestCase {
 
 		// A real ObjectEntity — getOwner()/jsonSerialize() are magic accessors.
 		$entity = new ObjectEntity();
+		$entity->setUuid('cred-1');
 		$entity->setOwner($ownerUid);
 		$entity->setObject($credData);
 
@@ -547,6 +552,7 @@ class CredentialControllerTest extends TestCase {
 	 * @param array<string, mixed> $params The request body params (e.g. `secret`).
 	 * @param CredentialStore&\PHPUnit\Framework\MockObject\MockObject $store The vault mock.
 	 * @param bool $saveFails Whether saving the metadata fails.
+	 * @param string|null $storedUuid The stored credential's uuid, null for none.
 	 *
 	 * @return CredentialController The wired controller.
 	 */
@@ -556,6 +562,7 @@ class CredentialControllerTest extends TestCase {
 		array $params,
 		CredentialStore $store,
 		bool $saveFails = false,
+		?string $storedUuid = 'cred-1',
 	): CredentialController {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn($ownerUid);
@@ -565,12 +572,20 @@ class CredentialControllerTest extends TestCase {
 		$entity = new ObjectEntity();
 		$entity->setOwner($ownerUid);
 		$entity->setObject($credData);
+		$entity->setUuid($storedUuid);
 
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('find')->willReturn($entity);
+		$objectService->method('deleteObject')->willReturnCallback(
+			function (string $uuid): bool {
+				$this->writtenUuids[] = $uuid;
+				return true;
+			}
+		);
 		$objectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) use ($saveFails) {
 				$this->saves++;
+				$this->writtenUuids[] = ($rest[3] ?? null);
 				if ($saveFails === true) {
 					throw new \RuntimeException('the object store is down');
 				}
@@ -610,6 +625,99 @@ class CredentialControllerTest extends TestCase {
 			$logger
 		);
 	}//end makeUpdateController()
+
+	/**
+	 * A credential named by another identifier is written by the uuid of the row the guard checked.
+	 */
+	public function testAnUpdateWritesTheCheckedRowByItsUuid(): void {
+		$puts = [];
+		$store = $this->createMock(CredentialStore::class);
+		$store->method('put')->willReturnCallback(
+			function (string $uuid) use (&$puts): void {
+				$puts[] = $uuid;
+			}
+		);
+
+		$controller = $this->makeUpdateController(
+			ownerUid: 'alice',
+			credData: ['name' => 'My GitHub', 'provider' => 'github', 'allowedApps' => ['hermiq']],
+			params: ['secret' => 'gho_rotated'],
+			store: $store,
+			storedUuid: 'cred-uuid'
+		);
+
+		$this->assertSame(Http::STATUS_OK, $controller->update('cred-slug')->getStatus());
+		$this->assertSame(['cred-uuid'], $puts);
+		$this->assertSame(['cred-uuid'], $this->writtenUuids);
+	}//end testAnUpdateWritesTheCheckedRowByItsUuid()
+
+	/**
+	 * A stored row that carries no uuid is refused: its writes would have nothing to name it by.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function writes(): array {
+		return ['update' => ['update'], 'share update' => ['updateShares'], 'delete' => ['destroy']];
+	}//end writes()
+
+	#[DataProvider('writes')]
+	public function testARowWithoutUuidIsRefused(string $method): void {
+		$store = $this->createMock(CredentialStore::class);
+		$store->expects($this->never())->method('put');
+		$store->expects($this->never())->method('delete');
+
+		$controller = $this->makeUpdateController(
+			ownerUid: 'alice',
+			credData: ['name' => 'My GitHub', 'provider' => 'github'],
+			params: ['secret' => 'gho_rotated', 'sharedWith' => [['type' => 'user', 'id' => 'bob']]],
+			store: $store,
+			storedUuid: null
+		);
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $controller->{$method}('cred-1')->getStatus());
+		$this->assertSame([], $this->writtenUuids);
+	}//end testARowWithoutUuidIsRefused()
+
+	/**
+	 * A share update is written by the uuid of the row the guard checked.
+	 */
+	public function testAShareUpdateWritesTheCheckedRowByItsUuid(): void {
+		$controller = $this->makeUpdateController(
+			ownerUid: 'alice',
+			credData: ['name' => 'My GitHub', 'provider' => 'github'],
+			params: ['sharedWith' => [['type' => 'user', 'id' => 'bob']]],
+			store: $this->createMock(CredentialStore::class),
+			storedUuid: 'cred-uuid'
+		);
+
+		$this->assertSame(Http::STATUS_OK, $controller->updateShares('cred-slug')->getStatus());
+		$this->assertSame(['cred-uuid'], $this->writtenUuids);
+	}//end testAShareUpdateWritesTheCheckedRowByItsUuid()
+
+	/**
+	 * A delete removes the checked row and its secret by the row's uuid.
+	 */
+	public function testADeleteRemovesTheCheckedRowByItsUuid(): void {
+		$deleted = [];
+		$store = $this->createMock(CredentialStore::class);
+		$store->method('delete')->willReturnCallback(
+			function (string $uuid) use (&$deleted): void {
+				$deleted[] = $uuid;
+			}
+		);
+
+		$controller = $this->makeUpdateController(
+			ownerUid: 'alice',
+			credData: ['name' => 'My GitHub', 'provider' => 'github'],
+			params: [],
+			store: $store,
+			storedUuid: 'cred-uuid'
+		);
+
+		$this->assertSame(Http::STATUS_OK, $controller->destroy('cred-slug')->getStatus());
+		$this->assertSame(['cred-uuid'], $this->writtenUuids);
+		$this->assertSame(['cred-uuid'], $deleted);
+	}//end testADeleteRemovesTheCheckedRowByItsUuid()
 
 	/**
 	 * An app id longer than 32 characters is refused with 400 before anything is

@@ -113,6 +113,8 @@ class BulkWriteEventsTest extends TestCase {
 		parent::setUp();
 
 		$this->objectMapper        = $this->createMock(MagicMapper::class);
+		// The stored rows lie inside the caller's organisations.
+		$this->objectMapper->method('callerOrganisationsHold')->willReturn(true);
 		$this->appConfig           = $this->createMock(IAppConfig::class);
 		$this->registerMapper      = $this->createMock(RegisterMapper::class);
 		$this->userSession         = $this->createMock(IUserSession::class);

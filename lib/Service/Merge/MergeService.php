@@ -1057,6 +1057,7 @@ class MergeService implements ObjectMergerInterface {
 		}
 
 		$data = ($raw->getObject() ?? []);
+		$record = $raw->getMatchEnvelope();
 
 		$unreadable = [];
 		foreach (array_keys($data) as $property) {
@@ -1064,7 +1065,7 @@ class MergeService implements ObjectMergerInterface {
 				continue;
 			}
 
-			if ($this->propertyRbac->canReadProperty(schema: $schema, property: $property, object: $data) === true) {
+			if ($this->propertyRbac->canReadProperty(schema: $schema, property: $property, object: $record) === true) {
 				continue;
 			}
 

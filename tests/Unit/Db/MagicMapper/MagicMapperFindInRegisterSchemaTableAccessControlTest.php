@@ -287,6 +287,32 @@ class MagicMapperFindInRegisterSchemaTableAccessControlTest extends TestCase {
 	}//end testFullBypassSkipsAccessControlSeam()
 
 	/**
+	 * Inside an organisation context the full bypass still consults the seam,
+	 * which applies the organisation filter.
+	 */
+	public function testFullBypassInsideAnOrganisationContextInvokesTheSeam(): void {
+		$mapper = $this->makeMapper();
+
+		try {
+			\OCA\OpenRegister\Service\OrganisationContext::run(
+				'org-a',
+				fn () => $mapper->findInRegisterSchemaTable(
+					identifier: 'uuid-portal-context',
+					register: $this->makeRegister(id: 1),
+					schema: $this->makeSchema(id: 4),
+					_rbac: false,
+					_multitenancy: false
+				)
+			);
+			$this->fail('empty DB result should have raised DoesNotExistException');
+		} catch (DoesNotExistException) {
+			// Expected.
+		}
+
+		$this->assertCount(1, $this->accessControlCalls);
+	}//end testFullBypassInsideAnOrganisationContextInvokesTheSeam()
+
+	/**
 	 * The default parameter values (both true) must exercise the seam — a
 	 * caller that omits the flags entirely must NOT accidentally get the
 	 * admin bypass path.

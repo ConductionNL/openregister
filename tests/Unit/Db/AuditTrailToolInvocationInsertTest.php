@@ -41,6 +41,8 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Audit\PurposeAttribution
  * @uses \OCA\OpenRegister\Service\Audit\TokenAttribution
  * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
+ * @uses \OCA\OpenRegister\Service\Audit\OrganisationContextAttribution
  */
 class AuditTrailToolInvocationInsertTest extends TestCase {
 
@@ -81,4 +83,25 @@ class AuditTrailToolInvocationInsertTest extends TestCase {
 		$this->assertSame([], json_decode((string) $rows[0]['changed'], true));
 		$this->assertSame('system', $rows[0]['user']);
 	}//end testAToolInvocationIsWrittenToTheAuditTable()
+
+	/**
+	 * A row written inside an organisation context names the organisation in its sealed summary.
+	 */
+	public function testARowInsideAnOrganisationContextNamesTheOrganisation(): void {
+		$entry = \OCA\OpenRegister\Service\OrganisationContext::run(
+			'org-a',
+			fn () => $this->mapper->createToolInvocationEntry(
+				toolId: 'keepiq.listEntries',
+				paramsDigest: hash('sha256', '{}'),
+				resultSummary: ['count' => 3]
+			)
+		);
+
+		$rows = $this->database->connection()->fetchAllAssociative(
+			'SELECT result_summary FROM openregister_audit_trails WHERE id = ?',
+			[$entry->getId()]
+		);
+
+		$this->assertSame(['count' => 3, 'organisationContext' => 'org-a'], json_decode((string) $rows[0]['result_summary'], true));
+	}//end testARowInsideAnOrganisationContextNamesTheOrganisation()
 }//end class

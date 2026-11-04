@@ -32,6 +32,7 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Audit\AuditAggregationService;
 use OCA\OpenRegister\Service\Audit\AuditSink;
+use OCA\OpenRegister\Service\Audit\OrganisationContextAttribution;
 use OCA\OpenRegister\Service\Audit\PurposeAttribution;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\TokenAttribution;
@@ -178,20 +179,7 @@ class AuditTrailMapper extends QBMapper {
 		// It must happen before the row is INSERTED, not merely before it is
 		// sealed: the sweep seals whatever is in the row, so a field added
 		// after insert would be outside the hash it is later given.
-		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
-
-		// The purpose the caller declared for the read that produced this row.
-		// Applied here as well as in buildAuditTrail() for the same reason the
-		// flow attribution is, and before the INSERT for the same reason again:
-		// the sealed half of it lives in `resultSummary`, which is inside the
-		// canonical JSON.
-		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
-
-		// Which token, whose, and for which consumer. Applied here as well as
-		// in buildAuditTrail() for the same reason the two above are, and
-		// before the INSERT for the same reason again: the sealed half lives in
-		// `resultSummary`, which is inside the canonical JSON.
-		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+		$this->applyAttributions(auditTrail: $auditTrail);
 
 		$inserted = $this->insert(entity: $auditTrail);
 
@@ -199,6 +187,33 @@ class AuditTrailMapper extends QBMapper {
 
 		return $inserted;
 	}//end insertHashChained()
+
+	/**
+	 * Stamp what caused a row onto it, before it is inserted.
+	 *
+	 * - Flow attribution: which run, node and step caused this write.
+	 * - Purpose (doelbinding): the purpose the caller declared for the read
+	 *   that produced this row.
+	 * - Token: which token, whose, and for which consumer.
+	 * - Organisation context: the organisation code acted for.
+	 *
+	 * The purpose, token and organisation context halves live in
+	 * `resultSummary`, which is inside the canonical JSON, so this MUST run
+	 * before the row is inserted. Re-applying to a row already stamped is
+	 * idempotent: it reads the same ambient frames and writes the same values.
+	 *
+	 * @param AuditTrail $auditTrail The row being built.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/act-for-an-organisation/specs/rbac-scopes/spec.md
+	 */
+	private function applyAttributions(AuditTrail $auditTrail): void {
+		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
+		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+		(new OrganisationContextAttribution())->apply(auditTrail: $auditTrail);
+	}//end applyAttributions()
 
 	/**
 	 * Set the request-scoped import-job UUID stamped on all
@@ -449,6 +464,44 @@ class AuditTrailMapper extends QBMapper {
 	}//end find()
 
 	/**
+	 * The columns findAll() filters and sorts on. A key outside this list is dropped.
+	 *
+	 * @var string[]
+	 */
+	public const QUERY_COLUMNS = [
+		'id',
+		'uuid',
+		'schema',
+		'register',
+		'object',
+		'object_uuid',
+		'action',
+		'changed',
+		'user',
+		'user_name',
+		'session',
+		'request',
+		'ip_address',
+		'version',
+		'created',
+		// Flow attribution. Absent from this allowlist a filter is
+		// not rejected — it is silently DROPPED by the `continue`
+		// in findAll(), so `?flow_run=<uuid>` would return the whole
+		// unfiltered audit trail with a 200 and read as a run that
+		// had touched everything on the instance.
+		'flow_run',
+		'flow_node',
+		'flow_step',
+		// The cause and its run. Absent from this allowlist a
+		// filter is not rejected, it is silently DROPPED by the
+		// `continue` in findAll() — so `?cause=import` would answer the
+		// WHOLE unfiltered trail with a 200 and read as a load
+		// that had touched everything on the instance.
+		'cause',
+		'cause_run',
+	];
+
+	/**
 	 * Find all audit trails with filters and sorting
 	 *
 	 * @param int|null $limit The limit of the results
@@ -491,38 +544,7 @@ class AuditTrailMapper extends QBMapper {
 			// Ensure the field is a valid column name.
 			if (in_array(
 				$field,
-				[
-					'id',
-					'uuid',
-					'schema',
-					'register',
-					'object',
-					'object_uuid',
-					'action',
-					'changed',
-					'user',
-					'user_name',
-					'session',
-					'request',
-					'ip_address',
-					'version',
-					'created',
-					// Flow attribution. Absent from this allowlist a filter is
-					// not rejected — it is silently DROPPED by the `continue`
-					// below, so `?flow_run=<uuid>` would return the whole
-					// unfiltered audit trail with a 200 and read as a run that
-					// had touched everything on the instance.
-					'flow_run',
-					'flow_node',
-					'flow_step',
-					// The cause and its run. Absent from this allowlist a
-					// filter is not rejected, it is silently DROPPED by the
-					// `continue` below — so `?cause=import` would answer the
-					// WHOLE unfiltered trail with a 200 and read as a load
-					// that had touched everything on the instance.
-					'cause',
-					'cause_run',
-				]
+				self::QUERY_COLUMNS
 			) === false
 			) {
 				continue;
@@ -578,35 +600,7 @@ class AuditTrailMapper extends QBMapper {
 			// Ensure the field is a valid column name.
 			if (in_array(
 				$field,
-				[
-					'id',
-					'uuid',
-					'schema',
-					'register',
-					'object',
-					'object_uuid',
-					'action',
-					'changed',
-					'user',
-					'user_name',
-					'session',
-					'request',
-					'ip_address',
-					'version',
-					'created',
-					// Sortable for the same reason they are filterable: a run's
-					// writes are read in step order.
-					'flow_run',
-					'flow_node',
-					'flow_step',
-					// The cause and its run. Absent from this allowlist a
-					// filter is not rejected, it is silently DROPPED by the
-					// `continue` below — so `?cause=import` would answer the
-					// WHOLE unfiltered trail with a 200 and read as a load
-					// that had touched everything on the instance.
-					'cause',
-					'cause_run',
-				]
+				self::QUERY_COLUMNS
 			) === false
 			) {
 				continue;
@@ -1144,9 +1138,7 @@ class AuditTrailMapper extends QBMapper {
 		$auditTrail->setCause($frame['cause']);
 		$auditTrail->setCauseRun($frame['run']);
 
-		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
-		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
-		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+		$this->applyAttributions(auditTrail: $auditTrail);
 	}//end stampAttributions()
 
 	/**
@@ -1710,7 +1702,7 @@ class AuditTrailMapper extends QBMapper {
 	/**
 	 * Revert an object to a previous state
 	 *
-	 * @param string|int $identifier Object ID, UUID, or URI
+	 * @param ObjectEntity|string|int $identifier The object itself, or its ID, UUID or URI to look it up by
 	 * @param DateTime|string|null $until DateTime or AuditTrail ID to revert to
 	 * @param bool $overwriteVersion Whether to overwrite the version or increment it
 	 *
@@ -1722,9 +1714,12 @@ class AuditTrailMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Controls version handling strategy on revert
 	 */
 	public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity {
-		// Get the current object (lazy-resolved to avoid circular DI).
-		$objectMapper = $this->container->get(MagicMapper::class);
-		$object = $objectMapper->find($identifier);
+		// A caller that already checked the object passes it, so it is not looked up again.
+		$object = $identifier;
+		if ($object instanceof ObjectEntity === false) {
+			// Lazy-resolved to avoid circular DI.
+			$object = $this->container->get(MagicMapper::class)->find($identifier);
+		}
 
 		// Get audit trail entries until the specified point.
 		$auditTrails = $this->findByObjectUntil(

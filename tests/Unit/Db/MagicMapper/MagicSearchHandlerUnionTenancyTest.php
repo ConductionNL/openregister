@@ -48,6 +48,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Object\DraftListLens
  * @uses \OCA\OpenRegister\Db\MagicMapper\DeletedLens
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
  */
 final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 

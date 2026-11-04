@@ -43,6 +43,7 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
@@ -1563,11 +1564,7 @@ class PermissionHandler {
 			return null;
 		}
 
-		$envelope = ($object->getObject() ?? []);
-		$organisation = $object->getOrganisation();
-		if ($organisation !== null) {
-			$envelope['@self'] = array_replace(($envelope['@self'] ?? []), ['organisation' => $organisation]);
-		}
+		$envelope = $object->getMatchEnvelope();
 
 		foreach ($conditional as $denial) {
 			$rule = $denial['rule'];
@@ -1951,6 +1948,7 @@ class PermissionHandler {
 		}
 
 		$activeOrganisation = $this->getActiveOrganisationForContext();
+		$checkOrganisation = $this->organisationCheckApplies(multitenancy: $_multitenancy, activeOrganisation: $activeOrganisation);
 
 		// An administrator reads every draft, so is not kept from one here
 		// (the same check hasPermission() and the read predicate make).
@@ -2025,14 +2023,9 @@ class PermissionHandler {
 				}//end if
 			}//end if
 
-			// Check multi-organization permissions if enabled.
-			if ($_multitenancy === true && $activeOrganisation !== null) {
-				$objectOrganisation = $object->getOrganisation();
-
-				if ($objectOrganisation !== null && $objectOrganisation !== $activeOrganisation) {
-					// Skip this object - different organization.
-					continue;
-				}
+			// Skip an object of a different organisation.
+			if ($checkOrganisation === true && $this->belongsToOtherOrganisation(object: $object, activeOrganisation: $activeOrganisation) === true) {
+				continue;
 			}
 
 			if ($objectUuid !== null) {
@@ -2044,6 +2037,42 @@ class PermissionHandler {
 		// contains a null and is already a list, so both were no-ops.
 		return $filteredUuids;
 	}//end filterUuidsForPermissions()
+
+	/**
+	 * Whether the bulk filter compares each object's organisation.
+	 *
+	 * Inside an organisation context it always does, and an unknown
+	 * organisation then keeps only objects without one.
+	 *
+	 * @param bool        $multitenancy       The caller's multitenancy flag.
+	 * @param string|null $activeOrganisation The caller's organisation, if any.
+	 *
+	 * @return bool True when objects of other organisations are dropped.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the caller's posture, passed through.
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
+	 */
+	private function organisationCheckApplies(bool $multitenancy, ?string $activeOrganisation): bool {
+		if (OrganisationContext::multitenancy(requested: $multitenancy) === false) {
+			return false;
+		}
+
+		return $activeOrganisation !== null || OrganisationContext::isActive() === true;
+	}//end organisationCheckApplies()
+
+	/**
+	 * Whether an object carries an organisation other than the caller's.
+	 *
+	 * @param ObjectEntity $object             The object.
+	 * @param string|null  $activeOrganisation The caller's organisation, if any.
+	 *
+	 * @return bool True when the object belongs to another organisation.
+	 */
+	private function belongsToOtherOrganisation(ObjectEntity $object, ?string $activeOrganisation): bool {
+		$objectOrganisation = $object->getOrganisation();
+
+		return $objectOrganisation !== null && $objectOrganisation !== $activeOrganisation;
+	}//end belongsToOtherOrganisation()
 
 	/**
 	 * Get the active organisation UUID for the current context
@@ -2936,7 +2965,7 @@ class PermissionHandler {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function matrixRowsFromApps(): MatrixRowsFromApps {
+	public function matrixRowsFromApps(): MatrixRowsFromApps {
 		$this->matrixRowsFromApps ??= new MatrixRowsFromApps(
 			dispatcher: $this->eventDispatcher,
 			validator: new DepartmentMatrixValidator(),

@@ -348,4 +348,34 @@ final class ConflictReportTest extends TestCase {
 		self::assertStringContainsString('changed since you read it', $body['message']);
 		self::assertStringNotContainsString('somebody else wrote the same', $body['message']);
 	}
+
+	/**
+	 * The read rule is asked of the record: its own organisation, not one its stored data claims.
+	 *
+	 * @return void
+	 */
+	public function testTheReadRuleIsAskedOfTheRecord(): void {
+		$seen = [];
+		$rbac = $this->createMock(PropertyRbacHandler::class);
+		$rbac->method('canReadProperty')->willReturnCallback(
+			static function (Schema $schema, string $property, array $object) use (&$seen): bool {
+				$seen[] = $object;
+				return true;
+			}
+		);
+		$stored = $this->stored(['status' => 'granted', '_organisation' => 'org-a', '@self' => ['organisation' => 'org-a']]);
+		$stored->setOrganisation('org-b');
+
+		(new ConflictReport($rbac))->build(
+			stored: $stored,
+			schema: new Schema(),
+			sent: ['status' => 'refused'],
+			intervening: [$this->change(changed: ['status' => ['old' => 'open', 'new' => 'granted']])],
+		);
+
+		self::assertCount(1, $seen);
+		self::assertSame('org-b', $seen[0]['@self']['organisation']);
+		self::assertArrayNotHasKey('_organisation', $seen[0]);
+		self::assertSame('granted', $seen[0]['status']);
+	}//end testTheReadRuleIsAskedOfTheRecord()
 }//end class

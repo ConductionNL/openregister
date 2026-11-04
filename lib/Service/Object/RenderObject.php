@@ -832,13 +832,7 @@ class RenderObject {
 					if ($doGated === true) {
 						// Note filterReadableProperties strips writeOnly first, then applies
 						// the group-authorization filter, so this covers both concerns.
-						$unfiltered = $object;
-						$object = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $object);
-						$this->withholdEntityCopies(
-							entity: $row,
-							schema: $schema,
-							removed: $this->removedProperties(before: $unfiltered, after: $object)
-						);
+						$object = $this->filterAuthorizedProperties(entity: $row, schema: $schema, objectData: $object);
 					} else {
 						// The writeOnly-only path (admin / `_rbac: false` / system context, or a
 						// schema with no property authorization): strip writeOnly unconditionally.
@@ -2625,8 +2619,9 @@ class RenderObject {
 	 * Strip the properties the reader's groups may not read, writeOnly included.
 	 *
 	 * Property authorization can reference `@self.organisation` or `_organisation`,
-	 * so a temporary `@self` is supplied when the data has none and removed again
-	 * afterwards (jsonSerialize re-adds it).
+	 * so the rules read a temporary `@self` built from the record's own metadata,
+	 * never one the data carries. The data's own `@self`, if any, is put back
+	 * afterwards (jsonSerialize re-adds the record's).
 	 *
 	 * @param ObjectEntity $entity     The entity being rendered
 	 * @param Schema       $schema     The object's schema
@@ -2637,29 +2632,17 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function filterAuthorizedProperties(ObjectEntity $entity, Schema $schema, array $objectData): array {
-		$objectDataWithSelf = $objectData;
-		if (isset($objectDataWithSelf['@self']) === false) {
-			$objectDataWithSelf['@self'] = [
-				'organisation' => $entity->getOrganisation(),
-				'owner'        => $entity->getOwner(),
-			];
-		}
-
-		$objectData = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $objectDataWithSelf);
+		$filtered = $entity->filterAsRecord(
+			data: $objectData,
+			filter: fn (array $probe): array => $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $probe)
+		);
 		$this->withholdEntityCopies(
 			entity: $entity,
 			schema: $schema,
-			removed: $this->removedProperties(before: $objectDataWithSelf, after: $objectData)
+			removed: $this->removedProperties(before: $objectData, after: $filtered)
 		);
 
-		if (isset($objectData['@self']) === true
-			&& count($objectData['@self']) <= 2
-			&& isset($objectData['@self']['organisation']) === true
-		) {
-			unset($objectData['@self']);
-		}
-
-		return $objectData;
+		return $filtered;
 	}//end filterAuthorizedProperties()
 
 	/**

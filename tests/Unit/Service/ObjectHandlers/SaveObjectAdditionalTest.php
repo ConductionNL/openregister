@@ -56,7 +56,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use stdClass;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
  * Testable Schema subclass to avoid mocking Entity __call magic methods.
@@ -159,6 +159,9 @@ class SaveObjectAdditionalTest extends TestCase {
 	/** @var MockObject&PropertyRbacHandler */
 	private $propertyRbacHandler;
 
+	/** @var TranslationHandler&MockObject */
+	private $translationHandler;
+
 	/** @var MockObject&LoggerInterface */
 	private $logger;
 
@@ -208,6 +211,8 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($this->mockUser);
 		$this->organisationService->method('getOrganisationForNewEntity')->willReturn('org-123');
 
+		$this->translationHandler = $this->createMock(TranslationHandler::class);
+
 		$this->saveObject = new SaveObject(
 			$this->objectEntityMapper,
 			$this->unifiedObjectMapper,
@@ -224,13 +229,13 @@ class SaveObjectAdditionalTest extends TestCase {
 			$this->settingsService,
 			$this->propertyRbacHandler,
 			$this->createMock(ComputedFieldHandler::class),
-			$this->createMock(TranslationHandler::class),
+			$this->translationHandler,
 			$this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
 			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
 			$this->logger,
 			$this->createMock(TmloService::class),
 			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			new ArrayLoader([])
+			$this->createMock(PermissionHandler::class)
 		);
 
 		$this->reflection = new ReflectionClass(SaveObject::class);
@@ -1222,6 +1227,58 @@ class SaveObjectAdditionalTest extends TestCase {
 			uuid: $uuid,
 			_rbac: true
 		);
+	}
+
+	/**
+	 * The property update check reads the stored record with `@self` from its own metadata.
+	 */
+	public function testSaveObjectWithRbacChecksPropertiesOnTheRecordsMetadata(): void {
+		$schema = new AdditionalTestableSchema();
+		$schema->setId(1);
+		$schema->setSlug('rbac-schema');
+		$schema->setTestHasPropertyAuth(true);
+		$schema->testSchemaObject = (object)['properties' => new stdClass()];
+		$schema->testProperties = ['name' => ['type' => 'string']];
+
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$uuid = 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4';
+		$existingObject = $this->createEntity(1, $uuid);
+		$existingObject->setOrganisation('org-b');
+		$existingObject->setOwner('bob');
+		$existingObject->setObject(['name' => 'Original', '_organisation' => 'org-a', '@self' => ['organisation' => 'org-a']]);
+
+		$this->unifiedObjectMapper->method('find')->willReturn($existingObject);
+		$this->translationHandler->method('normalizeTranslationsForSave')->willReturnCallback(
+			static fn (...$args): array => $args[0]
+		);
+
+		$seen = null;
+		$this->propertyRbacHandler->method('getUnauthorizedProperties')->willReturnCallback(
+			static function (Schema $schema, array $object, array $incomingData, bool $isCreate = false) use (&$seen): array {
+				$seen = $object;
+
+				return ['name'];
+			}
+		);
+
+		try {
+			$this->saveObject->saveObject(
+				register: $this->mockRegister,
+				schema: $schema,
+				data: ['name' => 'Updated'],
+				uuid: $uuid,
+				_rbac: true
+			);
+			$this->fail('the refused property was written');
+		} catch (Exception $e) {
+			$this->assertStringContainsString('not authorized to modify', $e->getMessage());
+		}
+
+		$this->assertSame('org-b', $seen['@self']['organisation']);
+		$this->assertSame('bob', $seen['@self']['owner']);
+		$this->assertSame('Original', $seen['name']);
+		$this->assertArrayNotHasKey('_organisation', $seen);
 	}
 
 	/**

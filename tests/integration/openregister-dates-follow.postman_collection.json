@@ -335,6 +335,19 @@
    },
    "event": [
     {
+     "listen": "prerequest",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "// The contact follows through a queued RelatedRetentionRecalculationJob, so the read",
+       "// below sends the run back here, after a pause, until the job has run.",
+       "if (Number(pm.collectionVariables.get('followTries') || 0) > 0) {",
+       "    setTimeout(() => {}, 2000);",
+       "}"
+      ]
+     }
+    },
+    {
      "listen": "test",
      "script": {
       "exec": [
@@ -372,6 +385,12 @@
        "pm.test('200', () => pm.response.to.have.status(200));",
        "const b = pm.response.json();",
        "const r = (b['@self'] && b['@self'].retention) || b.retention || {};",
+       "const tries = Number(pm.collectionVariables.get('followTries') || 0) + 1;",
+       "pm.collectionVariables.set('followTries', tries);",
+       "if (r.archiefactiedatum !== '2028-10-01' && tries < 20) {",
+       "    pm.execution.setNextRequest('Run background jobs');",
+       "    return;",
+       "}",
        "pm.test('contact destruction date follows the client', () => pm.expect(r.archiefactiedatum).to.eql('2028-10-01'));"
       ]
      }
@@ -438,6 +457,19 @@
    },
    "event": [
     {
+     "listen": "prerequest",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "// The contact follows through a queued RelatedRetentionRecalculationJob, so the read",
+       "// below sends the run back here, after a pause, until the job has run.",
+       "if (Number(pm.collectionVariables.get('clearTries') || 0) > 0) {",
+       "    setTimeout(() => {}, 2000);",
+       "}"
+      ]
+     }
+    },
+    {
      "listen": "test",
      "script": {
       "exec": [
@@ -475,6 +507,12 @@
        "pm.test('200', () => pm.response.to.have.status(200));",
        "const b = pm.response.json();",
        "const r = (b['@self'] && b['@self'].retention) || b.retention || {};",
+       "const tries = Number(pm.collectionVariables.get('clearTries') || 0) + 1;",
+       "pm.collectionVariables.set('clearTries', tries);",
+       "if ((r.archiefactiedatum || null) !== null && tries < 20) {",
+       "    pm.execution.setNextRequest('Run background jobs again');",
+       "    return;",
+       "}",
        "pm.test('contact destruction date removed', () => pm.expect(r.archiefactiedatum || null).to.eql(null));"
       ]
      }

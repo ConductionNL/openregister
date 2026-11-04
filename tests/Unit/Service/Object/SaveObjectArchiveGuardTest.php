@@ -41,7 +41,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
  * The write guard for the archived and frozen states.
@@ -104,7 +104,7 @@ class SaveObjectArchiveGuardTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(\OCA\OpenRegister\Service\TmloService::class),
 			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			new ArrayLoader()
+			$this->createMock(PermissionHandler::class)
 		);
 	}//end handler()
 

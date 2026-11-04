@@ -47,6 +47,8 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Audit\PurposeAttribution
  * @uses \OCA\OpenRegister\Service\Audit\TokenAttribution
  * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
+ * @uses \OCA\OpenRegister\Service\Audit\OrganisationContextAttribution
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
  */
 class DraftRemovalAuditRowTest extends TestCase {
 
