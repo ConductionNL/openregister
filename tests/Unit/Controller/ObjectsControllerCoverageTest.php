@@ -6,6 +6,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -101,7 +102,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		// Entities resolved by ObjectService::setRegister()/setSchema() default
 		// to null on the mock, so resolveRegisterSchemaIds() returns null
 		// entities unless a test wires the getters explicitly.
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,
@@ -184,7 +185,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$this->registerMapper->method('find')->willReturn($registerEntity);
 		$this->schemaMapper->method('find')->willReturn($schemaEntity);
 
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,
@@ -1453,7 +1454,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$failingWebhookService->method('interceptRequest')
 			->willThrowException($webhookException);
 
-		$controller = new ObjectsController(
+		$controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,

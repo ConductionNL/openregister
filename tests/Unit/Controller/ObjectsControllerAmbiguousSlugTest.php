@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -80,7 +81,7 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 			fn (string $id) => ($id === PresenceService::class) ? $presence : $this->createMock(MagicMapper::class)
 		);
 
-		return new ObjectsController(
+		return ObjectsControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(IAppConfig::class),

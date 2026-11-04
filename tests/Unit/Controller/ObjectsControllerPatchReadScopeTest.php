@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -49,6 +50,15 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectsController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectsControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectStore
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectTransfer
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectGovernanceServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectsExtensions
+ * @uses \OCA\OpenRegister\Controller\Support\AppPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\GeoServices
+ * @uses \OCA\OpenRegister\Controller\Support\LinkedDataServices
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class ObjectsControllerPatchReadScopeTest extends TestCase {
@@ -135,7 +145,7 @@ class ObjectsControllerPatchReadScopeTest extends TestCase {
 			static fn (string $id) => $id === 'userId' ? 'alice' : throw new \RuntimeException('not available')
 		);
 
-		return new ObjectsController(
+		return ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),
