@@ -44,6 +44,7 @@ use PHPUnit\Framework\TestCase;
  * The install gate on the discover and fetch endpoints.
  *
  * @covers \OCA\OpenRegister\Controller\FederatedConfigController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  */
 class FederatedConfigControllerDiscoverGateTest extends TestCase {
 
@@ -92,10 +93,8 @@ class FederatedConfigControllerDiscoverGateTest extends TestCase {
 			$this->request,
 			$this->service,
 			$this->access,
-			$this->createMock(IUserSession::class),
-			$this->createMock(IConfig::class),
-			$this->createMock(IGroupManager::class)
-		);
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class), $this->createMock(\Psr\Log\LoggerInterface::class)),
+			$this->createMock(IConfig::class));
 
 	}//end setUp()
 

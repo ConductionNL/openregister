@@ -155,9 +155,7 @@ final class InstanceWideAuditReadsTest extends TestCase {
 			$this->createMock(ProcessingPurposeMapper::class),
 			$this->createMock(PurposeRegistry::class),
 			$this->audit,
-			$this->session($uid),
-			$this->groupManager()
-		);
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->session($uid), $this->groupManager(), $this->createMock(\Psr\Log\LoggerInterface::class)));
 	}//end purposeController()
 
 	public function testASignedInUserCannotSearchTheWholeTrailForASubject(): void {

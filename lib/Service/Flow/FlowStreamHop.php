@@ -26,14 +26,7 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * A hop of the stream walk, from its claim until it is committed or ends the run.
  */
-final class FlowStreamHop {
-
-	/**
-	 * When the hop started, as `microtime(true)` returns it.
-	 *
-	 * @var float
-	 */
-	public readonly float $startedAt;
+final class FlowStreamHop extends FlowHop {
 
 	/**
 	 * Constructor. The start moment is taken when the hop is made.
@@ -47,36 +40,14 @@ final class FlowStreamHop {
 	 */
 	public function __construct(
 		public readonly FlowStreamPass $pass,
-		public readonly object $transition,
-		public readonly array $step,
-		public readonly array $itemsIn,
+		object $transition,
+		array $step,
+		array $itemsIn,
 		public readonly string $streamId,
 		public readonly array $claimed,
 	) {
-		$this->startedAt = microtime(true);
+		parent::__construct(owner: $pass, transition: $transition, step: $step, itemsIn: $itemsIn);
 	}//end __construct()
-
-	/**
-	 * The transition name.
-	 *
-	 * @return string The name.
-	 *
-	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
-	 */
-	public function name(): string {
-		return (string)$this->transition->getName();
-	}//end name()
-
-	/**
-	 * The step's catalogue id, carried onto every log entry.
-	 *
-	 * @return string The step type, or an empty string.
-	 *
-	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
-	 */
-	public function stepType(): string {
-		return (string)($this->step['type'] ?? '');
-	}//end stepType()
 
 	/**
 	 * The places the firing took, in the transition's declaration order.
@@ -97,4 +68,5 @@ final class FlowStreamHop {
 
 		return $takenTos;
 	}//end takenInOrder()
+
 }//end class

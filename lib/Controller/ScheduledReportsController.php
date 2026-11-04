@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\BackgroundJob\ScheduledReportRunNowJob;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCP\AppFramework\Controller;
@@ -36,10 +37,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\BackgroundJob\IJobList;
-use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * ScheduledReportsController handles CRUD + run-now for scheduled report exports.
@@ -54,18 +52,14 @@ class ScheduledReportsController extends Controller {
 	 * @param IRequest $request HTTP request.
 	 * @param ScheduledReportsInterface $service Business logic.
 	 * @param IJobList $jobList Background job list (for run-now).
-	 * @param IUserSession $userSession Current-user session.
-	 * @param IGroupManager $groupManager Group manager (admin check).
-	 * @param LoggerInterface $logger Logger.
+	 * @param ControllerSession $session Session, group manager and logger.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly ScheduledReportsInterface $service,
 		private readonly IJobList $jobList,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly LoggerInterface $logger,
+		private readonly ControllerSession $session,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -76,7 +70,7 @@ class ScheduledReportsController extends Controller {
 	 * @return ?string
 	 */
 	private function resolveUserId(): ?string {
-		$user = $this->userSession->getUser();
+		$user = $this->session->userSession->getUser();
 		if ($user === null) {
 			return null;
 		}
@@ -90,12 +84,12 @@ class ScheduledReportsController extends Controller {
 	 * @return bool
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
+		$user = $this->session->userSession->getUser();
 		if ($user === null) {
 			return false;
 		}
 
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->session->groupManager->isAdmin($user->getUID());
 	}//end isCurrentUserAdmin()
 
 	/**
@@ -209,7 +203,7 @@ class ScheduledReportsController extends Controller {
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		} catch (\Throwable $e) {
-			$this->logger->error(
+			$this->session->logger->error(
 				message: '[ScheduledReportsController] Error creating scheduled report: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__, 'trace' => $e->getTraceAsString()]
 			);
@@ -260,7 +254,7 @@ class ScheduledReportsController extends Controller {
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		} catch (\Throwable $e) {
-			$this->logger->error(
+			$this->session->logger->error(
 				message: '[ScheduledReportsController] Error updating scheduled report: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id, 'trace' => $e->getTraceAsString()]
 			);
@@ -297,7 +291,7 @@ class ScheduledReportsController extends Controller {
 		} catch (\RuntimeException $e) {
 			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
 		} catch (\Throwable $e) {
-			$this->logger->error(
+			$this->session->logger->error(
 				message: '[ScheduledReportsController] Error deleting scheduled report: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id, 'trace' => $e->getTraceAsString()]
 			);
@@ -341,7 +335,7 @@ class ScheduledReportsController extends Controller {
 
 		$this->jobList->add(ScheduledReportRunNowJob::class, ['scheduledReportId' => $report->getId()]);
 
-		$this->logger->info(
+		$this->session->logger->info(
 			message: '[ScheduledReportsController] Queued run-now for scheduled report',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $report->getId()]
 		);

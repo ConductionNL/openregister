@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Quality\DismissedPairStore;
@@ -39,9 +40,7 @@ use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUserSession;
 use RuntimeException;
 use Throwable;
 
@@ -54,8 +53,7 @@ class DuplicateController extends Controller {
 	 * @param DuplicateDetectionService $duplicates Duplicate-candidate detection service.
 	 * @param DismissedPairStore $dismissals Pairs a person has already ruled out.
 	 * @param ObjectService $objectService Object read path, to fingerprint a pair being dismissed.
-	 * @param IUserSession $userSession Current session, to name the reviewer.
-	 * @param IGroupManager $groupManager Group membership, to evaluate the declared `dismissGroups`.
+	 * @param ControllerSession $session Session, group manager and logger.
 	 */
 	public function __construct(
 		string $appName,
@@ -63,8 +61,7 @@ class DuplicateController extends Controller {
 		private readonly DuplicateDetectionService $duplicates,
 		private readonly DismissedPairStore $dismissals,
 		private readonly ObjectService $objectService,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		private readonly ControllerSession $session,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -302,7 +299,7 @@ class DuplicateController extends Controller {
 			schemaSlug: $schema,
 			fingerprint: $fingerprint,
 			reason: $reason,
-			dismissedBy: ((string)($this->userSession->getUser()?->getUID() ?? ''))
+			dismissedBy: ((string)($this->session->userSession->getUser()?->getUID() ?? ''))
 		);
 
 		return new JSONResponse($row);
@@ -344,7 +341,7 @@ class DuplicateController extends Controller {
 			second: $objectB,
 			registerSlug: $register,
 			schemaSlug: $schema,
-			reversedBy: ((string)($this->userSession->getUser()?->getUID() ?? ''))
+			reversedBy: ((string)($this->session->userSession->getUser()?->getUID() ?? ''))
 		);
 
 		if ($row === null) {
@@ -376,7 +373,7 @@ class DuplicateController extends Controller {
 			return false;
 		}
 
-		$user = $this->userSession->getUser();
+		$user = $this->session->userSession->getUser();
 		if ($user === null) {
 			return false;
 		}
@@ -386,7 +383,7 @@ class DuplicateController extends Controller {
 				continue;
 			}
 
-			if ($this->groupManager->isInGroup($user->getUID(), $group) === true) {
+			if ($this->session->groupManager->isInGroup($user->getUID(), $group) === true) {
 				return true;
 			}
 		}

@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\TextExtraction\EmlParser;
@@ -299,6 +300,31 @@ class TextExtractionService {
 			payload: $payload
 		);
 
+		if ($this->extractFileEntities(fileId: $fileId, entityTypes: $entityTypes) === false) {
+			return;
+		}
+
+		$this->logger->debug(
+			message: '[TextExtractionService] File extraction complete',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'fileId' => $fileId,
+				'chunkCount' => count($chunks) + 1,
+			]
+		);
+	}//end indexFilePayload()
+
+	/**
+	 * Run entity recognition over a file's stored chunks when it is enabled, then update the
+	 * file's risk level. A failure is logged, not thrown.
+	 *
+	 * @param int        $fileId      The file id.
+	 * @param array|null $entityTypes Entity types to detect, or null for all.
+	 *
+	 * @return bool False when entity recognition is disabled.
+	 */
+	private function extractFileEntities(int $fileId, ?array $entityTypes): bool {
 		// Extract entities from chunks.
 		try {
 			// Get entity recognition settings.
@@ -311,7 +337,7 @@ class TextExtractionService {
 					message: '[TextExtractionService] Entity recognition disabled, skipping',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
 				);
-				return;
+				return false;
 			}
 
 			$entityOptions = [
@@ -340,20 +366,7 @@ class TextExtractionService {
 			);
 
 			// Compute and persist risk level based on detected entities.
-			try {
-				$riskLevel = $this->riskLevelService->updateRiskLevel(fileId: $fileId);
-				// Info: a risk level changing is a compliance-relevant state
-				// change on the document, not a step in extracting it.
-				$this->logger->info(
-					'[TextExtractionService] Risk level updated',
-					['fileId' => $fileId, 'riskLevel' => $riskLevel]
-				);
-			} catch (Exception $e) {
-				$this->logger->warning(
-					'[TextExtractionService] Failed to update risk level',
-					['fileId' => $fileId, 'error' => $e->getMessage()]
-				);
-			}
+			$this->updateFileRiskLevel(fileId: $fileId);
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[TextExtractionService] Entity extraction failed',
@@ -366,16 +379,32 @@ class TextExtractionService {
 			);
 		}//end try
 
-		$this->logger->debug(
-			message: '[TextExtractionService] File extraction complete',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'fileId' => $fileId,
-				'chunkCount' => count($chunks) + 1,
-			]
-		);
-	}//end indexFilePayload()
+		return true;
+	}//end extractFileEntities()
+
+	/**
+	 * Compute and store a file's risk level from its detected entities; a failure is logged as a warning.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return void
+	 */
+	private function updateFileRiskLevel(int $fileId): void {
+		try {
+			$riskLevel = $this->riskLevelService->updateRiskLevel(fileId: $fileId);
+			// Info: a risk level changing is a compliance-relevant state
+			// change on the document, not a step in extracting it.
+			$this->logger->info(
+				'[TextExtractionService] Risk level updated',
+				['fileId' => $fileId, 'riskLevel' => $riskLevel]
+			);
+		} catch (Exception $e) {
+			$this->logger->warning(
+				'[TextExtractionService] Failed to update risk level',
+				['fileId' => $fileId, 'error' => $e->getMessage()]
+			);
+		}
+	}//end updateFileRiskLevel()
 
 	/**
 	 * The text extracted from a file, read back from its stored chunks.
@@ -459,7 +488,6 @@ class TextExtractionService {
 	 * @throws Exception If extraction fails
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for force re-extraction behavior
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive object extraction requires detailed processing
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -469,29 +497,12 @@ class TextExtractionService {
 			context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $objectId]
 		);
 
-		// Get object to check timestamp.
-		// Handle case where object was deleted between job scheduling and execution.
-		try {
-			$object = $this->objectEntityMapper->find($objectId);
-		} catch (DoesNotExistException $e) {
-			// Info, deliberately: this explains why queued work did NOT happen
-			// — the object was deleted between queueing and extraction. Silence
-			// there looks like the job never ran. TextExtractionServiceDeepTest
-			// asserts the level, so the intent is recorded rather than assumed.
-			$this->logger->info(
-				message: '[TextExtractionService] Object no longer exists, skipping extraction',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'objectId' => $objectId,
-				]
-			);
+		$object = $this->findObjectToExtract(objectId: $objectId);
+		if ($object === null) {
 			return;
 		}
 
 		$sourceTimestamp = $object->getUpdated()?->getTimestamp() ?? time();
-
-		// Check if chunks are up-to-date.
 		$isUpToDate = $this->isSourceUpToDate(
 			sourceId: $objectId,
 			sourceType: 'object',
@@ -499,42 +510,77 @@ class TextExtractionService {
 			forceReExtract: $forceReExtract
 		);
 		if ($forceReExtract === false && $isUpToDate === true) {
-			// Object is up-to-date and all chunks are still valid.
 			$this->logger->debug(
 				message: '[TextExtractionService] Object already processed and up-to-date',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'objectId' => $objectId,
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $objectId]
 			);
 			return;
 		}
 
-		// Create ObjectHandler and extract text.
-		$objectHandler = new ObjectHandler(
+		$objectHandler = $this->newObjectHandler();
+		$sourceMeta = $objectHandler->getSourceMetadata($objectId);
+		$extractedData = $objectHandler->extractText(sourceId: $objectId, sourceMeta: $sourceMeta, force: $forceReExtract);
+		$payload = $this->objectPayload(objectId: $objectId, extractedData: $extractedData);
+		$this->indexObjectPayload(payload: $payload, sourceTimestamp: $sourceTimestamp);
+	}//end extractObject()
+
+	/**
+	 * Load the object to extract, or null when it was deleted after the job was queued.
+	 *
+	 * @param int $objectId Object ID.
+	 *
+	 * @return ObjectEntity|null The object, or null when it no longer exists.
+	 */
+	private function findObjectToExtract(int $objectId): ?ObjectEntity {
+		try {
+			return $this->objectEntityMapper->find($objectId);
+		} catch (DoesNotExistException $e) {
+			// Info, deliberately: this explains why queued work did NOT happen
+			// — the object was deleted between queueing and extraction. Silence
+			// there looks like the job never ran. TextExtractionServiceDeepTest
+			// asserts the level, so the intent is recorded rather than assumed.
+			$this->logger->info(
+				message: '[TextExtractionService] Object no longer exists, skipping extraction',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $objectId]
+			);
+			return null;
+		}
+	}//end findObjectToExtract()
+
+	/**
+	 * A text handler for objects, over this service's mappers.
+	 *
+	 * @return ObjectHandler The handler.
+	 */
+	private function newObjectHandler(): ObjectHandler {
+		return new ObjectHandler(
 			objectMapper: $this->objectEntityMapper,
 			chunkMapper: $this->chunkMapper,
 			schemaMapper: $this->schemaMapper,
 			registerMapper: $this->registerMapper,
 			logger: $this->logger
 		);
+	}//end newObjectHandler()
 
-		// Get object metadata.
-		$sourceMeta = $objectHandler->getSourceMetadata($objectId);
-
-		// Extract text using ObjectHandler.
-		$extractedData = $objectHandler->extractText(sourceId: $objectId, sourceMeta: $sourceMeta, force: $forceReExtract);
+	/**
+	 * Build the chunk payload for an object's extracted text: sanitized, with language metadata.
+	 *
+	 * @param int   $objectId      Object ID.
+	 * @param array $extractedData ObjectHandler's extraction result.
+	 *
+	 * @return array The payload.
+	 *
+	 * @throws Exception If the sanitized text is empty.
+	 */
+	private function objectPayload(int $objectId, array $extractedData): array {
 		$cleanText = $this->sanitizeText(text: $extractedData['text']);
-
 		if ($cleanText === '') {
 			throw new Exception('Text extraction resulted in an empty payload for object.');
 		}
 
-		// Collect lightweight language metadata to enrich chunk storage.
 		$languageSignals = $this->detectLanguageSignals(text: $cleanText);
 
-		$payload = [
+		return [
 			'source_type' => 'object',
 			'source_id' => $objectId,
 			'text' => $cleanText,
@@ -549,16 +595,23 @@ class TextExtractionService {
 			'detection_method' => $languageSignals['detection_method'],
 			'metadata' => $extractedData['metadata'] ?? [],
 		];
+	}//end objectPayload()
 
+	/**
+	 * Chunk and store an object's payload, then run entity recognition over the chunks.
+	 *
+	 * @param array $payload         The object's text payload.
+	 * @param int   $sourceTimestamp The object's modification time.
+	 *
+	 * @return void
+	 */
+	private function indexObjectPayload(array $payload, int $sourceTimestamp): void {
+		$objectId = $payload['source_id'];
 		$chunks = $this->textToChunks(
 			payload: $payload,
-			options: [
-				'source_type' => $payload['source_type'],
-				'source_id' => $payload['source_id'],
-			]
+			options: ['source_type' => $payload['source_type'], 'source_id' => $objectId]
 		);
 
-		// Persist chunks to database.
 		$this->persistChunksForSource(
 			sourceType: 'object',
 			sourceId: $objectId,
@@ -569,15 +622,27 @@ class TextExtractionService {
 			payload: $payload
 		);
 
-		// Extract entities from chunks.
+		$this->extractObjectEntities(objectId: $objectId);
+
+		$this->logger->debug(
+			message: '[TextExtractionService] Object extraction completed',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $objectId, 'chunkCount' => count($chunks) + 1]
+		);
+	}//end indexObjectPayload()
+
+	/**
+	 * Run entity recognition over an object's stored chunks; a failure is logged, not thrown.
+	 *
+	 * @param int $objectId Object ID.
+	 *
+	 * @return void
+	 */
+	private function extractObjectEntities(int $objectId): void {
 		try {
 			$entityResult = $this->entityHandler->processSourceChunks(
 				sourceType: 'object',
 				sourceId: $objectId,
-				options: [
-					'method' => 'hybrid',
-					'confidence_threshold' => 0.5,
-				]
+				options: ['method' => 'hybrid', 'confidence_threshold' => 0.5]
 			);
 
 			$this->logger->debug(
@@ -593,25 +658,10 @@ class TextExtractionService {
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[TextExtractionService] Entity extraction failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'objectId' => $objectId,
-					'error' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $objectId, 'error' => $e->getMessage()]
 			);
-		}//end try
-
-		$this->logger->debug(
-			message: '[TextExtractionService] Object extraction completed',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'objectId' => $objectId,
-				'chunkCount' => count($chunks) + 1,
-			]
-		);
-	}//end extractObject()
+		}
+	}//end extractObjectEntities()
 
 	/**
 	 * Determine whether the latest chunks already reflect the current source state.

@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -57,13 +58,26 @@ use OCP\IUserSession;
  */
 class VerwerkingsactiviteitenController extends Controller {
 	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * The group manager.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App identifier.
 	 * @param IRequest $request Active request.
 	 * @param VerwerkingsactiviteitMapper $vrwMapper Mapper for the catalog.
-	 * @param IUserSession $userSession Current user session.
-	 * @param IGroupManager $groupManager Group manager (admin gate).
+	 * @param ControllerSession $session Session, group manager and logger.
 	 * @param IDBConnection $db DB for the verantwoording aggregation.
 	 * @param OrganisationService $organisationService Org-scoping helper.
 	 */
@@ -71,13 +85,14 @@ class VerwerkingsactiviteitenController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly VerwerkingsactiviteitMapper $vrwMapper,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		ControllerSession $session,
 		private readonly IDBConnection $db,
 		private readonly OrganisationService $organisationService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
+		$this->userSession = $session->userSession;
+		$this->groupManager = $session->groupManager;
 	}//end __construct()
 
 	/**

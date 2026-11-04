@@ -14,6 +14,7 @@ namespace OCA\OpenRegister\Tests\Unit\Repair;
 use OCA\OpenRegister\AppInfo\ClassAliasMap;
 use OCA\OpenRegister\BackgroundJob\LogCleanUpTask;
 use OCA\OpenRegister\Repair\RepointMovedBackgroundJobs;
+use OCA\OpenRegister\Service\Operations\MovedJobState;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\IJobList;
 use OCP\Migration\IOutput;
@@ -38,10 +39,18 @@ final class RepointMovedBackgroundJobsTest extends TestCase {
 		$calls   = [];
 		$jobList = $this->jobListWith(rows: [['a' => 1], null], calls: $calls);
 
+		$state = $this->createMock(MovedJobState::class);
+		$state->method('carry')->willReturnCallback(
+			static function (string $from, string $to) use (&$calls): void {
+				$calls[] = ['carry', $from, $to];
+			}
+		);
+
 		$step = new RepointMovedBackgroundJobs(
 			$jobList,
 			new ClassAliasMap(entries: [self::OLD => ['class' => LogCleanUpTask::class, 'eager' => false]]),
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$state
 		);
 		$step->run($this->createMock(IOutput::class));
 
@@ -51,6 +60,7 @@ final class RepointMovedBackgroundJobsTest extends TestCase {
 				['add', LogCleanUpTask::class, ['a' => 1]],
 				['add', LogCleanUpTask::class, null],
 				['remove', self::OLD, null],
+				['carry', self::OLD, LogCleanUpTask::class],
 			],
 			actual: $calls
 		);
@@ -68,7 +78,8 @@ final class RepointMovedBackgroundJobsTest extends TestCase {
 		$step = new RepointMovedBackgroundJobs(
 			$jobList,
 			new ClassAliasMap(entries: ['OCA\\OpenRegister\\Old\\Thing' => ['class' => self::class, 'eager' => false]]),
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(MovedJobState::class)
 		);
 		$step->run($this->createMock(IOutput::class));
 
@@ -96,7 +107,8 @@ final class RepointMovedBackgroundJobsTest extends TestCase {
 					self::OLD.'2' => ['class' => LogCleanUpTask::class, 'eager' => false],
 				]
 			),
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(MovedJobState::class)
 		);
 		$step->run($output);
 	}//end testAFailureIsReportedAndDoesNotStopTheRun()
@@ -110,7 +122,8 @@ final class RepointMovedBackgroundJobsTest extends TestCase {
 		$step = new RepointMovedBackgroundJobs(
 			$this->createMock(IJobList::class),
 			new ClassAliasMap(entries: []),
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(MovedJobState::class)
 		);
 
 		$this->assertStringContainsString('background jobs', $step->getName());
