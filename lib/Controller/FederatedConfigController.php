@@ -163,13 +163,14 @@ class FederatedConfigController extends Controller {
 		} catch (UnexpectedValueException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		} catch (Throwable $e) {
-			// A blocked source, an untrusted key, or a bad signature is a 403;
-			// anything else a 500.
+			// A blocked source, an untrusted key, a bad signature or a crossing rule
+			// is a 403; anything else a 500.
 			$status = Http::STATUS_INTERNAL_SERVER_ERROR;
 			$message = $e->getMessage();
 			if (str_contains($message, 'allowlist') === true
 				|| str_contains($message, 'trusted') === true
 				|| str_contains($message, 'signature') === true
+				|| str_contains($message, 'crossOrganisation') === true
 			) {
 				$status = Http::STATUS_FORBIDDEN;
 			}

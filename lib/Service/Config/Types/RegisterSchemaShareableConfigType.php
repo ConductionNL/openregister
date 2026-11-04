@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Config\Types;
 
+use OCA\OpenRegister\Service\Config\BundleCrossingGuard;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\RegisterService;
@@ -47,10 +48,12 @@ class RegisterSchemaShareableConfigType implements IShareableConfigType {
 	 *
 	 * @param RegisterService $registerService Loads the register to share.
 	 * @param ConfigurationService $configService Exports and imports the bundle.
+	 * @param BundleCrossingGuard $crossingGuard Judges the bundle's schemas for the caller.
 	 */
 	public function __construct(
 		private readonly RegisterService $registerService,
 		private readonly ConfigurationService $configService,
+		private readonly BundleCrossingGuard $crossingGuard,
 	) {
 
 	}//end __construct()
@@ -129,6 +132,8 @@ class RegisterSchemaShareableConfigType implements IShareableConfigType {
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
 	public function deserialise(array $bundle): array {
+		$this->crossingGuard->assertAllowed(bundle: $bundle);
+
 		$version = (string)($bundle['info']['version'] ?? '1.0.0');
 
 		return $this->configService->importFromApp(
