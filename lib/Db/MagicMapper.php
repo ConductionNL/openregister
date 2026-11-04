@@ -9992,76 +9992,76 @@ class MagicMapper extends AbstractObjectMapper {
 		bool $hardDelete = false,
 	): int {
 		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-		$registerId = $register->getId();
-		$schemaId = $schema->getId();
+		$scope     = [$register->getId(), $schema->getId()];
+		$context   = ['registerId' => $scope[0], 'schemaId' => $scope[1], 'tableName' => $tableName];
 
 		// Info: bulk destruction. Never routine, always worth explaining later.
 		$this->logger->info(
 			message: '[MagicMapper] Deleting all objects from magic table for schema',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'registerId' => $registerId,
-				'schemaId' => $schemaId,
-				'tableName' => $tableName,
-				'hardDelete' => $hardDelete,
-			]
+			context: array_merge(['file' => __FILE__, 'line' => __LINE__], $context, ['hardDelete' => $hardDelete])
 		);
 
-		// Check if table exists before attempting deletion.
 		if ($this->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
 			$this->logger->warning(
 				message: '[MagicMapper] Cannot delete from magic table - table does not exist',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'registerId' => $registerId,
-					'schemaId' => $schemaId,
-					'tableName' => $tableName,
-				]
+				context: array_merge(['file' => __FILE__, 'line' => __LINE__], $context)
 			);
 			return 0;
 		}
 
-		$qb = $this->db->getQueryBuilder();
-
+		$qb      = $this->db->getQueryBuilder();
+		$message = '[MagicMapper] Hard deleted objects from magic table';
 		if ($hardDelete === true) {
-			// Hard delete - remove all rows for this register+schema combination.
-			$regCol = self::METADATA_PREFIX . 'register';
-			$schCol = self::METADATA_PREFIX . 'schema';
-			$qb->delete($tableName)
-				->where(
-					$qb->expr()->eq(
-						$regCol,
-						$qb->createNamedParameter($registerId, \PDO::PARAM_INT)
-					)
-				)
-				->andWhere(
-					$qb->expr()->eq(
-						$schCol,
-						$qb->createNamedParameter($schemaId, \PDO::PARAM_INT)
-					)
-				);
+			$qb->delete($tableName);
+			$this->whereRegisterAndSchema(qb: $qb, scope: $scope);
+		}
 
-			$deletedCount = $qb->executeStatement();
-
-			$this->logger->debug(
-				message: '[MagicMapper] Hard deleted objects from magic table',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'deletedCount' => $deletedCount,
-					'registerId' => $registerId,
-					'schemaId' => $schemaId,
-					'tableName' => $tableName,
-				]
+		if ($hardDelete === false) {
+			$message = '[MagicMapper] Soft deleted objects in magic table';
+			$qb->update($tableName)->set(
+				self::METADATA_PREFIX . 'deleted',
+				$qb->createNamedParameter($this->bulkSoftDeleteMetadata(), \PDO::PARAM_STR)
 			);
-			return $deletedCount;
-		}//end if
+			$this->whereRegisterAndSchema(qb: $qb, scope: $scope);
+			// Only soft-delete objects that aren't already soft-deleted.
+			$qb->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
+		}
 
-		// Soft delete - set _deleted field for all rows.
-		// Prepare the deletion metadata as JSONB.
-		$deletedMetadata = json_encode(
+		$deletedCount = $qb->executeStatement();
+
+		$this->logger->debug(
+			message: $message,
+			context: array_merge(['file' => __FILE__, 'line' => __LINE__, 'deletedCount' => $deletedCount], $context)
+		);
+
+		return $deletedCount;
+	}//end deleteObjectsBySchema()
+
+	/**
+	 * Restrict a query to the rows of one register and schema.
+	 *
+	 * @param IQueryBuilder $qb    The query to restrict.
+	 * @param array         $scope The register id and the schema id.
+	 *
+	 * @psalm-param array{0: int|null, 1: int|null} $scope
+	 *
+	 * @return void
+	 */
+	private function whereRegisterAndSchema(IQueryBuilder $qb, array $scope): void {
+		$qb->where(
+			$qb->expr()->eq(self::METADATA_PREFIX . 'register', $qb->createNamedParameter($scope[0], \PDO::PARAM_INT))
+		)->andWhere(
+			$qb->expr()->eq(self::METADATA_PREFIX . 'schema', $qb->createNamedParameter($scope[1], \PDO::PARAM_INT))
+		);
+	}//end whereRegisterAndSchema()
+
+	/**
+	 * The _deleted metadata a bulk soft delete writes, as JSON.
+	 *
+	 * @return string The encoded deletion metadata.
+	 */
+	private function bulkSoftDeleteMetadata(): string {
+		return (string) json_encode(
 			[
 				'time' => (new DateTime())->format('Y-m-d H:i:s'),
 				'user' => $this->userSession->getUser()?->getUID() ?? 'system',
@@ -10069,46 +10069,7 @@ class MagicMapper extends AbstractObjectMapper {
 				'retention' => 30,
 			]
 		);
-
-		$regCol = self::METADATA_PREFIX . 'register';
-		$schCol = self::METADATA_PREFIX . 'schema';
-		$delCol = self::METADATA_PREFIX . 'deleted';
-		$qb->update($tableName)
-			->set(
-				$delCol,
-				$qb->createNamedParameter($deletedMetadata, \PDO::PARAM_STR)
-			)
-			->where(
-				$qb->expr()->eq(
-					$regCol,
-					$qb->createNamedParameter($registerId, \PDO::PARAM_INT)
-				)
-			)
-			->andWhere(
-				$qb->expr()->eq(
-					$schCol,
-					$qb->createNamedParameter($schemaId, \PDO::PARAM_INT)
-				)
-			)
-			// Only soft-delete objects that aren't already soft-deleted.
-			->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
-
-		$deletedCount = $qb->executeStatement();
-
-		$this->logger->debug(
-			message: '[MagicMapper] Soft deleted objects in magic table',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'deletedCount' => $deletedCount,
-				'registerId' => $registerId,
-				'schemaId' => $schemaId,
-				'tableName' => $tableName,
-			]
-		);
-
-		return $deletedCount;
-	}//end deleteObjectsBySchema()
+	}//end bulkSoftDeleteMetadata()
 
 	/**
 	 * Hard-delete the rows of a register+schema table whose `_expires` has passed.
