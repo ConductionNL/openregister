@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Db\MessageMapper;
 use OCA\OpenRegister\Service\ChatService;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -88,9 +88,9 @@ class ConversationController extends Controller {
 	/**
 	 * Organisation service
 	 *
-	 * @var OrganisationService
+	 * @var OrganisationServiceInterface
 	 */
-	private OrganisationService $organisationService;
+	private OrganisationServiceInterface $organisationService;
 
 	/**
 	 * Chat service
@@ -122,7 +122,7 @@ class ConversationController extends Controller {
 	 * @param MessageMapper $messageMapper Message mapper
 	 * @param FeedbackMapper $feedbackMapper Feedback mapper
 	 * @param AgentMapper $agentMapper Agent mapper
-	 * @param OrganisationService $organisationService Organisation service
+	 * @param OrganisationServiceInterface $organisationService Organisation service
 	 * @param ChatService $chatService Chat service
 	 * @param LoggerInterface $logger Logger
 	 * @param string $userId User ID
@@ -136,7 +136,7 @@ class ConversationController extends Controller {
 		MessageMapper $messageMapper,
 		FeedbackMapper $feedbackMapper,
 		AgentMapper $agentMapper,
-		OrganisationService $organisationService,
+		OrganisationServiceInterface $organisationService,
 		ChatService $chatService,
 		LoggerInterface $logger,
 		string $userId,

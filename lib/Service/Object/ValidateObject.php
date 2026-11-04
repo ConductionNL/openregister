@@ -37,7 +37,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
@@ -384,7 +384,7 @@ class ValidateObject {
 	 *
 	 * @param IAppConfig $config Configuration service.
 	 * @param MagicMapper $objectMapper Object mapper.
-	 * @param SchemaMapper $schemaMapper Schema mapper.
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper.
 	 * @param IURLGenerator $urlGenerator URL generator.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param IUserManager $userManager Backend consulted by the `user` string format.
@@ -395,7 +395,7 @@ class ValidateObject {
 	public function __construct(
 		private IAppConfig $config,
 		private MagicMapper $objectMapper,
-		private SchemaMapper $schemaMapper,
+		private SchemaMapperInterface $schemaMapper,
 		private IURLGenerator $urlGenerator,
 		private LoggerInterface $logger,
 		private IUserManager $userManager,

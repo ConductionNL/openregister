@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Geo;
 
-use OCA\OpenRegister\Service\Geo\GeoFeatureCollectionBuilder;
+use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
 use PHPUnit\Framework\TestCase;
 
 class GeoFeatureCollectionBuilderTest extends TestCase {

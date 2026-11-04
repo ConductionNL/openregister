@@ -4,7 +4,7 @@
  * Contract tests for {@see \OCA\OpenRegister\Controller\MapsOverviewController}.
  *
  * Covers the RBAC-scoped marker query. The point set comes from
- * {@see \OCA\OpenRegister\Service\MapsOverviewService::ensureReadablePoints()},
+ * {@see \OCA\OpenRegister\Search\Service\MapsOverviewService::ensureReadablePoints()},
  * which runs the canonical OpenRegister read path with `_rbac: true`; the
  * controller must return exactly those rows plus their count, and must surface
  * an invalid register/schema selector as a 400 rather than a fatal.
@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\MapsOverviewController;
-use OCA\OpenRegister\Service\MapsOverviewService;
+use OCA\OpenRegister\Search\Service\MapsOverviewService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;

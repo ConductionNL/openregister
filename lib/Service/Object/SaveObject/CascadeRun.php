@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
- * One SaveObject::cascadeObjects() pass over a parent's data, and the property it is on.
+ * One pass of SaveObject over a parent's data, property by property (cascade or write-back), and the property it is on.
  *
  * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
  */

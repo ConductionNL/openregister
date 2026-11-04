@@ -27,10 +27,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -68,24 +68,24 @@ class GdprEntitiesController extends Controller {
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param GdprEntityMapper $entityMapper GDPR entity mapper
-	 * @param EntityRelationMapper $entityRelationMapper Entity relation mapper
+	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper
 	 * @param IDBConnection $db Database connection
 	 * @param LoggerInterface $logger Logger
 	 * @param IUserSession $userSession Current user (admin gate)
 	 * @param IGroupManager $groupManager Group manager (admin gate)
-	 * @param OrganisationService $organisationService Org-scoping helper
+	 * @param OrganisationServiceInterface $organisationService Org-scoping helper
 	 * @param DecisionVisibility $decisionVisibility Masks another reviewer's hidden decision
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly GdprEntityMapper $entityMapper,
-		private readonly EntityRelationMapper $entityRelationMapper,
+		private readonly EntityRelationMapperInterface $entityRelationMapper,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 		private readonly DecisionVisibility $decisionVisibility,
 	) {
 		parent::__construct(appName: $appName, request: $request);

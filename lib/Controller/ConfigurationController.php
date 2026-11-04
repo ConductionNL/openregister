@@ -31,7 +31,7 @@ use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
-use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\NotificationService;
 use OCA\OpenRegister\Service\SecurityService;
 use OCP\App\IAppManager;
@@ -71,9 +71,9 @@ class ConfigurationController extends Controller {
 	/**
 	 * Configuration service instance.
 	 *
-	 * @var ConfigurationService The configuration service instance.
+	 * @var ConfigurationServiceInterface The configuration service instance.
 	 */
-	private ConfigurationService $configurationService;
+	private ConfigurationServiceInterface $configurationService;
 
 	/**
 	 * Notification service instance.

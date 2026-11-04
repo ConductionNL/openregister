@@ -31,12 +31,12 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Controller\Support\RetentionControllerServices;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Object\SaveObject;
-use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -59,9 +59,9 @@ class RetentionController extends Controller {
 	/**
 	 * Retention service
 	 *
-	 * @var RetentionService
+	 * @var RetentionServiceInterface
 	 */
-	private readonly RetentionService $retentionService;
+	private readonly RetentionServiceInterface $retentionService;
 
 	/**
 	 * Settings handler
@@ -87,16 +87,16 @@ class RetentionController extends Controller {
 	/**
 	 * Schema mapper
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Audit trail mapper
 	 *
-	 * @var AuditTrailMapper
+	 * @var AuditTrailMapperInterface
 	 */
-	private readonly AuditTrailMapper $auditMapper;
+	private readonly AuditTrailMapperInterface $auditMapper;
 
 	/**
 	 * Withholds entries a reviewer decided against

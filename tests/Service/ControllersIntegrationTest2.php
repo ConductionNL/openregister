@@ -57,7 +57,7 @@ use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCA\OpenRegister\Service\TextExtractionService;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\QueryBuilder\IQueryBuilder;

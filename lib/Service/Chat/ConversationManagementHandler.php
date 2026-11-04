@@ -35,7 +35,7 @@ use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\Message;
 use OCA\OpenRegister\Db\MessageMapper;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\SettingsServiceInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
@@ -86,9 +86,9 @@ class ConversationManagementHandler {
 	/**
 	 * Settings service
 	 *
-	 * @var SettingsService
+	 * @var SettingsServiceInterface
 	 */
-	private SettingsService $settingsService;
+	private SettingsServiceInterface $settingsService;
 
 	/**
 	 * Response generation handler
@@ -109,7 +109,7 @@ class ConversationManagementHandler {
 	 *
 	 * @param ConversationMapper $conversationMapper Conversation mapper.
 	 * @param MessageMapper $messageMapper Message mapper.
-	 * @param SettingsService $settingsService Settings service.
+	 * @param SettingsServiceInterface $settingsService Settings service.
 	 * @param ResponseGenerationHandler $responseHandler Response handler for API calls.
 	 * @param LoggerInterface $logger Logger.
 	 *
@@ -120,7 +120,7 @@ class ConversationManagementHandler {
 	public function __construct(
 		ConversationMapper $conversationMapper,
 		MessageMapper $messageMapper,
-		SettingsService $settingsService,
+		SettingsServiceInterface $settingsService,
 		ResponseGenerationHandler $responseHandler,
 		LoggerInterface $logger,
 	) {

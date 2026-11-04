@@ -271,9 +271,9 @@ class DemoDataService {
 	 * failure is a TypeError about a class nobody mentioned instead of the
 	 * RuntimeException above that names the missing app.
 	 *
-	 * @return object The importer — an OCA\OpenRegister\Service\ConfigurationService.
+	 * @return object The importer — an OCA\OpenRegister\Service\ConfigurationServiceInterface.
 	 *
-	 * @psalm-return \OCA\OpenRegister\Service\ConfigurationService
+	 * @psalm-return \OCA\OpenRegister\Service\ConfigurationServiceInterface
 	 *
 	 * @throws RuntimeException When OpenRegister is not installed.
 	 */

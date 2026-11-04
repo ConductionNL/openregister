@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
 
 /**
@@ -38,16 +38,16 @@ final class ArchivalMappers {
 	 *
 	 * @param MagicMapper               $objectMapper Object mapper.
 	 * @param DestructionListRepository $lists        Finds the destruction lists this instance holds.
-	 * @param AuditTrailMapper          $auditMapper  Records who signed off what.
-	 * @param SchemaMapper              $schemaMapper Loads the schema a nomination is derived from.
+	 * @param AuditTrailMapperInterface          $auditMapper  Records who signed off what.
+	 * @param SchemaMapperInterface              $schemaMapper Loads the schema a nomination is derived from.
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function __construct(
 		public readonly MagicMapper $objectMapper,
 		public readonly DestructionListRepository $lists,
-		public readonly AuditTrailMapper $auditMapper,
-		public readonly SchemaMapper $schemaMapper,
+		public readonly AuditTrailMapperInterface $auditMapper,
+		public readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 }//end class

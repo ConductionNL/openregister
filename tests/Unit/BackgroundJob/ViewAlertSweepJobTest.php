@@ -17,8 +17,8 @@ namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\ViewAlertSweepJob;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\View\ViewAlert;

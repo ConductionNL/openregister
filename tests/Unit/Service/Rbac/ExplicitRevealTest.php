@@ -36,7 +36,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
-use OCA\OpenRegister\Service\Search\PropertySearchProfile;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 use OCP\IGroupManager;
@@ -59,8 +59,8 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Mcp\McpResourcesService
  * @uses \OCA\OpenRegister\Service\Rbac\RevealCollector
  * @uses \OCA\OpenRegister\Service\Rules\ConditionDialect
- * @uses \OCA\OpenRegister\Service\Search\PlaceholderResolver
- * @uses \OCA\OpenRegister\Service\Search\PropertySearchProfile
+ * @uses \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\WriteCause
  * @uses \OCA\OpenRegister\Db\AuditTrail

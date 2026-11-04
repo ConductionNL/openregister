@@ -48,7 +48,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use DateTime;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Exception\FlowRunExpired;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -81,7 +81,7 @@ class FlowRunGuard {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapper $mapper Writes the beat.
+	 * @param FlowRunMapperInterface $mapper Writes the beat.
 	 * @param LoggerInterface $logger Records a beat that could not be written.
 	 * @param string $runUuid The run being guarded.
 	 * @param float $startedAt microtime(true) when the walk began.
@@ -89,7 +89,7 @@ class FlowRunGuard {
 	 * @param integer $minInterval Seconds between liveness writes.
 	 */
 	public function __construct(
-		private readonly FlowRunMapper $mapper,
+		private readonly FlowRunMapperInterface $mapper,
 		private readonly LoggerInterface $logger,
 		private readonly string $runUuid,
 		private readonly float $startedAt,

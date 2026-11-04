@@ -75,7 +75,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class RegisterMapper extends QBMapper {
+class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	use MultiTenancyTrait;
 
 	/**
@@ -94,9 +94,9 @@ class RegisterMapper extends QBMapper {
 	 *
 	 * Used for finding schemas associated with registers.
 	 *
-	 * @var SchemaMapper Schema mapper instance
+	 * @var SchemaMapperInterface Schema mapper instance
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * User session for multi-tenancy (from trait)
@@ -137,9 +137,9 @@ class RegisterMapper extends QBMapper {
 	 *
 	 * Used to get active organisation and apply organisation filters.
 	 *
-	 * @var OrganisationMapper Organisation mapper instance
+	 * @var OrganisationMapperInterface Organisation mapper instance
 	 */
-	protected OrganisationMapper $organisationMapper;
+	protected OrganisationMapperInterface $organisationMapper;
 
 	/**
 	 * App configuration for multitenancy settings
@@ -167,10 +167,10 @@ class RegisterMapper extends QBMapper {
 	 * for multi-tenancy, RBAC, and event dispatching.
 	 *
 	 * @param IDBConnection $db Database connection for queries
-	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher for register events
 	 * @param \Psr\Container\ContainerInterface $container Container for lazy MagicMapper resolution
-	 * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy
+	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy
 	 * @param IUserSession $userSession User session for current user context
 	 * @param IGroupManager $groupManager Group manager for RBAC checks
 	 * @param IAppConfig $appConfig App configuration for multitenancy settings
@@ -194,10 +194,10 @@ class RegisterMapper extends QBMapper {
 	 */
 	public function __construct(
 		IDBConnection $db,
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 		IEventDispatcher $eventDispatcher,
 		\Psr\Container\ContainerInterface $container,
-		OrganisationMapper $organisationMapper,
+		OrganisationMapperInterface $organisationMapper,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 		IAppConfig $appConfig,

@@ -2,7 +2,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use OCA\OpenRegister\Service\Vectorization\Handlers\VectorSearchHandler;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSearchHandler;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -17,7 +17,7 @@ class VectorEmbeddingServiceTest extends TestCase {
 		parent::setUp();
 
 		$db = $this->createMock(\OCP\IDBConnection::class);
-		$pgVector = $this->createMock(\OCA\OpenRegister\Service\Vectorization\Handlers\PgVectorPlatform::class);
+		$pgVector = $this->createMock(\OCA\OpenRegister\Search\Service\Vectorization\Handlers\PgVectorPlatform::class);
 		$pgVector->method('getVectorColumnDimension')->willReturn(null);
 		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
 

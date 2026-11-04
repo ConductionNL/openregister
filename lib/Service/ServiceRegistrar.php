@@ -23,9 +23,9 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Integration\TimeProvider as IntegrationTimeProvider;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
@@ -40,9 +40,6 @@ use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
-use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategy;
-use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategy;
-use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Service\WebPush\HexIconService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
@@ -249,8 +246,6 @@ final class ServiceRegistrar {
 		// FolderManagementHandler without FileService to break circular dependency.
 		$context->registerService(FolderManagementHandler::class, self::buildFolderManagementHandler(...));
 
-		$context->registerService(VectorizationService::class, self::buildVectorizationService(...));
-
 		$context->registerService(TaskService::class, self::buildTaskService(...));
 
 		$context->registerService(NoteService::class, self::buildNoteService(...));
@@ -288,7 +283,7 @@ final class ServiceRegistrar {
 	 */
 	private static function buildRegisterSlugResolver(ContainerInterface $container): RegisterSlugResolver {
 			return new RegisterSlugResolver(
-				registerMapper: $container->get(RegisterMapper::class),
+				registerMapper: $container->get(RegisterMapperInterface::class),
 				logger: $container->get(LoggerInterface::class)
 			);
 	}//end buildRegisterSlugResolver()
@@ -298,11 +293,11 @@ final class ServiceRegistrar {
 	 *
 	 * @param ContainerInterface $container The container.
 	 *
-	 * @return OrganisationService
+	 * @return OrganisationServiceInterface
 	 */
-	private static function buildOrganisationService(ContainerInterface $container): OrganisationService {
+	private static function buildOrganisationService(ContainerInterface $container): OrganisationServiceInterface {
 			return new OrganisationService(
-				organisationMapper: $container->get(OrganisationMapper::class),
+				organisationMapper: $container->get(OrganisationMapperInterface::class),
 				userSession: $container->get('OCP\IUserSession'),
 				session: $container->get('OCP\ISession'),
 				config: $container->get('OCP\IConfig'),
@@ -329,10 +324,10 @@ final class ServiceRegistrar {
 				groupManager: $container->get('OCP\IGroupManager'),
 				accountManager: $container->get('OCP\Accounts\IAccountManager'),
 				logger: $container->get('Psr\Log\LoggerInterface'),
-				organisationService: $container->get(OrganisationService::class),
+				organisationService: $container->get(OrganisationServiceInterface::class),
 				eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
 				avatarManager: $container->get('OCP\IAvatarManager'),
-				auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+				auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
 				secureRandom: $container->get('OCP\Security\ISecureRandom'),
 				db: $container->get('OCP\IDBConnection'),
 				l10nFactory: $container->get('OCP\L10N\IFactory')
@@ -368,13 +363,13 @@ final class ServiceRegistrar {
 	 */
 	private static function buildCacheHandler(ContainerInterface $container): CacheHandler {
 			return new CacheHandler(
-				organisationMapper: $container->get(OrganisationMapper::class),
+				organisationMapper: $container->get(OrganisationMapperInterface::class),
 				logger: $container->get('Psr\Log\LoggerInterface'),
 				cacheFactory: $container->get('OCP\ICacheFactory'),
 				userSession: $container->get('OCP\IUserSession'),
 				container: $container,
-				registerMapper: $container->get(RegisterMapper::class),
-				schemaMapper: $container->get(SchemaMapper::class),
+				registerMapper: $container->get(RegisterMapperInterface::class),
+				schemaMapper: $container->get(SchemaMapperInterface::class),
 				db: $container->get('OCP\IDBConnection')
 			);
 	}//end buildCacheHandler()
@@ -390,37 +385,16 @@ final class ServiceRegistrar {
 			return new FolderManagementHandler(
 				rootFolder: $container->get('OCP\Files\IRootFolder'),
 				objectEntityMapper: $container->get(MagicMapper::class),
-				registerMapper: $container->get(RegisterMapper::class),
+				registerMapper: $container->get(RegisterMapperInterface::class),
 				userSession: $container->get('OCP\IUserSession'),
 				groupManager: $container->get('OCP\IGroupManager'),
 				logger: $container->get('Psr\Log\LoggerInterface'),
-				auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+				auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
 				mountCache: $container->get('OCP\Files\Config\IUserMountCache'),
 				folderRecorder: $container->get(\OCA\OpenRegister\Db\RegisterFolderRecorder::class),
 				fileService: null
 			);
 	}//end buildFolderManagementHandler()
-
-	/**
-	 * Build the VectorizationService service.
-	 *
-	 * @param ContainerInterface $container The container.
-	 *
-	 * @return VectorizationService
-	 */
-	private static function buildVectorizationService(ContainerInterface $container): VectorizationService {
-			$service = new VectorizationService(
-				vectorService: $container->get(VectorEmbeddings::class),
-				logger: $container->get('Psr\Log\LoggerInterface')
-			);
-
-			$fileStrategy = $container->get(FileVectorizationStrategy::class);
-			$objectStrategy = $container->get(ObjectVectorizationStrategy::class);
-			$service->registerStrategy('file', $fileStrategy);
-			$service->registerStrategy('object', $objectStrategy);
-
-			return $service;
-	}//end buildVectorizationService()
 
 	/**
 	 * Build the TaskService service.

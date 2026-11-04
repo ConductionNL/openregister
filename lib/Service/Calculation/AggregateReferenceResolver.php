@@ -40,7 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Calculation;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use Psr\Log\LoggerInterface;
 use RuntimeException;

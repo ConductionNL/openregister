@@ -46,10 +46,10 @@ use OCA\OpenRegister\Service\FacetableAnalyzer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
@@ -116,6 +116,7 @@ use OCP\AppFramework\IAppContainer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 
 /**
  * Primary Object Management Service for OpenRegister
@@ -300,9 +301,9 @@ class ObjectService implements ObjectServiceInterface
      * @param ValidationHandler              $validationHandler    Handler for validation operations.
      * @param CascadingHandler               $cascadingHandler     Handler for cascading operations.
      * @param MigrationHandler               $migrationHandler     Handler for migration operations.
-     * @param RegisterMapper                 $registerMapper       Mapper for register operations.
-     * @param SchemaMapper                   $schemaMapper         Mapper for schema operations.
-     * @param ViewMapper                     $viewMapper           Mapper for view operations.
+     * @param RegisterMapperInterface                 $registerMapper       Mapper for register operations.
+     * @param SchemaMapperInterface                   $schemaMapper         Mapper for schema operations.
+     * @param ViewMapperInterface                     $viewMapper           Mapper for view operations.
      * @param MagicMapper                    $objectMapper         Unified mapper for object
      *                                                             operations (routes to
      *                                                             magic tables).
@@ -311,10 +312,10 @@ class ObjectService implements ObjectServiceInterface
      * @param SearchTrailService             $searchTrailService   Service for search trail operations.
      * @param IGroupManager                  $groupManager         Group manager for checking user groups.
      * @param IUserManager                   $userManager          User manager for getting user objects.
-     * @param OrganisationService            $organisationService  Service for organisation operations.
+     * @param OrganisationServiceInterface            $organisationService  Service for organisation operations.
      * @param LoggerInterface                $logger               Logger for performance monitoring.
      * @param CacheHandler                   $cacheHandler         Service for entity and query caching.
-     * @param SettingsService                $settingsService      Service for settings operations.
+     * @param SettingsServiceInterface                $settingsService      Service for settings operations.
      * @param DateTimeNormalizer             $dateTimeNormalizer   Normaliser for user-supplied datetime input.
      * @param IAppContainer                  $container            Application container.
      * @param ObjectSourceRegistry           $objectSourceRegistry Registry of object-source providers (virtual schemas).
@@ -357,19 +358,19 @@ class ObjectService implements ObjectServiceInterface
         private readonly ValidationHandler $validationHandler,
         private readonly CascadingHandler $cascadingHandler,
         private readonly MigrationHandler $migrationHandler,
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly ViewMapper $viewMapper,
+        private readonly RegisterMapperInterface $registerMapper,
+        private readonly SchemaMapperInterface $schemaMapper,
+        private readonly ViewMapperInterface $viewMapper,
         private readonly MagicMapper $objectMapper,
         private readonly FileService $fileService,
         private readonly IUserSession $userSession,
         private readonly SearchTrailService $searchTrailService,
         private readonly IGroupManager $groupManager,
         private readonly IUserManager $userManager,
-        private readonly OrganisationService $organisationService,
+        private readonly OrganisationServiceInterface $organisationService,
         private readonly LoggerInterface $logger,
         private readonly CacheHandler $cacheHandler,
-        private readonly SettingsService $settingsService,
+        private readonly SettingsServiceInterface $settingsService,
         private readonly DateTimeNormalizer $dateTimeNormalizer,
         private readonly IAppContainer $container,
         private readonly ObjectSourceRegistry $objectSourceRegistry,

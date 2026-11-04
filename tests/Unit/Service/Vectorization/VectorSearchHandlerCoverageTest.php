@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Vectorization;
 
-use OCA\OpenRegister\Service\Vectorization\Handlers\PgVectorPlatform;
-use OCA\OpenRegister\Service\Vectorization\Handlers\VectorSearchHandler;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\PgVectorPlatform;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSearchHandler;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

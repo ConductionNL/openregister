@@ -33,10 +33,10 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\ArchivalControllerServices;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
 use OCA\OpenRegister\Service\Archival\DestructionListCreator;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
@@ -152,9 +152,9 @@ class ArchivalController extends Controller {
 	/**
 	 * Records who signed off what.
 	 *
-	 * @var AuditTrailMapper
+	 * @var AuditTrailMapperInterface
 	 */
-	private readonly AuditTrailMapper $auditMapper;
+	private readonly AuditTrailMapperInterface $auditMapper;
 
 	/**
 	 * Derives and writes an archival nomination.
@@ -166,9 +166,9 @@ class ArchivalController extends Controller {
 	/**
 	 * Loads the schema a nomination is derived from.
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Creates a destruction list for the objects an app names.

@@ -1,0 +1,1411 @@
+{
+    "new property": {
+        "merged": {
+            "name": {
+                "type": "string",
+                "title": "Name",
+                "minLength": 2,
+                "maxLength": 50,
+                "format": "email",
+                "pattern": "^a",
+                "enum": [
+                    "a",
+                    "b",
+                    "c"
+                ]
+            },
+            "age": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120,
+                "multipleOf": 1
+            },
+            "tags": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "minItems": 1,
+                "maxItems": 5
+            },
+            "address": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "city": {
+                        "type": "string"
+                    }
+                },
+                "x-meta": {
+                    "a": 1,
+                    "b": {
+                        "c": 2
+                    }
+                }
+            },
+            "flag": "yes",
+            "empty": "",
+            "nullish": {
+                "type": "string",
+                "format": null,
+                "pattern": null
+            },
+            "multi": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "counted": {
+                "minProperties": 1,
+                "maxProperties": 4,
+                "minimum": "low"
+            },
+            "extra": {
+                "type": "string"
+            }
+        }
+    },
+    "metadata override": {
+        "merged": {
+            "name": {
+                "type": "string",
+                "title": "Full name",
+                "minLength": 2,
+                "maxLength": 50,
+                "format": "email",
+                "pattern": "^a",
+                "enum": [
+                    "a",
+                    "b",
+                    "c"
+                ],
+                "description": "d",
+                "x-order": 3,
+                "default": "z"
+            },
+            "age": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120,
+                "multipleOf": 1
+            },
+            "tags": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "minItems": 1,
+                "maxItems": 5
+            },
+            "address": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "city": {
+                        "type": "string"
+                    }
+                },
+                "x-meta": {
+                    "a": 1,
+                    "b": {
+                        "c": 2
+                    }
+                }
+            },
+            "flag": "yes",
+            "empty": "",
+            "nullish": {
+                "type": "string",
+                "format": null,
+                "pattern": null
+            },
+            "multi": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "counted": {
+                "minProperties": 1,
+                "maxProperties": 4,
+                "minimum": "low"
+            }
+        }
+    },
+    "tighten everything": {
+        "merged": {
+            "name": {
+                "type": "string",
+                "title": "Name",
+                "minLength": 3,
+                "maxLength": 40,
+                "format": "email",
+                "pattern": "^a",
+                "enum": [
+                    "a",
+                    "b"
+                ]
+            },
+            "age": {
+                "type": "integer",
+                "minimum": 18,
+                "maximum": 99,
+                "multipleOf": 1
+            },
+            "tags": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "minItems": 1,
+                "maxItems": 5
+            },
+            "address": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "city": {
+                        "type": "string"
+                    }
+                },
+                "x-meta": {
+                    "a": 1,
+                    "b": {
+                        "c": 2
+                    }
+                }
+            },
+            "flag": "yes",
+            "empty": "",
+            "nullish": {
+                "type": "string",
+                "format": null,
+                "pattern": null
+            },
+            "multi": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "counted": {
+                "minProperties": 1,
+                "maxProperties": 4,
+                "minimum": "low"
+            }
+        }
+    },
+    "same type": {
+        "merged": {
+            "name": {
+                "type": "string",
+                "title": "Name",
+                "minLength": 2,
+                "maxLength": 50,
+                "format": "email",
+                "pattern": "^a",
+                "enum": [
+                    "a",
+                    "b",
+                    "c"
+                ]
+            },
+            "age": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120,
+                "multipleOf": 1
+            },
+            "tags": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "minItems": 1,
+                "maxItems": 5
+            },
+            "address": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "city": {
+                        "type": "string"
+                    }
+                },
+                "x-meta": {
+                    "a": 1,
+                    "b": {
+                        "c": 2
+                    }
+                }
+            },
+            "flag": "yes",
+            "empty": "",
+            "nullish": {
+                "type": "string",
+                "format": null,
+                "pattern": null
+            },
+            "multi": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "counted": {
+                "minProperties": 1,
+                "maxProperties": 4,
+                "minimum": "low"
+            }
+        }
+    },
+    "change type": {
+        "exception": "Exception",
+        "message": "Schema 'child-7': Property 'name' cannot change type from 'string' to 'number'"
+    },
+    "array type subset": {
+        "merged": {
+            "name": {
+                "type": "string",
+                "title": "Name",
+                "minLength": 2,
+                "maxLength": 50,
+                "format": "email",
+                "pattern": "^a",
+                "enum": [
+                    "a",
+                    "b",
+                    "c"
+                ]
+            },
+            "age": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120,
+                "multipleOf": 1
+            },
+            "tags": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "minItems": 1,
+                "maxItems": 5
+            },
+            "address": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "city": {
+                        "type": "string"
+                    }
+                },
+                "x-meta": {
+                    "a": 1,
+                    "b": {
+                        "c": 2
+                    }
+                }
+            },
+            "flag": "yes",
+            "empty": "",
+            "nullish": {
+                "type": "string",
+                "format": null,
+                "pattern": null
+            },
+            "multi": {
+                "type": [
+                    "string"
+                ]
+            },
+            "counted": {
+                "minProperties": 1,
+                "maxProperties": 4,
+                "minimum": "low"
+            }
+        }
+    },
+    "array type superset": {
+        "exception": "Exception",
+        "message": "Schema 'child-7': Property 'multi' cannot change type from [\"string\",\"null\"] to [\"string\",\"integer\"] (adds types not in parent)"
+    },
+    "array to scalar type": {
+        "exception": "Exception",
+        "message": "Schema 'child-7': Property 'multi' type change is not compatible"
+    },
+    "format change": {
+        "exception": "Exception",
+        "message": "Schema 'child-7': Property 'name' cannot change format from 'email' to 'uri'"
+    },
+    "format from null": {
+        "merged": {
+            "name": {
+                "type": "string",
+                "title": "Name",
+                "minLength": 2,
+                "maxLength": 50,
+                "format": "email",
+                "pattern": "^a",
+                "enum": [
+                    "a",
+                    "b",
+                    "c"
+                ]
+            },
+            "age": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120,
+                "multipleOf": 1
+            },
+            "tags": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "minItems": 1,
+                "maxItems": 5
+            },
+            "address": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "city": {
+                        "type": "string"
+                    }
+                },
+                "x-meta": {
+                    "a": 1,
+                    "b": {
+                        "c": 2
+                    }
+                }
+            },
+            "flag": "yes",
+            "empty": "",
+            "nullish": {
+                "type": "string",
+                "format": "uri",
+                "pattern": "^b"
+            },
+            "multi": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "counted": {
+                "minProperties": 1,
+                "maxProperties": 4,
+                "minimum": "low"
+            }
+        }
+    },
+    "format same": {
+        "merged": {
+            "name": {
+                "type": "string",
+                "title": "Name",
+                "minLength": 2,
+                "maxLength": 50,
+                "format": "email",
+                "pattern": "^a",
+                "enum": [
+                    "a",
+                    "b",
+                    "c"
+                ]
+            },
+            "age": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120,
+                "multipleOf": 1
+            },
+            "tags": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "minItems": 1,
+                "maxItems": 5
+            },
+            "address": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "city": {
+                        "type": "string"
+                    }
+                },
+                "x-meta": {
+                    "a": 1,
+                    "b": {
+                        "c": 2
+                    }
+                }
+            },
+            "flag": "yes",
+            "empty": "",
+            "nullish": {
+                "type": "string",
+                "format": null,
+                "pattern": null
+            },
+            "multi": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "counted": {
+                "minProperties": 1,
+                "maxProperties": 4,
+                "minimum": "low"
+            }
+        }
+    },
+    "pattern change": {
+        "exception": "Exception",
+        "message": "Schema 'child-7': Property 'name' pattern cannot be changed from '^a' to '^b'"
+    },
+    "enum widen": {
+        "exception": "Exception",
+        "message": "Schema 'child-7': Property 'name' enum cannot add values not in parent (added: {\"1\":\"z\"})"
+    },
+    "enum scalar": {
+        "merged": {
+            "name": {
+                "type": "string",
+                "title": "Name",
+                "minLength": 2,
+                "maxLength": 50,
+                "format": "email",
+                "pattern": "^a",
+                "enum": "a"
+            },
+            "age": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120,
+                "multipleOf": 1
+            },
+            "tags": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "minItems": 1,
+                "maxItems": 5
+            },
+            "address": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "city": {
+                        "type": "string"
+                    }
+                },
+                "x-meta": {
+                    "a": 1,
+                    "b": {
+                        "c": 2
+                    }
+                }
+            },
+            "flag": "yes",
+            "empty": "",
+            "nullish": {
+                "type": "string",
+                "format": null,
+                "pattern": null
+            },
+            "multi": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "counted": {
+                "minProperties": 1,
+                "maxProperties": 4,
+                "minimum": "low"
+            }
+        }
+    },
+    "minimum decrease": {
+        "exception": "Exception",
+        "message": "Schema 'child-7': Property 'age' minimum cannot be decreased from 0 to -1 (relaxes constraint)"
+    },
+    "minLength decrease": {
+        "exception": "Exception",
+        "message": "Schema 'child-7': Property 'name' minLength cannot be decreased from 2 to 1 (relaxes constraint)"
+    },
+    "minItems decrease": {
+        "exception": "Exception",
+        "message": "Schema 'child-7': Property 'tags' minItems cannot be decreased from 1 to 0 (relaxes constraint)"
+    },
+    "minProperties decrease": {
+        "exception": "Exception",
+        "message": "Schema 'child-7': Property 'counted' minProperties cannot be decreased from 1 to 0 (relaxes constraint)"
+    },
+    "maximum increase": {
+        "exception": "Exception",
+        "message": "Schema 'child-7': Property 'age' maximum cannot be increased from 120 to 121 (relaxes constraint)"
+    },
+    "maxLength increase": {
+        "exception": "Exception",
+        "message": "Schema 'child-7': Property 'name' maxLength cannot be increased from 50 to 51 (relaxes constraint)"
+    },
+    "maxItems increase": {
+        "exception": "Exception",
+        "message": "Schema 'child-7': Property 'tags' maxItems cannot be increased from 5 to 6 (relaxes constraint)"
+    },
+    "maxProperties increase": {
+        "exception": "Exception",
+        "message": "Schema 'child-7': Property 'counted' maxProperties cannot be increased from 4 to 9 (relaxes constraint)"
+    },
+    "non numeric minimum": {
+        "merged": {
+            "name": {
+                "type": "string",
+                "title": "Name",
+                "minLength": 2,
+                "maxLength": 50,
+                "format": "email",
+                "pattern": "^a",
+                "enum": [
+                    "a",
+                    "b",
+                    "c"
+                ]
+            },
+            "age": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120,
+                "multipleOf": 1
+            },
+            "tags": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "minItems": 1,
+                "maxItems": 5
+            },
+            "address": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "city": {
+                        "type": "string"
+                    }
+                },
+                "x-meta": {
+                    "a": 1,
+                    "b": {
+                        "c": 2
+                    }
+                }
+            },
+            "flag": "yes",
+            "empty": "",
+            "nullish": {
+                "type": "string",
+                "format": null,
+                "pattern": null
+            },
+            "multi": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "counted": {
+                "minProperties": 1,
+                "maxProperties": 4,
+                "minimum": "lower"
+            }
+        }
+    },
+    "const and multipleOf free": {
+        "merged": {
+            "name": {
+                "type": "string",
+                "title": "Name",
+                "minLength": 2,
+                "maxLength": 50,
+                "format": "email",
+                "pattern": "^a",
+                "enum": [
+                    "a",
+                    "b",
+                    "c"
+                ]
+            },
+            "age": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120,
+                "multipleOf": 3,
+                "const": 5,
+                "required": true
+            },
+            "tags": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "minItems": 1,
+                "maxItems": 5
+            },
+            "address": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "city": {
+                        "type": "string"
+                    }
+                },
+                "x-meta": {
+                    "a": 1,
+                    "b": {
+                        "c": 2
+                    }
+                }
+            },
+            "flag": "yes",
+            "empty": "",
+            "nullish": {
+                "type": "string",
+                "format": null,
+                "pattern": null
+            },
+            "multi": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "counted": {
+                "minProperties": 1,
+                "maxProperties": 4,
+                "minimum": "low"
+            }
+        }
+    },
+    "nested tighten": {
+        "merged": {
+            "name": {
+                "type": "string",
+                "title": "Name",
+                "minLength": 2,
+                "maxLength": 50,
+                "format": "email",
+                "pattern": "^a",
+                "enum": [
+                    "a",
+                    "b",
+                    "c"
+                ]
+            },
+            "age": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120,
+                "multipleOf": 1
+            },
+            "tags": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "minItems": 1,
+                "maxItems": 5
+            },
+            "address": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "maxLength": 60
+                    },
+                    "zip": {
+                        "type": "string"
+                    },
+                    "city": {
+                        "type": "string"
+                    }
+                },
+                "x-meta": {
+                    "a": 1,
+                    "b": {
+                        "c": 2
+                    }
+                }
+            },
+            "flag": "yes",
+            "empty": "",
+            "nullish": {
+                "type": "string",
+                "format": null,
+                "pattern": null
+            },
+            "multi": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "counted": {
+                "minProperties": 1,
+                "maxProperties": 4,
+                "minimum": "low"
+            }
+        }
+    },
+    "nested relax": {
+        "exception": "Exception",
+        "message": "Schema 'child-7': Property 'address.properties.street' maxLength cannot be increased from 80 to 100 (relaxes constraint)"
+    },
+    "nested null parent": {
+        "merged": {
+            "p": {
+                "properties": {
+                    "a": {
+                        "type": "x"
+                    },
+                    "b": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    },
+    "items tighten": {
+        "exception": "TypeError",
+        "message": ""
+    },
+    "items relax": {
+        "exception": "TypeError",
+        "message": ""
+    },
+    "items scalar child": {
+        "merged": {
+            "name": {
+                "type": "string",
+                "title": "Name",
+                "minLength": 2,
+                "maxLength": 50,
+                "format": "email",
+                "pattern": "^a",
+                "enum": [
+                    "a",
+                    "b",
+                    "c"
+                ]
+            },
+            "age": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120,
+                "multipleOf": 1
+            },
+            "tags": {
+                "type": "array",
+                "items": "string",
+                "minItems": 1,
+                "maxItems": 5
+            },
+            "address": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "city": {
+                        "type": "string"
+                    }
+                },
+                "x-meta": {
+                    "a": 1,
+                    "b": {
+                        "c": 2
+                    }
+                }
+            },
+            "flag": "yes",
+            "empty": "",
+            "nullish": {
+                "type": "string",
+                "format": null,
+                "pattern": null
+            },
+            "multi": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "counted": {
+                "minProperties": 1,
+                "maxProperties": 4,
+                "minimum": "low"
+            }
+        }
+    },
+    "other array merges deep": {
+        "merged": {
+            "name": {
+                "type": "string",
+                "title": "Name",
+                "minLength": 2,
+                "maxLength": 50,
+                "format": "email",
+                "pattern": "^a",
+                "enum": [
+                    "a",
+                    "b",
+                    "c"
+                ]
+            },
+            "age": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120,
+                "multipleOf": 1
+            },
+            "tags": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "minItems": 1,
+                "maxItems": 5
+            },
+            "address": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "city": {
+                        "type": "string"
+                    }
+                },
+                "x-meta": {
+                    "a": 1,
+                    "b": {
+                        "c": 2,
+                        "d": 3
+                    },
+                    "e": 4
+                }
+            },
+            "flag": "yes",
+            "empty": "",
+            "nullish": {
+                "type": "string",
+                "format": null,
+                "pattern": null
+            },
+            "multi": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "counted": {
+                "minProperties": 1,
+                "maxProperties": 4,
+                "minimum": "low"
+            }
+        }
+    },
+    "other array to scalar": {
+        "merged": {
+            "name": {
+                "type": "string",
+                "title": "Name",
+                "minLength": 2,
+                "maxLength": 50,
+                "format": "email",
+                "pattern": "^a",
+                "enum": [
+                    "a",
+                    "b",
+                    "c"
+                ]
+            },
+            "age": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120,
+                "multipleOf": 1
+            },
+            "tags": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "minItems": 1,
+                "maxItems": 5
+            },
+            "address": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "city": {
+                        "type": "string"
+                    }
+                },
+                "x-meta": "flat"
+            },
+            "flag": "yes",
+            "empty": "",
+            "nullish": {
+                "type": "string",
+                "format": null,
+                "pattern": null
+            },
+            "multi": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "counted": {
+                "minProperties": 1,
+                "maxProperties": 4,
+                "minimum": "low"
+            }
+        }
+    },
+    "deep other relax": {
+        "exception": "Exception",
+        "message": "Schema 'child-7': Property 'p.x-rule.inner' maximum cannot be increased from 3 to 4 (relaxes constraint)"
+    },
+    "scalar replacement": {
+        "merged": {
+            "name": {
+                "type": "string",
+                "title": "Name",
+                "minLength": 2,
+                "maxLength": 50,
+                "format": "email",
+                "pattern": "^a",
+                "enum": [
+                    "a",
+                    "b",
+                    "c"
+                ]
+            },
+            "age": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120,
+                "multipleOf": 1
+            },
+            "tags": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "minItems": 1,
+                "maxItems": 5
+            },
+            "address": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "city": {
+                        "type": "string"
+                    }
+                },
+                "x-meta": {
+                    "a": 1,
+                    "b": {
+                        "c": 2
+                    }
+                }
+            },
+            "flag": "no",
+            "empty": "",
+            "nullish": {
+                "type": "string",
+                "format": null,
+                "pattern": null
+            },
+            "multi": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "counted": {
+                "minProperties": 1,
+                "maxProperties": 4,
+                "minimum": "low"
+            }
+        }
+    },
+    "scalar removed": {
+        "exception": "Exception",
+        "message": "Schema 'child-7': Property 'flag' cannot remove constraints (parent had value, child is empty)"
+    },
+    "scalar to array": {
+        "merged": {
+            "name": {
+                "type": "string",
+                "title": "Name",
+                "minLength": 2,
+                "maxLength": 50,
+                "format": "email",
+                "pattern": "^a",
+                "enum": [
+                    "a",
+                    "b",
+                    "c"
+                ]
+            },
+            "age": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120,
+                "multipleOf": 1
+            },
+            "tags": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "minItems": 1,
+                "maxItems": 5
+            },
+            "address": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "city": {
+                        "type": "string"
+                    }
+                },
+                "x-meta": {
+                    "a": 1,
+                    "b": {
+                        "c": 2
+                    }
+                }
+            },
+            "flag": {
+                "type": "string"
+            },
+            "empty": "",
+            "nullish": {
+                "type": "string",
+                "format": null,
+                "pattern": null
+            },
+            "multi": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "counted": {
+                "minProperties": 1,
+                "maxProperties": 4,
+                "minimum": "low"
+            }
+        }
+    },
+    "empty parent scalar": {
+        "merged": {
+            "name": {
+                "type": "string",
+                "title": "Name",
+                "minLength": 2,
+                "maxLength": 50,
+                "format": "email",
+                "pattern": "^a",
+                "enum": [
+                    "a",
+                    "b",
+                    "c"
+                ]
+            },
+            "age": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120,
+                "multipleOf": 1
+            },
+            "tags": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "minItems": 1,
+                "maxItems": 5
+            },
+            "address": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "city": {
+                        "type": "string"
+                    }
+                },
+                "x-meta": {
+                    "a": 1,
+                    "b": {
+                        "c": 2
+                    }
+                }
+            },
+            "flag": "yes",
+            "empty": "",
+            "nullish": {
+                "type": "string",
+                "format": null,
+                "pattern": null
+            },
+            "multi": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "counted": {
+                "minProperties": 1,
+                "maxProperties": 4,
+                "minimum": "low"
+            }
+        }
+    },
+    "array replaced by scalar": {
+        "merged": {
+            "name": {
+                "type": "string",
+                "title": "Name",
+                "minLength": 2,
+                "maxLength": 50,
+                "format": "email",
+                "pattern": "^a",
+                "enum": [
+                    "a",
+                    "b",
+                    "c"
+                ]
+            },
+            "age": "n/a",
+            "tags": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "minItems": 1,
+                "maxItems": 5
+            },
+            "address": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "city": {
+                        "type": "string"
+                    }
+                },
+                "x-meta": {
+                    "a": 1,
+                    "b": {
+                        "c": 2
+                    }
+                }
+            },
+            "flag": "yes",
+            "empty": "",
+            "nullish": {
+                "type": "string",
+                "format": null,
+                "pattern": null
+            },
+            "multi": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "counted": {
+                "minProperties": 1,
+                "maxProperties": 4,
+                "minimum": "low"
+            }
+        }
+    },
+    "array replaced by empty": {
+        "merged": {
+            "name": {
+                "type": "string",
+                "title": "Name",
+                "minLength": 2,
+                "maxLength": 50,
+                "format": "email",
+                "pattern": "^a",
+                "enum": [
+                    "a",
+                    "b",
+                    "c"
+                ]
+            },
+            "age": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 120,
+                "multipleOf": 1
+            },
+            "tags": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "minItems": 1,
+                "maxItems": 5
+            },
+            "address": {
+                "type": "object",
+                "properties": {
+                    "street": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "city": {
+                        "type": "string"
+                    }
+                },
+                "x-meta": {
+                    "a": 1,
+                    "b": {
+                        "c": 2
+                    }
+                }
+            },
+            "flag": "yes",
+            "empty": "",
+            "nullish": {
+                "type": "string",
+                "format": null,
+                "pattern": null
+            },
+            "multi": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "counted": {
+                "minProperties": 1,
+                "maxProperties": 4,
+                "minimum": "low"
+            }
+        }
+    },
+    "null parent property": {
+        "merged": {
+            "n": {
+                "type": "string"
+            }
+        }
+    },
+    "null child key": {
+        "exception": "Exception",
+        "message": "Schema 'child-7': Property 'name' cannot change type from 'string' to ''"
+    },
+    "array metadata replaced": {
+        "merged": {
+            "p": {
+                "ui:options": {
+                    "a": 1
+                },
+                "x-order": {
+                    "j": 2
+                }
+            }
+        }
+    },
+    "parent key null": {
+        "merged": {
+            "p": {
+                "type": "string",
+                "maximum": 2
+            }
+        }
+    }
+}
