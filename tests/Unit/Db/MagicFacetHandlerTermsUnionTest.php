@@ -41,6 +41,7 @@ use RuntimeException;
  * Every statement a union terms facet prepares, and the facet built from the rows.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\FacetLabelLookup
  * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses   \OCA\OpenRegister\Db\MagicMapper\TermsFacetUnion
  * @uses   \OCA\OpenRegister\Db\Schema
