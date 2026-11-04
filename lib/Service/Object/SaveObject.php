@@ -3644,7 +3644,7 @@ class SaveObject {
 
 		$frameKey = $this->enterSaveFrame(call: $call);
 		try {
-			$created = $this->createObjectForSave(call: $call);
+			$created = $this->handleObjectCreation(call: $call);
 
 			// An override is only on record once the object it overrode for
 			// exists, so this runs after the write and never before it.
@@ -3684,35 +3684,6 @@ class SaveObject {
 			data: $call->data
 		);
 	}//end recordUniqueHints()
-
-	/**
-	 * Create the object entity of a save.
-	 *
-	 * @param ObjectSaveCall $call The save call.
-	 *
-	 * @return ObjectEntity The created object entity.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function createObjectForSave(ObjectSaveCall $call): ObjectEntity {
-		return $this->handleObjectCreation(
-			registerId: $call->registerId,
-			schemaId: $call->schemaId,
-			register: $call->register,
-			schema: $call->schema,
-			data: $call->data,
-			selfData: $call->selfData,
-			uuid: $call->uuid,
-			folderId: $call->folderId,
-			persist: $call->flags->persist,
-			silent: $call->flags->silent,
-			_multitenancy: $call->flags->multitenancy,
-			currentUser: $call->flags->currentUser,
-			failIfExists: $call->flags->failIfExists,
-			_unowned: $call->flags->unowned,
-			_owner: $call->flags->owner
-		);
-	}//end createObjectForSave()
 
 	/**
 	 * The register identifier a save call frame records.
@@ -4256,193 +4227,61 @@ class SaveObject {
 	/**
 	 * Handle creation of new object.
 	 *
-	 * @param int $registerId Register ID
-	 * @param int $schemaId Schema ID
-	 * @param Register $register Register entity
-	 * @param Schema $schema Schema entity
-	 * @param array $data Object data
-	 * @param array $selfData @self metadata
-	 * @param string|null $uuid UUID for new object
-	 * @param int|null $folderId Folder ID
-	 * @param bool $persist Whether to persist changes
-	 * @param bool $silent Whether to skip audit trail
-	 * @param bool $_multitenancy Whether to apply multitenancy
-	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata)
-	 * @param bool $failIfExists Insert-only: refuse instead of updating when the identifier is taken.
-	 * @param bool $_unowned Stamp the system identity even when a session exists.
-	 * @param string|null $_owner An explicit owner, such as a draft's scope value (decision 195).
+	 * @param ObjectSaveCall $call The save call: register, schema, data, `@self` data and flags.
 	 *
 	 * @return ObjectEntity Created object
 	 *
 	 * @throws Exception If file processing fails
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible object creation
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function handleObjectCreation(
-		int $registerId,
-		int $schemaId,
-		Register $register,
-		Schema $schema,
-		array $data,
-		array $selfData,
-		?string $uuid,
-		?int $folderId,
-		bool $persist,
-		bool $silent,
-		bool $_multitenancy,
-		?IUser $currentUser = null,
-		bool $failIfExists = false,
-		bool $_unowned = false,
-		?string $_owner = null,
-	): ObjectEntity {
-		// Create a new object entity.
-		$objectEntity = new ObjectEntity();
-		$objectEntity->setRegister((string)$registerId);
-		$objectEntity->setSchema((string)$schemaId);
-		$objectEntity->setCreated(new DateTime());
-		$objectEntity->setUpdated(new DateTime());
-		$this->userActivity?->stamp(object: $objectEntity);
-
-		if ($uuid !== null) {
-			$objectEntity->setUuid($uuid);
-		}
-
-		// Set folder ID if provided.
-		if ($folderId !== null) {
-			$objectEntity->setFolder((string)$folderId);
-		}
-
-		// Prepare the object for creation (WITHOUT file processing yet).
-		$preparedObject = $this->prepareObjectForCreation(
-			objectEntity: $objectEntity,
-			schema: $schema,
-			data: $data,
-			selfData: $selfData,
-			_multitenancy: $_multitenancy,
-			currentUser: $currentUser,
-			_unowned: $_unowned,
-			_owner: $_owner
-		);
-
-		// Apply archival metadata from schema archive configuration.
-		$retentionService = $this->resolveRetentionService();
-		if ($retentionService !== null) {
-			// Outside the try below on purpose: a per-object selectielijst
-			// category that names no row is the caller's error, and must be
-			// refused rather than logged and ignored.
-			$retentionService->guardClassificationOverride(
-				schema: $schema,
-				data: ($preparedObject->getObject() ?? [])
-			);
-
-			try {
-				$preparedObject = $retentionService->applyArchivalMetadata($preparedObject, $schema);
-			} catch (\Throwable $e) {
-				$this->logger->debug('[SaveObject] Skipping archival metadata: ' . $e->getMessage());
-			}
-		}
+	private function handleObjectCreation(ObjectSaveCall $call): ObjectEntity {
+		$preparedObject = $this->prepareNewObject(call: $call);
 
 		// If not persisting, return the prepared object.
-		if ($persist === false) {
+		if ($call->flags->persist === false) {
 			return $preparedObject;
 		}
 
 		// Save the object to database FIRST (so it gets an ID).
-		// Use MagicMapper to route to MagicMapper when magic mapping is enabled.
 		\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:pre-insert');
 		$savedEntity = $this->unifiedObjectMapper->insert(
 			entity: $preparedObject,
-			register: $register,
-			schema: $schema,
-			failIfExists: $failIfExists
+			register: $call->register,
+			schema: $call->schema,
+			failIfExists: $call->flags->failIfExists
 		);
 		\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:INSERT');
 
-		// Capture the MAPPER's verdict for this row NOW, into a local. Two
-		// reasons it cannot be read at the end of this method instead:
-		// file-property processing and inverse-relation maintenance both write
-		// OTHER objects further down, so by then `getLastWriteAction()` answers
-		// about one of those rows rather than this one.
-		//
-		// The mapper is the authority rather than this method's name, for the
-		// reason spelled out at the audit-trail block below: we arrived here
-		// because the service-level lookup found nothing, but the mapper looks
-		// again and a concurrent writer can land the row in between — in which
-		// case the mapper took its UPDATE branch on what this path calls a
-		// create. Believing the method name here is what recorded three
-		// "created" audit entries for one insert (#2212/#2217).
+		// Capture the MAPPER's verdict for this row NOW: file-property processing
+		// and inverse-relation maintenance below write OTHER objects, after which
+		// getLastWriteAction() answers about one of those rows. The mapper is the
+		// authority, not this method's name: a concurrent writer can land the row
+		// between the service lookup and the insert, and the mapper then took its
+		// UPDATE branch on what this path calls a create (#2212/#2217).
 		$mapperWriteAction = $this->unifiedObjectMapper->getLastWriteAction();
 
-		// Update the name cache with the saved object's name.
-		// This ensures the name is available for subsequent operations and relation resolution.
-		$savedName = $savedEntity->getName();
-		$savedUuid = $savedEntity->getUuid();
-		if ($savedUuid !== null && $savedName !== null && trim($savedName) !== '') {
-			// SEC-CTRL-2 step 2: the cached name carries the entity's tenancy, so it
-			// is only ever handed back to a caller in that organisation.
-			$this->cacheHandler->setObjectName(
-				identifier: $savedUuid,
-				name: $savedName,
-				organisation: $savedEntity->getOrganisation()
-			);
-		}
-
-		// Process file properties with rollback on failure.
+		$this->cacheSavedName(savedEntity: $savedEntity);
 		$savedEntity = $this->processFilePropertiesWithRollback(
 			savedEntity: $savedEntity,
-			data: $data,
-			register: $register,
-			schema: $schema
+			data: $call->data,
+			register: $call->register,
+			schema: $call->schema
 		);
 		\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:FILEPROPS');
 
-		// Create audit trail if not in silent mode.
-		//
-		// The ACTION comes from the mapper, not from this method's name. We got
-		// here because the service-level existence lookup found nothing — but
-		// the mapper looks again, and between the two lookups a concurrent
-		// writer can land the row, so the mapper may have taken its UPDATE
-		// branch on what we are calling a create.
-		//
-		// Recording `create` regardless is how three audit `create` entries
-		// ended up against a single `_id` that was inserted once (#2212/#2217):
-		// the audit trail said three objects were created, and one was. The
-		// mapper's lookup ran last and therefore matches the row, so it is the
-		// one to believe. `old: null` is kept for a genuine create — there is
-		// no previous version to diff against — while an update is recorded as
-		// an update rather than as a second birth.
-		if ($silent === false && $this->isAuditTrailsEnabled() === true) {
-			$action = $this->unifiedObjectMapper->getLastWriteAction();
-			if ($action === 'update') {
-				$log = $this->auditTrailMapper->createAuditTrail(
-					old: null,
-					new: $savedEntity,
-					action: 'update'
-				);
-			} else {
-				$log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
-			}
+		$this->auditCreation(call: $call, savedEntity: $savedEntity);
 
-			$savedEntity->setLastLog($log->jsonSerialize());
-			\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:AUDIT');
-		}
-
-		// Update inverse relations on related objects (bidirectional relationship management).
-		// This ensures that when object A references object B, object B's relations also include A.
-		// Skip for silent mode (cascaded sub-objects) - the parent object handles the relationship,
-		// and the inversedBy property is already set in cascadeSingleObject before saving.
-		// This optimization significantly improves performance when creating many sub-objects.
-		if ($silent === false) {
-			$this->updateInverseRelations(savedEntity: $savedEntity, register: $register, schema: $schema);
+		// Bidirectional relations. Skipped in silent mode (cascaded sub-objects):
+		// the parent handles the relationship, and cascadeSingleObject already set
+		// the inversedBy property before saving.
+		if ($call->flags->silent === false) {
+			$this->updateInverseRelations(savedEntity: $savedEntity, register: $call->register, schema: $call->schema);
 			\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:INVERSE-RELATIONS');
 		}
 
-		// Publish the verdict last, from the local captured right after THIS
-		// row's insert. Written here rather than earlier so that the cascade and
-		// inverse-relation saves above — which run through saveObject() again
-		// and set their own outcome — cannot be mistaken for this frame's.
+		// Published last, from the verdict captured right after THIS row's insert,
+		// so the cascade and inverse-relation saves above cannot be mistaken for it.
 		$this->lastSaveOutcome = 'created';
 		if ($mapperWriteAction === 'update') {
 			$this->lastSaveOutcome = 'updated';
@@ -4450,6 +4289,129 @@ class SaveObject {
 
 		return $savedEntity;
 	}//end handleObjectCreation()
+
+	/**
+	 * A new object entity for a create, prepared and with its archival metadata, not yet persisted.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return ObjectEntity The prepared object.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function prepareNewObject(ObjectSaveCall $call): ObjectEntity {
+		$objectEntity = new ObjectEntity();
+		$objectEntity->setRegister((string)$call->registerId);
+		$objectEntity->setSchema((string)$call->schemaId);
+		$objectEntity->setCreated(new DateTime());
+		$objectEntity->setUpdated(new DateTime());
+		$this->userActivity?->stamp(object: $objectEntity);
+
+		if ($call->uuid !== null) {
+			$objectEntity->setUuid($call->uuid);
+		}
+
+		if ($call->folderId !== null) {
+			$objectEntity->setFolder((string)$call->folderId);
+		}
+
+		// Prepare the object for creation (WITHOUT file processing yet).
+		$preparedObject = $this->prepareObjectForCreation(
+			objectEntity: $objectEntity,
+			schema: $call->schema,
+			data: $call->data,
+			selfData: $call->selfData,
+			_multitenancy: $call->flags->multitenancy,
+			currentUser: $call->flags->currentUser,
+			_unowned: $call->flags->unowned,
+			_owner: $call->flags->owner
+		);
+
+		return $this->applyArchivalOnCreate(schema: $call->schema, preparedObject: $preparedObject);
+	}//end prepareNewObject()
+
+	/**
+	 * Apply the schema's archival metadata to a new object, when retention is available.
+	 *
+	 * A per-object selectielijst category that names no row is the caller's
+	 * error and is refused; any other failure to apply metadata is logged.
+	 *
+	 * @param Schema       $schema         The object's schema.
+	 * @param ObjectEntity $preparedObject The prepared object.
+	 *
+	 * @return ObjectEntity The object with its archival metadata.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function applyArchivalOnCreate(Schema $schema, ObjectEntity $preparedObject): ObjectEntity {
+		$retentionService = $this->resolveRetentionService();
+		if ($retentionService === null) {
+			return $preparedObject;
+		}
+
+		$retentionService->guardClassificationOverride(
+			schema: $schema,
+			data: ($preparedObject->getObject() ?? [])
+		);
+
+		try {
+			return $retentionService->applyArchivalMetadata($preparedObject, $schema);
+		} catch (\Throwable $e) {
+			$this->logger->debug('[SaveObject] Skipping archival metadata: ' . $e->getMessage());
+			return $preparedObject;
+		}
+	}//end applyArchivalOnCreate()
+
+	/**
+	 * Put a saved object's name in the name cache, scoped to its organisation (SEC-CTRL-2).
+	 *
+	 * @param ObjectEntity $savedEntity The saved object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cacheSavedName(ObjectEntity $savedEntity): void {
+		$savedName = $savedEntity->getName();
+		$savedUuid = $savedEntity->getUuid();
+		if ($savedUuid !== null && $savedName !== null && trim($savedName) !== '') {
+			$this->cacheHandler->setObjectName(
+				identifier: $savedUuid,
+				name: $savedName,
+				organisation: $savedEntity->getOrganisation()
+			);
+		}
+	}//end cacheSavedName()
+
+	/**
+	 * Write the audit trail of a create, unless silent or audit trails are off.
+	 *
+	 * The action comes from the mapper, not from this path's name: when the
+	 * mapper took its UPDATE branch the entry is an update, never a second
+	 * create (#2212/#2217). A genuine create keeps `old: null`.
+	 *
+	 * @param ObjectSaveCall $call        The save call.
+	 * @param ObjectEntity   $savedEntity The saved object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function auditCreation(ObjectSaveCall $call, ObjectEntity $savedEntity): void {
+		if ($call->flags->silent === true || $this->isAuditTrailsEnabled() === false) {
+			return;
+		}
+
+		$action = null;
+		if ($this->unifiedObjectMapper->getLastWriteAction() === 'update') {
+			$action = 'update';
+		}
+
+		$log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity, action: $action);
+
+		$savedEntity->setLastLog($log->jsonSerialize());
+		\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:AUDIT');
+	}//end auditCreation()
 
 	/**
 	 * Process file properties with automatic rollback on failure.

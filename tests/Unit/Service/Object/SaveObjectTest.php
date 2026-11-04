@@ -2878,9 +2878,18 @@ class SaveObjectTest extends TestCase {
 
 		$this->unifiedObjectMapper->expects($this->never())->method('insert');
 
-		$result = $this->invokePrivateMethod('handleObjectCreation', [
-			1, 1, $register, $schema, ['name' => 'Test'], [], 'test-uuid-123', null, false, false, false,
-		]);
+		$call = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall();
+		$call->flags = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags();
+		$call->registerId = 1;
+		$call->schemaId = 1;
+		$call->register = $register;
+		$call->schema = $schema;
+		$call->data = ['name' => 'Test'];
+		$call->uuid = 'test-uuid-123';
+		$call->flags->persist = false;
+		$call->flags->silent = false;
+		$call->flags->multitenancy = false;
+		$result = $this->invokePrivateMethod('handleObjectCreation', [$call]);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
 		$this->assertSame('test-uuid-123', $result->getUuid());

@@ -1,0 +1,254 @@
+{
+    "create": {
+        "trace": [
+            [
+                "retentionGuard",
+                7,
+                false
+            ],
+            [
+                "archival"
+            ],
+            [
+                "insert",
+                "3",
+                "7",
+                "77",
+                "alice",
+                true
+            ],
+            [
+                "cacheName",
+                "44444444-4444-4444-4444-444444444444",
+                "Saved name",
+                "org-9"
+            ],
+            [
+                "audit",
+                null,
+                "44444444-4444-4444-4444-444444444444",
+                null
+            ]
+        ],
+        "entity": {
+            "uuid": "44444444-4444-4444-4444-444444444444",
+            "register": "3",
+            "schema": "7",
+            "folder": "77",
+            "owner": "alice",
+            "organisation": "org-9",
+            "createdSet": true,
+            "lastLog": {
+                "log": 1
+            },
+            "description": "archived"
+        },
+        "outcome": "created",
+        "log": [
+            "debug: [SaveObject] updateInverseRelations called"
+        ]
+    },
+    "mapper took its update branch": {
+        "trace": [
+            [
+                "retentionGuard",
+                7,
+                false
+            ],
+            [
+                "archival"
+            ],
+            [
+                "insert",
+                "3",
+                "7",
+                null,
+                "",
+                false
+            ],
+            [
+                "cacheName",
+                "44444444-4444-4444-4444-444444444444",
+                "Saved name",
+                "org-9"
+            ],
+            [
+                "audit",
+                null,
+                "44444444-4444-4444-4444-444444444444",
+                "update"
+            ]
+        ],
+        "entity": {
+            "uuid": "44444444-4444-4444-4444-444444444444",
+            "register": "3",
+            "schema": "7",
+            "folder": null,
+            "owner": "",
+            "organisation": "org-9",
+            "createdSet": true,
+            "lastLog": {
+                "log": 1
+            },
+            "description": "archived"
+        },
+        "outcome": "updated",
+        "log": [
+            "debug: [SaveObject] updateInverseRelations called"
+        ]
+    },
+    "session user owns the create": {
+        "trace": [
+            [
+                "retentionGuard",
+                7,
+                false
+            ],
+            [
+                "archival"
+            ],
+            [
+                "insert",
+                "3",
+                "7",
+                null,
+                "bob",
+                false
+            ],
+            [
+                "cacheName",
+                "44444444-4444-4444-4444-444444444444",
+                "Saved name",
+                "org-9"
+            ],
+            [
+                "audit",
+                null,
+                "44444444-4444-4444-4444-444444444444",
+                null
+            ]
+        ],
+        "entity": {
+            "uuid": "44444444-4444-4444-4444-444444444444",
+            "register": "3",
+            "schema": "7",
+            "folder": null,
+            "owner": "bob",
+            "organisation": "org-9",
+            "createdSet": true,
+            "lastLog": {
+                "log": 1
+            },
+            "description": "archived"
+        },
+        "outcome": "created",
+        "log": [
+            "debug: [SaveObject] updateInverseRelations called"
+        ]
+    },
+    "silent": {
+        "trace": [
+            [
+                "retentionGuard",
+                7,
+                false
+            ],
+            [
+                "archival"
+            ],
+            [
+                "insert",
+                "3",
+                "7",
+                null,
+                "",
+                false
+            ],
+            [
+                "cacheName",
+                "44444444-4444-4444-4444-444444444444",
+                "Saved name",
+                "org-9"
+            ]
+        ],
+        "entity": {
+            "uuid": "44444444-4444-4444-4444-444444444444",
+            "register": "3",
+            "schema": "7",
+            "folder": null,
+            "owner": "",
+            "organisation": "org-9",
+            "createdSet": true,
+            "lastLog": null,
+            "description": "archived"
+        },
+        "outcome": "created",
+        "log": []
+    },
+    "audit off": {
+        "trace": [
+            [
+                "retentionGuard",
+                7,
+                false
+            ],
+            [
+                "archival"
+            ],
+            [
+                "insert",
+                "3",
+                "7",
+                null,
+                "",
+                false
+            ],
+            [
+                "cacheName",
+                "44444444-4444-4444-4444-444444444444",
+                "Saved name",
+                "org-9"
+            ]
+        ],
+        "entity": {
+            "uuid": "44444444-4444-4444-4444-444444444444",
+            "register": "3",
+            "schema": "7",
+            "folder": null,
+            "owner": "",
+            "organisation": "org-9",
+            "createdSet": true,
+            "lastLog": null,
+            "description": "archived"
+        },
+        "outcome": "created",
+        "log": [
+            "debug: [SaveObject] updateInverseRelations called"
+        ]
+    },
+    "not persisted": {
+        "trace": [
+            [
+                "retentionGuard",
+                7,
+                false
+            ],
+            [
+                "archival"
+            ]
+        ],
+        "entity": {
+            "uuid": "44444444-4444-4444-4444-444444444444",
+            "register": "3",
+            "schema": "7",
+            "folder": "77",
+            "owner": "",
+            "organisation": "org-1",
+            "createdSet": true,
+            "lastLog": null,
+            "description": "archived"
+        },
+        "outcome": null,
+        "log": []
+    }
+}
