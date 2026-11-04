@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ObjectOwnershipControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -64,26 +65,52 @@ use Psr\Log\LoggerInterface;
 class ObjectOwnershipController extends Controller {
 
 	/**
+	 * Resolves a record through the RBAC boundary.
+	 *
+	 * @var ObjectService
+	 */
+	private readonly ObjectService $objectService;
+
+	/**
+	 * Resolves the register entity.
+	 *
+	 * @var RegisterMapper
+	 */
+	private readonly RegisterMapper $registerMapper;
+
+	/**
+	 * Resolves the schema entity.
+	 *
+	 * @var SchemaMapper
+	 */
+	private readonly SchemaMapper $schemaMapper;
+
+	/**
+	 * Performs the checked writes.
+	 *
+	 * @var ObjectOwnershipService
+	 */
+	private readonly ObjectOwnershipService $ownership;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
-	 * @param ObjectService $objectService Resolves a record through the RBAC boundary.
-	 * @param RegisterMapper $registerMapper Resolves the register entity.
-	 * @param SchemaMapper $schemaMapper Resolves the schema entity.
-	 * @param ObjectOwnershipService $ownership Performs the checked writes.
+	 * @param ObjectOwnershipControllerServices $services The object ownership controller services.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objectService,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly ObjectOwnershipService $ownership,
+		ObjectOwnershipControllerServices $services,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->objectService = $services->objectService;
+		$this->registerMapper = $services->registerMapper;
+		$this->schemaMapper = $services->schemaMapper;
+		$this->ownership = $services->ownership;
 	}//end __construct()
 
 	/**

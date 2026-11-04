@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\CalculationsControllerServices;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -44,14 +45,39 @@ use Throwable;
 class CalculationsController extends Controller {
 
 	/**
+	 * The published operator catalogue.
+	 *
+	 * @var OperatorCatalogue
+	 */
+	private readonly OperatorCatalogue $catalogue;
+
+	/**
+	 * Dry-run evaluation of an unsaved declaration.
+	 *
+	 * @var CalculationTrialService
+	 */
+	private readonly CalculationTrialService $trials;
+
+	/**
+	 * Register lookup, scoped to the caller.
+	 *
+	 * @var RegisterMapper
+	 */
+	private readonly RegisterMapper $registerMapper;
+
+	/**
+	 * Schema lookup, scoped to the caller.
+	 *
+	 * @var SchemaMapper
+	 */
+	private readonly SchemaMapper $schemaMapper;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
-	 * @param OperatorCatalogue $catalogue The published operator catalogue.
-	 * @param CalculationTrialService $trials Dry-run evaluation of an unsaved declaration.
-	 * @param RegisterMapper $registerMapper Register lookup, scoped to the caller.
-	 * @param SchemaMapper $schemaMapper Schema lookup, scoped to the caller.
+	 * @param CalculationsControllerServices $services The calculations controller services.
 	 * @param MagicMapper $objectMapper Object lookup, scoped to the caller by RBAC and tenancy.
 	 *
 	 * @return void
@@ -59,13 +85,14 @@ class CalculationsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly OperatorCatalogue $catalogue,
-		private readonly CalculationTrialService $trials,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		CalculationsControllerServices $services,
 		private readonly MagicMapper $objectMapper,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->catalogue = $services->catalogue;
+		$this->trials = $services->trials;
+		$this->registerMapper = $services->registerMapper;
+		$this->schemaMapper = $services->schemaMapper;
 
 	}//end __construct()
 

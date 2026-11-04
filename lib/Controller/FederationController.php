@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\FederationControllerServices;
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -115,26 +116,52 @@ class FederationController extends Controller {
 	];
 
 	/**
+	 * Federated-share persistence.
+	 *
+	 * @var FederatedShareMapper
+	 */
+	private readonly FederatedShareMapper $shareMapper;
+
+	/**
+	 * Object read service.
+	 *
+	 * @var ObjectService
+	 */
+	private readonly ObjectService $objectService;
+
+	/**
+	 * Share management (list/create/revoke).
+	 *
+	 * @var FederationShareService
+	 */
+	private readonly FederationShareService $shareService;
+
+	/**
+	 * Brute-force throttler for rejected tokens.
+	 *
+	 * @var IThrottler
+	 */
+	private readonly IThrottler $throttler;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Current request.
-	 * @param FederatedShareMapper $shareMapper Federated-share persistence.
-	 * @param ObjectService $objectService Object read service.
-	 * @param FederationShareService $shareService Share management (list/create/revoke).
-	 * @param IThrottler $throttler Brute-force throttler for rejected tokens.
+	 * @param FederationControllerServices $services The federation controller services.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly FederatedShareMapper $shareMapper,
-		private readonly ObjectService $objectService,
-		private readonly FederationShareService $shareService,
-		private readonly IThrottler $throttler,
+		FederationControllerServices $services,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->shareMapper = $services->shareMapper;
+		$this->objectService = $services->objectService;
+		$this->shareService = $services->shareService;
+		$this->throttler = $services->throttler;
 	}//end __construct()
 
 	/**
