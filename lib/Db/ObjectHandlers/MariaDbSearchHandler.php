@@ -946,51 +946,40 @@ class MariaDbSearchHandler {
 			$values = $value;
 		}
 
+		// Each value matches as the scalar itself or inside an array; strings
+		// compare case-insensitively, other values exactly.
+		$valueConditions = static function (mixed $oneValue) use ($queryBuilder, $jsonPath): array {
+			$wrap = static fn (string $sql): string => $sql;
+			if (is_string($oneValue) === true) {
+				$oneValue = strtolower($oneValue);
+				$wrap     = static fn (string $sql): string => 'LOWER(' . $sql . ')';
+			}
+
+			$scalar = $queryBuilder->expr()->eq(
+				$queryBuilder->createFunction(
+					$wrap('JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . '))')
+				),
+				$queryBuilder->createNamedParameter($oneValue)
+			);
+
+			$pathParam  = $queryBuilder->createNamedParameter($jsonPath);
+			$valueParam = $queryBuilder->createNamedParameter(json_encode($oneValue));
+			$contains   = $queryBuilder->expr()->eq(
+				$queryBuilder->createFunction(
+					'JSON_CONTAINS(' . $wrap('JSON_EXTRACT(`object`, ' . $pathParam . ')') . ', ' . $valueParam . ')'
+				),
+				$queryBuilder->createNamedParameter(1)
+			);
+
+			return [$scalar, $contains];
+		};
+
 		foreach ($values as $oneValue) {
-			$conditions->addMultiple($this->jsonValueConditions(queryBuilder: $queryBuilder, match: [$jsonPath, $oneValue]));
+			$conditions->addMultiple($valueConditions($oneValue));
 		}
 
 		$queryBuilder->andWhere($conditions);
 	}//end applyJsonFieldFilter()
-
-	/**
-	 * Conditions matching one value at a JSON path: the scalar itself, or an array holding it.
-	 *
-	 * Strings compare case-insensitively; other values exactly.
-	 *
-	 * @param IQueryBuilder $queryBuilder The query builder.
-	 * @param array         $match        The JSON path and the value.
-	 *
-	 * @psalm-param array{0: string, 1: mixed} $match
-	 *
-	 * @return array The two conditions.
-	 */
-	private function jsonValueConditions(IQueryBuilder $queryBuilder, array $match): array {
-		[$jsonPath, $value] = $match;
-		$wrap = static fn (string $sql): string => $sql;
-		if (is_string($value) === true) {
-			$value = strtolower($value);
-			$wrap  = static fn (string $sql): string => 'LOWER(' . $sql . ')';
-		}
-
-		$scalar = $queryBuilder->expr()->eq(
-			$queryBuilder->createFunction(
-				$wrap('JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . '))')
-			),
-			$queryBuilder->createNamedParameter($value)
-		);
-
-		$pathParam  = $queryBuilder->createNamedParameter($jsonPath);
-		$valueParam = $queryBuilder->createNamedParameter(json_encode($value));
-		$contains   = $queryBuilder->expr()->eq(
-			$queryBuilder->createFunction(
-				'JSON_CONTAINS(' . $wrap('JSON_EXTRACT(`object`, ' . $pathParam . ')') . ', ' . $valueParam . ')'
-			),
-			$queryBuilder->createNamedParameter(1)
-		);
-
-		return [$scalar, $contains];
-	}//end jsonValueConditions()
 
 	/**
 	 * Apply full-text search on JSON object and metadata fields

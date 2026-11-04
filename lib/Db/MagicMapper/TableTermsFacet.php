@@ -58,6 +58,8 @@ final class TableTermsFacet {
 	 * @param string $field The metadata column.
 	 *
 	 * @return self The facet on that column.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
 	public function forMetadataField(string $field): self {
 		return new self(
@@ -76,6 +78,8 @@ final class TableTermsFacet {
 	 * @param string $field The property column.
 	 *
 	 * @return self The facet on that column.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
 	public function forPropertyField(string $field): self {
 		return new self(
