@@ -39,6 +39,16 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\RbacFilterCall
+ * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses   \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
  */
 class MagicRbacHandlerApplyFiltersGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

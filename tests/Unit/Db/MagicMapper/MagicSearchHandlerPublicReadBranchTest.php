@@ -61,6 +61,7 @@ use RuntimeException;
  * Tests that a marked public rule widens the organisation filter by its own rows only.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\RbacFilterCall
  * @uses   \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
  * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
