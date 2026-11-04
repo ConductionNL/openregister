@@ -1834,24 +1834,12 @@ class SaveObject {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function seedLifecycleFieldOnCreate(Schema $schema, array $data): array {
-		$config = ($schema->getConfiguration() ?? []);
-		$annotation = ($config['x-openregister-lifecycle'] ?? null);
-		if (is_array($annotation) === false) {
+		$seed = self::lifecycleSeedSpec(schema: $schema);
+		if ($seed === null) {
 			return $data;
 		}
 
-		// Auto-seed is driven exclusively by the object-form `initial`.
-		$initial = ($annotation['initial'] ?? null);
-		if (is_array($initial) === false) {
-			return $data;
-		}
-
-		$fromKey = (string)($initial['from'] ?? '');
-		$parentPath = (string)($initial['field'] ?? '');
-		$field = (string)($annotation['field'] ?? ($annotation['property'] ?? ''));
-		if ($fromKey === '' || $parentPath === '' || $field === '') {
-			return $data;
-		}
+		$field = $seed['field'];
 
 		// Empty-field-only: never overwrite a client-supplied value.
 		$currentValue = ($data[$field] ?? null);
@@ -1859,48 +1847,25 @@ class SaveObject {
 			return $data;
 		}
 
-		// Resolve the parent reference off the create payload.
-		$parentRef = (string)($data[$fromKey] ?? '');
+		$parentRef = (string)($data[$seed['from']] ?? '');
 		if ($parentRef === '') {
 			$this->logger->debug(
 				message: '[SaveObject] Lifecycle seed no-op: parent reference is empty',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'field' => $field,
-					'from' => $fromKey,
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field, 'from' => $seed['from']]
 			);
 			return $data;
 		}
 
-		// Load the parent through the standard read path (RBAC + multitenancy).
-		try {
-			$parent = $this->unifiedObjectMapper->find(identifier: $parentRef);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				message: '[SaveObject] Lifecycle seed no-op: parent could not be loaded: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'field' => $field,
-					'parentRef' => $parentRef,
-				]
-			);
+		$parent = $this->loadLifecycleSeedParent(parentRef: $parentRef, field: $field);
+		if ($parent === null) {
 			return $data;
 		}
 
-		$parentData = ($parent->getObject() ?? []);
-		$seedValue = ($parentData[$parentPath] ?? null);
+		$seedValue = (($parent->getObject() ?? [])[$seed['parentPath']] ?? null);
 		if ($seedValue === null || $seedValue === '') {
 			$this->logger->debug(
 				message: '[SaveObject] Lifecycle seed no-op: parent initial value is empty',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'field' => $field,
-					'parentPath' => $parentPath,
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field, 'parentPath' => $seed['parentPath']]
 			);
 			return $data;
 		}
@@ -1909,6 +1874,56 @@ class SaveObject {
 
 		return $data;
 	}//end seedLifecycleFieldOnCreate()
+
+	/**
+	 * The object-form `initial` of a schema's lifecycle annotation: the payload key naming the parent,
+	 * the parent field to copy and the lifecycle field to seed.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array{from: string, parentPath: string, field: string}|null Null without a complete object-form `initial`.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private static function lifecycleSeedSpec(Schema $schema): ?array {
+		$annotation = (($schema->getConfiguration() ?? [])['x-openregister-lifecycle'] ?? null);
+		if (is_array($annotation) === false || is_array($annotation['initial'] ?? null) === false) {
+			return null;
+		}
+
+		$seed = [
+			'from' => (string)($annotation['initial']['from'] ?? ''),
+			'parentPath' => (string)($annotation['initial']['field'] ?? ''),
+			'field' => (string)($annotation['field'] ?? ($annotation['property'] ?? '')),
+		];
+		if (in_array('', $seed, true) === true) {
+			return null;
+		}
+
+		return $seed;
+	}//end lifecycleSeedSpec()
+
+	/**
+	 * Load the parent a lifecycle field is seeded from, through the standard read path (RBAC + multitenancy).
+	 *
+	 * @param string $parentRef The parent reference.
+	 * @param string $field     The lifecycle field, for the log.
+	 *
+	 * @return ObjectEntity|null The parent, or null when it cannot be loaded.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function loadLifecycleSeedParent(string $parentRef, string $field): ?ObjectEntity {
+		try {
+			return $this->unifiedObjectMapper->find(identifier: $parentRef);
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				message: '[SaveObject] Lifecycle seed no-op: parent could not be loaded: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field, 'parentRef' => $parentRef]
+			);
+			return null;
+		}
+	}//end loadLifecycleSeedParent()
 
 	/**
 	 * Apply property default values to a data array (for use in bulk save paths).
@@ -2429,66 +2444,18 @@ class SaveObject {
 			return [];
 		}
 
-		// Filter out empty or invalid objects.
-		// Supports: standard UUIDs, UUIDs without dashes, prefixed UUIDs, and numeric IDs.
-		$validObjects = array_filter(
-			$propData,
-			function ($object) {
-				if (is_array($object) === true
-					&& empty($object) === false
-					&& (count($object) === 1
-					&& (($object['id'] ?? null) !== null)
-					&& empty($object['id']) === true) === false
-				) {
-					return true;
-				}
-
-				if (is_string($object) === true && self::isObjectIdentifier(value: $object) === true) {
-					return true;
-				}
-
-				return false;
-			}
-		);
-
+		$validObjects = array_filter($propData, fn ($object): bool => self::isCascadeCandidate(object: $object));
 		if (empty($validObjects) === true) {
 			return [];
 		}
 
-		if (($property['$ref'] ?? null) !== null) {
-			$property['items']['$ref'] = $property['$ref'];
-		}
-
-		if (($property['inversedBy'] ?? null) !== null) {
-			$property['items']['inversedBy'] = $property['inversedBy'];
-		}
-
-		if (($property['register'] ?? null) !== null) {
-			$property['items']['register'] = $property['register'];
-		}
-
-		if (($property['objectConfiguration'] ?? null) !== null) {
-			$property['items']['objectConfiguration'] = $property['objectConfiguration'];
-		}
-
-		// Validate that we have the necessary configuration.
-		if (isset($property['items']['$ref']) === false) {
+		$definition = self::cascadeItemsDefinition(property: $property);
+		if ($definition === null) {
 			return [];
 		}
 
-		// Collect objects that need to be created (filter out existing UUIDs).
-		$objectsToCreate = [];
-		foreach ($validObjects as $object) {
-			// Skip existing IDs (UUIDs, prefixed UUIDs, numeric IDs) - they don't need to be cascaded (created).
-			// Only arrays (nested objects) need to be created via cascading.
-			if (is_string($object) === true) {
-				continue;
-			}
-
-			$objectsToCreate[] = $object;
-		}
-
-		// If no objects need to be created, return empty array.
+		// Existing ids need no cascade; only nested objects are created.
+		$objectsToCreate = array_filter($validObjects, fn ($object): bool => is_string($object) === false);
 		if (empty($objectsToCreate) === true) {
 			return [];
 		}
@@ -2503,7 +2470,7 @@ class SaveObject {
 			try {
 				$uuid = $this->cascadeSingleObject(
 					objectEntity: $objectEntity,
-					definition: $property['items'],
+					definition: $definition,
 					object: $object
 				);
 				if ($uuid !== null) {
@@ -2518,6 +2485,55 @@ class SaveObject {
 
 		return $createdUuids;
 	}//end cascadeMultipleObjects()
+
+	/**
+	 * Whether an array item of a cascading property is a nested object or an object id.
+	 *
+	 * A nested object holding only an empty `id` is not; ids are uuids with or without
+	 * dashes, prefixed uuids and numeric ids.
+	 *
+	 * @param mixed $object The item.
+	 *
+	 * @return bool True when the item is cascaded or kept.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function isCascadeCandidate(mixed $object): bool {
+		if (is_array($object) === true
+			&& empty($object) === false
+			&& (count($object) === 1
+			&& (($object['id'] ?? null) !== null)
+			&& empty($object['id']) === true) === false
+		) {
+			return true;
+		}
+
+		return is_string($object) === true && self::isObjectIdentifier(value: $object) === true;
+	}//end isCascadeCandidate()
+
+	/**
+	 * The item definition of an array property, carrying the property's `$ref`, `inversedBy`,
+	 * `register` and `objectConfiguration` down to its items.
+	 *
+	 * @param array $property The property definition.
+	 *
+	 * @return array|null The item definition, or null when it names no schema.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function cascadeItemsDefinition(array $property): ?array {
+		foreach (['$ref', 'inversedBy', 'register', 'objectConfiguration'] as $key) {
+			if (($property[$key] ?? null) !== null) {
+				$property['items'][$key] = $property[$key];
+			}
+		}
+
+		if (isset($property['items']['$ref']) === false) {
+			return null;
+		}
+
+		return $property['items'];
+	}//end cascadeItemsDefinition()
 
 	/**
 	 * Whether a value is the id of a stored object rather than a nested object.
@@ -2619,29 +2635,13 @@ class SaveObject {
 
 		// Only set inversedBy if it's configured (for relation-based cascading).
 		if (($definition['inversedBy'] ?? null) !== null) {
-			$inversedByProperty = $definition['inversedBy'];
-
-			// Check if the inversedBy property already exists and is an array.
-			if (($object[$inversedByProperty] ?? null) !== null && is_array($object[$inversedByProperty]) === true) {
-				// Add to existing array if not already present.
-				if (in_array($objectId, $object[$inversedByProperty], true) === false) {
-					$object[$inversedByProperty][] = $objectId;
-				}
-			}
-
-			if (($object[$inversedByProperty] ?? null) === null || is_array($object[$inversedByProperty]) === false) {
-				// Set as single value or create new array.
-				$object[$inversedByProperty] = $objectId;
-			}
+			$object[$definition['inversedBy']] = self::withParentReference(
+				current: $object[$definition['inversedBy']] ?? null,
+				parentId: $objectId
+			);
 		}
 
-		// Extract register ID from definition or use parent object's register.
-		$register = $definition['register'] ?? $objectEntity->getRegister();
-
-		// If register is an array, extract the ID.
-		if (is_array($register) === true) {
-			$register = $register['id'] ?? $register;
-		}
+		$register = self::cascadeRegister(definition: $definition, parentRegister: $objectEntity->getRegister());
 
 		// A nested inline object is always created. The save would take its `id` or
 		// `@self.id` as the row to write onto, looked up past the read filters.
@@ -2686,6 +2686,49 @@ class SaveObject {
 
 		return $savedUuid;
 	}//end cascadeSingleObject()
+
+	/**
+	 * The inverse property value of a cascaded object once it names its parent.
+	 *
+	 * An array gains the parent id when missing; any other value is replaced by it.
+	 *
+	 * @param mixed  $current  The current inverse property value.
+	 * @param string $parentId The parent object's uuid.
+	 *
+	 * @return mixed The new value.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function withParentReference(mixed $current, string $parentId): mixed {
+		if (is_array($current) === false) {
+			return $parentId;
+		}
+
+		if (in_array($parentId, $current, true) === false) {
+			$current[] = $parentId;
+		}
+
+		return $current;
+	}//end withParentReference()
+
+	/**
+	 * The register a cascaded object is saved in: the definition's, else the parent's; an array gives its id.
+	 *
+	 * @param array $definition     The property definition.
+	 * @param mixed $parentRegister The parent object's register.
+	 *
+	 * @return mixed The register.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function cascadeRegister(array $definition, mixed $parentRegister): mixed {
+		$register = $definition['register'] ?? $parentRegister;
+		if (is_array($register) === true) {
+			$register = $register['id'] ?? $register;
+		}
+
+		return $register;
+	}//end cascadeRegister()
 
 	/**
 	 * Deletes orphaned related objects that are no longer referenced by the parent.
@@ -3160,7 +3203,6 @@ class SaveObject {
 		$sanitizedData = $data;
 
 		foreach ($properties as $propertyName => $propertyDefinition) {
-			// Skip if property is not in the data.
 			if (isset($sanitizedData[$propertyName]) === false) {
 				continue;
 			}
@@ -3169,67 +3211,63 @@ class SaveObject {
 			$propertyType = $propertyDefinition['type'] ?? null;
 			$isRequired = in_array($propertyName, $required) || ($propertyDefinition['required'] ?? false);
 
-			// Handle object properties.
-			if ($propertyType === 'object') {
-				if ($value === '') {
-					// Empty string to null for object properties.
-					$sanitizedData[$propertyName] = null;
-				} elseif (is_array($value) === true && empty($value) === true && ($isRequired === false)) {
-					// Empty object {} to null for non-required object properties.
-					$sanitizedData[$propertyName] = null;
-				} elseif (is_array($value) === true && empty($value) === true && ($isRequired === true)) {
-					// Keep empty object {} for required properties - will fail validation with clear error.
-				}
-			} elseif ($propertyType === 'array') {
-				// Handle array properties.
-				if ($value === '') {
-					// Empty string to null for array properties.
-					$sanitizedData[$propertyName] = null;
-				} elseif (is_array($value) === true) {
-					// Check minItems constraint.
-					$minItems = $propertyDefinition['minItems'] ?? 0;
+			// An empty required value stays, so validation reports it clearly.
+			if ($isRequired === false && self::isOptionalEmptyValue(value: $value, type: $propertyType) === true) {
+				$sanitizedData[$propertyName] = null;
+				continue;
+			}
 
-					if (empty($value) === true && $minItems > 0) {
-						// Keep empty array [] for arrays with minItems > 0 - will fail validation with clear error.
-					}
-
-					if (empty($value) === true && $minItems === 0) {
-						// Empty array is valid for arrays with no minItems constraint.
-					}
-
-					if (empty($value) === false) {
-						// Handle array items that might contain empty strings.
-						$sanitizedArray = [];
-						$hasChanges = false;
-						foreach ($value as $index => $item) {
-							$sanitizedArray[$index] = $item;
-							if ($item === '') {
-								$sanitizedArray[$index] = null;
-								$hasChanges = true;
-							}
-						}
-
-						if ($hasChanges === true) {
-							$sanitizedData[$propertyName] = $sanitizedArray;
-						}
-					}//end if
-				}//end if
-			} elseif ($value === '' && in_array($propertyType, ['string', 'number', 'integer', 'boolean']) === true) {
-				// Handle other property types with empty strings.
-				if ($isRequired === false) {
-					// Convert empty string to null for non-required scalar properties.
-					$sanitizedData[$propertyName] = null;
-				}
-
-				if ($isRequired === true) {
-					// Keep empty string for required properties - will fail validation with clear error.
-					// No action needed - property stays as is.
-				}
-			}//end if
+			$sanitizedData[$propertyName] = self::withoutEmptyStrings(value: $value, type: $propertyType);
 		}//end foreach
 
 		return $sanitizedData;
 	}//end sanitizeEmptyStringsForObjectProperties()
+
+	/**
+	 * Whether a value is empty in a way that clears an optional property: an empty object, or an
+	 * empty string for a scalar type.
+	 *
+	 * @param mixed $value The property value.
+	 * @param mixed $type  The property type.
+	 *
+	 * @return bool True when the value becomes null for an optional property.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function isOptionalEmptyValue(mixed $value, mixed $type): bool {
+		if ($type === 'object') {
+			return is_array($value) === true && empty($value) === true;
+		}
+
+		return $value === '' && in_array($type, ['string', 'number', 'integer', 'boolean']) === true;
+	}//end isOptionalEmptyValue()
+
+	/**
+	 * An object or array property value with empty strings turned into null: the value itself,
+	 * or each item of a non-empty array.
+	 *
+	 * @param mixed $value The property value.
+	 * @param mixed $type  The property type.
+	 *
+	 * @return mixed The value.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function withoutEmptyStrings(mixed $value, mixed $type): mixed {
+		if ($type !== 'object' && $type !== 'array') {
+			return $value;
+		}
+
+		if ($value === '') {
+			return null;
+		}
+
+		if ($type === 'object' || is_array($value) === false) {
+			return $value;
+		}
+
+		return array_map(fn ($item): mixed => $item === '' ? null : $item, $value);
+	}//end withoutEmptyStrings()
 
 	/**
 	 * Saves an object.
