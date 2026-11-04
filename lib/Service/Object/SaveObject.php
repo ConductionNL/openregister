@@ -57,6 +57,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource;
@@ -3089,323 +3090,399 @@ class SaveObject {
 			uploadedFiles: $uploadedFiles
 		);
 
-		// Take the duplicate-override flag off the body BEFORE anything reads
-		// it as data: it is an instruction about this write, not a property,
-		// and leaving it in would fail schema validation on every schema that
-		// never declared it. The policy it belongs to is enforced on the
-		// create branch further down.
-		// TWO WAYS IN, and both are needed.
-		//
-		// The PARAMETER is how the HTTP path gets here. `ObjectsController`
-		// strips every `_`-prefixed key from the body before it reaches this
-		// method — that is the convention for control parameters that must not
-		// be persisted onto the object — so a flag sent only in the body would
-		// have been silently gone by now, and an override by somebody entitled
-		// to make it would have been refused with no clue why. `_failIfExists`
-		// is threaded through for exactly this reason and is the precedent.
-		//
-		// The BODY KEY is how a service-layer caller gets here: an import, a
-		// migration or a background job hands `saveObject()` an array and has
-		// no request to read a parameter from.
-		$dedupOverrideRequested = $_dedupOverride;
-		if (array_key_exists(DedupCreatePolicy::OVERRIDE_KEY, $data) === true) {
-			if (filter_var($data[DedupCreatePolicy::OVERRIDE_KEY], FILTER_VALIDATE_BOOLEAN) === true) {
-				$dedupOverrideRequested = true;
-			}
-
-			unset($data[DedupCreatePolicy::OVERRIDE_KEY]);
-		}
+		$call = new ObjectSaveCall();
+		$call->data = $data;
+		$call->selfData = $selfData;
+		$call->uuid = $uuid;
+		$call->folderId = $folderId;
+		$call->rbac = $_rbac;
+		$call->multitenancy = $_multitenancy;
+		$call->persist = $persist;
+		$call->silent = $silent;
+		$call->currentUser = $currentUser;
+		$call->failIfExists = $failIfExists;
+		$call->unowned = $_unowned;
+		$call->dedupOverride = $_dedupOverride;
+		$call->owner = $_owner;
+		$this->takeDedupOverrideFromBody(call: $call);
 
 		// Resolve schema and register to entity objects.
-		[$schema, $schemaId, $register, $registerId] = $this->resolveSchemaAndRegister(
+		[$call->schema, $call->schemaId, $call->register, $call->registerId] = $this->resolveSchemaAndRegister(
 			schema: $schema,
 			register: $register
 		);
 
+		return $this->saveResolvedObject(call: $call);
+	}//end saveObject()
+
+	/**
+	 * Take the duplicate-override flag off the body before anything reads it as data.
+	 *
+	 * It is an instruction about this write, not a property, and leaving it in
+	 * would fail schema validation on every schema that never declared it. The
+	 * policy it belongs to is enforced on the create branch.
+	 *
+	 * There are two ways in, and both are needed. The PARAMETER is how the HTTP
+	 * path gets here: `ObjectsController` strips every `_`-prefixed key from the
+	 * body before it reaches saveObject(), so a flag sent only in the body would
+	 * be gone by now. The BODY KEY is how a service-layer caller gets here: an
+	 * import, a migration or a background job hands saveObject() an array and
+	 * has no request to read a parameter from.
+	 *
+	 * @param ObjectSaveCall $call The save call; its data loses the key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function takeDedupOverrideFromBody(ObjectSaveCall $call): void {
+		if (array_key_exists(DedupCreatePolicy::OVERRIDE_KEY, $call->data) === false) {
+			return;
+		}
+
+		if (filter_var($call->data[DedupCreatePolicy::OVERRIDE_KEY], FILTER_VALIDATE_BOOLEAN) === true) {
+			$call->dedupOverride = true;
+		}
+
+		unset($call->data[DedupCreatePolicy::OVERRIDE_KEY]);
+	}//end takeDedupOverrideFromBody()
+
+	/**
+	 * Save an object once its register and schema are resolved.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return ObjectEntity The saved object entity.
+	 *
+	 * @throws Exception If there is an error during save.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function saveResolvedObject(ObjectSaveCall $call): ObjectEntity {
 		// Shared master data guard (REQ-SLE-001, design D-2): a register or
-		// schema this organisation only CONSUMES is read-only to it. The read
-		// side hands a consumer the holder's rows through the ordinary query
-		// path, so without this the consumer would be able to write into the
-		// holder's table and the share would silently become a second write
-		// path into somebody else's records.
-		//
-		// Placed here, beside the object-source guard, for the same reason that
-		// one is here: it is a property of the RESOURCE being written, decided
-		// before anything is prepared, validated or persisted.
-		if ($persist === true && OrganisationContext::multitenancy(requested: $_multitenancy) === true) {
-			$this->refuseSharedMasterDataWrite(registerId: $registerId, schemaId: $schemaId, uuid: $uuid);
+		// schema this organisation only CONSUMES is read-only to it. It is a
+		// property of the RESOURCE being written, decided before anything is
+		// prepared, validated or persisted.
+		if ($call->persist === true && OrganisationContext::multitenancy(requested: $call->multitenancy) === true) {
+			$this->refuseSharedMasterDataWrite(registerId: $call->registerId, schemaId: $call->schemaId, uuid: $call->uuid);
 		}
 
 		// Read-only projection guard: a schema served from an external source
-		// (x-openregister-object-source) is read-only — the external system stays
-		// authoritative and OpenRegister must never become a second write path.
-		$objectSource = $schema->getObjectSource();
-		if ($persist === true && $objectSource !== null) {
-			// Opt-in write-through (dbal-virtual-registers-crud): delegate to a
-			// WritableObjectSourceProvider when the schema annotation carries
-			// `readOnly: false` — the provider re-verifies its backing source's
-			// writable flag live and fails closed. Everything else keeps the
-			// v1 read-only rejection. RBAC (create/update) and schema
-			// validation already ran upstream in ObjectService before this
-			// dispatch, so the external system is only reached for an
-			// authorized, valid write.
+		// (x-openregister-object-source) is read-only unless its provider opts
+		// in to write-through (dbal-virtual-registers-crud), which re-verifies
+		// its backing source's writable flag live and fails closed.
+		$objectSource = $call->schema->getObjectSource();
+		if ($call->persist === true && $objectSource !== null) {
 			return $this->delegateObjectSourceWrite(
-				register: $register,
-				schema: $schema,
+				register: $call->register,
+				schema: $call->schema,
 				objectSource: $objectSource,
-				data: $data,
-				uuid: $uuid,
-				silent: $silent
+				data: $call->data,
+				uuid: $call->uuid,
+				silent: $call->silent
 			);
 		}
 
 		// Normalize translatable properties (wrap simple values under default language).
-		$data = $this->translationHandler->normalizeTranslationsForSave(
-			objectData: $data,
-			schema: $schema,
-			register: $register
+		$call->data = $this->translationHandler->normalizeTranslationsForSave(
+			objectData: $call->data,
+			schema: $call->schema,
+			register: $call->register
 		);
 
-		// Check property-level authorization for incoming data.
-		// This throws a ValidationException if user tries to modify unauthorized properties.
-		// Skip when _rbac is false (internal/system calls should bypass all authorization).
-		if ($_rbac === true && $schema->hasPropertyAuthorization() === true) {
-			$isCreate = ($uuid === null);
-			$existingObjectData = [];
+		// Skip when _rbac is false (internal/system calls bypass all authorization).
+		if ($call->rbac === true && $call->schema->hasPropertyAuthorization() === true) {
+			$this->refuseUnauthorizedProperties(call: $call);
+		}
 
-			// For updates, get existing object data for matching.
-			if ($isCreate === false) {
-				try {
-					$tempExistingObject = $this->unifiedObjectMapper->find(
-						identifier: $uuid,
-						register: $register,
-						schema: $schema,
-						_rbac: false,
-						_multitenancy: false
-					);
-					// The find() call throws DoesNotExistException rather than returning
-					// null — that catch below is the real "missing" path.
-					$existingObjectData = $tempExistingObject->getMatchEnvelope();
-				} catch (DoesNotExistException $e) {
-					// Object doesn't exist, treat as create.
-					$isCreate = true;
-				}
-			}
+		$existingObject = $this->existingObjectForSave(call: $call);
+		if ($existingObject !== null) {
+			return $this->updateExistingForSave(call: $call, existingObject: $existingObject);
+		}
 
-			$unauthorizedProps = $this->propertyRbacHandler->getUnauthorizedProperties(
-				schema: $schema,
-				object: $existingObjectData,
-				incomingData: $data,
-				isCreate: $isCreate
+		return $this->createNewForSave(call: $call);
+	}//end saveResolvedObject()
+
+	/**
+	 * Refuse a save that modifies properties the caller may not write.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the incoming data touches an unauthorized property.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function refuseUnauthorizedProperties(ObjectSaveCall $call): void {
+		$isCreate = ($call->uuid === null);
+		$existingObjectData = [];
+
+		// For updates, get existing object data for matching.
+		if ($isCreate === false) {
+			$envelope = $this->storedMatchEnvelope(call: $call);
+			$isCreate = ($envelope === null);
+			$existingObjectData = ($envelope ?? []);
+		}
+
+		$unauthorizedProps = $this->propertyRbacHandler->getUnauthorizedProperties(
+			schema: $call->schema,
+			object: $existingObjectData,
+			incomingData: $call->data,
+			isCreate: $isCreate
+		);
+
+		if (empty($unauthorizedProps) === false) {
+			throw new Exception(
+				'You are not authorized to modify the following properties: ' . implode(', ', $unauthorizedProps)
 			);
+		}
+	}//end refuseUnauthorizedProperties()
 
-			if (empty($unauthorizedProps) === false) {
-				throw new Exception(
-					'You are not authorized to modify the following properties: ' . implode(', ', $unauthorizedProps)
-				);
-			}
-		}//end if
-
-		// Check if UUID was auto-generated (indicates CREATE operation, not UPDATE).
-		$isAutoGeneratedUuid = ($selfData['_autoGeneratedUuid'] ?? false) === true;
-
-		// Try to update existing object if UUID provided AND it's not auto-generated.
-		// Auto-generated UUIDs are for new objects, so skip the lookup.
-		if ($uuid !== null && $isAutoGeneratedUuid === false) {
-			$debugMsg = '[SaveObject] UUID provided and not auto-generated,';
-			$debugMsg .= ' checking for existing object (UPDATE operation)';
-			$this->logger->debug(
-				message: $debugMsg,
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'register' => $register?->getId(),
-					'schema' => $schema?->getId(),
-				]
-			);
-
-			// Always disable RBAC and multitenancy for internal object lookup
-			// to avoid permission errors when validating existing objects.
-			$existingObject = $this->findAndValidateExistingObject(
-				uuid: $uuid,
-				register: $register,
-				schema: $schema,
+	/**
+	 * The match envelope of the stored object a save names, or null when there is none.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return array|null The stored object's match envelope.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function storedMatchEnvelope(ObjectSaveCall $call): ?array {
+		try {
+			// find() throws DoesNotExistException rather than returning null.
+			return $this->unifiedObjectMapper->find(
+				identifier: $call->uuid,
+				register: $call->register,
+				schema: $call->schema,
 				_rbac: false,
 				_multitenancy: false
+			)->getMatchEnvelope();
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+	}//end storedMatchEnvelope()
+
+	/**
+	 * The stored object a save updates, or null when the save creates.
+	 *
+	 * An auto-generated UUID marks a create, so no lookup runs for it.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return ObjectEntity|null The object to update.
+	 *
+	 * @throws ObjectExistsException When failIfExists is set and the identifier is already taken.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function existingObjectForSave(ObjectSaveCall $call): ?ObjectEntity {
+		$isAutoGeneratedUuid = ($call->selfData['_autoGeneratedUuid'] ?? false) === true;
+		if ($isAutoGeneratedUuid === true) {
+			$this->logSaveLookup(
+				call: $call,
+				message: '[SaveObject] UUID is auto-generated, skipping existing object lookup (CREATE operation)'
 			);
+			return null;
+		}
 
-			if ($existingObject !== null) {
-				// INSERT-ONLY GUARD (openregister#2210).
-				//
-				// The default below is an upsert: an existing identifier is
-				// updated, silently and successfully. That is correct for the
-				// overwhelming majority of callers and is untouched.
-				//
-				// It is wrong for a caller that is CLAIMING something — a lock,
-				// a slot, a lease, a queue position. There "it already existed"
-				// is the entire answer, and swallowing it means two callers both
-				// believe they won and the loser is never told. Such a caller
-				// opts in with $failIfExists and gets a 409 instead.
-				//
-				// Deliberately opt-in rather than the default: the current
-				// upsert is silent, so there is no way to discover from the code
-				// which callers depend on it. Flipping the default would change
-				// behaviour fleet-wide with no way to enumerate the blast radius.
-				//
-				// This guard alone is NOT what makes the claim safe — it is a
-				// fast path. It and the write below are two separate
-				// operations, so under concurrency N callers can all reach here
-				// having found nothing. The arbitration that actually closes
-				// the race lives one layer down in
-				// MagicMapper::saveObjectToRegisterSchemaTable(), which refuses
-				// both the update branch and a losing INSERT when this flag is
-				// set (openregister#2215). Verified 6/6 races at 12 concurrent
-				// claimants: 1x201, 11x409. Do not remove that guard on the
-				// assumption that this one covers it.
-				if ($failIfExists === true) {
-					$this->logger->debug(
-						message: '[SaveObject] Existing object found and failIfExists is set, refusing the write',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'uuid' => $uuid,
-							'objectId' => $existingObject->getId(),
-						]
-					);
+		if ($call->uuid === null) {
+			return null;
+		}
 
-					throw new ObjectExistsException(
-						message: sprintf('An object with identifier "%s" already exists.', (string)$uuid),
-						uuid: (string)$uuid
-					);
-				}
+		$this->logSaveLookup(
+			call: $call,
+			message: '[SaveObject] UUID provided and not auto-generated, checking for existing object (UPDATE operation)'
+		);
 
-				$this->logger->debug(
-					message: '[SaveObject] Existing object found, proceeding with UPDATE',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $uuid,
-						'objectId' => $existingObject->getId(),
-					]
-				);
+		// Always disable RBAC and multitenancy for internal object lookup
+		// to avoid permission errors when validating existing objects.
+		$existingObject = $this->findAndValidateExistingObject(
+			uuid: $call->uuid,
+			register: $call->register,
+			schema: $call->schema,
+			_rbac: false,
+			_multitenancy: false
+		);
 
-				// Push the in-flight save onto the call stack so
-				// cascade descendants can detect cycles back to
-				// ancestors via `validateReferences()`. Popped in
-				// finally regardless of success/failure.
-				$frameKey = $this->pushSaveCallFrame(
-					schemaSlug: ((string)($schema->getSlug() ?? $schema->getId())),
-					uuid: (string)$uuid,
-					register: self::frameRegister(register: $register)
-				);
-				$this->enterCascadeScope(_rbac: $_rbac);
-				try {
-					return $this->handleObjectUpdate(
-						existingObject: $existingObject,
-						register: $register,
-						schema: $schema,
-						data: $data,
-						selfData: $this->selfDataForUpdate(selfData: $selfData, _rbac: $_rbac),
-						folderId: $folderId,
-						persist: $persist,
-						silent: $silent,
-						currentUser: $currentUser
-					);
-				} finally {
-					$this->leaveCascadeScope();
-					$this->popSaveCallFrame(key: $frameKey);
-				}
-			}//end if
-		} elseif ($isAutoGeneratedUuid === true) {
+		if ($existingObject !== null) {
+			$this->refuseExistingWhenInsertOnly(call: $call, existingObject: $existingObject);
+		}
+
+		return $existingObject;
+	}//end existingObjectForSave()
+
+	/**
+	 * Log a step of the existing-object lookup of a save.
+	 *
+	 * @param ObjectSaveCall $call    The save call.
+	 * @param string         $message The log message.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function logSaveLookup(ObjectSaveCall $call, string $message): void {
+		$this->logger->debug(
+			message: $message,
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $call->uuid,
+				'register' => $call->register?->getId(),
+				'schema' => $call->schema?->getId(),
+			]
+		);
+	}//end logSaveLookup()
+
+	/**
+	 * Refuse the write when the caller claims an identifier that already exists.
+	 *
+	 * INSERT-ONLY GUARD (openregister#2210). The default is an upsert: an
+	 * existing identifier is updated, silently and successfully. A caller that
+	 * is CLAIMING something (a lock, a slot, a lease, a queue position) opts in
+	 * with failIfExists and gets a 409 instead. Opt-in, because there is no way
+	 * to discover from the code which callers depend on the silent upsert.
+	 *
+	 * This guard is a fast path, not what makes the claim safe: under
+	 * concurrency N callers can all pass it having found nothing. The
+	 * arbitration that closes the race lives in
+	 * MagicMapper::saveObjectToRegisterSchemaTable(), which refuses both the
+	 * update branch and a losing INSERT when this flag is set
+	 * (openregister#2215). Do not remove that guard on the assumption that this
+	 * one covers it.
+	 *
+	 * @param ObjectSaveCall $call           The save call.
+	 * @param ObjectEntity   $existingObject The stored object the identifier names.
+	 *
+	 * @return void
+	 *
+	 * @throws ObjectExistsException When failIfExists is set.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function refuseExistingWhenInsertOnly(ObjectSaveCall $call, ObjectEntity $existingObject): void {
+		if ($call->failIfExists === true) {
 			$this->logger->debug(
-				message: '[SaveObject] UUID is auto-generated, skipping existing object lookup (CREATE operation)',
+				message: '[SaveObject] Existing object found and failIfExists is set, refusing the write',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'uuid' => $uuid,
-					'register' => $register?->getId(),
-					'schema' => $schema?->getId(),
+					'uuid' => $call->uuid,
+					'objectId' => $existingObject->getId(),
 				]
 			);
-		}//end if
 
-		// CREATE-TIME DUPLICATE POLICY (dedup-check-before-create).
-		//
-		// Everything above this line is either an update branch that returned,
-		// or a create, so this is the one place the policy can sit and see
-		// exactly the creates. It runs on the SAVE path and not only in the
-		// check endpoint on purpose: a client that never calls the endpoint —
-		// an import, a script, an integration — is stopped here all the same.
-		//
-		// NOT gated on $_rbac, and that is deliberate. $_rbac === false means
-		// "skip the permission checks" and the controller sets it for every
-		// ADMINISTRATOR, so gating on it would turn the declaration off for the
-		// one caller most likely to be doing a bulk create. This is a policy
-		// about the data, not about the caller's rights: an administrator is
-		// no more entitled to a second copy of a record than anyone else, which
-		// is the same reason `overrideGroups` has no implicit admin bypass.
-		//
-		// The opt-in that bounds the blast radius is the DECLARATION: nothing
-		// happens at all unless the schema asked for `onCreate: "block"`.
+			throw new ObjectExistsException(
+				message: sprintf('An object with identifier "%s" already exists.', (string)$call->uuid),
+				uuid: (string)$call->uuid
+			);
+		}
+
+		$this->logger->debug(
+			message: '[SaveObject] Existing object found, proceeding with UPDATE',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $call->uuid,
+				'objectId' => $existingObject->getId(),
+			]
+		);
+	}//end refuseExistingWhenInsertOnly()
+
+	/**
+	 * Push the in-flight save onto the call stack and enter the cascade scope.
+	 *
+	 * Cascade descendants detect cycles back to ancestors through the call
+	 * stack in `validateReferences()`. The caller pops the frame and leaves the
+	 * scope in a finally block.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return string|null The frame key to pop, or null when no frame was pushed.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function enterSaveFrame(ObjectSaveCall $call): ?string {
+		$frameKey = $this->pushSaveCallFrame(
+			schemaSlug: ((string)($call->schema->getSlug() ?? $call->schema->getId())),
+			uuid: (string)$call->uuid,
+			register: self::frameRegister(register: $call->register)
+		);
+		$this->enterCascadeScope(_rbac: $call->rbac);
+
+		return $frameKey;
+	}//end enterSaveFrame()
+
+	/**
+	 * Update the stored object a save names, inside its save frame.
+	 *
+	 * @param ObjectSaveCall $call           The save call.
+	 * @param ObjectEntity   $existingObject The stored object.
+	 *
+	 * @return ObjectEntity The updated object entity.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function updateExistingForSave(ObjectSaveCall $call, ObjectEntity $existingObject): ObjectEntity {
+		$frameKey = $this->enterSaveFrame(call: $call);
+		try {
+			return $this->handleObjectUpdate(
+				existingObject: $existingObject,
+				register: $call->register,
+				schema: $call->schema,
+				data: $call->data,
+				selfData: $this->selfDataForUpdate(selfData: $call->selfData, _rbac: $call->rbac),
+				folderId: $call->folderId,
+				persist: $call->persist,
+				silent: $call->silent,
+				currentUser: $call->currentUser
+			);
+		} finally {
+			$this->leaveCascadeScope();
+			$this->popSaveCallFrame(key: $frameKey);
+		}
+	}//end updateExistingForSave()
+
+	/**
+	 * Create a new object, under the schema's create-time duplicate policy.
+	 *
+	 * CREATE-TIME DUPLICATE POLICY (dedup-check-before-create). It runs on the
+	 * SAVE path and not only in the check endpoint, so an import, a script or
+	 * an integration is stopped all the same. It is NOT gated on $_rbac: the
+	 * controller sets that off for every administrator, and an administrator is
+	 * no more entitled to a second copy of a record than anyone else. Nothing
+	 * happens unless the schema declares `onCreate: "block"`.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return ObjectEntity The created object entity.
+	 *
+	 * @throws DuplicateBlockedException When a blocking duplicate match stands.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function createNewForSave(ObjectSaveCall $call): ObjectEntity {
 		$dedupOverriddenMatches = [];
 		$dedupPolicy = $this->resolveDedupCreatePolicy();
-
 		if ($dedupPolicy !== null) {
 			$dedupOverriddenMatches = $dedupPolicy->guardCreate(
-				register: $registerId,
-				schema: $schemaId,
-				data: $data,
-				overrideRequested: $dedupOverrideRequested
+				register: $call->registerId,
+				schema: $call->schemaId,
+				data: $call->data,
+				overrideRequested: $call->dedupOverride
 			);
 		}
 
-		// SOFT UNIQUENESS, the create half. Unlike the guard above it never
-		// refuses: it records a warning the controller puts on the response
-		// beside the created object. A schema that needs a refusal declares
-		// `onCreate: "block"` instead, which is the guard above.
-		$uniqueHints = $this->resolveUniqueHintChecker();
-		if ($uniqueHints !== null) {
-			$uniqueHints->check(
-				configuration: ($schema->getConfiguration() ?? []),
-				register: $registerId,
-				schema: $schemaId,
-				data: $data
-			);
-		}
+		$this->recordUniqueHints(call: $call);
 
-		// Push the in-flight save onto the call stack so cascade
-		// descendants can detect cycles via `validateReferences()`.
-		// Popped in finally regardless of success/failure.
-		$frameKey = $this->pushSaveCallFrame(
-			schemaSlug: ((string)($schema->getSlug() ?? $schema->getId())),
-			uuid: ($uuid ?? ''),
-			register: self::frameRegister(register: $register)
-		);
-		$this->enterCascadeScope(_rbac: $_rbac);
+		$frameKey = $this->enterSaveFrame(call: $call);
 		try {
-			// Create new object if no existing object found.
-			$created = $this->handleObjectCreation(
-				registerId: $registerId,
-				schemaId: $schemaId,
-				register: $register,
-				schema: $schema,
-				data: $data,
-				selfData: $selfData,
-				uuid: $uuid,
-				folderId: $folderId,
-				persist: $persist,
-				silent: $silent,
-				_multitenancy: $_multitenancy,
-				currentUser: $currentUser,
-				failIfExists: $failIfExists,
-				_unowned: $_unowned,
-				_owner: $_owner
-			);
+			$created = $this->createObjectForSave(call: $call);
 
 			// An override is only on record once the object it overrode for
 			// exists, so this runs after the write and never before it.
-			if ($dedupPolicy !== null && count($dedupOverriddenMatches) > 0 && $persist === true) {
+			if ($dedupPolicy !== null && count($dedupOverriddenMatches) > 0 && $call->persist === true) {
 				$dedupPolicy->recordOverride(object: $created, matches: $dedupOverriddenMatches);
 			}
 
@@ -3414,7 +3491,62 @@ class SaveObject {
 			$this->leaveCascadeScope();
 			$this->popSaveCallFrame(key: $frameKey);
 		}
-	}//end saveObject()
+	}//end createNewForSave()
+
+	/**
+	 * Record the soft-uniqueness warnings of a create.
+	 *
+	 * SOFT UNIQUENESS, the create half: it never refuses, it records a warning
+	 * the controller puts on the response beside the created object.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function recordUniqueHints(ObjectSaveCall $call): void {
+		$uniqueHints = $this->resolveUniqueHintChecker();
+		if ($uniqueHints === null) {
+			return;
+		}
+
+		$uniqueHints->check(
+			configuration: ($call->schema->getConfiguration() ?? []),
+			register: $call->registerId,
+			schema: $call->schemaId,
+			data: $call->data
+		);
+	}//end recordUniqueHints()
+
+	/**
+	 * Create the object entity of a save.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return ObjectEntity The created object entity.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function createObjectForSave(ObjectSaveCall $call): ObjectEntity {
+		return $this->handleObjectCreation(
+			registerId: $call->registerId,
+			schemaId: $call->schemaId,
+			register: $call->register,
+			schema: $call->schema,
+			data: $call->data,
+			selfData: $call->selfData,
+			uuid: $call->uuid,
+			folderId: $call->folderId,
+			persist: $call->persist,
+			silent: $call->silent,
+			_multitenancy: $call->multitenancy,
+			currentUser: $call->currentUser,
+			failIfExists: $call->failIfExists,
+			_unowned: $call->unowned,
+			_owner: $call->owner
+		);
+	}//end createObjectForSave()
 
 	/**
 	 * The register identifier a save call frame records.
