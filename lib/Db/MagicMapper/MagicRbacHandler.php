@@ -128,6 +128,15 @@ class MagicRbacHandler {
 	private ?bool $isPostgresCache = null;
 
 	/**
+	 * Memoised database-provider verdict for how a string value is quoted.
+	 *
+	 * Null until first resolved; the provider cannot change within a request.
+	 *
+	 * @var boolean|null
+	 */
+	private ?bool $isMysqlCache = null;
+
+	/**
 	 * Constructor for MagicRbacHandler
 	 *
 	 * @param IUserSession $userSession User session for current user context
@@ -1132,29 +1141,10 @@ class MagicRbacHandler {
 		array $rule,
 		array $caller,
 	): mixed {
-		$userGroups = $caller['groups'];
-		$userId = $caller['userId'];
-		$inheritFromPublic = $caller['inheritFromPublic'];
-		$group = ($rule['group'] ?? null);
 		$match = $rule['match'] ?? null;
 
-		// Check if user qualifies for this group OR is the named user override.
-		$userQualifies = false;
-		if (isset($rule['user']) === true && is_string($rule['user']) === true) {
-			// User-level override (delegation): { "user": "<uid>", "match": {...} }.
-			$userQualifies = $this->matchesUserOverride(rule: 'user:' . $rule['user'], userId: $userId);
-		} elseif ($group === 'public') {
-			// Anonymous users always qualify for public; authenticated users
-			// only when public inheritance is enabled (inheritFromPublic).
-			$userQualifies = $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $inheritFromPublic);
-		} elseif ($group === 'authenticated' && $userId !== null) {
-			$userQualifies = true;
-		} elseif ($group !== null && in_array($group, $userGroups, true) === true) {
-			$userQualifies = true;
-		}
-
-		// If user doesn't qualify for the group, this rule doesn't apply.
-		if ($userQualifies === false) {
+		// A caller outside the rule's group or named user is not given it.
+		if ($this->callerQualifiesForRule(rule: $rule, caller: $caller) === false) {
 			return false;
 		}
 
@@ -1171,6 +1161,38 @@ class MagicRbacHandler {
 		// Build SQL conditions for the match criteria.
 		return $this->buildMatchConditions(qb: $qb, match: $match);
 	}//end processConditionalRule()
+
+	/**
+	 * Whether a conditional rule applies to the caller: as its named user, or through its group.
+	 *
+	 * `public` admits anonymous callers, and signed-in ones when public
+	 * inheritance is on. `authenticated` is a pseudo-group nobody is a member
+	 * of, so it admits any signed-in user here.
+	 *
+	 * @param array<string, mixed> $rule   The rule.
+	 * @param array<string, mixed> $caller The caller's groups, userId and inheritFromPublic.
+	 *
+	 * @return bool True when the rule applies to the caller.
+	 */
+	private function callerQualifiesForRule(array $rule, array $caller): bool {
+		$group = ($rule['group'] ?? null);
+		$userId = $caller['userId'];
+
+		if (isset($rule['user']) === true && is_string($rule['user']) === true) {
+			// User-level override (delegation): { "user": "<uid>", "match": {...} }.
+			return $this->matchesUserOverride(rule: 'user:' . $rule['user'], userId: $userId);
+		}
+
+		if ($group === 'public') {
+			return $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $caller['inheritFromPublic']);
+		}
+
+		if ($group === 'authenticated' && $userId !== null) {
+			return true;
+		}
+
+		return $group !== null && in_array($group, $caller['groups'], true) === true;
+	}//end callerQualifiesForRule()
 
 	/**
 	 * Build SQL conditions for match criteria
@@ -2298,36 +2320,10 @@ class MagicRbacHandler {
 		array $rule,
 		array $caller,
 	): mixed {
-		$userGroups = $caller['groups'];
-		$userId = $caller['userId'];
-		$inheritFromPublic = $caller['inheritFromPublic'];
-		$group = ($rule['group'] ?? null);
 		$match = $rule['match'] ?? null;
 
-		// Check if user qualifies for this group OR is the named user override.
-		$userQualifies = false;
-		if (isset($rule['user']) === true && is_string($rule['user']) === true) {
-			// User-level override (delegation): { "user": "<uid>", "match": {...} }.
-			$userQualifies = $this->matchesUserOverride(rule: 'user:' . $rule['user'], userId: $userId);
-		} elseif ($group === 'public') {
-			// Anonymous users always qualify; authenticated users only when
-			// public inheritance is enabled (inheritFromPublic).
-			$userQualifies = $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $inheritFromPublic);
-		} elseif ($group === 'authenticated' && $userId !== null) {
-			// 🔴 The QueryBuilder emitter (processConditionalRule) and
-			// hasPermission() both admit any signed-in user here, and the
-			// comment in hasPermission() says this method did too. It did not:
-			// `authenticated` is a pseudo-group nobody is a member of, so a
-			// `{group: authenticated, match: {...}}` rule fell through to deny
-			// on every raw-SQL path (the multi-schema UNION, related-row
-			// subqueries, the aggregation fast path).
-			$userQualifies = true;
-		} elseif ($group !== null && in_array($group, $userGroups, true) === true) {
-			$userQualifies = true;
-		}
-
-		// If user doesn't qualify for the group, this rule doesn't apply.
-		if ($userQualifies === false) {
+		// A caller outside the rule's group or named user is not given it.
+		if ($this->callerQualifiesForRule(rule: $rule, caller: $caller) === false) {
 			return false;
 		}
 
@@ -2711,6 +2707,31 @@ class MagicRbacHandler {
 	}//end containsPredicateSql()
 
 	/**
+	 * Whether the connected database is MySQL or MariaDB.
+	 *
+	 * @return bool True for those two; a provider that cannot be read counts as true,
+	 *              because doubling a backslash is safe everywhere.
+	 */
+	private function isMysql(): bool {
+		if ($this->isMysqlCache !== null) {
+			return $this->isMysqlCache;
+		}
+
+		try {
+			$provider = $this->container->get(IDBConnection::class)->getDatabaseProvider();
+			$this->isMysqlCache = ($provider === IDBConnection::PLATFORM_MYSQL);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[MagicRbacHandler] Could not determine the database provider for quoting',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e->getMessage()]
+			);
+			$this->isMysqlCache = true;
+		}
+
+		return $this->isMysqlCache;
+	}//end isMysql()
+
+	/**
 	 * Whether the connected database is PostgreSQL.
 	 *
 	 * Resolved lazily through the container: this class is constructed on paths
@@ -2770,8 +2791,14 @@ class MagicRbacHandler {
 			return (string)$value;
 		}
 
-		// String value - escape single quotes by doubling them.
-		$escaped = str_replace("'", "''", (string)$value);
+		// MySQL and MariaDB read a backslash as an escape inside a string, so a
+		// value ending its quote through `\'` needs the backslash doubled as well.
+		$escaped = (string)$value;
+		if ($this->isMysql() === true) {
+			$escaped = str_replace('\\', '\\\\', $escaped);
+		}
+
+		$escaped = str_replace("'", "''", $escaped);
 		return "'{$escaped}'";
 	}//end quoteValue()
 

@@ -70,15 +70,7 @@ class UnknownRuleKeyFindings {
 			return;
 		}
 
-		$stored = null;
-		$row = $this->blocks->storedRow(table: 'openregister_schemas', id: $schema->getId());
-		if ($row !== null) {
-			$stored = new Schema();
-			$stored->setAuthorization($this->blocks->decoded(value: ($row['authorization'] ?? null)));
-			$stored->setProperties($this->blocks->decoded(value: ($row['properties'] ?? null)));
-		}
-
-		$this->blocks->assertNone(findings: $this->schemaFindings(schema: $schema, stored: $stored));
+		$this->blocks->assertNone(findings: $this->schemaFindings(schema: $schema, stored: $this->blocks->storedSchema(id: $schema->getId())));
 	}//end assertSchemaSavable()
 
 	/**
@@ -125,22 +117,10 @@ class UnknownRuleKeyFindings {
 			block: ['authorization' => $schema->getAuthorization(), 'context' => $name, 'columns' => $columns],
 			stored: $stored?->getAuthorization()
 		);
-		$storedProperties = ($stored?->getProperties() ?? []);
-
-		foreach (($schema->getProperties() ?? []) as $property => $config) {
-			if (is_array($config) === false || is_array(($config['authorization'] ?? null)) === false) {
-				continue;
-			}
-
-			$held = ($storedProperties[$property]['authorization'] ?? null);
-			if (is_array($held) === false) {
-				$held = null;
-			}
-
-			$context = sprintf('property "%s" of %s', (string)$property, $name);
+		foreach ($this->blocks->propertyBlocks(schema: $schema, stored: $stored, name: $name) as $block) {
 			$findings = array_merge(
 				$findings,
-				$this->findingsIn(block: ['authorization' => $config['authorization'], 'context' => $context, 'columns' => $columns], stored: $held)
+				$this->findingsIn(block: ['authorization' => $block['authorization'], 'context' => $block['context'], 'columns' => $columns], stored: $block['stored'])
 			);
 		}
 

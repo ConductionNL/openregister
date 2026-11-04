@@ -67,15 +67,7 @@ class MetadataConditionFindings {
 			return;
 		}
 
-		$stored = null;
-		$row = $this->storedRow(table: 'openregister_schemas', id: $schema->getId());
-		if ($row !== null) {
-			$stored = new Schema();
-			$stored->setAuthorization($this->decoded(value: ($row['authorization'] ?? null)));
-			$stored->setProperties($this->decoded(value: ($row['properties'] ?? null)));
-		}
-
-		$this->assertNone(findings: $this->schemaFindings(schema: $schema, stored: $stored));
+		$this->assertNone(findings: $this->schemaFindings(schema: $schema, stored: $this->storedSchema(id: $schema->getId())));
 	}//end assertSchemaSavable()
 
 	/**
@@ -158,20 +150,8 @@ class MetadataConditionFindings {
 	public function schemaFindings(Schema $schema, ?Schema $stored = null): array {
 		$name = sprintf('schema "%s"', (string)($schema->getSlug() ?? $schema->getTitle() ?? $schema->getId()));
 		$findings = $this->findings(authorization: $schema->getAuthorization(), context: $name, stored: $stored?->getAuthorization());
-		$storedProperties = ($stored?->getProperties() ?? []);
-
-		foreach (($schema->getProperties() ?? []) as $property => $config) {
-			if (is_array($config) === false || is_array(($config['authorization'] ?? null)) === false) {
-				continue;
-			}
-
-			$held = ($storedProperties[$property]['authorization'] ?? null);
-			if (is_array($held) === false) {
-				$held = null;
-			}
-
-			$context = sprintf('property "%s" of %s', (string)$property, $name);
-			$findings = array_merge($findings, $this->findings(authorization: $config['authorization'], context: $context, stored: $held));
+		foreach ($this->propertyBlocks(schema: $schema, stored: $stored, name: $name) as $block) {
+			$findings = array_merge($findings, $this->findings(authorization: $block['authorization'], context: $block['context'], stored: $block['stored']));
 		}
 
 		return $findings;
@@ -230,11 +210,70 @@ class MetadataConditionFindings {
 	}//end assertNone()
 
 	/**
+	 * The schema as stored, with the parts a save is judged against.
+	 *
+	 * @param int|null $id The schema's id; null when it is new.
+	 *
+	 * @return Schema|null The stored schema, or null when no row holds it.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	public function storedSchema(?int $id): ?Schema {
+		$row = $this->storedRow(table: 'openregister_schemas', id: $id);
+		if ($row === null) {
+			return null;
+		}
+
+		$stored = new Schema();
+		$stored->setAuthorization($this->decoded(value: ($row['authorization'] ?? null)));
+		$stored->setProperties($this->decoded(value: ($row['properties'] ?? null)));
+
+		return $stored;
+	}//end storedSchema()
+
+	/**
+	 * The authorization blocks of a schema's properties, with what is stored for each.
+	 *
+	 * @param Schema      $schema The schema.
+	 * @param Schema|null $stored The schema as stored, when saving over one.
+	 * @param string      $name   How a message names the schema.
+	 *
+	 * @return array<int, array{authorization: array, context: string, stored: array|null}> The blocks.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	public function propertyBlocks(Schema $schema, ?Schema $stored, string $name): array {
+		$storedProperties = ($stored?->getProperties() ?? []);
+		$blocks = [];
+
+		foreach (($schema->getProperties() ?? []) as $property => $config) {
+			if (is_array($config) === false || is_array(($config['authorization'] ?? null)) === false) {
+				continue;
+			}
+
+			$held = ($storedProperties[$property]['authorization'] ?? null);
+			if (is_array($held) === false) {
+				$held = null;
+			}
+
+			$blocks[] = [
+				'authorization' => $config['authorization'],
+				'context'       => sprintf('property "%s" of %s', (string)$property, $name),
+				'stored'        => $held,
+			];
+		}
+
+		return $blocks;
+	}//end propertyBlocks()
+
+	/**
 	 * The rule lists of a block, keyed by how a message names them.
 	 *
 	 * @param array|null $authorization The block.
 	 *
 	 * @return array<string, array<int|string, mixed>> The lists.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function ruleLists(?array $authorization): array {
 		$lists = [];
@@ -267,6 +306,8 @@ class MetadataConditionFindings {
 	 * @param array<string, mixed> $rule The rule.
 	 *
 	 * @return string The principal.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function principalOf(array $rule): string {
 		if (is_string(($rule['group'] ?? null)) === true) {
@@ -287,6 +328,8 @@ class MetadataConditionFindings {
 	 * @param int|null $id    The row's id, null for a new entity.
 	 *
 	 * @return array<string, mixed>|null The row, or null when there is none.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function storedRow(string $table, ?int $id): ?array {
 		if ($id === null || $this->db === null) {
@@ -312,6 +355,8 @@ class MetadataConditionFindings {
 	 * @param mixed $value The column value.
 	 *
 	 * @return array<int|string, mixed>|null The decoded value.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function decoded(mixed $value): ?array {
 		if (is_string($value) === false) {

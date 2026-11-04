@@ -415,6 +415,119 @@ class RuleKeysFailClosedTest extends TestCase {
 	}//end testTheColumnIsQuotedForThePlatform()
 
 	/**
+	 * Values that try to end their string literal under MySQL's backslash rule.
+	 *
+	 * @return array<string, array{0: string}> The values.
+	 */
+	public static function hostileValues(): array {
+		return [
+			'backslash before a quote' => ["\\' OR 1=1 -- "],
+			'two backslashes'          => ["\\\\' OR 1=1 -- "],
+			'trailing backslash'       => ['tail\\'],
+		];
+	}//end hostileValues()
+
+	/**
+	 * A handler connected to the given database provider.
+	 *
+	 * @param string $provider The provider the connection answers.
+	 *
+	 * @return MagicRbacHandler The handler.
+	 */
+	private function handlerOn(string $provider): MagicRbacHandler {
+		$connection = $this->createMock(IDBConnection::class);
+		$connection->method('getDatabaseProvider')->willReturn($provider);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn($connection);
+
+		return $this->handler(container: $container);
+	}//end handlerOn()
+
+	/**
+	 * The part of a predicate that sits outside its string literals, read by MySQL's rules.
+	 *
+	 * @param string $sql The predicate.
+	 *
+	 * @return string The predicate with each literal replaced by `?`.
+	 */
+	private function outsideMysqlLiterals(string $sql): string {
+		$outside = '';
+		$inside = false;
+		for ($i = 0, $end = strlen($sql); $i < $end; $i++) {
+			$char = $sql[$i];
+			if ($inside === false) {
+				$outside .= $char === "'" ? '?' : $char;
+				$inside = $char === "'";
+				continue;
+			}
+
+			if ($char === '\\' || ($char === "'" && ($sql[$i + 1] ?? '') === "'")) {
+				$i++;
+				continue;
+			}
+
+			$inside = $char !== "'";
+		}
+
+		return $outside;
+	}//end outsideMysqlLiterals()
+
+	/**
+	 * On MySQL a rule value stays inside its literal, on every operator that quotes one.
+	 *
+	 * @param string $value The hostile value.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('hostileValues')]
+	public function testAValueStaysInsideItsLiteralOnMysql(string $value): void {
+		$handler = $this->handlerOn(IDBConnection::PLATFORM_MYSQL);
+
+		foreach ([$value, ['$ne' => $value], ['$in' => [$value, 'b']], ['$contains' => $value]] as $condition) {
+			$safe = $this->schema($this->cross(['status' => (is_array($condition) === true ? array_map(static fn ($v) => is_array($v) === true ? ['x', 'b'] : 'x', $condition) : 'x')]));
+			$hostile = $this->schema($this->cross(['status' => $condition]));
+
+			$this->assertSame(
+				$this->outsideMysqlLiterals($handler->getCrossOrganisationBranchSql(schema: $safe)),
+				$this->outsideMysqlLiterals($handler->getCrossOrganisationBranchSql(schema: $hostile))
+			);
+		}
+	}//end testAValueStaysInsideItsLiteralOnMysql()
+
+	/**
+	 * A backslash is an ordinary character on PostgreSQL and SQLite, so it stays single there.
+	 *
+	 * @return void
+	 */
+	public function testABackslashIsDoubledOnlyOnMysql(): void {
+		$schema = $this->schema($this->cross(['status' => 'a\\b\'c']));
+
+		$this->assertSame(
+			"(`status` = 'a\\\\b''c')",
+			$this->handlerOn(IDBConnection::PLATFORM_MYSQL)->getCrossOrganisationBranchSql(schema: $schema)
+		);
+		$this->assertSame(
+			"(`status` = 'a\\b''c')",
+			$this->handlerOn(IDBConnection::PLATFORM_SQLITE)->getCrossOrganisationBranchSql(schema: $schema)
+		);
+	}//end testABackslashIsDoubledOnlyOnMysql()
+
+	/**
+	 * Without an answer from the connection the backslash is doubled, which is safe on every engine.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableProviderStillDoublesTheBackslash(): void {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willThrowException(new \RuntimeException('no connection'));
+
+		$this->assertStringContainsString(
+			"'a\\\\b'",
+			$this->handler(container: $container)->getCrossOrganisationBranchSql(schema: $this->schema($this->cross(['status' => 'a\\b'])))
+		);
+	}//end testAnUnreadableProviderStillDoublesTheBackslash()
+
+	/**
 	 * `$contains` is the one QueryBuilder condition written as raw SQL, so it quotes the column too.
 	 *
 	 * @return void
