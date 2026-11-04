@@ -36,6 +36,8 @@ use OCP\AppFramework\Http\JSONResponse;
  */
 trait ObjectLinkActionsTrait
 {
+	use ResolvesLinkedObjectTrait;
+
 	/**
 	 * The 501 answer when the linked Nextcloud app is not installed.
 	 *
@@ -116,23 +118,18 @@ trait ObjectLinkActionsTrait
 	}//end runOnLinkedObject()
 
 	/**
-	 * Resolve an OR object from register/schema/id.
+	 * A link action that answers the links the fetch finds, with their count.
 	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema   Schema slug or id.
-	 * @param string $id       Object id.
+	 * @param Closure $fetch Given the object, returns its links.
 	 *
-	 * @return ObjectEntity|null
-	 *
-	 * @throws DoesNotExistException When no such object exists; onLinkedObject() answers 404.
+	 * @return Closure The action, for onLinkedObject() or listLinkedObject().
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
-	private function validateObject(string $register, string $schema, string $id): ?ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
-
-		return $this->objectService->getObject();
-	}//end validateObject()
+	private function resultsOf(Closure $fetch): Closure {
+		return function (ObjectEntity $object) use ($fetch): JSONResponse {
+			$results = $fetch($object);
+			return new JSONResponse(['results' => $results, 'total' => count($results)]);
+		};
+	}//end resultsOf()
 }//end trait

@@ -90,16 +90,7 @@ class PhotoLinksController extends Controller {
 
 		return $this->listLinkedObject(
 			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$results = $this->photoLinkService->getLinkedAlbums($object->getUuid());
-
-				return new JSONResponse(
-					[
-						'results' => $results,
-						'total' => count($results),
-					]
-				);
-			}
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->photoLinkService->getLinkedAlbums($object->getUuid()))
 		);
 	}//end index()
 

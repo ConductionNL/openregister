@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Trait\ResolvesLinkedObjectTrait;
 use OCA\OpenRegister\Service\FormLinkService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
@@ -50,6 +51,8 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class FormLinksController extends Controller {
+	use ResolvesLinkedObjectTrait;
+
 
 	/**
 	 * Form-link service.
@@ -402,32 +405,4 @@ class FormLinksController extends Controller {
 		}
 
 	}//end available()
-
-	/**
-	 * Validate the (register, schema, id) tuple resolves to a real object.
-	 *
-	 * Mirrors the helper in ContactsController so the surface stays consistent.
-	 *
-	 * @param string $register Register slug.
-	 * @param string $schema Schema slug.
-	 * @param string $id Object id.
-	 *
-	 * @return \OCA\OpenRegister\Db\ObjectEntity|null
-	 *
-	 * @throws DoesNotExistException When no such object exists. Deliberately propagated rather
-	 *                               than caught: every call site already wraps this helper and translates it to a 404.
-	 *                               Swallowing it here would collapse "no such object" into the same null this method
-	 *                               returns for other reasons, which the caller could no longer tell apart.
-	 */
-	private function validateObject(
-		string $register,
-		string $schema,
-		string $id,
-	): ?\OCA\OpenRegister\Db\ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
-
-		return $this->objectService->getObject();
-	}//end validateObject()
 }//end class

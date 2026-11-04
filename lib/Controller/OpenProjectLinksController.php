@@ -93,16 +93,7 @@ class OpenProjectLinksController extends Controller {
 
 		return $this->onLinkedObject(
 			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$results = $this->linkService->getLinkedWorkPackages($object->getUuid());
-
-				return new JSONResponse(
-					[
-						'results' => $results,
-						'total' => count($results),
-					]
-				);
-			}
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->linkService->getLinkedWorkPackages($object->getUuid()))
 		);
 	}//end index()
 

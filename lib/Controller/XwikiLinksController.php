@@ -91,16 +91,7 @@ class XwikiLinksController extends Controller {
 	public function index(string $register, string $schema, string $id): JSONResponse {
 		return $this->onLinkedObject(
 			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$results = $this->xwikiLinkService->getLinkedPages($object->getUuid());
-
-				return new JSONResponse(
-					[
-						'results' => $results,
-						'total' => count($results),
-					]
-				);
-			}
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->xwikiLinkService->getLinkedPages($object->getUuid()))
 		);
 	}//end index()
 

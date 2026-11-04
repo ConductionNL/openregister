@@ -87,11 +87,7 @@ class ShareLinksController extends Controller {
 	public function index(string $register, string $schema, string $id): JSONResponse {
 		return $this->onLinkedObject(
 			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$results = $this->shareLinkService->getLinkedShares($object->getUuid());
-
-				return new JSONResponse(['results' => $results, 'total' => count($results)]);
-			}
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->shareLinkService->getLinkedShares($object->getUuid()))
 		);
 	}//end index()
 
@@ -210,11 +206,7 @@ class ShareLinksController extends Controller {
 	public function files(string $register, string $schema, string $id): JSONResponse {
 		return $this->onLinkedObject(
 			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$results = $this->shareLinkService->getShareableFiles($object->getUuid());
-
-				return new JSONResponse(['results' => $results, 'total' => count($results)]);
-			}
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->shareLinkService->getShareableFiles($object->getUuid()))
 		);
 	}//end files()
 

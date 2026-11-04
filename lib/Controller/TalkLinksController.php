@@ -80,11 +80,7 @@ class TalkLinksController extends Controller {
 
 		return $this->listLinkedObject(
 			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$results = $this->talkLinkService->getLinkedRooms($object->getUuid());
-
-				return new JSONResponse(['results' => $results, 'total' => count($results)]);
-			}
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->talkLinkService->getLinkedRooms($object->getUuid()))
 		);
 	}//end index()
 

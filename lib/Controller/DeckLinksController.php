@@ -90,11 +90,7 @@ class DeckLinksController extends Controller {
 
 		return $this->listLinkedObject(
 			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$results = $this->deckLinkService->getLinkedCards($object->getUuid());
-
-				return new JSONResponse(['results' => $results, 'total' => count($results)]);
-			}
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->deckLinkService->getLinkedCards($object->getUuid()))
 		);
 	}//end index()
 

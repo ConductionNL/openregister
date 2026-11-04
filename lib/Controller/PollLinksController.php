@@ -86,11 +86,7 @@ class PollLinksController extends Controller {
 
 		return $this->listLinkedObject(
 			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$results = $this->pollLinkService->getLinkedPolls($object->getUuid());
-
-				return new JSONResponse(['results' => $results, 'total' => count($results)]);
-			}
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->pollLinkService->getLinkedPolls($object->getUuid()))
 		);
 	}//end index()
 
