@@ -27,8 +27,8 @@ use ReflectionNamedType;
 /**
  * Every service in a controller's services bundle reaches the controller.
  *
- * A controller keeps a bundled service either in its own property of that type
- * or reads it through the bundle it keeps in $services.
+ * A controller keeps a bundled service in its own property, reads it through the
+ * bundle it keeps in $services, or hands it to an object it builds and keeps.
  */
 class ControllerServicesWiringTest extends TestCase {
 	/**
@@ -157,8 +157,33 @@ class ControllerServicesWiringTest extends TestCase {
 			) {
 				return true;
 			}
+
+			if ($this->isBundle(type: $object::class) === false
+				&& str_starts_with($object::class, 'OCA\\OpenRegister\\') === true
+				&& in_array(needle: $leaf, haystack: $this->propertiesOf(object: $object), strict: true) === true
+			) {
+				return true;
+			}
 		}
 
 		return false;
 	}//end reaches()
+
+	/**
+	 * The values of an object's initialised properties, private ones included.
+	 *
+	 * @param object $object The object a controller built from bundled services.
+	 *
+	 * @return array<int,mixed>
+	 */
+	private function propertiesOf(object $object): array {
+		$values = [];
+		foreach ((new ReflectionClass($object))->getProperties() as $property) {
+			if ($property->isInitialized($object) === true) {
+				$values[] = $property->getValue($object);
+			}
+		}
+
+		return $values;
+	}//end propertiesOf()
 }//end class
