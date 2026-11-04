@@ -29,6 +29,13 @@ use ReflectionClass;
 /**
  * @covers \OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets
  * @covers \OCA\OpenRegister\Service\Flow\FlowRunCommit
+ * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\FlowState
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunService
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStateBinding
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStateHandle
+ * @uses \OCA\OpenRegister\Service\Flow\FlowResumeState
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStepHistory
  */
 class ObjectActionSecretsTest extends TestCase {
 

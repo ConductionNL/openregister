@@ -53,6 +53,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
  * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
+ * @uses \OCA\OpenRegister\Db\FlowTimer
  */
 class WorkingCalendarGuardListenersTest extends TestCase {
 

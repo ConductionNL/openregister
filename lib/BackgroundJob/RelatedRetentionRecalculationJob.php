@@ -120,6 +120,7 @@ class RelatedRetentionRecalculationJob extends QueuedJob {
 	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
 	 */
 	public function recalculateDependantsOf(string $uuid): int {
+		$this->objectMapper->invalidateTableMemos();
 		$source = $this->objectMapper->find(identifier: $uuid, _rbac: false, _multitenancy: false);
 		$sourceSchema = $this->schemaMapper->find(id: (string)$source->getSchema(), _rbac: false, _multitenancy: false);
 

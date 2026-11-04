@@ -53,6 +53,7 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects
  * @covers \OCA\OpenRegister\Service\Object\BulkSafeguardRun
  * @uses   \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @uses   \OCA\OpenRegister\Service\Object\PermissionCheck
  * @uses   \OCA\OpenRegister\Service\Object\DraftCallerRule
  * @uses   \OCA\OpenRegister\Service\Object\DraftStatusPolicy
@@ -76,7 +77,10 @@ class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 
 	private const FOREIGN_LIVE = '99999999-9999-9999-9999-999999999999';
 
+	private const OWN_DELETED_DRAFT = '55555555-5555-5555-5555-555555555555';
+
 	private const ROWS = [
+		self::OWN_DELETED_DRAFT => ['org' => 'org-a', 'deleted' => true, 'status' => 'draft'],
 		self::FOREIGN_DELETED => ['org' => 'org-b', 'deleted' => true],
 		self::OWN_DELETED => ['org' => 'org-a', 'deleted' => true],
 		self::FOREIGN_LIVE => ['org' => 'org-b', 'deleted' => false],
@@ -121,6 +125,7 @@ class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 		$entity->setObject(['title' => 'stored']);
 		$entity->setRegister('10');
 		$entity->setSchema('681');
+		$entity->setStatus(self::ROWS[$uuid]['status'] ?? null);
 		if (self::ROWS[$uuid]['deleted'] === true) {
 			$entity->setDeleted(['deleted' => '2026-11-01T00:00:00+00:00', 'deletedBy' => 'bob']);
 		}
@@ -337,6 +342,10 @@ class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 		$createOnly = ['create' => ['planners'], 'read' => ['planners']];
 
 		$this->assertSame(expected: [null], actual: $this->screenBatch(rows: [['id' => self::OWN_DELETED]], rules: $createOnly));
+	}
+
+	public function testADeletedRowIsNotJudgedAsTheRowBeingUpdated(): void {
+		$this->assertNull($this->screen(row: ['id' => self::OWN_DELETED_DRAFT]));
 	}
 
 	public function testARefusedDeletedRowDoesNotRefuseTheNextRow(): void {

@@ -50,6 +50,26 @@ use Psr\Log\LoggerInterface;
  */
 class EntityRelationMapper extends QBMapper {
 	/**
+	 * The optional fields buildRelationFromRow() sets from a row, in order:
+	 * [setter, cast, whether a null value leaves the field unset].
+	 */
+	private const ROW_FIELDS = [
+		'fileId' => ['setFileId', 'int', true],
+		'chunkId' => ['setChunkId', 'int', true],
+		'objectId' => ['setObjectId', 'int', true],
+		'emailId' => ['setEmailId', 'int', true],
+		'positionStart' => ['setPositionStart', 'int', false],
+		'positionEnd' => ['setPositionEnd', 'int', false],
+		'confidence' => ['setConfidence', 'float', false],
+		'detectionMethod' => ['setDetectionMethod', 'string', true],
+		'context' => ['setContext', '?string', false],
+		'role' => ['setRole', '?string', false],
+		'anonymized' => ['setAnonymized', 'bool', false],
+		'skipAnonymization' => ['setSkipAnonymization', 'bool', false],
+		'bases' => ['setBases', 'raw', false],
+	];
+
+	/**
 	 * Maximum number of expressions allowed in a single SQL IN() list.
 	 *
 	 * Nextcloud's QueryBuilder refuses more than 1000 expressions in an IN()
@@ -495,78 +515,50 @@ class EntityRelationMapper extends QBMapper {
 	 */
 	private function buildRelationFromRow(array $row): EntityRelation {
 		$relation = new EntityRelation();
-
 		$relation->setEntityId((int)$row['entityId']);
-
-		if (array_key_exists('fileId', $row) === true && $row['fileId'] !== null) {
-			$relation->setFileId((int)$row['fileId']);
-		}
-
-		if (array_key_exists('chunkId', $row) === true && $row['chunkId'] !== null) {
-			$relation->setChunkId((int)$row['chunkId']);
-		}
-
-		if (array_key_exists('objectId', $row) === true && $row['objectId'] !== null) {
-			$relation->setObjectId((int)$row['objectId']);
-		}
-
-		if (array_key_exists('emailId', $row) === true && $row['emailId'] !== null) {
-			$relation->setEmailId((int)$row['emailId']);
-		}
-
-		if (array_key_exists('positionStart', $row) === true) {
-			$relation->setPositionStart((int)$row['positionStart']);
-		}
-
-		if (array_key_exists('positionEnd', $row) === true) {
-			$relation->setPositionEnd((int)$row['positionEnd']);
-		}
-
-		if (array_key_exists('confidence', $row) === true) {
-			$relation->setConfidence((float)$row['confidence']);
-		}
-
-		if (array_key_exists('detectionMethod', $row) === true && $row['detectionMethod'] !== null) {
-			$relation->setDetectionMethod((string)$row['detectionMethod']);
-		}
-
-		if (array_key_exists('context', $row) === true) {
-			$contextValue = null;
-			if ($row['context'] !== null) {
-				$contextValue = (string)$row['context'];
+		// phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
+		foreach (self::ROW_FIELDS as $field => [$setter, $cast, $nullSkips]) {
+			if (array_key_exists($field, $row) === false || ($nullSkips === true && $row[$field] === null)) {
+				continue;
 			}
 
-			$relation->setContext($contextValue);
+			$relation->$setter($this->castRowValue(value: $row[$field], cast: $cast));
 		}
 
-		if (array_key_exists('role', $row) === true) {
-			$roleValue = null;
-			if ($row['role'] !== null) {
-				$roleValue = (string)$row['role'];
-			}
-
-			$relation->setRole($roleValue);
-		}
-
-		if (array_key_exists('anonymized', $row) === true) {
-			$relation->setAnonymized((bool)$row['anonymized']);
-		}
-
-		if (array_key_exists('skipAnonymization', $row) === true) {
-			$relation->setSkipAnonymization((bool)$row['skipAnonymization']);
-		}
-
-		if (array_key_exists('bases', $row) === true) {
-			$relation->setBases($row['bases']);
-		}
-
+		// phpcs:enable
 		$relation->setCreatedAt(new DateTime());
-		if (array_key_exists('createdAt', $row) === true && $row['createdAt'] !== null) {
+		if (($row['createdAt'] ?? null) !== null) {
 			$relation->setCreatedAt($row['createdAt']);
 		}
 
 		return $relation;
 	}//end buildRelationFromRow()
+
+	/**
+	 * A row value cast for its field.
+	 *
+	 * @param mixed  $value The value.
+	 * @param string $cast  One of int, float, string, ?string, bool or raw.
+	 *
+	 * @return mixed
+	 */
+	private function castRowValue(mixed $value, string $cast): mixed {
+		if ($value === null && $cast === '?string') {
+			return null;
+		}
+
+		if ($cast === '?string') {
+			return (string)$value;
+		}
+
+		return match ($cast) {
+			'int' => (int)$value,
+			'float' => (float)$value,
+			'string' => (string)$value,
+			'bool' => (bool)$value,
+			default => $value,
+		};
+	}//end castRowValue()
 
 	/**
 	 * Mark entity relations as anonymized, persisting each entity's EXACT

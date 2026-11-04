@@ -47,6 +47,9 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Reference\ObjectReferenceProvider
  * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class ObjectReferenceProviderTest extends TestCase {
 

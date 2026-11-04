@@ -166,6 +166,10 @@ class FilePropertyHandler {
 	/**
 	 * Check if a value should be treated as a file property
 	 *
+	 * With a schema and a property name the schema decides: a `file` property,
+	 * or an array of `file` items. Otherwise the value decides: a file string,
+	 * a file object, or a list holding either.
+	 *
 	 * @param mixed $value The value to check
 	 * @param Schema|null $schema Optional schema for property-based checking
 	 * @param string|null $propertyName Optional property name for schema lookup
@@ -173,121 +177,101 @@ class FilePropertyHandler {
 	 * @return bool True if the value should be treated as a file property
 	 * @phpstan-return bool
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple file format detection patterns required
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Many conditional paths for different file input formats
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file type detection requires checking many formats
-	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
 	public function isFileProperty($value, ?Schema $schema = null, ?string $propertyName = null): bool {
-		// If we have schema and property name, use schema-based checking.
 		if ($schema !== null && $propertyName !== null) {
-			$schemaProperties = $schema->getProperties() ?? [];
+			return $this->isFileInSchema(schema: $schema, propertyName: $propertyName);
+		}
 
-			if (isset($schemaProperties[$propertyName]) === false) {
-				// Property not in schema, not a file.
-				return false;
-			}
-
-			$propertyConfig = $schemaProperties[$propertyName];
-			$propertyType = $propertyConfig['type'] ?? '';
-
-			// Check if it's a direct file property.
-			if ($propertyType === 'file') {
-				return true;
-			}
-
-			// Check if it's an array of files.
-			if (($propertyConfig['type'] ?? '') === 'array') {
-				$itemsConfig = $propertyConfig['items'] ?? [];
-				if (($itemsConfig['type'] ?? '') === 'file') {
-					return true;
-				}
-			}
-
-			return false;
-			// Property exists but is not configured as file type.
-		}//end if
-
-		// Fallback to format-based checking when schema info is not available.
-		// This is used within handleFileProperty for individual value validation.
-		// Check for single file (data URI, base64, URL with file extension, or file object).
 		if (is_string($value) === true) {
-			// Data URI format.
-			if (strpos($value, 'data:') === 0) {
+			return $this->looksLikeFile(value: $value);
+		}
+
+		if (is_array($value) === false) {
+			return false;
+		}
+
+		return $this->isFileObject(value: $value) === true || $this->listHoldsFile(items: $value) === true;
+	}//end isFileProperty()
+
+	/**
+	 * Whether any item of a list is a file string or a file object.
+	 *
+	 * @param array $items The list.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function listHoldsFile(array $items): bool {
+		foreach ($items as $item) {
+			if (is_string($item) === true && $this->looksLikeFile(value: $item) === true) {
 				return true;
 			}
 
-			// URL format (http/https) - but only if it looks like a downloadable file.
-			if (filter_var($value, FILTER_VALIDATE_URL) !== false
-				&& (strpos($value, 'http://') === 0 || strpos($value, 'https://') === 0)
-			) {
-				// Parse URL to get path.
-				$urlPath = parse_url($value, PHP_URL_PATH);
-				if ($urlPath !== null && $urlPath !== '') {
-					// Get file extension.
-					$extension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
-
-					// Common file extensions that indicate downloadable files.
-					$fileExtensions = $this->getCommonFileExtensions();
-
-					// Only treat as file if it has a recognized file extension.
-					if (in_array($extension, $fileExtensions) === true) {
-						return true;
-					}
-				}//end if
-
-				// Don't treat regular website URLs as files.
-				return false;
-			}//end if
-
-			// Base64 encoded string (simple heuristic).
-			if (base64_encode(base64_decode($value, true)) === $value && strlen($value) > 100) {
+			if (is_array($item) === true && $this->isFileObject(value: $item) === true) {
 				return true;
 			}
-		}//end if
+		}
 
-		// Check for file object (array with required file object properties).
-		if (is_array($value) === true && $this->isFileObject(value: $value) === true) {
+		return false;
+	}//end listHoldsFile()
+
+	/**
+	 * Whether the schema declares the property as a file, or as an array of files.
+	 *
+	 * @param Schema $schema       The schema.
+	 * @param string $propertyName The property.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function isFileInSchema(Schema $schema, string $propertyName): bool {
+		$propertyConfig = ($schema->getProperties() ?? [])[$propertyName] ?? null;
+		if ($propertyConfig === null) {
+			return false;
+		}
+
+		$propertyType = $propertyConfig['type'] ?? '';
+		if ($propertyType === 'file') {
 			return true;
 		}
 
-		// Check for array of files.
-		if (is_array($value) === true) {
-			foreach ($value as $item) {
-				if (is_string($item) === true) {
-					// Data URI.
-					if (strpos($item, 'data:') === 0) {
-						return true;
-					}
+		return $propertyType === 'array' && (($propertyConfig['items'] ?? [])['type'] ?? '') === 'file';
+	}//end isFileInSchema()
 
-					// URL with file extension.
-					if (filter_var($item, FILTER_VALIDATE_URL) !== false
-						&& (strpos($item, 'http://') === 0 || strpos($item, 'https://') === 0)
-					) {
-						$urlPath = parse_url($item, PHP_URL_PATH);
-						if ($urlPath !== null && $urlPath !== '') {
-							$extension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
-							$fileExtensions = $this->getCommonFileExtensions();
-							if (in_array($extension, $fileExtensions) === true) {
-								return true;
-							}
-						}//end if
-					}//end if
+	/**
+	 * Whether a string is a data URI, an http(s) URL to a known file extension, or long base64.
+	 *
+	 * Website URLs without a file extension are not files.
+	 *
+	 * @param string $value The string.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function looksLikeFile(string $value): bool {
+		if (strpos($value, 'data:') === 0) {
+			return true;
+		}
 
-					// Base64.
-					if (base64_encode(base64_decode($item, true)) === $item && strlen($item) > 100) {
-						return true;
-					}
-				} elseif (is_array($item) === true && $this->isFileObject(value: $item) === true) {
-					// File object in array.
-					return true;
-				}//end if
-			}//end foreach
-		}//end if
+		if (filter_var($value, FILTER_VALIDATE_URL) !== false
+			&& (strpos($value, 'http://') === 0 || strpos($value, 'https://') === 0)
+		) {
+			$urlPath = parse_url($value, PHP_URL_PATH);
+			if ($urlPath === null || $urlPath === '') {
+				return false;
+			}
 
-		return false;
-	}//end isFileProperty()
+			$extension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
+			return in_array($extension, $this->getCommonFileExtensions()) === true;
+		}
+
+		return base64_encode(base64_decode($value, true)) === $value && strlen($value) > 100;
+	}//end looksLikeFile()
 
 	/**
 	 * Checks if an array represents a file object.

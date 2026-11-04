@@ -51,6 +51,12 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\RecordTemplate\RecordTemplateService
  * @covers \OCA\OpenRegister\Db\RecordTemplate
  * @covers \OCA\OpenRegister\Exception\RecordTemplateRefused
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewShareListValidator
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewShareResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewerReachResolver
+ * @uses \OCA\OpenRegister\Service\RecordTemplate\RecordTemplateInput
  */
 class RecordTemplateServiceTest extends TestCase {
 

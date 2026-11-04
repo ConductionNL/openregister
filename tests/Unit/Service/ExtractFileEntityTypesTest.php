@@ -51,6 +51,10 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\TextExtractionService
+ * @uses \OCA\OpenRegister\Db\Chunk
+ * @uses \OCA\OpenRegister\Service\TextExtraction\PdfExtractor
+ * @uses \OCA\OpenRegister\Service\TextExtraction\SpreadsheetExtractor
+ * @uses \OCA\OpenRegister\Service\TextExtraction\WordExtractor
  */
 class ExtractFileEntityTypesTest extends TestCase {
 

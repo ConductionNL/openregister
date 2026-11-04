@@ -28,6 +28,8 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Service\ConditionMatcher
  * @uses \OCA\OpenRegister\Service\OrganisationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class Wave12ConditionMatcherDotSyntaxTest extends TestCase {
 

@@ -29,6 +29,7 @@ use Psr\Log\NullLogger;
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler::resolveSchemaReference
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler
  */
 class RelationCascadeHandlerSchemaReferenceTest extends TestCase {
 

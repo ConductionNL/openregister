@@ -44,6 +44,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Event\ObjectTransitionedEvent
  * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
+ * @uses \OCA\OpenRegister\Event\FlowRunTerminalEvent
  */
 class CaseListenersTest extends TestCase {
 

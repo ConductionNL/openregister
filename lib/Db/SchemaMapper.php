@@ -68,6 +68,7 @@ use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
 use OCA\OpenRegister\Service\Rbac\HierarchyAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Rbac\MetadataConditionFindings;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
 use OCA\OpenRegister\Service\Relation\LinkExposure;
@@ -1251,6 +1252,8 @@ class SchemaMapper extends QBMapper {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function validateAuthorizationDeny(Schema $schema): void {
+		(new MetadataConditionFindings(db: $this->db))->assertSchemaSavable(schema: $schema);
+
 		$authorization = $schema->getAuthorization();
 		if (is_array($authorization) === false || $authorization === []) {
 			return;

@@ -29,8 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use DateTime;
 use OCA\OpenRegister\Service\Rbac\MemberOfResolver;
+use OCA\OpenRegister\Service\Rbac\RecordMetadataConditions;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -55,6 +55,13 @@ class ConditionMatcher {
 	 * @var array<string, string|null>
 	 */
 	private array $cachedActiveOrg = [];
+
+	/**
+	 * Reads which metadata keys a record carries.
+	 *
+	 * @var RecordMetadataConditions
+	 */
+	private readonly RecordMetadataConditions $metadataConditions;
 
 	/**
 	 * Supported `$user.<property>` dot-path tokens.
@@ -123,6 +130,7 @@ class ConditionMatcher {
 		private readonly ?IGroupManager $groupManager = null,
 		private readonly ?MemberOfResolver $memberOfResolver = null,
 	) {
+		$this->metadataConditions = new RecordMetadataConditions(logger: $logger);
 	}//end __construct()
 
 	/**
@@ -136,6 +144,12 @@ class ConditionMatcher {
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-conditional-scopes-with-dynamic-variables
 	 */
 	public function objectMatchesConditions(array $object, array $match): bool {
+		// A condition on metadata no record carries is never met, also where a
+		// missing value would satisfy it (`null`, `$exists: false`).
+		if ($this->namesUnknownMetadata(match: $match, object: $object) === true) {
+			return false;
+		}
+
 		foreach ($match as $property => $value) {
 			if ($this->singleConditionMatches(object: $object, property: $property, value: $value) === false) {
 				return false;
@@ -144,6 +158,25 @@ class ConditionMatcher {
 
 		return true;
 	}//end objectMatchesConditions()
+
+	/**
+	 * Whether a match clause names record metadata that no record carries
+	 *
+	 * Such a condition can never match a record, so every caller fails closed
+	 * on it: {@see objectMatchesConditions()} answers false, so an allow grants
+	 * nothing, and a deny caller treats it as selecting the row. Each schema and
+	 * key is logged once per matcher.
+	 *
+	 * @param array $match  Match conditions
+	 * @param array $object The object being evaluated, for the schema its `@self` names
+	 *
+	 * @return bool True when at least one condition names unknown metadata
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	public function namesUnknownMetadata(array $match, array $object = []): bool {
+		return $this->metadataConditions->refuses(match: $match, object: $object);
+	}//end namesUnknownMetadata()
 
 	/**
 	 * Filter out organisation matching for create operations
@@ -164,10 +197,11 @@ class ConditionMatcher {
 		$filtered = [];
 		foreach ($match as $property => $value) {
 			// Skip if this is an organisation match condition.
-			if (in_array($property, $organisationKeys, true) === true) {
-				if (is_string($value) === true && in_array($value, $organisationValues, true) === true) {
-					continue;
-				}
+			if (in_array($property, $organisationKeys, true) === true
+				&& is_string($value) === true
+				&& in_array($value, $organisationValues, true) === true
+			) {
+				continue;
 			}
 
 			$filtered[$property] = $value;
@@ -251,11 +285,8 @@ class ConditionMatcher {
 	/**
 	 * Get a value from the object: `@self` for an underscore-prefixed property, else the body
 	 *
-	 * An underscore-prefixed property is metadata. When the object carries a
-	 * `@self`, that is the record's metadata and the only answer: a body key of
-	 * the same name is written by whoever wrote the body, and a field `@self`
-	 * lacks (`_published`, no longer record metadata) answers null. Only an
-	 * object without any `@self` falls back to its body.
+	 * See {@see RecordMetadataConditions::valueIn()}. A key that names no record
+	 * metadata never reaches this: {@see objectMatchesConditions()} refuses it first.
 	 *
 	 * @param array $object Object data
 	 * @param string $property Property name
@@ -263,15 +294,7 @@ class ConditionMatcher {
 	 * @return mixed Property value or null
 	 */
 	private function getObjectValue(array $object, string $property): mixed {
-		if (str_starts_with($property, '_') === true && is_array($object['@self'] ?? null) === true) {
-			return ($object['@self'][substr($property, 1)] ?? null);
-		}
-
-		if (isset($object[$property]) === true) {
-			return $object[$property];
-		}
-
-		return null;
+		return $this->metadataConditions->valueIn(object: $object, property: $property);
 	}//end getObjectValue()
 
 	/**
@@ -361,7 +384,7 @@ class ConditionMatcher {
 		// text/JSON-stored dates lexicographically. ISO 8601's "T" separator once
 		// made list and find disagree.
 		if ($value === '$now') {
-			return (new DateTime())->format('Y-m-d H:i:s');
+			return date('Y-m-d H:i:s');
 		}
 
 		return $value;

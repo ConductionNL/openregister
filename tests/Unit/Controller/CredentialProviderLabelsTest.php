@@ -49,6 +49,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialController
+ * @uses \OCA\OpenRegister\Service\Credential\ProviderCatalogue
  */
 class CredentialProviderLabelsTest extends TestCase {
 

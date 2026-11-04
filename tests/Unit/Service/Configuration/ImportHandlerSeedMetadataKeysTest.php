@@ -60,6 +60,15 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Configuration
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugBatch
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugClientValue
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugScope
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugWant
  */
 class ImportHandlerSeedMetadataKeysTest extends TestCase {
 	use BuildsObjectSlugHandler;

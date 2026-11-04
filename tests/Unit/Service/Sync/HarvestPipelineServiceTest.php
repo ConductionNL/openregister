@@ -45,6 +45,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\Source
  * @uses \OCA\OpenRegister\Db\SyncRecord
  * @uses \OCA\OpenRegister\Service\Sync\SyncConflictResolver
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class HarvestPipelineServiceTest extends TestCase {
 

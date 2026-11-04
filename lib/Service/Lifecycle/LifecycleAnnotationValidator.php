@@ -129,7 +129,8 @@ final class LifecycleAnnotationValidator {
 		$enumSet = $field['enumSet'];
 		$errors = array_merge(
 			$field['errors'],
-			$this->validateInitialAndFinal(annotation: $annotation, enumSet: $enumSet)
+			$this->validateInitialAndFinal(annotation: $annotation, enumSet: $enumSet),
+			$this->validateCreateStates(createStates: ($annotation['createStates'] ?? []), enumSet: $enumSet)
 		);
 
 		$transitions = $annotation['transitions'];
@@ -263,6 +264,39 @@ final class LifecycleAnnotationValidator {
 
 		return $errors;
 	}//end validateInitialAndFinal()
+
+	/**
+	 * Check that `createStates`, the states a create may start in besides `initial`, is a list of enum states.
+	 *
+	 * @param mixed              $createStates The declared value.
+	 * @param array<string, int> $enumSet      The enum values as a set.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 *
+	 * @spec openspec/changes/lifecycle-guards-see-the-stored-object/specs/object-lifecycle/spec.md#requirement-a-create-starts-in-the-declared-initial-state
+	 */
+	private function validateCreateStates(mixed $createStates, array $enumSet): array {
+		if (is_array($createStates) === false || array_is_list($createStates) === false) {
+			return [
+				[
+					'code' => 'lifecycle-create-states-malformed',
+					'message' => 'x-openregister-lifecycle.createStates must be a list of states.',
+				],
+			];
+		}
+
+		$errors = [];
+		foreach ($createStates as $state) {
+			if (is_string($state) === false || isset($enumSet[$state]) === false) {
+				$errors[] = [
+					'code' => 'lifecycle-create-state-not-in-enum',
+					'message' => sprintf('x-openregister-lifecycle.createStates value "%s" is not in the field\'s enum.', json_encode($state)),
+				];
+			}
+		}
+
+		return $errors;
+	}//end validateCreateStates()
 
 	/**
 	 * Validate one static-mode transition.

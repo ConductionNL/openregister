@@ -100,6 +100,7 @@ use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ReadOnlyTypeException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
@@ -110,6 +111,7 @@ use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use Psr\Log\LoggerInterface;
@@ -3464,6 +3466,12 @@ class ObjectService implements ObjectServiceInterface
      */
     private function rejectRefusedDelete(ObjectDeleteRequest $request, ?Schema $sourcedSchema): void
     {
+        if (($request->scoped === true || $sourcedSchema !== null)
+            && $this->deleteAnswersToOrganisation(rbac: $request->rbac, multitenancy: $request->multitenancy) === true
+        ) {
+            $this->rejectSharedMasterDataDelete(registerId: $this->currentRegister?->getId(), schemaId: $this->currentSchema?->getId());
+        }
+
         if ($sourcedSchema === null) {
             $this->rejectIfTransferred(uuid: $request->uuid, _rbac: $request->rbac, _multitenancy: $request->multitenancy);
         }
@@ -3494,6 +3502,107 @@ class ObjectService implements ObjectServiceInterface
             );
         }
     }//end rejectRefusedDelete()
+
+    /**
+     * Whether a delete with these flags is bound by the caller's organisation.
+     *
+     * An organisation context binds it whatever the flags say, as for a save.
+     *
+     * @param bool $rbac         The caller's RBAC flag.
+     * @param bool $multitenancy The caller's multitenancy flag.
+     *
+     * @return bool
+     */
+    private function deleteAnswersToOrganisation(bool $rbac, bool $multitenancy): bool
+    {
+        return $rbac === true || OrganisationContext::multitenancy(requested: $multitenancy) === true;
+    }//end deleteAnswersToOrganisation()
+
+    /**
+     * Refuse a delete in a register or schema the caller's organisation only consumes.
+     *
+     * The organisation boundary answers a read question and lets a consumer of shared
+     * master data see the holder's rows. A delete is a write, as for a save.
+     *
+     * @param int|null $registerId The register deleted from.
+     * @param int|null $schemaId   The schema deleted from.
+     *
+     * @return void
+     *
+     * @throws SharedMasterDataWriteException When the caller's organisation only consumes either.
+     *
+     * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md
+     */
+    private function rejectSharedMasterDataDelete(?int $registerId, ?int $schemaId): void
+    {
+        try {
+            $shared = $this->container->get(SharedMasterDataService::class);
+            $organisations = $this->organisationService->getUserActiveOrganisations();
+        } catch (\Throwable $e) {
+            // No resolvable organisation means no share can be consumed, as for a save.
+            return;
+        }
+
+        if ($shared instanceof SharedMasterDataService === false) {
+            return;
+        }
+
+        $shared->assertWritable(table: SharedMasterDataService::REGISTERS, id: $registerId, activeOrgUuids: $organisations);
+        $shared->assertWritable(table: SharedMasterDataService::SCHEMAS, id: $schemaId, activeOrgUuids: $organisations);
+    }//end rejectSharedMasterDataDelete()
+
+    /**
+     * Put a delete without a full scope on the row it found, and ask the share question of that row.
+     *
+     * Such a call looks across every table, so the register and schema on the service may
+     * be none, partial or left over from an earlier call: only the row says what is deleted.
+     *
+     * @param ObjectDeleteRequest $request The delete call.
+     * @param ObjectEntity        $row     The row the lookup found.
+     *
+     * @return void
+     *
+     * @throws SharedMasterDataWriteException When the caller's organisation only consumes the row's register or schema.
+     * @throws RuntimeException When the row's schema cannot be resolved, so no right can be asked of it.
+     *
+     * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md
+     */
+    private function scopeUnscopedDeleteToRow(ObjectDeleteRequest $request, ObjectEntity $row): void
+    {
+        $schemaId = $row->getSchema();
+        if ($request->scoped === true || is_numeric($schemaId) === false) {
+            return;
+        }
+
+        if ((int) $this->currentSchema->getId() !== (int) $schemaId) {
+            $schemaCache = [];
+            $this->currentSchema = $this->loadRowSchema(schemaId: $schemaId, schemaCache: $schemaCache);
+            if ($this->currentSchema === null) {
+                throw new RuntimeException('The schema of the object to delete could not be resolved.');
+            }
+        }
+
+        if ($this->deleteAnswersToOrganisation(rbac: $request->rbac, multitenancy: $request->multitenancy) === true) {
+            $this->rejectSharedMasterDataDelete(registerId: $this->rowRegisterId(row: $row), schemaId: (int) $schemaId);
+        }
+    }//end scopeUnscopedDeleteToRow()
+
+    /**
+     * The register a row says it lives in.
+     *
+     * @param ObjectEntity|null $row The row.
+     *
+     * @return int|null The register id, or null when the row names none.
+     */
+    private function rowRegisterId(?ObjectEntity $row): ?int
+    {
+        $registerId = $row?->getRegister();
+        if (is_numeric($registerId) === false) {
+            return null;
+        }
+
+        return (int) $registerId;
+    }//end rowRegisterId()
 
     /**
      * Find the object to delete (soft-deleted rows included) and check the acting user may delete it.
@@ -3535,6 +3644,8 @@ class ObjectService implements ObjectServiceInterface
             if ($this->currentSchema === null) {
                 $this->setSchema(schema: $objectToDelete->getSchema());
             }
+
+            $this->scopeUnscopedDeleteToRow(request: $request, row: $objectToDelete);
 
             \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.found');
 
@@ -6353,6 +6464,17 @@ class ObjectService implements ObjectServiceInterface
                 'error'   => 'OBJECT_NOT_PERMITTED',
                 'message' => 'Object is not visible to this user, or does not exist.',
             ];
+        }
+
+        if ($this->deleteAnswersToOrganisation(rbac: $run['_rbac'], multitenancy: $run['_multitenancy']) === true) {
+            try {
+                $this->rejectSharedMasterDataDelete(
+                    registerId: ($this->rowRegisterId(row: $scope['row']) ?? $scope['register']?->getId()),
+                    schemaId: $gateSchema->getId()
+                );
+            } catch (SharedMasterDataWriteException $sharedRefusal) {
+                return ['error' => 'OBJECT_NOT_PERMITTED', 'message' => $sharedRefusal->getMessage()];
+            }
         }
 
         if ($scope['draft'] === true) {

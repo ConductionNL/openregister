@@ -36,12 +36,13 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Db\AuditTrailMapper
- * @uses   \OCA\OpenRegister\Service\OrganisationContext
- * @uses   \OCA\OpenRegister\Service\Audit\OrganisationContextAttribution
- * @uses   \OCA\OpenRegister\Db\AuditFlowAttribution
- * @uses   \OCA\OpenRegister\Db\AuditTrail
- * @uses   \OCA\OpenRegister\Service\Audit\PurposeAttribution
- * @uses   \OCA\OpenRegister\Service\Audit\TokenAttribution
+ * @uses \OCA\OpenRegister\Db\AuditFlowAttribution
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Service\Audit\PurposeAttribution
+ * @uses \OCA\OpenRegister\Service\Audit\TokenAttribution
+ * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
+ * @uses \OCA\OpenRegister\Service\Audit\OrganisationContextAttribution
  */
 class AuditTrailToolInvocationInsertTest extends TestCase {
 

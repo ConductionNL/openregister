@@ -229,6 +229,9 @@ class MigratedSqliteDatabase {
 	 *
 	 * @param \Doctrine\DBAL\Schema\Table $table The Doctrine table.
 	 *
+	 * Without a Nextcloud server in scope `OC\DB\Schema\Table` is absent, and
+	 * the test-side DoctrineTable adapter gives the same contract.
+	 *
 	 * @return object The Doctrine table, or its NC 35 wrapper.
 	 */
 	private static function table(\Doctrine\DBAL\Schema\Table $table): object {
@@ -243,9 +246,7 @@ class MigratedSqliteDatabase {
 		}
 
 		if (class_exists(\OC\DB\Schema\Table::class) === false) {
-			throw new \RuntimeException(
-				'ISchemaWrapper returns ' . $wants . ' but OC\\DB\\Schema\\Table is not loadable to wrap the Doctrine table.'
-			);
+			return new \OCA\OpenRegister\Tests\Support\Schema\DoctrineTable($table);
 		}
 
 		return new \OC\DB\Schema\Table($table);
@@ -416,12 +417,12 @@ class MigratedSqliteDatabase {
 		$expr->method('notIn')->willReturnCallback(fn ($x, $y) => $doctrine->notIn(self::sql(value: $x), self::sql(value: $y)));
 		// As Nextcloud's SqliteExpressionBuilder::like(): the backslash escapes `_` and `%`.
 		$expr->method('like')->willReturnCallback(fn ($x, $y) => $doctrine->like(self::sql($x), self::sql($y))." ESCAPE '\\'");
-		// Nextcloud's own composite, which renders `(a) OR (b)` like Doctrine's.
+		// Renders `(a) OR (b)` like Nextcloud's own composite and Doctrine's.
 		$expr->method('orX')->willReturnCallback(
-			fn (...$parts) => new \OC\DB\QueryBuilder\CompositeExpression('OR', array_map(static fn ($part): string => (string) self::sql($part), $parts))
+			fn (...$parts) => new SqlComposite('OR', array_map(static fn ($part): string => (string) self::sql($part), $parts))
 		);
 		$expr->method('andX')->willReturnCallback(
-			fn (...$parts) => new \OC\DB\QueryBuilder\CompositeExpression('AND', array_map(static fn ($part): string => (string) self::sql($part), $parts))
+			fn (...$parts) => new SqlComposite('AND', array_map(static fn ($part): string => (string) self::sql($part), $parts))
 		);
 
 		return $expr;

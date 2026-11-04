@@ -158,7 +158,7 @@ class PermissionHandlerChainContractTest extends TestCase {
 		$record->setUuid(self::UUID);
 		$record->setOrganisation('org-1');
 		$record->setOwner('bea');
-		$self = $record->getObjectArray();
+		$self = $record->getMatchEnvelope()['@self'];
 		self::assertSame(expected: ['id' => self::UUID, 'owner' => 'bea', 'organisation' => 'org-1'], actual: array_intersect_key($self, ['id' => 0, 'owner' => 0, 'organisation' => 0]));
 		self::assertArrayNotHasKey(key: 'x', array: $self);
 

@@ -97,62 +97,102 @@ final class HealthCheckDescriptor {
 	 * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.1
 	 */
 	public static function fromArray(array $raw, int $index = 0): self {
-		$type = $raw['type'] ?? null;
-		if (is_string($type) === false || in_array($type, self::TYPES, true) === false) {
-			$allowed = implode(', ', self::TYPES);
-			throw new ObservabilityValidationException(
-				sprintf('Unknown health check type "%s" (allowed: %s).', self::describe(value: $type), $allowed)
-			);
-		}
-
-		$severity = $raw['severity'] ?? 'critical';
-		if (is_string($severity) === false || in_array($severity, self::SEVERITIES, true) === false) {
-			$allowed = implode(', ', self::SEVERITIES);
-			throw new ObservabilityValidationException(
-				sprintf('Invalid severity "%s" for health check (allowed: %s).', self::describe(value: $severity), $allowed)
-			);
-		}
+		$type = self::oneOf(value: $raw['type'] ?? null, rule: ['allowed' => self::TYPES, 'message' => 'Unknown health check type "%s" (allowed: %s).']);
+		$severity = self::oneOf(
+			value: $raw['severity'] ?? 'critical',
+			rule: ['allowed' => self::SEVERITIES, 'message' => 'Invalid severity "%s" for health check (allowed: %s).']
+		);
 
 		$id = $raw['id'] ?? $type . '_' . $index;
 		if (is_string($id) === false || $id === '') {
 			throw new ObservabilityValidationException('Health check id must be a non-empty string.');
 		}
 
-		$app = null;
-		$key = null;
-		$assert = null;
-
+		$target = ['app' => null, 'key' => null, 'assert' => null];
 		if ($type === 'appEnabled') {
-			$app = $raw['app'] ?? null;
-			if (is_string($app) === false || preg_match('/^[a-z0-9_-]+$/i', $app) !== 1) {
-				throw new ObservabilityValidationException('appEnabled check requires a valid "app" id.');
-			}
+			$target['app'] = self::appId(raw: $raw);
 		}
 
 		if ($type === 'appConfig') {
-			$key = $raw['key'] ?? null;
-			if (is_string($key) === false || $key === '') {
-				throw new ObservabilityValidationException('appConfig check requires a non-empty "key".');
-			}
-
-			$assert = $raw['assert'] ?? 'present';
-			if (is_string($assert) === false || in_array($assert, self::ASSERTIONS, true) === false) {
-				$allowed = implode(', ', self::ASSERTIONS);
-				throw new ObservabilityValidationException(
-					sprintf('Invalid appConfig assert "%s" (allowed: %s).', self::describe(value: $assert), $allowed)
-				);
-			}
+			$target = self::appConfigTarget(raw: $raw);
 		}
 
 		return new self(
 			id: $id,
 			type: $type,
 			severity: $severity,
-			app: $app,
-			key: $key,
-			assert: $assert
+			app: $target['app'],
+			key: $target['key'],
+			assert: $target['assert']
 		);
 	}//end fromArray()
+
+	/**
+	 * A value that must be one of a closed set of strings.
+	 *
+	 * @param mixed                                       $value The value.
+	 * @param array{allowed: string[], message: string} $rule  The set, and the refusal with %s for the value and the set.
+	 *
+	 * @return string
+	 *
+	 * @throws ObservabilityValidationException When the value is not in the set.
+	 *
+	 * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.1
+	 */
+	private static function oneOf(mixed $value, array $rule): string {
+		if (is_string($value) === false || in_array($value, $rule['allowed'], true) === false) {
+			throw new ObservabilityValidationException(
+				sprintf($rule['message'], self::describe(value: $value), implode(', ', $rule['allowed']))
+			);
+		}
+
+		return $value;
+	}//end oneOf()
+
+	/**
+	 * The app id an appEnabled check names.
+	 *
+	 * @param array<string, mixed> $raw The raw entry.
+	 *
+	 * @return string
+	 *
+	 * @throws ObservabilityValidationException When the app id is missing or malformed.
+	 *
+	 * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.1
+	 */
+	private static function appId(array $raw): string {
+		$app = $raw['app'] ?? null;
+		if (is_string($app) === false || preg_match('/^[a-z0-9_-]+$/i', $app) !== 1) {
+			throw new ObservabilityValidationException('appEnabled check requires a valid "app" id.');
+		}
+
+		return $app;
+	}//end appId()
+
+	/**
+	 * The key and assertion an appConfig check names; the assertion defaults to present.
+	 *
+	 * @param array<string, mixed> $raw The raw entry.
+	 *
+	 * @return array{app: null, key: string, assert: string}
+	 *
+	 * @throws ObservabilityValidationException When the key is empty or the assertion unknown.
+	 *
+	 * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.1
+	 */
+	private static function appConfigTarget(array $raw): array {
+		$key = $raw['key'] ?? null;
+		if (is_string($key) === false || $key === '') {
+			throw new ObservabilityValidationException('appConfig check requires a non-empty "key".');
+		}
+
+		$assert = self::oneOf(
+			value: $raw['assert'] ?? 'present',
+			rule: ['allowed' => self::ASSERTIONS, 'message' => 'Invalid appConfig assert "%s" (allowed: %s).']
+		);
+
+		return ['app' => null, 'key' => $key, 'assert' => $assert];
+	}//end appConfigTarget()
 
 	/**
 	 * Render a raw (possibly non-scalar) value as a short string for an
