@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.1.35-unstable.20261103200000</version>
+    <version>2.1.35-unstable.20261103220000</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -507,6 +507,8 @@ Vrij en open source onder de EUPL-licentie.
 		     rollback tool, deliberately NOT a repair step. -->
 		<command>OCA\OpenRegister\Command\RollbackApprovalMigrationCommand</command>
 		<command>OCA\OpenRegister\Command\RechainAuditTrailCommand</command>
+		<!-- Read-only report: federated shares whose creator does not hold the rights the share grants. -->
+		<command>OCA\OpenRegister\Command\FederationShareRightsCommand</command>
 		<!-- Read-only report: which RBAC groups this instance declares, and whether
 		     anyone belongs to them. Provisioning guarantees a declared group EXISTS;
 		     it never adds members, so an unpopulated group still denies every
