@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Service\Object;
 use Exception;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
@@ -187,6 +188,8 @@ class CascadingHandler {
 	 *
 	 * @return string|null UUID of created object or null if creation failed.
 	 *
+	 * @throws NotAuthorizedException When the caller may not create objects in the target schema.
+	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
@@ -215,21 +218,12 @@ class CascadingHandler {
 				return null;
 			}
 
-			// Find the schema - use the same logic as SaveObject.resolveSchemaReference.
-			$targetSchema = null;
-
-			// First try to find by slug using findAll and filtering.
-			$allSchemas = $this->schemaMapper->findAll();
-			foreach ($allSchemas as $schema) {
-				if (strcasecmp(string1: $schema->getSlug(), string2: $schemaSlug) === 0) {
-					$targetSchema = $schema;
-					break;
-				}
-			}
-
+			$targetSchema = $this->findSchemaBySlug(slug: $schemaSlug);
 			if ($targetSchema === null) {
 				return null;
 			}
+
+			$this->saveHandler->assertMayCascadeCreate(schema: $targetSchema);
 
 			// Get the register (use the same register as the parent object).
 			$targetRegister = $currentRegister;
@@ -261,6 +255,8 @@ class CascadingHandler {
 			}
 
 			return $createdUuid;
+		} catch (NotAuthorizedException $e) {
+			throw $e;
 		} catch (Exception $e) {
 			// Log error but don't expose details.
 			$this->logger->error(
@@ -270,6 +266,25 @@ class CascadingHandler {
 			return null;
 		}//end try
 	}//end createRelatedObject()
+
+	/**
+	 * The schema with this slug, compared case-insensitively.
+	 *
+	 * @param string $slug The schema slug from a `#/components/schemas/<slug>` reference.
+	 *
+	 * @return Schema|null The schema, or null when none has the slug.
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function findSchemaBySlug(string $slug): ?Schema {
+		foreach ($this->schemaMapper->findAll() as $schema) {
+			if (strcasecmp(string1: $schema->getSlug(), string2: $slug) === 0) {
+				return $schema;
+			}
+		}
+
+		return null;
+	}//end findSchemaBySlug()
 
 	/**
 	 * A nested object without the identity it carries.
