@@ -31,6 +31,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @covers \OCA\OpenRegister\Service\Rbac\MetadataConditionFindings
+ * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns

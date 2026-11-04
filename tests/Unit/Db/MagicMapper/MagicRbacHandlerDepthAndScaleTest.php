@@ -81,6 +81,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
  * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
+ * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
  */
 class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 

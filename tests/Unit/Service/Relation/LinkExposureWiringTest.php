@@ -44,6 +44,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Relation\RelationAnnotationValidator
  * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
  * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
+ * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
  */
 final class LinkExposureWiringTest extends TestCase {
 

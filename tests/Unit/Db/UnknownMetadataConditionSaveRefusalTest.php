@@ -44,6 +44,7 @@ use ReflectionProperty;
  * @covers \OCA\OpenRegister\Db\SchemaMapper
  * @covers \OCA\OpenRegister\Db\RegisterMapper
  * @covers \OCA\OpenRegister\Service\Rbac\MetadataConditionFindings
+ * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
  * @covers \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @covers \OCA\OpenRegister\Service\Rbac\RuleColumns
  * @covers \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings

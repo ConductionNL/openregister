@@ -64,6 +64,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
  * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
+ * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
  */
 class MagicRbacHandlerDenyTest extends TestCase {
 

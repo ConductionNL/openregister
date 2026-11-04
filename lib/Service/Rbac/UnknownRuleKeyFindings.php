@@ -46,12 +46,20 @@ class UnknownRuleKeyFindings {
 	private readonly MetadataConditionFindings $blocks;
 
 	/**
+	 * Reads the blocks a save is judged against.
+	 *
+	 * @var StoredRuleBlocks
+	 */
+	private readonly StoredRuleBlocks $stored;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IDBConnection|null $db Reads the stored block when a save has findings; without it a save is judged as new.
 	 */
 	public function __construct(?IDBConnection $db = null) {
 		$this->blocks = new MetadataConditionFindings(db: $db);
+		$this->stored = new StoredRuleBlocks(db: $db);
 	}//end __construct()
 
 	/**
@@ -70,7 +78,7 @@ class UnknownRuleKeyFindings {
 			return;
 		}
 
-		$this->blocks->assertNone(findings: $this->schemaFindings(schema: $schema, stored: $this->blocks->storedSchema(id: $schema->getId())));
+		$this->blocks->assertNone(findings: $this->schemaFindings(schema: $schema, stored: $this->stored->schema(id: $schema->getId())));
 	}//end assertSchemaSavable()
 
 	/**
@@ -90,12 +98,11 @@ class UnknownRuleKeyFindings {
 			return;
 		}
 
-		$row = $this->blocks->storedRow(table: 'openregister_registers', id: $register->getId());
 		$this->blocks->assertNone(
 			findings: $this->registerFindings(
 				authorization: $register->getAuthorization(),
 				context: $subject,
-				stored: $this->blocks->decoded(value: ($row['authorization'] ?? null))
+				stored: $this->stored->registerAuthorization(id: $register->getId())
 			)
 		);
 	}//end assertRegisterSavable()
@@ -117,11 +124,9 @@ class UnknownRuleKeyFindings {
 			block: ['authorization' => $schema->getAuthorization(), 'context' => $name, 'columns' => $columns],
 			stored: $stored?->getAuthorization()
 		);
-		foreach ($this->blocks->propertyBlocks(schema: $schema, stored: $stored, name: $name) as $block) {
-			$findings = array_merge(
-				$findings,
-				$this->findingsIn(block: ['authorization' => $block['authorization'], 'context' => $block['context'], 'columns' => $columns], stored: $block['stored'])
-			);
+		foreach ($this->stored->propertyBlocks(schema: $schema, stored: $stored, name: $name) as $block) {
+			$block['columns'] = $columns;
+			$findings = array_merge($findings, $this->findingsIn(block: $block, stored: $block['stored']));
 		}
 
 		return $findings;
