@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
 use OCA\OpenRegister\BackgroundJob\ChunkVectorizationJob;
 use OCA\OpenRegister\Db\Chunk;
 use OCA\OpenRegister\Db\ChunkMapper;
@@ -74,7 +75,7 @@ class ChunkVectorizationJobTest extends TestCase {
 		$this->registerService(EmbeddingGeneratorInterface::class, function () {
 			return $this->embeddings;
 		});
-		$this->registerService(VectorStorageHandler::class, function () {
+		$this->registerService(VectorStorageHandlerInterface::class, function () {
 			return $this->storageHandler;
 		});
 

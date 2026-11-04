@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\Organisation;
@@ -294,7 +295,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			TaskService::class        => $this->taskService(),
 			TaskMapper::class         => $this->taskMapper(),
 			ViewService::class        => $this->viewService(),
-			ViewMapper::class         => $this->viewMapper(),
+			ViewMapperInterface::class         => $this->viewMapper(),
 			WatcherMapper::class      => $this->watcherMapper(),
 			PartyRoleService::class   => $this->partyRoles(),
 			PartyService::class       => $this->partyService(),
