@@ -42,9 +42,9 @@ use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Authorization\GroupProvisioner;
@@ -130,16 +130,16 @@ class ImportHandler {
 	/**
 	 * Schema mapper instance for handling schema operations.
 	 *
-	 * @var SchemaMapper The schema mapper instance.
+	 * @var SchemaMapperInterface The schema mapper instance.
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Register mapper instance for handling register operations.
 	 *
-	 * @var RegisterMapper The register mapper instance.
+	 * @var RegisterMapperInterface The register mapper instance.
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Object mapper instance for handling object operations.
@@ -364,8 +364,8 @@ class ImportHandler {
 	/**
 	 * Constructor for ImportHandler.
 	 *
-	 * @param SchemaMapper $schemaMapper The schema mapper.
-	 * @param RegisterMapper $registerMapper The register mapper.
+	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
+	 * @param RegisterMapperInterface $registerMapper The register mapper.
 	 * @param MagicMapper $objectEntityMapper The object entity mapper.
 	 * @param ConfigurationMapper $configurationMapper The configuration mapper.
 	 * @param MappingMapper $mappingMapper The mapping mapper.
@@ -384,8 +384,8 @@ class ImportHandler {
 	 *        import fired no SchemaUpdatedEvent; null leaves an unchanged re-import installing nothing.
 	 */
 	public function __construct(
-		SchemaMapper $schemaMapper,
-		RegisterMapper $registerMapper,
+		SchemaMapperInterface $schemaMapper,
+		RegisterMapperInterface $registerMapper,
 		MagicMapper $objectEntityMapper,
 		ConfigurationMapper $configurationMapper,
 		MappingMapper $mappingMapper,
@@ -933,8 +933,6 @@ class ImportHandler {
 	 * @throws Exception If import fails.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Force flag to override version checks
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Register import has multiple exception and version checks
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Version checking and update/create paths add complexity
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
@@ -945,6 +943,7 @@ class ImportHandler {
 		?string $version = null,
 		bool $force = false,
 	): Register {
+		$options = new SchemaImportOptions(owner: $owner, appId: $appId, version: $version, force: $force);
 		try {
 			// Ensure data is consistently an array by converting any stdClass objects.
 			$data = $this->ensureArrayStructure(data: $data);
@@ -953,166 +952,66 @@ class ImportHandler {
 			// Organisation is instance-specific and should not be imported.
 			unset($data['id'], $data['uuid'], $data['organisation']);
 
-			// Check if register already exists by slug.
-			// CRITICAL: Disable RBAC and multitenancy to find registers from any app/tenant
-			// during import. This prevents duplicate creation when importing configurations.
-			$existingRegister = null;
-			try {
-				$existingRegister = $this->registerMapper->find(
-					id: strtolower($data['slug']),
-					_rbac: false,
-					_multitenancy: false
-				);
+			$existingRegister = $this->findRegisterForImport(data: $data, options: $options);
+			if ($existingRegister === null) {
+				return $this->createImportedRegister(data: $data, options: $options);
+			}
+
+			// A SKIPPED REGISTER UPDATE MUST STILL ADOPT THE SCHEMAS THIS
+			// RUN CREATED.
+			//
+			// The version gate below is about the register's OWN fields
+			// (title, description, …): nothing to write when the incoming
+			// definition is not newer. It is NOT about the schema links.
+			// `$data['schemas']` arriving here is the id list the schema
+			// pass just resolved, and that pass creates rows whatever the
+			// register version says — a register.d fragment adds a schema
+			// without ever touching the register's version. Returning on
+			// the version gate without that list therefore leaves those
+			// brand-new schema rows attached to nothing.
+			//
+			// That orphaning is what makes the NEXT import fork a twin.
+			// `computeRegisterScopedSchemaIds()` builds each slug's
+			// candidate set from the register's stored `schemas` list, so
+			// the missing ids are missing from the set too;
+			// `findBySlugInIds()` cannot see the app's own row, and the
+			// register-scoped branch of resolveExistingSchemaForImport()
+			// concludes — correctly, from what it was given — that the
+			// target register does not own this slug yet and creates a new
+			// schema. Every re-import repeats it. That is how one
+			// opencatalogi install reached 92 schemas with 25 slugs
+			// duplicated and page/menu/glossary present three times over
+			// (28 Aug / 3 Sep / 4 Sep), each copy identical but for its
+			// uuid: the slugs that STAYED in the register's list
+			// (publication, document) upserted correctly, and only the
+			// unlinked ones forked. See WOO-563 and
+			// ImportHandlerRegisterSchemaLinkOnVersionSkipTest.
+			//
+			// Union, never replace, for the same reason the update path
+			// below unions (#2935): a link this run can prove gets added,
+			// a link it merely cannot see is left alone.
+			// Compare versions using version_compare for proper semver comparison.
+			if ($force === false && $this->registerVersionIsCurrent(register: $existingRegister, data: $data) === true) {
 				$this->logger->debug(
-					message: '[ImportHandler] Found existing register during import',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'slug' => $data['slug'],
-						'registerId' => $existingRegister->getId(),
-						'application' => $existingRegister->getApplication(),
-					]
+					message: '[ImportHandler] Skipping register import as existing version is newer or equal.',
+					context: ['file' => __FILE__, 'line' => __LINE__]
 				);
-			} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-				// Register doesn't exist, we'll create a new one.
-				$this->logger->debug(
-					message: "[ImportHandler] Register '{$data['slug']}' not found, will create new one",
-					context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $appId]
+
+				// Skip the register's own fields, NOT its schema links.
+				// The full-update path below already unions them (#2935);
+				// this path is the one that used to drop them, so it needs
+				// the same union before it returns.
+				return $this->linkImportedSchemas(
+					register: $existingRegister,
+					importedSchemaIds: ($data['schemas'] ?? null)
 				);
-			} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-				// Multiple registers found with the same identifier.
-				$this->handleDuplicateRegisterError(
-					slug: $data['slug'],
-					appId: $appId ?? 'unknown',
-					version: $version ?? 'unknown'
-				);
-			}//end try
-
-			if ($existingRegister !== null) {
-				// A SKIPPED REGISTER UPDATE MUST STILL ADOPT THE SCHEMAS THIS
-				// RUN CREATED.
-				//
-				// The version gate below is about the register's OWN fields
-				// (title, description, …): nothing to write when the incoming
-				// definition is not newer. It is NOT about the schema links.
-				// `$data['schemas']` arriving here is the id list the schema
-				// pass just resolved, and that pass creates rows whatever the
-				// register version says — a register.d fragment adds a schema
-				// without ever touching the register's version. Returning on
-				// the version gate without that list therefore leaves those
-				// brand-new schema rows attached to nothing.
-				//
-				// That orphaning is what makes the NEXT import fork a twin.
-				// `computeRegisterScopedSchemaIds()` builds each slug's
-				// candidate set from the register's stored `schemas` list, so
-				// the missing ids are missing from the set too;
-				// `findBySlugInIds()` cannot see the app's own row, and the
-				// register-scoped branch of resolveExistingSchemaForImport()
-				// concludes — correctly, from what it was given — that the
-				// target register does not own this slug yet and creates a new
-				// schema. Every re-import repeats it. That is how one
-				// opencatalogi install reached 92 schemas with 25 slugs
-				// duplicated and page/menu/glossary present three times over
-				// (28 Aug / 3 Sep / 4 Sep), each copy identical but for its
-				// uuid: the slugs that STAYED in the register's list
-				// (publication, document) upserted correctly, and only the
-				// unlinked ones forked. See WOO-563 and
-				// ImportHandlerRegisterSchemaLinkOnVersionSkipTest.
-				//
-				// Union, never replace, for the same reason the update path
-				// below unions (#2935): a link this run can prove gets added,
-				// a link it merely cannot see is left alone.
-				// Compare versions using version_compare for proper semver comparison.
-				$existingVersion = $existingRegister->getVersion() ?? '0.0.0';
-				if ($force === false && version_compare($data['version'], $existingVersion, '<=') === true) {
-					$this->logger->debug(
-						message: '[ImportHandler] Skipping register import as existing version is newer or equal.',
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-
-					// Skip the register's own fields, NOT its schema links.
-					// The full-update path below already unions them (#2935);
-					// this path is the one that used to drop them, so it needs
-					// the same union before it returns.
-					// Even though we're skipping the update, we still need to add it to the map.
-					return $this->linkImportedSchemas(
-						register: $existingRegister,
-						importedSchemaIds: ($data['schemas'] ?? null)
-					);
-				}
-
-				// NEVER DROP A SCHEMA LINK THIS IMPORT COULD NOT RE-ESTABLISH.
-				//
-				// The caller builds `$data['schemas']` purely from `schemasMap`,
-				// which holds only the schemas THIS run processed — the schema
-				// pass does `if ($schema === null) { continue; }` before
-				// populating it, so a schema that already existed and was skipped
-				// or rejected never enters the map. The id list arriving here is
-				// then missing it, and this update REPLACES the register's list,
-				// unlinking a schema the register still owns.
-				//
-				// Nothing fails when that happens. The schema keeps its table and
-				// its rows; the register simply stops listing it. Every
-				// register-scoped read then returns an empty collection for data
-				// that is present — indistinguishable from a working-but-empty
-				// install, which is exactly how #2935 presented: 60 of dossiq's
-				// schemas unlinked, 11 of them holding rows, reported as "the
-				// config import silently writes zero objects".
-				//
-				// Union rather than replace: a link this run can prove stays, and
-				// a link it merely cannot see is left alone. The failure direction
-				// becomes a STALE link, which `occ
-				// openregister:registers:relink-schemas` already reports and
-				// repairs; the opposite direction loses reachable data with no
-				// error anywhere.
-				if (isset($data['schemas']) === true && is_array($data['schemas']) === true) {
-					$existingSchemaIds = $existingRegister->getSchemas();
-					if (is_array($existingSchemaIds) === true && $existingSchemaIds !== []) {
-						$data['schemas'] = $this->unionSchemaIds(
-							currentIds: $existingSchemaIds,
-							incomingIds: $data['schemas']
-						);
-					}
-				}
-
-				// Update existing register.
-				$existingRegister = $this->registerMapper->updateFromArray(id: $existingRegister->getId(), object: $data);
-				if ($owner !== null) {
-					$existingRegister->setOwner($owner);
-				}
-
-				// Set application if provided.
-				if ($appId !== null) {
-					$existingRegister->setApplication($appId);
-				}
-
-				return $this->registerMapper->update($existingRegister);
-			}//end if
-
-			// Create new register.
-			// NOTE: createFromArray already calls insert(), so we get a register with an ID.
-			$register = $this->registerMapper->createFromArray($data);
-
-			// Set owner and application if provided.
-			// These must be set AFTER creation because createFromArray doesn't handle them.
-			$needsUpdate = false;
-
-			if ($owner !== null) {
-				$register->setOwner($owner);
-				$needsUpdate = true;
 			}
 
-			if ($appId !== null) {
-				$register->setApplication($appId);
-				$needsUpdate = true;
-			}
+			$data = $this->withUnionedSchemaIds(register: $existingRegister, data: $data);
+			$existingRegister = $this->registerMapper->updateFromArray(id: $existingRegister->getId(), object: $data);
+			$this->stampImportProvenance(register: $existingRegister, options: $options);
 
-			// If we set owner or application, update the register.
-			if ($needsUpdate === true) {
-				$register = $this->registerMapper->update($register);
-			}
-
-			return $register;
+			return $this->registerMapper->update($existingRegister);
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[ImportHandler] Failed to import register: ' . $e->getMessage(),
@@ -1121,6 +1020,128 @@ class ImportHandler {
 			throw new Exception('Failed to import register: ' . $e->getMessage());
 		}//end try
 	}//end importRegister()
+
+	/**
+	 * Find the stored register an import updates, by slug.
+	 *
+	 * RBAC and multitenancy are disabled so a register of any app or tenant is
+	 * found; a miss here would create a duplicate.
+	 *
+	 * @param array $data The register data; `slug` is required.
+	 * @param SchemaImportOptions $options The caller's app id and version, for the duplicate error.
+	 *
+	 * @return Register|null The stored register, or null when there is none.
+	 *
+	 * @throws Exception When several registers share the slug.
+	 */
+	private function findRegisterForImport(array $data, SchemaImportOptions $options): ?Register {
+		try {
+			$existingRegister = $this->registerMapper->find(
+				id: strtolower($data['slug']),
+				_rbac: false,
+				_multitenancy: false
+			);
+			$this->logger->debug(
+				message: '[ImportHandler] Found existing register during import',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'slug' => $data['slug'],
+					'registerId' => $existingRegister->getId(),
+					'application' => $existingRegister->getApplication(),
+				]
+			);
+			return $existingRegister;
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			$this->logger->debug(
+				message: "[ImportHandler] Register '{$data['slug']}' not found, will create new one",
+				context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $options->appId]
+			);
+		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+			$this->handleDuplicateRegisterError(
+				slug: $data['slug'],
+				appId: $options->appId ?? 'unknown',
+				version: $options->version ?? 'unknown'
+			);
+		}//end try
+
+		return null;
+	}//end findRegisterForImport()
+
+	/**
+	 * Whether the stored register's version is at or above the incoming one.
+	 *
+	 * @param Register $register The stored register.
+	 * @param array $data The incoming register data.
+	 *
+	 * @return bool True when the incoming definition is not newer.
+	 */
+	private function registerVersionIsCurrent(Register $register, array $data): bool {
+		$existingVersion = $register->getVersion() ?? '0.0.0';
+		return version_compare($data['version'], $existingVersion, '<=') === true;
+	}//end registerVersionIsCurrent()
+
+	/**
+	 * The incoming data with its schema ids unioned with the register's current ones.
+	 *
+	 * @param Register $register The stored register.
+	 * @param array $data The incoming register data.
+	 *
+	 * @return array The data to write.
+	 */
+	private function withUnionedSchemaIds(Register $register, array $data): array {
+		if (isset($data['schemas']) === true && is_array($data['schemas']) === true) {
+			$existingSchemaIds = $register->getSchemas();
+			if (is_array($existingSchemaIds) === true && $existingSchemaIds !== []) {
+				$data['schemas'] = $this->unionSchemaIds(
+					currentIds: $existingSchemaIds,
+					incomingIds: $data['schemas']
+				);
+			}
+		}
+
+		return $data;
+	}//end withUnionedSchemaIds()
+
+	/**
+	 * Create a register from import data, stamped with the caller's owner and app.
+	 *
+	 * @param array $data The register data.
+	 * @param SchemaImportOptions $options The caller's owner and app id.
+	 *
+	 * @return Register The created register.
+	 */
+	private function createImportedRegister(array $data, SchemaImportOptions $options): Register {
+		$register = $this->registerMapper->createFromArray($data);
+		if ($this->stampImportProvenance(register: $register, options: $options) === true) {
+			$register = $this->registerMapper->update($register);
+		}
+
+		return $register;
+	}//end createImportedRegister()
+
+	/**
+	 * Set the caller's owner and app id on a register, where given.
+	 *
+	 * @param Register $register The register to stamp.
+	 * @param SchemaImportOptions $options The caller's owner and app id.
+	 *
+	 * @return bool True when anything was set.
+	 */
+	private function stampImportProvenance(Register $register, SchemaImportOptions $options): bool {
+		$stamped = false;
+		if ($options->owner !== null) {
+			$register->setOwner($options->owner);
+			$stamped = true;
+		}
+
+		if ($options->appId !== null) {
+			$register->setApplication($options->appId);
+			$stamped = true;
+		}
+
+		return $stamped;
+	}//end stampImportProvenance()
 
 	/**
 	 * Merge two schema-id lists, keeping every id either side can prove.

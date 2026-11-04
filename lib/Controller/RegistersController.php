@@ -28,12 +28,12 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\RegistersControllerServices;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
@@ -43,7 +43,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Configuration\RegisterBundleBinding;
-use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
@@ -104,16 +104,16 @@ class RegistersController extends Controller {
 	/**
 	 * Configuration service for handling import/export operations
 	 *
-	 * @var ConfigurationService
+	 * @var ConfigurationServiceInterface
 	 */
-	private readonly ConfigurationService $configurationService;
+	private readonly ConfigurationServiceInterface $configurationService;
 
 	/**
 	 * Audit trail mapper for fetching log statistics
 	 *
-	 * @var AuditTrailMapper
+	 * @var AuditTrailMapperInterface
 	 */
-	private readonly AuditTrailMapper $auditTrailMapper;
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * Export service for handling data exports
@@ -132,16 +132,16 @@ class RegistersController extends Controller {
 	/**
 	 * Schema mapper for handling schema operations
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Register mapper for handling register operations
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * GitHub service for publishing to GitHub
@@ -236,7 +236,7 @@ class RegistersController extends Controller {
 		);
 		$this->configurationService = $services->integrations->configurationService;
 		$this->logger->debug(
-			message: '[RegistersController] ConfigurationService assigned.',
+			message: '[RegistersController] ConfigurationServiceInterface assigned.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 		$this->auditTrailMapper = $services->mappers->auditTrailMapper;

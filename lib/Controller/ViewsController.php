@@ -20,10 +20,10 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Search\Db\View;
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\ViewPresentationService;
-use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Search\Service\ViewPresentationService;
+use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCA\OpenRegister\Exception\InvalidViewAlertException;
 use OCP\AppFramework\Controller;

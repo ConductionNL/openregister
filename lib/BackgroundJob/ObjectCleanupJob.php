@@ -45,7 +45,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Service\ObjectRelationCleanupService;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -63,7 +63,7 @@ class ObjectCleanupJob extends ActorForwardedJob {
 	 * @param ITimeFactory $time Time factory for the parent job class.
 	 * @param IUserSession $userSession Session to impersonate on / restore.
 	 * @param IUserManager $userManager Resolver for the captured user id.
-	 * @param OrganisationService $organisation Active-organisation resolver.
+	 * @param OrganisationServiceInterface $organisation Active-organisation resolver.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param DeferredEntryObjectResolver $resolver Re-create guard lookup.
 	 * @param ObjectRelationCleanupService $cleanup Shared cleanup implementation.
@@ -74,7 +74,7 @@ class ObjectCleanupJob extends ActorForwardedJob {
 		ITimeFactory $time,
 		IUserSession $userSession,
 		IUserManager $userManager,
-		OrganisationService $organisation,
+		OrganisationServiceInterface $organisation,
 		LoggerInterface $logger,
 		private readonly DeferredEntryObjectResolver $resolver,
 		private readonly ObjectRelationCleanupService $cleanup,

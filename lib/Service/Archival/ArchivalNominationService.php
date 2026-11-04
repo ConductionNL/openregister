@@ -46,7 +46,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
-use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -110,13 +110,13 @@ class ArchivalNominationService {
 	/**
 	 * Constructor.
 	 *
-	 * @param RetentionService            $retentionService Owns the selectielijst lookup and the date arithmetic.
+	 * @param RetentionServiceInterface            $retentionService Owns the selectielijst lookup and the date arithmetic.
 	 * @param LoggerInterface             $logger           Where an unnominatable record is reported.
 	 * @param LifecycleFinalStateResolver $finalStates      Answers whether a referenced state row is an end.
 	 * @param ArchivalDeclarationReader   $declarations     Reads both places a schema can declare archiving.
 	 */
 	public function __construct(
-		private readonly RetentionService $retentionService,
+		private readonly RetentionServiceInterface $retentionService,
 		private readonly LoggerInterface $logger,
 		private readonly LifecycleFinalStateResolver $finalStates,
 		private readonly ArchivalDeclarationReader $declarations,

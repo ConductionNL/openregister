@@ -31,11 +31,11 @@ use InvalidArgumentException;
 use RuntimeException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-use OCA\OpenRegister\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\GraphQL\GraphQLErrorFormatter;
 
 /**
  * Resolves GraphQL queries, mutations, and fields by delegating to OpenRegister services.
@@ -90,7 +91,7 @@ class GraphQLResolver {
 	 * @param PermissionHandler $permissionHandler Permission handler
 	 * @param PropertyRbacHandler $propertyRbac Property RBAC handler
 	 * @param RelationHandler $relationHandler Relation handler
-	 * @param RegisterMapper $registerMapper Register mapper
+	 * @param RegisterMapperInterface $registerMapper Register mapper
 	 * @param LoggerInterface $logger Logger
 	 * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler Translation handler
 	 * @param AggregationRunner $aggregationRunner Ad-hoc aggregation dispatcher.
@@ -104,7 +105,7 @@ class GraphQLResolver {
 		private readonly PermissionHandler $permissionHandler,
 		private readonly PropertyRbacHandler $propertyRbac,
 		private readonly RelationHandler $relationHandler,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly LoggerInterface $logger,
 		private readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler,
 		private readonly AggregationRunner $aggregationRunner,

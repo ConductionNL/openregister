@@ -22,7 +22,7 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Event\ConfigurationCreatedEvent;
 use OCA\OpenRegister\Event\ConfigurationDeletedEvent;
 use OCA\OpenRegister\Event\ConfigurationUpdatedEvent;

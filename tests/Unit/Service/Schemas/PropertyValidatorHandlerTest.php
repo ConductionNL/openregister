@@ -16,7 +16,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Schemas;
 
 use Exception;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
-use OCA\OpenRegister\Service\Search\PropertySearchProfile;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use PHPUnit\Framework\TestCase;
 
 /**

@@ -174,21 +174,21 @@ class MapperNamedArgumentContractTest extends TestCase {
 		$guarded = ['find', 'findAll'];
 
 		$cleaned = [
-			'ApplicationMapper',
-			'AuditTrailMapper',
-			'ConfigurationMapper',
-			'OrganisationMapper',
-			'SchemaMapper',
-			'SearchTrailMapper',
-			'ViewMapper',
+			'Db/ApplicationMapper',
+			'Db/AuditTrailMapper',
+			'Db/ConfigurationMapper',
+			'Db/OrganisationMapper',
+			'Db/SchemaMapper',
+			'Db/SearchTrailMapper',
+			'Search/Db/ViewMapper',
 		];
 
-		foreach ($cleaned as $shortName) {
-			$file = dirname(__DIR__, 3) . '/lib/Db/' . $shortName . '.php';
+		foreach ($cleaned as $path) {
+			$file = dirname(__DIR__, 3) . '/lib/' . $path . '.php';
 			$this->assertFileExists($file);
 
 			$source = (string)file_get_contents($file);
-			$class = 'OCA\\OpenRegister\\Db\\' . $shortName;
+			$class = 'OCA\\OpenRegister\\' . str_replace('/', '\\', $path);
 
 			preg_match_all('/^ \* @method\s+\S+\s+(\w+)\(/m', $source, $annotated);
 
@@ -211,7 +211,7 @@ class MapperNamedArgumentContractTest extends TestCase {
 						'%s carries "@method ... %s(...)" while also declaring %s() '
 						. 'natively. The docblock silently overrides the real signature '
 						. 'for phpstan and psalm — see openregister#2283.',
-						$shortName,
+						basename($path),
 						$name,
 						$name
 					)

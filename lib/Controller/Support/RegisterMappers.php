@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
  * The register, schema, audit trail and object table mappers a register is read through.
@@ -36,17 +36,17 @@ final class RegisterMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param RegisterMapper   $registerMapper     The register mapper.
-	 * @param SchemaMapper     $schemaMapper       The schema mapper.
-	 * @param AuditTrailMapper $auditTrailMapper   The audit trail mapper.
+	 * @param RegisterMapperInterface   $registerMapper     The register mapper.
+	 * @param SchemaMapperInterface     $schemaMapper       The schema mapper.
+	 * @param AuditTrailMapperInterface $auditTrailMapper   The audit trail mapper.
 	 * @param MagicMapper      $objectEntityMapper The object table mapper.
 	 *
 	 * @spec openspec/specs/register-service-extensions/spec.md
 	 */
 	public function __construct(
-		public readonly RegisterMapper $registerMapper,
-		public readonly SchemaMapper $schemaMapper,
-		public readonly AuditTrailMapper $auditTrailMapper,
+		public readonly RegisterMapperInterface $registerMapper,
+		public readonly SchemaMapperInterface $schemaMapper,
+		public readonly AuditTrailMapperInterface $auditTrailMapper,
 		public readonly MagicMapper $objectEntityMapper,
 	) {
 	}//end __construct()

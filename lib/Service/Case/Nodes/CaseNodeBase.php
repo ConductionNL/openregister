@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\Case\Nodes;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunAsScope;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -129,7 +129,7 @@ abstract class CaseNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNode
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	protected function actingUid(array $context): string {
-		$uid = trim((string)($context[FlowRunService::RUN_AS_CONTEXT_KEY] ?? ''));
+		$uid = trim((string)($context[FlowRunServiceInterface::RUN_AS_CONTEXT_KEY] ?? ''));
 		if ($uid === '') {
 			$uid = trim((string)$this->session->getUser()?->getUID());
 		}

@@ -66,11 +66,11 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -127,16 +127,16 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	 * Constructor.
 	 *
 	 * @param ObjectService $objects Object reads, RBAC-enforcing.
-	 * @param RegisterMapper $registers Resolves the configured register.
-	 * @param SchemaMapper $schemas Resolves the configured schema.
+	 * @param RegisterMapperInterface $registers Resolves the configured register.
+	 * @param SchemaMapperInterface $schemas Resolves the configured schema.
 	 * @param IUserManager $userManager Resolves the run owner.
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urls For the palette icon.
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
+		private readonly RegisterMapperInterface $registers,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly IUserManager $userManager,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urls,
@@ -477,7 +477,7 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 		// For a scheduled run they differ — the cause is a schedule, the acting
 		// identity is the user the trigger declares — and reading provenance here
 		// is what made a scheduled read execute as whoever authored the flow.
-		$uid = ($context[FlowRunService::RUN_AS_CONTEXT_KEY] ?? null);
+		$uid = ($context[FlowRunServiceInterface::RUN_AS_CONTEXT_KEY] ?? null);
 		if (is_string($uid) === false || trim($uid) === '') {
 			throw new RuntimeException(
 				$this->l10n->t('This flow run has no acting identity (runAs); an object read must be attributable.')

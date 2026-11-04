@@ -586,38 +586,12 @@ class WebhookService {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple webhook dispatch conditions
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-request-interception-must-support-pre-event-webhooks
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	public function dispatchEvent(Event $_event, string $eventName, array $payload): void {
-		try {
-			// Find all webhooks matching this event.
-			$webhooks = $this->webhookMapper->findForEvent($eventName);
-		} catch (\Exception $e) {
-			// If table doesn't exist yet (migrations haven't run), silently skip webhook delivery.
-			$this->logger->debug(
-				message: '[WebhookService] Webhook table does not exist yet, skipping webhook delivery',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'event' => $eventName,
-					'error' => $e->getMessage(),
-				]
-			);
-			return;
-		}
-
-		if (empty($webhooks) === true) {
-			$this->logger->debug(
-				message: '[WebhookService] No webhooks configured for event',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'event' => $eventName,
-				]
-			);
+		$webhooks = $this->webhooksForEvent(eventName: $eventName);
+		if ($webhooks === []) {
 			return;
 		}
 
@@ -667,6 +641,36 @@ class WebhookService {
 			}
 		}
 	}//end dispatchEvent()
+
+	/**
+	 * The webhooks subscribed to an event; none (logged) when there are none or the webhook
+	 * table does not exist yet because migrations have not run.
+	 *
+	 * @param string $eventName Event class name.
+	 *
+	 * @return array The webhooks.
+	 */
+	private function webhooksForEvent(string $eventName): array {
+		try {
+			$webhooks = $this->webhookMapper->findForEvent($eventName);
+		} catch (\Exception $e) {
+			$this->logger->debug(
+				message: '[WebhookService] Webhook table does not exist yet, skipping webhook delivery',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'event' => $eventName, 'error' => $e->getMessage()]
+			);
+			return [];
+		}
+
+		if (empty($webhooks) === true) {
+			$this->logger->debug(
+				message: '[WebhookService] No webhooks configured for event',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'event' => $eventName]
+			);
+			return [];
+		}
+
+		return $webhooks;
+	}//end webhooksForEvent()
 
 	/**
 	 * Deliver webhook to target URL

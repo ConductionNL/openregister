@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Service\File;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -47,13 +47,13 @@ class FileAuditHandler {
 	/**
 	 * Constructor for FileAuditHandler.
 	 *
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for persisting entries.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for persisting entries.
 	 * @param IUserSession $userSession User session for current user context.
 	 * @param IRequest $request Request object for IP and user-agent.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IUserSession $userSession,
 		private readonly IRequest $request,
 		private readonly LoggerInterface $logger,

@@ -65,7 +65,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  */
-class OrganisationMapper extends QBMapper {
+class OrganisationMapper extends QBMapper implements OrganisationMapperInterface {
 
 	/**
 	 * Maximum merge hops followed before the chain is treated as a data defect.

@@ -51,7 +51,7 @@ use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\DelegationGrantMapper;
 use OCA\OpenRegister\Service\Delegation\DelegationConsentService;
 use OCA\OpenRegister\Service\Delegation\DelegationNotifier;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -91,7 +91,7 @@ class DelegationController extends Controller {
 	 * @param IUserSession             $userSession  Names the caller.
 	 * @param IUserManager             $userManager  Proves the acted-as account exists.
 	 * @param IGroupManager            $groupManager Distinguishes an administrator.
-	 * @param OrganisationService      $organisations Bounds who a caller may ask.
+	 * @param OrganisationServiceInterface      $organisations Bounds who a caller may ask.
 	 * @param LoggerInterface          $logger        Records a tenancy that cannot be read.
 	 */
 	public function __construct(
@@ -103,7 +103,7 @@ class DelegationController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IUserManager $userManager,
 		private readonly IGroupManager $groupManager,
-		private readonly OrganisationService $organisations,
+		private readonly OrganisationServiceInterface $organisations,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);

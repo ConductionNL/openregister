@@ -29,7 +29,7 @@ use Exception;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Service\MappingService;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -69,7 +69,7 @@ class MappingsController extends Controller {
 	 * @param IAppConfig $config App configuration
 	 * @param MappingMapper $mappingMapper Mapping mapper for database operations
 	 * @param MappingService $mappingService Mapping service for executing mappings
-	 * @param OrganisationService $organisationService Organisation service for multi-tenancy
+	 * @param OrganisationServiceInterface $organisationService Organisation service for multi-tenancy
 	 * @param LoggerInterface $logger Logger for error tracking
 	 *
 	 * @return void
@@ -80,7 +80,7 @@ class MappingsController extends Controller {
 		private readonly IAppConfig $config,
 		private readonly MappingMapper $mappingMapper,
 		private readonly MappingService $mappingService,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
