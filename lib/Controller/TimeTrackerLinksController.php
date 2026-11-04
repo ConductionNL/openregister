@@ -174,21 +174,14 @@ class TimeTrackerLinksController extends Controller {
 
 		return $this->onLinkedObject(
 			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$name = (string)$this->request->getParam('name', '');
-				if (trim($name) === '') {
-					return new JSONResponse(['error' => 'name is required'], 400);
-				}
-
-				$link = $this->linkService->createAndLinkClient(
+			action: $this->namedLinkOf(
+				create: fn (ObjectEntity $object, string $name) => $this->linkService->createAndLinkClient(
 					$object->getUuid(),
 					(int)$object->getRegister(),
 					(int)$object->getSchema(),
 					$name
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
+				)
+			)
 		);
 	}//end createAndLink()
 

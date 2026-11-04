@@ -91,13 +91,8 @@ class EmailLinksController extends Controller {
 		return $this->onLinkedObject(
 			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
 			action: function (ObjectEntity $object): JSONResponse {
-				$cursor = $this->request->getParam('cursor');
-				$limit = (int)$this->request->getParam('limit', 50);
-
-				$cursorStr = null;
-				if ($cursor !== null) {
-					$cursorStr = (string)$cursor;
-				}
+				$cursorStr = $this->requestedCursor();
+				$limit     = (int)$this->request->getParam('limit', 50);
 
 				$result = $this->emailLinkService->getLinkedEmails(
 					$object->getUuid(),
@@ -256,13 +251,8 @@ class EmailLinksController extends Controller {
 				return new JSONResponse(['error' => 'mailbox query parameter is required'], 400);
 			}
 
-			$cursor = $this->request->getParam('cursor');
-			$limit = (int)$this->request->getParam('limit', 50);
-
-			$cursorStr = null;
-			if ($cursor !== null) {
-				$cursorStr = (string)$cursor;
-			}
+			$cursorStr = $this->requestedCursor();
+			$limit     = (int)$this->request->getParam('limit', 50);
 
 			$result = $this->emailLinkService->getMessagesForMailbox(
 				(int)$accountId,
@@ -276,6 +266,22 @@ class EmailLinksController extends Controller {
 			return $this->mapException(exception: $e);
 		}//end try
 	}//end messages()
+
+	/**
+	 * The paging cursor of the request, null when absent.
+	 *
+	 * @return string|null The cursor.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
+	 */
+	private function requestedCursor(): ?string {
+		$cursor = $this->request->getParam('cursor');
+		if ($cursor === null) {
+			return null;
+		}
+
+		return (string)$cursor;
+	}//end requestedCursor()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.

@@ -158,21 +158,14 @@ class PhotoLinksController extends Controller {
 
 		return $this->onLinkedObject(
 			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$name = (string)$this->request->getParam('name', '');
-				if (trim($name) === '') {
-					return new JSONResponse(['error' => 'name is required'], 400);
-				}
-
-				$link = $this->photoLinkService->createAndLinkAlbum(
+			action: $this->namedLinkOf(
+				create: fn (ObjectEntity $object, string $name) => $this->photoLinkService->createAndLinkAlbum(
 					$object->getUuid(),
 					(int)$object->getRegister(),
 					(int)$object->getSchema(),
 					$name
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
+				)
+			)
 		);
 	}//end createAndLink()
 

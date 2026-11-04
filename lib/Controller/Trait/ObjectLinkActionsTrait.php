@@ -132,4 +132,24 @@ trait ObjectLinkActionsTrait
 			return new JSONResponse(['results' => $results, 'total' => count($results)]);
 		};
 	}//end resultsOf()
+
+	/**
+	 * A link action that creates a named item and links it: 400 without a name, 201 with the link.
+	 *
+	 * @param Closure $create Given the object and the name, creates and links the item; returns the link.
+	 *
+	 * @return Closure The action, for onLinkedObject().
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
+	 */
+	private function namedLinkOf(Closure $create): Closure {
+		return function (ObjectEntity $object) use ($create): JSONResponse {
+			$name = (string)$this->request->getParam('name', '');
+			if (trim($name) === '') {
+				return new JSONResponse(['error' => 'name is required'], 400);
+			}
+
+			return new JSONResponse($create($object, $name)->jsonSerialize(), 201);
+		};
+	}//end namedLinkOf()
 }//end trait
