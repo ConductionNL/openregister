@@ -69,6 +69,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Exception\NotAuthorizedException
  * @uses   \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
+ * @uses   \OCA\OpenRegister\Service\ObjectSourceRead
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)

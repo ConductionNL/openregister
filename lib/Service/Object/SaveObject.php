@@ -55,14 +55,19 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\DefaultValueContext;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseRelationWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectFileWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceCheck;
+use OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun;
+use OCA\OpenRegister\Service\Object\SaveObject\RelationScanRun;
+use OCA\OpenRegister\Service\Object\SaveObject\StreamRun;
 use OCA\OpenRegister\Service\Object\SaveObject\WriteBackSettings;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog;
@@ -942,117 +947,146 @@ class SaveObject {
 	 *
 	 * @return array Array of relations with dot notation paths as keys and UUIDs/URLs as values
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex relation detection logic
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple detection paths for different value types
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive relation scanning requires extended logic
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function scanForRelations(array $data, string $prefix = '', ?Schema $schema = null): array {
-		$relations = [];
+		$scan = new RelationScanRun();
+		$scan->schema = $schema;
 
 		try {
-			// Get schema properties if available.
-			$schemaProperties = null;
-			if ($schema !== null) {
-				try {
-					$schemaJson = json_encode($schema->getSchemaObject($this->urlGenerator));
-					$schemaObject = json_decode($schemaJson, associative: true);
-					$schemaProperties = $schemaObject['properties'] ?? [];
-				} catch (Exception $e) {
-					// Continue without schema properties if parsing fails.
-				}
-			}
-
+			$scan->schemaProperties = $this->relationScanProperties(schema: $schema);
 			foreach ($data as $key => $value) {
 				// Skip if key is not a string or is empty.
 				if (is_string($key) === false || empty($key) === true) {
 					continue;
 				}
 
-				$currentPath = $key;
+				$scan->key = $key;
+				$scan->path = $key;
 				if (($prefix !== '') === true) {
-					$currentPath = $prefix . '.' . $key;
+					$scan->path = $prefix . '.' . $key;
 				}
 
 				if (is_array($value) === true && empty($value) === false) {
-					// Check if this is an array property in the schema.
-					$propertyConfig = $schemaProperties[$key] ?? null;
-					$isArrayOfObjects = $propertyConfig
-									  && ($propertyConfig['type'] ?? '') === 'array'
-									  && isset($propertyConfig['items']['type'])
-									  && $propertyConfig['items']['type'] === 'object';
-
-					if ($isArrayOfObjects === true) {
-						// For arrays of objects, scan each item for relations.
-						foreach ($value as $index => $item) {
-							if (is_array($item) === true) {
-								$itemRelations = $this->scanForRelations(
-									data: $item,
-									prefix: $currentPath . '.' . $index,
-									schema: $schema
-								);
-								$relations = array_merge($relations, $itemRelations);
-							} elseif (is_string($item) === true && empty($item) === false) {
-								// String values in object arrays are always treated as relations.
-								$relations[$currentPath . '.' . $index] = $item;
-							}
-						}
-					}
-
-					if ($isArrayOfObjects === false) {
-						// For non-object arrays, check each item.
-						foreach ($value as $index => $item) {
-							if (is_array($item) === true) {
-								// Recursively scan nested arrays/objects.
-								$itemRelations = $this->scanForRelations(
-									data: $item,
-									prefix: $currentPath . '.' . $index,
-									schema: $schema
-								);
-								$relations = array_merge($relations, $itemRelations);
-							} elseif (is_string($item) === true && empty($item) === false && trim($item) !== '') {
-								// Check if the string looks like a reference.
-								if ($this->isReference(value: $item) === true) {
-									$relations[$currentPath . '.' . $index] = $item;
-								}
-							}
-						}
-					}//end if
+					$this->scanListForRelations(scan: $scan, value: $value);
 				} elseif (is_string($value) === true && empty($value) === false && trim($value) !== '') {
-					$treatAsRelation = false;
-
-					// Check schema property configuration first.
-					if (($schemaProperties !== null) === true && (($schemaProperties[$key] ?? null) !== null)) {
-						$propertyConfig = $schemaProperties[$key];
-						$propertyType = $propertyConfig['type'] ?? '';
-						$propertyFormat = $propertyConfig['format'] ?? '';
-
-						// Check for explicit relation types.
-						if ($propertyType === 'text' && in_array($propertyFormat, ['uuid', 'uri', 'url']) === true) {
-							$treatAsRelation = true;
-						} elseif ($propertyType === 'object') {
-							// Object properties with string values are always relations.
-							$treatAsRelation = true;
-						}
-					}
-
-					// If not determined by schema, check for reference patterns.
-					if ($treatAsRelation === false) {
-						$treatAsRelation = $this->isReference(value: $value);
-					}
-
-					if ($treatAsRelation === true) {
-						$relations[$currentPath] = $value;
-					}
-				}//end if
-			}//end foreach
+					$this->scanStringForRelation(scan: $scan, value: $value);
+				}
+			}
 		} catch (Exception $e) {
-			// Error scanning for relations.
+			// Error scanning for relations: the relations found so far are kept.
 		}//end try
 
-		return $relations;
+		return $scan->relations;
 	}//end scanForRelations()
+
+	/**
+	 * The property definitions of the schema a relation scan reads, or null without a (readable) schema.
+	 *
+	 * @param Schema|null $schema The schema, if any.
+	 *
+	 * @return array|null The property definitions.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function relationScanProperties(?Schema $schema): ?array {
+		if ($schema === null) {
+			return null;
+		}
+
+		try {
+			$schemaObject = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
+			return $schemaObject['properties'] ?? [];
+		} catch (Exception $e) {
+			// Continue without schema properties if parsing fails.
+			return null;
+		}
+	}//end relationScanProperties()
+
+	/**
+	 * Scan a list value for relations: nested objects recursively, strings by the property kind.
+	 *
+	 * In an array-of-objects property every non-empty string is a relation;
+	 * elsewhere only strings that look like a reference are.
+	 *
+	 * @param RelationScanRun $scan  The scan, on one key.
+	 * @param array           $value The list.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function scanListForRelations(RelationScanRun $scan, array $value): void {
+		$isArrayOfObjects = self::isArrayOfObjectsProperty(propertyConfig: ($scan->schemaProperties[$scan->key] ?? null));
+
+		foreach ($value as $index => $item) {
+			$itemPath = $scan->path . '.' . $index;
+			if (is_array($item) === true) {
+				$scan->relations = array_merge(
+					$scan->relations,
+					$this->scanForRelations(data: $item, prefix: $itemPath, schema: $scan->schema)
+				);
+				continue;
+			}
+
+			if (is_string($item) === false || empty($item) === true) {
+				continue;
+			}
+
+			if ($isArrayOfObjects === true
+				|| (trim($item) !== '' && $this->isReference(value: $item) === true)
+			) {
+				$scan->relations[$itemPath] = $item;
+			}
+		}//end foreach
+	}//end scanListForRelations()
+
+	/**
+	 * Whether a property definition is an array of objects.
+	 *
+	 * @param mixed $propertyConfig The property definition, or null.
+	 *
+	 * @return bool True for an array whose items are objects.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function isArrayOfObjectsProperty(mixed $propertyConfig): bool {
+		return $propertyConfig
+			&& ($propertyConfig['type'] ?? '') === 'array'
+			&& isset($propertyConfig['items']['type'])
+			&& $propertyConfig['items']['type'] === 'object';
+	}//end isArrayOfObjectsProperty()
+
+	/**
+	 * Record a string value as a relation when its schema property declares one, or when it looks like a reference.
+	 *
+	 * A 'text' property with format uuid, uri or url, or an 'object' property, is always a relation.
+	 *
+	 * @param RelationScanRun $scan  The scan, on one key.
+	 * @param string          $value The value.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function scanStringForRelation(RelationScanRun $scan, string $value): void {
+		$treatAsRelation = false;
+		$propertyConfig = ($scan->schemaProperties[$scan->key] ?? null);
+		if ($scan->schemaProperties !== null && $propertyConfig !== null) {
+			$propertyType = $propertyConfig['type'] ?? '';
+			$propertyFormat = $propertyConfig['format'] ?? '';
+			$treatAsRelation = ($propertyType === 'text' && in_array($propertyFormat, ['uuid', 'uri', 'url']) === true)
+				|| $propertyType === 'object';
+		}
+
+		if ($treatAsRelation === false) {
+			$treatAsRelation = $this->isReference(value: $value);
+		}
+
+		if ($treatAsRelation === true) {
+			$scan->relations[$scan->path] = $value;
+		}
+	}//end scanStringForRelation()
 
 	/**
 	 * Determines if a string value should be treated as a reference to another object
@@ -1547,10 +1581,6 @@ class SaveObject {
 	 * @throws \Twig\Error\LoaderError
 	 * @throws \Twig\Error\SyntaxError
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex default value logic with multiple behaviors
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple property types and behaviors require branching
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive default value handling
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function setDefaultValues(ObjectEntity $objectEntity, Schema $schema, array $data): array {
@@ -1578,7 +1608,7 @@ class SaveObject {
 			$schemaObject['properties']
 		);
 
-		// Handle constant values - these should ALWAYS be set regardless of input data.
+		// Constant values are ALWAYS set, regardless of input data.
 		$constantValues = [];
 		foreach ($properties as $property) {
 			if (($property['const'] ?? null) !== null) {
@@ -1586,100 +1616,91 @@ class SaveObject {
 			}
 		}
 
-		// Handle default values with new behavior support.
-		$defaultValues = [];
-		foreach ($properties as $property) {
-			$key = $property['title'];
-			$defaultValue = $property['default'] ?? null;
-
-			// Skip if no default value is defined.
-			if ($defaultValue === null) {
-				continue;
-			}
-
-			$defaultBehavior = $property['defaultBehavior'] ?? 'false';
-
-			// Determine if default should be applied based on behavior.
-			$shouldApplyDefault = false;
-
-			// Default behavior: only apply if property is missing or null.
-			$shouldApplyDefault = isset($data[$key]) === false || $data[$key] === null;
-			if ($defaultBehavior === 'falsy') {
-				// Apply default if property is missing, null, empty string, or empty array/object.
-				$shouldApplyDefault = isset($data[$key]) === false
-					|| $data[$key] === null
-					|| $data[$key] === ''
-					|| (is_array($data[$key]) === true && empty($data[$key]));
-			} elseif ($defaultBehavior === 'always') {
-				// Always apply default value on every save (computed/derived property).
-				$shouldApplyDefault = true;
-			}
-
-			if ($shouldApplyDefault === true) {
-				$defaultValues[$key] = $defaultValue;
-			}
-		}//end foreach
-
-		// Render twig templated default values.
-		// Merge incoming $data with existing object data so Twig templates can reference
-		// both newly submitted values and existing object properties.
-		$twigContext = array_merge($objectEntity->getObjectArray(), $data);
+		// Twig templates can reference both newly submitted values and existing object properties.
+		$context = new DefaultValueContext();
+		$context->twigContext = array_merge($objectEntity->getObjectArray(), $data);
+		$context->schemaProperties = ($schemaObject['properties'] ?? []);
 		$renderedDefaults = [];
-		foreach ($defaultValues as $key => $defaultValue) {
-			try {
-				if (is_string($defaultValue) === true
-					&& str_contains(haystack: $defaultValue, needle: '{{') === true
-					&& str_contains(haystack: $defaultValue, needle: '}}') === true
-				) {
-					// Check if this is a simple property reference like "{{ propertyName }}"
-					// to preserve array values instead of converting to string.
-					$simpleRefPattern = '/^\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}$/';
-					if (preg_match($simpleRefPattern, $defaultValue, $matches) === 1) {
-						$sourceProperty = $matches[1];
-						if (isset($twigContext[$sourceProperty]) === true) {
-							// Direct copy preserves arrays and other types.
-							$renderedDefaults[$key] = $twigContext[$sourceProperty];
-						}
+		foreach ($properties as $property) {
+			if ($property['default'] !== null && self::appliesDefault(property: $property, data: $data) === true) {
+				$renderedDefaults[$property['title']] = $this->renderDefaultValue(context: $context, defaultValue: $property['default']);
+			}
+		}
 
-						if (isset($twigContext[$sourceProperty]) === false) {
-							// Source property not found, use empty value.
-							$renderedDefaults[$key] = null;
-						}
-					}
-
-					if (preg_match($simpleRefPattern, $defaultValue, $matches) !== 1) {
-						// Complex template, use MetadataHydrationHandler which supports
-						// pipe-based filters (| map:) and fallback syntax (| field2).
-						$rendered = $this->metaHydrationHandler->processTwigLikeTemplate(
-							data: $twigContext,
-							template: $defaultValue,
-							schemaProperties: $schemaObject['properties'] ?? []
-						);
-						$renderedDefaults[$key] = $rendered;
-					}
-				}//end if
-
-				if (is_string($defaultValue) === false
-					|| str_contains(haystack: $defaultValue, needle: '{{') === false
-					|| str_contains(haystack: $defaultValue, needle: '}}') === false
-				) {
-					$renderedDefaults[$key] = $defaultValue;
-				}
-			} catch (Exception $e) {
-				$renderedDefaults[$key] = $defaultValue;
-				// Use original value if template fails.
-			}//end try
-		}//end foreach
-
-		// Merge in this order:.
-		// 1. Start with existing data.
-		// 2. Apply rendered default values (only for properties that should get defaults).
-		// 3. Override with constant values (constants always take precedence).
-		// No slug is added to the data here: the slug is entity metadata that
-		// ObjectSlugHandler decides. A `slug` key in the data landed in
-		// `@self.relations.slug` and made the magic mapper warn on every save (#4037).
+		// Existing data, then the defaults that apply, then constants, which always take precedence.
+		// No slug is added here: the slug is entity metadata that ObjectSlugHandler decides
+		// (a `slug` key in the data made the magic mapper warn on every save, #4037).
 		return array_merge($data, $renderedDefaults, $constantValues);
 	}//end setDefaultValues()
+
+	/**
+	 * Whether a property's default applies to the incoming data, by its defaultBehavior.
+	 *
+	 * 'false' (the default) applies when the value is missing or null; 'falsy'
+	 * also when it is an empty string or an empty array; 'always' on every
+	 * save (a computed or derived property).
+	 *
+	 * @param array $property The property definition, with its name as title.
+	 * @param array $data     The incoming data.
+	 *
+	 * @return bool True when the default is applied.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function appliesDefault(array $property, array $data): bool {
+		$key = $property['title'];
+		$defaultBehavior = $property['defaultBehavior'] ?? 'false';
+		if ($defaultBehavior === 'always') {
+			return true;
+		}
+
+		$missing = isset($data[$key]) === false || $data[$key] === null;
+		if ($defaultBehavior !== 'falsy') {
+			return $missing;
+		}
+
+		return $missing === true
+			|| $data[$key] === ''
+			|| (is_array($data[$key]) === true && empty($data[$key]));
+	}//end appliesDefault()
+
+	/**
+	 * Render a default value: a `{{ property }}` reference copies that value, other templates render, the rest stays as is.
+	 *
+	 * A direct reference keeps arrays and other types; a missing referenced
+	 * property gives null. Complex templates go through MetadataHydrationHandler,
+	 * which supports pipe filters (`| map:`) and fallbacks (`| field2`). A
+	 * template that fails to render keeps the raw default.
+	 *
+	 * @param DefaultValueContext $context      What the templates render against.
+	 * @param mixed               $defaultValue The declared default.
+	 *
+	 * @return mixed The value to set.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function renderDefaultValue(DefaultValueContext $context, mixed $defaultValue): mixed {
+		if (is_string($defaultValue) === false
+			|| str_contains(haystack: $defaultValue, needle: '{{') === false
+			|| str_contains(haystack: $defaultValue, needle: '}}') === false
+		) {
+			return $defaultValue;
+		}
+
+		if (preg_match('/^\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}$/', $defaultValue, $matches) === 1) {
+			return $context->twigContext[$matches[1]] ?? null;
+		}
+
+		try {
+			return $this->metaHydrationHandler->processTwigLikeTemplate(
+				data: $context->twigContext,
+				template: $defaultValue,
+				schemaProperties: $context->schemaProperties
+			);
+		} catch (Exception $e) {
+			return $defaultValue;
+		}
+	}//end renderDefaultValue()
 
 	/**
 	 * Applies defaults with defaultBehavior: "always" BEFORE validation.
@@ -4458,102 +4479,103 @@ class SaveObject {
 			]
 		);
 
-		$filePropsProcessed = false;
+		$write = new ObjectFileWrite();
+		$write->entity = $savedEntity;
+		$write->data = $data;
+		$write->register = $register;
+		$write->schema = $schema;
 
 		try {
-			// Process all file properties.
-			foreach ($data as $propertyName => $value) {
-				if ($this->filePropertyHandler->isFileProperty(
-					value: $value,
-					schema: $schema,
-					propertyName: $propertyName
-				) === true
-				) {
-					$this->filePropertyHandler->handleFileProperty(
-						objectEntity: $savedEntity,
-						object: $data,
-						propertyName: $propertyName,
-						schema: $schema
-					);
-					$filePropsProcessed = true;
-				}
+			if ($this->handleFilePropertiesOf(write: $write) === true) {
+				$this->storeProcessedFileIds(write: $write);
 			}
 
-			// If files were processed, update the object with file IDs.
-			if ($filePropsProcessed === true) {
-				$this->logger->warning(
-					message: '[SaveObject] File properties processed, updating object with file IDs',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'app' => 'openregister',
-						'uuid' => $savedEntity->getUuid(),
-						'data' => json_encode($data),
-					]
-				);
-
-				$savedEntity->setObject($data);
-
-				// DEBUG: Verify setObject worked.
-				$this->logger->error(
-					message: '[SaveObject] DEBUG: After setObject - entity object is now',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'app' => 'openregister',
-						'entityObject' => json_encode($savedEntity->getObject()),
-					]
-				);
-
-				// DEBUG: About to call update.
-				$this->logger->error(
-					message: '[SaveObject] DEBUG: About to call objectEntityMapper->update()',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'app' => 'openregister',
-						'uuid' => $savedEntity->getUuid(),
-					]
-				);
-
-				// Clear image metadata if objectImageField is a file property.
-				$this->clearImageMetadataIfFileProperty(
-					savedEntity: $savedEntity,
-					schema: $schema
-				);
-
-				$savedEntity = $this->objectEntityMapper->update(entity: $savedEntity, register: $register, schema: $schema);
-
-				// DEBUG: After update.
-				$this->logger->error(
-					message: '[SaveObject] DEBUG: After objectEntityMapper->update() - result object',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'app' => 'openregister',
-						'resultObject' => json_encode($savedEntity->getObject()),
-					]
-				);
-			}//end if
-
-			return $savedEntity;
+			return $write->entity;
 		} catch (Exception $e) {
-			// ROLLBACK: Delete the object if file processing failed.
+			// ROLLBACK: Delete the object if file processing failed, then re-throw for the controller.
 			$this->logger->warning(
 				message: '[SaveObject] File processing failed, rolling back object creation',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'uuid' => $savedEntity->getUuid(),
+					'uuid' => $write->entity->getUuid(),
 					'error' => $e->getMessage(),
 				]
 			);
-			$this->objectEntityMapper->delete($savedEntity);
+			$this->objectEntityMapper->delete($write->entity);
 
-			// Re-throw the exception so the controller can handle it.
 			throw $e;
+		} finally {
+			$data = $write->data;
 		}//end try
 	}//end processFilePropertiesWithRollback()
+
+	/**
+	 * Store every file property of the data, replacing its content with file ids.
+	 *
+	 * @param ObjectFileWrite $write The file write; its data is rewritten.
+	 *
+	 * @return bool True when at least one file property was processed.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function handleFilePropertiesOf(ObjectFileWrite $write): bool {
+		$filePropsProcessed = false;
+		$snapshot = $write->data;
+		foreach ($snapshot as $propertyName => $value) {
+			if ($this->filePropertyHandler->isFileProperty(value: $value, schema: $write->schema, propertyName: $propertyName) === true) {
+				$this->filePropertyHandler->handleFileProperty(
+					objectEntity: $write->entity,
+					object: $write->data,
+					propertyName: $propertyName,
+					schema: $write->schema
+				);
+				$filePropsProcessed = true;
+			}
+		}
+
+		return $filePropsProcessed;
+	}//end handleFilePropertiesOf()
+
+	/**
+	 * Write the data with file ids back onto the saved object and update it.
+	 *
+	 * @param ObjectFileWrite $write The file write.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function storeProcessedFileIds(ObjectFileWrite $write): void {
+		$this->logger->warning(
+			message: '[SaveObject] File properties processed, updating object with file IDs',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'app' => 'openregister',
+				'uuid' => $write->entity->getUuid(),
+				'data' => json_encode($write->data),
+			]
+		);
+
+		$write->entity->setObject($write->data);
+		$this->logger->error(
+			message: '[SaveObject] DEBUG: After setObject - entity object is now',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister', 'entityObject' => json_encode($write->entity->getObject())]
+		);
+		$this->logger->error(
+			message: '[SaveObject] DEBUG: About to call objectEntityMapper->update()',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister', 'uuid' => $write->entity->getUuid()]
+		);
+
+		$this->clearImageMetadataIfFileProperty(savedEntity: $write->entity, schema: $write->schema);
+		$write->entity = $this->objectEntityMapper->update(entity: $write->entity, register: $write->register, schema: $write->schema);
+
+		$this->logger->error(
+			message: '[SaveObject] DEBUG: After objectEntityMapper->update() - result object',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister', 'resultObject' => json_encode($write->entity->getObject())]
+		);
+	}//end storeProcessedFileIds()
 
 	/**
 	 * Clear image metadata if objectImageField points to a file property.
@@ -5336,8 +5358,6 @@ class SaveObject {
 	 *
 	 * @throws ValidationException If a referenced object does not exist.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple property type checks
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function validateReferences(
@@ -5346,15 +5366,11 @@ class SaveObject {
 		?string $register,
 		?array $oldData = null,
 	): void {
-		// Operator-controlled admin bypass: when the current user is in
-		// the admin group AND the bypass flag is on (default true), skip
-		// reference existence validation entirely. Mirrors the
-		// `MultiTenancyTrait::isCurrentUserAdmin()` short-circuit so
-		// admins can repair broken cross-references during migrations or
-		// bulk imports without tripping 422s. Operators can flip the
-		// flag off via `occ config:app:set openregister
-		// reference_validation_admin_bypass --value=false` to enforce
-		// validation for every user.
+		// Operator-controlled admin bypass: an admin with the bypass flag on
+		// (default true) skips reference existence validation, so admins can
+		// repair broken cross-references during migrations or bulk imports.
+		// `occ config:app:set openregister reference_validation_admin_bypass
+		// --value=false` enforces validation for every user.
 		if ($this->shouldBypassValidationForAdmin() === true) {
 			return;
 		}
@@ -5364,121 +5380,151 @@ class SaveObject {
 			return;
 		}
 
+		$run = new ReferencePropertyRun();
+		$run->data = $data;
+		$run->oldData = $oldData;
+		$run->register = $register;
 		foreach ($properties as $propertyName => $property) {
-			// Resolve the configured strictness level for this property.
-			// Returns null when validation is not enabled — short-circuit
-			// so legacy `validateReference: false` (or absent) costs zero.
-			$strictness = $this->resolveReferenceStrictness(property: $property);
-			if ($strictness === null) {
-				continue;
-			}
-
-			// Determine the $ref target.
-			$ref = $property['$ref'] ?? $property['items']['$ref'] ?? null;
-			$isArray = isset($property['type']) && $property['type'] === 'array';
-
-			if ($ref === null) {
-				continue;
-			}
-
-			// Get the value from data.
-			$value = $data[$propertyName] ?? null;
-
-			// Skip null or empty values (non-required property).
-			if ($value === null || $value === '') {
-				continue;
-			}
-
-			// On updates, skip validation for unchanged values.
-			if ($oldData !== null && array_key_exists($propertyName, $oldData) === true) {
-				if ($oldData[$propertyName] === $value) {
-					continue;
-				}
-			}
-
-			// Resolve the target register: property-level config or object's register.
-			$targetRegister = $property['register'] ?? $register;
-
-			// Normalize to array for uniform validation.
-			$uuidsToValidate = [$value];
-			if ($isArray === true && is_array($value) === true) {
-				$uuidsToValidate = $value;
-			}
-
-			foreach ($uuidsToValidate as $uuid) {
-				if (empty($uuid) === true) {
-					continue;
-				}
-
-				try {
-					// Cross-app references can be expressed as HTTP(S)
-					// URLs (the canonical resource address of an object
-					// owned by another app or instance). Components are
-					// designed to operate individually — component A may
-					// not have read access to component B for security
-					// or tenancy reasons, so we MUST NOT fetch the URL
-					// to verify existence. Instead, validate syntax only:
-					// scheme is http/https and host parses. Decision
-					// recorded in `reference-existence-validation`
-					// tasks.md (2026-05-02).
-					if ($this->looksLikeHttpUrl(value: (string)$uuid) === true) {
-						$this->validateExternalUrlSyntax(
-							propertyName: $propertyName,
-							value: (string)$uuid,
-							schemaRef: $ref,
-							register: $targetRegister
-						);
-						continue;
-					}
-
-					$this->validateReferenceExists(
-						propertyName: $propertyName,
-						uuid: (string)$uuid,
-						schemaRef: $ref,
-						register: $targetRegister
-					);
-
-					// And it has to be one the picker would have offered.
-					// Costs nothing for a property that declares no filter:
-					// the reader returns null before any read is made.
-					$this->assertReferenceMatchesFilter(
-						propertyName: $propertyName,
-						property: $property,
-						record: $data,
-						uuid: (string)$uuid,
-						schemaRef: $ref,
-						register: $targetRegister
-					);
-				} catch (ReferenceValidationException $exception) {
-					// Strict mode (`error`) re-raises the 422 so the save
-					// is rejected. `warn` mode swallows the exception
-					// after the failure event has already fired in
-					// `validateReferenceExists()` — listeners still see
-					// the miss, the warning is logged for ops visibility,
-					// and the save proceeds. This lets schema authors
-					// adopt reference validation gradually on registers
-					// with known dirty data without forcing every save
-					// through an HTTP 422.
-					if ($strictness === 'warn') {
-						$this->logger->warning(
-							message: '[SaveObject] Reference validation failed (warn-only)',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'property' => $propertyName,
-								'uuid' => $uuid,
-								'targetSchema' => $exception->getTargetSchemaSlug(),
-								'targetRegister' => $exception->getTargetRegister(),
-							]
-						);
-						continue;
-					}
-
-					throw $exception;
-				}//end try
-			}//end foreach
-		}//end foreach
+			$run->propertyName = $propertyName;
+			$run->property = $property;
+			$this->validatePropertyReferences(run: $run);
+		}
 	}//end validateReferences()
+
+	/**
+	 * Validate the references one property holds, when its schema enables validation.
+	 *
+	 * Null or empty values, and values unchanged on an update, are skipped.
+	 * Legacy `validateReference: false` (or absent) costs nothing.
+	 *
+	 * @param ReferencePropertyRun $run The validation pass, on one property.
+	 *
+	 * @return void
+	 *
+	 * @throws ValidationException If a referenced object does not exist in strict mode.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function validatePropertyReferences(ReferencePropertyRun $run): void {
+		$property = $run->property;
+		$run->strictness = $this->resolveReferenceStrictness(property: $property);
+		$ref = $property['$ref'] ?? $property['items']['$ref'] ?? null;
+		$value = $run->data[$run->propertyName] ?? null;
+		if ($run->strictness === null || $ref === null || $value === null || $value === '') {
+			return;
+		}
+
+		if (self::referenceUnchanged(run: $run, value: $value) === true) {
+			return;
+		}
+
+		$run->ref = $ref;
+		$run->targetRegister = $property['register'] ?? $run->register;
+		foreach (self::referenceValues(property: $property, value: $value) as $uuid) {
+			if (empty($uuid) === false) {
+				$this->validateOneReference(run: $run, uuid: $uuid);
+			}
+		}
+	}//end validatePropertyReferences()
+
+	/**
+	 * Whether an update leaves the run's property at the value it already had.
+	 *
+	 * @param ReferencePropertyRun $run   The validation pass, on one property.
+	 * @param mixed                $value The incoming value.
+	 *
+	 * @return bool True when the stored value is the same.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function referenceUnchanged(ReferencePropertyRun $run, mixed $value): bool {
+		return $run->oldData !== null && array_key_exists($run->propertyName, $run->oldData) === true
+			&& $run->oldData[$run->propertyName] === $value;
+	}//end referenceUnchanged()
+
+	/**
+	 * The reference values of a property: the list of an array property, else the single value.
+	 *
+	 * @param array $property The property definition.
+	 * @param mixed $value    The value.
+	 *
+	 * @return array The values to validate.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function referenceValues(array $property, mixed $value): array {
+		if (isset($property['type']) === true && $property['type'] === 'array' && is_array($value) === true) {
+			return $value;
+		}
+
+		return [$value];
+	}//end referenceValues()
+
+	/**
+	 * Validate one reference value: URL syntax for a cross-app URL, else existence and the picker filter.
+	 *
+	 * A cross-app reference expressed as an HTTP(S) URL is never fetched (a
+	 * component may not read another for security or tenancy reasons); only
+	 * its syntax is checked. In `warn` mode a refusal is logged after its
+	 * failure event fired, and the save proceeds, so schema authors can adopt
+	 * validation gradually on registers with known dirty data.
+	 *
+	 * @param ReferencePropertyRun $run  The validation pass, on one property.
+	 * @param mixed                $uuid The reference value.
+	 *
+	 * @return void
+	 *
+	 * @throws ReferenceValidationException In strict mode, when the reference is refused.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function validateOneReference(ReferencePropertyRun $run, mixed $uuid): void {
+		try {
+			if ($this->looksLikeHttpUrl(value: (string)$uuid) === true) {
+				$this->validateExternalUrlSyntax(
+					propertyName: $run->propertyName,
+					value: (string)$uuid,
+					schemaRef: $run->ref,
+					register: $run->targetRegister
+				);
+				return;
+			}
+
+			$this->validateReferenceExists(
+				propertyName: $run->propertyName,
+				uuid: (string)$uuid,
+				schemaRef: $run->ref,
+				register: $run->targetRegister
+			);
+
+			// And it has to be one the picker would have offered; a property
+			// that declares no filter costs nothing.
+			$this->assertReferenceMatchesFilter(
+				propertyName: $run->propertyName,
+				property: $run->property,
+				record: $run->data,
+				uuid: (string)$uuid,
+				schemaRef: $run->ref,
+				register: $run->targetRegister
+			);
+		} catch (ReferenceValidationException $exception) {
+			if ($run->strictness !== 'warn') {
+				throw $exception;
+			}
+
+			$this->logger->warning(
+				message: '[SaveObject] Reference validation failed (warn-only)',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'property' => $run->propertyName,
+					'uuid' => $uuid,
+					'targetSchema' => $exception->getTargetSchemaSlug(),
+					'targetRegister' => $exception->getTargetRegister(),
+				]
+			);
+		}//end try
+	}//end validateOneReference()
 
 	/**
 	 * Resolve the configured strictness level for a schema property.
@@ -6151,8 +6197,6 @@ class SaveObject {
 	 *
 	 * @return BatchOperationStatus
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function saveObjectsStreaming(
@@ -6164,130 +6208,169 @@ class SaveObject {
 		$status ??= new BatchOperationStatus();
 		$status->start();
 
+		$run = new StreamRun();
+		$run->register = $register;
+		$run->schema = $schema;
+		$run->status = $status;
+
 		// Position in the submitted batch. A failed create has no UUID yet, so
 		// this is the only thing that lets a caller identify the row it lost
 		// (issue #2778). Counted rather than read from the key because $rows is
 		// an iterable and may be a generator.
-		$rowIndex = -1;
-
 		foreach ($rows as $row) {
-			$rowIndex++;
+			$run->rowIndex++;
+			$run->row = $row;
 			$cacheBefore = count($this->referenceValidationCache);
-
-			try {
-				$rowData = [];
-				if (is_array($row) === true) {
-					$rowData = $row;
-				}
-
-				// Clear the slot first. Without this, a row that reaches neither
-				// terminal path would be classified with the PREVIOUS row's
-				// verdict — a stale answer that reads exactly like a real one,
-				// where a null falls through to the fallback and is at least
-				// derived from this row.
-				$this->lastSaveOutcome = null;
-
-				$entity = $this->saveObject(
-					register: $register,
-					schema: $schema,
-					data: $rowData
-				);
-
-				$uuid = ((string)$entity->getUuid());
-
-				// Outcome bucket — from the save path's own verdict, not from
-				// the shape of the input. This used to guess: "the row carried a
-				// uuid, so it must be an update". The guess is wrong in both
-				// directions. A row supplying a uuid for an object that does not
-				// exist yet is a CREATE counted as an update, and a write that
-				// changed nothing is an UPDATE counted as a change — which is
-				// why `unchanged` was described here as a future enhancement
-				// needing "a deep diff against the previous state". No such diff
-				// is needed: handleObjectUpdate() already clones the pre-update
-				// state for the audit trail and handleObjectCreation() already
-				// has the mapper's write action, so both paths know the answer
-				// and now record it.
-				//
-				// The fallback is the old heuristic, kept for the one case that
-				// can still leave the verdict unset — a `persist: false` prepare
-				// reaching neither terminal path — so a null can never be
-				// silently dropped from the totals.
-				$outcome = $this->consumeLastSaveOutcome();
-				if ($outcome === null) {
-					$hadUuid = (
-						is_array($row) === true
-						&& (isset($row['@self']['id']) === true
-						|| isset($row['id']) === true
-						|| isset($row['uuid']) === true)
-					);
-					$outcome = 'created';
-					if ($hadUuid === true) {
-						$outcome = 'updated';
-					}
-				}
-
-				if ($outcome === 'created') {
-					$status->recordCreated(uuid: $uuid);
-				}
-
-				if ($outcome === 'updated') {
-					$status->recordUpdated(uuid: $uuid);
-				}
-
-				if ($outcome === 'unchanged') {
-					$status->recordUnchanged(uuid: $uuid);
-				}
-			} catch (Exception $e) {
-				$rowUuid = null;
-				if (is_array($row) === true) {
-					$rowUuid = (
-						$row['@self']['id'] ?? $row['id'] ?? $row['uuid'] ?? null
-					);
-					if (is_string($rowUuid) === false) {
-						$rowUuid = null;
-					}
-				}
-
-				$status->recordFailed(
-					uuid: $rowUuid,
-					message: $e->getMessage(),
-					exceptionClass: $e::class,
-					index: $rowIndex
-				);
-
-				$this->logger->warning(
-					message: '[SaveObject] saveObjectsStreaming row failed',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $rowUuid,
-						'index' => $rowIndex,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-
-			// Each row's reference checks either grew the cache (miss)
-			// or hit existing entries (hit). Comparing cache size
-			// before/after the row gives us a cheap proxy: any growth
-			// is a miss; rows that didn't grow the cache resolved
-			// their references via existing entries (hit).
-			$cacheAfter = count($this->referenceValidationCache);
-			$delta = ($cacheAfter - $cacheBefore);
-			if ($delta > 0) {
-				for ($i = 0; $i < $delta; $i++) {
-					$status->recordReferenceCacheMiss();
-				}
-			}
-
-			if ($delta <= 0) {
-				$status->recordReferenceCacheHit();
-			}
-		}//end foreach
+			$this->saveStreamRow(run: $run);
+			$this->recordReferenceCacheUse(status: $status, cacheBefore: $cacheBefore);
+		}
 
 		$status->complete();
 		return $status;
 	}//end saveObjectsStreaming()
+
+	/**
+	 * Save one streamed row and record its outcome, or its failure without stopping the batch.
+	 *
+	 * @param StreamRun $run The batch, on one row.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function saveStreamRow(StreamRun $run): void {
+		try {
+			$rowData = [];
+			if (is_array($run->row) === true) {
+				$rowData = $run->row;
+			}
+
+			// Clear the slot first: a row that reaches neither terminal path must
+			// not be classified with the PREVIOUS row's verdict.
+			$this->lastSaveOutcome = null;
+			$entity = $this->saveObject(register: $run->register, schema: $run->schema, data: $rowData);
+			$this->recordStreamOutcome(run: $run, uuid: (string)$entity->getUuid());
+		} catch (Exception $e) {
+			$rowUuid = self::streamRowUuid(row: $run->row);
+			$run->status->recordFailed(
+				uuid: $rowUuid,
+				message: $e->getMessage(),
+				exceptionClass: $e::class,
+				index: $run->rowIndex
+			);
+
+			$this->logger->warning(
+				message: '[SaveObject] saveObjectsStreaming row failed',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'uuid' => $rowUuid,
+					'index' => $run->rowIndex,
+					'error' => $e->getMessage(),
+				]
+			);
+		}//end try
+	}//end saveStreamRow()
+
+	/**
+	 * Record a saved row as created, updated or unchanged, from the save path's own verdict.
+	 *
+	 * The verdict is not guessed from the input: a row supplying a uuid for an
+	 * object that does not exist yet is a create, and a write that changed
+	 * nothing is unchanged. Only when the verdict is unset (a `persist: false`
+	 * prepare reaching neither terminal path) does the old heuristic apply,
+	 * so a row is never dropped from the totals.
+	 *
+	 * @param StreamRun $run  The batch, on one row.
+	 * @param string    $uuid The saved object's UUID.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function recordStreamOutcome(StreamRun $run, string $uuid): void {
+		$outcome = ($this->consumeLastSaveOutcome() ?? self::guessedStreamOutcome(row: $run->row));
+		if ($outcome === 'created') {
+			$run->status->recordCreated(uuid: $uuid);
+		}
+
+		if ($outcome === 'updated') {
+			$run->status->recordUpdated(uuid: $uuid);
+		}
+
+		if ($outcome === 'unchanged') {
+			$run->status->recordUnchanged(uuid: $uuid);
+		}
+	}//end recordStreamOutcome()
+
+	/**
+	 * The outcome guessed from a row's shape: updated when it carries an identifier, else created.
+	 *
+	 * @param mixed $row The input row.
+	 *
+	 * @return string The guessed outcome.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function guessedStreamOutcome(mixed $row): string {
+		$hadUuid = (
+			is_array($row) === true
+			&& (isset($row['@self']['id']) === true
+			|| isset($row['id']) === true
+			|| isset($row['uuid']) === true)
+		);
+		if ($hadUuid === true) {
+			return 'updated';
+		}
+
+		return 'created';
+	}//end guessedStreamOutcome()
+
+	/**
+	 * The identifier a failed row carries, or null when it carries no string identifier.
+	 *
+	 * @param mixed $row The input row.
+	 *
+	 * @return string|null The identifier.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function streamRowUuid(mixed $row): ?string {
+		if (is_array($row) === false) {
+			return null;
+		}
+
+		$rowUuid = ($row['@self']['id'] ?? $row['id'] ?? $row['uuid'] ?? null);
+		if (is_string($rowUuid) === false) {
+			return null;
+		}
+
+		return $rowUuid;
+	}//end streamRowUuid()
+
+	/**
+	 * Count a row's reference checks as cache misses (the cache grew) or one hit (it did not).
+	 *
+	 * Comparing the cache size before and after the row is a cheap proxy.
+	 *
+	 * @param BatchOperationStatus $status      The batch status.
+	 * @param int                  $cacheBefore The reference cache size before the row.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function recordReferenceCacheUse(BatchOperationStatus $status, int $cacheBefore): void {
+		$delta = (count($this->referenceValidationCache) - $cacheBefore);
+		if ($delta <= 0) {
+			$status->recordReferenceCacheHit();
+			return;
+		}
+
+		for ($i = 0; $i < $delta; $i++) {
+			$status->recordReferenceCacheMiss();
+		}
+	}//end recordReferenceCacheUse()
 
 	/**
 	 * Push an in-flight save onto the call stack used for circular
@@ -6932,32 +7015,10 @@ class SaveObject {
 		}
 
 		$updatedEntity->setObject($mergedObject);
-		if (self::imageFieldIsFileProperty(schema: $run->schema) === true) {
-			// Cleared so rendering extracts the image URL from the file object.
-			$updatedEntity->setImage(null);
-		}
+		$this->clearImageMetadataIfFileProperty(savedEntity: $updatedEntity, schema: $run->schema);
 
 		return $this->objectEntityMapper->update(entity: $updatedEntity, register: $run->register, schema: $run->schema);
 	}//end storeUpdatedFileProperties()
-
-	/**
-	 * Whether the schema's objectImageField points at a file property.
-	 *
-	 * @param Schema $schema The schema.
-	 *
-	 * @return bool True when the image field is a file property.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function imageFieldIsFileProperty(Schema $schema): bool {
-		$imageField = ($schema->getConfiguration()['objectImageField'] ?? null);
-		if ($imageField === null) {
-			return false;
-		}
-
-		$propertyConfig = (($schema->getProperties() ?? [])[$imageField] ?? null);
-		return $propertyConfig !== null && ($propertyConfig['type'] ?? '') === 'file';
-	}//end imageFieldIsFileProperty()
 
 	/**
 	 * Compare old vs new object values for translatable properties and flip

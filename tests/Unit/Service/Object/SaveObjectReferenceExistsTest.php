@@ -47,6 +47,9 @@ use RuntimeException;
  * which events it sends, and when it refuses.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
+ * @uses \OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration
+ * @uses \OCA\OpenRegister\Service\Schemas\ReferenceFilterException
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
@@ -220,4 +223,92 @@ final class SaveObjectReferenceExistsTest extends TestCase {
 
 		$this->assertSame([], $this->trace);
 	}
+
+	/**
+	 * Run validateReferences() over one schema and record the lookups, or the refusal.
+	 */
+	private function validateAll(string $lookup, array $properties, array $data, ?array $oldData = null): array {
+		$this->trace = [];
+		$schema = new Schema();
+		$schema->setId(7);
+		$schema->setProperties($properties);
+		try {
+			(new ReflectionClass(SaveObject::class))->getMethod('validateReferences')
+				->invoke($this->handler(lookup: $lookup), $schema, $data, '5', $oldData);
+			$outcome = 'ok';
+		} catch (\Throwable $e) {
+			$outcome = (new ReflectionClass($e))->getShortName();
+		}
+
+		return ['outcome' => $outcome, 'finds' => array_values(array_filter($this->trace, static fn (array $t): bool => $t[0] !== 'event'))];
+	}
+
+	public function testValidateReferencesChecksOnlyTheValuesThatNeedIt(): void {
+		$ref = ['$ref' => '2', 'validateReference' => true];
+		$properties = [
+			'a' => $ref,
+			'b' => $ref + ['register' => '9'],
+			'c' => ['type' => 'array', 'items' => ['$ref' => '2'], 'validateReference' => true],
+			'd' => $ref,
+			'e' => $ref,
+			'f' => $ref,
+			'g' => ['$ref' => '2'],
+		];
+		$data = [
+			'a' => 'a1111111-1111-1111-1111-111111111111',
+			'b' => 'b1111111-1111-1111-1111-111111111111',
+			'c' => ['c1111111-1111-1111-1111-111111111111', '', 'c2222222-2222-2222-2222-222222222222'],
+			'd' => '',
+			'e' => 'e1111111-1111-1111-1111-111111111111',
+			'f' => 'https://elsewhere.example/objects/1',
+			'g' => 'g1111111-1111-1111-1111-111111111111',
+		];
+
+		$find = static fn (string $uuid): array => ['find', $uuid, 5, 2, false, false, false];
+		$this->assertSame(
+			[
+				'outcome' => 'ok',
+				'finds' => [
+					['findRegister', '5'], $find('a1111111-1111-1111-1111-111111111111'),
+					['findRegister', '9'], $find('b1111111-1111-1111-1111-111111111111'),
+					$find('c1111111-1111-1111-1111-111111111111'), $find('c2222222-2222-2222-2222-222222222222'),
+				],
+			],
+			$this->validateAll(lookup: 'found', properties: $properties, data: $data, oldData: ['e' => 'e1111111-1111-1111-1111-111111111111'])
+		);
+	}
+
+	public function testAWarnOnlyReferenceLetsTheSaveGoOnAndAStrictOneRefuses(): void {
+		$ref = ['$ref' => '2', 'validateReference' => true];
+		$this->assertSame(
+			[
+				'outcome' => 'ReferenceValidationException',
+				'finds' => [
+					['findRegister', '5'],
+					['find', 'a1111111-1111-1111-1111-111111111111', 5, 2, false, false, false],
+					['find', 'b1111111-1111-1111-1111-111111111111', 5, 2, false, false, false],
+				],
+			],
+			$this->validateAll(
+				lookup: 'missing',
+				properties: ['a' => $ref + ['validationStrictness' => 'warn'], 'b' => $ref],
+				data: ['a' => 'a1111111-1111-1111-1111-111111111111', 'b' => 'b1111111-1111-1111-1111-111111111111']
+			)
+		);
+	}
+
+	public function testAFoundReferenceMustAlsoPassThePickerFilter(): void {
+		$this->assertSame(
+			[
+				'outcome' => 'ReferenceFilterException',
+				'finds' => [['findRegister', '5'], ['find', 'a1111111-1111-1111-1111-111111111111', 5, 2, false, false, false]],
+			],
+			$this->validateAll(
+				lookup: 'found',
+				properties: ['a' => ['$ref' => '2', 'validateReference' => true, 'x-openregister-reference-filter' => 'not-a-list']],
+				data: ['a' => 'a1111111-1111-1111-1111-111111111111']
+			)
+		);
+	}
 }
+
