@@ -388,40 +388,28 @@ class ImportService implements ObjectImporterInterface {
 			$reader = new Xlsx();
 			$reader->setReadDataOnly(true);
 			$spreadsheet = $reader->load($filePath);
+			$import = [
+				'register' => $register,
+				'schema' => $schema,
+				'validation' => $validation,
+				'events' => $events,
+				'_rbac' => $_rbac,
+				'_multitenancy' => $_multitenancy,
+				'publish' => $publish,
+				'currentUser' => $currentUser,
+				'enrich' => $enrich,
+			];
 
 			// If we have a register but no schema, process each sheet as a different schema.
 			if ($register !== null && $schema === null) {
-				$multi = $this->processMultiSchemaSpreadsheetAsync(
-					spreadsheet: $spreadsheet,
-					register: $register,
-					validation: $validation,
-					events: $events,
-					_rbac: $_rbac,
-					_multitenancy: $_multitenancy,
-					publish: $publish,
-					currentUser: $currentUser,
-					enrich: $enrich
-				);
+				$multi = $this->processMultiSchemaSpreadsheetAsync(spreadsheet: $spreadsheet, import: $import);
 				$multi['importJobId'] = $importJobId;
 				return $multi;
 			}
 
 			// Single schema processing - use batch processing for better performance.
 			$sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
-			$sheetSummary = $this->processSpreadsheetBatch(
-				spreadsheet: $spreadsheet,
-				import: [
-					'register' => $register,
-					'schema' => $schema,
-					'validation' => $validation,
-					'events' => $events,
-					'_rbac' => $_rbac,
-					'_multitenancy' => $_multitenancy,
-					'publish' => $publish,
-					'currentUser' => $currentUser,
-					'enrich' => $enrich,
-				]
-			);
+			$sheetSummary = $this->processSpreadsheetBatch(spreadsheet: $spreadsheet, import: $import);
 
 			// Add schema information to the summary (consistent with multi-sheet Excel import).
 			if ($schema !== null) {
@@ -1097,14 +1085,8 @@ class ImportService implements ObjectImporterInterface {
 	 * Process spreadsheet with multiple schemas using batch saving for better performance
 	 *
 	 * @param Spreadsheet $spreadsheet The spreadsheet to process
-	 * @param Register $register The register to associate with imported objects
-	 * @param bool $validation Whether to validate objects against schema definitions
-	 * @param bool $events Whether to dispatch object lifecycle events
-	 * @param bool $_rbac Whether to apply RBAC permissions
-	 * @param bool $_multitenancy Whether to apply multi-tenancy filtering
-	 * @param bool $publish DEPRECATED: No-op. Object-level publish metadata removed; use RBAC $now rules
-	 * @param IUser|null $currentUser The current user performing the import.
-	 * @param bool $enrich Whether to enrich objects with metadata.
+	 * @param array       $import      The register (required here), the save flags, the deprecated
+	 *                                 no-op publish and currentUser; each sheet sets its own schema
 	 *
 	 * @return array<string, array> Summary of import with sheet-based results
 	 * @phpstan-return array<string, array{
@@ -1132,21 +1114,10 @@ class ImportService implements ObjectImporterInterface {
 	 *     schema: array{id: int, slug: null|string, title: null|string}|null
 	 * }>
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function processMultiSchemaSpreadsheetAsync(
-		Spreadsheet $spreadsheet,
-		Register $register,
-		bool $validation = false,
-		bool $events = false,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $publish = false,
-		?IUser $currentUser = null,
-		bool $enrich = true,
-	): array {
+	private function processMultiSchemaSpreadsheetAsync(Spreadsheet $spreadsheet, array $import): array {
+		$register = $import['register'];
 		$summary = [];
 
 		foreach ($spreadsheet->getWorksheetIterator() as $worksheet) {
@@ -1200,20 +1171,8 @@ class ImportService implements ObjectImporterInterface {
 
 			// Set the worksheet as active and process using batch saving for better performance.
 			$spreadsheet->setActiveSheetIndex($spreadsheet->getIndex($worksheet));
-			$sheetSummary = $this->processSpreadsheetBatch(
-				spreadsheet: $spreadsheet,
-				import: [
-					'register' => $register,
-					'schema' => $schema,
-					'validation' => $validation,
-					'events' => $events,
-					'_rbac' => $_rbac,
-					'_multitenancy' => $_multitenancy,
-					'publish' => $publish,
-					'currentUser' => $currentUser,
-					'enrich' => $enrich,
-				]
-			);
+			$import['schema'] = $schema;
+			$sheetSummary = $this->processSpreadsheetBatch(spreadsheet: $spreadsheet, import: $import);
 
 			// Merge the sheet summary with the existing summary (preserve debug info).
 			$summary[$schemaSlug] = array_merge($summary[$schemaSlug], $sheetSummary);
