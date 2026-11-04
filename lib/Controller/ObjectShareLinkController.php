@@ -47,7 +47,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -96,7 +96,7 @@ class ObjectShareLinkController extends Controller {
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param IManager $shareManager Core share manager — validates the token.
-	 * @param ObjectService $objectService Loads the addressed object.
+	 * @param ObjectOperationsInterface $objectService Loads the addressed object.
 	 * @param AccessLinkReader $reader Projects the object onto what an anonymous caller may read.
 	 * @param IThrottler $throttler Brute-force throttler for rejected tokens.
 	 * @param LoggerInterface $logger Logger.
@@ -105,7 +105,7 @@ class ObjectShareLinkController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly IManager $shareManager,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly AccessLinkReader $reader,
 		private readonly IThrottler $throttler,
 		private readonly LoggerInterface $logger,

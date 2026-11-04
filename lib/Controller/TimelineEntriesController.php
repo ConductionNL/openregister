@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\TimelineEntriesControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Timeline\ReferenceService;
 use OCA\OpenRegister\Service\Timeline\TimelineEntrySearchService;
 use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
@@ -68,9 +68,9 @@ class TimelineEntriesController extends Controller {
 	/**
 	 * Resolves an object through the RBAC boundary.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objects;
+	private readonly ObjectOperationsInterface $objects;
 
 	/**
 	 * The record.

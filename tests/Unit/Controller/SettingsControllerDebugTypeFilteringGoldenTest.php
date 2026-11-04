@@ -103,7 +103,7 @@ class SettingsControllerDebugTypeFilteringGoldenTest extends TestCase {
 				}
 
 				return match ($id) {
-					ObjectService::class => $objectService,
+					\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class => $objectService,
 					RegisterSlugResolverInterface::class => $resolver,
 					IDBConnection::class => $connection,
 				};

@@ -27,7 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PersonLinkService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -61,9 +61,9 @@ class ContactsController extends Controller {
 	/**
 	 * Object service.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * The controller's injected services.

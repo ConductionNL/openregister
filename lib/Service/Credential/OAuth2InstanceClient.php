@@ -38,7 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Credential;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
 use Throwable;
@@ -65,14 +65,14 @@ class OAuth2InstanceClient {
 	 * Constructor.
 	 *
 	 * @param CredentialBrokerService $broker Mints the client-secret credential.
-	 * @param ObjectService $objectService Reads the client already pinned to a credential.
+	 * @param ObjectOperationsInterface $objectService Reads the client already pinned to a credential.
 	 * @param IClientService $clientService NC HTTP client factory.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly CredentialBrokerService $broker,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly IClientService $clientService,
 	) {
 	}//end __construct()

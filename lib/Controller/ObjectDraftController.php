@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Service\Object\DraftActivation;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -65,9 +65,9 @@ class ObjectDraftController extends Controller {
 	/**
 	 * Resolves the record through the RBAC boundary.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objects;
+	private readonly ObjectOperationsInterface $objects;
 
 	/**
 	 * Resolves the register.
