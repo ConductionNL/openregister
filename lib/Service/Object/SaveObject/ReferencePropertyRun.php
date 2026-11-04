@@ -53,9 +53,9 @@ final class ReferencePropertyRun {
 	/**
 	 * The property being validated.
 	 *
-	 * @var string|integer
+	 * @var mixed
 	 */
-	public string|int $propertyName = '';
+	public mixed $propertyName = '';
 
 	/**
 	 * The definition of the property being validated.

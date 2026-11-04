@@ -5412,7 +5412,7 @@ class SaveObject {
 		$run->targetRegister = $property['register'] ?? $run->register;
 
 		$uuidsToValidate = [$value];
-		if (isset($property['type']) && $property['type'] === 'array' && is_array($value) === true) {
+		if (isset($property['type']) === true && $property['type'] === 'array' && is_array($value) === true) {
 			$uuidsToValidate = $value;
 		}
 
