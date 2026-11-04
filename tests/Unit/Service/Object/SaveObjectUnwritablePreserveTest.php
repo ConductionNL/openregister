@@ -44,7 +44,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 
 /**
@@ -115,7 +115,7 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(\OCA\OpenRegister\Service\TmloService::class),
 			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			new ArrayLoader()
+			$this->createMock(PermissionHandler::class)
 		);
 	}//end handlerAs()
 

@@ -88,8 +88,6 @@ use OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration;
 use RuntimeException;
 use Throwable;
 use Symfony\Component\Uid\Uuid;
-use Twig\Environment;
-use Twig\Loader\ArrayLoader;
 
 /**
  * Individual Object Save/Create/Update Handler
@@ -177,13 +175,6 @@ class SaveObject {
 	 * @var string
 	 */
 	private const CONFIG_KEY_REFERENCE_VALIDATION_ADMIN_BYPASS = 'reference_validation_admin_bypass';
-
-	/**
-	 * Twig template engine instance
-	 *
-	 * @var Environment
-	 */
-	private Environment $twig;
 
 	/**
 	 * Stamps `@self.version` on create and bumps it on update.
@@ -292,6 +283,13 @@ class SaveObject {
 	private ?string $lastSaveOutcome = null;
 
 	/**
+	 * Permission mode of each save whose cascades are running, outermost first.
+	 *
+	 * @var list<bool>
+	 */
+	private array $cascadeScopes = [];
+
+	/**
 	 * Stack of `(targetSchemaSlug, uuid)` entries currently being saved.
 	 *
 	 * Pushed when `saveObject()` enters, popped when it exits. Each
@@ -344,7 +342,7 @@ class SaveObject {
 	 * @param LoggerInterface $logger Logger interface for logging operations
 	 * @param TmloService $tmloService TMLO archival metadata service
 	 * @param \OCA\OpenRegister\Service\File\FolderManagementHandler $folderManagementHandler Folder access-control gateway
-	 * @param ArrayLoader $arrayLoader Twig array loader for template rendering
+	 * @param PermissionHandler $permissionHandler Checks the caller's create rights for each nested object a cascade creates
 	 * @param IGroupManager|null $groupManager Group manager for admin-bypass detection
 	 * @param IAppConfig|null $appConfig App-config reader (admin bypass)
 	 * @param IEventDispatcher|null $eventDispatcher Event dispatcher (reference events)
@@ -381,7 +379,7 @@ class SaveObject {
 		private readonly LoggerInterface $logger,
 		private readonly TmloService $tmloService,
 		private readonly \OCA\OpenRegister\Service\File\FolderManagementHandler $folderManagementHandler,
-		ArrayLoader $arrayLoader,
+		private readonly PermissionHandler $permissionHandler,
 		private readonly ?IGroupManager $groupManager = null,
 		private readonly ?IAppConfig $appConfig = null,
 		private readonly ?IEventDispatcher $eventDispatcher = null,
@@ -391,7 +389,6 @@ class SaveObject {
 		private readonly ?ContainerInterface $container = null,
 		private readonly ?UserActivityStamper $userActivity = null,
 	) {
-		$this->twig = new Environment($arrayLoader);
 		$this->versionHandler = new ObjectVersionHandler();
 		$slugLog = new ObjectSlugLog(logger: $logger);
 		$this->slugHandler = new ObjectSlugHandler(
@@ -2110,6 +2107,8 @@ class SaveObject {
 					// Without inversedBy: store the created object's UUID.
 					$data[$property] = $createdUuid;
 				}
+			} catch (NotAuthorizedException $e) {
+				throw $e;
 			} catch (Exception $e) {
 				// Continue with other properties even if one fails.
 			}//end try
@@ -2142,23 +2141,7 @@ class SaveObject {
 			$propIsEmpty = empty($data[$property]) === true;
 			if ($propIsEmpty === true) {
 				if (($isRelatedObject === true || $isCascade === true) && empty($oldUuids) === false) {
-					// Resolve the sub-object's schema and register for magic-mapped lookups.
-					$subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
-					$subSchemaId = null;
-					if ($subSchemaRef !== null) {
-						$subSchemaId = $this->resolveSchemaReference(reference: $subSchemaRef);
-					}
-
-					$subSchema = null;
-					if ($subSchemaId !== null) {
-						$subSchema = $this->getCachedSchema(schemaId: $subSchemaId);
-					}
-
-					$subRegister = null;
-					if ($objectEntity->getRegister() !== null) {
-						$subRegister = $this->getCachedRegister(registerId: $objectEntity->getRegister());
-					}
-
+					[$subRegister, $subSchema] = $this->orphanScope(objectEntity: $objectEntity, definition: $definition);
 					$this->deleteOrphanedRelatedObjects(
 						orphanedUuids: $oldUuids,
 						register: $subRegister,
@@ -2191,30 +2174,7 @@ class SaveObject {
 								return false;
 							}
 
-							// Standard UUID with dashes.
-							$uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
-							if (preg_match($uuidPattern, $item) === 1) {
-								return true;
-							}
-
-							// UUID without dashes (32 hex chars).
-							if (preg_match('/^[0-9a-f]{32}$/i', $item) === 1) {
-								return true;
-							}
-
-							// Prefixed UUID (e.g., "id-uuid" with or without dashes).
-							$prefixedPattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}';
-							$prefixedPattern .= '-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
-							if (preg_match($prefixedPattern, $item) === 1) {
-								return true;
-							}
-
-							// Numeric ID.
-							if (preg_match('/^[0-9]+$/', $item) === 1) {
-								return true;
-							}
-
-							return false;
+							return self::isObjectIdentifier(value: $item);
 						}
 					);
 
@@ -2225,23 +2185,7 @@ class SaveObject {
 					if (empty($oldUuids) === false) {
 						$orphanedUuids = array_diff($oldUuids, $data[$property]);
 						if (empty($orphanedUuids) === false) {
-							// Resolve the sub-object's schema and register for magic-mapped lookups.
-							$subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
-							$subSchemaId = null;
-							if ($subSchemaRef !== null) {
-								$subSchemaId = $this->resolveSchemaReference(reference: $subSchemaRef);
-							}
-
-							$subSchema = null;
-							if ($subSchemaId !== null) {
-								$subSchema = $this->getCachedSchema(schemaId: $subSchemaId);
-							}
-
-							$subRegister = null;
-							if ($objectEntity->getRegister() !== null) {
-								$subRegister = $this->getCachedRegister(registerId: $objectEntity->getRegister());
-							}
-
+							[$subRegister, $subSchema] = $this->orphanScope(objectEntity: $objectEntity, definition: $definition);
 							$this->deleteOrphanedRelatedObjects(
 								orphanedUuids: array_values($orphanedUuids),
 								register: $subRegister,
@@ -2281,6 +2225,8 @@ class SaveObject {
 						$data[$property] = $createdUuids;
 					}
 				}//end if
+			} catch (NotAuthorizedException $e) {
+				throw $e;
 			} catch (Exception $e) {
 				// Continue with other properties even if one fails.
 			}//end try
@@ -2327,30 +2273,9 @@ class SaveObject {
 					return true;
 				}
 
-				if (is_string($object) === true) {
-					// Standard UUID with dashes.
-					$uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
-					if (preg_match($uuidPattern, $object) === 1) {
-						return true;
-					}
-
-					// UUID without dashes (32 hex chars).
-					if (preg_match('/^[0-9a-f]{32}$/i', $object) === 1) {
-						return true;
-					}
-
-					// Prefixed UUID (e.g., "id-uuid" with or without dashes).
-					$prefixedPattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}';
-					$prefixedPattern .= '-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
-					if (preg_match($prefixedPattern, $object) === 1) {
-						return true;
-					}
-
-					// Numeric ID.
-					if (preg_match('/^[0-9]+$/', $object) === 1) {
-						return true;
-					}
-				}//end if
+				if (is_string($object) === true && self::isObjectIdentifier(value: $object) === true) {
+					return true;
+				}
 
 				return false;
 			}
@@ -2414,6 +2339,8 @@ class SaveObject {
 				if ($uuid !== null) {
 					$createdUuids[] = $uuid;
 				}
+			} catch (NotAuthorizedException $e) {
+				throw $e;
 			} catch (Exception $e) {
 				// Continue with other objects even if one fails.
 			}
@@ -2421,6 +2348,64 @@ class SaveObject {
 
 		return $createdUuids;
 	}//end cascadeMultipleObjects()
+
+	/**
+	 * Whether a value is the id of a stored object rather than a nested object.
+	 *
+	 * Accepts a uuid with or without dashes, a prefixed uuid (`id-<uuid>`) and a
+	 * numeric id.
+	 *
+	 * @param string $value The value to test.
+	 *
+	 * @return bool True when the value is an object identifier.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function isObjectIdentifier(string $value): bool {
+		$patterns = [
+			'/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
+			'/^[0-9a-f]{32}$/i',
+			'/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i',
+			'/^[0-9]+$/',
+		];
+		foreach ($patterns as $pattern) {
+			if (preg_match($pattern, $value) === 1) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isObjectIdentifier()
+
+	/**
+	 * The register and schema of the sub-objects a cascading property holds.
+	 *
+	 * @param ObjectEntity $objectEntity The parent object.
+	 * @param array        $definition   The property definition.
+	 *
+	 * @return array{0: Register|null, 1: Schema|null} The register and schema, null when unresolved.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function orphanScope(ObjectEntity $objectEntity, array $definition): array {
+		$subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
+		$subSchemaId = null;
+		if ($subSchemaRef !== null) {
+			$subSchemaId = $this->resolveSchemaReference(reference: $subSchemaRef);
+		}
+
+		$subSchema = null;
+		if ($subSchemaId !== null) {
+			$subSchema = $this->getCachedSchema(schemaId: $subSchemaId);
+		}
+
+		$subRegister = null;
+		if ($objectEntity->getRegister() !== null) {
+			$subRegister = $this->getCachedRegister(registerId: $objectEntity->getRegister());
+		}
+
+		return [$subRegister, $subSchema];
+	}//end orphanScope()
 
 	/**
 	 * Cascade a single object form an object in the source data
@@ -2500,33 +2485,31 @@ class SaveObject {
 			throw new Exception("Invalid schema reference: {$definition['$ref']}");
 		}
 
-		try {
-			// Use silent mode for cascaded sub-objects to improve performance.
-			// This skips audit trail creation for each sub-object, reducing database writes.
-			// The parent object's audit trail still captures the overall operation.
-			$savedObject = $this->saveObject(
-				register: $register,
-				schema: $schemaId,
-				data: $object,
-				uuid: null,
-				folderId: null,
-				_rbac: true,
-				_multitenancy: true,
-				persist: true,
-				silent: true
-			);
-			$savedUuid = $savedObject->getUuid();
+		$this->assertMayCascadeCreate(schema: $this->getCachedSchema(schemaId: $schemaId));
 
-			// Track the created sub-object for inclusion in @self.objects.
-			// This allows the parent response to include the full sub-object data.
-			if ($savedUuid !== null) {
-				$this->createdSubObjects[$savedUuid] = $savedObject->jsonSerialize();
-			}
+		// Use silent mode for cascaded sub-objects to improve performance.
+		// This skips audit trail creation for each sub-object, reducing database writes.
+		// The parent object's audit trail still captures the overall operation.
+		$savedObject = $this->saveObject(
+			register: $register,
+			schema: $schemaId,
+			data: $object,
+			uuid: null,
+			folderId: null,
+			_rbac: true,
+			_multitenancy: true,
+			persist: true,
+			silent: true
+		);
+		$savedUuid = $savedObject->getUuid();
 
-			return $savedUuid;
-		} catch (Exception $e) {
-			throw $e;
-		}//end try
+		// Track the created sub-object for inclusion in @self.objects.
+		// This allows the parent response to include the full sub-object data.
+		if ($savedUuid !== null) {
+			$this->createdSubObjects[$savedUuid] = $savedObject->jsonSerialize();
+		}
+
+		return $savedUuid;
 	}//end cascadeSingleObject()
 
 	/**
@@ -2774,29 +2757,7 @@ class SaveObject {
 						return false;
 					}
 
-					// Standard UUID with dashes.
-					if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid) === 1) {
-						return true;
-					}
-
-					// UUID without dashes (32 hex chars).
-					if (preg_match('/^[0-9a-f]{32}$/i', $uuid) === 1) {
-						return true;
-					}
-
-					// Prefixed UUID (e.g., "id-uuid" with or without dashes).
-					$prefixedPattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}';
-					$prefixedPattern .= '-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
-					if (preg_match($prefixedPattern, $uuid) === 1) {
-						return true;
-					}
-
-					// Numeric ID.
-					if (preg_match('/^[0-9]+$/', $uuid) === 1) {
-						return true;
-					}
-
-					return false;
+					return self::isObjectIdentifier(value: $uuid);
 				}
 			);
 
@@ -2806,41 +2767,16 @@ class SaveObject {
 
 			// Update each target object.
 			foreach ($validUuids as $targetUuid) {
-				// Ensure targetUuid is string (filter already validated it is a valid UUID string).
-				$targetUuid = (string)$targetUuid;
-				try {
-					// Find the target object.
-					$targetObject = $this->objectEntityMapper->find($targetUuid);
-					// Find() throws DoesNotExistException, never returns null.
-					// Get current data from target object.
-					$targetData = $targetObject->getObject();
-
-					// Initialize inverse property as array if it doesn't exist.
-					if (isset($targetData[$inverseProperty]) === false) {
-						$targetData[$inverseProperty] = [];
-					}
-
-					// Ensure inverse property is an array.
-					if (is_array($targetData[$inverseProperty]) === false) {
-						$targetData[$inverseProperty] = [$targetData[$inverseProperty]];
-					}
-
-					// Add current object's UUID to the inverse property if not already present.
-					if (in_array($objectEntity->getUuid(), $targetData[$inverseProperty], true) === false) {
-						$targetData[$inverseProperty][] = $objectEntity->getUuid();
-					}
-
-					// Save the updated target object.
-					$this->saveObject(
-						register: $targetRegister,
-						schema: $resolvedSchemaId,
-						data: $targetData,
-						uuid: $targetUuid
-					);
-				} catch (Exception $e) {
-					// Continue with other targets even if one fails.
-				}//end try
-			}//end foreach
+				$this->writeBackToTarget(
+					reference: (string)$targetUuid,
+					link: [
+						'inverseProperty' => $inverseProperty,
+						'register' => $targetRegister,
+						'schema' => $resolvedSchemaId,
+						'source' => $objectEntity->getUuid(),
+					]
+				);
+			}
 
 			// Remove the property from source object if configured to do so.
 			if ($removeFromSource === true) {
@@ -2850,6 +2786,46 @@ class SaveObject {
 
 		return $data;
 	}//end handleInverseRelationsWriteBack()
+
+	/**
+	 * Add the source object to one target's inverse property and save the target.
+	 *
+	 * The target is saved by the uuid of the row found: the reference may be its
+	 * id, which as a uuid would name another row. A target that cannot be read or
+	 * saved does not stop the other targets.
+	 *
+	 * @param string $reference The target's uuid or id, as the source holds it.
+	 * @param array{inverseProperty: string, register: mixed, schema: mixed, source: string|null} $link The inverse relation.
+	 *
+	 * @return void
+	 */
+	private function writeBackToTarget(string $reference, array $link): void {
+		try {
+			$targetObject = $this->objectEntityMapper->find($reference);
+			$foundUuid = $targetObject->getUuid();
+			if ($foundUuid === null || $foundUuid === '') {
+				return;
+			}
+
+			$inverse = ($targetObject->getObject()[$link['inverseProperty']] ?? []);
+			if (is_array($inverse) === false) {
+				$inverse = [$inverse];
+			}
+
+			if (in_array($link['source'], $inverse, true) === false) {
+				$inverse[] = $link['source'];
+			}
+
+			$this->saveObject(
+				register: $link['register'],
+				schema: $link['schema'],
+				data: array_replace($targetObject->getObject(), [$link['inverseProperty'] => $inverse]),
+				uuid: $foundUuid
+			);
+		} catch (Exception $e) {
+			return;
+		}
+	}//end writeBackToTarget()
 
 	/**
 	 * Sanitizes empty strings and handles empty objects/arrays based on schema definitions.
@@ -3223,16 +3199,12 @@ class SaveObject {
 				// cascade descendants can detect cycles back to
 				// ancestors via `validateReferences()`. Popped in
 				// finally regardless of success/failure.
-				$pushRegisterIdUpdate = null;
-				if ($register?->getId() !== null) {
-					$pushRegisterIdUpdate = (string)$register->getId();
-				}
-
 				$frameKey = $this->pushSaveCallFrame(
 					schemaSlug: ((string)($schema->getSlug() ?? $schema->getId())),
 					uuid: (string)$uuid,
-					register: $pushRegisterIdUpdate
+					register: self::frameRegister(register: $register)
 				);
+				$this->enterCascadeScope(_rbac: $_rbac);
 				try {
 					return $this->handleObjectUpdate(
 						existingObject: $existingObject,
@@ -3246,6 +3218,7 @@ class SaveObject {
 						currentUser: $currentUser
 					);
 				} finally {
+					$this->leaveCascadeScope();
 					$this->popSaveCallFrame(key: $frameKey);
 				}
 			}//end if
@@ -3309,16 +3282,12 @@ class SaveObject {
 		// Push the in-flight save onto the call stack so cascade
 		// descendants can detect cycles via `validateReferences()`.
 		// Popped in finally regardless of success/failure.
-		$pushRegisterIdCreate = null;
-		if ($register?->getId() !== null) {
-			$pushRegisterIdCreate = (string)$register->getId();
-		}
-
 		$frameKey = $this->pushSaveCallFrame(
 			schemaSlug: ((string)($schema->getSlug() ?? $schema->getId())),
 			uuid: ($uuid ?? ''),
-			register: $pushRegisterIdCreate
+			register: self::frameRegister(register: $register)
 		);
+		$this->enterCascadeScope(_rbac: $_rbac);
 		try {
 			// Create new object if no existing object found.
 			$created = $this->handleObjectCreation(
@@ -3347,9 +3316,81 @@ class SaveObject {
 
 			return $created;
 		} finally {
+			$this->leaveCascadeScope();
 			$this->popSaveCallFrame(key: $frameKey);
 		}
 	}//end saveObject()
+
+	/**
+	 * The register identifier a save call frame records.
+	 *
+	 * @param Register|null $register The register being written to.
+	 *
+	 * @return string|null The register id, or null when there is none.
+	 *
+	 * @spec openspec/specs/reference-existence-validation/spec.md
+	 */
+	private static function frameRegister(?Register $register): ?string {
+		if ($register?->getId() === null) {
+			return null;
+		}
+
+		return (string)$register->getId();
+	}//end frameRegister()
+
+	/**
+	 * Record the permission mode of a save whose cascades are about to run.
+	 *
+	 * Paired with leaveCascadeScope() in a finally. A nested object created
+	 * inside the scope is checked for create rights unless an enclosing save
+	 * runs with RBAC off.
+	 *
+	 * @param bool $_rbac Whether the enclosing save applies RBAC.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC flag follows the save API
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function enterCascadeScope(bool $_rbac): void {
+		$this->cascadeScopes[] = $_rbac;
+	}//end enterCascadeScope()
+
+	/**
+	 * Close the scope opened by the matching enterCascadeScope().
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function leaveCascadeScope(): void {
+		array_pop($this->cascadeScopes);
+	}//end leaveCascadeScope()
+
+	/**
+	 * Refuse a nested object the caller may not create.
+	 *
+	 * A cascade creates every nested inline object as a new row of the
+	 * property's target schema, so the caller needs create rights there,
+	 * just as for a direct create. Skipped only when an enclosing save runs
+	 * with RBAC off. With no enclosing save the check runs.
+	 *
+	 * @param Schema $schema The schema the nested object is created in.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When the caller may not create objects in the schema.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function assertMayCascadeCreate(Schema $schema): void {
+		$this->permissionHandler->checkPermission(
+			schema: $schema,
+			action: 'create',
+			_rbac: in_array(needle: false, haystack: $this->cascadeScopes, strict: true) === false
+		);
+	}//end assertMayCascadeCreate()
 
 	/**
 	 * Resolve the soft-uniqueness checker from the app container, or null when
@@ -3567,6 +3608,13 @@ class SaveObject {
 				_rbac: $_rbac,
 				_multitenancy: $_multitenancy
 			);
+
+			// An explicit uuid names the row of that uuid only. The lookup also
+			// matches ids, slugs and uris; a row found that way is another row,
+			// so the write is a create under the given uuid.
+			if (strcasecmp((string) $existingObject->getUuid(), $uuid) !== 0) {
+				return null;
+			}
 
 			// Check if object is locked - prevent updates on locked objects.
 			//

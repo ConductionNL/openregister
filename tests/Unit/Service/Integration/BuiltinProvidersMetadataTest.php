@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -261,7 +261,7 @@ class BuiltinProvidersMetadataTest extends TestCase {
 
 	public function testAuditTrailProviderMetadata(): void {
 		$provider = new AuditTrailProvider(
-			$this->createMock(AuditTrailMapper::class),
+			$this->createMock(ObjectHistoryForReaders::class),
 			$this->buildL10n(),
 		);
 
@@ -273,16 +273,16 @@ class BuiltinProvidersMetadataTest extends TestCase {
 	}//end testAuditTrailProviderMetadata()
 
 	public function testAuditTrailProviderListSurfacesEmptyOnError(): void {
-		$mapper = $this->createMock(AuditTrailMapper::class);
-		// No method exists / no findAllByObject on mock — Should return [].
-		$provider = new AuditTrailProvider($mapper, $this->buildL10n());
+		$history = $this->createMock(ObjectHistoryForReaders::class);
+		$history->method('page')->willThrowException(new \RuntimeException('trail unreadable'));
+		$provider = new AuditTrailProvider($history, $this->buildL10n());
 
 		$this->assertSame([], $provider->list('r', 's', 'o'));
 	}//end testAuditTrailProviderListSurfacesEmptyOnError()
 
 	public function testAuditTrailProviderMutationsThrowNotImplemented(): void {
 		$provider = new AuditTrailProvider(
-			$this->createMock(AuditTrailMapper::class),
+			$this->createMock(ObjectHistoryForReaders::class),
 			$this->buildL10n(),
 		);
 

@@ -485,7 +485,9 @@ class SchemaGenerator {
 			'resolve' => fn (array $row): ?string => $this->ownerForCaller(row: $row),
 		];
 
-		// Audit trail field.
+		// Audit trail field. It answers null: an object's entries may only be
+		// given out through ObjectHistoryForReaders, and the explicit resolver
+		// keeps the default one from reading an `_auditTrail` key off the object.
 		$fields['_auditTrail'] = [
 			'type' => Type::listOf($this->typeMapper->getAuditTrailType()),
 			'description' => 'Audit trail entries for this object',
@@ -496,6 +498,7 @@ class SchemaGenerator {
 					'description' => 'Number of most recent entries to return',
 				],
 			],
+			'resolve' => static fn (): ?array => null,
 		];
 
 		// Schema property fields.

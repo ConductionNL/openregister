@@ -251,7 +251,8 @@ class DsarDpiaDetectionJob extends TimedJob {
 					_rbac: false,
 					_multitenancy: false
 				));
-				if ($entity === null) {
+				// A row without a uuid has nothing to be written under.
+				if ($entity === null || (string) $entity->getUuid() === '') {
 					continue;
 				}
 
@@ -267,7 +268,7 @@ class DsarDpiaDetectionJob extends TimedJob {
 					object: $data,
 					register: CaseObjectAccessor::REGISTER_SLUG,
 					schema: CaseObjectAccessor::SCHEMA_SLUG,
-					uuid: $uuid,
+					uuid: $entity->getUuid(),
 					_rbac: false,
 					_multitenancy: false
 				);

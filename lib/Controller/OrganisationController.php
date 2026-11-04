@@ -34,6 +34,7 @@ use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\TenantUsageMapper;
+use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\OrganisationUsageService;
 use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
@@ -405,7 +406,7 @@ class OrganisationController extends Controller {
 	 * @no-admin-idor-exempt Self-service, no object read: creates a new organisation with the current user added as owner;
 	 *   no caller-supplied object id is read.
 	 *
-	 * @psalm-return JSONResponse<201|400,
+	 * @psalm-return JSONResponse<201|400|409,
 	 *     array{error?: string, message?: 'Organisation created successfully',
 	 *     organisation?: array{id: int, uuid: null|string, slug: null|string,
 	 *     name: null|string, description: null|string, users: array,
@@ -449,6 +450,8 @@ class OrganisationController extends Controller {
 				],
 				statusCode: Http::STATUS_CREATED
 			);
+		} catch (OrganisationSlugConflictException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_CONFLICT);
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[OrganisationController] Failed to create organisation',

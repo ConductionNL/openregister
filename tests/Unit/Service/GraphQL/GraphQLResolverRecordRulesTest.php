@@ -21,7 +21,6 @@ declare(strict_types=1);
 namespace Unit\Service\GraphQL;
 
 use GraphQL\Error\Error;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -118,7 +117,6 @@ class GraphQLResolverRecordRulesTest extends TestCase {
 			$permissionHandler,
 			$rbac,
 			$this->createMock(RelationHandler::class),
-			$this->createMock(AuditTrailMapper::class),
 			$registerMapper,
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(TranslationHandler::class),
