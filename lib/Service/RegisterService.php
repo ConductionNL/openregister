@@ -544,16 +544,9 @@ class RegisterService {
 	 * @psalm-return array<int, array{total: int}>
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) getSchemaObjectCounts() builds a UNION SQL query
-	 * across N schema magic-tables with platform-specific CAST syntax (Postgres vs MariaDB/MySQL),
-	 * processes the result set, and backfills zero-stats for missing tables in one pass; splitting
-	 * would require multiple DB round-trips or passing the DB connection to sub-helpers.
 	 */
 	public function getSchemaObjectCounts(int $registerId, array $schemas): array {
-		// Initialize result array.
 		$result = [];
-
 		if (empty($schemas) === true) {
 			return $result;
 		}
@@ -565,30 +558,10 @@ class RegisterService {
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 
-			// Build UNION queries for each schema's magic table.
-			// Cast syntax differs across platforms — PostgreSQL uses `::text`
-			// while MariaDB/MySQL require CAST AS CHAR (mirrors lib/Db/MagicMapper.php:1346-1349).
-			// get_debug_type() is null-safe (a mocked IDBConnection returns null here in unit tests).
-			$platform = $this->db->getDatabasePlatform();
-			$isPostgres = stripos(get_debug_type($platform), 'PostgreSQL') !== false;
-
+			$schemaIdFormat = $this->schemaIdSqlFormat();
 			$unionQueries = [];
-
 			foreach ($schemas as $schema) {
-				// $schemas may arrive as hydrated Schema objects (the
-				// `_extend[]=schemas` + `@self.stats` path via
-				// resolveSchemasForStats()/schemaMapper->find()), as plain
-				// arrays, or as scalar ids — resolve the id from any shape.
-				if ($schema instanceof \OCA\OpenRegister\Db\Schema) {
-					$schemaId = $schema->getId();
-				} elseif (is_array($schema) === true) {
-					$schemaId = $schema['id'] ?? null;
-				} elseif (is_numeric($schema) === true) {
-					$schemaId = (int)$schema;
-				} else {
-					$schemaId = null;
-				}
-
+				$schemaId = $this->schemaIdOf(schema: $schema);
 				if ($schemaId === null) {
 					$this->logger->warning(
 						message: '[RegisterService] Schema without ID found, skipping',
@@ -598,40 +571,22 @@ class RegisterService {
 				}
 
 				$tableName = 'openregister_table_' . $registerId . '_' . $schemaId;
-				$tableExists = $this->magicTableExists(tableName: $tableName);
-
-				if ($tableExists !== true) {
-					// Table doesn't exist yet, return 0 for all stats.
+				if ($this->magicTableExists(tableName: $tableName) !== true) {
 					$result[$schemaId] = $this->getZeroCountStats();
 					continue;
 				}
 
-				$quotedTableName = $this->db->getQueryBuilder()->getTableName($tableName);
-				$schemaIdExpr = "CAST({$schemaId} AS CHAR)";
-				if ($isPostgres === true) {
-					$schemaIdExpr = "{$schemaId}::text";
-				}
-
-				$unionQueries[] = "
-                    SELECT
-                        {$schemaIdExpr} as schema_id,
-                        COUNT(*) as total,
-                        COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted,
-                        0 as invalid,
-                        0 as locked,
-                        0 as size
-                    FROM {$quotedTableName}
-                ";
+				$unionQueries[] = $this->schemaCountSql(
+					schemaIdExpr: sprintf($schemaIdFormat, $schemaId),
+					tableName: $tableName
+				);
 			}//end foreach
 
 			if (empty($unionQueries) === true) {
 				return $result;
 			}
 
-			// Combine all queries with UNION ALL.
 			$sql = implode(' UNION ALL ', $unionQueries);
-
-			// Log the SQL for debugging.
 			$this->logger->debug(
 				message: '[RegisterService] Schema object counts SQL: ' . $sql,
 				context: ['file' => __FILE__, 'line' => __LINE__]
@@ -641,15 +596,13 @@ class RegisterService {
 			// number of dynamically-named magic tables (one per schema/register pair).
 			$stmt = $this->db->prepare($sql);
 			$stmt->execute();
-
-			// Process results.
 			while (($row = $stmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
 				$result[(int)$row['schema_id']] = $this->getZeroCountStats(row: $row);
 			}
 
 			$stmt->closeCursor();
 		} catch (\Exception $e) {
-			// Log error but don't fail - return empty counts.
+			// Log the error but don't fail: the counts gathered so far are returned.
 			$this->logger->error(
 				message: '[RegisterService] Error getting schema object counts: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
@@ -662,6 +615,71 @@ class RegisterService {
 
 		return $result;
 	}//end getSchemaObjectCounts()
+
+	/**
+	 * The sprintf format that renders a schema id as text in SQL.
+	 *
+	 * PostgreSQL uses `::text`, MariaDB/MySQL need CAST AS CHAR (as lib/Db/MagicMapper.php does).
+	 * get_debug_type() is null-safe: a mocked IDBConnection returns null for the platform.
+	 *
+	 * @return string The format, with one %s for the id.
+	 */
+	private function schemaIdSqlFormat(): string {
+		$platform = $this->db->getDatabasePlatform();
+		if (stripos(get_debug_type($platform), 'PostgreSQL') !== false) {
+			return '%s::text';
+		}
+
+		return 'CAST(%s AS CHAR)';
+	}//end schemaIdSqlFormat()
+
+	/**
+	 * The id of a schema given as a Schema entity, an array with an `id`, or a numeric id.
+	 *
+	 * Schemas arrive hydrated (the `_extend[]=schemas` + `@self.stats` path), as plain
+	 * arrays, or as scalar ids.
+	 *
+	 * @param mixed $schema The schema in any of those shapes.
+	 *
+	 * @return mixed The id, or null when it has none.
+	 */
+	private function schemaIdOf(mixed $schema): mixed {
+		if ($schema instanceof \OCA\OpenRegister\Db\Schema) {
+			return $schema->getId();
+		}
+
+		if (is_array($schema) === true) {
+			return $schema['id'] ?? null;
+		}
+
+		if (is_numeric($schema) === true) {
+			return (int)$schema;
+		}
+
+		return null;
+	}//end schemaIdOf()
+
+	/**
+	 * The count query for one schema's magic table.
+	 *
+	 * @param string $schemaIdExpr SQL expression for the schema id as text.
+	 * @param string $tableName    The unprefixed magic table name.
+	 *
+	 * @return string The SELECT returning schema_id, total, deleted, invalid, locked and size.
+	 */
+	private function schemaCountSql(string $schemaIdExpr, string $tableName): string {
+		$quotedTableName = $this->db->getQueryBuilder()->getTableName($tableName);
+		return "
+                    SELECT
+                        {$schemaIdExpr} as schema_id,
+                        COUNT(*) as total,
+                        COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted,
+                        0 as invalid,
+                        0 as locked,
+                        0 as size
+                    FROM {$quotedTableName}
+                ";
+	}//end schemaCountSql()
 
 	/**
 	 * Whether a magic table exists, answered from a single cached catalog read.

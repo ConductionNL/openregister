@@ -795,101 +795,24 @@ class SchemaService implements SchemaExplorationInterface {
 	 *     type?: 'array'|'object'|'string', type_variations: mixed|null,
 	 *     usage_count: mixed, usage_percentage: 0|mixed}>
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex suggestion generation with multiple property types
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Many property type scenarios require individual handling
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive suggestion logic requires extensive code
 	 */
 	private function generateSuggestions(array $discoveredProperties, array $existingProperties): array {
 		$suggestions = [];
 		$existPropNames = array_keys($existingProperties);
 
 		foreach ($discoveredProperties as $propertyName => $analysis) {
-			// Skip properties that already exist in the schema.
-			if (in_array($propertyName, $existPropNames) === true) {
+			// Skip properties already in the schema, and internal/metadata properties.
+			if (in_array($propertyName, $existPropNames) === true
+				|| $this->isInternalProperty(propertyName: $propertyName) === true
+			) {
 				continue;
 			}
 
-			// Skip internal/metadata properties.
-			if ($this->isInternalProperty(propertyName: $propertyName) === true) {
-				continue;
-			}
-
-			// Calculate confidence based on usage percentage.
-			$usagePercentage = $analysis['usage_percentage'] ?? 0;
-			$confidence = 'low';
-
-			if ($usagePercentage >= 80) {
-				$confidence = 'high';
-			} elseif ($usagePercentage >= 50) {
-				$confidence = 'medium';
-			}
-
-			// Determine recommended type.
-			$recommendedType = $this->recommendPropertyType(analysis: $analysis);
-
-			// Determine max length value.
-			$maxLengthValue = null;
-			if ($analysis['max_length'] > 0) {
-				$maxLengthValue = $analysis['max_length'];
-			}
-
-			// Determine min length value.
-			$minLengthValue = null;
-			if (isset($analysis['min_length']) === true && $analysis['min_length'] < PHP_INT_MAX) {
-				$minLengthValue = $analysis['min_length'];
-			}
-
-			// Determine type variations.
-			$typeVariations = null;
-			if (count($analysis['types']) > 1) {
-				$typeVariations = $analysis['types'];
-			}
-
-			$suggestion = [
-				'property_name' => $propertyName,
-				'confidence' => $confidence,
-				'usage_percentage' => $usagePercentage,
-				'usage_count' => $analysis['usage_count'],
-				'recommended_type' => $recommendedType,
-				'examples' => array_slice($analysis['examples'], 0, 3),
-				'max_length' => $maxLengthValue,
-				'min_length' => $minLengthValue,
-				'nullable' => true,
-				// Default to nullable unless evidence suggests otherwise.
-				'description' => 'Property discovered through object analysis',
-				'detected_format' => $analysis['detected_format'] ?? null,
-				'string_patterns' => $analysis['string_patterns'] ?? [],
-				'numeric_range' => $analysis['numeric_range'] ?? null,
-				'type_variations' => $typeVariations,
-			];
-
-			// Add specific type recommendations.
-			if ($recommendedType === 'string' && $analysis['max_length'] > 0) {
-				$suggestion['maxLength'] = min($analysis['max_length'] * 2, 1000);
-				// Allow some buffer.
-			}
-
-			// Handle enum-like properties.
-			if ($this->detectEnumLike(analysis: $analysis) === true) {
-				$suggestion['type'] = 'string';
-				$suggestion['enum'] = $this->extractEnumValues(examples: $analysis['examples']);
-				$suggestion['description'] = 'Enum-like property with predefined values';
-			}
-
-			// Handle nested objects.
-			if (empty($analysis['object_structure']) === false && $analysis['object_structure']['type'] === 'object') {
-				$suggestion['type'] = 'object';
-				$suggestion['properties'] = $this->generateNestedProperties(objectStructure: $analysis['object_structure']);
-			}
-
-			// Handle arrays.
-			if (empty($analysis['array_structure']) === false && $analysis['array_structure']['type'] === 'list') {
-				$suggestion['type'] = 'array';
-				$suggestion['items'] = $this->generateArrayItemType(arrayStructure: $analysis['array_structure']);
-			}
-
-			$suggestions[] = $suggestion;
-		}//end foreach
+			$suggestions[] = $this->refineSuggestion(
+				suggestion: $this->baseSuggestion(propertyName: $propertyName, analysis: $analysis),
+				analysis: $analysis
+			);
+		}
 
 		// Sort suggestions by confidence and usage.
 		usort(
@@ -908,6 +831,101 @@ class SchemaService implements SchemaExplorationInterface {
 
 		return $suggestions;
 	}//end generateSuggestions()
+
+	/**
+	 * The suggestion for one discovered property: confidence from usage, recommended type and
+	 * the observed lengths, formats and type variations.
+	 *
+	 * @param int|string $propertyName The property name.
+	 * @param array      $analysis     The property's analysis.
+	 *
+	 * @return array The suggestion.
+	 */
+	private function baseSuggestion(int|string $propertyName, array $analysis): array {
+		$usagePercentage = $analysis['usage_percentage'] ?? 0;
+		$confidence = 'low';
+		if ($usagePercentage >= 80) {
+			$confidence = 'high';
+		} elseif ($usagePercentage >= 50) {
+			$confidence = 'medium';
+		}
+
+		$maxLengthValue = null;
+		if ($analysis['max_length'] > 0) {
+			$maxLengthValue = $analysis['max_length'];
+		}
+
+		$minLengthValue = null;
+		if (isset($analysis['min_length']) === true && $analysis['min_length'] < PHP_INT_MAX) {
+			$minLengthValue = $analysis['min_length'];
+		}
+
+		return [
+			'property_name' => $propertyName,
+			'confidence' => $confidence,
+			'usage_percentage' => $usagePercentage,
+			'usage_count' => $analysis['usage_count'],
+			'recommended_type' => $this->recommendPropertyType(analysis: $analysis),
+			'examples' => array_slice($analysis['examples'], 0, 3),
+			'max_length' => $maxLengthValue,
+			'min_length' => $minLengthValue,
+			// Default to nullable unless evidence suggests otherwise.
+			'nullable' => true,
+			'description' => 'Property discovered through object analysis',
+			'detected_format' => $analysis['detected_format'] ?? null,
+			'string_patterns' => $analysis['string_patterns'] ?? [],
+			'numeric_range' => $analysis['numeric_range'] ?? null,
+			'type_variations' => $this->typeVariations(types: $analysis['types']),
+		];
+	}//end baseSuggestion()
+
+	/**
+	 * The observed types of a property when there is more than one.
+	 *
+	 * @param array $types The observed types.
+	 *
+	 * @return array|null The types, or null for a single type.
+	 */
+	private function typeVariations(array $types): ?array {
+		if (count($types) > 1) {
+			return $types;
+		}
+
+		return null;
+	}//end typeVariations()
+
+	/**
+	 * Add the type-specific parts of a suggestion: a buffered maxLength for strings, enum values
+	 * for enum-like properties, and the shape of nested objects and lists.
+	 *
+	 * @param array $suggestion The base suggestion.
+	 * @param array $analysis   The property's analysis.
+	 *
+	 * @return array The suggestion.
+	 */
+	private function refineSuggestion(array $suggestion, array $analysis): array {
+		if ($suggestion['recommended_type'] === 'string' && $analysis['max_length'] > 0) {
+			$suggestion['maxLength'] = min($analysis['max_length'] * 2, 1000);
+		}
+
+		if ($this->detectEnumLike(analysis: $analysis) === true) {
+			$suggestion['type'] = 'string';
+			$suggestion['enum'] = $this->extractEnumValues(examples: $analysis['examples']);
+			$suggestion['description'] = 'Enum-like property with predefined values';
+		}
+
+		if (empty($analysis['object_structure']) === false && $analysis['object_structure']['type'] === 'object') {
+			$suggestion['type'] = 'object';
+			$suggestion['properties'] = $this->generateNestedProperties(objectStructure: $analysis['object_structure']);
+		}
+
+		if (empty($analysis['array_structure']) === false && $analysis['array_structure']['type'] === 'list') {
+			$suggestion['type'] = 'array';
+			$suggestion['items'] = $this->generateArrayItemType(arrayStructure: $analysis['array_structure']);
+		}
+
+		return $suggestion;
+	}//end refineSuggestion()
 
 	/**
 	 * Analyze existing schema properties for potential improvements
