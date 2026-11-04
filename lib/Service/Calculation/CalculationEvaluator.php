@@ -64,7 +64,7 @@ use Throwable;
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-1
  */
-class CalculationEvaluator {
+class CalculationEvaluator implements CalculationEvaluatorInterface {
 	/**
 	 * The operator vocabulary, described.
 	 *

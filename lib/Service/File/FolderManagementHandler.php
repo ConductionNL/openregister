@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Service\File;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -94,7 +94,7 @@ class FolderManagementHandler {
 	 * @param IUserSession $userSession User session for user context.
 	 * @param IGroupManager $groupManager Group manager for group operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param AuditTrailMapper $auditTrailMapper Mapper for writing forensic audit-trail entries on folder-access denials.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Mapper for writing forensic audit-trail entries on folder-access denials.
 	 * @param IUserMountCache $mountCache Mount cache, used to recognise a folder OpenRegister manages
 	 *                                    without setting up the owning user's mounts.
 	 * @param RegisterFolderRecorder $folderRecorder Records a register's folder id as bookkeeping, so a
@@ -111,7 +111,7 @@ class FolderManagementHandler {
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IUserMountCache $mountCache,
 		private readonly RegisterFolderRecorder $folderRecorder,
 		private ?FileService $fileService = null,

@@ -190,9 +190,9 @@ class OrganisationService {
 	/**
 	 * Settings service for application configuration
 	 *
-	 * @var SettingsService|null
+	 * @var SettingsServiceInterface|null
 	 */
-	private ?SettingsService $settingsService = null;
+	private ?SettingsServiceInterface $settingsService = null;
 
 	/**
 	 * Organisations named by an organisation context, by uuid (null = not found).
@@ -212,7 +212,7 @@ class OrganisationService {
 	 * @param IGroupManager $groupManager Group manager service
 	 * @param IUserManager $userManager User manager service
 	 * @param LoggerInterface $logger Logger service
-	 * @param SettingsService|null $settingsService Settings service (optional)
+	 * @param SettingsServiceInterface|null $settingsService Settings service (optional)
 	 */
 	public function __construct(
 		OrganisationMapper $organisationMapper,
@@ -223,7 +223,7 @@ class OrganisationService {
 		IGroupManager $groupManager,
 		IUserManager $userManager,
 		LoggerInterface $logger,
-		?SettingsService $settingsService = null,
+		?SettingsServiceInterface $settingsService = null,
 	) {
 		$this->organisationMapper = $organisationMapper;
 		$this->userSession = $userSession;

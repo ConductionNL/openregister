@@ -138,7 +138,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.StaticAccess)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class SchemaMapper extends QBMapper {
+class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	use MultiTenancyTrait;
 
 	/**

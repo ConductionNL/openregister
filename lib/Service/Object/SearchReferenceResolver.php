@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -108,14 +108,14 @@ class SearchReferenceResolver {
 	 * SearchReferenceResolver constructor.
 	 *
 	 * @param RegisterMapper  $registerMapper Resolves a register reference.
-	 * @param SchemaMapper    $schemaMapper   Resolves a schema reference.
+	 * @param SchemaMapperInterface    $schemaMapper   Resolves a schema reference.
 	 * @param LoggerInterface $logger         Records each reference that had to be resolved.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

@@ -44,7 +44,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -85,13 +85,13 @@ class MoveObject {
 	 *
 	 * @param MagicMapper      $objects  The object store.
 	 * @param ValidateObject   $validator Validation against a schema.
-	 * @param AuditTrailMapper $audit    The audit trail.
+	 * @param AuditTrailMapperInterface $audit    The audit trail.
 	 * @param LoggerInterface  $logger   The logger.
 	 */
 	public function __construct(
 		private readonly MagicMapper $objects,
 		private readonly ValidateObject $validator,
-		private readonly AuditTrailMapper $audit,
+		private readonly AuditTrailMapperInterface $audit,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

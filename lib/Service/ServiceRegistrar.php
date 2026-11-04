@@ -25,7 +25,7 @@ use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Integration\TimeProvider as IntegrationTimeProvider;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
@@ -332,7 +332,7 @@ final class ServiceRegistrar {
 				organisationService: $container->get(OrganisationService::class),
 				eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
 				avatarManager: $container->get('OCP\IAvatarManager'),
-				auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+				auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
 				secureRandom: $container->get('OCP\Security\ISecureRandom'),
 				db: $container->get('OCP\IDBConnection'),
 				l10nFactory: $container->get('OCP\L10N\IFactory')
@@ -374,7 +374,7 @@ final class ServiceRegistrar {
 				userSession: $container->get('OCP\IUserSession'),
 				container: $container,
 				registerMapper: $container->get(RegisterMapper::class),
-				schemaMapper: $container->get(SchemaMapper::class),
+				schemaMapper: $container->get(SchemaMapperInterface::class),
 				db: $container->get('OCP\IDBConnection')
 			);
 	}//end buildCacheHandler()
@@ -394,7 +394,7 @@ final class ServiceRegistrar {
 				userSession: $container->get('OCP\IUserSession'),
 				groupManager: $container->get('OCP\IGroupManager'),
 				logger: $container->get('Psr\Log\LoggerInterface'),
-				auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+				auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
 				mountCache: $container->get('OCP\Files\Config\IUserMountCache'),
 				folderRecorder: $container->get(\OCA\OpenRegister\Db\RegisterFolderRecorder::class),
 				fileService: null

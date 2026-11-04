@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\View;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
@@ -80,9 +80,9 @@ class ViewService {
 	 * Used to resolve the view's schema when validating a presentation
 	 * config's groupByField/dateField against real schema properties.
 	 *
-	 * @var SchemaMapper Schema mapper instance
+	 * @var SchemaMapperInterface Schema mapper instance
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Constructor
@@ -91,14 +91,14 @@ class ViewService {
 	 *
 	 * @param ViewMapper $viewMapper View mapper for database operations
 	 * @param LoggerInterface $logger Logger for error tracking
-	 * @param SchemaMapper $schemaMapper Schema mapper for presentation field validation
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper for presentation field validation
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		ViewMapper $viewMapper,
 		LoggerInterface $logger,
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 	) {
 		// Store dependencies for use in service methods.
 		$this->viewMapper = $viewMapper;

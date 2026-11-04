@@ -37,7 +37,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Reporting\ReportRenderService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -129,7 +129,7 @@ class ReportRenderJob extends TimedJob {
 	 * @param IAppConfig $appConfig App-config reader.
 	 * @param ReportRenderService $renderService Render composer.
 	 * @param RegisterMapper $registerMapper Register lookup.
-	 * @param SchemaMapper $schemaMapper Schema lookup for the register's schemas.
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup for the register's schemas.
 	 * @param MagicMapper $objectMapper Object loader.
 	 * @param IRootFolder $rootFolder Files root.
 	 * @param LoggerInterface $logger Logger.
@@ -139,7 +139,7 @@ class ReportRenderJob extends TimedJob {
 		private readonly IAppConfig $appConfig,
 		private readonly ReportRenderService $renderService,
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapper $objectMapper,
 		private readonly IRootFolder $rootFolder,
 		private readonly LoggerInterface $logger,

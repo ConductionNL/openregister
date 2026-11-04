@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectEventSubscription;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -422,7 +422,7 @@ final class ObjectEventProxyListener implements IEventListener {
 
 			try {
 				if ($isSchema === true) {
-					$mapper = $this->container->get(SchemaMapper::class);
+					$mapper = $this->container->get(SchemaMapperInterface::class);
 				} else {
 					$mapper = $this->container->get(RegisterMapper::class);
 				}

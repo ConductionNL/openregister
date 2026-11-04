@@ -41,7 +41,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use Psr\Log\LoggerInterface;
@@ -97,7 +97,7 @@ class SelectielijstImportService {
 	 *
 	 * @param ObjectRetentionHandler $settingsHandler Names the selectielijst register and schema.
 	 * @param RegisterMapper         $registerMapper  Resolves the register.
-	 * @param SchemaMapper           $schemaMapper    Resolves the schema.
+	 * @param SchemaMapperInterface           $schemaMapper    Resolves the schema.
 	 * @param MagicMapper            $objectMapper    Reads the rows already stored.
 	 * @param SaveObject             $saveObject      Writes an imported row.
 	 * @param LoggerInterface        $logger          Reports a row that could not be stored.
@@ -105,7 +105,7 @@ class SelectielijstImportService {
 	public function __construct(
 		private readonly ObjectRetentionHandler $settingsHandler,
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapper $objectMapper,
 		private readonly SaveObject $saveObject,
 		private readonly LoggerInterface $logger,

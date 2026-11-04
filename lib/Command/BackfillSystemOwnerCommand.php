@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IDBConnection;
 use Symfony\Component\Console\Command\Command;
@@ -51,7 +51,7 @@ class BackfillSystemOwnerCommand extends Command {
 	 * Wire the mappers and database connection used by the command.
 	 *
 	 * @param RegisterMapper $registerMapper Register lookup mapper.
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
 	 * @param MagicMapper $magicMapper Magic table resolver.
 	 * @param IDBConnection $db Database connection for native UPDATE.
 	 *
@@ -61,7 +61,7 @@ class BackfillSystemOwnerCommand extends Command {
 	 */
 	public function __construct(
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapper $magicMapper,
 		private readonly IDBConnection $db,
 	) {

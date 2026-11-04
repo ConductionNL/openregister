@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rbac\OrphanCleanupFlag;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
@@ -58,11 +58,11 @@ class SchemasToolProvider implements IMcpToolProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param SchemaMapper          $schemaMapper Schema database mapper
+	 * @param SchemaMapperInterface          $schemaMapper Schema database mapper
 	 * @param DefinitionWriteRights $rights       The rights of the signed-in user
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly DefinitionWriteRights $rights,
 	) {
 	}//end __construct()

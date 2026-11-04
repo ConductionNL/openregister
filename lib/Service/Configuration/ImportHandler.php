@@ -44,7 +44,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Authorization\GroupProvisioner;
@@ -148,9 +148,9 @@ class ImportHandler {
 	/**
 	 * Schema mapper instance for handling schema operations.
 	 *
-	 * @var SchemaMapper The schema mapper instance.
+	 * @var SchemaMapperInterface The schema mapper instance.
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Register mapper instance for handling register operations.
@@ -382,7 +382,7 @@ class ImportHandler {
 	/**
 	 * Constructor for ImportHandler.
 	 *
-	 * @param SchemaMapper $schemaMapper The schema mapper.
+	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
 	 * @param RegisterMapper $registerMapper The register mapper.
 	 * @param MagicMapper $objectEntityMapper The object entity mapper.
 	 * @param ConfigurationMapper $configurationMapper The configuration mapper.
@@ -403,7 +403,7 @@ class ImportHandler {
 	 *        import fired no SchemaUpdatedEvent; null leaves an unchanged re-import installing nothing.
 	 */
 	public function __construct(
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 		RegisterMapper $registerMapper,
 		MagicMapper $objectEntityMapper,
 		ConfigurationMapper $configurationMapper,

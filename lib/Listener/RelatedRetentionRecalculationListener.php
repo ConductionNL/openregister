@@ -26,7 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\BackgroundJob\RelatedRetentionRecalculationJob;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Archival\DependantRetentionIndex;
 use OCP\BackgroundJob\IJobList;
@@ -45,13 +45,13 @@ class RelatedRetentionRecalculationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper            $schemaMapper Resolves the saved record's schema
+	 * @param SchemaMapperInterface            $schemaMapper Resolves the saved record's schema
 	 * @param DependantRetentionIndex $index        Knows which schemas read a date off it
 	 * @param IJobList                $jobList      The background job queue
 	 * @param LoggerInterface         $logger       The logger
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly DependantRetentionIndex $index,
 		private readonly IJobList $jobList,
 		private readonly LoggerInterface $logger,

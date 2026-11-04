@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Service\Vectorization;
 
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\Vectorization\Handlers\EmbeddingGeneratorHandler;
 use OCA\OpenRegister\Service\Vectorization\Handlers\VectorSearchHandler;
 use OCA\OpenRegister\Service\Vectorization\Handlers\VectorStatsHandler;
@@ -54,7 +54,7 @@ class VectorEmbeddings implements EmbeddingGeneratorInterface {
 	 * Constructor
 	 *
 	 * @param IDBConnection $db Database connection
-	 * @param SettingsService $settingsService Settings service
+	 * @param SettingsServiceInterface $settingsService Settings service
 	 * @param EmbeddingGeneratorHandler $generatorHandler Embedding generator handler
 	 * @param VectorStorageHandler $storageHandler Vector storage handler
 	 * @param VectorSearchHandler $searchHandler Vector search handler
@@ -63,7 +63,7 @@ class VectorEmbeddings implements EmbeddingGeneratorInterface {
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly SettingsService $settingsService,
+		private readonly SettingsServiceInterface $settingsService,
 		private readonly EmbeddingGeneratorHandler $generatorHandler,
 		private readonly VectorStorageHandler $storageHandler,
 		private readonly VectorSearchHandler $searchHandler,

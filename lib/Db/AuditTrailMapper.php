@@ -75,7 +75,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessivePublicCount) Same reason: the slug backfill's run entry
  *   (createSlugBackfillEntry) is one more entry point that must seal into the hash chain here.
  */
-class AuditTrailMapper extends QBMapper {
+class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 	/**
 	 * The most changes one slug backfill entry lists; the rest is in the log.
@@ -1532,10 +1532,10 @@ class AuditTrailMapper extends QBMapper {
 
 		try {
 			/*
-			 * @var SchemaMapper $schemaMapper
+			 * @var SchemaMapperInterface $schemaMapper
 			 */
 
-			$schemaMapper = $this->container->get(SchemaMapper::class);
+			$schemaMapper = $this->container->get(SchemaMapperInterface::class);
 			$schema = $schemaMapper->find(
 				$schemaId,
 				_rbac: false,

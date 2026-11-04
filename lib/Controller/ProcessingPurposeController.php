@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ProcessingPurpose;
 use OCA\OpenRegister\Db\ProcessingPurposeMapper;
 use OCA\OpenRegister\Service\Audit\PurposeRegistry;
@@ -54,7 +54,7 @@ class ProcessingPurposeController extends Controller {
 	 * @param IRequest                $request      Active request.
 	 * @param ProcessingPurposeMapper $purposes     The administered list.
 	 * @param PurposeRegistry         $registry     Resolves a purpose to its activity.
-	 * @param AuditTrailMapper        $auditTrail   Counts entries per purpose.
+	 * @param AuditTrailMapperInterface        $auditTrail   Counts entries per purpose.
 	 * @param IUserSession            $userSession  Current user session.
 	 * @param IGroupManager           $groupManager Group manager, for the admin gate.
 	 */
@@ -63,7 +63,7 @@ class ProcessingPurposeController extends Controller {
 		IRequest $request,
 		private readonly ProcessingPurposeMapper $purposes,
 		private readonly PurposeRegistry $registry,
-		private readonly AuditTrailMapper $auditTrail,
+		private readonly AuditTrailMapperInterface $auditTrail,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 	) {

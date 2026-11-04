@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use Psr\Log\LoggerInterface;
 
@@ -53,9 +53,9 @@ class ExportHandler {
 	/**
 	 * Schema mapper instance for handling schema operations.
 	 *
-	 * @var SchemaMapper The schema mapper instance.
+	 * @var SchemaMapperInterface The schema mapper instance.
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Register mapper instance for handling register operations.
@@ -129,7 +129,7 @@ class ExportHandler {
 	/**
 	 * Constructor for ExportHandler.
 	 *
-	 * @param SchemaMapper $schemaMapper The schema mapper.
+	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
 	 * @param RegisterMapper $registerMapper The register mapper.
 	 * @param MagicMapper $objectEntityMapper The object entity mapper.
 	 * @param ConfigurationMapper $configurationMapper The configuration mapper.
@@ -137,7 +137,7 @@ class ExportHandler {
 	 * @param LoggerInterface $logger The logger interface.
 	 */
 	public function __construct(
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 		RegisterMapper $registerMapper,
 		MagicMapper $objectEntityMapper,
 		ConfigurationMapper $configurationMapper,

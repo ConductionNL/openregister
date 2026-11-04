@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rules;
 
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
 use Throwable;
 
@@ -59,13 +60,13 @@ final class ConditionDialect {
 	/**
 	 * Constructor.
 	 *
-	 * @param CalculationEvaluator        $ast     The JSON-AST evaluator.
+	 * @param CalculationEvaluatorInterface        $ast     The JSON-AST evaluator.
 	 * @param ExpressionValueSources|null $sources Integriq's value sources; null leaves source nodes unresolved.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly CalculationEvaluator $ast,
+		private readonly CalculationEvaluatorInterface $ast,
 		private readonly ?ExpressionValueSources $sources=null,
 	) {
 	}//end __construct()

@@ -596,7 +596,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 * schema and register management, configuration handling, logging, and specialized handlers.
 	 *
 	 * @param IDBConnection $db Database connection for table operations
-	 * @param SchemaMapper $schemaMapper Mapper for schema operations
+	 * @param SchemaMapperInterface $schemaMapper Mapper for schema operations
 	 * @param RegisterMapper $registerMapper Mapper for register operations
 	 * @param IConfig $config Nextcloud config for settings
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher for audit trail events
@@ -612,7 +612,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapper $registerMapper,
 		private readonly IConfig $config,
 		private readonly IEventDispatcher $eventDispatcher,

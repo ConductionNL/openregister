@@ -36,7 +36,7 @@ use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\TextExtraction\EmlParser;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Service\TextExtraction\ObjectHandler;
@@ -141,12 +141,12 @@ class TextExtractionService {
 	 * @param IDBConnection $db Database connection
 	 * @param LoggerInterface $logger Logger
 	 * @param MagicMapper $objectEntityMapper Mapper for object entities
-	 * @param SchemaMapper $schemaMapper Mapper for schemas
+	 * @param SchemaMapperInterface $schemaMapper Mapper for schemas
 	 * @param RegisterMapper $registerMapper Mapper for registers
 	 * @param EntityRecognitionHandler $entityHandler Handler for entity recognition
 	 * @param GdprEntityMapper $entityMapper Mapper for GDPR entities
 	 * @param EntityRelationMapper $entityRelationMapper Mapper for entity relations
-	 * @param SettingsService $settingsService Settings service
+	 * @param SettingsServiceInterface $settingsService Settings service
 	 * @param RiskLevelService $riskLevelService Risk level computation service
 	 * @param EmlParser $emlParser EML message-parser (used for message/rfc822
 	 *                             inputs and for the public `parseEmlStructured`
@@ -166,12 +166,12 @@ class TextExtractionService {
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 		private readonly MagicMapper $objectEntityMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapper $registerMapper,
 		private readonly EntityRecognitionHandler $entityHandler,
 		private readonly GdprEntityMapper $entityMapper,
 		private readonly EntityRelationMapper $entityRelationMapper,
-		private readonly SettingsService $settingsService,
+		private readonly SettingsServiceInterface $settingsService,
 		private readonly RiskLevelService $riskLevelService,
 		private readonly EmlParser $emlParser,
 		private readonly SpreadsheetExtractor $spreadsheetExtractor,
