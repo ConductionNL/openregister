@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Service\Quality\DismissedPairStore;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionServiceInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -52,7 +52,7 @@ class DuplicateController extends Controller {
 	 * @param IRequest $request The current request.
 	 * @param DuplicateDetectionServiceInterface $duplicates Duplicate-candidate detection service.
 	 * @param DismissedPairStore $dismissals Pairs a person has already ruled out.
-	 * @param ObjectService $objectService Object read path, to fingerprint a pair being dismissed.
+	 * @param ObjectOperationsInterface $objectService Object read path, to fingerprint a pair being dismissed.
 	 * @param ControllerSession $session Session, group manager and logger.
 	 */
 	public function __construct(
@@ -60,7 +60,7 @@ class DuplicateController extends Controller {
 		IRequest $request,
 		private readonly DuplicateDetectionServiceInterface $duplicates,
 		private readonly DismissedPairStore $dismissals,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly ControllerSession $session,
 	) {
 		parent::__construct(appName: $appName, request: $request);

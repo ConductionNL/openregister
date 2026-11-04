@@ -1348,7 +1348,7 @@ class SettingsControllerTest extends TestCase {
 
 		$this->container->method('get')
 			->willReturnCallback(function (string $id) use ($mockObjectService) {
-				if ($id === \OCA\OpenRegister\Service\ObjectService::class) {
+				if ($id === \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class) {
 					return $mockObjectService;
 				}
 
@@ -1399,7 +1399,7 @@ class SettingsControllerTest extends TestCase {
 
 		$this->container->method('get')
 			->willReturnCallback(function (string $id) use ($mockObjectService, $mockConnection, $carries) {
-				if ($id === \OCA\OpenRegister\Service\ObjectService::class) {
+				if ($id === \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class) {
 					return $mockObjectService;
 				}
 
@@ -1445,7 +1445,7 @@ class SettingsControllerTest extends TestCase {
 
 		$this->container->method('get')
 			->willReturnCallback(function (string $id) use ($mockObjectService, $mockConnection) {
-				if ($id === \OCA\OpenRegister\Service\ObjectService::class) {
+				if ($id === \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class) {
 					return $mockObjectService;
 				}
 
@@ -1503,7 +1503,7 @@ class SettingsControllerTest extends TestCase {
 
 		$this->container->method('get')
 			->willReturnCallback(function (string $id) use ($mockObjectService, $mockConnection) {
-				if ($id === \OCA\OpenRegister\Service\ObjectService::class) {
+				if ($id === \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class) {
 					return $mockObjectService;
 				}
 
@@ -1567,7 +1567,7 @@ class SettingsControllerTest extends TestCase {
 
 		$this->container->method('get')
 			->willReturnCallback(function (string $id) use ($mockObjectService, $mockConnection) {
-				if ($id === \OCA\OpenRegister\Service\ObjectService::class) {
+				if ($id === \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class) {
 					return $mockObjectService;
 				}
 
@@ -1602,7 +1602,7 @@ class SettingsControllerTest extends TestCase {
 
 		$this->container->method('get')
 			->willReturnCallback(function (string $id) use ($mockObjectService) {
-				if ($id === \OCA\OpenRegister\Service\ObjectService::class) {
+				if ($id === \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class) {
 					return $mockObjectService;
 				}
 
@@ -1635,7 +1635,7 @@ class SettingsControllerTest extends TestCase {
 
 		$this->container->method('get')
 			->willReturnCallback(function (string $id) use ($mockObjectService) {
-				if ($id === \OCA\OpenRegister\Service\ObjectService::class) {
+				if ($id === \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class) {
 					return $mockObjectService;
 				}
 
@@ -1670,7 +1670,7 @@ class SettingsControllerTest extends TestCase {
 
 		$this->container->method('get')
 			->willReturnCallback(function (string $id) use ($mockObjectService, $mockConnection) {
-				if ($id === \OCA\OpenRegister\Service\ObjectService::class) {
+				if ($id === \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class) {
 					return $mockObjectService;
 				}
 

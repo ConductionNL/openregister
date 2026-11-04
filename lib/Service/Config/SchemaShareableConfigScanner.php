@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Service\Config;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Config\Types\GenericObjectShareableConfigType;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -45,13 +45,13 @@ class SchemaShareableConfigScanner {
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Enumerates schemas and their markers.
 	 * @param RegisterMapperInterface $registerMapper Finds the registers a schema belongs to.
-	 * @param ObjectService $objectService Handed to each generated type.
+	 * @param ObjectOperationsInterface $objectService Handed to each generated type.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 

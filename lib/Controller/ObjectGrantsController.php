@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rbac\AccessReviewGate;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantsReport;
 use OCP\AppFramework\Controller;
@@ -51,7 +51,7 @@ class ObjectGrantsController extends Controller {
 	 *
 	 * @param string             $appName       Application identifier.
 	 * @param IRequest           $request       Active HTTP request.
-	 * @param ObjectService      $objectService Names the register and schema the request resolved.
+	 * @param ObjectOperationsInterface      $objectService Names the register and schema the request resolved.
 	 * @param AccessReviewGate   $gate          Resolves the object and decides who may ask.
 	 * @param ObjectGrantsReport $report        Assembles the rows.
 	 * @param LoggerInterface    $logger        Records why the rows could not be assembled.
@@ -59,7 +59,7 @@ class ObjectGrantsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly AccessReviewGate $gate,
 		private readonly ObjectGrantsReport $report,
 		private readonly LoggerInterface $logger,

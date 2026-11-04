@@ -46,7 +46,7 @@ use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
 use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteService;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -65,9 +65,9 @@ class DsarCaseController extends Controller {
 	/**
 	 * RBAC + tenant scoped object store (case creation).
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * RBAC-scoped case load helper.

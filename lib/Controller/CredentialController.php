@@ -46,7 +46,7 @@ use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\CredentialUpdateRequest;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use OCA\OpenRegister\Service\WriteCause;
@@ -88,9 +88,9 @@ class CredentialController extends Controller {
 	/**
 	 * OR object CRUD for credential metadata.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * The controller's injected services.

@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Service\ObjectAction;
 use OCA\OpenRegister\Db\EmptyPropertyClaim;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\PropertyAlreadySetException;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IUserSession;
 use RuntimeException;
 
@@ -48,11 +48,11 @@ class ObjectActionSelfAssign {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects     Writes the property.
+	 * @param ObjectOperationsInterface $objects     Writes the property.
 	 * @param IUserSession  $userSession The caller.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly IUserSession $userSession,
 	) {
 	}//end __construct()

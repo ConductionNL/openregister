@@ -40,7 +40,7 @@ use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLErrorFormatter;
@@ -87,7 +87,7 @@ class GraphQLResolver {
 	 * Constructor.
 	 *
 	 * @param GetObject $getObject Object finder
-	 * @param ObjectService $objectService Object service
+	 * @param ObjectOperationsInterface $objectService Object service
 	 * @param PermissionHandler $permissionHandler Permission handler
 	 * @param PropertyRbacHandler $propertyRbac Property RBAC handler
 	 * @param RelationHandler $relationHandler Relation handler
@@ -101,7 +101,7 @@ class GraphQLResolver {
 	 */
 	public function __construct(
 		private readonly GetObject $getObject,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly PropertyRbacHandler $propertyRbac,
 		private readonly RelationHandler $relationHandler,

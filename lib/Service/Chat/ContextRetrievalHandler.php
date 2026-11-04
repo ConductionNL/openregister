@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Service\Chat;
 
 use Exception;
 use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
 use Psr\Log\LoggerInterface;
 
@@ -58,9 +58,9 @@ class ContextRetrievalHandler {
 	/**
 	 * Object service for database search
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private ObjectService $objectService;
+	private ObjectOperationsInterface $objectService;
 
 	/**
 	 * Logger
@@ -73,7 +73,7 @@ class ContextRetrievalHandler {
 	 * Constructor
 	 *
 	 * @param VectorEmbeddingsInterface $vectorService Vector embeddings service.
-	 * @param ObjectService $objectService Object service for database search.
+	 * @param ObjectOperationsInterface $objectService Object service for database search.
 	 * @param LoggerInterface $logger Logger.
 	 *
 	 * @return void
@@ -82,7 +82,7 @@ class ContextRetrievalHandler {
 	 */
 	public function __construct(
 		VectorEmbeddingsInterface $vectorService,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		LoggerInterface $logger,
 	) {
 		$this->vectorService = $vectorService;
