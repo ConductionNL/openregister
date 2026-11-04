@@ -813,118 +813,158 @@ class RenderObject {
 		}
 
 		// The trusted-internal-read bypass applies to property `authorization.read` and to
-		// decryption ONLY. The writeOnly strip below deliberately does not consult it.
-		$applyGatedStrips = ($_rbac !== false) && (SystemOperationContext::isActive() === false);
+		// decryption ONLY. The writeOnly strip deliberately does not consult it.
+		$pass = new RowRedaction();
+		$pass->applyGatedStrips = ($_rbac !== false) && (SystemOperationContext::isActive() === false);
 
 		foreach ($rows as &$row) {
 			if ($row instanceof ObjectEntity === true) {
-				$schema = $this->getSchema(id: $row->getSchema());
-
-				$doWriteOnly = $this->schemaHasWriteOnlyRule(schema: $schema);
-				$doGated = ($applyGatedStrips === true && $this->schemaNeedsReadStrip(schema: $schema) === true);
-				if ($doWriteOnly === false && $doGated === false) {
-					$this->maskEntityReveals(entity: $row, schema: $schema);
-					continue;
-				}
-
-				$object = $row->getObject();
-				if (is_array($object) === true) {
-					if ($doGated === true) {
-						// Note filterReadableProperties strips writeOnly first, then applies
-						// the group-authorization filter, so this covers both concerns.
-						$object = $this->filterAuthorizedProperties(entity: $row, schema: $schema, objectData: $object);
-					} else {
-						// The writeOnly-only path (admin / `_rbac: false` / system context, or a
-						// schema with no property authorization): strip writeOnly unconditionally.
-						$object = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $schema, object: $object);
-					}
-
-					// Decrypt AFTER redaction: a field the RBAC/writeOnly strip above just
-					// removed is no longer a key in $object, so decryptProperties() (which
-					// only acts on keys still present) silently skips it — an unauthorized
-					// caller never reaches decryption for that field.
-					if ($doGated === true
-						&& $this->fieldEncryptionHandler !== null
-						&& $schema->hasEncryptedProperties() === true
-					) {
-						$object = $this->fieldEncryptionHandler->decryptProperties(data: $object, schema: $schema);
-					}//end if
-
-					$row->setObject($object);
-				}//end if
-
-				// Explicit-reveal values leave masked on every read, admins and `_rbac: false` included.
-				$this->maskEntityReveals(entity: $row, schema: $schema);
-
-				// The body strip above leaves the `relations` search index untouched; it is
-				// a separate scalar mirror that jsonSerialize surfaces as @self.relations,
-				// so a write-only secret leaks there unless stripped too (#429). It rides the
-				// SAME unconditional boundary as the body strip. Encrypted values are
-				// ciphertext by the time scanForRelations() runs at save time and do not look
-				// like references (isReference() matches UUID/URI/URL shapes), so they are not
-				// expected to appear in this mirror in the first place — only the writeOnly
-				// strip applies here.
-				if ($doWriteOnly === true) {
-					$relations = $row->getRelations();
-					if (is_array($relations) === true) {
-						$row->setRelations($this->propertyRbacHandler->stripWriteOnlyProperties(schema: $schema, object: $relations));
-					}
-				}
-
+				$this->redactEntityRow(pass: $pass, row: $row);
 				continue;
-			}//end if
+			}
 
 			if (is_array($row) === true) {
-				$schemaId = $row['@self']['schema'] ?? null;
-				if (is_int($schemaId) === false && is_string($schemaId) === false) {
-					continue;
-				}
-
-				$schema = $this->getSchema(id: $schemaId);
-
-				$doWriteOnly = $this->schemaHasWriteOnlyRule(schema: $schema);
-				$doGated = ($applyGatedStrips === true && $this->schemaNeedsReadStrip(schema: $schema) === true);
-				if ($doWriteOnly === false && $doGated === false) {
-					$row = $this->maskRowReveals(row: $row, schema: $schema);
-					continue;
-				}
-
-				if ($doGated === true) {
-					$unfiltered = $row;
-					$row = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $row);
-					$row = $this->withholdRowCopies(
-						row: $row,
-						schema: $schema,
-						removed: $this->removedProperties(before: $unfiltered, after: $row)
-					);
-				} else {
-					$row = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $schema, object: $row);
-				}
-
-				// Decrypt AFTER redaction, same ordering rationale as the ObjectEntity branch above.
-				if ($doGated === true
-					&& $this->fieldEncryptionHandler !== null
-					&& $schema->hasEncryptedProperties() === true
-				) {
-					$row = $this->fieldEncryptionHandler->decryptProperties(data: $row, schema: $schema);
-				}
-
-				$row = $this->maskRowReveals(row: $row, schema: $schema);
-
-				if ($doWriteOnly === true
-					&& isset($row['@self']['relations']) === true
-					&& is_array($row['@self']['relations']) === true
-				) {
-					$row['@self']['relations'] = $this->propertyRbacHandler->stripWriteOnlyProperties(
-						schema: $schema,
-						object: $row['@self']['relations']
-					);
-				}
-			}//end if
-		}//end foreach
+				$row = $this->redactArrayRow(pass: $pass, row: $row);
+			}
+		}
 
 		unset($row);
 	}//end redactWriteOnlyFromRows()
+
+	/**
+	 * Record on the pass the schema of a row and which strips apply to it.
+	 *
+	 * @param RowRedaction $pass     The redaction pass.
+	 * @param int|string   $schemaId The row's schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	private function planRowRedaction(RowRedaction $pass, int|string $schemaId): void {
+		$pass->schema = $this->getSchema(id: $schemaId);
+		$pass->doWriteOnly = $this->schemaHasWriteOnlyRule(schema: $pass->schema);
+		$pass->doGated = ($pass->applyGatedStrips === true && $this->schemaNeedsReadStrip(schema: $pass->schema) === true);
+	}//end planRowRedaction()
+
+	/**
+	 * Decrypt a row's fields when the gated strips apply and the schema encrypts properties.
+	 *
+	 * Runs AFTER redaction: a field the strip removed is no longer a key, so
+	 * decryptProperties() (which only acts on keys still present) skips it,
+	 * and an unauthorized caller never reaches decryption for that field.
+	 *
+	 * @param RowRedaction $pass The redaction pass, on one row.
+	 * @param array        $data The redacted data.
+	 *
+	 * @return array The data, decrypted where allowed.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	private function decryptRedactedRow(RowRedaction $pass, array $data): array {
+		if ($pass->doGated === true
+			&& $this->fieldEncryptionHandler !== null
+			&& $pass->schema->hasEncryptedProperties() === true
+		) {
+			return $this->fieldEncryptionHandler->decryptProperties(data: $data, schema: $pass->schema);
+		}
+
+		return $data;
+	}//end decryptRedactedRow()
+
+	/**
+	 * Redact one ObjectEntity row in place: body, masked reveals and the relations index.
+	 *
+	 * The gated path uses filterAuthorizedProperties, which strips writeOnly
+	 * first and then applies the group-authorization filter. The writeOnly-only
+	 * path (admin, `_rbac: false`, system context, or no property authorization)
+	 * strips writeOnly unconditionally. Explicit-reveal values leave masked on
+	 * every read. The `relations` search index is a separate scalar mirror
+	 * surfaced as `@self.relations`, so a writeOnly secret leaks there unless
+	 * it is stripped too (#429); encrypted values do not look like references,
+	 * so only the writeOnly strip applies to it.
+	 *
+	 * @param RowRedaction $pass The redaction pass.
+	 * @param ObjectEntity $row  The row.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	private function redactEntityRow(RowRedaction $pass, ObjectEntity $row): void {
+		$this->planRowRedaction(pass: $pass, schemaId: $row->getSchema());
+		if ($pass->doWriteOnly === false && $pass->doGated === false) {
+			$this->maskEntityReveals(entity: $row, schema: $pass->schema);
+			return;
+		}
+
+		$object = $row->getObject();
+		if (is_array($object) === true) {
+			if ($pass->doGated === true) {
+				$object = $this->filterAuthorizedProperties(entity: $row, schema: $pass->schema, objectData: $object);
+			} else {
+				$object = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $pass->schema, object: $object);
+			}
+
+			$row->setObject($this->decryptRedactedRow(pass: $pass, data: $object));
+		}
+
+		$this->maskEntityReveals(entity: $row, schema: $pass->schema);
+
+		$relations = $row->getRelations();
+		if ($pass->doWriteOnly === true && is_array($relations) === true) {
+			$row->setRelations($this->propertyRbacHandler->stripWriteOnlyProperties(schema: $pass->schema, object: $relations));
+		}
+	}//end redactEntityRow()
+
+	/**
+	 * Redact one array row: body, `@self` copies of removed properties, masked reveals and `@self.relations`.
+	 *
+	 * A row without a usable `@self.schema` is returned unchanged.
+	 *
+	 * @param RowRedaction $pass The redaction pass.
+	 * @param array        $row  The row.
+	 *
+	 * @return array The redacted row.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	private function redactArrayRow(RowRedaction $pass, array $row): array {
+		$schemaId = $row['@self']['schema'] ?? null;
+		if (is_int($schemaId) === false && is_string($schemaId) === false) {
+			return $row;
+		}
+
+		$this->planRowRedaction(pass: $pass, schemaId: $schemaId);
+		if ($pass->doWriteOnly === false && $pass->doGated === false) {
+			return $this->maskRowReveals(row: $row, schema: $pass->schema);
+		}
+
+		if ($pass->doGated === true) {
+			$unfiltered = $row;
+			$row = $this->propertyRbacHandler->filterReadableProperties(schema: $pass->schema, object: $row);
+			$row = $this->withholdRowCopies(
+				row: $row,
+				schema: $pass->schema,
+				removed: $this->removedProperties(before: $unfiltered, after: $row)
+			);
+		} else {
+			$row = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $pass->schema, object: $row);
+		}
+
+		$row = $this->maskRowReveals(row: $this->decryptRedactedRow(pass: $pass, data: $row), schema: $pass->schema);
+		if ($pass->doWriteOnly === true
+			&& isset($row['@self']['relations']) === true
+			&& is_array($row['@self']['relations']) === true
+		) {
+			$row['@self']['relations'] = $this->propertyRbacHandler->stripWriteOnlyProperties(
+				schema: $pass->schema,
+				object: $row['@self']['relations']
+			);
+		}
+
+		return $row;
+	}//end redactArrayRow()
 
 	/**
 	 * The schema configuration keys that copy a property into `@self` metadata.
@@ -4163,101 +4203,130 @@ class RenderObject {
 			return [$objectData, $_extend];
 		}
 
-		$properties = ($schema->getProperties() ?? []);
-		$register = null;
-
-		foreach ($properties as $name => $definition) {
-			if (is_array($definition) === false || in_array($name, $_extend, true) === false) {
-				continue;
+		$run = new SourceRefRun();
+		$run->entity = $entity;
+		$run->extend = $_extend;
+		$run->objectData = $objectData;
+		$run->depth = $depth;
+		$run->visitedIds = $visitedIds;
+		foreach (($schema->getProperties() ?? []) as $name => $definition) {
+			if (is_array($definition) === true && in_array($name, $run->extend, true) === true
+				&& $this->sourceRefTarget(run: $run, definition: $definition) === true
+			) {
+				$this->resolveSourceRefProperty(run: $run, name: $name);
 			}
+		}
 
-			$ref = ($definition['$ref'] ?? ($definition['items']['$ref'] ?? null));
-
-			// An INT is as valid a `$ref` as a slug, and is what a descriptor
-			// ends up holding: `ImportHandler` rewrites `"$ref": "nc-organisation"`
-			// to the resolved schema id. Requiring a string here meant a
-			// reference resolved fine when hand-written and silently stopped
-			// resolving the moment it had been through an import — the property
-			// rendered as its raw key and nothing reported anything.
-			// `getSchema()` has always accepted `int|string`.
-			if (is_int($ref) === false && (is_string($ref) === false || $ref === '')) {
-				continue;
-			}
-
-			$target = $this->getSchema(id: $ref);
-			$objectSource = $target?->getObjectSource();
-			if ($target === null || $objectSource === null) {
-				continue;
-			}
-
-			$provider = $this->objectSourceRegistry->get((string)$objectSource['provider']);
-			if ($provider === null || $provider->isEnabled() === false) {
-				continue;
-			}
-
-			if ($register === null) {
-				$register = $this->getRegister(id: $entity->getRegister());
-			}
-
-			if ($register === null) {
-				continue;
-			}
-
-			$config = ($objectSource['config'] ?? []);
-			$resolve = function ($identifier) use ($provider, $register, $target, $config, $depth, $visitedIds) {
-				if (is_scalar($identifier) === false) {
-					return $identifier;
-				}
-
-				$related = $provider->find(
-					register: $register,
-					schema: $target,
-					id: (string)$identifier,
-					config: $config
-				);
-				if ($related === null) {
-					// Preserve the raw key when the external row is absent.
-					return $identifier;
-				}
-
-				return $this->renderEntity(
-					entity: $related,
-					_extend: [],
-					depth: ($depth + 1),
-					filter: [],
-					fields: [],
-					unset: [],
-					visitedIds: $visitedIds
-				)->jsonSerialize();
-			};
-
-			$value = ($objectData[$name] ?? null);
-			if (is_array($value) === true) {
-				// An associative array (i.e. one carrying string keys such as
-				// id/@self) is an object already embedded by an earlier extend
-				// pass — never treat its VALUES as ids to resolve. A list can
-				// never carry those string keys, so list-ness is the test.
-				$alreadyEmbedded = (array_is_list($value) === false);
-				if ($alreadyEmbedded === false) {
-					$objectData[$name] = array_map($resolve, $value);
-				}
-			} elseif ($value !== null) {
-				$objectData[$name] = $resolve($value);
-			}
-
-			// The generic extend path must never see this key — a raw external
-			// key resolved against native storage can match a foreign object.
-			$_extend = array_values(
-				array_filter(
-					$_extend,
-					fn ($key) => ((string)$key) !== $name
-						&& str_starts_with((string)$key, $name . '.') === false
-				)
-			);
-		}//end foreach
-
-		return [$objectData, $_extend];
+		return [$run->objectData, $run->extend];
 	}//end extendObjectSourceRefs()
+
+	/**
+	 * Find the enabled object-source provider a property's `$ref` points at, and the entity's register.
+	 *
+	 * An INT is as valid a `$ref` as a slug: ImportHandler rewrites a slug
+	 * `$ref` to the resolved schema id, and getSchema() accepts both.
+	 *
+	 * @param SourceRefRun $run        The pass; receives the target, provider, config and register.
+	 * @param array        $definition The property definition.
+	 *
+	 * @return bool True when the property references an enabled object source in a known register.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function sourceRefTarget(SourceRefRun $run, array $definition): bool {
+		$ref = ($definition['$ref'] ?? ($definition['items']['$ref'] ?? null));
+		if (is_int($ref) === false && (is_string($ref) === false || $ref === '')) {
+			return false;
+		}
+
+		$run->target = $this->getSchema(id: $ref);
+		$objectSource = $run->target?->getObjectSource();
+		if ($run->target === null || $objectSource === null) {
+			return false;
+		}
+
+		$run->provider = $this->objectSourceRegistry->get((string)$objectSource['provider']);
+		if ($run->provider === null || $run->provider->isEnabled() === false) {
+			return false;
+		}
+
+		if ($run->register === null) {
+			$run->register = $this->getRegister(id: $run->entity->getRegister());
+		}
+
+		$run->config = ($objectSource['config'] ?? []);
+		return $run->register !== null;
+	}//end sourceRefTarget()
+
+	/**
+	 * Resolve one property's raw external keys through its provider, and take the property off the extend list.
+	 *
+	 * An associative array is an object already embedded by an earlier extend
+	 * pass, so its values are never treated as ids. The generic extend path
+	 * must never see the key: a raw external key resolved against native
+	 * storage can match a foreign object.
+	 *
+	 * @param SourceRefRun $run  The pass, on one property's target.
+	 * @param mixed        $name The property name.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function resolveSourceRefProperty(SourceRefRun $run, mixed $name): void {
+		$value = ($run->objectData[$name] ?? null);
+		if (is_array($value) === true) {
+			if (array_is_list($value) === true) {
+				$run->objectData[$name] = array_map(fn ($identifier) => $this->resolveSourceRef(run: $run, identifier: $identifier), $value);
+			}
+		} elseif ($value !== null) {
+			$run->objectData[$name] = $this->resolveSourceRef(run: $run, identifier: $value);
+		}
+
+		$run->extend = array_values(
+			array_filter(
+				$run->extend,
+				fn ($key) => ((string)$key) !== $name
+					&& str_starts_with((string)$key, $name . '.') === false
+			)
+		);
+	}//end resolveSourceRefProperty()
+
+	/**
+	 * Render the external row a raw key names, or keep the raw key when it is not scalar or the row is absent.
+	 *
+	 * @param SourceRefRun $run        The pass, on one property's target.
+	 * @param mixed        $identifier The raw key.
+	 *
+	 * @return mixed The rendered row, or the raw key.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function resolveSourceRef(SourceRefRun $run, mixed $identifier): mixed {
+		if (is_scalar($identifier) === false) {
+			return $identifier;
+		}
+
+		$related = $run->provider->find(
+			register: $run->register,
+			schema: $run->target,
+			id: (string)$identifier,
+			config: $run->config
+		);
+		if ($related === null) {
+			return $identifier;
+		}
+
+		return $this->renderEntity(
+			entity: $related,
+			_extend: [],
+			depth: ($run->depth + 1),
+			filter: [],
+			fields: [],
+			unset: [],
+			visitedIds: $run->visitedIds
+		)->jsonSerialize();
+	}//end resolveSourceRef()
 
 	/**
 	 * Collect all UUIDs from object data for properties that will be extended.
@@ -5250,153 +5319,201 @@ class RenderObject {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): array {
-		// Convert extend to array if it's a string.
 		if (is_string($_extend) === true) {
 			$_extend = explode(',', $_extend);
 		}
 
-		$_extend = $_extend ?? [];
+		$page = new PageRender();
+		$page->extend = ($_extend ?? []);
+		$page->fields = self::trimmedList(value: $_fields);
+		$page->filter = self::trimmedList(value: $_filter);
+		$page->unset = self::trimmedList(value: $_unset);
+		$page->rbac = $_rbac;
+		$page->multitenancy = $_multitenancy;
 
-		// Convert _fields to array if it's a string.
-		if (is_string($_fields) === true) {
-			$_fields = array_filter(array_map('trim', explode(',', $_fields)));
-		}
-
-		// Convert _filter to array if it's a string.
-		if (is_string($_filter) === true) {
-			$_filter = array_filter(array_map('trim', explode(',', $_filter)));
-		}
-
-		// Convert _unset to array if it's a string.
-		if (is_string($_unset) === true) {
-			$_unset = array_filter(array_map('trim', explode(',', $_unset)));
-		}
-
-		// **PERFORMANCE OPTIMIZATION**: Batch preload ALL related objects BEFORE rendering.
-		// This prevents N+1 query problem when extending relations across multiple entities.
 		// Debug level: this fires on EVERY extended list render (hot path).
 		$this->logger->debug(
 			message: '[RenderObject] [BATCH_PRELOAD] Starting batch preload check',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'extendParam' => $_extend,
+				'extendParam' => $page->extend,
 				'entityCount' => count($entities),
 			]
 		);
 
-		if (empty($_extend) === false && empty($entities) === false) {
-			$allUuidsToPreload = [];
-
-			// Collect ALL UUIDs from ALL entities that need to be extended.
-			foreach ($entities as $entity) {
-				if ($entity instanceof \OCA\OpenRegister\Db\ObjectEntity === false) {
-					continue;
-				}
-
-				$objectData = $entity->getObject();
-				if (is_array($objectData) === false) {
-					continue;
-				}
-
-				// Use the existing collectUuidsForExtend method to extract UUIDs.
-				$entityUuids = $this->collectUuidsForExtend(objectData: $objectData, extend: $_extend);
-				$allUuidsToPreload = array_merge($allUuidsToPreload, $entityUuids);
-			}
-
-			// Remove duplicates and batch preload ALL related objects in ONE query.
-			$allUuidsToPreload = array_unique($allUuidsToPreload);
-
-			$this->logger->debug(
-				message: '[RenderObject] [BATCH_PRELOAD] UUIDs collected',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuidCount' => count($allUuidsToPreload),
-					'sampleUuids' => array_slice($allUuidsToPreload, 0, 3),
-				]
-			);
-
-			if (empty($allUuidsToPreload) === false) {
-				$preloadedObjects = $this->objectCacheService->preloadObjects(
-					identifiers: $allUuidsToPreload,
-					registerId: $this->sharedRegisterIdOf(entities: $entities)
-				);
-
-				// Add preloaded objects to local cache for immediate access during rendering.
-				foreach ($preloadedObjects as $object) {
-					$this->objectsCache[$object->getUuid()] = $object;
-					$this->objectsCache[$object->getId()] = $object;
-				}
-
-				$this->logger->debug(
-					message: '[RenderObject] Batch preloaded objects for renderEntities',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'entityCount' => count($entities),
-						'requestedUuids' => count($allUuidsToPreload),
-						'loadedObjects' => count($preloadedObjects),
-					]
-				);
-			}
-
-			// **INVERSE RELATIONSHIP OPTIMIZATION**: Batch preload objects that REFERENCE our entities.
-			// This prevents N+1 queries when extending inverse properties like 'contactpersonen'.
-			$this->preloadInverseRelationships(entities: $entities, extend: $_extend);
-		}//end if
-
-		// Batch-prefetch lightweight @self.files IDs once for the entire page so that
-		// renderEntity does not issue one FileMapper query per row when extend does
-		// NOT cover @self.files. When extend opts in to full file metadata, the
-		// per-entity renderFiles() runs instead and this cache is unused.
-		if (self::shouldExtendFiles(extend: $_extend) === false && empty($entities) === false) {
-			$uuids = [];
-			foreach ($entities as $entity) {
-				if ($entity instanceof ObjectEntity === true) {
-					$uuid = $entity->getUuid();
-					if ($uuid !== null) {
-						$uuids[] = $uuid;
-					}
-				}
-			}
-
-			if (empty($uuids) === false) {
-				$this->batchFileIdsCache = $this->fileMapper->getFileIdsForObjects($uuids);
-			}
+		// Batch preload ALL related objects BEFORE rendering, to prevent N+1 queries.
+		if (empty($page->extend) === false && empty($entities) === false) {
+			$this->preloadExtendedRelations(entities: $entities, extend: $page->extend);
 		}
+
+		$this->prefetchPageFileIds(entities: $entities, extend: $page->extend);
 
 		// PERF-1: batch-prefetch full file objects + tags for every file-typed property
 		// value across the whole page, so renderFileProperties()/getFileObject() do not
-		// issue 1+ queries per file per row. This turns a 20-row x 3-file page from ~120
-		// queries into ~3 (one IN(...) files query + one batched tag-id query + one tag
-		// resolve). Caches are request-scoped and cleared in the finally below.
+		// issue 1+ queries per file per row. Caches are request-scoped and cleared in
+		// the finally of renderPage().
 		$this->batchPreloadFileObjects(entities: $entities);
 
+		return $this->renderPage(page: $page, entities: $entities);
+	}//end renderEntities()
+
+	/**
+	 * A comma-separated option as a list of trimmed, non-empty names; any other value as it is.
+	 *
+	 * @param array|string|null $value The option.
+	 *
+	 * @return array|null The list.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function trimmedList(array|string|null $value): ?array {
+		if (is_string($value) === true) {
+			return array_filter(array_map('trim', explode(',', $value)));
+		}
+
+		return $value;
+	}//end trimmedList()
+
+	/**
+	 * Preload, in one query, every object the page's rows reference through an extended property, and the inverse relations.
+	 *
+	 * @param array $entities The page of entities.
+	 * @param array $extend   The relations to extend.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function preloadExtendedRelations(array $entities, array $extend): void {
+		$allUuidsToPreload = [];
+		foreach ($entities as $entity) {
+			if ($entity instanceof ObjectEntity === true && is_array($entity->getObject()) === true) {
+				$allUuidsToPreload = array_merge(
+					$allUuidsToPreload,
+					$this->collectUuidsForExtend(objectData: $entity->getObject(), extend: $extend)
+				);
+			}
+		}
+
+		$allUuidsToPreload = array_unique($allUuidsToPreload);
+		$this->logger->debug(
+			message: '[RenderObject] [BATCH_PRELOAD] UUIDs collected',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuidCount' => count($allUuidsToPreload),
+				'sampleUuids' => array_slice($allUuidsToPreload, 0, 3),
+			]
+		);
+
+		if (empty($allUuidsToPreload) === false) {
+			$this->cachePreloadedObjects(entities: $entities, uuids: $allUuidsToPreload);
+		}
+
+		// Batch preload objects that REFERENCE our entities, so extending inverse
+		// properties like 'contactpersonen' does not query per row.
+		$this->preloadInverseRelationships(entities: $entities, extend: $extend);
+	}//end preloadExtendedRelations()
+
+	/**
+	 * Load the given objects in one query and keep them in the local cache by UUID and id.
+	 *
+	 * @param array $entities The page of entities, for the register they share.
+	 * @param array $uuids    The UUIDs to load.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cachePreloadedObjects(array $entities, array $uuids): void {
+		$preloadedObjects = $this->objectCacheService->preloadObjects(
+			identifiers: $uuids,
+			registerId: $this->sharedRegisterIdOf(entities: $entities)
+		);
+
+		foreach ($preloadedObjects as $object) {
+			$this->objectsCache[$object->getUuid()] = $object;
+			$this->objectsCache[$object->getId()] = $object;
+		}
+
+		$this->logger->debug(
+			message: '[RenderObject] Batch preloaded objects for renderEntities',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'entityCount' => count($entities),
+				'requestedUuids' => count($uuids),
+				'loadedObjects' => count($preloadedObjects),
+			]
+		);
+	}//end cachePreloadedObjects()
+
+	/**
+	 * Batch-prefetch the lightweight @self.files ids of the whole page.
+	 *
+	 * Without it renderEntity issues one FileMapper query per row when extend
+	 * does NOT cover @self.files. When extend opts in to full file metadata,
+	 * the per-entity renderFiles() runs instead and this cache is unused.
+	 *
+	 * @param array $entities The page of entities.
+	 * @param array $extend   The relations to extend.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function prefetchPageFileIds(array $entities, array $extend): void {
+		if (self::shouldExtendFiles(extend: $extend) === true || empty($entities) === true) {
+			return;
+		}
+
+		$uuids = [];
+		foreach ($entities as $entity) {
+			if ($entity instanceof ObjectEntity === true && $entity->getUuid() !== null) {
+				$uuids[] = $entity->getUuid();
+			}
+		}
+
+		if (empty($uuids) === false) {
+			$this->batchFileIdsCache = $this->fileMapper->getFileIdsForObjects($uuids);
+		}
+	}//end prefetchPageFileIds()
+
+	/**
+	 * Render every row of a page with warm caches, then drop the page's request-scoped caches.
+	 *
+	 * The source is removed from `@self` in list responses; only a single
+	 * object response carries it.
+	 *
+	 * @param PageRender $page     The page's render options.
+	 * @param array      $entities The page of entities.
+	 *
+	 * @return ObjectEntity[] The rendered rows.
+	 *
+	 * @psalm-return list<ObjectEntity>
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function renderPage(PageRender $page, array $entities): array {
 		$renderedEntities = [];
 
 		// PERF-8: mark a page render so extendObject() skips per-row re-preloading.
 		$this->pageRenderActive = true;
 
 		try {
-			// Render each entity (now using warm cache for forward relations).
 			foreach ($entities as $entity) {
 				$renderedEntity = $this->renderEntity(
 					entity: $entity,
-					_extend: $_extend,
+					_extend: $page->extend,
 					depth: 0,
-					filter: $_filter,
-					fields: $_fields,
-					unset: $_unset,
-					_rbac: $_rbac,
-					_multitenancy: $_multitenancy
+					filter: $page->filter,
+					fields: $page->fields,
+					unset: $page->unset,
+					_rbac: $page->rbac,
+					_multitenancy: $page->multitenancy
 				);
-
-				// Remove source from @self in list responses.
-				// The source property is only included in individual object responses,
-				// not in collection/list responses for cleaner output.
 				$renderedEntity->setSource(null);
-
 				$renderedEntities[] = $renderedEntity;
 			}
 		} finally {
@@ -5409,7 +5526,7 @@ class RenderObject {
 		}//end try
 
 		return $renderedEntities;
-	}//end renderEntities()
+	}//end renderPage()
 
 	/**
 	 * Batch-preload formatted file objects + tags for an entire page of entities (PERF-1).

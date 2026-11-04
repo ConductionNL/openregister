@@ -241,10 +241,18 @@ class SaveObjectRetentionResolutionTest extends TestCase {
 
 		$method = new ReflectionMethod(SaveObject::class, 'handleObjectCreation');
 		$method->setAccessible(true);
-		$result = $method->invokeArgs(
-			$handler,
-			[1, 1, $register, $schema, ['name' => 'Test'], [], 'test-uuid-123', null, false, false, false]
-		);
+		$call = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall();
+		$call->flags = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags();
+		$call->registerId = 1;
+		$call->schemaId = 1;
+		$call->register = $register;
+		$call->schema = $schema;
+		$call->data = ['name' => 'Test'];
+		$call->uuid = 'test-uuid-123';
+		$call->flags->persist = false;
+		$call->flags->silent = false;
+		$call->flags->multitenancy = false;
+		$result = $method->invokeArgs($handler, [$call]);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
 		$this->assertSame('archived-by-test', $result->getDescription());
