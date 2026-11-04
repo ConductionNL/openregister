@@ -689,6 +689,8 @@ class FileTextController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function addManualEntity(int $fileId): JSONResponse {
 		$refusal = $this->refuseNonJsonBody(route: 'POST /api/files/{fileId}/manual-entities');

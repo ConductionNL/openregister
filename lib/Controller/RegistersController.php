@@ -1090,6 +1090,8 @@ class RegistersController extends Controller {
 	 * @param string   $format   'csv' or 'pdf'.
 	 *
 	 * @return JSONResponse|DataDownloadResponse The download, or 400 without a schema.
+	 *
+	 * @throws Exception When the schema cannot be found or the export fails; export() answers 400.
 	 */
 	private function exportRegisterSchemaTable(Register $register, string $format): JSONResponse|DataDownloadResponse {
 		$schemaId = $this->request->getParam('schema');
