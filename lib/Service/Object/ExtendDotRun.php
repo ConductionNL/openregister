@@ -34,9 +34,9 @@ final class ExtendDotRun {
 	/**
 	 * The object data being extended.
 	 *
-	 * @var Dot
+	 * @var Dot|null
 	 */
-	public Dot $data;
+	public ?Dot $data = null;
 
 	/**
 	 * The current render depth.

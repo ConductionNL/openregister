@@ -34,9 +34,9 @@ final class InverseLookup {
 	/**
 	 * The entity being rendered.
 	 *
-	 * @var ObjectEntity
+	 * @var ObjectEntity|null
 	 */
-	public ObjectEntity $entity;
+	public ?ObjectEntity $entity = null;
 
 	/**
 	 * The inverse property configurations, by property name.

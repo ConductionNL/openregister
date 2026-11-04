@@ -51,6 +51,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Service\Object\ObjectVersionHandler
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugBatch

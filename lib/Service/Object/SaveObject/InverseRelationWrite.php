@@ -42,16 +42,16 @@ final class InverseRelationWrite {
 	/**
 	 * The register the saved object belongs to.
 	 *
-	 * @var Register
+	 * @var Register|null
 	 */
-	public Register $register;
+	public ?Register $register = null;
 
 	/**
 	 * The schema the saved object belongs to.
 	 *
-	 * @var Schema
+	 * @var Schema|null
 	 */
-	public Schema $schema;
+	public ?Schema $schema = null;
 
 	/**
 	 * The saved object's schema properties.

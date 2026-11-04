@@ -91,7 +91,7 @@ final class ObjectSaveCall {
 	/**
 	 * How the save runs: rights, tenancy, persistence and ownership.
 	 *
-	 * @var ObjectSaveFlags
+	 * @var ObjectSaveFlags|null
 	 */
-	public ObjectSaveFlags $flags;
+	public ?ObjectSaveFlags $flags = null;
 }//end class

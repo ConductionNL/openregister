@@ -34,9 +34,9 @@ final class CascadeRun {
 	/**
 	 * The parent object.
 	 *
-	 * @var ObjectEntity
+	 * @var ObjectEntity|null
 	 */
-	public ObjectEntity $parent;
+	public ?ObjectEntity $parent = null;
 
 	/**
 	 * The parent's data, rewritten as properties cascade.
