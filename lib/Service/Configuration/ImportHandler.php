@@ -3276,13 +3276,13 @@ class ImportHandler {
 	 * @param ImportRun       $run       The import.
 	 * @param ImportComponent $component The schema component.
 	 *
-	 * @return Schema|null The schema, or null when it is skipped.
+	 * @return Schema The created or updated schema.
 	 *
 	 * @throws Exception When the schema is rejected.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function importSchemaComponent(ImportRun $run, ImportComponent $component): ?Schema {
+	private function importSchemaComponent(ImportRun $run, ImportComponent $component): Schema {
 		$schemaSlugLower = strtolower((string)($component->data['slug'] ?? $component->key));
 		return $this->importSchema(
 			data: $component->data,
@@ -3480,7 +3480,8 @@ class ImportHandler {
 		}
 
 		foreach ($run->data['components']['registers'] as $slug => $registerData) {
-			$component = new ImportComponent(key: strtolower($slug), data: $registerData);
+			$slug = strtolower($slug);
+			$component = new ImportComponent(key: $slug, data: $registerData);
 			if (($registerData['schemas'] ?? null) !== null && is_array($registerData['schemas']) === true) {
 				$component->data['schemas'] = $this->registerSchemaIds(run: $run, schemaSlugs: $registerData['schemas']);
 			}
@@ -3494,7 +3495,10 @@ class ImportHandler {
 				$component->data['type'] = (string)$parentType;
 			}
 
-			$this->importRegisterComponent(run: $run, component: $component);
+			$register = $this->importRegisterComponent(run: $run, component: $component);
+			if ($register !== null) {
+				$this->registersMap[$slug] = $register;
+			}
 		}
 	}//end importRegisterComponents()
 
@@ -3571,11 +3575,11 @@ class ImportHandler {
 	 * @param ImportRun       $run       The import.
 	 * @param ImportComponent $component The register, keyed by its lower-cased slug.
 	 *
-	 * @return void
+	 * @return Register|null The register, or null when it was skipped.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function importRegisterComponent(ImportRun $run, ImportComponent $component): void {
+	private function importRegisterComponent(ImportRun $run, ImportComponent $component): ?Register {
 		try {
 			$register = $this->importRegister(
 				data: $component->data,
@@ -3584,14 +3588,15 @@ class ImportHandler {
 				version: $run->version,
 				force: $run->force
 			);
-			$this->registersMap[$component->key] = $register;
 			$run->result['registers'][] = $register;
+			return $register;
 		} catch (\Throwable $e) {
 			$run->result['skipped']['registers']++;
 			$this->logger->warning(
 				message: "[ImportHandler] Skipping register '{$component->key}' - import failed: " . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $run->appId, 'registerSlug' => $component->key, 'error' => $e->getMessage()]
 			);
+			return null;
 		}
 	}//end importRegisterComponent()
 
@@ -5964,14 +5969,10 @@ class ImportHandler {
 		// Scoped to seeding alone. Schemas, registers and mappings are imported
 		// outside this call and are unaffected, as is every ordinary save.
 		SystemOperationContext::run(
-			function () use ($configData, $owner, $appId, $configuration, &$result): void {
-				$this->importSeedDataObjects(
-					configData: $configData,
-					owner: $owner,
-					appId: $appId,
-					configuration: $configuration,
-					result: $result
-				);
+			function () use ($configData, $appId, $configuration, &$result): void {
+				$seed = new SeedImport(configData: $configData, result: $result);
+				$seed->appId = $appId;
+				$this->importSeedDataObjects(seed: $seed, configuration: $configuration);
 			}
 		);
 	}//end importSeedData()
@@ -6177,480 +6178,37 @@ class ImportHandler {
 	 * Split out of {@see importSeedData()} so the whole pass runs inside one
 	 * SystemOperationContext without indenting several hundred lines.
 	 *
-	 * @param array $configData The configuration payload.
-	 * @param string|null $owner The owner to attribute seeded objects to.
-	 * @param string|null $appId The owning app id.
+	 * @param SeedImport    $seed          The seed pass.
 	 * @param Configuration $configuration The configuration entity.
-	 * @param array $result Accumulated import result, by reference.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function importSeedDataObjects(
-		array $configData,
-		?string $owner,
-		?string $appId,
-		Configuration $configuration,
-		array &$result,
-	): void {
-		$seedData = $configData['x-openregister']['seedData'] ?? null;
-
-		// Tasks + notes both require a logged-in actor (CalDAV calendar
-		// lookup, comment authorship). Capture this once at the top of
-		// the import — at occ install time there's no user session, so
-		// those item types skip with a warning. Files are tied to the
-		// object's folder, not the actor, so they always run.
-		$hasUserContext = ($this->userSession !== null && $this->userSession->getUser() !== null);
-		$this->logger->debug(
-			message: '[ImportHandler] Seed data import context',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'has_user_context' => $hasUserContext,
-			]
-		);
-
-		$result['relatedFiles'] = ($result['relatedFiles'] ?? 0);
-		$result['relatedNotes'] = ($result['relatedNotes'] ?? 0);
-		$result['relatedTasks'] = ($result['relatedTasks'] ?? 0);
-
-		// Ensure the skipped-entity observability map exists even when this
-		// method is invoked with a result array that predates it.
-		$result['skipped'] = ($result['skipped'] ?? []);
-		$result['skipped']['seedObjects'] = ($result['skipped']['seedObjects'] ?? 0);
-
-		// Determine target register for seedData objects.
-		// Prefer the registers imported IN THIS RUN ($this->registersMap): on a
-		// FIRST import the configuration entity's registers list is only
-		// persisted after importFromJson returns, so reading it here yielded
-		// "register 0" and every seed object failed with "Cannot insert object
-		// without register and schema context" (verified live with the DSAR
-		// policy-pack register). Fall back to the configuration's recorded
-		// registers for the version-equal "checking seedData" re-import path,
-		// where the map is empty but the configuration is populated.
-		$targetRegister = null;
-		$freshRegisters = array_values($this->registersMap);
-		if ($freshRegisters !== []) {
-			$targetRegister = $freshRegisters[0];
-		}
-
-		if ($targetRegister === null) {
-			$registerIds = $configuration->getRegisters();
-			if (empty($registerIds) === false) {
-				$targetRegister = $this->registerMapper->find($registerIds[0], _multitenancy: false, _rbac: false);
-			}
-		}
-
-		$targetRegisterId = 0;
-		if ($targetRegister === null) {
-			$this->logger->warning(
-				message: '[ImportHandler] No register found for seedData - using register 0',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'appId' => $appId,
-					'config_title' => $configData['info']['title'] ?? 'unknown',
-				]
-			);
-		}
-
-		if ($targetRegister !== null) {
-			$targetRegisterId = $targetRegister->getId();
-			$this->logger->debug(
-				message: '[ImportHandler] SeedData will be imported into register',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'register_id' => $targetRegisterId,
-					'register_slug' => $targetRegister->getSlug(),
-					'register_title' => $targetRegister->getTitle(),
-				]
-			);
-		}
+	private function importSeedDataObjects(SeedImport $seed, Configuration $configuration): void {
+		$seedData = $seed->configData['x-openregister']['seedData'] ?? null;
+		$this->startSeedImport(seed: $seed);
+		$this->resolveSeedTargetRegister(seed: $seed, configuration: $configuration);
 
 		$this->logger->debug(
 			message: '[ImportHandler] Importing seed data objects',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'config_title' => $configData['info']['title'] ?? 'unknown',
+				'config_title' => $seed->configData['info']['title'] ?? 'unknown',
 				'description' => $seedData['description'] ?? 'no description',
 				'object_types' => array_keys($seedData['objects']),
-				'target_register' => $targetRegisterId,
+				'target_register' => $seed->targetRegisterId,
 			]
 		);
 
-		// Ensure dependencies are met before importing seedData.
-		// This is checked here (lazy) rather than at start of import to avoid circular dependency issues.
-		// TEMPORARILY DISABLED: Causes hanging due to circular dependency when apps try to load configs at boot.
-		// See: $this->ensureDependenciesForSeedData(configData: $configData).
+		// Dependencies are not ensured here: ensureDependenciesForSeedData() hangs on a
+		// circular dependency when apps load their configurations at boot.
 		foreach ($seedData['objects'] as $schemaSlug => $objects) {
-			// Find schema by slug - first check schemasMap, then database.
-			$schema = $this->schemasMap[$schemaSlug] ?? null;
-
-			if ($schema === null) {
-				// Try to find schema in database (may be from another app/config).
-				// Disable multitenancy to allow cross-app schema lookup.
-				try {
-					$schema = $this->schemaMapper->find(
-						id: $schemaSlug,
-						_extend: [],
-						_rbac: false,
-						_multitenancy: false
-					);
-					$this->logger->debug(
-						message: "[ImportHandler] Found schema '{$schemaSlug}' in database for seedData",
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'schemaId' => $schema->getId(),
-							'schemaApp' => $schema->getApplication(),
-						]
-					);
-				} catch (\Throwable $e) {
-					// PER-ENTITY RESILIENCE: any failure resolving this schema (not
-					// found, validation, or otherwise) skips only this schema's seed
-					// objects with a warning - never the rest of the seed import.
-					$this->logger->warning(
-						message: "[ImportHandler] Skipping seed data for schema '{$schemaSlug}' - schema not resolvable: " . $e->getMessage(),
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'appId' => $appId,
-							'error' => $e->getMessage(),
-							'availableSchemasInMap' => array_keys($this->schemasMap),
-						]
-					);
-					continue;
-				}//end try
-			}//end if
-
-			// Same guard as the components.objects path: a slug that resolved
-			// to another app's schema its target register does not list is a
-			// stale seed, so every object under it is skipped.
-			if ($targetRegister instanceof Register
-				&& $this->seedSchemaIsForeign(register: $targetRegister, schema: $schema, appId: $appId) === true
-			) {
-				$result['skipped']['seedObjects'] += count((array)$objects);
-				continue;
-			}
-
-			$this->logger->debug(
-				message: "[ImportHandler] Importing seed objects for schema '{$schemaSlug}'",
-				context: ['file' => __FILE__, 'line' => __LINE__, 'count' => count($objects)]
-			);
-
-			// PRE-CREATE MAGIC MAPPER TABLE: Ensure the magic mapper table exists BEFORE inserting objects.
-			if ($this->magicMapper !== null && $targetRegister !== null) {
-				try {
-					$this->logger->debug(
-						message: '[ImportHandler] Pre-creating magic mapper table for schema before importing seed objects',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'schema_id' => $schema->getId(),
-							'schema_slug' => $schemaSlug,
-							'register_id' => $targetRegisterId,
-						]
-					);
-					$this->magicMapper->ensureTableForRegisterSchema(
-						register: $targetRegister,
-						schema: $schema
-					);
-				} catch (\Exception $e) {
-					// Non-fatal: if table creation fails, object saving may fail.
-					$this->logger->warning(
-						message: '[ImportHandler] Failed to pre-create magic mapper table',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'schema_slug' => $schemaSlug,
-							'register_id' => $targetRegisterId,
-							'error' => $e->getMessage(),
-						]
-					);
-				}//end try
-			}//end if
-
-			foreach ($objects as $objectData) {
-				// Strip + capture _relatedItems before any other processing.
-				// Must happen before the object is persisted so the marker
-				// never reaches the database. Tasks/notes/files are created
-				// AFTER successful insert so we have a real UUID to link to.
-				$relatedItems = ($objectData['_relatedItems'] ?? null);
-				unset($objectData['_relatedItems']);
-
-				// Check if object has @self with external configuration reference.
-				// This allows seedData from one app to reference schemas/registers from another app's configuration.
-				$selfData = $objectData['@self'] ?? null;
-				$externalConfigUrl = $selfData['configuration'] ?? null;
-				$externalRegisterSlug = $selfData['register'] ?? null;
-				$externalSchemaSlug = $selfData['schema'] ?? null;
-
-				// Start with the current target register (from configuration).
-				$targetRegId = $targetRegisterId;
-				$objectSchema = $schema;
-				$objectRegister = $targetRegister;
-				// Track the Register object for idempotency checks.
-				// If object references external configuration, resolve schema and register from that config.
-				if ($externalConfigUrl !== null) {
-					$this->logger->debug(
-						message: '[ImportHandler] SeedData object references external configuration',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'config_url' => $externalConfigUrl,
-							'register_slug' => $externalRegisterSlug,
-							'schema_slug' => $externalSchemaSlug,
-							'object_title' => $objectData['title'] ?? 'unknown',
-						]
-					);
-
-					// Find the external register by slug.
-					if ($externalRegisterSlug !== null) {
-						try {
-							// Use slug-to-ID map for efficient lookup.
-							$slugToIdMap = $this->registerMapper->getSlugToIdMap();
-
-							if (isset($slugToIdMap[$externalRegisterSlug]) === false) {
-								$this->logger->warning(
-									message: '[ImportHandler] External register not found - using default',
-									context: [
-										'file' => __FILE__,
-										'line' => __LINE__,
-										'requested_slug' => $externalRegisterSlug,
-										'available_slugs' => array_keys($slugToIdMap),
-									]
-								);
-							}
-
-							if (isset($slugToIdMap[$externalRegisterSlug]) === true) {
-								$externalRegisterId = $slugToIdMap[$externalRegisterSlug];
-								$externalRegister = $this->registerMapper->find(
-									id: $externalRegisterId,
-									_rbac: false,
-									_multitenancy: false
-								);
-								$targetRegId = $externalRegister->getId();
-								$objectRegister = $externalRegister;
-								// Update for idempotency check.
-								$this->logger->debug(
-									message: '[ImportHandler] Resolved external register for seedData object',
-									context: [
-										'file' => __FILE__,
-										'line' => __LINE__,
-										'slug' => $externalRegisterSlug,
-										'id' => $targetRegId,
-										'title' => $externalRegister->getTitle(),
-									]
-								);
-							}//end if
-						} catch (\Exception $e) {
-							$this->logger->error(
-								message: '[ImportHandler] Failed to resolve external register',
-								context: [
-									'file' => __FILE__,
-									'line' => __LINE__,
-									'slug' => $externalRegisterSlug,
-									'error' => $e->getMessage(),
-								]
-							);
-						}//end try
-					}//end if
-
-					// Find the external schema by slug (if different from current schema).
-					if ($externalSchemaSlug !== null) {
-						try {
-							$externalSchemas = $this->schemaMapper->findBySlug(
-								slug: $externalSchemaSlug,
-								limit: 1,
-								offset: 0,
-								_multitenancy: false,
-								_rbac: false
-							);
-
-							if (empty($externalSchemas) === true) {
-								$this->logger->warning(
-									message: '[ImportHandler] External schema not found - using current schema',
-									context: [
-										'file' => __FILE__,
-										'line' => __LINE__,
-										'requested_slug' => $externalSchemaSlug,
-										'current_schema' => $schemaSlug,
-									]
-								);
-							}
-
-							if (empty($externalSchemas) === false) {
-								$objectSchema = $externalSchemas[0];
-								$this->logger->debug(
-									message: '[ImportHandler] Resolved external schema for seedData object',
-									context: [
-										'file' => __FILE__,
-										'line' => __LINE__,
-										'slug' => $externalSchemaSlug,
-										'id' => $objectSchema->getId(),
-										'title' => $objectSchema->getTitle(),
-									]
-								);
-							}
-						} catch (\Exception $e) {
-							$this->logger->error(
-								message: '[ImportHandler] Failed to resolve external schema',
-								context: [
-									'file' => __FILE__,
-									'line' => __LINE__,
-									'slug' => $externalSchemaSlug,
-									'error' => $e->getMessage(),
-								]
-							);
-						}//end try
-					}//end if
-				}//end if
-
-				$objectSlug = $objectData['slug'] ?? $objectData['title'] ?? null;
-				if ($objectSlug === null) {
-					$this->logger->error(
-						message: "[ImportHandler] Seed for '{$schemaSlug}' missing slug and title",
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'objectData' => $objectData,
-						]
-					);
-					continue;
-				}
-
-				try {
-					// IDEMPOTENCY CHECK: Check if object already exists by slug or uuid.
-					// This prevents duplicate data when configuration is run multiple times.
-					$existingObject = null;
-					$lookupIdentifier = ($objectData['uuid'] ?? $this->seedLookupSlug(objectData: $objectData, slug: (string)$objectSlug, schema: $objectSchema));
-
-					try {
-						// Try to find existing object using MagicMapper.
-						// Disable RBAC/multitenancy to find objects from any app/tenant.
-						// No MagicMapper or register context available - cannot look up.
-						$existingObject = null;
-						if ($this->routingMapper !== null && $objectRegister !== null) {
-							$existingObject = $this->routingMapper->find(
-								identifier: $lookupIdentifier,
-								register: $objectRegister,
-								schema: $objectSchema,
-								includeDeleted: false,
-								_rbac: false,
-								_multitenancy: false
-							);
-						}
-					} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-						// Object doesn't exist - this is expected, we'll create it.
-						$existingObject = null;
-					} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-						// Multiple objects found with same identifier - log warning and skip.
-						$warnMsg = '[ImportHandler] Multiple seed objects found with identifier';
-						$warnMsg .= " '{$lookupIdentifier}' - skipping to avoid duplication";
-						$this->logger->warning(
-							message: $warnMsg,
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'schema' => $schemaSlug,
-								'identifier' => $lookupIdentifier,
-							]
-						);
-						continue;
-					}//end try
-
-					$existingObject = $this->orSuffixedSeed(found: $existingObject, objectData: $objectData, schema: $objectSchema, register: $objectRegister);
-
-					if ($existingObject !== null) {
-						// Object already exists - skip creation to prevent duplication.
-						$this->logger->debug(
-							message: '[ImportHandler] Seed object already exists - skipping',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'schema' => $schemaSlug,
-								'identifier' => $lookupIdentifier,
-								'object_id' => $existingObject->getId(),
-							]
-						);
-						$result['objects'][] = $existingObject->getId();
-						continue;
-					}
-
-					// Use MagicMapper directly for seedData objects to avoid complex ObjectService dependencies.
-					// SeedData objects are simple and don't require cascading or complex validation.
-					$objectEntity = new ObjectEntity();
-
-					// Generate UUID if not provided.
-					$objectEntity->setUuid($objectData['uuid'] ?? \Symfony\Component\Uid\Uuid::v4()->toRfc4122());
-
-					// Set schema reference - use resolved external schema if available.
-					$objectEntity->setSchema($objectSchema->getId());
-
-					// Use the resolved target register (either from external config or default).
-					// SeedData with external config references goes to the external register.
-					$objectEntity->setRegister($targetRegId);
-
-					// Store object data, without the top-level uuid/slug the seed
-					// format carries as metadata (set above) unless the schema
-					// declares them as properties.
-					$objectEntity->setObject(
-						$this->withoutSeedMetadataKeys(objectData: $objectData, schema: $objectSchema)
-					);
-
-					// Set the slug for future idempotency checks (#4037).
-					$this->applySeedSlug(entity: $objectEntity, schema: $objectSchema, objectData: $objectData, objectSlug: $objectSlug);
-
-					// Set timestamps.
-					$now = new DateTime();
-					$objectEntity->setCreated($now);
-					$objectEntity->setUpdated($now);
-
-					// Insert once: through the routing mapper when one is set, else the object entity mapper.
-					$createdObject = ($this->routingMapper ?? $this->objectEntityMapper)->insert($objectEntity);
-
-					$result['objects'][] = $createdObject->getId();
-					$this->logger->debug(
-						message: '[ImportHandler] Seed object imported',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'schema' => $schemaSlug,
-							'object_id' => $createdObject->getId(),
-							'slug' => $objectSlug,
-						]
-					);
-
-					if (is_array($relatedItems) === true && count($relatedItems) > 0) {
-						$this->processRelatedItems(
-							object: $createdObject,
-							relatedItems: $relatedItems,
-							registerId: (int)$targetRegId,
-							schemaId: (int)$objectSchema->getId(),
-							objectTitle: (string)($objectData['title'] ?? $objectSlug),
-							hasUserContext: $hasUserContext,
-							result: $result
-						);
-					}
-				} catch (\Throwable $e) {
-					// PER-ENTITY RESILIENCE: skip this seed object, keep the rest.
-					$result['skipped']['seedObjects']++;
-					$this->logger->warning(
-						message: "[ImportHandler] Skipping seed object for '{$schemaSlug}' - import failed: " . $e->getMessage(),
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'schemaSlug' => $schemaSlug,
-							'objectSlug' => $objectSlug ?? null,
-							'error' => $e->getMessage(),
-						]
-					);
-				}//end try
-			}//end foreach
-		}//end foreach
+			$seed->schemaSlug = $schemaSlug;
+			$seed->objects = $objects;
+			$this->importSeedSchemaObjects(seed: $seed);
+		}
 
 		// Info: the summary line, carrying counts. One per import, and the
 		// thing you actually want when asking what an import did.
@@ -6659,14 +6217,513 @@ class ImportHandler {
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'config_title' => $configData['info']['title'] ?? 'unknown',
-				'imported' => count($result['objects']),
-				'related_files' => $result['relatedFiles'] ?? 0,
-				'related_notes' => $result['relatedNotes'] ?? 0,
-				'related_tasks' => $result['relatedTasks'] ?? 0,
+				'config_title' => $seed->configData['info']['title'] ?? 'unknown',
+				'imported' => count($seed->result['objects']),
+				'related_files' => $seed->result['relatedFiles'] ?? 0,
+				'related_notes' => $seed->result['relatedNotes'] ?? 0,
+				'related_tasks' => $seed->result['relatedTasks'] ?? 0,
 			]
 		);
 	}//end importSeedDataObjects()
+
+	/**
+	 * Note whether a user is logged in and make sure the result's seed counters exist.
+	 *
+	 * Tasks and notes need a logged-in actor (CalDAV calendar lookup, comment
+	 * authorship); at occ install time there is no session, so those item
+	 * types skip with a warning. Files are tied to the object's folder, not
+	 * the actor, so they always run.
+	 *
+	 * @param SeedImport $seed The seed pass.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function startSeedImport(SeedImport $seed): void {
+		$seed->hasUserContext = ($this->userSession !== null && $this->userSession->getUser() !== null);
+		$this->logger->debug(
+			message: '[ImportHandler] Seed data import context',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'has_user_context' => $seed->hasUserContext]
+		);
+
+		$seed->result['relatedFiles'] = ($seed->result['relatedFiles'] ?? 0);
+		$seed->result['relatedNotes'] = ($seed->result['relatedNotes'] ?? 0);
+		$seed->result['relatedTasks'] = ($seed->result['relatedTasks'] ?? 0);
+		// The skipped-entity map may predate the result array this pass is handed.
+		$seed->result['skipped'] = ($seed->result['skipped'] ?? []);
+		$seed->result['skipped']['seedObjects'] = ($seed->result['skipped']['seedObjects'] ?? 0);
+	}//end startSeedImport()
+
+	/**
+	 * Pick the register seed objects go to.
+	 *
+	 * The registers imported IN THIS RUN come first: on a FIRST import the
+	 * configuration's register list is only persisted after importFromJson
+	 * returns, so reading it here gave "register 0" and every seed object
+	 * failed. The configuration's recorded registers are the fallback, for the
+	 * re-import where the map is empty but the configuration is populated.
+	 *
+	 * @param SeedImport    $seed          The seed pass.
+	 * @param Configuration $configuration The configuration entity.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function resolveSeedTargetRegister(SeedImport $seed, Configuration $configuration): void {
+		$freshRegisters = array_values($this->registersMap);
+		$seed->targetRegister = ($freshRegisters[0] ?? null);
+		$registerIds = [];
+		if ($seed->targetRegister === null) {
+			$registerIds = $configuration->getRegisters();
+		}
+
+		if (empty($registerIds) === false) {
+			$seed->targetRegister = $this->registerMapper->find($registerIds[0], _multitenancy: false, _rbac: false);
+		}
+
+		$this->logSeedTargetRegister(seed: $seed);
+	}//end resolveSeedTargetRegister()
+
+	/**
+	 * Record the target register's id and log which register seed objects go to.
+	 *
+	 * @param SeedImport $seed The seed pass.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function logSeedTargetRegister(SeedImport $seed): void {
+		$seed->targetRegisterId = 0;
+		if ($seed->targetRegister === null) {
+			$this->logger->warning(
+				message: '[ImportHandler] No register found for seedData - using register 0',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $seed->appId, 'config_title' => $seed->configData['info']['title'] ?? 'unknown']
+			);
+			return;
+		}
+
+		$seed->targetRegisterId = $seed->targetRegister->getId();
+		$this->logger->debug(
+			message: '[ImportHandler] SeedData will be imported into register',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'register_id' => $seed->targetRegisterId,
+				'register_slug' => $seed->targetRegister->getSlug(),
+				'register_title' => $seed->targetRegister->getTitle(),
+			]
+		);
+	}//end logSeedTargetRegister()
+
+	/**
+	 * Import the seed objects of one schema.
+	 *
+	 * A slug that resolved to another app's schema its target register does
+	 * not list is a stale seed (the same guard as the components.objects
+	 * path), so every object under it is skipped.
+	 *
+	 * @param SeedImport $seed The seed pass, positioned on the schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function importSeedSchemaObjects(SeedImport $seed): void {
+		$seed->schema = $this->resolveSeedSchema(seed: $seed);
+		if ($seed->schema === null) {
+			return;
+		}
+
+		if ($seed->targetRegister instanceof Register
+			&& $this->seedSchemaIsForeign(register: $seed->targetRegister, schema: $seed->schema, appId: $seed->appId) === true
+		) {
+			$seed->result['skipped']['seedObjects'] += count((array)$seed->objects);
+			return;
+		}
+
+		$this->logger->debug(
+			message: "[ImportHandler] Importing seed objects for schema '{$seed->schemaSlug}'",
+			context: ['file' => __FILE__, 'line' => __LINE__, 'count' => count($seed->objects)]
+		);
+		$this->ensureSeedObjectTable(seed: $seed);
+		foreach ($seed->objects as $objectData) {
+			$this->importSeedObject(seed: $seed, object: new SeedDataObject(data: $objectData, seed: $seed));
+		}
+	}//end importSeedSchemaObjects()
+
+	/**
+	 * The schema a seed slug names: the one this import created, else the stored one.
+	 *
+	 * The stored lookup ignores multitenancy, so another app's schema can be
+	 * seeded. PER-ENTITY RESILIENCE: a schema that cannot be resolved skips
+	 * only its own seed objects, with a warning.
+	 *
+	 * @param SeedImport $seed The seed pass, positioned on the schema.
+	 *
+	 * @return Schema|null The schema, or null when it cannot be resolved.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function resolveSeedSchema(SeedImport $seed): ?Schema {
+		$schemaSlug = $seed->schemaSlug;
+		if (($this->schemasMap[$schemaSlug] ?? null) !== null) {
+			return $this->schemasMap[$schemaSlug];
+		}
+
+		try {
+			$schema = $this->schemaMapper->find(id: $schemaSlug, _extend: [], _rbac: false, _multitenancy: false);
+			$this->logger->debug(
+				message: "[ImportHandler] Found schema '{$schemaSlug}' in database for seedData",
+				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schema->getId(), 'schemaApp' => $schema->getApplication()]
+			);
+			return $schema;
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: "[ImportHandler] Skipping seed data for schema '{$schemaSlug}' - schema not resolvable: " . $e->getMessage(),
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'appId' => $seed->appId,
+					'error' => $e->getMessage(),
+					'availableSchemasInMap' => array_keys($this->schemasMap),
+				]
+			);
+			return null;
+		}
+	}//end resolveSeedSchema()
+
+	/**
+	 * Create the magic table of the target register and the current schema before its objects are inserted.
+	 *
+	 * Non-fatal: when the table cannot be created, the object saves may fail on their own.
+	 *
+	 * @param SeedImport $seed The seed pass, positioned on the schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function ensureSeedObjectTable(SeedImport $seed): void {
+		if ($this->magicMapper === null || $seed->targetRegister === null) {
+			return;
+		}
+
+		try {
+			$this->logger->debug(
+				message: '[ImportHandler] Pre-creating magic mapper table for schema before importing seed objects',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'schema_id' => $seed->schema->getId(),
+					'schema_slug' => $seed->schemaSlug,
+					'register_id' => $seed->targetRegisterId,
+				]
+			);
+			$this->magicMapper->ensureTableForRegisterSchema(register: $seed->targetRegister, schema: $seed->schema);
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[ImportHandler] Failed to pre-create magic mapper table',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'schema_slug' => $seed->schemaSlug,
+					'register_id' => $seed->targetRegisterId,
+					'error' => $e->getMessage(),
+				]
+			);
+		}
+	}//end ensureSeedObjectTable()
+
+	/**
+	 * Import one seed object, skipping it with a warning when it fails.
+	 *
+	 * An object without slug and title cannot be found again, so it is not imported.
+	 *
+	 * @param SeedImport     $seed   The seed pass, positioned on the schema.
+	 * @param SeedDataObject $object The seed object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function importSeedObject(SeedImport $seed, SeedDataObject $object): void {
+		$this->resolveExternalSeedTarget(seed: $seed, object: $object);
+		$object->slug = $object->data['slug'] ?? $object->data['title'] ?? null;
+		if ($object->slug === null) {
+			$this->logger->error(
+				message: "[ImportHandler] Seed for '{$seed->schemaSlug}' missing slug and title",
+				context: ['file' => __FILE__, 'line' => __LINE__, 'objectData' => $object->data]
+			);
+			return;
+		}
+
+		try {
+			$this->storeSeedObject(seed: $seed, object: $object);
+		} catch (\Throwable $e) {
+			// PER-ENTITY RESILIENCE: skip this seed object, keep the rest.
+			$seed->result['skipped']['seedObjects']++;
+			$this->logger->warning(
+				message: "[ImportHandler] Skipping seed object for '{$seed->schemaSlug}' - import failed: " . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaSlug' => $seed->schemaSlug, 'objectSlug' => $object->slug, 'error' => $e->getMessage()]
+			);
+		}
+	}//end importSeedObject()
+
+	/**
+	 * Point a seed object at the register and schema its `@self` names in another app's configuration.
+	 *
+	 * This lets seed data of one app reference schemas and registers of
+	 * another app's configuration. Only an object whose `@self` names a
+	 * `configuration` is redirected.
+	 *
+	 * @param SeedImport     $seed   The seed pass, positioned on the schema.
+	 * @param SeedDataObject $object The seed object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function resolveExternalSeedTarget(SeedImport $seed, SeedDataObject $object): void {
+		$selfData = $object->data['@self'] ?? null;
+		if (($selfData['configuration'] ?? null) === null) {
+			return;
+		}
+
+		$this->logger->debug(
+			message: '[ImportHandler] SeedData object references external configuration',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'config_url' => $selfData['configuration'],
+				'register_slug' => $selfData['register'] ?? null,
+				'schema_slug' => $selfData['schema'] ?? null,
+				'object_title' => $object->data['title'] ?? 'unknown',
+			]
+		);
+		$this->resolveExternalSeedRegister(object: $object);
+		$this->resolveExternalSeedSchema(seed: $seed, object: $object);
+	}//end resolveExternalSeedTarget()
+
+	/**
+	 * Point a seed object at the register its `@self.register` slug names, when that register exists.
+	 *
+	 * @param SeedDataObject $object The seed object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function resolveExternalSeedRegister(SeedDataObject $object): void {
+		$slug = $object->data['@self']['register'] ?? null;
+		if ($slug === null) {
+			return;
+		}
+
+		try {
+			$slugToIdMap = $this->registerMapper->getSlugToIdMap();
+			if (isset($slugToIdMap[$slug]) === false) {
+				$this->logger->warning(
+					message: '[ImportHandler] External register not found - using default',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'requested_slug' => $slug, 'available_slugs' => array_keys($slugToIdMap)]
+				);
+				return;
+			}
+
+			$object->register = $this->registerMapper->find(id: $slugToIdMap[$slug], _rbac: false, _multitenancy: false);
+			$object->registerId = $object->register->getId();
+			$this->logger->debug(
+				message: '[ImportHandler] Resolved external register for seedData object',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $slug, 'id' => $object->registerId, 'title' => $object->register->getTitle()]
+			);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[ImportHandler] Failed to resolve external register',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $slug, 'error' => $e->getMessage()]
+			);
+		}
+	}//end resolveExternalSeedRegister()
+
+	/**
+	 * Point a seed object at the schema its `@self.schema` slug names, when that schema exists.
+	 *
+	 * @param SeedImport     $seed   The seed pass, positioned on the schema.
+	 * @param SeedDataObject $object The seed object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function resolveExternalSeedSchema(SeedImport $seed, SeedDataObject $object): void {
+		$slug = $object->data['@self']['schema'] ?? null;
+		if ($slug === null) {
+			return;
+		}
+
+		try {
+			$externalSchemas = $this->schemaMapper->findBySlug(slug: $slug, limit: 1, offset: 0, _multitenancy: false, _rbac: false);
+			if (empty($externalSchemas) === true) {
+				$this->logger->warning(
+					message: '[ImportHandler] External schema not found - using current schema',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'requested_slug' => $slug, 'current_schema' => $seed->schemaSlug]
+				);
+				return;
+			}
+
+			$object->schema = $externalSchemas[0];
+			$this->logger->debug(
+				message: '[ImportHandler] Resolved external schema for seedData object',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $slug, 'id' => $object->schema->getId(), 'title' => $object->schema->getTitle()]
+			);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[ImportHandler] Failed to resolve external schema',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $slug, 'error' => $e->getMessage()]
+			);
+		}
+	}//end resolveExternalSeedSchema()
+
+	/**
+	 * Insert a seed object unless it is already stored, then create its related items.
+	 *
+	 * IDEMPOTENCY: an object found by uuid or slug is counted and left alone,
+	 * so running a configuration again never duplicates its seed data; one
+	 * that more than one stored object answers to is skipped.
+	 *
+	 * @param SeedImport     $seed   The seed pass, positioned on the schema.
+	 * @param SeedDataObject $object The seed object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function storeSeedObject(SeedImport $seed, SeedDataObject $object): void {
+		$object->identifier = ($object->data['uuid']
+			?? $this->seedLookupSlug(objectData: $object->data, slug: (string)$object->slug, schema: $object->schema));
+		$existingObject = $this->findStoredSeedObject(seed: $seed, object: $object);
+		if ($object->ambiguous === true) {
+			return;
+		}
+
+		$existingObject = $this->orSuffixedSeed(found: $existingObject, objectData: $object->data, schema: $object->schema, register: $object->register);
+		if ($existingObject !== null) {
+			$this->logger->debug(
+				message: '[ImportHandler] Seed object already exists - skipping',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'schema' => $seed->schemaSlug,
+					'identifier' => $object->identifier,
+					'object_id' => $existingObject->getId(),
+				]
+			);
+			$seed->result['objects'][] = $existingObject->getId();
+			return;
+		}
+
+		$this->insertSeedObject(seed: $seed, object: $object);
+	}//end storeSeedObject()
+
+	/**
+	 * The stored object a seed object's uuid or slug finds, across every app and tenant.
+	 *
+	 * Without a routing mapper or a register there is nothing to look in.
+	 * More than one match marks the object ambiguous, with a warning.
+	 *
+	 * @param SeedImport     $seed   The seed pass, positioned on the schema.
+	 * @param SeedDataObject $object The seed object, its lookup identifier set.
+	 *
+	 * @return ObjectEntity|null The stored object, or null when there is none.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function findStoredSeedObject(SeedImport $seed, SeedDataObject $object): ?ObjectEntity {
+		if ($this->routingMapper === null || $object->register === null) {
+			return null;
+		}
+
+		try {
+			return $this->routingMapper->find(
+				identifier: $object->identifier,
+				register: $object->register,
+				schema: $object->schema,
+				includeDeleted: false,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return null;
+		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+			$object->ambiguous = true;
+			$this->logger->warning(
+				message: "[ImportHandler] Multiple seed objects found with identifier '{$object->identifier}' - skipping to avoid duplication",
+				context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $seed->schemaSlug, 'identifier' => $object->identifier]
+			);
+			return null;
+		}
+	}//end findStoredSeedObject()
+
+	/**
+	 * Insert a new seed object through the routing mapper (else the object entity mapper), then its related items.
+	 *
+	 * Seed objects are written by the mapper directly: they are simple and
+	 * need none of ObjectService's cascading or validation.
+	 *
+	 * @param SeedImport     $seed   The seed pass, positioned on the schema.
+	 * @param SeedDataObject $object The seed object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function insertSeedObject(SeedImport $seed, SeedDataObject $object): void {
+		$createdObject = ($this->routingMapper ?? $this->objectEntityMapper)->insert($this->newSeedEntity(object: $object));
+		$seed->result['objects'][] = $createdObject->getId();
+		$this->logger->debug(
+			message: '[ImportHandler] Seed object imported',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $seed->schemaSlug, 'object_id' => $createdObject->getId(), 'slug' => $object->slug]
+		);
+
+		if (is_array($object->relatedItems) === true && count($object->relatedItems) > 0) {
+			$this->processRelatedItems(
+				object: $createdObject,
+				relatedItems: $object->relatedItems,
+				registerId: (int)$object->registerId,
+				schemaId: (int)$object->schema->getId(),
+				objectTitle: (string)($object->data['title'] ?? $object->slug),
+				hasUserContext: $seed->hasUserContext,
+				result: $seed->result
+			);
+		}
+	}//end insertSeedObject()
+
+	/**
+	 * The entity a new seed object is inserted as.
+	 *
+	 * The data leaves out the top-level uuid/slug the seed format carries as
+	 * metadata unless the schema declares them; the slug is set for future
+	 * idempotency checks (#4037).
+	 *
+	 * @param SeedDataObject $object The seed object.
+	 *
+	 * @return ObjectEntity The unsaved entity.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function newSeedEntity(SeedDataObject $object): ObjectEntity {
+		$objectEntity = new ObjectEntity();
+		$objectEntity->setUuid($object->data['uuid'] ?? \Symfony\Component\Uid\Uuid::v4()->toRfc4122());
+		$objectEntity->setSchema($object->schema->getId());
+		$objectEntity->setRegister($object->registerId);
+		$objectEntity->setObject($this->withoutSeedMetadataKeys(objectData: $object->data, schema: $object->schema));
+		$this->applySeedSlug(entity: $objectEntity, schema: $object->schema, objectData: $object->data, objectSlug: $object->slug);
+		$now = new DateTime();
+		$objectEntity->setCreated($now);
+		$objectEntity->setUpdated($now);
+		return $objectEntity;
+	}//end newSeedEntity()
 
 	/**
 	 * Create related Nextcloud items (files, notes, tasks) for a freshly
