@@ -934,16 +934,7 @@ class FlowRunService implements FlowRunServiceInterface {
 
 		$flow = $pinned;
 
-		$resuming = ($run->getStatus() === FlowRun::STATUS_SUSPENDED);
-		if ($resuming === true) {
-			// Stored items win on resume (below), but the subject's own fields
-			// on them are a trigger-time snapshot: see refreshSubjectItems().
-			$this->refreshSubjectItems(run: $run, subject: $subject);
-		}
-
-		$run->setStatus(FlowRun::STATUS_RUNNING);
-		$run->setUpdated(new DateTime());
-		$this->mapper->update($run);
+		$resuming = $this->markRunning(run: $run, subject: $subject);
 
 		$items = $seedItems;
 		$start = $startAt;
@@ -988,11 +979,7 @@ class FlowRunService implements FlowRunServiceInterface {
 				]
 			);
 
-			$run->setStatus(FlowRun::STATUS_FAILED);
-			$run->setError($e->getMessage());
-			$run->setUpdated(new DateTime());
-
-			return $this->mapper->update($run);
+			return $this->failRun(run: $run, error: $e);
 		} catch (Throwable $e) {
 			$this->releaseWalk(walk: $walk);
 			// The engine itself failing (rather than a step) is not something
@@ -1003,15 +990,51 @@ class FlowRunService implements FlowRunServiceInterface {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $run->getUuid(), 'error' => $e->getMessage()]
 			);
 
-			$run->setStatus(FlowRun::STATUS_FAILED);
-			$run->setError($e->getMessage());
-			$run->setUpdated(new DateTime());
-
-			return $this->mapper->update($run);
+			return $this->failRun(run: $run, error: $e);
 		}//end try
 
 		return $this->persistResult(run: $run, result: $result);
 	}//end execute()
+
+	/**
+	 * Mark a run as running, refreshing the subject's fields on a resumed run's items.
+	 *
+	 * Stored items win on resume, but the subject's own fields on them are a
+	 * trigger-time snapshot: see refreshSubjectItems().
+	 *
+	 * @param FlowRun $run The run.
+	 * @param object $subject The flow's subject.
+	 *
+	 * @return bool True when the run resumes from a suspension.
+	 */
+	private function markRunning(FlowRun $run, object $subject): bool {
+		$resuming = ($run->getStatus() === FlowRun::STATUS_SUSPENDED);
+		if ($resuming === true) {
+			$this->refreshSubjectItems(run: $run, subject: $subject);
+		}
+
+		$run->setStatus(FlowRun::STATUS_RUNNING);
+		$run->setUpdated(new DateTime());
+		$this->mapper->update($run);
+
+		return $resuming;
+	}//end markRunning()
+
+	/**
+	 * Record a run as failed with the error's message.
+	 *
+	 * @param FlowRun $run The run.
+	 * @param Throwable $error What stopped it.
+	 *
+	 * @return FlowRun The updated run.
+	 */
+	private function failRun(FlowRun $run, Throwable $error): FlowRun {
+		$run->setStatus(FlowRun::STATUS_FAILED);
+		$run->setError($error->getMessage());
+		$run->setUpdated(new DateTime());
+
+		return $this->mapper->update($run);
+	}//end failRun()
 
 	/**
 	 * Run exactly ONE named node of a queued run's published graph, and stop.
