@@ -28,11 +28,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\BookmarkLinkService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
@@ -43,6 +44,8 @@ use OCP\IRequest;
  * @package  OCA\OpenRegister\Controller
  */
 class BookmarkLinksController extends Controller {
+	use ObjectLinkActionsTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -76,26 +79,13 @@ class BookmarkLinksController extends Controller {
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
 		if ($this->bookmarkLinkService->isBookmarksAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Bookmarks app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'Nextcloud Bookmarks');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$results = $this->bookmarkLinkService->getLinkedBookmarks($object->getUuid());
-
-			return new JSONResponse(['results' => $results, 'total' => count($results)]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
-		}//end try
+		return $this->listLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->bookmarkLinkService->getLinkedBookmarks($object->getUuid()))
+		);
 	}//end index()
 
 	/**
@@ -116,36 +106,27 @@ class BookmarkLinksController extends Controller {
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
 		if ($this->bookmarkLinkService->isBookmarksAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Bookmarks app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'Nextcloud Bookmarks');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: function (ObjectEntity $object): JSONResponse {
+				$bookmarkId = (int)$this->request->getParam('bookmarkId', 0);
+				if ($bookmarkId === 0) {
+					return new JSONResponse(['error' => 'bookmarkId is required'], 400);
+				}
+
+				$link = $this->bookmarkLinkService->linkBookmark(
+					$object->getUuid(),
+					(int)$object->getRegister(),
+					(int)$object->getSchema(),
+					$bookmarkId
+				);
+
+				return new JSONResponse($link->jsonSerialize(), 201);
 			}
-
-			$bookmarkId = (int)$this->request->getParam('bookmarkId', 0);
-			if ($bookmarkId === 0) {
-				return new JSONResponse(['error' => 'bookmarkId is required'], 400);
-			}
-
-			$link = $this->bookmarkLinkService->linkBookmark(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$bookmarkId
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		);
 	}//end link()
 
 	/**
@@ -168,56 +149,47 @@ class BookmarkLinksController extends Controller {
 	 */
 	public function createNew(string $register, string $schema, string $id): JSONResponse {
 		if ($this->bookmarkLinkService->isBookmarksAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Bookmarks app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'Nextcloud Bookmarks');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: function (ObjectEntity $object): JSONResponse {
+				$title = (string)$this->request->getParam('title', '');
+				$url = (string)$this->request->getParam('url', '');
+				$description = (string)$this->request->getParam('description', '');
+				$rawTags = $this->request->getParam('tags', []);
 
-			$title = (string)$this->request->getParam('title', '');
-			$url = (string)$this->request->getParam('url', '');
-			$description = (string)$this->request->getParam('description', '');
-			$rawTags = $this->request->getParam('tags', []);
+				if (trim($title) === '') {
+					return new JSONResponse(['error' => 'title is required'], 400);
+				}
 
-			if (trim($title) === '') {
-				return new JSONResponse(['error' => 'title is required'], 400);
-			}
+				if (trim($url) === '') {
+					return new JSONResponse(['error' => 'url is required'], 400);
+				}
 
-			if (trim($url) === '') {
-				return new JSONResponse(['error' => 'url is required'], 400);
-			}
-
-			$tags = [];
-			if (is_array($rawTags) === true) {
-				foreach ($rawTags as $tag) {
-					if (is_string($tag) === true) {
-						$tags[] = $tag;
+				$tags = [];
+				if (is_array($rawTags) === true) {
+					foreach ($rawTags as $tag) {
+						if (is_string($tag) === true) {
+							$tags[] = $tag;
+						}
 					}
 				}
+
+				$link = $this->bookmarkLinkService->createAndLinkBookmark(
+					$object->getUuid(),
+					(int)$object->getRegister(),
+					(int)$object->getSchema(),
+					$title,
+					$url,
+					$description,
+					$tags
+				);
+
+				return new JSONResponse($link->jsonSerialize(), 201);
 			}
-
-			$link = $this->bookmarkLinkService->createAndLinkBookmark(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$title,
-				$url,
-				$description,
-				$tags
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		);
 	}//end createNew()
 
 	/**
@@ -237,26 +209,17 @@ class BookmarkLinksController extends Controller {
 	 */
 	public function destroy(string $register, string $schema, string $id, string $bookmarkId): JSONResponse {
 		if ($this->bookmarkLinkService->isBookmarksAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Bookmarks app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'Nextcloud Bookmarks');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: function (ObjectEntity $object) use ($bookmarkId): JSONResponse {
+				$this->bookmarkLinkService->unlinkBookmark($object->getUuid(), (int)$bookmarkId);
+
+				return new JSONResponse(['success' => true]);
 			}
-
-			$this->bookmarkLinkService->unlinkBookmark($object->getUuid(), (int)$bookmarkId);
-
-			return new JSONResponse(['success' => true]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		);
 	}//end destroy()
 
 	/**
@@ -275,10 +238,7 @@ class BookmarkLinksController extends Controller {
 	 */
 	public function available(): JSONResponse {
 		if ($this->bookmarkLinkService->isBookmarksAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Bookmarks app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'Nextcloud Bookmarks');
 		}
 
 		$search = $this->request->getParam('search');
@@ -306,28 +266,6 @@ class BookmarkLinksController extends Controller {
 	}//end available()
 
 	/**
-	 * Resolve an OR object from register/schema/id.
-	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object id.
-	 *
-	 * @return ObjectEntity|null
-	 *
-	 * @throws DoesNotExistException When no such object exists. Deliberately propagated rather
-	 *                               than caught: every call site already wraps this helper and translates it to a 404.
-	 *                               Swallowing it here would collapse "no such object" into the same null this method
-	 *                               returns for other reasons, which the caller could no longer tell apart.
-	 */
-	private function validateObject(string $register, string $schema, string $id): ?ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
-
-		return $this->objectService->getObject();
-	}//end validateObject()
-
-	/**
 	 * Map a service-layer Exception to a JSONResponse.
 	 *
 	 * Exception codes carry HTTP intent:
@@ -341,7 +279,7 @@ class BookmarkLinksController extends Controller {
 	 *
 	 * @return JSONResponse
 	 */
-	private function mapException(Exception $exception): JSONResponse {
+	protected function mapException(Exception $exception): JSONResponse {
 		$code = $exception->getCode();
 		if ($code === 409) {
 			return new JSONResponse(['error' => $exception->getMessage()], 409);

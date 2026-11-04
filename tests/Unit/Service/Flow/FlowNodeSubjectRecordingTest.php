@@ -51,6 +51,8 @@ use PHPUnit\Framework\TestCase;
  * Wiring tests for the two recording nodes.
  *
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlan
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteItem
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses \OCA\OpenRegister\Service\Flow\FlowNodeResumeState
