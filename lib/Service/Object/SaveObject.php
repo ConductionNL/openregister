@@ -64,6 +64,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceCheck;
+use OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanRun;
 use OCA\OpenRegister\Service\Object\SaveObject\WriteBackSettings;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
@@ -5328,8 +5329,6 @@ class SaveObject {
 	 *
 	 * @throws ValidationException If a referenced object does not exist.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple property type checks
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function validateReferences(
@@ -5338,15 +5337,11 @@ class SaveObject {
 		?string $register,
 		?array $oldData = null,
 	): void {
-		// Operator-controlled admin bypass: when the current user is in
-		// the admin group AND the bypass flag is on (default true), skip
-		// reference existence validation entirely. Mirrors the
-		// `MultiTenancyTrait::isCurrentUserAdmin()` short-circuit so
-		// admins can repair broken cross-references during migrations or
-		// bulk imports without tripping 422s. Operators can flip the
-		// flag off via `occ config:app:set openregister
-		// reference_validation_admin_bypass --value=false` to enforce
-		// validation for every user.
+		// Operator-controlled admin bypass: an admin with the bypass flag on
+		// (default true) skips reference existence validation, so admins can
+		// repair broken cross-references during migrations or bulk imports.
+		// `occ config:app:set openregister reference_validation_admin_bypass
+		// --value=false` enforces validation for every user.
 		if ($this->shouldBypassValidationForAdmin() === true) {
 			return;
 		}
@@ -5356,121 +5351,126 @@ class SaveObject {
 			return;
 		}
 
+		$run = new ReferencePropertyRun();
+		$run->data = $data;
+		$run->oldData = $oldData;
+		$run->register = $register;
 		foreach ($properties as $propertyName => $property) {
-			// Resolve the configured strictness level for this property.
-			// Returns null when validation is not enabled — short-circuit
-			// so legacy `validateReference: false` (or absent) costs zero.
-			$strictness = $this->resolveReferenceStrictness(property: $property);
-			if ($strictness === null) {
-				continue;
-			}
-
-			// Determine the $ref target.
-			$ref = $property['$ref'] ?? $property['items']['$ref'] ?? null;
-			$isArray = isset($property['type']) && $property['type'] === 'array';
-
-			if ($ref === null) {
-				continue;
-			}
-
-			// Get the value from data.
-			$value = $data[$propertyName] ?? null;
-
-			// Skip null or empty values (non-required property).
-			if ($value === null || $value === '') {
-				continue;
-			}
-
-			// On updates, skip validation for unchanged values.
-			if ($oldData !== null && array_key_exists($propertyName, $oldData) === true) {
-				if ($oldData[$propertyName] === $value) {
-					continue;
-				}
-			}
-
-			// Resolve the target register: property-level config or object's register.
-			$targetRegister = $property['register'] ?? $register;
-
-			// Normalize to array for uniform validation.
-			$uuidsToValidate = [$value];
-			if ($isArray === true && is_array($value) === true) {
-				$uuidsToValidate = $value;
-			}
-
-			foreach ($uuidsToValidate as $uuid) {
-				if (empty($uuid) === true) {
-					continue;
-				}
-
-				try {
-					// Cross-app references can be expressed as HTTP(S)
-					// URLs (the canonical resource address of an object
-					// owned by another app or instance). Components are
-					// designed to operate individually — component A may
-					// not have read access to component B for security
-					// or tenancy reasons, so we MUST NOT fetch the URL
-					// to verify existence. Instead, validate syntax only:
-					// scheme is http/https and host parses. Decision
-					// recorded in `reference-existence-validation`
-					// tasks.md (2026-05-02).
-					if ($this->looksLikeHttpUrl(value: (string)$uuid) === true) {
-						$this->validateExternalUrlSyntax(
-							propertyName: $propertyName,
-							value: (string)$uuid,
-							schemaRef: $ref,
-							register: $targetRegister
-						);
-						continue;
-					}
-
-					$this->validateReferenceExists(
-						propertyName: $propertyName,
-						uuid: (string)$uuid,
-						schemaRef: $ref,
-						register: $targetRegister
-					);
-
-					// And it has to be one the picker would have offered.
-					// Costs nothing for a property that declares no filter:
-					// the reader returns null before any read is made.
-					$this->assertReferenceMatchesFilter(
-						propertyName: $propertyName,
-						property: $property,
-						record: $data,
-						uuid: (string)$uuid,
-						schemaRef: $ref,
-						register: $targetRegister
-					);
-				} catch (ReferenceValidationException $exception) {
-					// Strict mode (`error`) re-raises the 422 so the save
-					// is rejected. `warn` mode swallows the exception
-					// after the failure event has already fired in
-					// `validateReferenceExists()` — listeners still see
-					// the miss, the warning is logged for ops visibility,
-					// and the save proceeds. This lets schema authors
-					// adopt reference validation gradually on registers
-					// with known dirty data without forcing every save
-					// through an HTTP 422.
-					if ($strictness === 'warn') {
-						$this->logger->warning(
-							message: '[SaveObject] Reference validation failed (warn-only)',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'property' => $propertyName,
-								'uuid' => $uuid,
-								'targetSchema' => $exception->getTargetSchemaSlug(),
-								'targetRegister' => $exception->getTargetRegister(),
-							]
-						);
-						continue;
-					}
-
-					throw $exception;
-				}//end try
-			}//end foreach
-		}//end foreach
+			$run->propertyName = $propertyName;
+			$run->property = $property;
+			$this->validatePropertyReferences(run: $run);
+		}
 	}//end validateReferences()
+
+	/**
+	 * Validate the references one property holds, when its schema enables validation.
+	 *
+	 * Null or empty values, and values unchanged on an update, are skipped.
+	 * Legacy `validateReference: false` (or absent) costs nothing.
+	 *
+	 * @param ReferencePropertyRun $run The validation pass, on one property.
+	 *
+	 * @return void
+	 *
+	 * @throws ValidationException If a referenced object does not exist in strict mode.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function validatePropertyReferences(ReferencePropertyRun $run): void {
+		$property = $run->property;
+		$run->strictness = $this->resolveReferenceStrictness(property: $property);
+		$ref = $property['$ref'] ?? $property['items']['$ref'] ?? null;
+		$value = $run->data[$run->propertyName] ?? null;
+		if ($run->strictness === null || $ref === null || $value === null || $value === '') {
+			return;
+		}
+
+		if ($run->oldData !== null && array_key_exists($run->propertyName, $run->oldData) === true
+			&& $run->oldData[$run->propertyName] === $value
+		) {
+			return;
+		}
+
+		$run->ref = $ref;
+		$run->targetRegister = $property['register'] ?? $run->register;
+
+		$uuidsToValidate = [$value];
+		if (isset($property['type']) && $property['type'] === 'array' && is_array($value) === true) {
+			$uuidsToValidate = $value;
+		}
+
+		foreach ($uuidsToValidate as $uuid) {
+			if (empty($uuid) === false) {
+				$this->validateOneReference(run: $run, uuid: $uuid);
+			}
+		}
+	}//end validatePropertyReferences()
+
+	/**
+	 * Validate one reference value: URL syntax for a cross-app URL, else existence and the picker filter.
+	 *
+	 * A cross-app reference expressed as an HTTP(S) URL is never fetched (a
+	 * component may not read another for security or tenancy reasons); only
+	 * its syntax is checked. In `warn` mode a refusal is logged after its
+	 * failure event fired, and the save proceeds, so schema authors can adopt
+	 * validation gradually on registers with known dirty data.
+	 *
+	 * @param ReferencePropertyRun $run  The validation pass, on one property.
+	 * @param mixed                $uuid The reference value.
+	 *
+	 * @return void
+	 *
+	 * @throws ReferenceValidationException In strict mode, when the reference is refused.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function validateOneReference(ReferencePropertyRun $run, mixed $uuid): void {
+		try {
+			if ($this->looksLikeHttpUrl(value: (string)$uuid) === true) {
+				$this->validateExternalUrlSyntax(
+					propertyName: $run->propertyName,
+					value: (string)$uuid,
+					schemaRef: $run->ref,
+					register: $run->targetRegister
+				);
+				return;
+			}
+
+			$this->validateReferenceExists(
+				propertyName: $run->propertyName,
+				uuid: (string)$uuid,
+				schemaRef: $run->ref,
+				register: $run->targetRegister
+			);
+
+			// And it has to be one the picker would have offered; a property
+			// that declares no filter costs nothing.
+			$this->assertReferenceMatchesFilter(
+				propertyName: $run->propertyName,
+				property: $run->property,
+				record: $run->data,
+				uuid: (string)$uuid,
+				schemaRef: $run->ref,
+				register: $run->targetRegister
+			);
+		} catch (ReferenceValidationException $exception) {
+			if ($run->strictness !== 'warn') {
+				throw $exception;
+			}
+
+			$this->logger->warning(
+				message: '[SaveObject] Reference validation failed (warn-only)',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'property' => $run->propertyName,
+					'uuid' => $uuid,
+					'targetSchema' => $exception->getTargetSchemaSlug(),
+					'targetRegister' => $exception->getTargetRegister(),
+				]
+			);
+		}//end try
+	}//end validateOneReference()
 
 	/**
 	 * Resolve the configured strictness level for a schema property.
