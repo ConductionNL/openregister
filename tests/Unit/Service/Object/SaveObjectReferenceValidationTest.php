@@ -45,7 +45,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
  * Unit tests for the admin-bypass + event dispatch behaviour added to
@@ -87,7 +87,7 @@ class SaveObjectReferenceValidationTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 			tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
 			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			arrayLoader: new ArrayLoader(),
+			permissionHandler: $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class),
 			groupManager: $groupManager,
 			appConfig: $appConfig,
 			eventDispatcher: $eventDispatcher,
@@ -637,7 +637,7 @@ class SaveObjectReferenceValidationTest extends TestCase {
 			logger: $logger,
 			tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
 			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			arrayLoader: new ArrayLoader(),
+			permissionHandler: $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class),
 			groupManager: $this->makeAdminGroupManager(false),
 			appConfig: $this->makeAppConfig('true'),
 			eventDispatcher: $this->createMock(IEventDispatcher::class),
