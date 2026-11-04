@@ -5385,71 +5385,16 @@ class RenderObject {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function batchPreloadFileObjects(array $entities): void {
-		if (empty($entities) === true) {
-			return;
-		}
-
 		// 1) Collect all file ids referenced by file-typed properties across the page.
 		$allFileIds = [];
 		foreach ($entities as $entity) {
-			if ($entity instanceof ObjectEntity === false) {
-				continue;
+			if ($entity instanceof ObjectEntity === true) {
+				$allFileIds += $this->referencedFileIds(entity: $entity);
 			}
-
-			$schema = $this->getSchema(id: $entity->getSchema());
-			if ($schema === null) {
-				continue;
-			}
-
-			$schemaProperties = $schema->getProperties() ?? [];
-			$objectData = $entity->getObject();
-			if (is_array($objectData) === false) {
-				continue;
-			}
-
-			foreach ($schemaProperties as $propertyName => $propertyConfig) {
-				if (is_array($propertyConfig) === false
-					|| $this->isFilePropertyConfig(propertyConfig: $propertyConfig) === false
-				) {
-					continue;
-				}
-
-				$value = ($objectData[$propertyName] ?? null);
-				if ($value === null) {
-					continue;
-				}
-
-				// Base64-format properties read content, not the formatted file
-				// object/tags, so they are not part of this prefetch.
-				$isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
-				$fileConfig = $propertyConfig;
-				if ($isArrayProperty === true) {
-					$fileConfig = ($propertyConfig['items'] ?? []);
-				}
-
-				if (($fileConfig['format'] ?? '') === 'base64') {
-					continue;
-				}
-
-				$candidates = $value;
-				if (is_array($value) === false) {
-					$candidates = [$value];
-				}
-
-				foreach ($candidates as $candidate) {
-					if (is_numeric($candidate) === true
-						|| (is_string($candidate) === true && ctype_digit($candidate) === true)
-					) {
-						$allFileIds[(int)$candidate] = (int)$candidate;
-					}
-				}
-			}//end foreach
-		}//end foreach
+		}
 
 		if (empty($allFileIds) === true) {
 			return;
@@ -5461,59 +5406,12 @@ class RenderObject {
 			// 2) Batch-load all files in one query.
 			$filesById = $this->fileMapper->getFilesByIds(fileIds: $fileIds);
 
-			// 3) Batch-load all tag ids for all files in one query.
-			$stringFileIds = array_map(static fn ($id) => (string)$id, $fileIds);
-
-			// Numeric-string keys are coerced to int by PHP — see the longer
-			// note on the other getTagIdsForObjects() call in this class.
-			// phpcs:ignore Squiz.Commenting.InlineComment.DocBlock -- PHPStan only reads @var from a /** */ block.
-			/** @var array<int|string, list<string>> $allTagIdsPerFile */
-			$allTagIdsPerFile = $this->systemTagMapper->getTagIdsForObjects(
-				objIds: $stringFileIds,
-				objectType: 'files'
-			);
-
-			// Resolve all unique tag ids to names in one call.
-			$uniqueTagIds = [];
-			foreach ($allTagIdsPerFile as $fileTagIds) {
-				foreach ($fileTagIds as $tagId) {
-					$uniqueTagIds[$tagId] = true;
-				}
-			}
-
-			$tagNameMap = [];
-			if (empty($uniqueTagIds) === false) {
-				$tags = $this->systemTagManager->getTagsByIds(tagIds: array_keys($uniqueTagIds));
-				foreach ($tags as $tag) {
-					$name = $tag->getName();
-					if (str_starts_with($name, 'object:') === false) {
-						$tagNameMap[$tag->getId()] = $name;
-					}
-				}
-			}
-
-			// 4) Populate the request-scoped tag cache for every requested file id.
-			foreach ($stringFileIds as $fileIdStr) {
-				$labels = [];
-				foreach (($allTagIdsPerFile[$fileIdStr] ?? []) as $tagId) {
-					if (isset($tagNameMap[$tagId]) === true) {
-						$labels[] = $tagNameMap[$tagId];
-					}
-				}
-
-				$this->fileTagsCache[$fileIdStr] = $labels;
-			}
+			// 3) and 4) Batch-load and cache the tags of every requested file.
+			$this->cacheFileTags(fileIds: $fileIds);
 
 			// 5) Populate the request-scoped file-object cache (null for missing files).
 			foreach ($fileIds as $fileId) {
-				$fileIdStr = (string)$fileId;
-				$record = ($filesById[$fileIdStr] ?? null);
-				if ($record === null) {
-					$this->fileObjectCache[$fileIdStr] = null;
-					continue;
-				}
-
-				$this->fileObjectCache[$fileIdStr] = $this->formatFileRecord(fileRecord: $record);
+				$this->cacheFileObject(fileIdStr: (string)$fileId, record: ($filesById[(string)$fileId] ?? null));
 			}
 		} catch (Exception $e) {
 			// A prefetch failure must never break rendering — per-row paths will simply
@@ -5524,4 +5422,159 @@ class RenderObject {
 			);
 		}//end try
 	}//end batchPreloadFileObjects()
+
+	/**
+	 * The file ids an entity references through its file-typed properties, keyed by id.
+	 *
+	 * @param ObjectEntity $entity The entity about to be rendered.
+	 *
+	 * @return array<int, int> The file ids, keyed by themselves.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function referencedFileIds(ObjectEntity $entity): array {
+		$schema = $this->getSchema(id: $entity->getSchema());
+		$objectData = $entity->getObject();
+		if ($schema === null || is_array($objectData) === false) {
+			return [];
+		}
+
+		$fileIds = [];
+		foreach (($schema->getProperties() ?? []) as $propertyName => $propertyConfig) {
+			if (is_array($propertyConfig) === true
+				&& $this->isFilePropertyConfig(propertyConfig: $propertyConfig) === true
+			) {
+				$fileIds += self::fileIdsOfValue(propertyConfig: $propertyConfig, value: ($objectData[$propertyName] ?? null));
+			}
+		}
+
+		return $fileIds;
+	}//end referencedFileIds()
+
+	/**
+	 * The numeric file ids in one file property's value, keyed by id.
+	 *
+	 * Base64-format properties read content, not the formatted file
+	 * object/tags, so they are not part of the prefetch.
+	 *
+	 * @param array $propertyConfig The file property's configuration.
+	 * @param mixed $value          The property's value.
+	 *
+	 * @return array<int, int> The file ids, keyed by themselves.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function fileIdsOfValue(array $propertyConfig, mixed $value): array {
+		$fileConfig = $propertyConfig;
+		if (($propertyConfig['type'] ?? '') === 'array') {
+			$fileConfig = ($propertyConfig['items'] ?? []);
+		}
+
+		if ($value === null || ($fileConfig['format'] ?? '') === 'base64') {
+			return [];
+		}
+
+		$candidates = $value;
+		if (is_array($value) === false) {
+			$candidates = [$value];
+		}
+
+		$fileIds = [];
+		foreach ($candidates as $candidate) {
+			if (is_numeric($candidate) === true
+				|| (is_string($candidate) === true && ctype_digit($candidate) === true)
+			) {
+				$fileIds[(int)$candidate] = (int)$candidate;
+			}
+		}
+
+		return $fileIds;
+	}//end fileIdsOfValue()
+
+	/**
+	 * Load the tags of the given files in one batch and put their visible names in the request-scoped tag cache.
+	 *
+	 * @param int[] $fileIds The requested file ids.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cacheFileTags(array $fileIds): void {
+		$stringFileIds = array_map(static fn ($id) => (string)$id, $fileIds);
+
+		// Numeric-string keys are coerced to int by PHP — see the longer
+		// note on the other getTagIdsForObjects() call in this class.
+		// phpcs:ignore Squiz.Commenting.InlineComment.DocBlock -- PHPStan only reads @var from a /** */ block.
+		/** @var array<int|string, list<string>> $allTagIdsPerFile */
+		$allTagIdsPerFile = $this->systemTagMapper->getTagIdsForObjects(
+			objIds: $stringFileIds,
+			objectType: 'files'
+		);
+
+		$tagNameMap = $this->visibleTagNames(tagIdsPerFile: $allTagIdsPerFile);
+		foreach ($stringFileIds as $fileIdStr) {
+			$labels = [];
+			foreach (($allTagIdsPerFile[$fileIdStr] ?? []) as $tagId) {
+				if (isset($tagNameMap[$tagId]) === true) {
+					$labels[] = $tagNameMap[$tagId];
+				}
+			}
+
+			$this->fileTagsCache[$fileIdStr] = $labels;
+		}
+	}//end cacheFileTags()
+
+	/**
+	 * The names of the tags used by the given files, by tag id, without the internal `object:` tags.
+	 *
+	 * All unique tag ids are resolved to names in one call.
+	 *
+	 * @param array $tagIdsPerFile The tag ids per file id.
+	 *
+	 * @return array<string, string> The tag names, by tag id.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function visibleTagNames(array $tagIdsPerFile): array {
+		$uniqueTagIds = [];
+		foreach ($tagIdsPerFile as $fileTagIds) {
+			foreach ($fileTagIds as $tagId) {
+				$uniqueTagIds[$tagId] = true;
+			}
+		}
+
+		if (empty($uniqueTagIds) === true) {
+			return [];
+		}
+
+		$tagNameMap = [];
+		foreach ($this->systemTagManager->getTagsByIds(tagIds: array_keys($uniqueTagIds)) as $tag) {
+			$name = $tag->getName();
+			if (str_starts_with($name, 'object:') === false) {
+				$tagNameMap[$tag->getId()] = $name;
+			}
+		}
+
+		return $tagNameMap;
+	}//end visibleTagNames()
+
+	/**
+	 * Put one file's formatted object in the request-scoped file-object cache, or null for a missing file.
+	 *
+	 * @param string     $fileIdStr The file id.
+	 * @param array|null $record    The file record, or null when the file is missing.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cacheFileObject(string $fileIdStr, ?array $record): void {
+		if ($record === null) {
+			$this->fileObjectCache[$fileIdStr] = null;
+			return;
+		}
+
+		$this->fileObjectCache[$fileIdStr] = $this->formatFileRecord(fileRecord: $record);
+	}//end cacheFileObject()
 }//end class

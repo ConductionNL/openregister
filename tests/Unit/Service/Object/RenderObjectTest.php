@@ -6698,4 +6698,120 @@ class RenderObjectTest extends TestCase {
 
 		$this->assertSame(['name' => 'Test'], $this->invokePrivate('handleInversedProperties', [$entity, ['name' => 'Test'], 0]));
 	}
+
+	// =========================================================================
+	// batchPreloadFileObjects — page-wide file and tag prefetch
+	// =========================================================================
+
+	/**
+	 * A tag double with an id and a name.
+	 *
+	 * @param string $id   The tag id.
+	 * @param string $name The tag name.
+	 *
+	 * @return ISystemTag
+	 */
+	private function preloadTag(string $id, string $name): ISystemTag {
+		$tag = $this->createMock(ISystemTag::class);
+		$tag->method('getId')->willReturn($id);
+		$tag->method('getName')->willReturn($name);
+		return $tag;
+	}
+
+	/**
+	 * The private request caches the prefetch fills.
+	 *
+	 * @param string $name The cache property.
+	 *
+	 * @return array
+	 */
+	private function preloadCache(string $name): array {
+		$prop = (new ReflectionClass($this->handler))->getProperty($name);
+		$prop->setAccessible(true);
+		return $prop->getValue($this->handler);
+	}
+
+	/**
+	 * The prefetch loads every numeric file id of every file property of the page once, with tags, skipping base64.
+	 *
+	 * @return void
+	 */
+	public function testBatchPreloadFileObjectsCachesFilesAndTagsForThePage(): void {
+		$schema = $this->createSchema(1, 'files-schema');
+		$schema->setProperties([
+			'doc' => ['type' => 'file'],
+			'docs' => ['type' => 'array', 'items' => ['type' => 'file']],
+			'raw' => ['type' => 'file', 'format' => 'base64'],
+			'raws' => ['type' => 'array', 'items' => ['type' => 'file', 'format' => 'base64']],
+			'name' => ['type' => 'string'],
+			'odd' => 'not-a-config',
+		]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$one = $this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001', ['doc' => 5, 'docs' => ['7', 'x', 5, 9.0], 'raw' => 11, 'raws' => [12], 'name' => '13', 'odd' => 14]);
+		$two = $this->createBasicEntity(2, 'aaaaaaaa-0000-0000-0000-000000000002', ['doc' => '3', 'docs' => null]);
+		$three = $this->createBasicEntity(3, 'aaaaaaaa-0000-0000-0000-000000000003', ['doc' => (object)['id' => 4]]);
+
+		$this->fileMapper->expects($this->once())->method('getFilesByIds')->with([5, 7, 9, 3])->willReturn([
+			'5' => ['fileid' => 5, 'path' => '/a/five.pdf', 'name' => 'five.pdf', 'size' => '10'],
+			'3' => ['fileid' => 3, 'path' => '/a/three.txt', 'name' => 'three.txt', 'size' => 3, 'mimetype' => 'text/plain'],
+		]);
+		$this->systemTagMapper->expects($this->once())->method('getTagIdsForObjects')
+			->with(['5', '7', '9', '3'], 'files')
+			->willReturn([5 => ['t1', 't2'], 3 => ['t2', 't3'], 9 => []]);
+		$this->systemTagManager->expects($this->once())->method('getTagsByIds')->with(['t1', 't2', 't3'])->willReturn([
+			$this->preloadTag('t1', 'invoice'),
+			$this->preloadTag('t2', 'object:internal'),
+			$this->preloadTag('t3', 'public'),
+		]);
+
+		$this->invokePrivate('batchPreloadFileObjects', [[$one, 'not-an-entity', $two, $three]]);
+
+		$this->assertSame(['5' => ['invoice'], '7' => [], '9' => [], '3' => ['public']], $this->preloadCache('fileTagsCache'));
+		$files = $this->preloadCache('fileObjectCache');
+		$this->assertSame(['5', '7', '9', '3'], array_map('strval', array_keys($files)));
+		$this->assertNull($files['7']);
+		$this->assertNull($files['9']);
+		$this->assertSame(['5', 'five.pdf', 'pdf', 10, ['invoice']], [$files['5']['id'], $files['5']['title'], $files['5']['extension'], $files['5']['size'], $files['5']['labels']]);
+		$this->assertSame(['3', 'text/plain', ['public']], [$files['3']['id'], $files['3']['type'], $files['3']['labels']]);
+	}
+
+	/**
+	 * A page without file ids asks nothing, and a failing prefetch leaves the caches for per-row lookups.
+	 *
+	 * @return void
+	 */
+	public function testBatchPreloadFileObjectsAsksNothingWithoutFileIdsAndSurvivesAFailure(): void {
+		$schema = $this->createSchema(1, 'files-schema');
+		$schema->setProperties(['doc' => ['type' => 'file']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->fileMapper->expects($this->once())->method('getFilesByIds')->willThrowException(new Exception('db down'));
+		$this->systemTagMapper->expects($this->never())->method('getTagIdsForObjects');
+
+		$this->invokePrivate('batchPreloadFileObjects', [[]]);
+		$this->invokePrivate('batchPreloadFileObjects', [[$this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001', ['doc' => null])]]);
+		$this->invokePrivate('batchPreloadFileObjects', [[$this->createBasicEntity(2, 'aaaaaaaa-0000-0000-0000-000000000002', ['doc' => 8])]]);
+
+		$this->assertSame([], $this->preloadCache('fileTagsCache'));
+		$this->assertSame([], $this->preloadCache('fileObjectCache'));
+	}
+
+	/**
+	 * Files without tags never ask the tag manager.
+	 *
+	 * @return void
+	 */
+	public function testBatchPreloadFileObjectsSkipsTheTagLookupWhenNoFileHasTags(): void {
+		$schema = $this->createSchema(1, 'files-schema');
+		$schema->setProperties(['doc' => ['type' => 'file']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->fileMapper->method('getFilesByIds')->willReturn([]);
+		$this->systemTagMapper->method('getTagIdsForObjects')->willReturn([]);
+		$this->systemTagManager->expects($this->never())->method('getTagsByIds');
+
+		$this->invokePrivate('batchPreloadFileObjects', [[$this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001', ['doc' => 8])]]);
+
+		$this->assertSame(['8' => []], $this->preloadCache('fileTagsCache'));
+		$this->assertSame(['8' => null], $this->preloadCache('fileObjectCache'));
+	}
 }
