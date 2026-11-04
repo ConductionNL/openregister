@@ -133,9 +133,7 @@ class MigrationPacksControllerTest extends TestCase {
 			'openregister',
 			$request,
 			$service ?? $this->service,
-			$this->userSession,
-			$this->groupManager,
-			$this->logger,
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, $this->groupManager, $this->logger),
 			new MigrationPackRequestReader(new PackDefinitionValidator($this->passThroughL10n()), $this->l10n),
 			new MigrationPackErrorResponder($this->l10n, $this->logger)
 		);
