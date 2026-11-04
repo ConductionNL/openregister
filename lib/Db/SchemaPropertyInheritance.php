@@ -169,7 +169,7 @@ final class SchemaPropertyInheritance {
 	 */
 	private function atPath(string $path): self {
 		return new self(schemaId: $this->schemaId, path: $path);
-	}//end at()
+	}//end atPath()
 
 	/**
 	 * Merge one child property definition over the parent's definition at this path.
