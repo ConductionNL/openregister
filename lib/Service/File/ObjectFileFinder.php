@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\File;
 
-use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\File;
@@ -68,7 +67,7 @@ final class ObjectFileFinder
 	 *
 	 * @return File The file, its ownership checked.
 	 *
-	 * @throws Exception When no file is found, or the node is not a file.
+	 * @throws \Exception When no file is found, or the node is not a file.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -88,7 +87,7 @@ final class ObjectFileFinder
 	 *
 	 * @return File The file.
 	 *
-	 * @throws Exception When no file is found, or the node is not a file.
+	 * @throws \Exception When no file is found, or the node is not a file.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -108,7 +107,7 @@ final class ObjectFileFinder
 	 *
 	 * @return File The file.
 	 *
-	 * @throws Exception When the node is not a file.
+	 * @throws \Exception When the node is not a file.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -119,7 +118,7 @@ final class ObjectFileFinder
 				message: "{$lookup->prefix} Found node is not a File instance, it's a: $nodeClass",
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			throw new Exception('File not found.');
+			throw new \Exception('File not found.');
 		}
 
 		$this->fileService->checkOwnership($node);
@@ -133,7 +132,7 @@ final class ObjectFileFinder
 	 *
 	 * @return File The file.
 	 *
-	 * @throws Exception When there is no file with that id.
+	 * @throws \Exception When there is no file with that id.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -142,7 +141,7 @@ final class ObjectFileFinder
 		$fileNode = $this->fileService->getFile(object: $lookup->object, file: $lookup->file);
 		if ($fileNode === null) {
 			$this->logger->error(message: "{$lookup->prefix} No file found with ID: {$lookup->file}", context: ['file' => __FILE__, 'line' => __LINE__]);
-			throw new Exception("File with ID {$lookup->file} does not exist");
+			throw new \Exception("File with ID {$lookup->file} does not exist");
 		}
 
 		$foundMsg = "{$lookup->prefix} Found file by ID: " . $fileNode->getName();
@@ -158,7 +157,7 @@ final class ObjectFileFinder
 	 *
 	 * @return Node The node.
 	 *
-	 * @throws Exception When the folder or the file is not found.
+	 * @throws \Exception When the folder or the file is not found.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -184,7 +183,7 @@ final class ObjectFileFinder
 	 *
 	 * @return Folder The object's folder.
 	 *
-	 * @throws Exception When the object has no folder.
+	 * @throws \Exception When the object has no folder.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -196,7 +195,7 @@ final class ObjectFileFinder
 				message: "{$lookup->prefix} Could not get object folder for object: $objectId",
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			throw new Exception('Object folder not found.');
+			throw new \Exception('Object folder not found.');
 		}
 
 		$this->logger->debug(
@@ -227,7 +226,7 @@ final class ObjectFileFinder
 				message: "{$lookup->prefix} Files in object folder: " . json_encode($objectFileNames),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-		} catch (Exception $e) {
+		} catch (\Exception $e) {
 			$this->logger->error(
 				message: "{$lookup->prefix} Error listing object folder contents: " . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
@@ -242,7 +241,7 @@ final class ObjectFileFinder
 	 *
 	 * @return Node The node.
 	 *
-	 * @throws Exception When neither the name nor the full path is found.
+	 * @throws \Exception When neither the name nor the full path is found.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -258,10 +257,10 @@ final class ObjectFileFinder
 			return $fileNode;
 		} catch (NotFoundException $e) {
 			return $this->nodeAtFullPath(lookup: $lookup);
-		} catch (Exception $e) {
+		} catch (\Exception $e) {
 			$errMsg = "{$lookup->prefix} Unexpected error getting file from object folder: " . $e->getMessage();
 			$this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-			throw new Exception('File not found.');
+			throw new \Exception('File not found.');
 		}
 	}//end nodeInObjectFolder()
 
@@ -272,7 +271,7 @@ final class ObjectFileFinder
 	 *
 	 * @return Node The node.
 	 *
-	 * @throws Exception When the full path is not found either.
+	 * @throws \Exception When the full path is not found either.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -289,7 +288,7 @@ final class ObjectFileFinder
 			$errMsg = "{$lookup->prefix} File '{$lookup->fileName}' and '{$lookup->filePath}' not found";
 			$errMsg .= ' in object folder. NotFoundException: ' . $e2->getMessage();
 			$this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-			throw new Exception('File not found.');
+			throw new \Exception('File not found.');
 		}
 	}//end nodeAtFullPath()
 }//end class
