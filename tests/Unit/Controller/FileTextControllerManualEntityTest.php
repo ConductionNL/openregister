@@ -170,6 +170,23 @@ class FileTextControllerManualEntityTest extends TestCase {
 	}//end testWrongContentTypeReturns415()
 
 	/**
+	 * The wholeWord and caseSensitive flags of the body reach the service, defaulting to true.
+	 *
+	 * @return void
+	 */
+	public function testMatchFlagsReachTheService(): void {
+		$this->setupRequest(body: ['value' => 'Jan', 'type' => 'PERSON', 'wholeWord' => false, 'caseSensitive' => 0]);
+		$this->setupAuthenticatedUser();
+
+		$this->manualEntityService->expects($this->once())
+			->method('addManualEntity')
+			->with(42, 'Jan', 'PERSON', false, false, $this->anything())
+			->willThrowException(new \RuntimeException('stop'));
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $this->controller->addManualEntity(fileId: 42)->getStatus());
+	}//end testMatchFlagsReachTheService()
+
+	/**
 	 * No session user → 401.
 	 *
 	 * @return void
