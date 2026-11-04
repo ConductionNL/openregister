@@ -26,6 +26,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Controller\Support\ConversationControllerServices;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
@@ -118,37 +119,23 @@ class ConversationController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request Request object
-	 * @param ConversationMapper $conversationMapper Conversation mapper
-	 * @param MessageMapper $messageMapper Message mapper
-	 * @param FeedbackMapper $feedbackMapper Feedback mapper
-	 * @param AgentMapper $agentMapper Agent mapper
-	 * @param OrganisationService $organisationService Organisation service
-	 * @param ChatService $chatService Chat service
-	 * @param LoggerInterface $logger Logger
+	 * @param ConversationControllerServices $services The conversation controller services.
 	 * @param string $userId User ID
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		ConversationMapper $conversationMapper,
-		MessageMapper $messageMapper,
-		FeedbackMapper $feedbackMapper,
-		AgentMapper $agentMapper,
-		OrganisationService $organisationService,
-		ChatService $chatService,
-		LoggerInterface $logger,
+		ConversationControllerServices $services,
 		string $userId,
 	) {
 		parent::__construct(appName: $appName, request: $request);
-		$this->conversationMapper = $conversationMapper;
-		$this->messageMapper = $messageMapper;
-		$this->feedbackMapper = $feedbackMapper;
-		$this->agentMapper = $agentMapper;
-		$this->organisationService = $organisationService;
-		$this->chatService = $chatService;
-		$this->logger = $logger;
+		$this->conversationMapper = $services->mappers->conversationMapper;
+		$this->messageMapper = $services->mappers->messageMapper;
+		$this->feedbackMapper = $services->mappers->feedbackMapper;
+		$this->agentMapper = $services->mappers->agentMapper;
+		$this->organisationService = $services->domain->organisationService;
+		$this->chatService = $services->domain->chatService;
+		$this->logger = $services->platform->logger;
 		$this->userId = $userId;
 	}//end __construct()
 
