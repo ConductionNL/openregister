@@ -28,7 +28,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
-use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\TranslationProjectionService;
@@ -210,7 +210,7 @@ final class SaveObjectCreateObjectTest extends TestCase {
 			$log->method('jsonSerialize')->willReturn(['log' => 1]);
 			return $log;
 		});
-		$retention = $this->createMock(RetentionService::class);
+		$retention = $this->createMock(RetentionServiceInterface::class);
 		$retention->method('guardClassificationOverride')->willReturnCallback(function (Schema $schema, array $data): void {
 			$this->trace[] = ['retentionGuard', $schema->getId(), array_key_exists('title', $data)];
 		});
@@ -220,7 +220,7 @@ final class SaveObjectCreateObjectTest extends TestCase {
 			return $object;
 		});
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->willReturnCallback(static fn (string $id): object => ($id === RetentionService::class) ? $retention : throw new \RuntimeException('no ' . $id));
+		$container->method('get')->willReturnCallback(static fn (string $id): object => ($id === RetentionServiceInterface::class) ? $retention : throw new \RuntimeException('no ' . $id));
 		$folders = $this->createMock(FolderManagementHandler::class);
 		$translations = $this->createMock(TranslationHandler::class);
 		$translations->method('normalizeTranslationsForSave')->willReturnCallback(static fn (array $objectData): array => $objectData);
