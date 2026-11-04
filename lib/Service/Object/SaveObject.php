@@ -55,6 +55,7 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\DefaultValueContext;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseRelationWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
@@ -1547,10 +1548,6 @@ class SaveObject {
 	 * @throws \Twig\Error\LoaderError
 	 * @throws \Twig\Error\SyntaxError
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex default value logic with multiple behaviors
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple property types and behaviors require branching
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive default value handling
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function setDefaultValues(ObjectEntity $objectEntity, Schema $schema, array $data): array {
@@ -1578,7 +1575,7 @@ class SaveObject {
 			$schemaObject['properties']
 		);
 
-		// Handle constant values - these should ALWAYS be set regardless of input data.
+		// Constant values are ALWAYS set, regardless of input data.
 		$constantValues = [];
 		foreach ($properties as $property) {
 			if (($property['const'] ?? null) !== null) {
@@ -1586,100 +1583,91 @@ class SaveObject {
 			}
 		}
 
-		// Handle default values with new behavior support.
-		$defaultValues = [];
-		foreach ($properties as $property) {
-			$key = $property['title'];
-			$defaultValue = $property['default'] ?? null;
-
-			// Skip if no default value is defined.
-			if ($defaultValue === null) {
-				continue;
-			}
-
-			$defaultBehavior = $property['defaultBehavior'] ?? 'false';
-
-			// Determine if default should be applied based on behavior.
-			$shouldApplyDefault = false;
-
-			// Default behavior: only apply if property is missing or null.
-			$shouldApplyDefault = isset($data[$key]) === false || $data[$key] === null;
-			if ($defaultBehavior === 'falsy') {
-				// Apply default if property is missing, null, empty string, or empty array/object.
-				$shouldApplyDefault = isset($data[$key]) === false
-					|| $data[$key] === null
-					|| $data[$key] === ''
-					|| (is_array($data[$key]) === true && empty($data[$key]));
-			} elseif ($defaultBehavior === 'always') {
-				// Always apply default value on every save (computed/derived property).
-				$shouldApplyDefault = true;
-			}
-
-			if ($shouldApplyDefault === true) {
-				$defaultValues[$key] = $defaultValue;
-			}
-		}//end foreach
-
-		// Render twig templated default values.
-		// Merge incoming $data with existing object data so Twig templates can reference
-		// both newly submitted values and existing object properties.
-		$twigContext = array_merge($objectEntity->getObjectArray(), $data);
+		// Twig templates can reference both newly submitted values and existing object properties.
+		$context = new DefaultValueContext();
+		$context->twigContext = array_merge($objectEntity->getObjectArray(), $data);
+		$context->schemaProperties = ($schemaObject['properties'] ?? []);
 		$renderedDefaults = [];
-		foreach ($defaultValues as $key => $defaultValue) {
-			try {
-				if (is_string($defaultValue) === true
-					&& str_contains(haystack: $defaultValue, needle: '{{') === true
-					&& str_contains(haystack: $defaultValue, needle: '}}') === true
-				) {
-					// Check if this is a simple property reference like "{{ propertyName }}"
-					// to preserve array values instead of converting to string.
-					$simpleRefPattern = '/^\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}$/';
-					if (preg_match($simpleRefPattern, $defaultValue, $matches) === 1) {
-						$sourceProperty = $matches[1];
-						if (isset($twigContext[$sourceProperty]) === true) {
-							// Direct copy preserves arrays and other types.
-							$renderedDefaults[$key] = $twigContext[$sourceProperty];
-						}
+		foreach ($properties as $property) {
+			if ($property['default'] !== null && self::appliesDefault(property: $property, data: $data) === true) {
+				$renderedDefaults[$property['title']] = $this->renderDefaultValue(context: $context, defaultValue: $property['default']);
+			}
+		}
 
-						if (isset($twigContext[$sourceProperty]) === false) {
-							// Source property not found, use empty value.
-							$renderedDefaults[$key] = null;
-						}
-					}
-
-					if (preg_match($simpleRefPattern, $defaultValue, $matches) !== 1) {
-						// Complex template, use MetadataHydrationHandler which supports
-						// pipe-based filters (| map:) and fallback syntax (| field2).
-						$rendered = $this->metaHydrationHandler->processTwigLikeTemplate(
-							data: $twigContext,
-							template: $defaultValue,
-							schemaProperties: $schemaObject['properties'] ?? []
-						);
-						$renderedDefaults[$key] = $rendered;
-					}
-				}//end if
-
-				if (is_string($defaultValue) === false
-					|| str_contains(haystack: $defaultValue, needle: '{{') === false
-					|| str_contains(haystack: $defaultValue, needle: '}}') === false
-				) {
-					$renderedDefaults[$key] = $defaultValue;
-				}
-			} catch (Exception $e) {
-				$renderedDefaults[$key] = $defaultValue;
-				// Use original value if template fails.
-			}//end try
-		}//end foreach
-
-		// Merge in this order:.
-		// 1. Start with existing data.
-		// 2. Apply rendered default values (only for properties that should get defaults).
-		// 3. Override with constant values (constants always take precedence).
-		// No slug is added to the data here: the slug is entity metadata that
-		// ObjectSlugHandler decides. A `slug` key in the data landed in
-		// `@self.relations.slug` and made the magic mapper warn on every save (#4037).
+		// Existing data, then the defaults that apply, then constants, which always take precedence.
+		// No slug is added here: the slug is entity metadata that ObjectSlugHandler decides
+		// (a `slug` key in the data made the magic mapper warn on every save, #4037).
 		return array_merge($data, $renderedDefaults, $constantValues);
 	}//end setDefaultValues()
+
+	/**
+	 * Whether a property's default applies to the incoming data, by its defaultBehavior.
+	 *
+	 * 'false' (the default) applies when the value is missing or null; 'falsy'
+	 * also when it is an empty string or an empty array; 'always' on every
+	 * save (a computed or derived property).
+	 *
+	 * @param array $property The property definition, with its name as title.
+	 * @param array $data     The incoming data.
+	 *
+	 * @return bool True when the default is applied.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function appliesDefault(array $property, array $data): bool {
+		$key = $property['title'];
+		$defaultBehavior = $property['defaultBehavior'] ?? 'false';
+		if ($defaultBehavior === 'always') {
+			return true;
+		}
+
+		$missing = isset($data[$key]) === false || $data[$key] === null;
+		if ($defaultBehavior !== 'falsy') {
+			return $missing;
+		}
+
+		return $missing === true
+			|| $data[$key] === ''
+			|| (is_array($data[$key]) === true && empty($data[$key]));
+	}//end appliesDefault()
+
+	/**
+	 * Render a default value: a `{{ property }}` reference copies that value, other templates render, the rest stays as is.
+	 *
+	 * A direct reference keeps arrays and other types; a missing referenced
+	 * property gives null. Complex templates go through MetadataHydrationHandler,
+	 * which supports pipe filters (`| map:`) and fallbacks (`| field2`). A
+	 * template that fails to render keeps the raw default.
+	 *
+	 * @param DefaultValueContext $context      What the templates render against.
+	 * @param mixed               $defaultValue The declared default.
+	 *
+	 * @return mixed The value to set.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function renderDefaultValue(DefaultValueContext $context, mixed $defaultValue): mixed {
+		if (is_string($defaultValue) === false
+			|| str_contains(haystack: $defaultValue, needle: '{{') === false
+			|| str_contains(haystack: $defaultValue, needle: '}}') === false
+		) {
+			return $defaultValue;
+		}
+
+		if (preg_match('/^\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}$/', $defaultValue, $matches) === 1) {
+			return $context->twigContext[$matches[1]] ?? null;
+		}
+
+		try {
+			return $this->metaHydrationHandler->processTwigLikeTemplate(
+				data: $context->twigContext,
+				template: $defaultValue,
+				schemaProperties: $context->schemaProperties
+			);
+		} catch (Exception $e) {
+			return $defaultValue;
+		}
+	}//end renderDefaultValue()
 
 	/**
 	 * Applies defaults with defaultBehavior: "always" BEFORE validation.
