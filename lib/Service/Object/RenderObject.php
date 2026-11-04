@@ -4163,101 +4163,130 @@ class RenderObject {
 			return [$objectData, $_extend];
 		}
 
-		$properties = ($schema->getProperties() ?? []);
-		$register = null;
-
-		foreach ($properties as $name => $definition) {
-			if (is_array($definition) === false || in_array($name, $_extend, true) === false) {
-				continue;
+		$run = new SourceRefRun();
+		$run->entity = $entity;
+		$run->extend = $_extend;
+		$run->objectData = $objectData;
+		$run->depth = $depth;
+		$run->visitedIds = $visitedIds;
+		foreach (($schema->getProperties() ?? []) as $name => $definition) {
+			if (is_array($definition) === true && in_array($name, $run->extend, true) === true
+				&& $this->sourceRefTarget(run: $run, definition: $definition) === true
+			) {
+				$this->resolveSourceRefProperty(run: $run, name: $name);
 			}
+		}
 
-			$ref = ($definition['$ref'] ?? ($definition['items']['$ref'] ?? null));
-
-			// An INT is as valid a `$ref` as a slug, and is what a descriptor
-			// ends up holding: `ImportHandler` rewrites `"$ref": "nc-organisation"`
-			// to the resolved schema id. Requiring a string here meant a
-			// reference resolved fine when hand-written and silently stopped
-			// resolving the moment it had been through an import — the property
-			// rendered as its raw key and nothing reported anything.
-			// `getSchema()` has always accepted `int|string`.
-			if (is_int($ref) === false && (is_string($ref) === false || $ref === '')) {
-				continue;
-			}
-
-			$target = $this->getSchema(id: $ref);
-			$objectSource = $target?->getObjectSource();
-			if ($target === null || $objectSource === null) {
-				continue;
-			}
-
-			$provider = $this->objectSourceRegistry->get((string)$objectSource['provider']);
-			if ($provider === null || $provider->isEnabled() === false) {
-				continue;
-			}
-
-			if ($register === null) {
-				$register = $this->getRegister(id: $entity->getRegister());
-			}
-
-			if ($register === null) {
-				continue;
-			}
-
-			$config = ($objectSource['config'] ?? []);
-			$resolve = function ($identifier) use ($provider, $register, $target, $config, $depth, $visitedIds) {
-				if (is_scalar($identifier) === false) {
-					return $identifier;
-				}
-
-				$related = $provider->find(
-					register: $register,
-					schema: $target,
-					id: (string)$identifier,
-					config: $config
-				);
-				if ($related === null) {
-					// Preserve the raw key when the external row is absent.
-					return $identifier;
-				}
-
-				return $this->renderEntity(
-					entity: $related,
-					_extend: [],
-					depth: ($depth + 1),
-					filter: [],
-					fields: [],
-					unset: [],
-					visitedIds: $visitedIds
-				)->jsonSerialize();
-			};
-
-			$value = ($objectData[$name] ?? null);
-			if (is_array($value) === true) {
-				// An associative array (i.e. one carrying string keys such as
-				// id/@self) is an object already embedded by an earlier extend
-				// pass — never treat its VALUES as ids to resolve. A list can
-				// never carry those string keys, so list-ness is the test.
-				$alreadyEmbedded = (array_is_list($value) === false);
-				if ($alreadyEmbedded === false) {
-					$objectData[$name] = array_map($resolve, $value);
-				}
-			} elseif ($value !== null) {
-				$objectData[$name] = $resolve($value);
-			}
-
-			// The generic extend path must never see this key — a raw external
-			// key resolved against native storage can match a foreign object.
-			$_extend = array_values(
-				array_filter(
-					$_extend,
-					fn ($key) => ((string)$key) !== $name
-						&& str_starts_with((string)$key, $name . '.') === false
-				)
-			);
-		}//end foreach
-
-		return [$objectData, $_extend];
+		return [$run->objectData, $run->extend];
 	}//end extendObjectSourceRefs()
+
+	/**
+	 * Find the enabled object-source provider a property's `$ref` points at, and the entity's register.
+	 *
+	 * An INT is as valid a `$ref` as a slug: ImportHandler rewrites a slug
+	 * `$ref` to the resolved schema id, and getSchema() accepts both.
+	 *
+	 * @param SourceRefRun $run        The pass; receives the target, provider, config and register.
+	 * @param array        $definition The property definition.
+	 *
+	 * @return bool True when the property references an enabled object source in a known register.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function sourceRefTarget(SourceRefRun $run, array $definition): bool {
+		$ref = ($definition['$ref'] ?? ($definition['items']['$ref'] ?? null));
+		if (is_int($ref) === false && (is_string($ref) === false || $ref === '')) {
+			return false;
+		}
+
+		$run->target = $this->getSchema(id: $ref);
+		$objectSource = $run->target?->getObjectSource();
+		if ($run->target === null || $objectSource === null) {
+			return false;
+		}
+
+		$run->provider = $this->objectSourceRegistry->get((string)$objectSource['provider']);
+		if ($run->provider === null || $run->provider->isEnabled() === false) {
+			return false;
+		}
+
+		if ($run->register === null) {
+			$run->register = $this->getRegister(id: $run->entity->getRegister());
+		}
+
+		$run->config = ($objectSource['config'] ?? []);
+		return $run->register !== null;
+	}//end sourceRefTarget()
+
+	/**
+	 * Resolve one property's raw external keys through its provider, and take the property off the extend list.
+	 *
+	 * An associative array is an object already embedded by an earlier extend
+	 * pass, so its values are never treated as ids. The generic extend path
+	 * must never see the key: a raw external key resolved against native
+	 * storage can match a foreign object.
+	 *
+	 * @param SourceRefRun $run  The pass, on one property's target.
+	 * @param mixed        $name The property name.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function resolveSourceRefProperty(SourceRefRun $run, mixed $name): void {
+		$value = ($run->objectData[$name] ?? null);
+		if (is_array($value) === true) {
+			if (array_is_list($value) === true) {
+				$run->objectData[$name] = array_map(fn ($identifier) => $this->resolveSourceRef(run: $run, identifier: $identifier), $value);
+			}
+		} elseif ($value !== null) {
+			$run->objectData[$name] = $this->resolveSourceRef(run: $run, identifier: $value);
+		}
+
+		$run->extend = array_values(
+			array_filter(
+				$run->extend,
+				fn ($key) => ((string)$key) !== $name
+					&& str_starts_with((string)$key, $name . '.') === false
+			)
+		);
+	}//end resolveSourceRefProperty()
+
+	/**
+	 * Render the external row a raw key names, or keep the raw key when it is not scalar or the row is absent.
+	 *
+	 * @param SourceRefRun $run        The pass, on one property's target.
+	 * @param mixed        $identifier The raw key.
+	 *
+	 * @return mixed The rendered row, or the raw key.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function resolveSourceRef(SourceRefRun $run, mixed $identifier): mixed {
+		if (is_scalar($identifier) === false) {
+			return $identifier;
+		}
+
+		$related = $run->provider->find(
+			register: $run->register,
+			schema: $run->target,
+			id: (string)$identifier,
+			config: $run->config
+		);
+		if ($related === null) {
+			return $identifier;
+		}
+
+		return $this->renderEntity(
+			entity: $related,
+			_extend: [],
+			depth: ($run->depth + 1),
+			filter: [],
+			fields: [],
+			unset: [],
+			visitedIds: $run->visitedIds
+		)->jsonSerialize();
+	}//end resolveSourceRef()
 
 	/**
 	 * Collect all UUIDs from object data for properties that will be extended.
