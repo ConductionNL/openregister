@@ -48,10 +48,10 @@ use RuntimeException;
 /**
  * `MagicMapper::shouldUseUnionQuery()`: related-row filters need the sequential route.
  *
+ * @uses \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  * @covers \OCA\OpenRegister\Db\MagicMapper
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
- * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
- * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  */
 class MagicMapperUnionRoutingTest extends TestCase {
 
