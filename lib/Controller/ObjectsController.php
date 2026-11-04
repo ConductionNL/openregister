@@ -70,7 +70,7 @@ use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
 use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader;
@@ -180,9 +180,9 @@ class ObjectsController extends Controller {
 	/**
 	 * The object service.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * The user session.
@@ -939,7 +939,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @param string $register Register slug or ID
 	 * @param string $schema Schema slug or ID
-	 * @param ObjectService $objectService Object service instance
+	 * @param ObjectOperationsInterface $objectService Object service instance
 	 *
 	 * @return array Array with resolved register and schema IDs: ['register' => int, 'schema' => int]
 	 *
@@ -988,13 +988,13 @@ class ObjectsController extends Controller {
 	 *
 	 * @param array $registers Array of register IDs/slugs.
 	 * @param array $schemas Array of schema IDs/slugs.
-	 * @param ObjectService $objectService Object service for resolution.
+	 * @param ObjectOperationsInterface $objectService Object service for resolution.
 	 *
 	 * @return JSONResponse Search results from multiple tables.
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
-	private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse {
+	private function crossTableSearch(array $registers, array $schemas, ObjectOperationsInterface $objectService): JSONResponse {
 		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
 		$pairs       = $this->crossTablePairs(registers: $registers, schemas: $schemas);
 		if (empty($pairs) === true) {
@@ -1121,11 +1121,11 @@ class ObjectsController extends Controller {
 	 * Both cross-table builders honour these flags (MagicSearchHandler::buildWhereConditionsSql()
 	 * renders the multitenancy decision for the UNION arms).
 	 *
-	 * @param ObjectService $objectService Object service that builds the query.
+	 * @param ObjectOperationsInterface $objectService Object service that builds the query.
 	 *
 	 * @return array<string, mixed> The query.
 	 */
-	private function crossTableQuery(ObjectService $objectService): array {
+	private function crossTableQuery(ObjectOperationsInterface $objectService): array {
 		$query   = $objectService->buildSearchQuery(requestParams: $this->request->getParams());
 		$isAdmin = $this->isCurrentUserAdmin();
 		$query['_rbac']         = ($isAdmin === false);
@@ -1265,7 +1265,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @param string $register Register slug, uuid or numeric id.
 	 * @param string $schema Schema slug, uuid or numeric id.
-	 * @param ObjectService $objectService The request's object service.
+	 * @param ObjectOperationsInterface $objectService The request's object service.
 	 *
 	 * @return array The resolved ids and entities.
 	 *
@@ -1274,7 +1274,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
-	private function resolveRegisterSchemaIds(string $register, string $schema, ObjectService $objectService): array {
+	private function resolveRegisterSchemaIds(string $register, string $schema, ObjectOperationsInterface $objectService): array {
 		return $this->resolveRegisterAndSchema(
 			register: $register,
 			schema: $schema,
@@ -1434,7 +1434,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return JSONResponse A JSON response containing the list of objects with optional facets and facetable fields
 	 *
@@ -1454,7 +1454,7 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
-	public function index(string $register, string $schema, ObjectService $objectService): JSONResponse {
+	public function index(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		// Read paths were unmeasured: WritePhaseProbe::flush() is only reached
 		// from the write path, so search and single-read reported no
 		// per-request counts at all. Stamp + flush here so the same in-PHP
@@ -1636,7 +1636,7 @@ class ObjectsController extends Controller {
 	 * List the objects of a magic-mapped schema straight from its table.
 	 *
 	 * @param array $listing The listing scope.
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectOperationsInterface $objectService The object service.
 	 *
 	 * @psalm-param array<string, mixed> $listing
 	 *
@@ -1644,7 +1644,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function indexFromMagicTable(array $listing, ObjectService $objectService): JSONResponse {
+	private function indexFromMagicTable(array $listing, ObjectOperationsInterface $objectService): JSONResponse {
 		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
 		$registerEntity = $listing['resolved']['registerEntity'];
 		$schemaEntity = $listing['resolved']['schemaEntity'];
@@ -1716,7 +1716,7 @@ class ObjectsController extends Controller {
 	 * Build the search query of a listing and warn about filter keys the schema does not know.
 	 *
 	 * @param array $listing The listing scope.
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectOperationsInterface $objectService The object service.
 	 *
 	 * @psalm-param array<string, mixed> $listing
 	 *
@@ -1724,7 +1724,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function buildListingQuery(array $listing, ObjectService $objectService): array {
+	private function buildListingQuery(array $listing, ObjectOperationsInterface $objectService): array {
 		$query = $objectService->buildSearchQuery(
 			requestParams: $this->request->getParams(),
 			register: $listing['resolved']['register'],
@@ -2089,7 +2089,7 @@ class ObjectsController extends Controller {
 	 * List the objects through ObjectService, which picks the source.
 	 *
 	 * @param array $listing The listing scope.
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectOperationsInterface $objectService The object service.
 	 *
 	 * @psalm-param array<string, mixed> $listing
 	 *
@@ -2097,7 +2097,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function indexFromObjectService(array $listing, ObjectService $objectService): JSONResponse {
+	private function indexFromObjectService(array $listing, ObjectOperationsInterface $objectService): JSONResponse {
 		$query = $this->buildListingQuery(listing: $listing, objectService: $objectService);
 
 		try {
@@ -2162,7 +2162,7 @@ class ObjectsController extends Controller {
 	 * page: any authenticated user may call it; an unauthenticated request is
 	 * rejected by the security middleware exactly like a non-public read.
 	 *
-	 * @param ObjectService $objectService The object service (DI).
+	 * @param ObjectOperationsInterface $objectService The object service (DI).
 	 *
 	 * @return JSONResponse `{ results: [ { register, schema, count } ] }`
 	 *
@@ -2174,7 +2174,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	public function counts(ObjectService $objectService): JSONResponse {
+	public function counts(ObjectOperationsInterface $objectService): JSONResponse {
 		$params = $this->request->getParams();
 		$entries = ($params['counts'] ?? null);
 
@@ -2278,7 +2278,7 @@ class ObjectsController extends Controller {
 	 * @param array $filter Object-property filters for this entry.
 	 * @param bool $rbac Whether to apply RBAC (parity with the list read).
 	 * @param bool $multi Whether to apply multitenancy (parity with the list read).
-	 * @param ObjectService $objectService The object service (DI).
+	 * @param ObjectOperationsInterface $objectService The object service (DI).
 	 *
 	 * @return int|null The scoped count, or null when the pair is withheld.
 	 *
@@ -2290,7 +2290,7 @@ class ObjectsController extends Controller {
 		array $filter,
 		bool $rbac,
 		bool $multi,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): ?int {
 		try {
 			// Resolve slugs/ids to numeric ids + entities (same as index()).
@@ -2385,7 +2385,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @param string $register Register slug or id.
 	 * @param string $schema Schema slug or id.
-	 * @param ObjectService $objectService Object service via DI.
+	 * @param ObjectOperationsInterface $objectService Object service via DI.
 	 *
 	 * @return JSONResponse
 	 *
@@ -2397,7 +2397,7 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 60, period: 60)]
-	public function geoSearch(string $register, string $schema, ObjectService $objectService): JSONResponse {
+	public function geoSearch(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		if ($this->geo->geoFilterParser === null || $this->geo->geoFilterApplier === null) {
 			return new JSONResponse(
 				data: ['error' => 'Geo filtering primitives not configured'],
@@ -2443,7 +2443,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @param string $register Register slug or id.
 	 * @param string $schema Schema slug or id.
-	 * @param ObjectService $objectService Object service via DI.
+	 * @param ObjectOperationsInterface $objectService Object service via DI.
 	 *
 	 * @return JSONResponse A GeoJSON FeatureCollection (application/geo+json).
 	 *
@@ -2456,7 +2456,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
-	public function geoJson(string $register, string $schema, ObjectService $objectService): JSONResponse {
+	public function geoJson(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		if ($this->geo->geoFeatureBuilder === null) {
 			return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
 		}
@@ -2495,7 +2495,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @param string $register Register slug or id.
 	 * @param string $schema Schema slug or id.
-	 * @param ObjectService $objectService Object service via DI.
+	 * @param ObjectOperationsInterface $objectService Object service via DI.
 	 *
 	 * @return JSONResponse A WFS-compatible GeoJSON FeatureCollection.
 	 *
@@ -2508,7 +2508,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
-	public function wfs(string $register, string $schema, ObjectService $objectService): JSONResponse {
+	public function wfs(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		if ($this->geo->geoFeatureBuilder === null) {
 			return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
 		}
@@ -2600,13 +2600,13 @@ class ObjectsController extends Controller {
 	 *
 	 * @param string $register Register slug or id.
 	 * @param string $schema Schema slug or id.
-	 * @param ObjectService $objectService Object service via DI.
+	 * @param ObjectOperationsInterface $objectService Object service via DI.
 	 *
 	 * @return array The RBAC-scoped result rows.
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
-	private function scopedGeoRows(string $register, string $schema, ObjectService $objectService): array {
+	private function scopedGeoRows(string $register, string $schema, ObjectOperationsInterface $objectService): array {
 		$listing = $this->index(register: $register, schema: $schema, objectService: $objectService);
 		$payload = (array)$listing->getData();
 		$rows = ($payload['results'] ?? []);
@@ -2761,7 +2761,7 @@ class ObjectsController extends Controller {
 	 *   and empty array values are stripped from the response to reduce payload size.
 	 *   Set _empty=true to include all properties including empty values.
 	 *
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return JSONResponse A JSON response containing the list of objects with optional facets and facetable fields
 	 *
@@ -2781,7 +2781,7 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
-	public function objects(ObjectService $objectService): JSONResponse {
+	public function objects(ObjectOperationsInterface $objectService): JSONResponse {
 		// Check for register/schema in query parameters for magic mapper routing.
 		$params = $this->request->getParams();
 		$registerParam = $params['register'] ?? $params['_register'] ?? null;
@@ -3026,7 +3026,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The record being edited.
 	 * @param string $register The register.
 	 * @param string $schema The schema.
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectOperationsInterface $objectService The object service.
 	 *
 	 * @return JSONResponse The options, or what is still needed.
 	 *
@@ -3042,7 +3042,7 @@ class ObjectsController extends Controller {
 		string $id,
 		string $register,
 		string $schema,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): JSONResponse {
 		$property = (string)($this->request->getParam('property') ?? '');
 		if (trim($property) === '') {
@@ -3173,7 +3173,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The object ID
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @NoAdminRequired
 	 *
@@ -3195,7 +3195,7 @@ class ObjectsController extends Controller {
 		string $id,
 		string $register,
 		string $schema,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.show.in');
 
@@ -3520,7 +3520,7 @@ class ObjectsController extends Controller {
 	 * @param array $renderedData The rendered record.
 	 * @param Schema|null $schema The schema, when it resolved.
 	 * @param ObjectEntity|null $object The row.
-	 * @param ObjectService $objectService The service holding the resolver.
+	 * @param ObjectOperationsInterface $objectService The service holding the resolver.
 	 *
 	 * @return array The record, with its actions when they could be resolved.
 	 *
@@ -3530,7 +3530,7 @@ class ObjectsController extends Controller {
 		array $renderedData,
 		?Schema $schema,
 		?ObjectEntity $object,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): array {
 		if ($schema === null || $object === null || isset($renderedData['@self']) === false) {
 			return $renderedData;
@@ -3565,7 +3565,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return JSONResponse JSON response with created object
 	 *
@@ -3602,7 +3602,7 @@ class ObjectsController extends Controller {
 	public function create(
 		string $register,
 		string $schema,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.create.in');
 		try {
@@ -3995,7 +3995,7 @@ class ObjectsController extends Controller {
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
 	 * @param string $id The object ID or UUID
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return JSONResponse A JSON response containing the updated object
 	 *
@@ -4020,7 +4020,7 @@ class ObjectsController extends Controller {
 		string $register,
 		string $schema,
 		string $id,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.update.in');
 
@@ -4232,7 +4232,7 @@ class ObjectsController extends Controller {
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
 	 * @param string $id The object ID or UUID
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return JSONResponse A JSON response containing the updated object
 	 *
@@ -4253,7 +4253,7 @@ class ObjectsController extends Controller {
 		string $register,
 		string $schema,
 		string $id,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): JSONResponse {
 		try {
 			// Resolve slugs to numeric IDs consistently.
@@ -4452,7 +4452,7 @@ class ObjectsController extends Controller {
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
 	 * @param string $id The object ID or UUID
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return JSONResponse A JSON response containing the updated object
 	 *
@@ -4470,7 +4470,7 @@ class ObjectsController extends Controller {
 		string $register,
 		string $schema,
 		string $id,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): JSONResponse {
 		try {
 			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
@@ -4605,7 +4605,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID/UUID of the object to delete
 	 * @param string $register The register ID
 	 * @param string $schema The schema ID
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return JSONResponse JSON response with success or error.
 	 *
@@ -4619,7 +4619,7 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
-	public function destroy(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
+	public function destroy(string $id, string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.destroy.in');
 
 		try {
@@ -4748,7 +4748,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID/UUID of the object to check
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return JSONResponse JSON response with DeletionAnalysis
 	 *
@@ -4761,7 +4761,7 @@ class ObjectsController extends Controller {
 		string $id,
 		string $register,
 		string $schema,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): JSONResponse {
 		try {
 			$objectService->setRegister(register: $register);
@@ -4806,7 +4806,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID/UUID of the object to retrieve logs for
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return JSONResponse JSON response with object contracts
 	 *
@@ -4824,7 +4824,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	public function contracts(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
+	public function contracts(string $id, string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		// REGISTER FIRST. `setSchema()` scopes its slug lookup to whatever
 		// register is currently set, and ObjectService is reused across many
 		// operations in one process, so naming the schema first resolves it
@@ -4983,7 +4983,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID of the object to retrieve relations for
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @NoAdminRequired
 	 *
@@ -4998,7 +4998,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
+	public function uses(string $id, string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		// Set the register and schema context first.
 		$objectService->setRegister(register: $register);
 		$objectService->setSchema(schema: $schema);
@@ -5035,7 +5035,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID of the object to retrieve uses for
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @NoAdminRequired
 	 *
@@ -5055,7 +5055,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	public function used(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
+	public function used(string $id, string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		// REGISTER FIRST. `setSchema()` scopes its slug lookup to whatever
 		// register is currently set, and ObjectService is reused across many
 		// operations in one process, so naming the schema first resolves it
@@ -5094,7 +5094,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID of the object to retrieve logs for
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return JSONResponse JSON response with object audit logs
 	 *
@@ -5114,7 +5114,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
+	public function logs(string $id, string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		// Whoever may read the object reads its history, redacted like the
 		// audit-trails route: a non-admin is answered by ObjectHistoryForReaders
 		// (404 when the object GET would be, the doelbinding guard, and no
@@ -6013,7 +6013,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return DataDownloadResponse|JSONResponse The exported file as a download response, or a
 	 *                                           400 JSON error when a `format=pdf` request exceeds
@@ -6032,7 +6032,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
-	public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse|JSONResponse {
+	public function export(string $register, string $schema, ObjectOperationsInterface $objectService): DataDownloadResponse|JSONResponse {
 		// Set the register and schema context.
 		$objectService->setRegister(register: $register);
 		$objectService->setSchema(schema: $schema);
@@ -6436,7 +6436,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID of object A (source object to merge from)
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @NoAdminRequired
 	 *
@@ -6450,7 +6450,7 @@ class ObjectsController extends Controller {
 		string $id,
 		string $register,
 		string $schema,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): JSONResponse {
 		// Set the schema and register to the object service.
 		$objectService->setRegister($register);
@@ -6495,7 +6495,7 @@ class ObjectsController extends Controller {
 	 * This method migrates multiple objects from one register/schema combination
 	 * to another register/schema combination with property mapping.
 	 *
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @NoAdminRequired
 	 *
@@ -6505,7 +6505,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	public function migrate(ObjectService $objectService): JSONResponse {
+	public function migrate(ObjectOperationsInterface $objectService): JSONResponse {
 		try {
 			// Get migration parameters from request.
 			$requestParams = $this->request->getParams();
@@ -6570,7 +6570,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The identifier of the object to download files for
 	 * @param string $register The register (identifier or slug) to search within
 	 * @param string $schema The schema (identifier or slug) to search within
-	 * @param ObjectService $objectService The object service for handling object operations
+	 * @param ObjectOperationsInterface $objectService The object service for handling object operations
 	 *
 	 * @return DataDownloadResponse|JSONResponse Download response or error.
 	 *
@@ -6586,7 +6586,7 @@ class ObjectsController extends Controller {
 		string $id,
 		string $register,
 		string $schema,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): JSONResponse|DataDownloadResponse {
 		try {
 			// Set the context for the object service.
@@ -7280,7 +7280,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The object being read as the hinge.
 	 * @param string $register The register slug or identifier.
 	 * @param string $schema The schema slug or identifier.
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectOperationsInterface $objectService The object service.
 	 * @param ReferencedByService $referencedByService The reverse view.
 	 *
 	 * @NoAdminRequired
@@ -7295,7 +7295,7 @@ class ObjectsController extends Controller {
 		string $id,
 		string $register,
 		string $schema,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		ReferencedByService $referencedByService,
 	): JSONResponse {
 		$isAdmin = $this->isCurrentUserAdmin();
@@ -7347,7 +7347,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The object whose features are read.
 	 * @param string $register The register slug or identifier.
 	 * @param string $schema The schema slug or identifier.
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectOperationsInterface $objectService The object service.
 	 * @param InheritedGeoCollector $collector The feature collector.
 	 *
 	 * @NoAdminRequired
@@ -7362,7 +7362,7 @@ class ObjectsController extends Controller {
 		string $id,
 		string $register,
 		string $schema,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		InheritedGeoCollector $collector,
 	): JSONResponse {
 		$isAdmin = $this->isCurrentUserAdmin();
