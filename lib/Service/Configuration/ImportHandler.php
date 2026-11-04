@@ -94,6 +94,41 @@ use Symfony\Component\Yaml\Yaml;
 class ImportHandler {
 
 	/**
+	 * The result of an import that wrote nothing: every key present, every count zero.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const EMPTY_IMPORT_RESULT = [
+		'registers' => [],
+		'schemas' => [],
+		'workflows' => ['deployed' => [], 'updated' => [], 'unchanged' => [], 'failed' => []],
+		'endpoints' => [],
+		'sources' => [],
+		'mappings' => [],
+		'jobs' => [],
+		'synchronizations' => [],
+		'rules' => [],
+		'objects' => [],
+		// Per-entity resilience: how many entities were skipped (with a logged
+		// warning) instead of aborting the import.
+		'skipped' => [
+			'registers' => 0,
+			'schemas' => 0,
+			'objects' => 0,
+			'mappings' => 0,
+			'seedObjects' => 0,
+		],
+		// The entities left alone because they are already present at the same
+		// or a newer version, so a caller can tell "nothing needed doing" from
+		// "everything failed" (both arrive as `objects: []`).
+		'unchanged' => ['objects' => 0],
+		// The entities this import REJECTED, named with the reason. A rejected
+		// SCHEMA propagates: the registers declaring it are created without the
+		// link, so the damage surfaces layers away with nothing pointing back here.
+		'failed' => ['schemas' => [], 'objects' => []],
+	];
+
+	/**
 	 * Guard flag to prevent recursive dependency checking.
 	 *
 	 * When an app is enabled as a dependency, it may boot and load its own configuration,
@@ -2917,674 +2952,777 @@ class ImportHandler {
 		}
 
 		// Ensure data is consistently an array by converting any stdClass objects.
-		$data = $this->ensureArrayStructure(data: $data);
-
+		$run = new ImportRun(data: $this->ensureArrayStructure(data: $data), configuration: $configuration);
+		$run->owner = $owner;
 		// Extract appId and version from data if not provided as parameters.
-		if ($appId === null && (($data['appId'] ?? null) !== null)) {
-			$appId = $data['appId'];
-		}
+		$run->appId = $appId ?? ($run->data['appId'] ?? null);
+		$run->version = $version ?? ($run->data['version'] ?? null);
+		$run->force = $force;
 
-		if ($version === null && (($data['version'] ?? null) !== null)) {
-			$version = $data['version'];
-		}
+		return $this->runImport(run: $run);
+	}//end importFromJson()
 
+	/**
+	 * Run every phase of a configuration import.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return array The import result.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function runImport(ImportRun $run): array {
 		// Content hash of the definitional payload, computed ONCE from the incoming
-		// data before any import step mutates $data (schema import resolves $refs and
+		// data before any import step mutates it (schema import resolves $refs and
 		// stamps ids into it). The same value is reused for the skip check below and
 		// for the post-import store, so an unchanged release always produces an
 		// identical hash on the next run.
-		$definitionHash = $this->computeDefinitionHash(data: $data);
+		$run->definitionHash = $this->computeDefinitionHash(data: $run->data);
 
 		// Create the Nextcloud groups this configuration declares. Deliberately
 		// ahead of the content-hash skip below: the skip means "the stored data
 		// already matches", which says nothing about whether the GROUPS those
 		// authorization blocks name still exist.
-		$this->provisionDeclaredGroups(data: $data, appId: $appId);
+		$this->provisionDeclaredGroups(data: $run->data, appId: $run->appId);
 
-		// Perform version check if appId and version are available (unless force is enabled).
-		if ($appId !== null && $version !== null && $force === false) {
-			$storedVersion = $this->appConfig->getValueString('openregister', "imported_config_{$appId}_version", '');
-			$storedHash = $this->appConfig->getValueString('openregister', "imported_config_{$appId}_hash", '');
-
-			// The CONTENT HASH decides, on its own. `$definitionHash` covers the
-			// fully-merged configuration — monolith plus every register.d
-			// fragment — so an identical hash means importing would write exactly
-			// what is already stored. There is nothing to do, whatever the
-			// version says.
-			//
-			// This used to require `version_compare($version, $storedVersion, '<=')`
-			// as well, and that made the skip unreliable in one direction and
-			// wasteful in the other. Three apps (opencatalogi, procest,
-			// softwarecatalog) fold a digest into the version they pass here —
-			// `1.2.3+frag.a1b2c3d4`, per ADR-037 — so that changing a fragment
-			// forces a re-import. But version_compare does NOT treat `+…` as
-			// semver build metadata; it compares it as further version parts,
-			// LEXICALLY. Whether the gate fired therefore depended on how two md5
-			// hashes happened to sort:
-			//
-			// incoming 1.0.0+frag.abc12345 vs stored 1.0.0+frag.def67890 -> no skip,
-			// and the same pair the other way round -> skip.
-			//
-			// Unchanged content re-imported the whole configuration roughly half
-			// the time — measured on the dev instance as the dominant cost of
-			// `occ maintenance:repair`, which stalls in OpenCatalogi's
-			// InitializeSettings step. A digest has no order, so version_compare
-			// was the wrong instrument for it.
-			//
-			// Correctness is unaffected: a CHANGED fragment changes the merged
-			// data, which changes the hash, which fails this equality and lets
-			// the import proceed to the per-entity gates exactly as before (#426).
-			// A never-stored hash ('' on an install predating the hash) also fails
-			// it, so those heal on the next run.
-			if ($storedHash !== '' && $storedHash === $definitionHash) {
-				$this->logger->debug(
-					message: "[ImportHandler] Skipping {$appId}: config content unchanged (v{$version}, stored v{$storedVersion})",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-
-				// Return empty result to indicate no import was performed.
-				// The `skipped`/`failed` keys are present and zeroed on this path
-				// too: a caller that reads them must not have to know which return
-				// it got, and "nothing was imported" is not the same answer as
-				// "something was rejected".
-				return [
-					'registers' => [],
-					'schemas' => [],
-					'workflows' => ['deployed' => [], 'updated' => [], 'unchanged' => [], 'failed' => []],
-					'endpoints' => [],
-					'sources' => [],
-					'mappings' => [],
-					'jobs' => [],
-					'synchronizations' => [],
-					'rules' => [],
-					'objects' => [],
-					'skipped' => [
-						'registers' => 0,
-						'schemas' => 0,
-						'objects' => 0,
-						'mappings' => 0,
-						'seedObjects' => 0,
-					],
-					'unchanged' => ['objects' => 0],
-					'failed' => ['schemas' => [], 'objects' => []],
-				];
-			}//end if
-		}//end if
-
-		// Log force import if enabled.
-		if ($force === true && $appId !== null && $version !== null) {
-			$msg = "Force import enabled for app {$appId} version {$version} - bypassing version check";
-			$this->logger->debug(message: '[ImportHandler] ' . $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
+		if ($this->isUnchangedConfiguration(run: $run) === true) {
+			// The `skipped`/`failed` keys are present and zeroed on this path
+			// too: a caller that reads them must not have to know which return
+			// it got, and "nothing was imported" is not the same answer as
+			// "something was rejected".
+			return self::EMPTY_IMPORT_RESULT;
 		}
 
+		$this->logForcedImport(run: $run);
+		$this->importComponents(run: $run);
+		$this->finishImport(run: $run);
+
+		return $run->result;
+	}//end runImport()
+
+	/**
+	 * Whether the stored content hash of this app's configuration equals the incoming one.
+	 *
+	 * The CONTENT HASH decides, on its own. It covers the fully-merged
+	 * configuration (monolith plus every register.d fragment), so an identical
+	 * hash means importing would write exactly what is already stored.
+	 *
+	 * A version comparison is deliberately not part of it: three apps fold a
+	 * digest into the version (`1.2.3+frag.a1b2c3d4`, ADR-037), and
+	 * version_compare orders the `+…` part lexically, so whether a skip fired
+	 * depended on how two md5 hashes happened to sort. A CHANGED fragment
+	 * changes the hash, and a never-stored hash ('' on an install predating the
+	 * hash) never matches, so those import as before (#426).
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return bool True when the import can be skipped.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function isUnchangedConfiguration(ImportRun $run): bool {
+		if ($run->appId === null || $run->version === null || $run->force === true) {
+			return false;
+		}
+
+		$storedVersion = $this->appConfig->getValueString('openregister', "imported_config_{$run->appId}_version", '');
+		$storedHash = $this->appConfig->getValueString('openregister', "imported_config_{$run->appId}_hash", '');
+		if ($storedHash === '' || $storedHash !== $run->definitionHash) {
+			return false;
+		}
+
+		$this->logger->debug(
+			message: "[ImportHandler] Skipping {$run->appId}: config content unchanged (v{$run->version}, stored v{$storedVersion})",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+		return true;
+	}//end isUnchangedConfiguration()
+
+	/**
+	 * Log that a forced import bypasses the version check.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function logForcedImport(ImportRun $run): void {
+		if ($run->force === true && $run->appId !== null && $run->version !== null) {
+			$msg = "Force import enabled for app {$run->appId} version {$run->version} - bypassing version check";
+			$this->logger->debug(message: '[ImportHandler] ' . $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
+		}
+	}//end logForcedImport()
+
+	/**
+	 * Import the schemas, registers, mappings, selection lists and listed objects of a configuration.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importComponents(ImportRun $run): void {
 		// Reset the maps for this import.
 		$this->registersMap = [];
 		$this->schemasMap = [];
-
-		$result = [
-			'registers' => [],
-			'schemas' => [],
-			'workflows' => ['deployed' => [], 'updated' => [], 'unchanged' => [], 'failed' => []],
-			'endpoints' => [],
-			'sources' => [],
-			'mappings' => [],
-			'jobs' => [],
-			'synchronizations' => [],
-			'rules' => [],
-			'objects' => [],
-			// Per-entity-resilience observability: how many entities were
-			// skipped (with a logged warning) instead of aborting the import.
-			'skipped' => [
-				'registers' => 0,
-				'schemas' => 0,
-				'objects' => 0,
-				'mappings' => 0,
-				'seedObjects' => 0,
-			],
-			// The entities this import REJECTED, named with the reason. A count
-			// alone tells an operator something went wrong but not what, and a
-			// rejected SCHEMA is the one failure that propagates: the registers
-			// that declare it are created without the link, so the damage
-			// surfaces layers away (empty `*_schema` config keys, a seed step
-			// that cannot resolve a schema) with nothing pointing back here.
-			// The entities this import LEFT ALONE because they are already
-			// present at the same or a newer version. Counted because a caller
-			// otherwise cannot tell "nothing needed doing" from "everything
-			// failed": both arrive as `objects: []`. dossiq's demo-data step
-			// read that ambiguity as failure and refused every re-install,
-			// breaking the promise its own UI makes ("safe to run more than
-			// once").
-			'unchanged' => [
-				'objects' => 0,
-			],
-			'failed' => [
-				'schemas' => [],
-				// The listed objects this import could not write, each with
-				// its slug, schema and the reason, after one retry.
-				'objects' => [],
-			],
-		];
+		$run->result = self::EMPTY_IMPORT_RESULT;
 
 		// PER-REGISTER SLUG-UNIQUENESS (openspec/changes/per-register-schema-slug-uniqueness):
 		// computed ONCE, from the RAW (pre-mutation) `components.registers.*.schemas` slug
-		// lists, before the schema pass below touches anything. Maps each schema slug this
-		// import declares for a register to the UNION of that register's (or those
-		// registers') PRE-IMPORT schema ids, so importSchema() below can resolve "does the
-		// TARGET register already own this slug" instead of "does ANY app/register own this
-		// slug" (the latter is how a foreign same-slug schema gets silently reused).
-		$slugToSchemaIds = $this->computeRegisterScopedSchemaIds(data: $data);
+		// lists, before the schema pass touches anything, so importSchema() resolves
+		// "does the TARGET register already own this slug" instead of "does ANY
+		// app/register own this slug" (how a foreign same-slug schema gets silently reused).
+		$run->slugToSchemaIds = $this->computeRegisterScopedSchemaIds(data: $run->data);
 
-		// Process and import schemas if present.
-		// TWO-PASS APPROACH: First create all schemas without resolving cross-references,
-		// then resolve cross-references after all schemas exist to avoid "Schema not found" errors.
-		if (($data['components']['schemas'] ?? null) !== null && is_array($data['components']['schemas']) === true) {
-			$slugsAndIdsMap = $this->schemaMapper->getSlugToIdMap();
-			$this->logger->debug(
-				message: '[ImportHandler] Starting TWO-PASS schema import process',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'totalSchemas' => count($data['components']['schemas']),
-					'schemaKeys' => array_keys($data['components']['schemas']),
-				]
-			);
-
-			// PASS 1: Create all schemas without resolving objectConfiguration.schema references.
-			// This ensures all schema entities exist before we try to look them up.
-			$this->logger->debug(
-				message: '[ImportHandler] PASS 1: Creating all schemas without cross-reference resolution',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			$schemasToResolve = [];
-			// Track schemas that need $ref resolution in Pass 2.
-			foreach ($data['components']['schemas'] as $key => $schemaData) {
-				$this->logger->debug(
-					message: '[ImportHandler] Processing schema (Pass 1)',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'schemaKey' => $key,
-						'schemaTitle' => $schemaData['title'] ?? 'no title',
-						'schemaSlug' => $schemaData['slug'] ?? $key,
-					]
-				);
-
-				if (isset($schemaData['title']) === false && is_string($key) === true) {
-					$schemaData['title'] = $key;
-				}
-
-				// The component key IS the slug in every app configuration this
-				// handler has ever received: the register lists name schemas by
-				// key, and `$schemaSlugLower` below already reads the key when
-				// `slug` is absent. Only importSchema()'s guard disagreed, and
-				// it rejected the fragment outright. pipelinq shipped sixteen
-				// schemas over four fragments without a `slug`, all sixteen
-				// went dark for nine days, and the app's re-import reported
-				// success. Defaulting the slug here, exactly as `title` is
-				// defaulted two lines up, makes the payload say what every
-				// caller already assumed. A slug that is present but blank is
-				// left alone: that is a mistake to reject, not to paper over.
-				if (array_key_exists('slug', $schemaData) === false && is_string($key) === true) {
-					$schemaData['slug'] = $key;
-				}
-
-				// Blanking `schemasMap` is a TEMPORARY mutation of shared state
-				// whose only purpose is to stop importSchema() resolving $refs in
-				// Pass 1. Its undo therefore belongs to leaving this region — on
-				// EVERY path — which is what `finally` is for.
-				//
-				// 🔴 It used to be undone on the success path only. One rejected
-				// schema then left the map empty for everything that followed, so
-				// each later schema re-saved an already-emptied map and the map
-				// ended Pass 1 holding ONLY the schemas declared after the LAST
-				// failure. The register pass resolves its slugs against that map,
-				// finds nothing, and creates the register WITHOUT those links.
-				// The fingerprint is arithmetic: in softwarecatalog 2 rejected
-				// schemas produced 18 missing register<->schema links out of 20.
-				// See ImportHandlerSchemaMapRestoreTest.
-				$savedSchemasMap = $this->schemasMap;
-				$this->schemasMap = [];
-				$schema = null;
-
-				try {
-					// Create schema without resolving cross-references.
-					$schemaSlugLower = strtolower((string)($schemaData['slug'] ?? $key));
-					$schema = $this->importSchema(
-						data: $schemaData,
-						slugsAndIdsMap: $slugsAndIdsMap,
-						owner: $owner,
-						appId: $appId,
-						version: $version,
-						force: $force,
-						registerSchemaIds: $slugToSchemaIds[$schemaSlugLower] ?? null
-					);
-				} catch (Exception $e) {
-					// A rejected schema is CONTAINED (siblings still import) but it
-					// is never silent: it is counted and NAMED in the result, so the
-					// operator sees it here rather than three layers downstream.
-					$result['skipped']['schemas']++;
-					$result['failed']['schemas'][] = [
-						'key' => (string)$key,
-						'slug' => (string)($schemaData['slug'] ?? $key),
-						'error' => $e->getMessage(),
-					];
-					$this->logger->error(
-						message: '[ImportHandler] Failed to create schema (Pass 1)',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'schemaKey' => $key,
-							'error' => $e->getMessage(),
-							'trace' => $e->getTraceAsString(),
-						]
-					);
-					// Continue with other schemas instead of failing the entire import.
-				} finally {
-					// Restore on every path — success, rejection, or an \Error
-					// escaping this loop entirely.
-					$this->schemasMap = $savedSchemasMap;
-				}//end try
-
-				if ($schema === null) {
-					continue;
-				}
-
-				$this->schemasMap[$schema->getSlug()] = $schema;
-				$result['schemas'][] = $schema;
-				$schemasToResolve[$key] = $schemaData;
-				// Save for Pass 2.
-				$this->logger->debug(
-					message: '[ImportHandler] Successfully created schema (Pass 1)',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'schemaKey' => $key,
-						'schemaSlug' => $schema->getSlug(),
-						'schemaId' => $schema->getId(),
-					]
-				);
-			}//end foreach
-
-			// One warning naming every rejected schema, at the end of the pass.
-			// The per-schema `error` lines above are one line each in a log that
-			// is otherwise almost all `debug`, so on a real import they are easy
-			// to miss; this is the line that says the import was PARTIAL.
-			if ($result['failed']['schemas'] !== []) {
-				$rejectedSlugs = array_column($result['failed']['schemas'], 'slug');
-				$this->logger->warning(
-					message: sprintf(
-						'[ImportHandler] PARTIAL IMPORT: %d of %d schema(s) were rejected and are NOT '
-						. 'linked to any register in this import: %s. Registers declaring them were '
-						. 'created without those schema references.',
-						count($rejectedSlugs),
-						count($data['components']['schemas']),
-						implode(', ', $rejectedSlugs)
-					),
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'appId' => $appId,
-						'failedSchemas' => $result['failed']['schemas'],
-					]
-				);
-			}
-
-			$this->logger->debug(
-				message: '[ImportHandler] Pass 1 completed - all schemas created',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'createdCount' => count($result['schemas']),
-					'createdSchemas' => array_map(fn ($schema) => $schema->getSlug(), $result['schemas']),
-				]
-			);
-
-			// PASS 2: Now resolve cross-references (objectConfiguration.schema) for all schemas.
-			// All schemas now exist, so find() calls will succeed.
-			$this->logger->debug(
-				message: '[ImportHandler] PASS 2: Resolving schema cross-references',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			foreach ($schemasToResolve as $key => $schemaData) {
-				if (isset($schemaData['title']) === false && is_string($key) === true) {
-					$schemaData['title'] = $key;
-				}
-
-				$schemaSlug = $schemaData['slug'] ?? $key;
-
-				// Find the schema we created in Pass 1. Schemas Pass 1 skipped
-				// as up-to-date (or already reported as failed) are not in the
-				// map — the expected case on every boot of an unchanged config,
-				// so debug rather than one warning per schema per import.
-				if (($this->schemasMap[$schemaSlug] ?? null) === null) {
-					$this->logger->debug(
-						message: '[ImportHandler] Schema not found in map for Pass 2 - skipping cross-reference resolution',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'schemaSlug' => $schemaSlug]
-					);
-					continue;
-				}
-
-				try {
-					$this->logger->debug(
-						message: '[ImportHandler] Resolving cross-references for schema (Pass 2)',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'schemaSlug' => $schemaSlug]
-					);
-
-					// Pass 2 MUST resolve back to the EXACT same schema Pass 1 just
-					// created/updated (schemasMap[$schemaSlug]) — not fork a second
-					// one. $slugToSchemaIds was computed from PRE-IMPORT
-					// register state, so a schema freshly CREATED in Pass 1 is not
-					// in it yet; union that schema's own id in so findBySlugInIds()
-					// below still finds it deterministically.
-					$schemaSlugLower = strtolower((string)$schemaSlug);
-					$pass2SchemaIds = $slugToSchemaIds[$schemaSlugLower] ?? null;
-					$resolvedSchemaId = $this->schemasMap[$schemaSlug]->getId();
-					if ($resolvedSchemaId !== null) {
-						$pass2SchemaIds = ($pass2SchemaIds ?? []);
-						$pass2SchemaIds[] = (int)$resolvedSchemaId;
-					}
-
-					// Re-import with schemasMap populated to resolve cross-references.
-					$schema = $this->importSchema(
-						data: $schemaData,
-						slugsAndIdsMap: $slugsAndIdsMap,
-						owner: $owner,
-						appId: $appId,
-						version: $version,
-						force: true,
-						// Force update to resolve cross-references.
-						registerSchemaIds: $pass2SchemaIds
-					);
-
-					// Update in map with resolved version.
-					$this->schemasMap[$schema->getSlug()] = $schema;
-
-					$this->logger->debug(
-						message: '[ImportHandler] Cross-references resolved for schema (Pass 2)',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'schemaSlug' => $schemaSlug,
-							'schemaId' => $schema->getId(),
-						]
-					);
-				} catch (Exception $e) {
-					$this->logger->error(
-						message: '[ImportHandler] Failed to resolve cross-references for schema (Pass 2)',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'schemaKey' => $key,
-							'error' => $e->getMessage(),
-							'trace' => $e->getTraceAsString(),
-						]
-					);
-				}//end try
-			}//end foreach
-
-			$this->logger->debug(
-				message: '[ImportHandler] Schema import process completed (TWO-PASS)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'importedCount' => count($result['schemas']),
-					'importedSchemas' => array_map(fn ($schema) => $schema->getSlug(), $result['schemas']),
-				]
-			);
-		}//end if
-
-		// Process and import registers if present.
-		if (($data['components']['registers'] ?? null) !== null && is_array($data['components']['registers']) === true) {
-			foreach ($data['components']['registers'] as $slug => $registerData) {
-				$slug = strtolower($slug);
-
-				if (($registerData['schemas'] ?? null) !== null && is_array($registerData['schemas']) === true) {
-					$schemaIds = [];
-					foreach ($registerData['schemas'] as $schemaSlug) {
-						// First check if schema exists in schemasMap (schemas imported in this session).
-						if (($this->schemasMap[$schemaSlug] ?? null) !== null) {
-							$schemaId = $this->schemasMap[$schemaSlug]->getId();
-							$schemaIds[] = $schemaId;
-							$this->logger->debug(
-								message: "[ImportHandler] Schema '{$schemaSlug}' found in schemasMap",
-								context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]
-							);
-							continue;
-						}
-
-						// Schema not in map. Since the Pass-1 restore fix this has
-						// exactly ONE cause — the schema pass rejected it — so name
-						// that reason here instead of leaving the operator to
-						// correlate two log lines. Do not fall back to a database
-						// lookup: it may fail on organisation/multi-tenancy filters
-						// during cross-instance imports.
-						$rejection = null;
-						foreach ($result['failed']['schemas'] as $failedSchema) {
-							if ($failedSchema['slug'] === $schemaSlug || $failedSchema['key'] === $schemaSlug) {
-								$rejection = $failedSchema['error'];
-								break;
-							}
-						}
-
-						$reason = 'This schema should have been created in the TWO-PASS schema import phase. ';
-						if ($rejection !== null) {
-							$reason = 'It was REJECTED by the schema import phase (' . $rejection . '). ';
-						}
-
-						$msg = 'Schema with slug %s not found in schemasMap during register import. ';
-						$msg .= $reason;
-						$msg .= 'This register will be created without this schema reference.';
-						$this->logger->warning(
-							message: '[ImportHandler] ' . sprintf($msg, $schemaSlug),
-							context: ['file' => __FILE__, 'line' => __LINE__]
-						);
-					}//end foreach
-
-					$registerData['schemas'] = $schemaIds;
-				}//end if
-
-				// Propagate parent-level x-openregister.type onto the register
-				// so consuming apps can filter mock/demo data via
-				// `GET /api/registers?filters[type]=mock`. Per-register
-				// overrides on `$registerData['type']` take precedence so a
-				// single configuration file can mix register types.
-				$parentType = ($data['x-openregister']['type'] ?? null);
-				if (isset($registerData['type']) === false && $parentType !== null && $parentType !== '') {
-					$registerData['type'] = (string)$parentType;
-				}
-
-				// PER-ENTITY RESILIENCE: a single failing register MUST NOT abort
-				// the rest of the data-layer import (sibling registers, mappings,
-				// objects, seed data). Catch \Throwable (not just \Exception) so
-				// opis/json-schema validation failures and folder-access denials
-				// are also contained. Skip-and-continue with a descriptive warning,
-				// mirroring the existing per-schema / per-mapping idiom.
-				try {
-					$register = $this->importRegister(
-						data: $registerData,
-						owner: $owner,
-						appId: $appId,
-						version: $version,
-						force: $force
-					);
-					// Store register in map by slug for reference. The import call
-					// above is declared non-nullable and throws on failure, which
-					// the catch below handles.
-					$this->registersMap[$slug] = $register;
-					$result['registers'][] = $register;
-				} catch (\Throwable $e) {
-					$result['skipped']['registers']++;
-					$this->logger->warning(
-						message: "[ImportHandler] Skipping register '{$slug}' - import failed: " . $e->getMessage(),
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'appId' => $appId,
-							'registerSlug' => $slug,
-							'error' => $e->getMessage(),
-						]
-					);
-				}//end try
-			}//end foreach
-		}//end if
-
-		// Process and import mappings if present.
-		if (($data['components']['mappings'] ?? null) !== null
-			&& is_array($data['components']['mappings']) === true
-		) {
-			$slugsAndIdsMap = $this->mappingMapper->getSlugToIdMap(includeNullOrg: true);
-
-			$this->logger->debug(
-				message: '[ImportHandler] Starting mapping import',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'totalMappings' => count($data['components']['mappings']),
-					'mappingKeys' => array_keys($data['components']['mappings']),
-				]
-			);
-
-			foreach ($data['components']['mappings'] as $key => $mappingData) {
-				if (isset($mappingData['name']) === false && is_string($key) === true) {
-					$mappingData['name'] = $key;
-				}
-
-				$mappingSlug = $mappingData['slug'] ?? $key;
-
-				try {
-					$mapping = $this->importMapping(
-						data: $mappingData,
-						slugsAndIdsMap: $slugsAndIdsMap,
-						configuration: $configuration,
-						version: $version,
-						force: $force
-					);
-
-					if ($mapping !== null) {
-						$result['mappings'][] = $mapping;
-					}
-
-					$mappingId = null;
-					if ($mapping !== null) {
-						$mappingId = $mapping->getId();
-					}
-
-					$this->logger->debug(
-						message: '[ImportHandler] Mapping imported successfully',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'mappingSlug' => $mappingSlug,
-							'mappingId' => $mappingId,
-						]
-					);
-				} catch (Exception $e) {
-					$this->logger->error(
-						message: '[ImportHandler] Failed to import mapping',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'mappingKey' => $key,
-							'error' => $e->getMessage(),
-						]
-					);
-				}//end try
-			}//end foreach
-
-			$this->logger->debug(
-				message: '[ImportHandler] Mapping import completed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'importedCount' => count($result['mappings']),
-				]
-			);
-		}//end if
-
-		// Selectielijst categories the app ships (`components.selectionLists`),
-		// written as selectielijst register rows so its schemas' `archive.classification`
-		// resolves on a fresh install. A refused entry is named in the result;
-		// it never stops the rest of the import.
-		if (is_array($data['components']['selectionLists'] ?? null) === true
-			&& $this->selectionListSeeder !== null
-		) {
-			$result['selectionLists'] = $this->selectionListSeeder->seed(
-				entries: $data['components']['selectionLists'],
-				appId: $appId
-			);
-		}
+		$this->importSchemaComponents(run: $run);
+		$this->importRegisterComponents(run: $run);
+		$this->importMappingComponents(run: $run);
+		$this->seedSelectionLists(run: $run);
 
 		// Resolve `@ref:<slug>` seed-reference tokens to concrete target UUIDs
-		// before the import loop. Seed objects reference siblings by slug; the
-		// referenced schema properties are `format: uuid`, so the tokens must be
-		// rewritten to the target object's UUID (and the targets given a stable
-		// id) before validation runs inside saveObject().
-		$data = $this->resolveSeedReferenceTokens(data: $data, appId: $appId);
+		// before the import loop: the referenced schema properties are
+		// `format: uuid`, so the tokens must be rewritten (and the targets given
+		// a stable id) before validation runs inside saveObject().
+		$run->data = $this->resolveSeedReferenceTokens(data: $run->data, appId: $run->appId);
+		$this->importListedObjects(run: $run);
+	}//end importComponents()
 
-		// NOTE: We do NOT build ID maps - we'll pass the actual objects to avoid organisation filter issues.
-		// When saveObject() receives Register/Schema objects, it skips the find() lookup entirely.
-		// Resolve the acting user once for the object loop. On the occ/installer/cron
-		// path there is no user session, so saveObject()'s folder access checks would
-		// default-deny ("Access to folder NNNN is denied for the acting user").
-		// resolveActingUser() returns the session user when present, otherwise a
-		// fallback admin; null when none is resolvable (folder op then skips, not the
-		// whole import).
-		$actingUser = $this->resolveActingUser();
-		// Process and import objects. Seed objects may be authored under
-		// components.objects (the canonical export location) OR at the top-level
-		// `objects` key (how some app register files place seed). Merge both,
-		// de-duped by @self identity (uuid, else register/schema/slug), so either
-		// authoring location seeds and re-import never duplicates.
-		$seedObjects = [];
-		$seedSeen = [];
-		foreach ([($data['components']['objects'] ?? null), ($data['objects'] ?? null)] as $seedBucket) {
-			if (is_array($seedBucket) === false) {
+	/**
+	 * Import the schemas of a configuration in two passes.
+	 *
+	 * Pass 1 creates every schema without resolving cross-references, pass 2
+	 * resolves them once every schema exists, so no lookup fails on a schema
+	 * declared later in the file.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importSchemaComponents(ImportRun $run): void {
+		if (($run->data['components']['schemas'] ?? null) === null || is_array($run->data['components']['schemas']) === false) {
+			return;
+		}
+
+		$run->slugsAndIdsMap = $this->schemaMapper->getSlugToIdMap();
+		$this->logger->debug(
+			message: '[ImportHandler] Starting TWO-PASS schema import process',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'totalSchemas' => count($run->data['components']['schemas']),
+				'schemaKeys' => array_keys($run->data['components']['schemas']),
+			]
+		);
+
+		$schemasToResolve = $this->createSchemasWithoutReferences(run: $run);
+		$this->resolveSchemaReferences(run: $run, schemasToResolve: $schemasToResolve);
+
+		$this->logger->debug(
+			message: '[ImportHandler] Schema import process completed (TWO-PASS)',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'importedCount' => count($run->result['schemas']),
+				'importedSchemas' => $this->schemaSlugs(schemas: $run->result['schemas']),
+			]
+		);
+	}//end importSchemaComponents()
+
+	/**
+	 * The slugs of a list of schemas.
+	 *
+	 * @param array<Schema> $schemas The schemas.
+	 *
+	 * @return array<string|null> Their slugs, in order.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function schemaSlugs(array $schemas): array {
+		return array_map(fn ($schema) => $schema->getSlug(), $schemas);
+	}//end schemaSlugs()
+
+	/**
+	 * Pass 1: create every schema of the configuration without resolving cross-references.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return array<int|string, array> The created schemas' data by component key, for pass 2.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function createSchemasWithoutReferences(ImportRun $run): array {
+		$this->logger->debug(
+			message: '[ImportHandler] PASS 1: Creating all schemas without cross-reference resolution',
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+		$schemasToResolve = [];
+		foreach ($run->data['components']['schemas'] as $key => $schemaData) {
+			$component = $this->schemaComponent(key: $key, schemaData: $schemaData);
+			if ($this->createSchemaWithoutReferences(run: $run, component: $component) === true) {
+				$schemasToResolve[$key] = $component->data;
+			}
+		}
+
+		$this->warnRejectedSchemas(run: $run);
+		$this->logger->debug(
+			message: '[ImportHandler] Pass 1 completed - all schemas created',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'createdCount' => count($run->result['schemas']),
+				'createdSchemas' => $this->schemaSlugs(schemas: $run->result['schemas']),
+			]
+		);
+
+		return $schemasToResolve;
+	}//end createSchemasWithoutReferences()
+
+	/**
+	 * A schema component with its title and slug defaulted to its key.
+	 *
+	 * The component key IS the slug in every app configuration this handler
+	 * has received: the registers list schemas by key. pipelinq shipped sixteen
+	 * schemas without a `slug`, importSchema() rejected all sixteen, and the
+	 * re-import still reported success. A slug that is present but blank is
+	 * left alone: that is a mistake to reject, not to paper over.
+	 *
+	 * @param int|string $key        The component key.
+	 * @param array      $schemaData The schema data.
+	 *
+	 * @return ImportComponent The keyed schema data.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function schemaComponent(int|string $key, array $schemaData): ImportComponent {
+		$this->logger->debug(
+			message: '[ImportHandler] Processing schema (Pass 1)',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schemaKey' => $key,
+				'schemaTitle' => $schemaData['title'] ?? 'no title',
+				'schemaSlug' => $schemaData['slug'] ?? $key,
+			]
+		);
+
+		if (isset($schemaData['title']) === false && is_string($key) === true) {
+			$schemaData['title'] = $key;
+		}
+
+		if (array_key_exists('slug', $schemaData) === false && is_string($key) === true) {
+			$schemaData['slug'] = $key;
+		}
+
+		return new ImportComponent(key: $key, data: $schemaData);
+	}//end schemaComponent()
+
+	/**
+	 * Pass 1 for one schema: create it with the schema map blanked, so no $ref resolves yet.
+	 *
+	 * Blanking `schemasMap` is a TEMPORARY mutation of shared state, so it is
+	 * undone in `finally`, on EVERY path. Undone on the success path only, one
+	 * rejected schema left the map empty for every later schema, and the
+	 * registers were created without their links (softwarecatalog: 2 rejected
+	 * schemas, 18 of 20 links missing). See ImportHandlerSchemaMapRestoreTest.
+	 *
+	 * @param ImportRun       $run       The import.
+	 * @param ImportComponent $component The schema component.
+	 *
+	 * @return bool True when the schema was created and needs pass 2.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function createSchemaWithoutReferences(ImportRun $run, ImportComponent $component): bool {
+		$savedSchemasMap = $this->schemasMap;
+		$this->schemasMap = [];
+		$schema = null;
+
+		try {
+			$schema = $this->importSchemaComponent(run: $run, component: $component);
+		} catch (Exception $e) {
+			$component->error = $e;
+			$this->recordRejectedSchema(run: $run, rejection: $component);
+		} finally {
+			// Restore on every path — success, rejection, or an \Error escaping this loop entirely.
+			$this->schemasMap = $savedSchemasMap;
+		}
+
+		if ($schema === null) {
+			return false;
+		}
+
+		$this->schemasMap[$schema->getSlug()] = $schema;
+		$run->result['schemas'][] = $schema;
+		$this->logger->debug(
+			message: '[ImportHandler] Successfully created schema (Pass 1)',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schemaKey' => $component->key,
+				'schemaSlug' => $schema->getSlug(),
+				'schemaId' => $schema->getId(),
+			]
+		);
+		return true;
+	}//end createSchemaWithoutReferences()
+
+	/**
+	 * Import one schema component without forcing, scoped to the ids its registers declare.
+	 *
+	 * @param ImportRun       $run       The import.
+	 * @param ImportComponent $component The schema component.
+	 *
+	 * @return Schema|null The schema, or null when it is skipped.
+	 *
+	 * @throws Exception When the schema is rejected.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importSchemaComponent(ImportRun $run, ImportComponent $component): ?Schema {
+		$schemaSlugLower = strtolower((string)($component->data['slug'] ?? $component->key));
+		return $this->importSchema(
+			data: $component->data,
+			slugsAndIdsMap: $run->slugsAndIdsMap,
+			owner: $run->owner,
+			appId: $run->appId,
+			version: $run->version,
+			force: $run->force,
+			registerSchemaIds: $run->slugToSchemaIds[$schemaSlugLower] ?? null
+		);
+	}//end importSchemaComponent()
+
+	/**
+	 * Count and name a schema pass 1 rejected.
+	 *
+	 * A rejected schema is CONTAINED (siblings still import) but never silent:
+	 * it is counted and NAMED in the result, so the operator sees it here
+	 * rather than three layers downstream.
+	 *
+	 * @param ImportRun       $run       The import.
+	 * @param ImportComponent $rejection The schema component and the exception that rejected it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function recordRejectedSchema(ImportRun $run, ImportComponent $rejection): void {
+		$error = $rejection->error;
+		$run->result['skipped']['schemas']++;
+		$run->result['failed']['schemas'][] = [
+			'key' => (string)$rejection->key,
+			'slug' => (string)($rejection->data['slug'] ?? $rejection->key),
+			'error' => $error->getMessage(),
+		];
+		$this->logger->error(
+			message: '[ImportHandler] Failed to create schema (Pass 1)',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schemaKey' => $rejection->key,
+				'error' => $error->getMessage(),
+				'trace' => $error->getTraceAsString(),
+			]
+		);
+	}//end recordRejectedSchema()
+
+	/**
+	 * Warn once, naming every schema pass 1 rejected.
+	 *
+	 * The per-schema `error` lines are easy to miss in a log that is almost all
+	 * `debug`; this is the line that says the import was PARTIAL.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function warnRejectedSchemas(ImportRun $run): void {
+		if ($run->result['failed']['schemas'] === []) {
+			return;
+		}
+
+		$rejectedSlugs = array_column($run->result['failed']['schemas'], 'slug');
+		$this->logger->warning(
+			message: sprintf(
+				'[ImportHandler] PARTIAL IMPORT: %d of %d schema(s) were rejected and are NOT '
+				. 'linked to any register in this import: %s. Registers declaring them were '
+				. 'created without those schema references.',
+				count($rejectedSlugs),
+				count($run->data['components']['schemas']),
+				implode(', ', $rejectedSlugs)
+			),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $run->appId, 'failedSchemas' => $run->result['failed']['schemas']]
+		);
+	}//end warnRejectedSchemas()
+
+	/**
+	 * Pass 2: resolve the cross-references of every schema pass 1 created.
+	 *
+	 * @param ImportRun                $run              The import.
+	 * @param array<int|string, array> $schemasToResolve The created schemas' data by component key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function resolveSchemaReferences(ImportRun $run, array $schemasToResolve): void {
+		$this->logger->debug(
+			message: '[ImportHandler] PASS 2: Resolving schema cross-references',
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+
+		foreach ($schemasToResolve as $key => $schemaData) {
+			if (isset($schemaData['title']) === false && is_string($key) === true) {
+				$schemaData['title'] = $key;
+			}
+
+			$this->resolveSchemaComponentReferences(run: $run, component: new ImportComponent(key: $key, data: $schemaData));
+		}
+	}//end resolveSchemaReferences()
+
+	/**
+	 * Pass 2 for one schema: re-import it, forced, with the schema map populated.
+	 *
+	 * Schemas pass 1 skipped as up-to-date (or reported as failed) are not in
+	 * the map: the expected case on every boot of an unchanged config, so that
+	 * is logged at debug rather than as one warning per schema per import.
+	 *
+	 * @param ImportRun       $run       The import.
+	 * @param ImportComponent $component The schema component.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function resolveSchemaComponentReferences(ImportRun $run, ImportComponent $component): void {
+		$schemaSlug = $component->data['slug'] ?? $component->key;
+		if (($this->schemasMap[$schemaSlug] ?? null) === null) {
+			$this->logger->debug(
+				message: '[ImportHandler] Schema not found in map for Pass 2 - skipping cross-reference resolution',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaSlug' => $schemaSlug]
+			);
+			return;
+		}
+
+		try {
+			$this->logger->debug(
+				message: '[ImportHandler] Resolving cross-references for schema (Pass 2)',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaSlug' => $schemaSlug]
+			);
+			$schema = $this->reimportSchemaComponent(run: $run, component: $component);
+			// Update in map with resolved version.
+			$this->schemasMap[$schema->getSlug()] = $schema;
+			$this->logger->debug(
+				message: '[ImportHandler] Cross-references resolved for schema (Pass 2)',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaSlug' => $schemaSlug, 'schemaId' => $schema->getId()]
+			);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[ImportHandler] Failed to resolve cross-references for schema (Pass 2)',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaKey' => $component->key, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
+			);
+		}
+	}//end resolveSchemaComponentReferences()
+
+	/**
+	 * Re-import one schema forced, resolving back to the EXACT schema pass 1 created.
+	 *
+	 * The register-scoped ids were computed from PRE-IMPORT register state, so
+	 * a schema freshly CREATED in pass 1 is not in them yet; its own id is
+	 * added so findBySlugInIds() still finds it rather than forking a second one.
+	 *
+	 * @param ImportRun       $run       The import.
+	 * @param ImportComponent $component The schema component.
+	 *
+	 * @return Schema The schema with its cross-references resolved.
+	 *
+	 * @throws Exception When the schema is rejected.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function reimportSchemaComponent(ImportRun $run, ImportComponent $component): Schema {
+		$schemaSlug = $component->data['slug'] ?? $component->key;
+		$schemaIds = $run->slugToSchemaIds[strtolower((string)$schemaSlug)] ?? null;
+		$resolvedSchemaId = $this->schemasMap[$schemaSlug]->getId();
+		if ($resolvedSchemaId !== null) {
+			$schemaIds = ($schemaIds ?? []);
+			$schemaIds[] = (int)$resolvedSchemaId;
+		}
+
+		return $this->importSchema(
+			data: $component->data,
+			slugsAndIdsMap: $run->slugsAndIdsMap,
+			owner: $run->owner,
+			appId: $run->appId,
+			version: $run->version,
+			force: true,
+			registerSchemaIds: $schemaIds
+		);
+	}//end reimportSchemaComponent()
+
+	/**
+	 * Import the registers of a configuration, linking the schemas this import created.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importRegisterComponents(ImportRun $run): void {
+		if (($run->data['components']['registers'] ?? null) === null || is_array($run->data['components']['registers']) === false) {
+			return;
+		}
+
+		foreach ($run->data['components']['registers'] as $slug => $registerData) {
+			$component = new ImportComponent(key: strtolower($slug), data: $registerData);
+			if (($registerData['schemas'] ?? null) !== null && is_array($registerData['schemas']) === true) {
+				$component->data['schemas'] = $this->registerSchemaIds(run: $run, schemaSlugs: $registerData['schemas']);
+			}
+
+			// Propagate parent-level x-openregister.type onto the register so
+			// consuming apps can filter mock/demo data via
+			// `GET /api/registers?filters[type]=mock`. A per-register `type`
+			// takes precedence, so one configuration file can mix register types.
+			$parentType = ($run->data['x-openregister']['type'] ?? null);
+			if (isset($component->data['type']) === false && $parentType !== null && $parentType !== '') {
+				$component->data['type'] = (string)$parentType;
+			}
+
+			$this->importRegisterComponent(run: $run, component: $component);
+		}
+	}//end importRegisterComponents()
+
+	/**
+	 * The ids of the schemas a register lists, taken from the schemas this import created.
+	 *
+	 * There is no database fallback: it may fail on organisation or
+	 * multi-tenancy filters during cross-instance imports.
+	 *
+	 * @param ImportRun $run         The import.
+	 * @param array     $schemaSlugs The schema slugs the register lists.
+	 *
+	 * @return array The ids of the schemas found in the schema map.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function registerSchemaIds(ImportRun $run, array $schemaSlugs): array {
+		$schemaIds = [];
+		foreach ($schemaSlugs as $schemaSlug) {
+			if (($this->schemasMap[$schemaSlug] ?? null) === null) {
+				$this->warnMissingRegisterSchema(run: $run, schemaSlug: $schemaSlug);
 				continue;
 			}
 
-			foreach ($seedBucket as $seedCandidate) {
-				if (is_array($seedCandidate) === false) {
-					continue;
-				}
+			$schemaId = $this->schemasMap[$schemaSlug]->getId();
+			$schemaIds[] = $schemaId;
+			$this->logger->debug(
+				message: "[ImportHandler] Schema '{$schemaSlug}' found in schemasMap",
+				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]
+			);
+		}
 
-				$seedSelf = ($seedCandidate['@self'] ?? []);
-				$seedKey = (string)($seedSelf['uuid'] ?? '');
-				if ($seedKey === '') {
-					$seedKey = trim(($seedSelf['register'] ?? '') . '/' . ($seedSelf['schema'] ?? '') . '/' . ($seedSelf['slug'] ?? ''), '/');
-				}
+		return $schemaIds;
+	}//end registerSchemaIds()
 
-				if ($seedKey !== '' && isset($seedSeen[$seedKey]) === true) {
-					continue;
-				}
+	/**
+	 * Warn that a register lists a schema this import did not create, naming the rejection when there was one.
+	 *
+	 * Since pass 1 restores the schema map on every path, a missing schema has
+	 * exactly ONE cause: the schema pass rejected it.
+	 *
+	 * @param ImportRun $run        The import.
+	 * @param mixed     $schemaSlug The schema slug the register lists.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function warnMissingRegisterSchema(ImportRun $run, mixed $schemaSlug): void {
+		$reason = 'This schema should have been created in the TWO-PASS schema import phase. ';
+		foreach ($run->result['failed']['schemas'] as $failedSchema) {
+			if ($failedSchema['slug'] === $schemaSlug || $failedSchema['key'] === $schemaSlug) {
+				$reason = 'It was REJECTED by the schema import phase (' . $failedSchema['error'] . '). ';
+				break;
+			}
+		}
 
-				if ($seedKey !== '') {
-					$seedSeen[$seedKey] = true;
-				}
+		$msg = 'Schema with slug %s not found in schemasMap during register import. ';
+		$msg .= $reason;
+		$msg .= 'This register will be created without this schema reference.';
+		$this->logger->warning(
+			message: '[ImportHandler] ' . sprintf($msg, $schemaSlug),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end warnMissingRegisterSchema()
 
-				$seedObjects[] = $seedCandidate;
-			}//end foreach
-		}//end foreach
+	/**
+	 * Import one register, skipping it with a warning when it fails.
+	 *
+	 * PER-ENTITY RESILIENCE: one failing register MUST NOT abort the rest of
+	 * the import. \Throwable is caught so opis/json-schema validation failures
+	 * and folder-access denials are contained too.
+	 *
+	 * @param ImportRun       $run       The import.
+	 * @param ImportComponent $component The register, keyed by its lower-cased slug.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importRegisterComponent(ImportRun $run, ImportComponent $component): void {
+		try {
+			$register = $this->importRegister(
+				data: $component->data,
+				owner: $run->owner,
+				appId: $run->appId,
+				version: $run->version,
+				force: $run->force
+			);
+			$this->registersMap[$component->key] = $register;
+			$run->result['registers'][] = $register;
+		} catch (\Throwable $e) {
+			$run->result['skipped']['registers']++;
+			$this->logger->warning(
+				message: "[ImportHandler] Skipping register '{$component->key}' - import failed: " . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $run->appId, 'registerSlug' => $component->key, 'error' => $e->getMessage()]
+			);
+		}
+	}//end importRegisterComponent()
 
-		// Set when a listed object was refused by a listener (an app's own
-		// validation on the save event). That refusal depends on what the
-		// instance holds, not on the file, so this import must not be
-		// remembered as done: the content hash below is withheld and the next
-		// run imports again instead of fast-skipping.
-		$refusedByListener = false;
+	/**
+	 * Import the mappings of a configuration.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importMappingComponents(ImportRun $run): void {
+		if (($run->data['components']['mappings'] ?? null) === null || is_array($run->data['components']['mappings']) === false) {
+			return;
+		}
 
-		// A listed object that fails is tried once more after every other one
-		// has been written: an object may name another that comes later in the
-		// list, and a listener may judge it by a row a sibling writes. Only a
-		// second failure is recorded, in `failed.objects`, with the reason.
+		$run->slugsAndIdsMap = $this->mappingMapper->getSlugToIdMap(includeNullOrg: true);
+		$this->logger->debug(
+			message: '[ImportHandler] Starting mapping import',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'totalMappings' => count($run->data['components']['mappings']),
+				'mappingKeys' => array_keys($run->data['components']['mappings']),
+			]
+		);
+
+		foreach ($run->data['components']['mappings'] as $key => $mappingData) {
+			if (isset($mappingData['name']) === false && is_string($key) === true) {
+				$mappingData['name'] = $key;
+			}
+
+			$this->importMappingComponent(run: $run, component: new ImportComponent(key: $key, data: $mappingData));
+		}
+
+		$this->logger->debug(
+			message: '[ImportHandler] Mapping import completed',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'importedCount' => count($run->result['mappings'])]
+		);
+	}//end importMappingComponents()
+
+	/**
+	 * Import one mapping, logging and skipping it when it fails.
+	 *
+	 * @param ImportRun       $run       The import.
+	 * @param ImportComponent $component The mapping component.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importMappingComponent(ImportRun $run, ImportComponent $component): void {
+		try {
+			$mapping = $this->importMapping(
+				data: $component->data,
+				slugsAndIdsMap: $run->slugsAndIdsMap,
+				configuration: $run->configuration,
+				version: $run->version,
+				force: $run->force
+			);
+			$mappingId = null;
+			if ($mapping !== null) {
+				$run->result['mappings'][] = $mapping;
+				$mappingId = $mapping->getId();
+			}
+
+			$this->logger->debug(
+				message: '[ImportHandler] Mapping imported successfully',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'mappingSlug' => $component->data['slug'] ?? $component->key, 'mappingId' => $mappingId]
+			);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[ImportHandler] Failed to import mapping',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'mappingKey' => $component->key, 'error' => $e->getMessage()]
+			);
+		}
+	}//end importMappingComponent()
+
+	/**
+	 * Write the selectielijst categories the app ships (`components.selectionLists`).
+	 *
+	 * They become selectielijst register rows, so the app's schemas'
+	 * `archive.classification` resolves on a fresh install. A refused entry is
+	 * named in the result; it never stops the rest of the import.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function seedSelectionLists(ImportRun $run): void {
+		if (is_array($run->data['components']['selectionLists'] ?? null) === true
+			&& $this->selectionListSeeder !== null
+		) {
+			$run->result['selectionLists'] = $this->selectionListSeeder->seed(
+				entries: $run->data['components']['selectionLists'],
+				appId: $run->appId
+			);
+		}
+	}//end seedSelectionLists()
+
+	/**
+	 * Import the objects a configuration lists, retrying each failure once after the rest.
+	 *
+	 * An object may name another that comes later in the list, and a listener
+	 * may judge it by a row a sibling writes, so a failure is retried once
+	 * after every other object has been written. Only a second failure is
+	 * recorded, in `failed.objects`, with the reason. Objects without a
+	 * `@self.slug` are not imported here.
+	 *
+	 * The acting user is resolved once: on the occ, installer and cron paths
+	 * there is no session, and saveObject()'s folder checks would default-deny.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importListedObjects(ImportRun $run): void {
+		$run->actingUser = $this->resolveActingUser();
 		$retry = [];
-		foreach ($seedObjects as $objectData) {
+		foreach ($this->listedSeedObjects(data: $run->data) as $objectData) {
 			if (empty($objectData['@self']['slug'] ?? null) === true) {
 				continue;
 			}
 
 			try {
-				$this->importListedObject(objectData: $objectData, appId: $appId, actingUser: $actingUser, result: $result);
+				$this->importListedObject(objectData: $objectData, appId: $run->appId, actingUser: $run->actingUser, result: $run->result);
 			} catch (\Throwable $e) {
 				$this->logger->debug(
 					message: '[ImportHandler] Object failed on the first pass, retried after the rest',
@@ -3594,121 +3732,202 @@ class ImportHandler {
 			}
 		}
 
+		$this->retryListedObjects(run: $run, retry: $retry);
+	}//end importListedObjects()
+
+	/**
+	 * Import the listed objects that failed on the first pass, recording a second failure.
+	 *
+	 * A refusal by a listener (an app's own validation on the save event)
+	 * depends on what the instance holds, not on the file, so it marks the run
+	 * and the content hash is not stored.
+	 *
+	 * @param ImportRun   $run   The import.
+	 * @param list<array> $retry The listed objects to retry.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function retryListedObjects(ImportRun $run, array $retry): void {
 		foreach ($retry as $objectData) {
 			try {
-				$this->importListedObject(objectData: $objectData, appId: $appId, actingUser: $actingUser, result: $result);
+				$this->importListedObject(objectData: $objectData, appId: $run->appId, actingUser: $run->actingUser, result: $run->result);
 			} catch (\Throwable $e) {
 				if ($e instanceof HookStoppedException === true) {
-					$refusedByListener = true;
+					$run->refusedByListener = true;
 				}
 
-				$this->recordFailedObject(objectData: $objectData, appId: $appId, error: $e, result: $result);
+				$this->recordFailedObject(objectData: $objectData, appId: $run->appId, error: $e, result: $run->result);
+			}
+		}
+	}//end retryListedObjects()
+
+	/**
+	 * The seed objects a configuration lists, from `components.objects` and the top-level `objects`.
+	 *
+	 * Both authoring locations seed; the lists are merged and de-duplicated by
+	 * `@self` identity (uuid, else register/schema/slug), so a re-import never
+	 * duplicates.
+	 *
+	 * @param array $data The configuration data.
+	 *
+	 * @return list<array> The seed objects, first occurrence kept.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function listedSeedObjects(array $data): array {
+		$seedObjects = [];
+		$seedSeen = [];
+		foreach ([($data['components']['objects'] ?? null), ($data['objects'] ?? null)] as $seedBucket) {
+			foreach ((array)$seedBucket as $seedCandidate) {
+				if (is_array($seedBucket) === false || is_array($seedCandidate) === false) {
+					continue;
+				}
+
+				$seedKey = $this->seedIdentity(seedSelf: $seedCandidate['@self'] ?? []);
+				if ($seedKey !== '' && isset($seedSeen[$seedKey]) === true) {
+					continue;
+				}
+
+				if ($seedKey !== '') {
+					$seedSeen[$seedKey] = true;
+				}
+
+				$seedObjects[] = $seedCandidate;
 			}
 		}
 
-		// The shipped versions the seeds above recorded are written once, not once per seed.
+		return $seedObjects;
+	}//end listedSeedObjects()
+
+	/**
+	 * The identity a seed object is de-duplicated by: its uuid, else register/schema/slug.
+	 *
+	 * @param array $seedSelf The object's `@self`.
+	 *
+	 * @return string The identity, '' when it has none.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function seedIdentity(array $seedSelf): string {
+		$seedKey = (string)($seedSelf['uuid'] ?? '');
+		if ($seedKey === '') {
+			$seedKey = trim(($seedSelf['register'] ?? '') . '/' . ($seedSelf['schema'] ?? '') . '/' . ($seedSelf['slug'] ?? ''), '/');
+		}
+
+		return $seedKey;
+	}//end seedIdentity()
+
+	/**
+	 * Flush the seed ledgers, merge OpenConnector's import, store the version and import seed data.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function finishImport(ImportRun $run): void {
+		// The shipped versions the seeds recorded are written once, not once per seed.
 		$this->seedVersions()->flush();
 		$this->seedHashes()->flush();
+		$this->importConnectorConfiguration(run: $run);
+		$this->storeImportedVersion(run: $run);
+		$this->importSeedDataContained(run: $run);
+	}//end finishImport()
 
-		// Process OpenConnector integration if available.
-		if ($this->connectorConfigSvc !== null) {
-			try {
-				$openConnectorResult = $this->connectorConfigSvc->importConfiguration($data);
-				$result = array_replace_recursive($openConnectorResult, $result);
-			} catch (Exception $e) {
-				$this->logger->warning(
-					message: '[ImportHandler] OpenConnector integration failed: ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
+	/**
+	 * Hand the configuration to OpenConnector, when installed, and merge its result.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importConnectorConfiguration(ImportRun $run): void {
+		if ($this->connectorConfigSvc === null) {
+			return;
 		}
 
-		// Create or update configuration entity to track imported data.
-		// ONLY create/update if configuration was NOT provided by caller (e.g. importFromApp already created it).
-		if ($configuration === null
-			&& $appId !== null
-			&& $version !== null
-			&& (count($result['registers']) > 0
-			|| count($result['schemas']) > 0
-			|| count($result['objects']) > 0)
-		) {
-			$configuration = $this->createOrUpdateConfiguration(
-				data: $data,
-				appId: $appId,
-				version: $version,
-				result: $result,
-				owner: $owner
-			);
-		}
-
-		// Store the version information if appId and version are available.
-		if ($appId !== null && $version !== null) {
-			$this->appConfig->setValueString('openregister', "imported_config_{$appId}_version", $version);
-			// Persist the content hash computed from the pre-mutation snapshot above so
-			// the next run can fast-skip only when the definitional content is unchanged
-			// (#426). Storing it even when the per-entity gates ended up updating nothing
-			// is correct: it records "this exact config content has been seen".
-			// Withheld when a listener refused a listed object: the refusal
-			// depends on what the instance holds (a seed naming a row another
-			// step writes later), so the next run must import again rather than
-			// fast-skip on an unchanged hash. A failure the file itself causes
-			// (a schema validation error) does not withhold it: retrying the
-			// same content would fail the same way, on every repair.
-			$storedHash = $definitionHash;
-			if ($refusedByListener === true) {
-				$storedHash = '';
-				$this->logger->warning(
-					message: "[ImportHandler] {$appId}: a listener refused a listed object; "
-						. 'this import is not remembered as done, so the next run imports again',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'failedObjects' => $result['failed']['objects']]
-				);
-			}
-
-			$this->appConfig->setValueString('openregister', "imported_config_{$appId}_hash", $storedHash);
-			// Info: an app's configuration genuinely changed version. The
-			// far more common "unchanged, skipping" is debug — reporting the
-			// NON-event at info is what made a repair unreadable.
-			$this->logger->info(
-				message: "[ImportHandler] Stored version {$version} for app {$appId} after successful import",
+		try {
+			$openConnectorResult = $this->connectorConfigSvc->importConfiguration($run->data);
+			$run->result = array_replace_recursive($openConnectorResult, $run->result);
+		} catch (Exception $e) {
+			$this->logger->warning(
+				message: '[ImportHandler] OpenConnector integration failed: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 		}
+	}//end importConnectorConfiguration()
 
-		// Import seed data objects if present (only if configuration was created/updated).
-		if ($configuration === null) {
-			$this->logger->debug(
-				message: '[ImportHandler] Skipping seedData import - no configuration entity available',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return $result;
+	/**
+	 * Store the imported version and content hash of the app's configuration.
+	 *
+	 * The hash records "this exact config content has been seen", so the next
+	 * run fast-skips only when the content is unchanged (#426). It is withheld
+	 * when a listener refused a listed object: that refusal depends on what
+	 * the instance holds, so the next run must import again. A failure the
+	 * file itself causes (a schema validation error) does not withhold it.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function storeImportedVersion(ImportRun $run): void {
+		if ($run->appId === null || $run->version === null) {
+			return;
 		}
 
-		// PER-ENTITY RESILIENCE: seed-data import runs AFTER registers/schemas/objects
-		// are already persisted. A throw inside it must never unwind that completed
-		// work, so wrap the whole call. Per-schema and per-object resilience also
-		// live inside importSeedData().
+		$this->appConfig->setValueString('openregister', "imported_config_{$run->appId}_version", $run->version);
+		$storedHash = $run->definitionHash;
+		if ($run->refusedByListener === true) {
+			$storedHash = '';
+			$this->logger->warning(
+				message: "[ImportHandler] {$run->appId}: a listener refused a listed object; "
+					. 'this import is not remembered as done, so the next run imports again',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'failedObjects' => $run->result['failed']['objects']]
+			);
+		}
+
+		$this->appConfig->setValueString('openregister', "imported_config_{$run->appId}_hash", $storedHash);
+		$this->logger->info(
+			message: "[ImportHandler] Stored version {$run->version} for app {$run->appId} after successful import",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end storeImportedVersion()
+
+	/**
+	 * Import the configuration's seed data, keeping everything already imported when it fails.
+	 *
+	 * Seed data is imported AFTER registers, schemas and objects are
+	 * persisted; a throw inside it must never unwind that completed work.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importSeedDataContained(ImportRun $run): void {
 		try {
 			$this->importSeedData(
-				configData: $data,
-				owner: $owner,
-				appId: $appId,
-				configuration: $configuration,
-				result: $result
+				configData: $run->data,
+				owner: $run->owner,
+				appId: $run->appId,
+				configuration: $run->configuration,
+				result: $run->result
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[ImportHandler] Seed-data import failed - registers/schemas/objects kept: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'appId' => $appId,
-					'error' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $run->appId, 'error' => $e->getMessage()]
 			);
-		}//end try
-
-		return $result;
-	}//end importFromJson()
+		}
+	}//end importSeedDataContained()
 
 	/**
 	 * Import one object listed in a configuration (`components.objects`).
