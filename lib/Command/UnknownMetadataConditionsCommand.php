@@ -79,6 +79,8 @@ class UnknownMetadataConditionsCommand extends Command {
 	 * @return int 0 when no stored rule names unknown metadata, 1 otherwise.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Symfony's signature; the command takes no input.
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$conditions = new MetadataConditionFindings();
