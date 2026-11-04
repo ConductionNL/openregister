@@ -814,22 +814,7 @@ class SchemaService implements SchemaExplorationInterface {
 			);
 		}
 
-		// Sort suggestions by confidence and usage.
-		usort(
-			$suggestions,
-			function ($a, $b) {
-				$confidenceOrder = ['high' => 3, 'medium' => 2, 'low' => 1];
-				$confCompare = $confidenceOrder[$a['confidence']] - $confidenceOrder[$b['confidence']];
-
-				if ($confCompare !== 0) {
-					return $confCompare;
-				}
-
-				return $b['usage_percentage'] - $a['usage_percentage'];
-			}
-		);
-
-		return $suggestions;
+		return $this->sortByConfidence(suggestions: $suggestions);
 	}//end generateSuggestions()
 
 	/**
@@ -842,6 +827,28 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @return array The suggestion.
 	 */
 	private function baseSuggestion(int|string $propertyName, array $analysis): array {
+		$observed = $this->observedFields(analysis: $analysis);
+		return array_merge(
+			$this->suggestionHead(propertyName: $propertyName, analysis: $analysis),
+			array_slice($observed, 0, 3),
+			[
+				// Default to nullable unless evidence suggests otherwise.
+				'nullable' => true,
+				'description' => 'Property discovered through object analysis',
+			],
+			array_slice($observed, 3)
+		);
+	}//end baseSuggestion()
+
+	/**
+	 * The leading fields of a suggestion: name, confidence from usage, usage and recommended type.
+	 *
+	 * @param int|string $propertyName The property name.
+	 * @param array      $analysis     The property's analysis.
+	 *
+	 * @return array The fields.
+	 */
+	private function suggestionHead(int|string $propertyName, array $analysis): array {
 		$usagePercentage = $analysis['usage_percentage'] ?? 0;
 		$confidence = 'low';
 		if ($usagePercentage >= 80) {
@@ -850,6 +857,24 @@ class SchemaService implements SchemaExplorationInterface {
 			$confidence = 'medium';
 		}
 
+		return [
+			'property_name' => $propertyName,
+			'confidence' => $confidence,
+			'usage_percentage' => $usagePercentage,
+			'usage_count' => $analysis['usage_count'],
+			'recommended_type' => $this->recommendPropertyType(analysis: $analysis),
+		];
+	}//end suggestionHead()
+
+	/**
+	 * What the analysis observed: examples, lengths, format, patterns, numeric range and the
+	 * type variations when there is more than one type.
+	 *
+	 * @param array $analysis The property's analysis.
+	 *
+	 * @return array The fields.
+	 */
+	private function observedFields(array $analysis): array {
 		$maxLengthValue = null;
 		if ($analysis['max_length'] > 0) {
 			$maxLengthValue = $analysis['max_length'];
@@ -860,39 +885,45 @@ class SchemaService implements SchemaExplorationInterface {
 			$minLengthValue = $analysis['min_length'];
 		}
 
+		$typeVariations = null;
+		if (count($analysis['types']) > 1) {
+			$typeVariations = $analysis['types'];
+		}
+
 		return [
-			'property_name' => $propertyName,
-			'confidence' => $confidence,
-			'usage_percentage' => $usagePercentage,
-			'usage_count' => $analysis['usage_count'],
-			'recommended_type' => $this->recommendPropertyType(analysis: $analysis),
 			'examples' => array_slice($analysis['examples'], 0, 3),
 			'max_length' => $maxLengthValue,
 			'min_length' => $minLengthValue,
-			// Default to nullable unless evidence suggests otherwise.
-			'nullable' => true,
-			'description' => 'Property discovered through object analysis',
 			'detected_format' => $analysis['detected_format'] ?? null,
 			'string_patterns' => $analysis['string_patterns'] ?? [],
 			'numeric_range' => $analysis['numeric_range'] ?? null,
-			'type_variations' => $this->typeVariations(types: $analysis['types']),
+			'type_variations' => $typeVariations,
 		];
-	}//end baseSuggestion()
+	}//end observedFields()
 
 	/**
-	 * The observed types of a property when there is more than one.
+	 * Sort suggestions by confidence, then by usage percentage descending.
 	 *
-	 * @param array $types The observed types.
+	 * @param array $suggestions The suggestions.
 	 *
-	 * @return array|null The types, or null for a single type.
+	 * @return array The sorted suggestions.
 	 */
-	private function typeVariations(array $types): ?array {
-		if (count($types) > 1) {
-			return $types;
-		}
+	private function sortByConfidence(array $suggestions): array {
+		usort(
+			$suggestions,
+			function ($a, $b) {
+				$confidenceOrder = ['high' => 3, 'medium' => 2, 'low' => 1];
+				$confCompare = $confidenceOrder[$a['confidence']] - $confidenceOrder[$b['confidence']];
+				if ($confCompare !== 0) {
+					return $confCompare;
+				}
 
-		return null;
-	}//end typeVariations()
+				return $b['usage_percentage'] - $a['usage_percentage'];
+			}
+		);
+
+		return $suggestions;
+	}//end sortByConfidence()
 
 	/**
 	 * Add the type-specific parts of a suggestion: a buffered maxLength for strings, enum values
@@ -938,8 +969,6 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @param array $_usageStats Usage statistics for all properties
 	 *
 	 * @return array List of property improvements
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Analysis of existing properties requires multiple checks
 	 */
 	private function analyzeExistingProperties(
 		array $existingProperties,
@@ -947,7 +976,6 @@ class SchemaService implements SchemaExplorationInterface {
 		array $_usageStats,
 	): array {
 		$improvements = [];
-
 		foreach ($existingProperties as $propertyName => $propertyConfig) {
 			// Skip if we don't have analysis data for this property.
 			if (isset($discoveredProperties[$propertyName]) === false) {
@@ -955,77 +983,24 @@ class SchemaService implements SchemaExplorationInterface {
 			}
 
 			$analysis = $discoveredProperties[$propertyName];
-			$currentConfig = $propertyConfig;
-			$improvement = $this->comparePropertyWithAnalysis(currentConfig: $currentConfig, analysis: $analysis);
+			$improvement = $this->comparePropertyWithAnalysis(currentConfig: $propertyConfig, analysis: $analysis);
+			if (empty($improvement['issues']) === true) {
+				continue;
+			}
 
-			if (empty($improvement['issues']) === false) {
-				$usagePercentage = $analysis['usage_percentage'] ?? 0;
-				$confidence = 'low';
-				if ($usagePercentage >= 50) {
-					$confidence = 'medium';
-				}
-
-				if ($usagePercentage >= 80) {
-					$confidence = 'high';
-				}
-
-				// Determine max length value.
-				$maxLengthValue = null;
-				if ($analysis['max_length'] > 0) {
-					$maxLengthValue = $analysis['max_length'];
-				}
-
-				// Determine min length value.
-				$minLengthValue = null;
-				if (isset($analysis['min_length']) === true && $analysis['min_length'] < PHP_INT_MAX) {
-					$minLengthValue = $analysis['min_length'];
-				}
-
-				// Determine type variations.
-				$typeVariations = null;
-				if (count($analysis['types']) > 1) {
-					$typeVariations = $analysis['types'];
-				}
-
-				$suggestion = [
-					'property_name' => $propertyName,
-					'confidence' => $confidence,
-					'usage_percentage' => $usagePercentage,
-					'usage_count' => $analysis['usage_count'],
-					'recommended_type' => $improvement['recommended_type'],
+			$improvements[] = array_merge(
+				$this->suggestionHead(propertyName: $propertyName, analysis: $analysis),
+				[
 					'current_type' => $propertyConfig['type'] ?? 'undefined',
 					'improvement_status' => 'existing',
 					'issues' => $improvement['issues'],
 					'suggestions' => $improvement['suggestions'],
-					'examples' => array_slice($analysis['examples'], 0, 3),
-					'max_length' => $maxLengthValue,
-					'min_length' => $minLengthValue,
-					'detected_format' => $analysis['detected_format'] ?? null,
-					'string_patterns' => $analysis['string_patterns'] ?? [],
-					'numeric_range' => $analysis['numeric_range'] ?? null,
-					'type_variations' => $typeVariations,
-				];
-
-				$improvements[] = $suggestion;
-			}//end if
+				],
+				$this->observedFields(analysis: $analysis)
+			);
 		}//end foreach
 
-		// Sort improvements by confidence and usage.
-		usort(
-			$improvements,
-			function ($a, $b) {
-				$confidenceOrder = ['high' => 3, 'medium' => 2, 'low' => 1];
-				$confCompare = $confidenceOrder[$a['confidence']] - $confidenceOrder[$b['confidence']];
-
-				if ($confCompare !== 0) {
-					return $confCompare;
-				}
-
-				return $b['usage_percentage'] - $a['usage_percentage'];
-			}
-		);
-
-		return $improvements;
+		return $this->sortByConfidence(suggestions: $improvements);
 	}//end analyzeExistingProperties()
 
 	/**
@@ -1035,57 +1010,29 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @param array $analysis Analysis data from objects
 	 *
 	 * @return array Comparison results with issues and suggestions
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Comprehensive comparison requires many checks
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple comparison aspects create many code paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Detailed comparison logic requires extensive code
 	 */
 	private function comparePropertyWithAnalysis(array $currentConfig, array $analysis): array {
-		$issues = [];
-		$suggestions = [];
 		$recommendedType = $this->recommendPropertyType(analysis: $analysis);
+		$currentType = $currentConfig['type'] ?? null;
 
-		// Delegate to focused comparison methods for each aspect.
-		$typeComparison = $this->compareType(
-			currentConfig: $currentConfig,
-			recommendedType: $recommendedType
-		);
-		$issues = array_merge($issues, $typeComparison['issues']);
-		$suggestions = array_merge($suggestions, $typeComparison['suggestions']);
+		$comparisons = [$this->compareType(currentConfig: $currentConfig, recommendedType: $recommendedType)];
+		// String constraints apply when the type is or should be string, numeric ones likewise.
+		if ($recommendedType === 'string' || $currentType === 'string') {
+			$comparisons[] = $this->compareStringConstraints(currentConfig: $currentConfig, analysis: $analysis);
+		}
 
-		$stringComparison = $this->compareStringConstraints(
-			currentConfig: $currentConfig,
-			analysis: $analysis,
-			recommendedType: $recommendedType
-		);
-		$issues = array_merge($issues, $stringComparison['issues']);
-		$suggestions = array_merge($suggestions, $stringComparison['suggestions']);
+		if (in_array($recommendedType, ['number', 'integer'], true) === true
+			|| in_array($currentType, ['number', 'integer'], true) === true
+		) {
+			$comparisons[] = $this->compareNumericConstraints(currentConfig: $currentConfig, analysis: $analysis);
+		}
 
-		$numericComparison = $this->compareNumericConstraints(
-			currentConfig: $currentConfig,
-			analysis: $analysis,
-			recommendedType: $recommendedType
-		);
-		$issues = array_merge($issues, $numericComparison['issues']);
-		$suggestions = array_merge($suggestions, $numericComparison['suggestions']);
-
-		$nullableComparison = $this->compareNullableConstraint(
-			currentConfig: $currentConfig,
-			analysis: $analysis
-		);
-		$issues = array_merge($issues, $nullableComparison['issues']);
-		$suggestions = array_merge($suggestions, $nullableComparison['suggestions']);
-
-		$enumComparison = $this->compareEnumConstraint(
-			currentConfig: $currentConfig,
-			analysis: $analysis
-		);
-		$issues = array_merge($issues, $enumComparison['issues']);
-		$suggestions = array_merge($suggestions, $enumComparison['suggestions']);
+		$comparisons[] = $this->compareNullableConstraint(currentConfig: $currentConfig, analysis: $analysis);
+		$comparisons[] = $this->compareEnumConstraint(currentConfig: $currentConfig, analysis: $analysis);
 
 		return [
-			'issues' => $issues,
-			'suggestions' => $suggestions,
+			'issues' => array_merge(...array_column($comparisons, 'issues')),
+			'suggestions' => array_merge(...array_column($comparisons, 'suggestions')),
 			'recommended_type' => $recommendedType,
 		];
 	}//end comparePropertyWithAnalysis()
@@ -1134,166 +1081,238 @@ class SchemaService implements SchemaExplorationInterface {
 	 * Compare string constraints (maxLength, format, pattern).
 	 *
 	 * @param array $currentConfig Current property configuration
-	 * @param array $analysis Property analysis data
-	 * @param string $recommendedType Recommended type
+	 * @param array $analysis      Property analysis data
 	 *
 	 * @return array String constraint comparison results
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple string constraints require individual checks
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      String validation has many conditional paths
 	 */
-	private function compareStringConstraints(array $currentConfig, array $analysis, string $recommendedType): array {
-		$issues = [];
-		$suggestions = [];
-		$currentType = $currentConfig['type'] ?? null;
-
-		// Only check string constraints if type is or should be string.
-		if ($recommendedType !== 'string' && $currentType !== 'string') {
-			return ['issues' => $issues, 'suggestions' => $suggestions];
-		}
-
-		// Check for missing or insufficient maxLength.
-		if (($analysis['max_length'] ?? null) !== null && $analysis['max_length'] > 0) {
-			$currentMaxLength = $currentConfig['maxLength'] ?? null;
-
-			if ($currentMaxLength === null || $currentMaxLength === 0) {
-				$issues[] = 'missing_max_length';
-				$suggestedMaxLength = min($analysis['max_length'] * 2, 1000);
-				$suggestions[] = [
-					'type' => 'constraint',
-					'field' => 'maxLength',
-					'current' => 'unlimited',
-					'recommended' => $suggestedMaxLength,
-					'description' => "Objects have max length of {$analysis['max_length']} characters",
-				];
-			} elseif ($currentMaxLength < $analysis['max_length']) {
-				$issues[] = 'max_length_too_small';
-				$observedMax = $analysis['max_length'];
-				$descriptionText = "Schema maxLength ({$currentMaxLength}) is smaller than observed max ({$observedMax})";
-				$suggestions[] = [
-					'type' => 'constraint',
-					'field' => 'maxLength',
-					'current' => $currentMaxLength,
-					'recommended' => $observedMax,
-					'description' => $descriptionText,
-				];
-			}//end if
-		}//end if
-
-		// Check for missing format.
-		if (($analysis['detected_format'] ?? null) !== null
-			&& ($analysis['detected_format'] !== '') === true
-		) {
-			$currentFormat = $currentConfig['format'] ?? null;
-			if ($currentFormat === null || $currentFormat === '') {
-				$issues[] = 'missing_format';
-				$suggestions[] = [
-					'type' => 'format',
-					'field' => 'format',
-					'current' => 'none',
-					'recommended' => $analysis['detected_format'],
-					'description' => "Objects appear to have '{$analysis['detected_format']}' format pattern",
-				];
-			}
-		}
-
-		// Check for missing pattern.
-		if (empty($analysis['string_patterns']) === false) {
-			$currentPattern = $currentConfig['pattern'] ?? null;
-			$mainPattern = $analysis['string_patterns'][0];
-			if ($currentPattern === null || $currentPattern === '') {
-				$issues[] = 'missing_pattern';
-				$suggestions[] = [
-					'type' => 'pattern',
-					'field' => 'pattern',
-					'current' => 'none',
-					'recommended' => $mainPattern,
-					'description' => "Strings follow '{$mainPattern}' pattern",
-				];
-			}
-		}
-
-		return [
-			'issues' => $issues,
-			'suggestions' => $suggestions,
-		];
+	private function compareStringConstraints(array $currentConfig, array $analysis): array {
+		return $this->findingsResult(
+			findings: [
+				$this->maxLengthFinding(currentConfig: $currentConfig, analysis: $analysis),
+				$this->formatFinding(currentConfig: $currentConfig, analysis: $analysis),
+				$this->patternFinding(currentConfig: $currentConfig, analysis: $analysis),
+			]
+		);
 	}//end compareStringConstraints()
 
 	/**
-	 * Compare numeric constraints (minimum, maximum).
+	 * Issues and suggestions from a list of findings.
 	 *
-	 * @param array $currentConfig Current property configuration
-	 * @param array $analysis Property analysis data
-	 * @param string $recommendedType Recommended type
+	 * @param array<array{0: string, 1: array}|null> $findings Each an issue with its suggestion, or null.
 	 *
-	 * @return array Numeric constraint comparison results
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Numeric range validation requires multiple comparisons
+	 * @return array{issues: list<string>, suggestions: list<array>}
 	 */
-	private function compareNumericConstraints(array $currentConfig, array $analysis, string $recommendedType): array {
-		$issues = [];
-		$suggestions = [];
-		$currentType = $currentConfig['type'] ?? null;
-
-		// Only check numeric constraints if type is or should be numeric.
-		$isNumericType = in_array($recommendedType, ['number', 'integer'], true)
-			|| in_array($currentType, ['number', 'integer'], true);
-
-		if ($isNumericType === false || ($analysis['numeric_range'] ?? null) === null) {
-			return ['issues' => $issues, 'suggestions' => $suggestions];
+	private function findingsResult(array $findings): array {
+		$result = ['issues' => [], 'suggestions' => []];
+		foreach ($findings as $finding) {
+			if ($finding !== null) {
+				$result['issues'][] = $finding[0];
+				$result['suggestions'][] = $finding[1];
+			}
 		}
 
-		$range = $analysis['numeric_range'];
+		return $result;
+	}//end findingsResult()
 
-		// Check for missing or incorrect minimum.
-		$currentMin = $currentConfig['minimum'] ?? null;
-		if (($currentMin === false) && $range['min'] !== $range['max']) {
-			$issues[] = 'missing_minimum';
-			$suggestions[] = [
-				'type' => 'constraint',
-				'field' => 'minimum',
-				'current' => 'unlimited',
-				'recommended' => $range['min'],
-				'description' => "Observed range starts at {$range['min']}",
+	/**
+	 * A missing or too small maxLength, compared with the observed maximum length.
+	 *
+	 * @param array $currentConfig Current property configuration
+	 * @param array $analysis      Property analysis data
+	 *
+	 * @return array{0: string, 1: array}|null The issue and suggestion, or null.
+	 */
+	private function maxLengthFinding(array $currentConfig, array $analysis): ?array {
+		if (($analysis['max_length'] ?? null) === null || ($analysis['max_length'] > 0) === false) {
+			return null;
+		}
+
+		$observedMax = $analysis['max_length'];
+		$currentMaxLength = $currentConfig['maxLength'] ?? null;
+		if ($currentMaxLength === null || $currentMaxLength === 0) {
+			return [
+				'missing_max_length',
+				[
+					'type' => 'constraint',
+					'field' => 'maxLength',
+					'current' => 'unlimited',
+					'recommended' => min($observedMax * 2, 1000),
+					'description' => "Objects have max length of {$observedMax} characters",
+				],
 			];
-		} elseif ($currentMin > $range['min']) {
-			$issues[] = 'minimum_too_high';
-			$suggestions[] = [
+		}
+
+		if (($currentMaxLength < $observedMax) === false) {
+			return null;
+		}
+
+		return [
+			'max_length_too_small',
+			[
+				'type' => 'constraint',
+				'field' => 'maxLength',
+				'current' => $currentMaxLength,
+				'recommended' => $observedMax,
+				'description' => "Schema maxLength ({$currentMaxLength}) is smaller than observed max ({$observedMax})",
+			],
+		];
+	}//end maxLengthFinding()
+
+	/**
+	 * A missing format when the analysis detected one.
+	 *
+	 * @param array $currentConfig Current property configuration
+	 * @param array $analysis      Property analysis data
+	 *
+	 * @return array{0: string, 1: array}|null The issue and suggestion, or null.
+	 */
+	private function formatFinding(array $currentConfig, array $analysis): ?array {
+		$detected = $analysis['detected_format'] ?? null;
+		$currentFormat = $currentConfig['format'] ?? null;
+		if ($detected === null || $detected === '' || ($currentFormat !== null && $currentFormat !== '')) {
+			return null;
+		}
+
+		return [
+			'missing_format',
+			[
+				'type' => 'format',
+				'field' => 'format',
+				'current' => 'none',
+				'recommended' => $detected,
+				'description' => "Objects appear to have '{$detected}' format pattern",
+			],
+		];
+	}//end formatFinding()
+
+	/**
+	 * A missing pattern when the strings follow one.
+	 *
+	 * @param array $currentConfig Current property configuration
+	 * @param array $analysis      Property analysis data
+	 *
+	 * @return array{0: string, 1: array}|null The issue and suggestion, or null.
+	 */
+	private function patternFinding(array $currentConfig, array $analysis): ?array {
+		if (empty($analysis['string_patterns']) === true) {
+			return null;
+		}
+
+		$mainPattern = $analysis['string_patterns'][0];
+		$currentPattern = $currentConfig['pattern'] ?? null;
+		if ($currentPattern !== null && $currentPattern !== '') {
+			return null;
+		}
+
+		return [
+			'missing_pattern',
+			[
+				'type' => 'pattern',
+				'field' => 'pattern',
+				'current' => 'none',
+				'recommended' => $mainPattern,
+				'description' => "Strings follow '{$mainPattern}' pattern",
+			],
+		];
+	}//end patternFinding()
+
+	/**
+	 * Compare numeric constraints (minimum, maximum) with the observed numeric range.
+	 *
+	 * @param array $currentConfig Current property configuration
+	 * @param array $analysis      Property analysis data
+	 *
+	 * @return array Numeric constraint comparison results
+	 */
+	private function compareNumericConstraints(array $currentConfig, array $analysis): array {
+		$range = $analysis['numeric_range'] ?? null;
+		if ($range === null) {
+			return ['issues' => [], 'suggestions' => []];
+		}
+
+		return $this->findingsResult(
+			findings: [
+				$this->minimumFinding(currentMin: $currentConfig['minimum'] ?? null, range: $range),
+				$this->maximumFinding(currentMax: $currentConfig['maximum'] ?? null, range: $range),
+			]
+		);
+	}//end compareNumericConstraints()
+
+	/**
+	 * A missing or too high minimum, compared with the observed range.
+	 *
+	 * @param mixed $currentMin The schema's minimum; false marks it as unset.
+	 * @param array $range      The observed range, with min and max.
+	 *
+	 * @return array{0: string, 1: array}|null The issue and suggestion, or null.
+	 */
+	private function minimumFinding(mixed $currentMin, array $range): ?array {
+		if ($currentMin === false && $range['min'] !== $range['max']) {
+			return [
+				'missing_minimum',
+				[
+					'type' => 'constraint',
+					'field' => 'minimum',
+					'current' => 'unlimited',
+					'recommended' => $range['min'],
+					'description' => "Observed range starts at {$range['min']}",
+				],
+			];
+		}
+
+		if (($currentMin > $range['min']) === false) {
+			return null;
+		}
+
+		return [
+			'minimum_too_high',
+			[
 				'type' => 'constraint',
 				'field' => 'minimum',
 				'current' => $currentMin,
 				'recommended' => $range['min'],
 				'description' => "Schema minimum ({$currentMin}) is higher than observed min ({$range['min']})",
+			],
+		];
+	}//end minimumFinding()
+
+	/**
+	 * A missing or too low maximum, compared with the observed range.
+	 *
+	 * @param mixed $currentMax The schema's maximum; false marks it as unset.
+	 * @param array $range      The observed range, with min and max.
+	 *
+	 * @return array{0: string, 1: array}|null The issue and suggestion, or null.
+	 */
+	private function maximumFinding(mixed $currentMax, array $range): ?array {
+		if ($currentMax === false && $range['min'] !== $range['max']) {
+			return [
+				'missing_maximum',
+				[
+					'type' => 'constraint',
+					'field' => 'maximum',
+					'current' => 'unlimited',
+					'recommended' => $range['max'],
+					'description' => "Observed range ends at {$range['max']}",
+				],
 			];
 		}
 
-		// Check for missing or incorrect maximum.
-		$currentMax = $currentConfig['maximum'] ?? null;
-		if (($currentMax === false) && $range['min'] !== $range['max']) {
-			$issues[] = 'missing_maximum';
-			$suggestions[] = [
-				'type' => 'constraint',
-				'field' => 'maximum',
-				'current' => 'unlimited',
-				'recommended' => $range['max'],
-				'description' => "Observed range ends at {$range['max']}",
-			];
-		} elseif ($currentMax < $range['max']) {
-			$issues[] = 'maximum_too_low';
-			$suggestions[] = [
+		if (($currentMax < $range['max']) === false) {
+			return null;
+		}
+
+		return [
+			'maximum_too_low',
+			[
 				'type' => 'constraint',
 				'field' => 'maximum',
 				'current' => $currentMax,
 				'recommended' => $range['max'],
 				'description' => "Schema maximum ({$currentMax}) is lower than observed max ({$range['max']})",
-			];
-		}
-
-		return [
-			'issues' => $issues,
-			'suggestions' => $suggestions,
+			],
 		];
-	}//end compareNumericConstraints()
+	}//end maximumFinding()
 
 	/**
 	 * Compare nullable/required constraint.
