@@ -47,6 +47,20 @@ use RuntimeException;
  * which events it sends, and when it refuses.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\ReferenceValidatedEvent
+ * @uses \OCA\OpenRegister\Event\ReferenceValidationFailedEvent
+ * @uses \OCA\OpenRegister\Exception\CircularReferenceException
+ * @uses \OCA\OpenRegister\Exception\ReferenceValidationException
+ * @uses \OCA\OpenRegister\Exception\ValidationException
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugBatch
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugClientValue
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
  */
 final class SaveObjectReferenceExistsTest extends TestCase {
 
