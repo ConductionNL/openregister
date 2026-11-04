@@ -41,7 +41,7 @@ use OCA\OpenRegister\Db\CalendarFeedToken;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IDateTimeZone;
 use OCP\IUserManager;
@@ -77,7 +77,7 @@ class ObjectCalendarFeedService {
 	 *
 	 * @param ObjectService $objects The object search path, RBAC included.
 	 * @param SchemaMapper $schemas The schema store.
-	 * @param ViewMapper $views The saved-view store.
+	 * @param ViewMapperInterface $views The saved-view store.
 	 * @param IUserManager $userManager Resolves the principal a token names.
 	 * @param IDateTimeZone $dateTimeZone The tenant time zone.
 	 * @param ObjectDateEventBuilder $eventBuilder Builds one VEVENT per declared date.
@@ -87,7 +87,7 @@ class ObjectCalendarFeedService {
 	public function __construct(
 		private readonly ObjectService $objects,
 		private readonly SchemaMapper $schemas,
-		private readonly ViewMapper $views,
+		private readonly ViewMapperInterface $views,
 		private readonly IUserManager $userManager,
 		private readonly IDateTimeZone $dateTimeZone,
 		private readonly ObjectDateEventBuilder $eventBuilder,

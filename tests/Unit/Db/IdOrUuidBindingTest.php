@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\ICompositeExpression;

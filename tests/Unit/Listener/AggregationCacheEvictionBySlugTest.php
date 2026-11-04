@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
-use OCA\OpenRegister\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\ICache;
 use OCP\ICacheFactory;

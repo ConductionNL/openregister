@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Service\Chat;
 use Exception;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
+use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -51,9 +51,9 @@ class ContextRetrievalHandler {
 	/**
 	 * Vector embeddings service
 	 *
-	 * @var VectorEmbeddings
+	 * @var VectorEmbeddingsInterface
 	 */
-	private VectorEmbeddings $vectorService;
+	private VectorEmbeddingsInterface $vectorService;
 
 	/**
 	 * Object service for database search
@@ -72,7 +72,7 @@ class ContextRetrievalHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param VectorEmbeddings $vectorService Vector embeddings service.
+	 * @param VectorEmbeddingsInterface $vectorService Vector embeddings service.
 	 * @param ObjectService $objectService Object service for database search.
 	 * @param LoggerInterface $logger Logger.
 	 *
@@ -81,7 +81,7 @@ class ContextRetrievalHandler {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		VectorEmbeddings $vectorService,
+		VectorEmbeddingsInterface $vectorService,
 		ObjectService $objectService,
 		LoggerInterface $logger,
 	) {

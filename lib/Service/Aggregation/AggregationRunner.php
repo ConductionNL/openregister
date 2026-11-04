@@ -57,12 +57,16 @@ use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Support\NullFilter;
 use OCP\IDBConnection;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationCacheInterface;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationJoinAnnotationValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Search\Service\Aggregation\ThresholdEvaluationService;
 
 /**
  * Runs a named aggregation against a schema.
@@ -151,7 +155,7 @@ class AggregationRunner {
 	 * @param SchemaMapper $schemaMapper Schema loader.
 	 * @param PlaceholderResolver $placeholders Resolves dynamic placeholders inside filters.
 	 * @param IDBConnection $db Database connection for the Postgres-native fast path.
-	 * @param AggregationCache $cache 60s aggregation result cache.
+	 * @param AggregationCacheInterface $cache 60s aggregation result cache.
 	 * @param PermissionHandler $permissionHandler RBAC verdict on the schema's `list` action.
 	 * @param IUserSession $userSession Active session, for the RBAC + cache-key user scope.
 	 * @param OrganisationService $organisationService Active-organisation lookup for the cache key.
@@ -180,7 +184,7 @@ class AggregationRunner {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly PlaceholderResolver $placeholders,
 		private readonly IDBConnection $db,
-		private readonly AggregationCache $cache,
+		private readonly AggregationCacheInterface $cache,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly OrganisationService $organisationService,

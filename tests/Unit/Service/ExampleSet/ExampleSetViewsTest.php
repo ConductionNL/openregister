@@ -15,16 +15,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
+use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
 
 /**
- * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
+ * @covers \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
- * @uses \OCA\OpenRegister\Db\View
+ * @uses \OCA\OpenRegister\Search\Db\View
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles
