@@ -59,6 +59,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
  */
 class SaveObjectArchiveGuardTest extends TestCase {
 
