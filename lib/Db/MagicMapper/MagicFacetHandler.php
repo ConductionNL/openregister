@@ -453,93 +453,39 @@ class MagicFacetHandler {
 		// would turn the refusal into empty buckets with only a log line.
 		$this->searchHandler?->refuseRelatedRowFilters(query: $query);
 
-		// Extract facet configuration.
 		$facetConfig = $query['_facets'] ?? [];
 		if (empty($facetConfig) === true) {
 			return [];
 		}
 
-		// Handle _facets as string (e.g., _facets=extend).
-		// IMPORTANT: Merge facet configs from ALL schemas, not just the first one.
-		// Each schema may have different facetable fields, and we want the union of all.
-		if (is_string($facetConfig) === true) {
-			$facetConfig = $this->expandFacetConfigFromAllSchemas(
-				facetConfigString: $facetConfig,
-				tableConfigs: $tableConfigs
-			);
-		}
-
-		// Handle _facets as numerically-indexed array (e.g., _facets[]=standaardversies).
-		// PHP converts ?_facets[]=foo&_facets[]=bar into [0 => 'foo', 1 => 'bar'].
-		if (is_array($facetConfig) === true && array_is_list($facetConfig) === true) {
-			$facetConfig = $this->expandFacetConfigFromAllSchemas(
-				facetConfigString: implode(separator: ',', array: $facetConfig),
-				tableConfigs: $tableConfigs
-			);
-		}
+		$facetConfig = $this->normaliseUnionFacetConfig(facetConfig: $facetConfig, tableConfigs: $tableConfigs);
 
 		// Extract base query (without facet config).
 		$baseQuery = $query;
 		unset($baseQuery['_facets']);
 
-		$facets = [];
+		$facets     = [];
 		$facetTimes = [];
-
-		// Process object field facets using UNION.
-		$objectFacetConfig = array_filter(
-			$facetConfig,
-			fn ($key) => $key !== '@self',
-			ARRAY_FILTER_USE_KEY
-		);
-
-		foreach ($objectFacetConfig as $field => $config) {
+		foreach ($facetConfig as $field => $config) {
 			// Same read rule as the single-table path: a facet across several
 			// schemas is omitted when ANY of them withholds the property from
 			// this caller, because the union would hand back that schema's
 			// values among the others.
-			if ($this->callerMayFacetOnEveryTable(tableConfigs: $tableConfigs, property: (string)$field) === false) {
+			if ($field === '@self'
+				|| $this->callerMayFacetOnEveryTable(tableConfigs: $tableConfigs, property: (string)$field) === false
+			) {
 				continue;
 			}
 
 			$facetStart = microtime(true);
-			$type = $config['type'] ?? 'terms';
-			$columnName = $this->sanitizeColumnName(name: $field);
+			$facet      = $this->computeUnionFacet(
+				facet: new TermsFacetUnion(tableConfigs: $tableConfigs, field: $this->sanitizeColumnName(name: $field), baseQuery: $baseQuery),
+				config: $config
+			);
+			if ($facet !== null) {
+				$facets[$field] = $facet;
+			}
 
-			if ($type === 'terms') {
-				// Find which tables have this column.
-				$tablesWithColumn = [];
-				foreach ($tableConfigs as $tc) {
-					if ($this->columnExists(tableName: $tc['tableName'], columnName: $columnName) === true) {
-						$tablesWithColumn[] = $tc;
-					}
-				}
-
-				$facets[$field] = ['type' => 'terms', 'buckets' => []];
-				if (empty($tablesWithColumn) === false) {
-					$facets[$field] = $this->getTermsFacetUnion(
-						facet: new TermsFacetUnion(tableConfigs: $tablesWithColumn, field: $columnName, baseQuery: $baseQuery)
-					);
-				}
-			} elseif ($type === 'date_histogram') {
-				$interval = $config['interval'] ?? 'month';
-
-				// Find which tables have this column.
-				$tablesWithColumn = [];
-				foreach ($tableConfigs as $tc) {
-					if ($this->columnExists(tableName: $tc['tableName'], columnName: $columnName) === true) {
-						$tablesWithColumn[] = $tc;
-					}
-				}
-
-				$facets[$field] = $this->getDateHistogramFacetUnion(
-					tableConfigs: $tablesWithColumn,
-					field: $columnName,
-					interval: $interval,
-					baseQuery: $baseQuery
-				);
-			}//end if
-
-			// Add schema property title if available.
 			if (isset($config['title']) === true) {
 				$facets[$field]['title'] = $config['title'];
 			}
@@ -547,39 +493,25 @@ class MagicFacetHandler {
 			$facetTimes[$field] = round((microtime(true) - $facetStart) * 1000, 2);
 		}//end foreach
 
-		// Process @self metadata facets using UNION.
 		if (($facetConfig['@self'] ?? null) !== null && is_array($facetConfig['@self']) === true) {
 			$facets['@self'] = [];
-
 			foreach ($facetConfig['@self'] as $field => $config) {
 				$facetStart = microtime(true);
-				$type = $config['type'] ?? 'terms';
-				$columnName = self::METADATA_PREFIX . $field;
-
-				if ($type === 'terms') {
-					$facets['@self'][$field] = $this->getTermsFacetUnion(
-						facet: new TermsFacetUnion(tableConfigs: $tableConfigs, field: $columnName, baseQuery: $baseQuery, isMetadata: true)
-					);
-				} elseif ($type === 'date_histogram') {
-					// Date histograms still use single-table approach (less common).
-					$interval = $config['interval'] ?? 'month';
-					$facets['@self'][$field] = $this->getDateHistogramFacetUnion(
-						tableConfigs: $tableConfigs,
-						field: $columnName,
-						interval: $interval,
-						baseQuery: $baseQuery
-					);
+				$facet      = $this->computeUnionFacet(
+					facet: new TermsFacetUnion(tableConfigs: $tableConfigs, field: self::METADATA_PREFIX . $field, baseQuery: $baseQuery, isMetadata: true),
+					config: $config
+				);
+				if ($facet !== null) {
+					$facets['@self'][$field] = $facet;
 				}
 
 				$facetTimes['@self.' . $field] = round((microtime(true) - $facetStart) * 1000, 2);
-			}//end foreach
-		}//end if
-
-		$totalTime = round((microtime(true) - $startTime) * 1000, 2);
+			}
+		}
 
 		// Add timing metadata to facets for performance debugging.
 		$facets['_metrics'] = [
-			'total_ms' => $totalTime,
+			'total_ms' => round((microtime(true) - $startTime) * 1000, 2),
 			'table_count' => count($tableConfigs),
 			'per_facet_ms' => $facetTimes,
 			'label_cache' => $this->cacheStats,
@@ -587,6 +519,86 @@ class MagicFacetHandler {
 
 		return $facets;
 	}//end getSimpleFacetsUnion()
+
+	/**
+	 * Expand a union facet configuration given as a string or a list of names.
+	 *
+	 * The expansion merges the facetable fields of ALL schemas, not just the first.
+	 *
+	 * @param mixed $facetConfig  The facet configuration from the query.
+	 * @param array $tableConfigs The tables of the union.
+	 *
+	 * @return array The facet configuration keyed by field.
+	 */
+	private function normaliseUnionFacetConfig(mixed $facetConfig, array $tableConfigs): array {
+		if (is_string($facetConfig) === true) {
+			$facetConfig = $this->expandFacetConfigFromAllSchemas(facetConfigString: $facetConfig, tableConfigs: $tableConfigs);
+		}
+
+		if (is_array($facetConfig) === true && array_is_list($facetConfig) === true) {
+			$facetConfig = $this->expandFacetConfigFromAllSchemas(
+				facetConfigString: implode(separator: ',', array: $facetConfig),
+				tableConfigs: $tableConfigs
+			);
+		}
+
+		return $facetConfig;
+	}//end normaliseUnionFacetConfig()
+
+	/**
+	 * Compute one union facet of the configured type.
+	 *
+	 * A property facet runs only over the tables that have its column; a metadata
+	 * facet runs over every table.
+	 *
+	 * @param TermsFacetUnion $facet  The tables, column and filters of the facet.
+	 * @param mixed           $config The facet configuration (type, interval).
+	 *
+	 * @return array|null The facet, or null for a type that is not supported.
+	 */
+	private function computeUnionFacet(TermsFacetUnion $facet, mixed $config): ?array {
+		$type = $config['type'] ?? 'terms';
+		if ($type !== 'terms' && $type !== 'date_histogram') {
+			return null;
+		}
+
+		if ($facet->isMetadata === false) {
+			$facet = new TermsFacetUnion(tableConfigs: $this->tablesWithColumn(facet: $facet), field: $facet->field, baseQuery: $facet->baseQuery);
+		}
+
+		if ($type === 'date_histogram') {
+			return $this->getDateHistogramFacetUnion(
+				tableConfigs: $facet->tableConfigs,
+				field: $facet->field,
+				interval: $config['interval'] ?? 'month',
+				baseQuery: $facet->baseQuery
+			);
+		}
+
+		if (empty($facet->tableConfigs) === true) {
+			return ['type' => 'terms', 'buckets' => []];
+		}
+
+		return $this->getTermsFacetUnion(facet: $facet);
+	}//end computeUnionFacet()
+
+	/**
+	 * The tables of a union facet that have its column.
+	 *
+	 * @param TermsFacetUnion $facet The union facet.
+	 *
+	 * @return array The table configurations with the column.
+	 */
+	private function tablesWithColumn(TermsFacetUnion $facet): array {
+		$tables = [];
+		foreach ($facet->tableConfigs as $tableConfig) {
+			if ($this->columnExists(tableName: $tableConfig['tableName'], columnName: $facet->field) === true) {
+				$tables[] = $tableConfig;
+			}
+		}
+
+		return $tables;
+	}//end tablesWithColumn()
 
 	/**
 	 * Get terms facet using UNION ALL across multiple tables.
