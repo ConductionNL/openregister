@@ -35,6 +35,8 @@ use ReflectionMethod;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\TextExtractionService
+ * @uses   \OCA\OpenRegister\Service\PendingExtractionWalk
+ * @uses   \OCA\OpenRegister\Service\TextSplitPass
  * @uses   \OCA\OpenRegister\Service\TextExtraction\SpreadsheetExtractor
  * @uses   \OCA\OpenRegister\Service\TextExtraction\PdfExtractor
  * @uses   \OCA\OpenRegister\Service\TextExtraction\WordExtractor
