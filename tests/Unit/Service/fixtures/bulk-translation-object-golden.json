@@ -1,0 +1,197 @@
+{
+    "all properties nl to en": [
+        [
+            "translate",
+            "hallo",
+            "nl",
+            "en"
+        ],
+        [
+            "upsert",
+            [
+                "obj-1",
+                "title",
+                "en",
+                "HALLO@en",
+                "machine_translated",
+                "provider:fake",
+                null
+            ]
+        ],
+        [
+            "translate",
+            "plain dutch",
+            "nl",
+            "en"
+        ],
+        [
+            "upsert",
+            [
+                "obj-1",
+                "body",
+                "en",
+                "PLAIN DUTCH@en",
+                "machine_translated",
+                "provider:fake",
+                null
+            ]
+        ],
+        [
+            "translate",
+            "y",
+            "nl",
+            "en"
+        ],
+        [
+            "upsert",
+            [
+                "obj-1",
+                "nonStringTarget",
+                "en",
+                "Y@en",
+                "machine_translated",
+                "provider:fake",
+                null
+            ]
+        ],
+        [
+            "translate",
+            "boom",
+            "nl",
+            "en"
+        ],
+        [
+            "warning",
+            "[BulkTranslationService] provider fake failed for obj-1/failing -> en: provider down"
+        ],
+        [
+            "translate",
+            "blank",
+            "nl",
+            "en"
+        ],
+        [
+            "translate",
+            "side",
+            "nl",
+            "en"
+        ],
+        [
+            "upsert",
+            [
+                "obj-1",
+                "sidecarFails",
+                "en",
+                "SIDE@en",
+                "machine_translated",
+                "provider:fake",
+                null
+            ]
+        ],
+        [
+            "result",
+            {
+                "translated": {
+                    "title": "HALLO@en",
+                    "body": "PLAIN DUTCH@en",
+                    "nonStringTarget": "Y@en",
+                    "sidecarFails": "SIDE@en"
+                },
+                "skipped": {
+                    "filled": "target-slot-already-filled",
+                    "noSource": "no-source-value",
+                    "emptySource": "no-source-value",
+                    "failing": "provider-error: provider down",
+                    "blank": "provider-returned-empty",
+                    "number": "no-source-value",
+                    "missing": "no-source-value"
+                }
+            }
+        ]
+    ],
+    "whitelist": [
+        [
+            "translate",
+            "hallo",
+            "nl",
+            "en"
+        ],
+        [
+            "upsert",
+            [
+                "obj-1",
+                "title",
+                "en",
+                "HALLO@en",
+                "machine_translated",
+                "provider:fake",
+                null
+            ]
+        ],
+        [
+            "result",
+            {
+                "translated": {
+                    "title": "HALLO@en"
+                },
+                "skipped": {
+                    "number": "no-source-value"
+                }
+            }
+        ]
+    ],
+    "from en": [
+        [
+            "result",
+            {
+                "translated": [],
+                "skipped": {
+                    "title": "no-source-value",
+                    "body": "no-source-value",
+                    "filled": "target-slot-already-filled",
+                    "nonStringTarget": "no-source-value",
+                    "noSource": "no-source-value",
+                    "emptySource": "no-source-value",
+                    "failing": "no-source-value",
+                    "blank": "no-source-value",
+                    "sidecarFails": "no-source-value",
+                    "number": "no-source-value",
+                    "missing": "no-source-value"
+                }
+            }
+        ]
+    ],
+    "same language": [
+        [
+            "result",
+            {
+                "translated": [],
+                "skipped": {
+                    "_global": "fromLang === toLang"
+                }
+            }
+        ]
+    ],
+    "no translatable properties": [
+        [
+            "result",
+            {
+                "translated": [],
+                "skipped": {
+                    "_global": "no-translatable-properties"
+                }
+            }
+        ]
+    ],
+    "schema not resolvable": [
+        [
+            "result",
+            {
+                "translated": [],
+                "skipped": {
+                    "_global": "schema-not-resolvable"
+                }
+            }
+        ]
+    ]
+}

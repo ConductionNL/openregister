@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\AppInfo\ClassAliasMap;
+use OCA\OpenRegister\Service\Operations\MovedJobState;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\IJobList;
 use OCP\Migration\IOutput;
@@ -35,7 +36,8 @@ use Throwable;
  * its old row, and ReconcileDeclaredBackgroundJobs adds a row under the new
  * name, so the job would run twice. Every queued row is re-added under the new
  * name with its own argument (a no-op when that row exists) and the old row is
- * removed, so no queued work is lost.
+ * removed, so no queued work is lost. The schedule and run log OpenRegister
+ * keeps per job class move with it (MovedJobState).
  */
 class RepointMovedBackgroundJobs implements IRepairStep {
 
@@ -45,6 +47,7 @@ class RepointMovedBackgroundJobs implements IRepairStep {
 	 * @param IJobList        $jobList The Nextcloud job list.
 	 * @param ClassAliasMap   $map     The old => new class map.
 	 * @param LoggerInterface $logger  Logger.
+	 * @param MovedJobState   $state   The schedule and run log kept per job class.
 	 *
 	 * @return void
 	 */
@@ -52,6 +55,7 @@ class RepointMovedBackgroundJobs implements IRepairStep {
 		private readonly IJobList $jobList,
 		private readonly ClassAliasMap $map,
 		private readonly LoggerInterface $logger,
+		private readonly MovedJobState $state,
 	) {
 	}//end __construct()
 
@@ -109,5 +113,7 @@ class RepointMovedBackgroundJobs implements IRepairStep {
 
 		/* @phpstan-ignore argument.type */
 		$this->jobList->remove($old);
+
+		$this->state->carry(from: $old, to: $new);
 	}//end repoint()
 }//end class

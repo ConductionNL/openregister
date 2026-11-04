@@ -259,6 +259,26 @@ class JobRunMapper extends QBMapper {
 	}//end pruneBefore()
 
 	/**
+	 * Point the run history of a moved job at its new class name.
+	 *
+	 * @param string $from The class name the runs were recorded under.
+	 * @param string $to   The class name the job now has.
+	 *
+	 * @return int How many rows were updated.
+	 *
+	 * @spec exclude Upgrade plumbing for moved job classes; the run log itself is unchanged.
+	 */
+	public function renameJobClass(string $from, string $to): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableName())
+			->set('job_class', $qb->createNamedParameter($to))
+			->where($qb->expr()->eq('job_class', $qb->createNamedParameter($from)));
+
+		return (int)$qb->executeStatement();
+
+	}//end renameJobClass()
+
+	/**
 	 * Apply the three filters the console offers.
 	 *
 	 * @param IQueryBuilder $qb       The query being built.

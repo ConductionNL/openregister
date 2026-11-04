@@ -168,6 +168,9 @@ class LockLifecycleDispatcher implements FlowStepDispatcher {
  * @uses \OCA\OpenRegister\Event\FlowRunTerminalEvent
  * @uses \OCA\OpenRegister\Service\Flow\FlowStop
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHop
+ * @uses \OCA\OpenRegister\Service\Flow\FlowWalkHop
+ * @uses \OCA\OpenRegister\Service\Flow\FlowWalkPass
  */
 class RunLockReleaseTerminalityTest extends TestCase {
 	use FluentQueryBuilderTrait;
