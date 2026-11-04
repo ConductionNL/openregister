@@ -83,6 +83,8 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 
 	private const REFUSAL = 'The transition is not allowed';
 
+	private const NOT_INITIAL = 'A new object starts in "open"';
+
 	/**
 	 * Events in the order they were dispatched.
 	 *
@@ -103,6 +105,27 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 	 * @var bool
 	 */
 	private bool $taken = false;
+
+	/**
+	 * The object data of every table write, in order.
+	 *
+	 * @var list<array<string, mixed>>
+	 */
+	private array $writtenData = [];
+
+	/**
+	 * Whether the stored row is soft-deleted.
+	 *
+	 * @var bool
+	 */
+	private bool $storedDeleted = false;
+
+	/**
+	 * Raw rows the next table reads answer with, before falling back to $taken.
+	 *
+	 * @var list<array<string, mixed>|null>
+	 */
+	private array $rowQueue = [];
 
 	/**
 	 * Run once inside the next ObjectCreatingEvent, before it is recorded.
@@ -129,6 +152,7 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 		$this->dispatched = [];
 		$this->writes     = [];
 		$this->taken      = $taken;
+		$this->rowQueue   = [];
 
 		$events = $this->createMock(IEventDispatcher::class);
 		$events->method('dispatchTyped')->willReturnCallback(
@@ -143,6 +167,16 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 					$hook             = $this->onUpdating;
 					$this->onUpdating = null;
 					$hook();
+				}
+
+				if ($event instanceof ObjectCreatingEvent && (($event->getObject()->getObject()['status'] ?? null) === 'numbered')) {
+					$event->setModifiedData(['number' => 'N-1']);
+				}
+
+				if ($event instanceof ObjectCreatingEvent && (($event->getObject()->getObject()['status'] ?? null) === 'archived')) {
+					$event->setModifiedData(['number' => 'from-a-refused-create']);
+					$event->setErrors(['message' => self::NOT_INITIAL]);
+					$event->stopPropagation();
 				}
 
 				if ($event instanceof ObjectUpdatingEvent && (($event->getNewObject()->getObject()['status'] ?? null) === 'in-deliberation')) {
@@ -187,6 +221,7 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 		$mapper->method('saveObjectToRegisterSchemaTable')->willReturnCallback(
 			function (array $objectData, Register $register, Schema $schema, string $tableName, bool $failIfExists = false, ?int &$insertedId = null): string {
 				$this->writes[] = $failIfExists;
+				$this->writtenData[] = $objectData;
 				if ($this->taken === true && $failIfExists === true) {
 					throw new ObjectExistsException(message: 'taken', uuid: self::UUID);
 				}
@@ -198,13 +233,19 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 				return self::UUID;
 			}
 		);
-		$mapper->method('findObjectInRegisterSchemaTable')->willReturn(['_id' => 5, '_uuid' => self::UUID]);
+		$mapper->method('findObjectInRegisterSchemaTable')->willReturnCallback(
+			fn (): ?array => ($this->rowQueue !== [] ? array_shift($this->rowQueue) : ($this->taken === true ? ['_id' => 5, '_uuid' => self::UUID] : null))
+		);
 		$mapper->method('convertRowToObjectEntity')->willReturnCallback(
-			static function (): ObjectEntity {
+			function (): ObjectEntity {
 				$stored = new ObjectEntity();
 				$stored->setId(5);
 				$stored->setUuid(self::UUID);
 				$stored->setObject(['status' => 'open']);
+				if ($this->storedDeleted === true) {
+					$stored->setDeleted(['deletedBy' => 'agent']);
+				}
+
 				return $stored;
 			}
 		);
@@ -385,6 +426,7 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 
 		$this->assertSame([ObjectCreatingEvent::class, ObjectCreatedEvent::class], $this->eventClasses());
 	}//end testAStoppedUpdateLeavesNoReplacedRowBehind()
+
 	public function testAWonInsertNestedInAnUpdatingListenerKeepsTheOuterUpdate(): void {
 		[$register, $schema] = $this->target();
 		$mapper = $this->mapper(taken: true);
@@ -401,5 +443,99 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 		$this->assertSame('closed', $last->getNewObject()->getObject()['status']);
 		$this->assertSame('open', $last->getOldObject()?->getObject()['status']);
 	}//end testAWonInsertNestedInAnUpdatingListenerKeepsTheOuterUpdate()
+
+	public function testARefusedCreateOverATakenIdentifierIsJudgedAsAnUpdate(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+
+		$saved = $mapper->insert(entity: $this->entity('archived'), register: $register, schema: $schema);
+
+		$this->assertSame(5, $saved->getId());
+		$this->assertSame([false], $this->writes);
+		$this->assertSame([ObjectCreatingEvent::class, ObjectUpdatingEvent::class, ObjectUpdatedEvent::class], $this->eventClasses());
+		$this->assertSame('open', $this->dispatched[2]->getOldObject()?->getObject()['status']);
+	}//end testARefusedCreateOverATakenIdentifierIsJudgedAsAnUpdate()
+
+	public function testARefusedCreateOfAFreeIdentifierStaysRefused(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: false);
+
+		try {
+			$mapper->insert(entity: $this->entity('archived'), register: $register, schema: $schema);
+			$this->fail('The creating refusal should stand.');
+		} catch (HookStoppedException $e) {
+			$this->assertSame(self::NOT_INITIAL, $e->getMessage());
+		}
+
+		$this->assertSame([], $this->writes);
+		$this->assertSame([ObjectCreatingEvent::class], $this->eventClasses());
+	}//end testARefusedCreateOfAFreeIdentifierStaysRefused()
+
+	public function testARefusedClaimStaysRefused(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+
+		try {
+			$mapper->insertObjectEntity(entity: $this->entity('archived'), register: $register, schema: $schema, failIfExists: true);
+			$this->fail('The creating refusal should stand.');
+		} catch (HookStoppedException $e) {
+			$this->assertSame(self::NOT_INITIAL, $e->getMessage());
+		}
+
+		$this->assertSame([], $this->writes);
+	}//end testARefusedClaimStaysRefused()
+
+	public function testWhatACreatingHookSetsIsWritten(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: false);
+		$this->writtenData = [];
+
+		$mapper->insertObjectEntity(entity: $this->entity('numbered'), register: $register, schema: $schema);
+
+		$this->assertSame('N-1', ($this->writtenData[0]['number'] ?? $this->writtenData[0]['object']['number'] ?? null));
+	}//end testWhatACreatingHookSetsIsWritten()
+
+	public function testARefusedCreateOverASoftDeletedRowStaysRefused(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		$this->storedDeleted = true;
+
+		try {
+			$mapper->insert(entity: $this->entity('archived'), register: $register, schema: $schema);
+			$this->fail('A refused create must not bring a soft-deleted object back.');
+		} catch (HookStoppedException $e) {
+			$this->assertSame(self::NOT_INITIAL, $e->getMessage());
+		}
+
+		$this->assertSame([], $this->writes);
+		$this->assertSame([ObjectCreatingEvent::class], $this->eventClasses());
+	}//end testARefusedCreateOverASoftDeletedRowStaysRefused()
+
+	public function testWhatARefusedCreatingHookSetsIsNotWritten(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		$this->writtenData = [];
+
+		$mapper->insert(entity: $this->entity('archived'), register: $register, schema: $schema);
+
+		$this->assertCount(1, $this->writtenData);
+		$this->assertArrayNotHasKey('number', $this->writtenData[0]);
+		$this->assertArrayNotHasKey('number', ($this->writtenData[0]['object'] ?? []));
+	}//end testWhatARefusedCreatingHookSetsIsNotWritten()
+
+	public function testARefusedCreateIsNotWrittenWhenItsRowGoesAway(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		$this->rowQueue = [['_id' => 5, '_uuid' => self::UUID], null];
+
+		try {
+			$mapper->insert(entity: $this->entity('archived'), register: $register, schema: $schema);
+			$this->fail('A refused create whose row went away must not be written.');
+		} catch (\Throwable $e) {
+			$this->assertNotInstanceOf(\PHPUnit\Framework\AssertionFailedError::class, $e);
+		}
+
+		$this->assertSame([], $this->writes);
+	}//end testARefusedCreateIsNotWrittenWhenItsRowGoesAway()
 
 }//end class
