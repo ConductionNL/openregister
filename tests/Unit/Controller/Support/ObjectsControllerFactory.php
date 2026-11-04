@@ -20,8 +20,8 @@ final class ObjectsControllerFactory {
 	 *
 	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
-	 * @param IAppConfig $config Constructor argument.
-	 * @param IAppManager $appManager Constructor argument.
+	 * @param IAppConfig $config Unused; kept so existing calls still fit.
+	 * @param IAppManager $appManager Unused; kept so existing calls still fit.
 	 * @param ContainerInterface $container Constructor argument.
 	 * @param RegisterMapper $registerMapper Constructor argument.
 	 * @param SchemaMapper $schemaMapper Constructor argument.
@@ -107,11 +107,6 @@ final class ObjectsControllerFactory {
 					stateHistory: $stateHistory,
 				),
 				extensions: new \OCA\OpenRegister\Controller\Support\ObjectsExtensions(
-					platform: new \OCA\OpenRegister\Controller\Support\AppPlatform(
-						config: $config,
-						appManager: $appManager,
-						container: $container,
-					),
 					geo: new \OCA\OpenRegister\Controller\Support\GeoServices(
 						geoFilterParser: $geoFilterParser,
 						geoFilterApplier: $geoFilterApplier,
@@ -124,6 +119,7 @@ final class ObjectsControllerFactory {
 						deepLinkRegistry: $deepLinkRegistry,
 						relationUrlGenerator: $relationUrlGenerator,
 					),
+					container: $container,
 				),
 			),
 		];

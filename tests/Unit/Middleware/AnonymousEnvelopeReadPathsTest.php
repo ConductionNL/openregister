@@ -82,7 +82,6 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Controller\Support\ObjectTransfer
  * @uses \OCA\OpenRegister\Controller\Support\ObjectGovernanceServices
  * @uses \OCA\OpenRegister\Controller\Support\ObjectsExtensions
- * @uses \OCA\OpenRegister\Controller\Support\AppPlatform
  * @uses \OCA\OpenRegister\Controller\Support\GeoServices
  * @uses \OCA\OpenRegister\Controller\Support\LinkedDataServices
  * @uses   \OCA\OpenRegister\Db\FederatedShare

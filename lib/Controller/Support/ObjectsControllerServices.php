@@ -34,7 +34,7 @@ final class ObjectsControllerServices {
 	 * @param ObjectStore              $store      Object service and mappers.
 	 * @param ObjectTransfer           $transfer   Export, import, webhooks and upsert.
 	 * @param ObjectGovernanceServices $governance Recovery window, uniqueness, purpose and history.
-	 * @param ObjectsExtensions        $extensions Platform, geo and linked data services.
+	 * @param ObjectsExtensions        $extensions Geo and linked data services and the container.
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md
 	 */

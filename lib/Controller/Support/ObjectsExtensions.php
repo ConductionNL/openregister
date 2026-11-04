@@ -22,8 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use Psr\Container\ContainerInterface;
+
 /**
- * The platform services plus the optional geo and linked data services of the objects API.
+ * The optional geo and linked data services of the objects API, plus the DI container.
  *
  * @spec openspec/specs/objects-crud/spec.md
  */
@@ -31,16 +33,16 @@ final class ObjectsExtensions {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param AppPlatform        $platform   App configuration, app manager and container.
 	 * @param GeoServices        $geo        The geo services.
 	 * @param LinkedDataServices $linkedData The linked data services.
+	 * @param ContainerInterface $container  The DI container.
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function __construct(
-		public readonly AppPlatform $platform,
 		public readonly GeoServices $geo,
 		public readonly LinkedDataServices $linkedData,
+		public readonly ContainerInterface $container,
 	) {
 	}//end __construct()
 }//end class
