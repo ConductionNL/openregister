@@ -203,6 +203,35 @@ class FederatedConfigServiceTest extends TestCase {
 		$service->install('demo.type', [], 'ConductionNL/pack');
 	}
 
+	/**
+	 * The values an administrator may send for the allowance, and what is stored.
+	 *
+	 * @return array<string, array{0: string, 1: string}> Sent and stored.
+	 */
+	public static function allowanceValues(): array {
+		return [
+			'JSON true, cast to a string' => ['1', 'true'],
+			'the string true'             => ['true', 'true'],
+			'upper case'                  => [' TRUE ', 'true'],
+			'JSON false, cast to a string' => ['', ''],
+			'the string false'            => ['false', ''],
+			'zero'                        => ['0', ''],
+		];
+	}
+
+	#[\PHPUnit\Framework\Attributes\DataProvider('allowanceValues')]
+	public function testTheAllowanceIsStoredAsTrueOrEmpty(string $sent, string $stored): void {
+		$this->config->expects($this->once())->method('setValueString')->with('openregister', 'federated_config_allow_unverified_bundles', $stored);
+
+		$this->service->setTrustValue('allowUnverifiedBundles', $sent);
+	}
+
+	public function testOtherTrustSettingsAreStoredAsSent(): void {
+		$this->config->expects($this->once())->method('setValueString')->with('openregister', 'federated_config_install_groups', '1');
+
+		$this->service->setTrustValue('installGroups', ' 1 ');
+	}
+
 	public function testTheAllowanceIsATrustSetting(): void {
 		$this->config->expects($this->once())->method('setValueString')->with('openregister', 'federated_config_allow_unverified_bundles', 'true');
 

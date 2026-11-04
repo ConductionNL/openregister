@@ -63,6 +63,10 @@ with a credential they did not choose.
 > alike. Add a trusted key or turn on `allowUnverifiedBundles` to install again. The
 > output of `/api/federated-config/bundle` is unsigned, so copying a bundle between
 > instances needs that setting or a published, signed bundle.
+>
+> Set `installGroups` before you turn the setting on. While `installGroups` is
+> empty, any signed-in user may install, and with the setting on that includes
+> bundles nothing vouches for.
 
 An administrator manages trust at `GET`/`PUT /api/federated-config/trust`:
 
@@ -74,8 +78,10 @@ An administrator manages trust at `GET`/`PUT /api/federated-config/trust`:
   on this list. With an empty list, every install is refused until you add a key or
   turn on `allowUnverifiedBundles`.
 - **`allowUnverifiedBundles`**: set `PUT {field: "allowUnverifiedBundles", value: true}`
-  to accept bundles nothing vouches for while the key list is empty. A key on the list
-  always wins over this setting.
+  to accept bundles nothing vouches for while the key list is empty. `true`, `"true"`
+  and `"1"` turn it on; anything else turns it off. A key on the list always wins over
+  this setting. Set `installGroups` first: an empty `installGroups` lets any signed-in
+  user install.
 - **`publishGroups`** / **`installGroups`** — Nextcloud groups permitted to publish
   / install. Empty means any signed-in user; admins are always allowed.
 

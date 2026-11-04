@@ -536,9 +536,32 @@ class FederatedConfigService {
 			throw new UnexpectedValueException(sprintf('Unknown trust setting "%s".', $field));
 		}
 
-		$this->appConfig->setValueString(self::APP_ID, self::TRUST_KEYS[$field], trim($value));
+		$value = trim($value);
+		if ($field === 'allowUnverifiedBundles') {
+			$value = $this->allowanceValue(value: $value);
+		}
+
+		$this->appConfig->setValueString(self::APP_ID, self::TRUST_KEYS[$field], $value);
 
 	}//end setTrustValue()
+
+	/**
+	 * The stored form of the unverified-bundle allowance: 'true' or ''.
+	 *
+	 * A JSON `true` arrives as "1" after the controller's string cast, so
+	 * "1" and "true" (any case) both turn it on and anything else turns it off.
+	 *
+	 * @param string $value The value as sent.
+	 *
+	 * @return string 'true' when the allowance is on, '' otherwise.
+	 */
+	private function allowanceValue(string $value): string {
+		if (in_array(strtolower($value), ['1', 'true'], true) === true) {
+			return 'true';
+		}
+
+		return '';
+	}//end allowanceValue()
 
 	/**
 	 * Add a base64 public key to the trusted-keys allowlist (a convenience over
