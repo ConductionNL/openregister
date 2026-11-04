@@ -46,7 +46,7 @@ namespace OCA\OpenRegister\Service\Credential;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;
@@ -83,7 +83,7 @@ class OAuth2ConnectService {
 	 * @param OAuth2RefreshService $refresh Persists a token set and mirrors its non-secret metadata.
 	 * @param OAuth2InstanceClient $instanceClients Registers or reuses a per-instance OAuth2 application.
 	 * @param OAuth2AccountIdentity $identities Reads and records whose account was connected.
-	 * @param ObjectService $objectService Loads the credential being re-authorised.
+	 * @param ObjectOperationsInterface $objectService Loads the credential being re-authorised.
 	 * @param IClientService $clientService NC HTTP client factory.
 	 * @param LoggerInterface $logger Secret-free diagnostics.
 	 *
@@ -96,7 +96,7 @@ class OAuth2ConnectService {
 		private readonly OAuth2RefreshService $refresh,
 		private readonly OAuth2InstanceClient $instanceClients,
 		private readonly OAuth2AccountIdentity $identities,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly IClientService $clientService,
 		private readonly LoggerInterface $logger,
 	) {

@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -71,12 +72,12 @@ class AuditQueryService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService Cross-schema object search (audit entries ARE objects).
+	 * @param ObjectOperationsInterface $objectService Cross-schema object search (audit entries ARE objects).
 	 * @param RegisterMapperInterface $registerMapper Register lookup + register/schema relationship helpers.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 	) {

@@ -66,7 +66,7 @@ use OCA\OpenRegister\Service\Flow\IFlowDirectlyInvokable;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -123,7 +123,7 @@ class FlowNodeRunController extends Controller {
 	 *                              `IFlowDirectlyInvokable` / `IFlowNodeConfigForm`
 	 *                              opt-ins.
 	 * @param FlowRunServiceInterface $runner Queues and executes the one node.
-	 * @param ObjectService $objects Loads the subject, scoped to the CALLER's
+	 * @param ObjectOperationsInterface $objects Loads the subject, scoped to the CALLER's
 	 *                               own organisation (`_multitenancy: true`) —
 	 *                               RBAC is deliberately OFF here
 	 *                               (`_rbac: false`); this endpoint evaluates
@@ -148,7 +148,7 @@ class FlowNodeRunController extends Controller {
 		private readonly FlowLocator $subjects,
 		private readonly FlowNodeRegistry $nodes,
 		private readonly FlowRunServiceInterface $runner,
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly PermissionHandler $permissions,
 	) {

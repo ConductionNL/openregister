@@ -1568,6 +1568,30 @@ class ValidateObjectTest extends TestCase {
 		$this->assertSame('array', $result->type);
 	}
 
+	public function testResolveSchemaPropertyReadsAnObjectOrArrayRefId(): void {
+		$schema = $this->createSchema(['street' => ['type' => 'string']]);
+		$schema->setSlug('addr');
+		$this->schemaMapper->method('find')
+			->willReturn($schema);
+
+		$objectProp = new stdClass();
+		$objectProp->type = 'object';
+		$objectProp->description = 'd';
+		$objectProp->{'$ref'} = (object) ['id' => '#/components/schemas/addr'];
+		$union = $this->invokePrivate('resolveSchemaProperty', [$objectProp, []]);
+
+		$this->assertSame(['oneOf', 'description'], array_keys(get_object_vars($union)));
+		$this->assertSame('d', $union->description);
+
+		$listProp = new stdClass();
+		$listProp->type = 'array';
+		$listProp->{'$ref'} = ['id' => '#/components/schemas/addr?x=1'];
+		$resolved = $this->invokePrivate('resolveSchemaProperty', [$listProp, []]);
+
+		$this->assertSame('array', $resolved->type);
+		$this->assertObjectNotHasProperty('$ref', $resolved);
+	}
+
 	public function testResolveSchemaPropertyWithNestedProperties(): void {
 		$prop = new stdClass();
 		$prop->type = 'object';

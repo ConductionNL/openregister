@@ -35,7 +35,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegistrySubscription;
 use OCA\OpenRegister\Db\RegistrySubscriptionMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -51,14 +51,14 @@ class RegistrySubscriptionService {
 	 * Constructor.
 	 *
 	 * @param RegistrySubscriptionMapper $subscriptionMapper Reads/writes the state table.
-	 * @param ObjectService $objectService Applies inbound updates through the ordinary save path.
+	 * @param ObjectOperationsInterface $objectService Applies inbound updates through the ordinary save path.
 	 * @param RegistrySubscriptionNotifier $notifier Dispatches events and writes audit rows.
 	 * @param RegistryUpdateTargetGuard $updateTargetGuard Resolves a row's schema and checks owned properties.
 	 * @param LoggerInterface $logger Structured logging.
 	 */
 	public function __construct(
 		private readonly RegistrySubscriptionMapper $subscriptionMapper,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly RegistrySubscriptionNotifier $notifier,
 		private readonly RegistryUpdateTargetGuard $updateTargetGuard,
 		private readonly LoggerInterface $logger,

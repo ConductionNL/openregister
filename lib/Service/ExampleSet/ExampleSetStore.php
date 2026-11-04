@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -63,7 +64,7 @@ class ExampleSetStore {
 	/**
 	 * Constructor.
 	 *
-	 * @param ContainerInterface $container Hands out ObjectService and ValidateObject.
+	 * @param ContainerInterface $container Hands out ObjectOperationsInterface and ValidateObject.
 	 * @param LoggerInterface    $logger    Logger.
 	 *
 	 * @return void
@@ -675,11 +676,11 @@ class ExampleSetStore {
 	/**
 	 * OpenRegister's ObjectService, or null when it cannot be built.
 	 *
-	 * @return ObjectService|null
+	 * @return ObjectOperationsInterface|null
 	 */
-	private function objectService(): ?ObjectService {
+	private function objectService(): ?ObjectOperationsInterface {
 		try {
-			$service = $this->container->get(ObjectService::class);
+			$service = $this->container->get(ObjectOperationsInterface::class);
 		} catch (Throwable) {
 			return null;
 		}

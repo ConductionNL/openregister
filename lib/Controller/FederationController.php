@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\FederatedShareMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
@@ -120,7 +120,7 @@ class FederationController extends Controller {
 	 * @param string $appName App name.
 	 * @param IRequest $request Current request.
 	 * @param FederatedShareMapper $shareMapper Federated-share persistence.
-	 * @param ObjectService $objectService Object read service.
+	 * @param ObjectOperationsInterface $objectService Object read service.
 	 * @param FederationShareService $shareService Share management (list/create/revoke).
 	 * @param IThrottler $throttler Brute-force throttler for rejected tokens.
 	 * @param LoggerInterface $logger Logger.
@@ -129,7 +129,7 @@ class FederationController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly FederatedShareMapper $shareMapper,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly FederationShareService $shareService,
 		private readonly IThrottler $throttler,
 		private readonly LoggerInterface $logger,
