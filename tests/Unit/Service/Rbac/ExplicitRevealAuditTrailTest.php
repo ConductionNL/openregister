@@ -72,6 +72,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders
  * @uses \OCA\OpenRegister\Service\Audit\HistoryEntryRedactor
  * @uses \OCA\OpenRegister\Service\PropertyRbacHandler
+ * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
  * @uses \OCA\OpenRegister\Service\Audit\ReadableAuditCursor
  */
 class ExplicitRevealAuditTrailTest extends TestCase {
