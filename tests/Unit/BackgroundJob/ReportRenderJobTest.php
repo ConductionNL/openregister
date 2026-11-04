@@ -19,14 +19,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
-use OCA\OpenRegister\BackgroundJob\ReportRenderJob;
+use OCA\OpenRegister\Search\BackgroundJob\ReportRenderJob;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Reporting\ReportRenderService;
+use OCA\OpenRegister\Search\Service\Reporting\ReportRenderService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\IRootFolder;
 use OCP\IAppConfig;

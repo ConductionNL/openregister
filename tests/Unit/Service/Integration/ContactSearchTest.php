@@ -18,7 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use OCA\OpenRegister\Controller\ContactSearchController;
-use OCA\OpenRegister\Service\Integration\ContactSearch;
+use OCA\OpenRegister\Search\Service\Integration\ContactSearch;
 use OCP\Contacts\IManager;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;

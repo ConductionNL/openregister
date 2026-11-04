@@ -19,8 +19,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Reporting;
 
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
-use OCA\OpenRegister\Service\Reporting\HtmlReportWriter;
-use OCA\OpenRegister\Service\Reporting\PdfReportWriter;
+use OCA\OpenRegister\Search\Service\Reporting\HtmlReportWriter;
+use OCA\OpenRegister\Search\Service\Reporting\PdfReportWriter;
 use PHPUnit\Framework\TestCase;
 use ZipArchive;
 

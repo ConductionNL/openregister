@@ -1,4 +1,320 @@
 {
 	"description": "Old class name => new class name for every OpenRegister class that moved to a component directory. Read by lib/AppInfo/ClassAliasMap.php at boot and written by scripts/component-move.py. eager: alias at boot (required when another app names the class in instanceof, catch or a type declaration); otherwise the alias is made on first autoload.",
-	"aliases": {}
+	"aliases": {
+		"OCA\\OpenRegister\\BackgroundJob\\AggregationThresholdJob": {
+			"class": "OCA\\OpenRegister\\Search\\BackgroundJob\\AggregationThresholdJob",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\BackgroundJob\\ReportRenderJob": {
+			"class": "OCA\\OpenRegister\\Search\\BackgroundJob\\ReportRenderJob",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\BackgroundJob\\SearchIndexRebuildJob": {
+			"class": "OCA\\OpenRegister\\Search\\BackgroundJob\\SearchIndexRebuildJob",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Command\\SearchIndexCommand": {
+			"class": "OCA\\OpenRegister\\Search\\Command\\SearchIndexCommand",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\View": {
+			"class": "OCA\\OpenRegister\\Search\\Db\\View",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\ViewMapper": {
+			"class": "OCA\\OpenRegister\\Search\\Db\\ViewMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Listener\\AggregationThresholdListener": {
+			"class": "OCA\\OpenRegister\\Search\\Listener\\AggregationThresholdListener",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Listener\\ObjectMetricsListener": {
+			"class": "OCA\\OpenRegister\\Search\\Listener\\ObjectMetricsListener",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Aggregation\\AggregationAnnotationValidator": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Aggregation\\AggregationAnnotationValidator",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Aggregation\\AggregationCache": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Aggregation\\AggregationCache",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Aggregation\\AggregationJoinAnnotationValidator": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Aggregation\\AggregationJoinAnnotationValidator",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Aggregation\\AggregationMetricsAnnotationValidator": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Aggregation\\AggregationMetricsAnnotationValidator",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Aggregation\\AggregationQuery": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Aggregation\\AggregationQuery",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Aggregation\\AggregationSpecEntry": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Aggregation\\AggregationSpecEntry",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Aggregation\\ThresholdEvaluationService": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Aggregation\\ThresholdEvaluationService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Aggregation\\TimeseriesDateBucketValidator": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Aggregation\\TimeseriesDateBucketValidator",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Aggregation\\TimeseriesRequestValidator": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Aggregation\\TimeseriesRequestValidator",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\DashboardService": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\DashboardService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\ExampleSet\\ExampleSetViews": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\ExampleSet\\ExampleSetViews",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Geo\\GeoFeatureCollectionBuilder": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Geo\\GeoFeatureCollectionBuilder",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Geo\\GeoFilter": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Geo\\GeoFilter",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Geo\\GeoFilterApplier": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Geo\\GeoFilterApplier",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Geo\\GeoFilterParser": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Geo\\GeoFilterParser",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Geo\\GeoSpatialEvaluator": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Geo\\GeoSpatialEvaluator",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Geo\\RdCrsTransformer": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Geo\\RdCrsTransformer",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\GraphQL\\GraphQLErrorFormatter": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\GraphQL\\GraphQLErrorFormatter",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\GraphQL\\GraphQLService": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\GraphQL\\GraphQLService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\GraphQL\\QueryComplexityAnalyzer": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\GraphQL\\QueryComplexityAnalyzer",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\GraphQL\\Scalar\\DateTimeType": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\GraphQL\\Scalar\\DateTimeType",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\GraphQL\\Scalar\\EmailType": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\GraphQL\\Scalar\\EmailType",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\GraphQL\\Scalar\\JsonType": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\GraphQL\\Scalar\\JsonType",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\GraphQL\\Scalar\\UploadType": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\GraphQL\\Scalar\\UploadType",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\GraphQL\\Scalar\\UriType": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\GraphQL\\Scalar\\UriType",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\GraphQL\\Scalar\\UuidType": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\GraphQL\\Scalar\\UuidType",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\GraphQL\\SchemaGenerator": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\GraphQL\\SchemaGenerator",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\GraphQL\\SchemaGenerator\\AggregationTypes": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\GraphQL\\SchemaGenerator\\AggregationTypes",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\GraphQL\\SchemaGenerator\\CompositionHandler": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\GraphQL\\SchemaGenerator\\CompositionHandler",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\GraphQL\\SchemaGenerator\\TypeMapperHandler": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\GraphQL\\SchemaGenerator\\TypeMapperHandler",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Integration\\ContactSearch": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Integration\\ContactSearch",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\MapsOverviewService": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\MapsOverviewService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\MetricsService": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\MetricsService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Quality\\DedupCreatePolicy": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Quality\\DedupCreatePolicy",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Quality\\DismissedPairStore": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Quality\\DismissedPairStore",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Quality\\DuplicateDetectionService": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Quality\\DuplicateDetectionService",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Quality\\SimilarityCalculator": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Quality\\SimilarityCalculator",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Quality\\UniqueHintAnnotationValidator": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Quality\\UniqueHintAnnotationValidator",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Reporting\\HtmlReportWriter": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Reporting\\HtmlReportWriter",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Reporting\\PdfReportWriter": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Reporting\\PdfReportWriter",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Reporting\\ReportRenderService": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Reporting\\ReportRenderService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Reporting\\SpreadsheetReportWriter": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Reporting\\SpreadsheetReportWriter",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Search\\PlaceholderResolver": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Search\\PlaceholderResolver",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Search\\PropertySearchProfile": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Search\\PropertySearchProfile",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Search\\SearchIndexMaintenance": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Search\\SearchIndexMaintenance",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\VectorizationService": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\VectorizationService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Vectorization\\Handlers\\EmbeddingGeneratorHandler": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Vectorization\\Handlers\\EmbeddingGeneratorHandler",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Vectorization\\Handlers\\PgVectorPlatform": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Vectorization\\Handlers\\PgVectorPlatform",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Vectorization\\Handlers\\VectorSearchHandler": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Vectorization\\Handlers\\VectorSearchHandler",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Vectorization\\Handlers\\VectorStatsHandler": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Vectorization\\Handlers\\VectorStatsHandler",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Vectorization\\Handlers\\VectorStorageHandler": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Vectorization\\Handlers\\VectorStorageHandler",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Vectorization\\Strategies\\VectorizationStrategyInterface": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Vectorization\\Strategies\\VectorizationStrategyInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Vectorization\\VectorEmbeddings": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\Vectorization\\VectorEmbeddings",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\ViewPresentationService": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\ViewPresentationService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\ViewService": {
+			"class": "OCA\\OpenRegister\\Search\\Service\\ViewService",
+			"eager": true,
+			"service": true
+		}
+	}
 }
