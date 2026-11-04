@@ -45,7 +45,7 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
@@ -164,7 +164,7 @@ final class ConfigurationServiceRegistrar {
 					appConfig: $container->get('OCP\IAppConfig'),
 					logger: $container->get('Psr\Log\LoggerInterface'),
 					client: new Client(),
-					objectService: $container->get(ObjectService::class),
+					objectService: $container->get(ObjectOperationsInterface::class),
 					githubHandler: $container->get(GitHubHandler::class),
 					gitlabHandler: $container->get(GitLabHandler::class),
 					cacheHandler: $container->get(ConfigurationCacheHandler::class),
@@ -244,7 +244,7 @@ final class ConfigurationServiceRegistrar {
 			logger: $logger,
 			appDataPath: $appDataPath,
 			uploadHandler: $container->get(ConfigurationUploadHandler::class),
-			objectService: $container->get(ObjectService::class),
+			objectService: $container->get(ObjectOperationsInterface::class),
 			shippedGuard: $shippedGuard,
 			importJobRecorder: $importJobRecorder,
 			schemaInstaller: $schemaInstaller

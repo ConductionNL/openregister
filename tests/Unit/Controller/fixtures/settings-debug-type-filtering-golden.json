@@ -2,7 +2,7 @@
     "testDebugTypeFilteringMatchesTheRecording every search answers its own set": {
         "calls": [
             {
-                "container.get": "OCA\\OpenRegister\\Service\\ObjectService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ObjectOperationsInterface"
             },
             {
                 "container.get": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface"
@@ -259,7 +259,7 @@
     "testDebugTypeFilteringMatchesTheRecording no results anywhere": {
         "calls": [
             {
-                "container.get": "OCA\\OpenRegister\\Service\\ObjectService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ObjectOperationsInterface"
             },
             {
                 "container.get": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface"
@@ -444,7 +444,7 @@
     "testDebugTypeFilteringMatchesTheRecording register absent": {
         "calls": [
             {
-                "container.get": "OCA\\OpenRegister\\Service\\ObjectService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ObjectOperationsInterface"
             },
             {
                 "container.get": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface"
@@ -464,7 +464,7 @@
     "testDebugTypeFilteringMatchesTheRecording the database lookup throws": {
         "calls": [
             {
-                "container.get": "OCA\\OpenRegister\\Service\\ObjectService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ObjectOperationsInterface"
             },
             {
                 "container.get": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface"
@@ -568,7 +568,7 @@
     "testDebugTypeFilteringMatchesTheRecording the search throws": {
         "calls": [
             {
-                "container.get": "OCA\\OpenRegister\\Service\\ObjectService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ObjectOperationsInterface"
             },
             {
                 "container.get": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface"
@@ -614,7 +614,7 @@
     "testDebugTypeFilteringMatchesTheRecording the slug resolver throws": {
         "calls": [
             {
-                "container.get": "OCA\\OpenRegister\\Service\\ObjectService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ObjectOperationsInterface"
             },
             {
                 "container.get": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface"

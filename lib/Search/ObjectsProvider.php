@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Search;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
 use OCP\IL10N;
 use OCP\IUser;
@@ -126,9 +126,9 @@ class ObjectsProvider implements IFilteringProvider {
 	/**
 	 * The object service for advanced search operations
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Logger for debugging search operations
@@ -163,7 +163,7 @@ class ObjectsProvider implements IFilteringProvider {
 	 * Constructor for the ObjectsProvider class
 	 *
 	 * @param IL10N $l10n The localization service
-	 * @param ObjectService $objectService The object service for search operations
+	 * @param ObjectOperationsInterface $objectService The object service for search operations
 	 * @param LoggerInterface $logger Logger for debugging search operations
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for the searchable-schema opt-out
 	 * @param ObjectSearchResultFormatter $resultFormatter Shared result-formatting service
@@ -177,7 +177,7 @@ class ObjectsProvider implements IFilteringProvider {
 	 */
 	public function __construct(
 		IL10N $l10n,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		LoggerInterface $logger,
 		SchemaMapperInterface $schemaMapper,
 		ObjectSearchResultFormatter $resultFormatter,

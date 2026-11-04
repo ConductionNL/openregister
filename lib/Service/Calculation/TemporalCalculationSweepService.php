@@ -49,7 +49,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleDeclarationForms;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -71,7 +71,7 @@ class TemporalCalculationSweepService {
 	 * @param MagicMapper $objectMapper Raw per-table object enumeration.
 	 * @param CalculationEvaluatorInterface $evaluator Expression evaluator (exposes `now`).
 	 * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
-	 * @param ObjectService $objectService The normal object write path (events + audit).
+	 * @param ObjectOperationsInterface $objectService The normal object write path (events + audit).
 	 * @param LoggerInterface $logger Structured logging.
 	 * @param LifecycleDeclarationForms $finalForm Owns the shape rules for `initial` and `final`.
 	 * @param SchemaTypeConverter $types Restores the stored form of `type: string` values the read decoded.
@@ -82,7 +82,7 @@ class TemporalCalculationSweepService {
 		private readonly MagicMapper $objectMapper,
 		private readonly CalculationEvaluatorInterface $evaluator,
 		private readonly CalculationPayloadBuilder $payloadBuilder,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 		private readonly LifecycleDeclarationForms $finalForm = new LifecycleDeclarationForms(),
 		private readonly SchemaTypeConverter $types = new SchemaTypeConverter(),

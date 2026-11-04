@@ -49,7 +49,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
 use OCA\OpenRegister\Exception\MergeDecisionException;
 use OCA\OpenRegister\Exception\MergeNotFullyReadableException;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
@@ -145,7 +145,7 @@ class MergeService implements ObjectMergerInterface {
 	/**
 	 * Wire collaborators.
 	 *
-	 * @param ObjectService $objectService Object read/write path (RBAC + tenant scoped).
+	 * @param ObjectOperationsInterface $objectService Object read/write path (RBAC + tenant scoped).
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup for the merge + survivorship annotations.
 	 * @param SurvivorshipResolver $resolver Pure golden-record resolver, reused for recompute.
 	 * @param TrustTierResolver $trustResolver Pure trust-tier lookup + decay engine.
@@ -159,7 +159,7 @@ class MergeService implements ObjectMergerInterface {
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#3.1
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly SurvivorshipResolver $resolver,
 		private readonly TrustTierResolver $trustResolver,

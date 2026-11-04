@@ -54,7 +54,7 @@ use OCA\OpenRegister\Event\HandoffExecutedEvent;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -110,7 +110,7 @@ class HandoffService {
 	/**
 	 * Wire the engine against the shipped OR capabilities it composes.
 	 *
-	 * @param ObjectService $objectService RBAC-enforcing object read/write path.
+	 * @param ObjectOperationsInterface $objectService RBAC-enforcing object read/write path.
 	 * @param SemanticTypeResolver $semanticTypeResolver Kind URI → installed schema resolution.
 	 * @param SchemaMapperInterface $schemaMapper Source-schema loading.
 	 * @param MagicMapper $objectMapper Raw entity access for provenance relation writes.
@@ -126,7 +126,7 @@ class HandoffService {
 	 * @param LoggerInterface $logger Structured logging.
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly SemanticTypeResolver $semanticTypeResolver,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapper $objectMapper,
