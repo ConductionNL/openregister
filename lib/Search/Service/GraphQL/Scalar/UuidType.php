@@ -22,6 +22,7 @@ use GraphQL\Error\Error;
 use GraphQL\Language\AST\StringValueNode;
 use GraphQL\Type\Definition\ScalarType;
 use GraphQL\Utils\Utils;
+use OCA\OpenRegister\Formats\UuidFormat;
 
 /**
  * UUID scalar type validating UUID v4 format.
@@ -46,13 +47,6 @@ class UuidType extends ScalarType {
 	 * @var string|null
 	 */
 	public ?string $description = 'UUID v4 string (e.g., 550e8400-e29b-41d4-a716-446655440000).';
-
-	/**
-	 * The UUID validation pattern.
-	 *
-	 * @var string
-	 */
-	private const UUID_PATTERN = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
 
 	/**
 	 * Serializes a UUID value to string.
@@ -93,7 +87,7 @@ class UuidType extends ScalarType {
 			);
 		}
 
-		if (preg_match(self::UUID_PATTERN, $value) !== 1) {
+		if (UuidFormat::isCanonical(value: $value) === false) {
 			throw new Error(
 				'UUID cannot represent invalid UUID value: ' . $value
 			);
