@@ -79,7 +79,7 @@ class RotateTenantKeyCommand extends Command {
 			->setDescription(description: 'Retire a tenant\'s active HMAC signing key and store a new one')
 			->addArgument(name: 'tenant', mode: InputArgument::REQUIRED, description: 'The tenant identifier')
 			->addOption(name: 'create', mode: InputOption::VALUE_NONE, description: 'Create a first key for a tenant that has none')
-			->addOption(name: self::ACCEPT_OPTION, mode: InputOption::VALUE_NONE, description: 'Rotate even though signatures made with the current key can no longer be checked');
+			->addOption(name: self::ACCEPT_OPTION, mode: InputOption::VALUE_NONE, description: 'Rotate although old signatures can no longer be checked');
 	}//end configure()
 
 	/**
