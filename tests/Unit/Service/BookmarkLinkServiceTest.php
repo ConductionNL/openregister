@@ -29,6 +29,8 @@ use Exception;
 use OCA\OpenRegister\Db\BookmarkLink;
 use OCA\OpenRegister\Db\BookmarkLinkMapper;
 use OCA\OpenRegister\Service\BookmarkLinkService;
+use OCA\OpenRegister\Service\BookmarkDraft;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -41,6 +43,8 @@ use Psr\Log\LoggerInterface;
  * BookmarkLinkServiceTest.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @uses \OCA\OpenRegister\Service\LinkTarget
+ * @uses \OCA\OpenRegister\Service\BookmarkDraft
  */
 class BookmarkLinkServiceTest extends TestCase {
 	private BookmarkLinkMapper&MockObject $mapper;
@@ -95,7 +99,7 @@ class BookmarkLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('No user logged in');
 
-		$this->service->linkBookmark('abc-123', 1, 2, 5);
+		$this->service->linkBookmark((new LinkTarget('abc-123', 1))->inSchema(2), 5);
 	}
 
 	public function testLinkBookmarkThrowsOnDuplicate(): void {
@@ -107,7 +111,7 @@ class BookmarkLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(409);
 		$this->expectExceptionMessage('Bookmark already linked to this object');
 
-		$this->service->linkBookmark('abc-123', 1, 2, 5);
+		$this->service->linkBookmark((new LinkTarget('abc-123', 1))->inSchema(2), 5);
 	}
 
 	public function testLinkBookmarkThrowsWhenBookmarksUnavailable(): void {
@@ -119,7 +123,7 @@ class BookmarkLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(503);
 		$this->expectExceptionMessage('Bookmarks is not available');
 
-		$this->service->linkBookmark('abc-123', 1, 2, 5);
+		$this->service->linkBookmark((new LinkTarget('abc-123', 1))->inSchema(2), 5);
 	}
 
 	public function testUnlinkBookmarkSucceeds(): void {
@@ -175,7 +179,7 @@ class BookmarkLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('No user logged in');
 
-		$this->service->createAndLinkBookmark('abc-123', 1, 2, 'T', 'https://x.nl', null, []);
+		$this->service->createAndLinkBookmark((new LinkTarget('abc-123', 1))->inSchema(2), (new BookmarkDraft('T', 'https://x.nl'))->withDetails(null, []));
 	}
 
 	public function testCreateAndLinkBookmarkThrowsWhenBookmarksUnavailable(): void {
@@ -186,7 +190,7 @@ class BookmarkLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(503);
 		$this->expectExceptionMessage('Bookmarks is not available');
 
-		$this->service->createAndLinkBookmark('abc-123', 1, 2, 'T', 'https://x.nl', null, []);
+		$this->service->createAndLinkBookmark((new LinkTarget('abc-123', 1))->inSchema(2), (new BookmarkDraft('T', 'https://x.nl'))->withDetails(null, []));
 	}
 
 	public function testCreateAndLinkBookmarkThrowsWhenTitleEmpty(): void {
@@ -197,7 +201,7 @@ class BookmarkLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(400);
 		$this->expectExceptionMessage('Title is required');
 
-		$this->service->createAndLinkBookmark('abc-123', 1, 2, '   ', 'https://x.nl', null, []);
+		$this->service->createAndLinkBookmark((new LinkTarget('abc-123', 1))->inSchema(2), (new BookmarkDraft('   ', 'https://x.nl'))->withDetails(null, []));
 	}
 
 	public function testCreateAndLinkBookmarkThrowsWhenUrlEmpty(): void {
@@ -208,7 +212,7 @@ class BookmarkLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(400);
 		$this->expectExceptionMessage('URL is required');
 
-		$this->service->createAndLinkBookmark('abc-123', 1, 2, 'Title', '   ', null, []);
+		$this->service->createAndLinkBookmark((new LinkTarget('abc-123', 1))->inSchema(2), (new BookmarkDraft('Title', '   '))->withDetails(null, []));
 	}
 
 	public function testGetAvailableBookmarksReturnsEmptyWhenBookmarksUnavailable(): void {

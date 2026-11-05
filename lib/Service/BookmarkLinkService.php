@@ -124,9 +124,7 @@ class BookmarkLinkService {
 	 * Idempotent: a duplicate link raises a 409 Exception (callers should
 	 * surface as HTTP 409 to the UI).
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
+	 * @param LinkTarget $target The object to link to.
 	 * @param int $bookmarkId NC Bookmarks bookmark id.
 	 *
 	 * @return BookmarkLink The persisted link row.
@@ -135,13 +133,13 @@ class BookmarkLinkService {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
-	public function linkBookmark(string $objectUuid, int $registerId, int $schemaId, int $bookmarkId): BookmarkLink {
+	public function linkBookmark(LinkTarget $target, int $bookmarkId): BookmarkLink {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
 
-		$existing = $this->bookmarkLinkMapper->findByObjectAndBookmark($objectUuid, $bookmarkId);
+		$existing = $this->bookmarkLinkMapper->findByObjectAndBookmark($target->objectUuid, $bookmarkId);
 		if ($existing !== null) {
 			throw new Exception('Bookmark already linked to this object', 409);
 		}
@@ -156,17 +154,13 @@ class BookmarkLinkService {
 		}
 
 		$link = new BookmarkLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setBookmarkId($bookmarkId);
 		$link->setTitle($details['title']);
 		$link->setUrl($details['url']);
 		$link->setDescription($details['description']);
 		$link->setTags($details['tags']);
 		$link->setAddedAt($details['addedAt']);
-		$link->setLinkedBy($user->getUID());
-		$link->setLinkedAt(new DateTime());
+		$target->stamp(link: $link, linkedBy: $user->getUID());
 
 		return $this->bookmarkLinkMapper->insert($link);
 	}//end linkBookmark()
@@ -303,33 +297,19 @@ class BookmarkLinkService {
 	 * The new bookmark is owned by the current user. Tags supplied here
 	 * are applied to the bookmark via NC Bookmarks' TagMapper.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
-	 * @param string $title Bookmark title (required).
-	 * @param string $url Bookmark URL (required).
-	 * @param string|null $description Optional description.
-	 * @param array<int,string> $tags Optional tags.
+	 * @param LinkTarget    $target The object to link to.
+	 * @param BookmarkDraft $draft  Title and URL (required), description and tags.
 	 *
 	 * @return BookmarkLink The persisted link row.
 	 *
 	 * @throws Exception On missing user, Bookmarks unavailable, or create failure.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList)
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
-	public function createAndLinkBookmark(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		string $title,
-		string $url,
-		?string $description = null,
-		array $tags = [],
-	): BookmarkLink {
+	public function createAndLinkBookmark(LinkTarget $target, BookmarkDraft $draft): BookmarkLink {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
@@ -339,11 +319,11 @@ class BookmarkLinkService {
 			throw new Exception('Bookmarks is not available', 503);
 		}
 
-		if (trim($title) === '') {
+		if (trim($draft->title) === '') {
 			throw new Exception('Title is required', 400);
 		}
 
-		if (trim($url) === '') {
+		if (trim($draft->url) === '') {
 			throw new Exception('URL is required', 400);
 		}
 
@@ -352,14 +332,14 @@ class BookmarkLinkService {
 			throw new Exception('Bookmarks is not available', 503);
 		}
 
-		$cleanTags = $this->cleanTags(tags: $tags);
+		$cleanTags = $this->cleanTags(tags: $draft->tags());
 
 		try {
 			$bookmark = new \OCA\Bookmarks\Db\Bookmark();
 			$bookmark->setUserId($user->getUID());
-			$bookmark->setUrl(trim($url));
-			$bookmark->setTitle(mb_substr(trim($title), 0, 512));
-			$bookmark->setDescription((string)($description ?? ''));
+			$bookmark->setUrl(trim($draft->url));
+			$bookmark->setTitle(mb_substr(trim($draft->title), 0, 512));
+			$bookmark->setDescription((string)($draft->description() ?? ''));
 
 			$saved = $mapper->insertOrUpdate($bookmark);
 			$bookmarkId = (int)$saved->getId();
@@ -381,23 +361,19 @@ class BookmarkLinkService {
 			throw new Exception('Failed to create bookmark: ' . $e->getMessage(), 500);
 		}//end try
 
-		$existing = $this->bookmarkLinkMapper->findByObjectAndBookmark($objectUuid, $bookmarkId);
+		$existing = $this->bookmarkLinkMapper->findByObjectAndBookmark($target->objectUuid, $bookmarkId);
 		if ($existing !== null) {
 			return $existing;
 		}
 
 		$link = new BookmarkLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setBookmarkId($bookmarkId);
-		$link->setTitle(mb_substr(trim($title), 0, 512));
-		$link->setUrl(trim($url));
-		$link->setDescription((string)($description ?? ''));
+		$link->setTitle(mb_substr(trim($draft->title), 0, 512));
+		$link->setUrl(trim($draft->url));
+		$link->setDescription((string)($draft->description() ?? ''));
 		$link->setTags($cleanTags);
 		$link->setAddedAt(new DateTime());
-		$link->setLinkedBy($user->getUID());
-		$link->setLinkedAt(new DateTime());
+		$target->stamp(link: $link, linkedBy: $user->getUID());
 
 		return $this->bookmarkLinkMapper->insert($link);
 	}//end createAndLinkBookmark()
