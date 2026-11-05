@@ -45,9 +45,7 @@ namespace OCA\OpenRegister\Service\Form;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\IAppData;
-use OCP\Files\NotFoundException;
 use OCP\Files\SimpleFS\ISimpleFile;
-use OCP\Files\SimpleFS\ISimpleFolder;
 use OCP\IL10N;
 use OCP\Lock\ILockingProvider;
 use OCP\Lock\LockedException;
@@ -59,6 +57,8 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
  */
 class FormIdempotencyStore {
+
+	use AppDataFolder;
 
 	/**
 	 * The app-data folder.
@@ -343,25 +343,4 @@ class FormIdempotencyStore {
 	private function name(string $scope, string $key): string {
 		return hash('sha256', $scope . "\0" . $key) . '.json';
 	}//end name()
-
-	/**
-	 * The store's folder.
-	 *
-	 * @param bool $create Create it when absent.
-	 *
-	 * @return ISimpleFolder|null The folder; null only when absent and not created.
-	 *
-	 * @psalm-return ($create is true ? ISimpleFolder : ISimpleFolder|null)
-	 */
-	private function folder(bool $create): ?ISimpleFolder {
-		try {
-			return $this->appData->getFolder(self::FOLDER);
-		} catch (NotFoundException) {
-			if ($create === false) {
-				return null;
-			}
-
-			return $this->appData->newFolder(self::FOLDER);
-		}
-	}//end folder()
 }//end class
