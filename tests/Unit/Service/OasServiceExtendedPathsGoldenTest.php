@@ -25,6 +25,8 @@ use ReflectionMethod;
 /**
  * @covers \OCA\OpenRegister\Service\OasService
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Oas\OasRbacAnnotator
+ * @uses \OCA\OpenRegister\Service\Rbac\EffectiveAuthorization
  */
 class OasServiceExtendedPathsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/oas-extended-paths-golden.json';
