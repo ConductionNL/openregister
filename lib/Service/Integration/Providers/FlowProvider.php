@@ -35,15 +35,18 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use OCA\OpenRegister\Db\FlowLink;
 use OCA\OpenRegister\Db\FlowLinkMapper;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IL10N;
-use Throwable;
 
 class FlowProvider extends AbstractIntegrationProvider {
+
+	use NcAppLinkRowsProvider;
+	use FirstRowQuery;
 
 	private const REQUIRED_APP = 'workflowengine';
 
@@ -71,75 +74,61 @@ class FlowProvider extends AbstractIntegrationProvider {
 		return 'workflow';
 	}//end getGroup()
 
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
-
-	public function isEnabled(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
-	}//end isEnabled()
+	/**
+	 * The link mapper this provider reads.
+	 *
+	 * @return FlowLinkMapper
+	 */
+	protected function linkMapper(): FlowLinkMapper {
+		return $this->flowLinkMapper;
+	}//end linkMapper()
 
 	/**
-	 * List Flow operations linked to an OR object.
+	 * One Flow link, hydrated with the current name/class/entity/events/checks
+	 * from `oc_flow_operations`. When the operation has been deleted from NC Flow
+	 * the cached link-row columns are used and the row carries `enabled=false`.
 	 *
-	 * Reads link rows from `openregister_flow_links`, then hydrates each
-	 * row with the current name/class/entity/events/checks from
-	 * `oc_flow_operations`. Falls back to the cached link-row columns
-	 * when the operation has been deleted from NC Flow (the row still
-	 * surfaces in the sidebar but is flagged with `enabled=false`).
+	 * @param FlowLink $link Link row from the mapper.
 	 *
-	 * @param string $register Register slug or numeric id (unused).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Object uuid.
-	 * @param array<string,mixed> $filters Optional filters (unused).
-	 *
-	 * @return array<int,array<string,mixed>>
+	 * @return array<string,mixed>
 	 *
 	 * @spec openspec/specs/integration-flow/spec.md
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		if ($this->isEnabled() === false) {
-			return [];
-		}
+	protected function rowFromLink(FlowLink $link): array {
+		$operationId = (int)$link->getOperationId();
+		$onRow = $this->fetchOperationRow(operationId: $operationId);
 
-		$links = $this->flowLinkMapper->findByObjectUuid($objectId);
-		if ($links === []) {
-			return [];
-		}
-
-		$out = [];
-		foreach ($links as $link) {
-			$operationId = (int)$link->getOperationId();
-			$onRow = $this->fetchOperationRow(operationId: $operationId);
-
-			$name = (string)($onRow['name'] ?? $link->getOperationName() ?? '');
-			$class = (string)($onRow['class'] ?? $link->getOperationClass() ?? '');
-			$entity = (string)($onRow['entity'] ?? $link->getEntityType() ?? '');
-			$operation = (string)($onRow['operation'] ?? '');
-			$events = $this->decodeJsonField(value: $onRow['events'] ?? null);
-			$checks = $this->decodeJsonField(value: $onRow['checks'] ?? null);
-
-			$out[] = [
-				'id' => (string)$operationId,
-				'title' => $name,
-				'class' => $class,
-				'entity' => $entity,
-				'operation' => $operation,
-				'events' => $events,
-				'checks' => $checks,
+		return array_merge(
+			$this->operationFields(link: $link, onRow: $onRow),
+			[
 				'enabled' => $onRow !== null,
 				'url' => '/index.php/settings/admin/workflow#' . $operationId,
 				'linkId' => $link->getId(),
 				'data' => $onRow ?? [],
-			];
-		}//end foreach
+			]
+		);
+	}//end rowFromLink()
 
-		return $out;
-	}//end list()
+	/**
+	 * The operation's id, title, class, entity, operation, events and checks:
+	 * the live row first, the cached link columns second.
+	 *
+	 * @param FlowLink                 $link  Link row.
+	 * @param array<string,mixed>|null $onRow Live `oc_flow_operations` row, if any.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function operationFields(FlowLink $link, ?array $onRow): array {
+		return [
+			'id' => (string)(int)$link->getOperationId(),
+			'title' => (string)($onRow['name'] ?? $link->getOperationName() ?? ''),
+			'class' => (string)($onRow['class'] ?? $link->getOperationClass() ?? ''),
+			'entity' => (string)($onRow['entity'] ?? $link->getEntityType() ?? ''),
+			'operation' => (string)($onRow['operation'] ?? ''),
+			'events' => $this->decodeJsonField(value: $onRow['events'] ?? null),
+			'checks' => $this->decodeJsonField(value: $onRow['checks'] ?? null),
+		];
+	}//end operationFields()
 
 	/**
 	 * Fetch an operation row from `oc_flow_operations`.
@@ -149,21 +138,14 @@ class FlowProvider extends AbstractIntegrationProvider {
 	 * @return array<string,mixed>|null
 	 */
 	private function fetchOperationRow(int $operationId): ?array {
-		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('id', 'class', 'name', 'entity', 'operation', 'events', 'checks')
-				->from('flow_operations')
-				->where($qb->expr()->eq('id', $qb->createNamedParameter($operationId, IQueryBuilder::PARAM_INT)));
-
-			$row = $qb->executeQuery()->fetch();
-			if ($row === false) {
-				return null;
+		return $this->firstRowOf(
+			query: function () use ($operationId): IQueryBuilder {
+				$qb = $this->db->getQueryBuilder();
+				return $qb->select('id', 'class', 'name', 'entity', 'operation', 'events', 'checks')
+					->from('flow_operations')
+					->where($qb->expr()->eq('id', $qb->createNamedParameter($operationId, IQueryBuilder::PARAM_INT)));
 			}
-
-			return $row;
-		} catch (Throwable $e) {
-			return null;
-		}
+		);
 	}//end fetchOperationRow()
 
 	/**
@@ -185,13 +167,9 @@ class FlowProvider extends AbstractIntegrationProvider {
 			return [];
 		}
 
-		try {
-			$decoded = json_decode($value, true);
-			if (is_array($decoded) === true) {
-				return $decoded;
-			}
-		} catch (Throwable $e) {
-			// Fall through.
+		$decoded = json_decode($value, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
 		}
 
 		return [];
