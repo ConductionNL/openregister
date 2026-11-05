@@ -40,6 +40,7 @@ use RuntimeException;
  * setting, against a golden recorded before the listener was split.
  *
  * @covers \OCA\OpenRegister\Listener\AnnotationNotificationListener
+ * @uses   \OCA\OpenRegister\Listener\NotificationTrigger
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Event\ObjectCreatedEvent

@@ -44,6 +44,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Listener\AggregationCacheInvalidationListener
  * @covers \OCA\OpenRegister\Listener\AnnotationNotificationListener
+ * @uses   \OCA\OpenRegister\Listener\NotificationTrigger
  * @covers \OCA\OpenRegister\Listener\FacetCacheInvalidationListener
  * @covers \OCA\OpenRegister\Listener\WrittenObjectOfEvent
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
