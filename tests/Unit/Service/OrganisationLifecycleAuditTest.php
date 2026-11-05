@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use OCA\OpenRegister\Controller\OrganisationController;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -165,7 +166,7 @@ class OrganisationLifecycleAuditTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn(['name' => 'Gemeente Waterland-Noord', 'description' => 'Gemeente']);
 
-		$controller = new OrganisationController(
+		$controller = OrganisationControllerFactory::create(
 			'openregister',
 			$request,
 			$service,
