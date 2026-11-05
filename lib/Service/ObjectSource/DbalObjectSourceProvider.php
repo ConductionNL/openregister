@@ -181,7 +181,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 
 		try {
 			$qb = $this->baseSelect(connection: $connection, config: $config, columns: $columns);
-			$this->applyIdPredicate(qb: $qb, connection: $connection, idColumns: $idColumns, id: $id);
+			(new DbalStatement(qb: $qb, connection: $connection))->andEquals(pairs: self::idPairs(idColumns: $idColumns, id: $id));
 			$qb->setMaxResults(1);
 
 			$row = $qb->executeQuery()->fetchAssociative();
@@ -234,8 +234,9 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 
 		try {
 			$qb = $this->baseSelect(connection: $connection, config: $config, columns: $columns);
-			$this->applyFilters(qb: $qb, connection: $connection, query: $query, columns: $columns, config: $config);
-			$this->applySort(qb: $qb, connection: $connection, query: $query, columns: $columns);
+			$statement = new DbalStatement(qb: $qb, connection: $connection);
+			$this->applyFilters(statement: $statement, query: $query, filterable: $this->filterableColumns(columns: $columns, config: $config));
+			$this->applySort(statement: $statement, query: $query, columns: $columns);
 
 			$limit = $this->limit(query: $query);
 			$offset = max(0, (int)($query['offset'] ?? 0));
@@ -294,7 +295,11 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 		try {
 			$qb = $connection->createQueryBuilder();
 			$qb->select('COUNT(*)')->from($this->fromExpression(connection: $connection, config: $config));
-			$this->applyFilters(qb: $qb, connection: $connection, query: $query, columns: $columns, config: $config);
+			$this->applyFilters(
+				statement: new DbalStatement(qb: $qb, connection: $connection),
+				query: $query,
+				filterable: $this->filterableColumns(columns: $columns, config: $config)
+			);
 
 			$total = $qb->executeQuery()->fetchOne();
 		} catch (DbalException $e) {
@@ -870,45 +875,35 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	}//end baseSelect()
 
 	/**
-	 * Apply equality filters and a `_search` LIKE as bound parameters.
+	 * Apply equality and `like` filters on the filterable columns and a `_search` LIKE, all bound.
 	 *
-	 * @param QueryBuilder $qb The query builder (mutated).
-	 * @param Connection $connection The DBAL connection.
-	 * @param array<string, mixed> $query The OR query.
-	 * @param array<int, string> $columns The allowlisted scalar columns.
-	 * @param array<string, mixed> $config The object-source config block.
+	 * @param DbalStatement        $statement  The statement (mutated).
+	 * @param array<string, mixed> $query      The OR query.
+	 * @param array<int, string>   $filterable The filterable columns.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
-	private function applyFilters(QueryBuilder $qb, Connection $connection, array $query, array $columns, array $config): void {
-		$filterable = $this->filterableColumns(columns: $columns, config: $config);
-
+	private function applyFilters(DbalStatement $statement, array $query, array $filterable): void {
 		$filters = ($query['filters'] ?? []);
-		if (is_array($filters) === true) {
-			foreach ($filters as $column => $value) {
-				if (is_string($column) === false || in_array($column, $filterable, true) === false) {
-					continue;
-				}
+		foreach ((is_array($filters) === true ? $filters : []) as $column => $value) {
+			if (is_string($column) === false || in_array($column, $filterable, true) === false) {
+				continue;
+			}
 
-				if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
-					$this->applyLikeFilter(qb: $qb, connection: $connection, column: $column, value: $value[LikeOperator::KEY]);
-					continue;
-				}
+			if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
+				$this->applyLikeFilter(statement: $statement, column: $column, value: $value[LikeOperator::KEY]);
+				continue;
+			}
 
-				if (is_array($value) === true || is_object($value) === true) {
-					continue;
-				}
-
-				$qb->andWhere(
-					$this->quote(connection: $connection, identifier: $column) . ' = ' . $qb->createNamedParameter($value)
-				);
+			if (is_array($value) === false && is_object($value) === false) {
+				$statement->andEquals(pairs: [[$column, $value]]);
 			}
 		}
 
-		$this->applySearch(qb: $qb, connection: $connection, query: $query, filterable: $filterable);
+		$this->applySearch(statement: $statement, query: $query, filterable: $filterable);
 	}//end applyFilters()
 
 	/**
@@ -916,8 +911,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * The other operators in the bag stay unsupported on this path, as before.
 	 *
-	 * @param QueryBuilder $qb The query builder (mutated).
-	 * @param Connection $connection The DBAL connection.
+	 * @param DbalStatement $statement The statement (mutated).
 	 * @param string $column The allowlisted column.
 	 * @param mixed $value The value under the `like` key: one term or a list.
 	 *
@@ -925,27 +919,23 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
-	private function applyLikeFilter(QueryBuilder $qb, Connection $connection, string $column, mixed $value): void {
-		$like = new LikeOperator(databasePlatform: $connection->getDatabasePlatform());
+	private function applyLikeFilter(DbalStatement $statement, string $column, mixed $value): void {
+		$like = new LikeOperator(databasePlatform: $statement->connection->getDatabasePlatform());
 		$placeholders = [];
 		foreach ($like->terms(value: $value) as $term) {
-			$placeholders[] = $qb->createNamedParameter($like->pattern(term: $term));
+			$placeholders[] = $statement->qb->createNamedParameter($like->pattern(term: $term));
 		}
 
-		$condition = $like->anyCondition(
-			column: $this->quote(connection: $connection, identifier: $column),
-			patternSqls: $placeholders
-		);
+		$condition = $like->anyCondition(column: $statement->quote(identifier: $column), patternSqls: $placeholders);
 		if ($condition !== null) {
-			$qb->andWhere($condition);
+			$statement->qb->andWhere($condition);
 		}
 	}//end applyLikeFilter()
 
 	/**
 	 * Apply a `_search` term as a bound LIKE across the filterable columns.
 	 *
-	 * @param QueryBuilder $qb The query builder (mutated).
-	 * @param Connection $connection The DBAL connection.
+	 * @param DbalStatement $statement The statement (mutated).
 	 * @param array<string, mixed> $query The OR query.
 	 * @param array<int, string> $filterable The filterable columns.
 	 *
@@ -953,7 +943,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function applySearch(QueryBuilder $qb, Connection $connection, array $query, array $filterable): void {
+	private function applySearch(DbalStatement $statement, array $query, array $filterable): void {
 		$search = (string)($query['_search'] ?? $query['search'] ?? '');
 		if ($search === '' || $filterable === []) {
 			return;
@@ -964,26 +954,23 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 		// column is CAST to the platform's text type first. MySQL spells the
 		// cast target CHAR; PostgreSQL and SQLite use TEXT.
 		$castType = 'TEXT';
-		if ($connection->getDatabasePlatform() instanceof AbstractMySQLPlatform === true) {
+		if ($statement->connection->getDatabasePlatform() instanceof AbstractMySQLPlatform === true) {
 			$castType = 'CHAR';
 		}
 
-		$like = '%' . $search . '%';
-		$ors = [];
-		$param = $qb->createNamedParameter($like);
+		$param = $statement->qb->createNamedParameter('%' . $search . '%');
+		$ors   = [];
 		foreach ($filterable as $column) {
-			$quoted = $this->quote(connection: $connection, identifier: $column);
-			$ors[] = 'CAST(' . $quoted . ' AS ' . $castType . ') LIKE ' . $param;
+			$ors[] = 'CAST(' . $statement->quote(identifier: $column) . ' AS ' . $castType . ') LIKE ' . $param;
 		}
 
-		$qb->andWhere('(' . implode(' OR ', $ors) . ')');
+		$statement->qb->andWhere('(' . implode(' OR ', $ors) . ')');
 	}//end applySearch()
 
 	/**
 	 * Apply a validated sort column/direction.
 	 *
-	 * @param QueryBuilder $qb The query builder (mutated).
-	 * @param Connection $connection The DBAL connection.
+	 * @param DbalStatement $statement The statement (mutated).
 	 * @param array<string, mixed> $query The OR query.
 	 * @param array<int, string> $columns The allowlisted scalar columns.
 	 *
@@ -991,7 +978,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function applySort(QueryBuilder $qb, Connection $connection, array $query, array $columns): void {
+	private function applySort(DbalStatement $statement, array $query, array $columns): void {
 		$sort = ($query['sort'] ?? $query['_order'] ?? null);
 		if (is_array($sort) === false || $sort === []) {
 			return;
@@ -1007,38 +994,35 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 				$dir = 'DESC';
 			}
 
-			$qb->addOrderBy($this->quote(connection: $connection, identifier: $column), $dir);
+			$statement->qb->addOrderBy($statement->quote(identifier: $column), $dir);
 		}
 	}//end applySort()
 
 	/**
-	 * Add the WHERE predicate that selects a single object by its id.
+	 * The column and value pairs that select a single object by its id.
 	 *
-	 * @param QueryBuilder $qb The query builder (mutated).
-	 * @param Connection $connection The DBAL connection.
+	 * A composite id is split on the separator; a missing part matches the empty string.
+	 *
 	 * @param array<int, string> $idColumns The id column(s) (single or composite).
-	 * @param string $id The object id (composite ids are separator-joined).
+	 * @param string             $id        The object id (composite ids are separator-joined).
 	 *
-	 * @return void
+	 * @return array<int, array{0: string, 1: string}> The pairs, in column order.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function applyIdPredicate(QueryBuilder $qb, Connection $connection, array $idColumns, string $id): void {
+	private static function idPairs(array $idColumns, string $id): array {
 		if (count($idColumns) === 1) {
-			$qb->andWhere(
-				$this->quote(connection: $connection, identifier: $idColumns[0]) . ' = ' . $qb->createNamedParameter($id)
-			);
-			return;
+			return [[$idColumns[0], $id]];
 		}
 
 		$parts = explode(DatabaseIntrospectionService::COMPOSITE_ID_SEPARATOR, $id);
+		$pairs = [];
 		foreach ($idColumns as $index => $column) {
-			$part = ($parts[$index] ?? '');
-			$qb->andWhere(
-				$this->quote(connection: $connection, identifier: $column) . ' = ' . $qb->createNamedParameter($part)
-			);
+			$pairs[] = [$column, ($parts[$index] ?? '')];
 		}
-	}//end applyIdPredicate()
+
+		return $pairs;
+	}//end idPairs()
 
 	/**
 	 * Map a fetched row onto a non-persisted virtual ObjectEntity.
@@ -1360,7 +1344,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 				$qb->set($this->quote(connection: $connection, identifier: $column), $qb->createNamedParameter($value));
 			}
 
-			$this->applyWritePredicate(qb: $qb, connection: $connection, idColumns: $idColumns, id: $id);
+			(new DbalStatement(qb: $qb, connection: $connection))->andEquals(pairs: self::writeIdPairs(idColumns: $idColumns, id: $id));
 			$affected = (int)$qb->executeStatement();
 		} catch (DbalException $e) {
 			throw $this->translateWriteError(exception: $e);
@@ -1400,7 +1384,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 
 		try {
 			$qb = $connection->createQueryBuilder()->delete($this->quote(connection: $connection, identifier: $this->table(config: $config)));
-			$this->applyWritePredicate(qb: $qb, connection: $connection, idColumns: $idColumns, id: $id);
+			(new DbalStatement(qb: $qb, connection: $connection))->andEquals(pairs: self::writeIdPairs(idColumns: $idColumns, id: $id));
 			$affected = (int)$qb->executeStatement();
 		} catch (DbalException $e) {
 			throw $this->translateWriteError(exception: $e);
@@ -1602,38 +1586,25 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	}//end quoteColumns()
 
 	/**
-	 * Apply the primary-key predicate to a write query builder.
+	 * The id pairs of a write, refusing a composite id whose part count differs from the key's.
 	 *
-	 * @param QueryBuilder $qb The query builder (mutated).
-	 * @param Connection $connection The DBAL connection.
-	 * @param array<int, string> $idColumns The id columns.
-	 * @param string $id The object id (possibly composite-joined).
+	 * @param array<int, string> $idColumns The id column(s) (single or composite).
+	 * @param string             $id        The object id (composite ids are separator-joined).
 	 *
-	 * @return void
+	 * @return array<int, array{0: string, 1: string}> The pairs, in column order.
 	 *
-	 * @throws DbalWriteException When a composite id has the wrong number of parts (400).
+	 * @throws DbalWriteException When a composite id does not match the key's shape.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function applyWritePredicate(QueryBuilder $qb, Connection $connection, array $idColumns, string $id): void {
-		if (count($idColumns) === 1) {
-			$qb->andWhere(
-				$this->quote(connection: $connection, identifier: $idColumns[0]) . ' = ' . $qb->createNamedParameter($id)
-			);
-			return;
-		}
-
+	private static function writeIdPairs(array $idColumns, string $id): array {
 		$parts = explode(DatabaseIntrospectionService::COMPOSITE_ID_SEPARATOR, $id);
-		if (count($parts) !== count($idColumns)) {
+		if (count($idColumns) !== 1 && count($parts) !== count($idColumns)) {
 			throw new DbalWriteException('The object id does not match the table\'s composite key shape.', 400);
 		}
 
-		foreach ($idColumns as $index => $column) {
-			$qb->andWhere(
-				$this->quote(connection: $connection, identifier: $column) . ' = ' . $qb->createNamedParameter($parts[$index])
-			);
-		}
-	}//end applyWritePredicate()
+		return self::idPairs(idColumns: $idColumns, id: $id);
+	}//end writeIdPairs()
 
 	/**
 	 * Translate a DBAL write error into a sanitized, status-carrying exception.
