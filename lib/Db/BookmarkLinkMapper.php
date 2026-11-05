@@ -24,6 +24,7 @@ use OCP\IDBConnection;
  * Class BookmarkLinkMapper
  *
  * @template-extends QBMapper<BookmarkLink>
+ * @method list<BookmarkLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
 class BookmarkLinkMapper extends QBMapper {
 

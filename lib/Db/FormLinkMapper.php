@@ -33,6 +33,7 @@ use OCP\IDBConnection;
  * Class FormLinkMapper
  *
  * @template-extends QBMapper<FormLink>
+ * @method list<FormLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
 class FormLinkMapper extends QBMapper {
 

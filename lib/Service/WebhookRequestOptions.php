@@ -112,6 +112,8 @@ final class WebhookRequestOptions {
 	 * @return array<string, mixed> Guzzle allow_redirects option.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Guzzle calls `on_redirect` with (request, response, uri); only the uri is checked.
 	 */
 	public function redirects(Closure $assertSafe): array {
 		return [

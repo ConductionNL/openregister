@@ -320,7 +320,8 @@ interface SaveObjectInterface {
 	 * just as for a direct create. Skipped only when an enclosing save runs
 	 * with RBAC off. With no enclosing save the check runs.
 	 *
-	 * @param Schema $schema The schema the nested object is created in.
+	 * @param Schema      $schema   The schema the nested object is created in.
+	 * @param string|null $register The register it is created in, when known.
 	 *
 	 * @return void
 	 *
@@ -328,7 +329,7 @@ interface SaveObjectInterface {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function assertMayCascadeCreate(Schema $schema): void;
+	public function assertMayCascadeCreate(Schema $schema, ?string $register = null): void;
 
 	/**
 	 * The slug handler this save pipeline uses, so the bulk path shares one instance.
