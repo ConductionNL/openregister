@@ -217,6 +217,616 @@
             ]
         }
     ],
+    "default batch of 50": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Processing destruction list: list-1",
+                []
+            ]
+        },
+        {
+            "get": [
+                "RetentionServiceInterface"
+            ]
+        },
+        {
+            "get": [
+                "ObjectRetentionHandler"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "AuditTrailMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "DeleteObject"
+            ]
+        },
+        {
+            "get": [
+                "SaveObject"
+            ]
+        },
+        {
+            "find": [
+                "list-1",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "update": [
+                "list-1",
+                {
+                    "id": "list-1",
+                    "status": "executing",
+                    "objects": [
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T"
+                }
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Batch 1/2",
+                []
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Batch 2/2",
+                []
+            ]
+        },
+        {
+            "generateDestructionCertificate": [
+                {
+                    "id": "list-1",
+                    "status": "executed",
+                    "objects": [
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T",
+                    "executedAt": "T",
+                    "destroyedCount": 0,
+                    "skippedHolds": 0,
+                    "skippedErrors": 51,
+                    "skippedDecisions": 0
+                },
+                0,
+                "T"
+            ]
+        },
+        {
+            "update": [
+                "list-1",
+                {
+                    "id": "list-1",
+                    "status": "executed",
+                    "objects": [
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T",
+                    "executedAt": "T",
+                    "destroyedCount": 0,
+                    "skippedHolds": 0,
+                    "skippedErrors": 51,
+                    "skippedDecisions": 0
+                }
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Done: 0 destroyed, 0 held, 0 withheld by decision, 51 errors",
+                []
+            ]
+        }
+    ],
     "default batch, no cert": [
         {
             "get": [
