@@ -182,16 +182,14 @@ class PhotoLinkService {
 		}
 
 		$link = new PhotoLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setAlbumId($albumId);
 		$link->setAlbumName($info['name']);
 		$link->setCoverPhotoUrl($info['coverPhotoUrl']);
 		$link->setPhotoCount($info['photoCount']);
 		$link->setLastEdited($info['lastEdited']);
-		$link->setLinkedBy($uid);
-		$link->setLinkedAt(new DateTime());
+		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
+			->inSchema(schemaId: $schemaId)
+			->stamp(link: $link, linkedBy: $uid);
 
 		return $this->photoLinkMapper->insert($link);
 	}//end linkAlbum()
@@ -233,16 +231,14 @@ class PhotoLinkService {
 		}
 
 		$link = new PhotoLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setAlbumId($albumId);
 		$link->setAlbumName($name);
 		$link->setCoverPhotoUrl(null);
 		$link->setPhotoCount(0);
 		$link->setLastEdited(new DateTime());
-		$link->setLinkedBy($uid);
-		$link->setLinkedAt(new DateTime());
+		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
+			->inSchema(schemaId: $schemaId)
+			->stamp(link: $link, linkedBy: $uid);
 
 		return $this->photoLinkMapper->insert($link);
 	}//end createAndLinkAlbum()

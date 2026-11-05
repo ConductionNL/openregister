@@ -141,9 +141,6 @@ class PollLinkService {
 		$optionCount = $this->fetchOptionCount(pollId: $pollId);
 
 		$link = new PollLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setPollId($pollId);
 		$link->setPollTitle((string)($pollRow['title'] ?? ''));
 		$link->setPollType((string)($pollRow['type'] ?? ''));
@@ -151,8 +148,9 @@ class PollLinkService {
 		$link->setVoterCount($voterCount);
 		$link->setOptionCount($optionCount);
 		$link->setClosed($closed);
-		$link->setLinkedBy($user->getUID());
-		$link->setLinkedAt(new DateTime());
+		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
+			->inSchema(schemaId: $schemaId)
+			->stamp(link: $link, linkedBy: $user->getUID());
 
 		return $this->pollLinkMapper->insert($link);
 	}//end linkPoll()
@@ -324,9 +322,7 @@ class PollLinkService {
 		$pollId = $this->insertPollRecord(draft: $draft);
 
 		$link = $this->buildPollLink(draft: $draft, pollId: $pollId);
-		$link->setObjectUuid($target->objectUuid);
-		$link->setRegisterId($target->registerId);
-		$link->setSchemaId($target->schemaId());
+		$target->stamp(link: $link, linkedBy: $draft->owner());
 
 		return $this->pollLinkMapper->insert($link);
 	}//end createAndLinkPoll()
@@ -401,8 +397,6 @@ class PollLinkService {
 		$link->setVoterCount(0);
 		$link->setOptionCount(count($draft->options()));
 		$link->setClosed(false);
-		$link->setLinkedBy($draft->owner());
-		$link->setLinkedAt(new DateTime());
 
 		return $link;
 	}//end buildPollLink()

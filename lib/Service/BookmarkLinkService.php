@@ -156,17 +156,15 @@ class BookmarkLinkService {
 		}
 
 		$link = new BookmarkLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setBookmarkId($bookmarkId);
 		$link->setTitle($details['title']);
 		$link->setUrl($details['url']);
 		$link->setDescription($details['description']);
 		$link->setTags($details['tags']);
 		$link->setAddedAt($details['addedAt']);
-		$link->setLinkedBy($user->getUID());
-		$link->setLinkedAt(new DateTime());
+		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
+			->inSchema(schemaId: $schemaId)
+			->stamp(link: $link, linkedBy: $user->getUID());
 
 		return $this->bookmarkLinkMapper->insert($link);
 	}//end linkBookmark()
@@ -387,17 +385,15 @@ class BookmarkLinkService {
 		}
 
 		$link = new BookmarkLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setBookmarkId($bookmarkId);
 		$link->setTitle(mb_substr(trim($title), 0, 512));
 		$link->setUrl(trim($url));
 		$link->setDescription((string)($description ?? ''));
 		$link->setTags($cleanTags);
 		$link->setAddedAt(new DateTime());
-		$link->setLinkedBy($user->getUID());
-		$link->setLinkedAt(new DateTime());
+		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
+			->inSchema(schemaId: $schemaId)
+			->stamp(link: $link, linkedBy: $user->getUID());
 
 		return $this->bookmarkLinkMapper->insert($link);
 	}//end createAndLinkBookmark()

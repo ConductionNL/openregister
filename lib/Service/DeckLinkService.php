@@ -165,9 +165,6 @@ class DeckLinkService {
 		$widened = $this->extractCardFields(card: $card);
 
 		$link = new DeckLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setBoardId($boardId);
 		$link->setStackId($stackId);
 		$link->setCardId($cardId);
@@ -185,8 +182,9 @@ class DeckLinkService {
 
 		$link->setLabels($labels);
 		$link->setAssignees($assignees);
-		$link->setLinkedBy($user->getUID());
-		$link->setLinkedAt(new DateTime());
+		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
+			->inSchema(schemaId: $schemaId)
+			->stamp(link: $link, linkedBy: $user->getUID());
 
 		return $this->deckLinkMapper->insert($link);
 	}//end linkCard()
@@ -317,9 +315,6 @@ class DeckLinkService {
 		}
 
 		$link = new DeckLink();
-		$link->setObjectUuid($target->objectUuid);
-		$link->setRegisterId($target->registerId);
-		$link->setSchemaId($target->schemaId());
 		$link->setBoardId($resolvedBoard);
 		$link->setStackId($card->stackId);
 		$link->setCardId($cardId);
@@ -327,8 +322,7 @@ class DeckLinkService {
 		$link->setDueDate($card->dueDateTime());
 		$link->setLabels(null);
 		$link->setAssignees(null);
-		$link->setLinkedBy($userUid);
-		$link->setLinkedAt(new DateTime());
+		$target->stamp(link: $link, linkedBy: $userUid);
 
 		return $this->deckLinkMapper->insert($link);
 	}//end createAndLinkCard()
