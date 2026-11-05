@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -76,7 +77,7 @@ class ObjectsControllerGeoTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 
 		$controller = $this->getMockBuilder(ObjectsController::class)
-			->setConstructorArgs([
+			->setConstructorArgs(ObjectsControllerFactory::args(
 				'openregister',
 				$this->request,
 				$this->createMock(IAppConfig::class),
@@ -97,8 +98,8 @@ class ObjectsControllerGeoTest extends TestCase {
 				null,
 				null,
 				new GeoFeatureCollectionBuilder(),
-				null,
-			])
+				null
+			))
 			->onlyMethods(['index'])
 			->getMock();
 
@@ -167,7 +168,7 @@ class ObjectsControllerGeoTest extends TestCase {
 
 	public function testGeoJsonNotConfiguredReturns501(): void {
 		$this->request = $this->createMock(IRequest::class);
-		$controller = new ObjectsController(
+		$controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),
@@ -208,7 +209,7 @@ class ObjectsControllerGeoTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 
 		$controller = $this->getMockBuilder(ObjectsController::class)
-			->setConstructorArgs([
+			->setConstructorArgs(ObjectsControllerFactory::args(
 				'openregister',
 				$this->request,
 				$this->createMock(IAppConfig::class),
@@ -225,8 +226,8 @@ class ObjectsControllerGeoTest extends TestCase {
 				$this->createMock(WebhookService::class),
 				$this->createMock(LoggerInterface::class),
 				$parser,
-				$applier,
-			])
+				$applier
+			))
 			->onlyMethods(['index'])
 			->getMock();
 
@@ -247,7 +248,7 @@ class ObjectsControllerGeoTest extends TestCase {
 	private function controllerWithGeocoder(?PdokGeocoder $geocoder): ObjectsController {
 		$this->request = $this->createMock(IRequest::class);
 
-		return new ObjectsController(
+		return ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),

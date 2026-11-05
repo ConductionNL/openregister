@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -69,7 +70,7 @@ class ObjectsControllerLogsRedactionTest extends TestCase {
 		$request->method('getParams')->willReturn(['limit' => 5, '_search' => 'x', 'action' => 'update', 'order' => ['created' => 'ASC']]);
 		$this->objectService = $this->createMock(ObjectService::class);
 
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(IAppConfig::class),

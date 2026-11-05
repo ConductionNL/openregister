@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -114,7 +115,7 @@ class ObjectsControllerUpsertOnKeyTest extends TestCase {
 		$webhooks = $this->createMock(WebhookService::class);
 		$webhooks->method('interceptRequest')->willReturnCallback(fn (): array => $this->params);
 
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),

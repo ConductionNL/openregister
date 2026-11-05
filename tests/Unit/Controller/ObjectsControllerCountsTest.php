@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -98,7 +99,7 @@ class ObjectsControllerCountsTest extends TestCase {
 		// register/schema entities stay null — this forces the
 		// database-backed (non-magic) count path through
 		// searchObjectsPaginated, which these tests mock.
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,

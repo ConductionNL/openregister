@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\FilesController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Service\FileService;
@@ -56,7 +57,7 @@ class FilesDownloadAuditNamesTheFileTest extends TestCase {
 			}
 		);
 
-		$controller = new FilesController(
+		$controller = FilesControllerFactory::create(
 			appName: 'openregister',
 			request: $this->createMock(IRequest::class),
 			fileService: $this->createMock(FileService::class),

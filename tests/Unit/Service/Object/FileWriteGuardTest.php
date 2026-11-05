@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Controller\FilesController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\File\FileAuditHandler;
@@ -122,7 +123,7 @@ class FileWriteGuardTest extends TestCase {
 
 		$userManager = $this->createMock(IUserManager::class);
 
-		return new FilesController(
+		return FilesControllerFactory::create(
 			'openregister',
 			$request,
 			$this->fileService,

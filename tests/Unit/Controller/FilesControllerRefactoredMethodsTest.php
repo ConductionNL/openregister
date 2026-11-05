@@ -21,6 +21,7 @@
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\FilesController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -79,7 +80,7 @@ class FilesControllerRefactoredMethodsTest extends TestCase {
 		$this->userManager = $this->createMock(IUserManager::class);
 
 		// Create FilesController instance.
-		$this->filesController = new FilesController(
+		$this->filesController = FilesControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			fileService: $this->fileService,

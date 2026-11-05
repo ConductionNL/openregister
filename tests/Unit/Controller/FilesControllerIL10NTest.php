@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\FilesController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\JSONResponse;
@@ -71,7 +72,7 @@ class FilesControllerIL10NTest extends TestCase {
 	}//end setUp()
 
 	private function buildController(?IL10N $l10n): FilesController {
-		return new FilesController(
+		return FilesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->fileService,

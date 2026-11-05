@@ -9,6 +9,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\SchemasController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
@@ -332,7 +333,7 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 			return $uploaded;
 		});
 
-		return new SchemasController(
+		return SchemasControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(IAppConfig::class),

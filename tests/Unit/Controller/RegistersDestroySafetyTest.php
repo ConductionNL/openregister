@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\RegistersController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\RegistersControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
@@ -135,7 +136,7 @@ class RegistersDestroySafetyTest extends TestCase {
 			}
 		);
 
-		$this->controller = new RegistersController(
+		$this->controller = RegistersControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->registerService,

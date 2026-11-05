@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Controller\FilesController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\AttachNodeHandler;
 use OCA\OpenRegister\Service\File\ObjectFileAccess;
@@ -129,7 +130,7 @@ class AttachNodeHandlerTest extends TestCase {
 		$fileService = $this->createMock(FileService::class);
 		$fileService->expects($this->never())->method('addFile');
 
-		$controller = new FilesController(
+		$controller = FilesControllerFactory::create(
 			'openregister',
 			$request,
 			$fileService,
@@ -175,7 +176,7 @@ class AttachNodeHandlerTest extends TestCase {
 		$fileService->expects($this->once())->method('addFile')->willReturn($this->createMock(File::class));
 		$fileService->method('formatFile')->willReturn(['title' => 'brief.txt']);
 
-		$controller = new FilesController(
+		$controller = FilesControllerFactory::create(
 			'openregister',
 			$request,
 			$fileService,
