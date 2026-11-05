@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
+use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskAudit;
 use OCA\OpenRegister\Db\TaskAuditMapper;
@@ -286,6 +287,43 @@ class TaskServiceTest extends TestCase {
 		$this->assertTrue($created->getIsTerminal());
 		$this->assertSame('done', $created->getOutcome());
 	}//end testCreateMapsALegacyStatusAndPreservesTheOutcome()
+
+	/**
+	 * An imported task given its creation moment carries it, and so does its create audit entry.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-task-may-carry-the-moment-it-was-created
+	 */
+	public function testAnImportDatesTheTaskAndItsCreateAuditEntry(): void {
+		$audited = [];
+		$this->setUpAuditRecorder(audited: $audited);
+		$at = new DateTime('2026-10-05T14:20:00+00:00');
+
+		$created = $this->service()->import(data: ['title' => 'Hoorzitting inplannen'], actor: 'rita', createdAt: $at);
+
+		$this->assertSame(expected: $at, actual: $created->getCreated());
+		$this->assertCount(expectedCount: 1, haystack: $audited);
+		$this->assertSame(expected: 'create', actual: $audited[0]->getAction());
+		$this->assertSame(expected: $at, actual: $audited[0]->getCreated());
+	}//end testAnImportDatesTheTaskAndItsCreateAuditEntry()
+
+	/**
+	 * Without a creation moment, the import leaves both stamps to the mappers.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
+	 */
+	public function testAnImportWithoutAMomentLeavesTheStampsToTheMappers(): void {
+		$audited = [];
+		$this->setUpAuditRecorder(audited: $audited);
+
+		$created = $this->service()->import(data: ['title' => 'Taak'], actor: 'rita');
+
+		$this->assertNull(actual: $created->getCreated());
+		$this->assertNull(actual: $audited[0]->getCreated());
+	}//end testAnImportWithoutAMomentLeavesTheStampsToTheMappers()
 
 	/**
 	 * A checklist arriving as a STRING is refused — the procest shape.
