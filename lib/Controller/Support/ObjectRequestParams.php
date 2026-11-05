@@ -54,6 +54,8 @@ final class ObjectRequestParams {
 	 *     _unset: mixed|null,
 	 *     ids: null
 	 * }
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function listing(array $params): array {
 		return ($this->paging(params: $params) + [
@@ -73,6 +75,8 @@ final class ObjectRequestParams {
 	 * @param mixed $order The order parameter from the request.
 	 *
 	 * @return array The order.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function order(mixed $order): array {
 		if (is_array($order) === true) {
@@ -97,6 +101,8 @@ final class ObjectRequestParams {
 	 * @param mixed $extend The extend parameter: a comma-separated string or an array.
 	 *
 	 * @return array|null The extend list, or null for any other value.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function extend(mixed $extend): ?array {
 		if (is_string($extend) === true) {
@@ -117,6 +123,8 @@ final class ObjectRequestParams {
 	 * @param string $defaultValue The value when the parameter is null or empty.
 	 *
 	 * @return array The values.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function multiValue(mixed $param, string $defaultValue): array {
 		if ($param === null || $param === '') {
@@ -138,6 +146,8 @@ final class ObjectRequestParams {
 	 * @param array $data The form values.
 	 *
 	 * @return array The values, JSON arrays and objects decoded.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function decodedFormValues(array $data): array {
 		return array_map(fn (mixed $value): mixed => $this->decodedFormValue(value: $value), $data);
