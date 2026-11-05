@@ -6,7 +6,7 @@ namespace Unit\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Service\File\FilePreviewHandler;
-use OCP\Files\IRootFolder;
+use OCA\OpenRegister\Service\File\PreviewSize;
 use OCP\Files\File;
 use OCP\Files\SimpleFS\ISimpleFile;
 use OCP\IPreview;
@@ -27,7 +27,6 @@ class FilePreviewHandlerTest extends TestCase {
 
 		$this->handler = new FilePreviewHandler(
 			$this->previewManager,
-			$this->createMock(IRootFolder::class),
 			$this->logger
 		);
 	}
@@ -67,7 +66,11 @@ class FilePreviewHandlerTest extends TestCase {
 	 * Calls the handler with an optional width and height.
 	 */
 	private function preview(File $file, ?int $width = null, ?int $height = null): ISimpleFile {
-		return $this->handler->getPreview($file, $width, $height);
+		if ($width === null) {
+			return $this->handler->getPreview($file);
+		}
+
+		return $this->handler->getPreview($file, new PreviewSize($width, (int) $height));
 	}
 
 	public function testGetPreviewUsesTheDefaultSizeAndLogsIt(): void {

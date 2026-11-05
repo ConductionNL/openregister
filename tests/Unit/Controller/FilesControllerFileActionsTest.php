@@ -13,6 +13,7 @@ use OCA\OpenRegister\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCA\OpenRegister\Service\File\FilePreviewHandler;
+use OCA\OpenRegister\Service\File\PreviewSize;
 use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -371,7 +372,8 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->assertSame('image/png', $response->getHeaders()['Content-Type']);
 		$this->assertSame('max-age=3600, public', $response->getHeaders()['Cache-Control']);
 		$this->assertSame('9', $response->getHeaders()['Content-Length']);
-		$this->assertSame([$file, 100, 50], $asked);
+		$this->assertSame($file, $asked[0]);
+		$this->assertEquals(new PreviewSize(100, 50), $asked[1]);
 	}//end testPreviewStreamsTheRequestedSize()
 
 	/**
