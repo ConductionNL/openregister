@@ -33,7 +33,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
@@ -48,6 +47,8 @@ use OCP\EventDispatcher\IEventListener;
  * @template-implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent|ObjectTransitionedEvent>
  */
 class FacetCacheInvalidationListener implements IEventListener {
+	use WrittenObjectOfEvent;
+
 	/**
 	 * Wire the counter bumped on every object write.
 	 *
@@ -82,39 +83,4 @@ class FacetCacheInvalidationListener implements IEventListener {
 			schema: $object->getSchema()
 		);
 	}//end handle()
-
-	/**
-	 * Resolve the underlying object for any of the supported event types.
-	 *
-	 * A delete event carries the object under getObject(); an update event
-	 * carries the post-write state under getNewObject(). Both are read, because
-	 * a facet is derived from whichever rows now exist.
-	 *
-	 * @param Event $event Inbound dispatcher event.
-	 *
-	 * @return ObjectEntity|null Object instance, or null when not resolvable.
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-an-object-write-must-invalidate-the-facet-response-derived-from-it
-	 */
-	private function extractObject(Event $event): ?ObjectEntity {
-		if ($event instanceof ObjectTransitionedEvent) {
-			return $event->getObject();
-		}
-
-		if (method_exists($event, 'getObject') === true) {
-			$obj = $event->getObject();
-			if ($obj instanceof ObjectEntity) {
-				return $obj;
-			}
-		}
-
-		if (method_exists($event, 'getNewObject') === true) {
-			$obj = $event->getNewObject();
-			if ($obj instanceof ObjectEntity) {
-				return $obj;
-			}
-		}
-
-		return null;
-	}//end extractObject()
 }//end class

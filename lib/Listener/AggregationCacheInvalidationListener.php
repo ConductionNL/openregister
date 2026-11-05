@@ -29,7 +29,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
@@ -47,6 +46,8 @@ use Psr\Container\ContainerInterface;
  * @template-implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent|ObjectTransitionedEvent>
  */
 class AggregationCacheInvalidationListener implements IEventListener {
+	use WrittenObjectOfEvent;
+
 	/**
 	 * Wire the aggregation cache used for evictions.
 	 *
@@ -129,35 +130,4 @@ class AggregationCacheInvalidationListener implements IEventListener {
 
 		return $slug;
 	}//end slugOf()
-
-	/**
-	 * Resolve the underlying object for any of the supported event types.
-	 *
-	 * @param Event $event Inbound dispatcher event.
-	 *
-	 * @return ObjectEntity|null Object instance, or null when not resolvable.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
-	 */
-	private function extractObject(Event $event): ?ObjectEntity {
-		if ($event instanceof ObjectTransitionedEvent) {
-			return $event->getObject();
-		}
-
-		if (method_exists($event, 'getObject') === true) {
-			$obj = $event->getObject();
-			if ($obj instanceof ObjectEntity) {
-				return $obj;
-			}
-		}
-
-		if (method_exists($event, 'getNewObject') === true) {
-			$obj = $event->getNewObject();
-			if ($obj instanceof ObjectEntity) {
-				return $obj;
-			}
-		}
-
-		return null;
-	}//end extractObject()
 }//end class

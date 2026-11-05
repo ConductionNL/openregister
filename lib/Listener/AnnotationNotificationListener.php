@@ -55,6 +55,7 @@ use OCP\EventDispatcher\IEventListener;
  * @spec openspec/specs/event-driven-architecture/spec.md
  */
 class AnnotationNotificationListener implements IEventListener {
+	use WrittenObjectOfEvent;
 
 	/**
 	 * Entries per enqueued dispatch job. Smaller than the projection chunk
@@ -276,30 +277,4 @@ class AnnotationNotificationListener implements IEventListener {
 
 		return is_array($notifications) === true && count($notifications) > 0;
 	}//end schemaDeclaresNotifications()
-
-	/**
-	 * Different Object*Event classes expose the entity under different
-	 * accessors. Normalise to one.
-	 *
-	 * @param Event $event Inbound dispatcher event.
-	 *
-	 * @return ObjectEntity|null Object instance, or null when none could be derived.
-	 */
-	private function extractObject(Event $event): ?ObjectEntity {
-		if (method_exists($event, 'getObject') === true) {
-			$obj = $event->getObject();
-			if ($obj instanceof ObjectEntity) {
-				return $obj;
-			}
-		}
-
-		if (method_exists($event, 'getNewObject') === true) {
-			$obj = $event->getNewObject();
-			if ($obj instanceof ObjectEntity) {
-				return $obj;
-			}
-		}
-
-		return null;
-	}//end extractObject()
 }//end class
