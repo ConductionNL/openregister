@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ConfigurationControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\ConfigurationController;
 use OCA\OpenRegister\Db\Configuration;
@@ -36,6 +37,11 @@ use Psr\Log\LoggerInterface;
  * by a marker. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\ConfigurationController
+ * @uses \OCA\OpenRegister\Controller\Support\ConfigurationMappers
+ * @uses \OCA\OpenRegister\Controller\Support\ConfigurationDomain
+ * @uses \OCA\OpenRegister\Controller\Support\ConfigurationPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\ConfigurationControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Db\Configuration
  */
 class ConfigurationControllerImportGoldenTest extends TestCase {
@@ -121,7 +127,7 @@ class ConfigurationControllerImportGoldenTest extends TestCase {
 			return $uid === 'alice';
 		});
 
-		$controller = new ConfigurationController(
+		$controller = ConfigurationControllerFactory::create(
 			'openregister',
 			$request,
 			$this->mapper($case),

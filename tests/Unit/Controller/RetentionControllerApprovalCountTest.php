@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\RetentionControllerFactory;
 use OCA\OpenRegister\Controller\RetentionController;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -110,7 +111,7 @@ class RetentionControllerApprovalCountTest extends TestCase {
 
 		$this->auditMapper = $this->createMock(AuditTrailMapper::class);
 
-		return new RetentionController(
+		return RetentionControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(RetentionService::class),

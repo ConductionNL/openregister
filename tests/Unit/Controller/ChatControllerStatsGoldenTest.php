@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ChatControllerFactory;
 use OCA\OpenRegister\Controller\ChatController;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\ConversationMapper;
@@ -40,6 +41,10 @@ use RuntimeException;
  * the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\ChatController
+ * @uses \OCA\OpenRegister\Controller\Support\ChatMappers
+ * @uses \OCA\OpenRegister\Controller\Support\ChatDomain
+ * @uses \OCA\OpenRegister\Controller\Support\ChatPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\ChatControllerServices
  * @uses \OCA\OpenRegister\Db\Organisation
  */
 class ChatControllerStatsGoldenTest extends TestCase {
@@ -109,7 +114,7 @@ class ChatControllerStatsGoldenTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnCallback(fn (string $text) => 'T:' . $text);
 
-		$controller = new ChatController(
+		$controller = ChatControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(ChatService::class),

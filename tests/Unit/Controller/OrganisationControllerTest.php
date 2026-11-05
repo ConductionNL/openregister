@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\OrganisationController;
 use OCA\OpenRegister\Db\Organisation;
@@ -60,7 +61,7 @@ class OrganisationControllerTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->usageService = $this->createMock(originalClassName: OrganisationUsageService::class);
 
-		$this->controller = new OrganisationController(
+		$this->controller = OrganisationControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->organisationService,
@@ -2221,7 +2222,7 @@ class OrganisationControllerTest extends TestCase {
 			$this->logger
 		);
 
-		return new OrganisationController(
+		return OrganisationControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->organisationService,
