@@ -38,6 +38,12 @@ use ReflectionMethod;
  * Pins the failure handling of SaveObjects' chunk side effects.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Event\ObjectCreatedEvent
+ * @uses   \OCA\OpenRegister\Event\ObjectUpdatedEvent
+ * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectEventGate
+ * @uses   \OCA\OpenRegister\Service\SystemOperationContext
  */
 class SaveObjectsChunkSideEffectFailuresTest extends TestCase {
 

@@ -49,6 +49,11 @@ use ReflectionMethod;
  * Pins the served language, source language, isSource flag and sidecar status per translatable property.
  *
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Db\Translation
+ * @uses   \OCA\OpenRegister\Service\Object\LanguageMetaSubject
  */
 class RenderObjectLanguageMetaGoldenTest extends TestCase {
 

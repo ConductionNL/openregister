@@ -37,6 +37,10 @@ use ReflectionMethod;
  * Pins the @self data each prepared object carries: identity, register, schema, owner, organisation, metadata, relations.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\BulkObjectSlugs
  * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectDefaults
  * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectOwnership
  */
