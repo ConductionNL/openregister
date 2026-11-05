@@ -137,9 +137,7 @@ class TimeTrackerLinksController extends Controller {
 				}
 
 				$link = $this->linkService->linkEntry(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
+					$this->linkTargetOf(object: $object),
 					$entryType,
 					$entryId
 				);
