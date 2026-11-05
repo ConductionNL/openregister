@@ -583,23 +583,10 @@
 			</div>
 
 			<div class="actions-right">
-				<NcButton @click="$emit('closing')">
-					{{ t('openregister', 'Cancel') }}
-				</NcButton>
-				<NcButton
-					variant="primary"
-					:disabled="saving"
-					@click="saveConfiguration">
-					<template #icon>
-						<NcLoadingIcon v-if="saving" :size="20" />
-						<ContentSave v-else :size="20" />
-					</template>
-					{{
-						saving
-							? t('openregister', 'Saving...')
-							: t('openregister', 'Save Configuration')
-					}}
-				</NcButton>
+				<SettingsSaveActions
+					:saving="saving"
+					@cancel="$emit('closing')"
+					@save="saveConfiguration" />
 			</div>
 		</template>
 	</NcDialog>
@@ -616,10 +603,10 @@ import {
 	NcLoadingIcon,
 	NcSelect,
 } from '@nextcloud/vue'
-import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import TestTube from 'vue-material-design-icons/TestTube.vue'
+import SettingsSaveActions from './SettingsSaveActions.vue'
 import { freshState } from '../../services/initialState.js'
 
 /**
@@ -1195,8 +1182,8 @@ export default {
 		NcCheckboxRadioSwitch,
 		InformationOutline,
 		TestTube,
-		ContentSave,
 		Delete,
+		SettingsSaveActions,
 	},
 
 	props: {
@@ -1622,44 +1609,14 @@ export default {
 	}
 }
 
-.form-group {
-	margin-bottom: 20px;
+@include form-group;
 
-	label {
-		display: block;
-		margin-bottom: 8px;
-		font-weight: 500;
-	}
+.form-group small a {
+	color: var(--color-primary-element);
+	text-decoration: none;
 
-	.input-field {
-		width: 100%;
-		padding: 10px 12px;
-		border: 1px solid var(--color-border);
-		border-radius: 6px;
-		font-size: 14px;
-		background: var(--color-main-background);
-		color: var(--color-main-text);
-
-		&:focus {
-			outline: none;
-			border-color: var(--color-primary-element);
-		}
-	}
-
-	small {
-		display: block;
-		margin-top: 6px;
-		color: var(--color-text-maxcontrast);
-		font-size: 12px;
-
-		a {
-			color: var(--color-primary-element);
-			text-decoration: none;
-
-			&:hover {
-				text-decoration: underline;
-			}
-		}
+	&:hover {
+		text-decoration: underline;
 	}
 }
 

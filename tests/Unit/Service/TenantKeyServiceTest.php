@@ -244,6 +244,19 @@ class TenantKeyServiceTest extends TestCase {
 	}//end testRotationWithNoPriorKeySucceeds()
 
 	/**
+	 * hasActiveKey() answers without creating a key.
+	 */
+	public function testHasActiveKeyDoesNotBootstrap(): void {
+		$svc = $this->makeService();
+
+		$this->assertFalse($svc->hasActiveKey('nobody'));
+		$this->assertFalse($svc->hasActiveKey('nobody'), 'asking twice still finds nothing: the first ask created no key');
+
+		$svc->getCurrentTenantKey('somebody');
+		$this->assertTrue($svc->hasActiveKey('somebody'));
+	}//end testHasActiveKeyDoesNotBootstrap()
+
+	/**
 	 * After rotation the store has exactly one active row and one retired row.
 	 */
 	public function testStoreStateAfterRotation(): void {
