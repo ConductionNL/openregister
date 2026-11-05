@@ -2540,7 +2540,8 @@ class SaveObjects {
 			action: 'create',
 			userId: $run->userId,
 			objectOwner: ($objData['owner'] ?? null),
-			_rbac: true
+			_rbac: true,
+			register: $this->runRegisterId(run: $run)
 		);
 		if ($hasPermission === true) {
 			return null;
@@ -2551,6 +2552,28 @@ class SaveObjects {
 			'type' => 'PermissionDeniedException',
 		];
 	}//end chunkPermissionRefusal()
+
+	/**
+	 * The id of the register a bulk save writes to, or null when the call names none.
+	 *
+	 * @param BulkSaveRun $run The bulk save call.
+	 *
+	 * @return string|null The register id.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function runRegisterId(BulkSaveRun $run): ?string {
+		$register = $run->register;
+		if ($register instanceof Register) {
+			$register = $register->getId();
+		}
+
+		if ($register === null || $register === '') {
+			return null;
+		}
+
+		return (string)$register;
+	}//end runRegisterId()
 
 	/**
 	 * The refusal of a row whose business data fails its schema (BUG-OBJ-1); null when validation is off or it passes.

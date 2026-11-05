@@ -419,6 +419,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @param string|null       $objectOwner Object owner ID
      * @param bool              $_rbac       Whether to enforce RBAC checks
      * @param ObjectEntity|null $object      Optional object entity for conditional authorization matching
+     * @param string|null       $register    The register written to, for a check whose object names none
      *
      * @return void
      *
@@ -430,7 +431,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         ?string $userId=null,
         ?string $objectOwner=null,
         bool $_rbac=true,
-        ?ObjectEntity $object=null
+        ?ObjectEntity $object=null,
+        ?string $register=null
     ): void {
         $this->permissionHandler->checkPermission(
             schema: $schema,
@@ -438,9 +440,25 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             userId: $userId,
             objectOwner: $objectOwner,
             _rbac: $_rbac,
-            object: $object
+            object: $object,
+            register: $register
         );
     }//end checkPermission()
+
+    /**
+     * The id of the register this service is set to, or null when none is set.
+     *
+     * @return string|null The register id.
+     */
+    private function currentRegisterId(): ?string
+    {
+        $id = $this->currentRegister?->getId();
+        if ($id === null) {
+            return null;
+        }
+
+        return (string) $id;
+    }//end currentRegisterId()
 
     /**
      * Run a callable as a trusted system operation.
@@ -2431,7 +2449,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 userId: null,
                 objectOwner: null,
                 _rbac: $_rbac,
-                object: $incoming
+                object: $incoming,
+                register: $this->currentRegisterId()
             );
             return null;
         }
@@ -2472,7 +2491,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 userId: null,
                 objectOwner: null,
                 _rbac: $_rbac,
-                object: $incoming
+                object: $incoming,
+                register: $this->currentRegisterId()
             );
 
             // Stored but hidden: the write lands on that row, so it must keep to
@@ -3685,7 +3705,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                     action: 'delete',
                     userId: $request->actingUserId(),
                     objectOwner: null,
-                    _rbac: $request->rbac
+                    _rbac: $request->rbac,
+                    register: $this->currentRegisterId()
                 );
             }
 
@@ -3743,7 +3764,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             action: 'delete',
             userId: $request->actingUserId(),
             objectOwner: null,
-            _rbac: $request->rbac
+            _rbac: $request->rbac,
+            register: $this->currentRegisterId()
         );
 
         return $this->deleteHandler->deleteObject(

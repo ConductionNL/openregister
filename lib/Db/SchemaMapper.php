@@ -23,6 +23,7 @@
 
 namespace OCA\OpenRegister\Db;
 
+use Closure;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
@@ -263,7 +264,9 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @param IGroupManager $groupManager Group manager for RBAC checks
 	 * @param IAppConfig $appConfig App configuration for multitenancy settings
 	 * @param LoggerInterface $logger Structured logger (R07: surfaces unknown annotation keys).
-	 * @param ObjectActionValidator|null $objectActions Verifies every declared action, the flows macros bind to included.
+	 * @param ObjectActionValidator|Closure|null $objectActions Verifies every declared action, the flows macros bind to included;
+	 *                                                         a Closure returns it on first use, which breaks the
+	 *                                                         construction cycle through the flow services.
 	 *
 	 * @return void
 	 */
@@ -282,7 +285,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		// only the questions about other records (the bound flow, the step
 		// nodes, the saver) are skipped, which the save says out loud rather
 		// than passing over in silence.
-		private readonly ?ObjectActionValidator $objectActions = null,
+		private readonly ObjectActionValidator|Closure|null $objectActions = null,
 	) {
 		// Initialize parent mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_schemas', entityClass: Schema::class);
@@ -1386,8 +1389,13 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	private function validateMacroActions(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
 
-		if ($this->objectActions !== null) {
-			$refusals = $this->objectActions->refusals(schema: $schema);
+		$objectActions = $this->objectActions;
+		if ($objectActions instanceof Closure) {
+			$objectActions = $objectActions();
+		}
+
+		if ($objectActions instanceof ObjectActionValidator) {
+			$refusals = $objectActions->refusals(schema: $schema);
 			if ($refusals !== []) {
 				throw new InvalidArgumentException(implode(' ', $refusals));
 			}

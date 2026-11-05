@@ -142,15 +142,25 @@ class ObjectActionRunner {
 		}
 
 		$definition = $checked['definition'];
-		if ($definition->kind === ObjectActionDefinition::KIND_TRANSITION) {
-			return $this->runTransition(object: $object, definition: $definition, inputs: $checked['inputs']);
+		$execute = function () use ($object, $schema, $definition, $checked, $subject): array {
+			if ($definition->kind === ObjectActionDefinition::KIND_TRANSITION) {
+				return $this->runTransition(object: $object, definition: $definition, inputs: $checked['inputs']);
+			}
+
+			if ($definition->kind === ObjectActionDefinition::KIND_SELF_ASSIGN) {
+				return $this->runSelfAssign(object: $object, definition: $definition);
+			}
+
+			return $this->runFlow(object: $object, schema: $schema, definition: $definition, inputs: $checked['inputs'], subject: $subject);
+		};
+
+		if ($definition->elevate === []) {
+			return $execute();
 		}
 
-		if ($definition->kind === ObjectActionDefinition::KIND_SELF_ASSIGN) {
-			return $this->runSelfAssign(object: $object, definition: $definition);
-		}
-
-		return $this->runFlow(object: $object, schema: $schema, definition: $definition, inputs: $checked['inputs'], subject: $subject);
+		// Opened only now: the person's right on the subject and `when` have
+		// passed, so the elevation covers the body and nothing before it.
+		return $this->gate->elevated(definition: $definition, operation: $execute);
 	}//end run()
 
 	/**
