@@ -259,9 +259,9 @@ class DocumentProcessingHandler {
 	 * @param Node $node The file node to process.
 	 * @param array $replacements Array of replacement mappings (search => replace).
 	 * @param string|null $outputName Optional name for the output file.
-	 * @param bool $strict PDF only: when true (entity anonymisation),
-	 *                     residual entity text in the output fails
-	 *                     closed instead of being logged as partial.
+	 * @param bool $strict PDF only: when true (entity anonymisation), an
+	 *                     output that cannot be re-read for the residual
+	 *                     check is refused instead of written unchecked.
 	 * @param bool|null $preserveStructure PDF only (REQ-ORTPR-004): tri-state structure-
 	 *                                     preservation option — null/absent = auto (preserve
 	 *                                     iff the input is a tagged PDF), true = attempt,
@@ -280,7 +280,7 @@ class DocumentProcessingHandler {
 	 *
 	 * @psalm-return File
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $strict selects fail-closed vs lenient validation per the entity-anonymisation contract.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $strict selects strict vs lenient validation per the entity-anonymisation contract.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
@@ -405,9 +405,9 @@ class DocumentProcessingHandler {
 		// walker cannot reach (comments, tracked changes, metadata, custom XML,
 		// person field codes, hyperlink URLs). Sanitise to a clean derivative
 		// BEFORE the entity walker pass. The original NC file is untouched.
-		// Entity anonymisation is GDPR-critical: fail closed (strict) if any
-		// original entity text survives in the output rather than writing a
-		// file marked '_anonymized' that still contains it.
+		// Entity anonymisation runs strict: residual entity text is still
+		// written and reported back, but a PDF output that cannot be re-read
+		// for that check is refused rather than written as '_anonymized'.
 		$anonymizedFile = $this->replaceWords(
 			node: $node,
 			replacements: $replacements,
@@ -1054,10 +1054,13 @@ class DocumentProcessingHandler {
 	 * Routes to {@see PdfTextReplacer} (text replacement with font switch
 	 * + Helvetica fallback, then /Info and XMP stripping via
 	 * {@see PdfTextReplacer::sanitizeMetadata()}). The output is re-extracted post-replacement; residual
-	 * substitution-map keys are always logged as a PII-free warning, and the
-	 * `$strict` flag then decides the outcome: lenient (default, ad-hoc
-	 * replace) writes the partial PDF for docx parity, strict (entity
-	 * anonymisation) fails closed with `REASON_VALIDATION_FAILED`.
+	 * substitution-map keys are logged as a PII-free warning, the partial PDF
+	 * is written in both modes, and the residuals are kept for
+	 * {@see getLastResidualEntities()} (best-effort, pdf-anonymisation spec).
+	 * When the output cannot be re-read at all, a strict run (entity
+	 * anonymisation) is refused with `REASON_VALIDATION_FAILED`: no file is
+	 * written and an existing output is left alone. A lenient run (ad-hoc
+	 * replace) writes it unchecked.
 	 *
 	 * Pre-dispatch: encrypted PDFs are rejected with `REASON_ENCRYPTED_PDF`
 	 * (caller-correctable, HTTP 422); if smalot/pdfparser cannot extract any
@@ -1065,15 +1068,15 @@ class DocumentProcessingHandler {
 	 * capability via `REASON_TEXT_LAYER_MISSING` (caller's responsibility to route).
 	 *
 	 * @param DocumentReplacement $job The PDF file, replacement map (entity-text =>
-	 *                                 placeholder), output name, strict flag (residual
-	 *                                 entity text fails closed instead of being written
-	 *                                 as a partial result) and tri-state structure-
+	 *                                 placeholder), output name, strict flag (an output
+	 *                                 that cannot be re-read is refused instead of
+	 *                                 written unchecked) and tri-state structure-
 	 *                                 preservation option (REQ-ORTPR-004), forwarded to
 	 *                                 {@see PdfTextReplacer::replaceInPdf()}.
 	 *
 	 * @throws Exception If node content is unreadable.
 	 * @throws PdfAnonymisationException On encrypted PDF, missing text
-	 *                                   layer, validation gate failure (strict),
+	 *                                   layer, unreadable output (strict),
 	 *                                   or internal pipeline errors.
 	 *
 	 * @return File The anonymised PDF.
@@ -1091,9 +1094,9 @@ class DocumentProcessingHandler {
 
 		// Run text replacement first; metadata sanitisation operates on
 		// the result so /Info / XMP changes survive the rebuild.
-		// Best-effort: replaceInPdf no longer fails closed on residual entity
-		// text — it returns the residual needles so we can produce the file
-		// and warn instead of discarding it.
+		// Best-effort: replaceInPdf returns the residual needles so the file
+		// is still produced with a warning. It throws before anything is
+		// written when a strict run's output cannot be re-read.
 		$residualNeedles = [];
 		$structureResult = null;
 		$replacedBytes = $replacer->replaceInPdf(
