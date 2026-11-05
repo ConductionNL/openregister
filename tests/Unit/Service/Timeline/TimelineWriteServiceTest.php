@@ -31,6 +31,7 @@ use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Notifications\Service\Timeline\EntryMentionService;
 use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceService;
+use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceSource;
 use OCA\OpenRegister\Notifications\Service\Timeline\TextBlockService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException;
@@ -128,7 +129,7 @@ class TimelineWriteServiceTest extends TestCase {
 		$this->recordsAs('entry-a');
 		$this->notes->expects($this->once())->method('createNote');
 		$this->references->expects($this->once())->method('record')
-			->with('entry-a', 'case-1', 'zie Z-2026-0044 en @jurist');
+			->with(new ReferenceSource('entry-a', 'case-1', 'zie Z-2026-0044 en @jurist'));
 		$this->mentions->expects($this->once())->method('apply');
 
 		$entry = $this->service->write($this->object(), ['message' => 'zie Z-2026-0044 en @jurist']);
@@ -211,7 +212,7 @@ class TimelineWriteServiceTest extends TestCase {
 		$entry->setUuid('entry-a');
 		$this->entries->method('syncFromNote')->willReturn($entry);
 		$this->references->expects($this->once())->method('record')
-			->with('entry-a', 'case-1', 'de verwijzing is eruit');
+			->with(new ReferenceSource('entry-a', 'case-1', 'de verwijzing is eruit'));
 		// Somebody already named and subscribed stays subscribed: unsubscribing
 		// them by deleting a word is a silent act on another person's inbox.
 		$this->mentions->expects($this->never())->method('apply');
