@@ -40,6 +40,7 @@ class RotateTenantKeyCommandTest extends TestCase {
 	 */
 	public function testRotatesAndPrintsOnlyMetadata(): void {
 		$keys = $this->createMock(TenantKeyService::class);
+		$keys->method('hasActiveKey')->willReturn(true);
 		$keys->expects($this->once())->method('rotateTenantKey')->with('org-E')
 			->willReturn(['tenant_id' => 'org-E', 'rotated_at' => '2026-11-05T10:00:00+00:00', 'retired_key_id' => 41]);
 		$keys->expects($this->never())->method('getCurrentTenantKey');
@@ -58,10 +59,11 @@ class RotateTenantKeyCommandTest extends TestCase {
 	 */
 	public function testAFirstKeySaysNoEarlierKeyExisted(): void {
 		$keys = $this->createMock(TenantKeyService::class);
+		$keys->method('hasActiveKey')->willReturn(false);
 		$keys->method('rotateTenantKey')->willReturn(['tenant_id' => 'org-F', 'rotated_at' => 'now', 'retired_key_id' => null]);
 
 		$tester = new CommandTester(new RotateTenantKeyCommand(tenantKeys: $keys));
-		$tester->execute(['tenant' => 'org-F']);
+		$tester->execute(['tenant' => 'org-F', '--create' => true]);
 
 		$this->assertStringContainsString('no earlier key existed', $tester->getDisplay());
 	}//end testAFirstKeySaysNoEarlierKeyExisted()
@@ -87,6 +89,7 @@ class RotateTenantKeyCommandTest extends TestCase {
 	 */
 	public function testAFailedRotationExitsNonZero(): void {
 		$keys = $this->createMock(TenantKeyService::class);
+		$keys->method('hasActiveKey')->willReturn(true);
 		$keys->method('rotateTenantKey')->willThrowException(new RuntimeException('Failed to encrypt tenant key'));
 
 		$tester = new CommandTester(new RotateTenantKeyCommand(tenantKeys: $keys));
@@ -94,4 +97,36 @@ class RotateTenantKeyCommandTest extends TestCase {
 		$this->assertSame(1, $tester->execute(['tenant' => 'org-G']));
 		$this->assertStringContainsString('not rotated', $tester->getDisplay());
 	}//end testAFailedRotationExitsNonZero()
+
+	/**
+	 * A tenant with no active key is refused without --create, so a mistyped id writes nothing.
+	 *
+	 * @return void
+	 */
+	public function testATenantWithoutAKeyIsRefusedWithoutCreate(): void {
+		$keys = $this->createMock(TenantKeyService::class);
+		$keys->method('hasActiveKey')->with('org-typo')->willReturn(false);
+		$keys->expects($this->never())->method('rotateTenantKey');
+
+		$tester = new CommandTester(new RotateTenantKeyCommand(tenantKeys: $keys));
+
+		$this->assertSame(1, $tester->execute(['tenant' => 'org-typo']));
+		$this->assertStringContainsString('--create', $tester->getDisplay());
+	}//end testATenantWithoutAKeyIsRefusedWithoutCreate()
+
+	/**
+	 * --create still rotates a tenant that already has a key.
+	 *
+	 * @return void
+	 */
+	public function testCreateOnATenantWithAKeyStillRotates(): void {
+		$keys = $this->createMock(TenantKeyService::class);
+		$keys->method('hasActiveKey')->willReturn(true);
+		$keys->expects($this->once())->method('rotateTenantKey')
+			->willReturn(['tenant_id' => 'org-H', 'rotated_at' => 'now', 'retired_key_id' => 7]);
+
+		$tester = new CommandTester(new RotateTenantKeyCommand(tenantKeys: $keys));
+
+		$this->assertSame(0, $tester->execute(['tenant' => 'org-H', '--create' => true]));
+	}//end testCreateOnATenantWithAKeyStillRotates()
 }//end class
