@@ -53,6 +53,7 @@ use Throwable;
  * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class TimelineWriteService {
+	use OptionalPayloadString;
 
 	/**
 	 * Constructor.
@@ -94,7 +95,7 @@ class TimelineWriteService {
 		$note = $this->notes->createNote(
 			objectUuid: (string)$object->getUuid(),
 			message: $message,
-			visibility: $this->readString(data: $data, key: 'visibility')
+			visibility: $this->stringOrNull(data: $data, key: 'visibility')
 		);
 
 		$entry = $this->entries->record(
@@ -274,8 +275,8 @@ class TimelineWriteService {
 				object: $object,
 				entryUuid: (string)$entry->getUuid(),
 				text: $message,
-				register: $this->readString(data: $data, key: 'register'),
-				schema: $this->readString(data: $data, key: 'schema')
+				register: $this->stringOrNull(data: $data, key: 'register'),
+				schema: $this->stringOrNull(data: $data, key: 'schema')
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -297,9 +298,11 @@ class TimelineWriteService {
 	private function recordReferences(ObjectEntity $object, TimelineEntry $entry, string $message): void {
 		try {
 			$this->references->record(
-				entryUuid: (string)$entry->getUuid(),
-				sourceUuid: (string)$object->getUuid(),
-				text: $message
+				source: new ReferenceSource(
+					entryUuid: (string)$entry->getUuid(),
+					sourceUuid: (string)$object->getUuid(),
+					text: $message
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -325,12 +328,12 @@ class TimelineWriteService {
 	 * @throws TimelineValidationException When neither is usable.
 	 */
 	private function resolveMessage(ObjectEntity $object, array $data): string {
-		$message = $this->readString(data: $data, key: 'message');
+		$message = $this->stringOrNull(data: $data, key: 'message');
 		if ($message !== null) {
 			return $message;
 		}
 
-		$slug = $this->readString(data: $data, key: 'textBlock');
+		$slug = $this->stringOrNull(data: $data, key: 'textBlock');
 		if ($slug === null) {
 			throw new TimelineValidationException(['message' => 'An entry needs a message or a text block']);
 		}
@@ -355,25 +358,4 @@ class TimelineWriteService {
 			)
 		);
 	}//end resolveMessage()
-
-	/**
-	 * Read one optional string off a payload.
-	 *
-	 * @param array<string,mixed> $data The payload.
-	 * @param string              $key  The key.
-	 *
-	 * @return string|null The value, or null when absent, empty or not a string.
-	 */
-	private function readString(array $data, string $key): ?string {
-		if (isset($data[$key]) === false || is_string($data[$key]) === false) {
-			return null;
-		}
-
-		$value = trim($data[$key]);
-		if ($value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end readString()
 }//end class

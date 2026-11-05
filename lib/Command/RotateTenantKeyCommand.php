@@ -30,6 +30,7 @@ use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -60,7 +61,8 @@ class RotateTenantKeyCommand extends Command {
 	protected function configure(): void {
 		$this->setName(name: 'openregister:tenant-key:rotate')
 			->setDescription(description: 'Retire a tenant\'s active HMAC signing key and store a new one')
-			->addArgument(name: 'tenant', mode: InputArgument::REQUIRED, description: 'The tenant identifier');
+			->addArgument(name: 'tenant', mode: InputArgument::REQUIRED, description: 'The tenant identifier')
+			->addOption(name: 'create', mode: InputOption::VALUE_NONE, description: 'Create a first key for a tenant that has none');
 	}//end configure()
 
 	/**
@@ -77,6 +79,11 @@ class RotateTenantKeyCommand extends Command {
 		$tenant = trim((string)$input->getArgument('tenant'));
 		if ($tenant === '') {
 			$output->writeln('<error>A tenant identifier is required.</error>');
+			return 1;
+		}
+
+		if ($input->getOption('create') !== true && $this->tenantKeys->hasActiveKey(tenantId: $tenant) === false) {
+			$output->writeln('<error>Tenant '.$tenant.' has no active key. Check the identifier, or pass --create to create a first key.</error>');
 			return 1;
 		}
 

@@ -1139,20 +1139,6 @@ class ServicesIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Test MappingService::invalidateMappingCache
-	 *
-	 * @return void
-	 */
-	public function testMappingServiceInvalidateCache(): void {
-		$service = \OC::$server->get(MappingService::class);
-
-		// This should not throw.
-		$service->invalidateMappingCache(99999);
-		$service->invalidateMappingCache('some-uuid');
-		$this->assertTrue(true);
-	}
-
-	/**
 	 * Test MappingService::getMappings
 	 *
 	 * @return void

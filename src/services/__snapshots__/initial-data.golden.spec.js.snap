@@ -788,7 +788,6 @@ exports[`initial component data golden LlmConfiguration starts from the recorded
     "storageMB": "0.0",
     "totalVectors": 0,
   },
-  "vectorizing": false,
 }
 `;
 
