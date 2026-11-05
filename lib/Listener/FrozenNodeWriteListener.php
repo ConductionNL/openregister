@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
+use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -340,7 +341,7 @@ class FrozenNodeWriteListener implements IEventListener {
 				return null;
 			}
 
-			if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $name) === 1) {
+			if (UuidFormat::isCanonical(value: $name) === true) {
 				try {
 					return ['uuid' => $name, 'folderId' => (int)$current->getId()];
 				} catch (Throwable $e) {

@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -185,6 +186,6 @@ class ExplicitRevealMasker {
 	 * @return bool
 	 */
 	private static function isUuid(string $value): bool {
-		return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
+		return UuidFormat::isCanonical(value: $value);
 	}//end isUuid()
 }//end class
