@@ -185,7 +185,7 @@ class ExternalGrantGuard {
 			$lapsing[] = [
 				'action' => $found['action'],
 				'principal' => $this->principalOf(entry: $found['entry']),
-				'holder' => $this->holderOf(entry: $found['entry']),
+				'holders' => $this->holdersOf(entry: $found['entry']),
 				'endsAt' => date(DATE_ATOM, $ends),
 				'daysLeft' => (int)ceil((($ends - $now->getTimestamp()) / 86400)),
 			];
@@ -287,53 +287,29 @@ class ExternalGrantGuard {
 	}//end endOf()
 
 	/**
-	 * Who holds a grant, read by the entry's own key as access enforcement reads it.
+	 * Who holds a grant, read by the entry's own keys and compared as access enforcement compares them.
 	 *
-	 * `user` names a user; `group`, or a plain string, names a group. Any other
-	 * shape names no holder anybody can be warned through.
+	 * An entry naming both a user and a group is held by both. The ids are kept
+	 * exactly as written, so a padded id resolves to nobody here as it grants
+	 * nobody there.
 	 *
-	 * @param mixed $entry The entry.
+	 * @param array<string, mixed> $entry The external entry.
 	 *
-	 * @return array{kind: string, id: string}|null The holder, or null when the entry names none.
+	 * @return array<int, array{kind: string, id: string}> The holders.
 	 *
 	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
-	private function holderOf(mixed $entry): ?array {
-		if (is_string($entry) === true) {
-			return $this->holder(kind: 'group', id: $entry);
+	private function holdersOf(array $entry): array {
+		$holders = [];
+		foreach (['user', 'group'] as $kind) {
+			$id = ($entry[$kind] ?? null);
+			if (is_string($id) === true && $id !== '') {
+				$holders[] = ['kind' => $kind, 'id' => $id];
+			}
 		}
 
-		if (is_array($entry) === false) {
-			return null;
-		}
-
-		if (is_string($entry['user'] ?? null) === true) {
-			return $this->holder(kind: 'user', id: $entry['user']);
-		}
-
-		$group = ($entry['group'] ?? null);
-		if (is_string($group) === false) {
-			return null;
-		}
-
-		return $this->holder(kind: 'group', id: $group);
-	}//end holderOf()
-
-	/**
-	 * A holder, or null for a blank id.
-	 *
-	 * @param string $kind `user` or `group`.
-	 * @param string $id   The id.
-	 *
-	 * @return array{kind: string, id: string}|null The holder.
-	 */
-	private function holder(string $kind, string $id): ?array {
-		if (trim($id) === '') {
-			return null;
-		}
-
-		return ['kind' => $kind, 'id' => trim($id)];
-	}//end holder()
+		return $holders;
+	}//end holdersOf()
 
 	/**
 	 * The principal an entry names, for the refusal to be actionable.

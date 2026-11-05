@@ -72,7 +72,7 @@ class ExternalGrantLapseNotifier {
 	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function warn(Schema $schema, array $grant): int {
-		$holders = $this->holdersOf(holder: ($grant['holder'] ?? null));
+		$holders = $this->holdersOf(holders: (array)($grant['holders'] ?? []));
 		foreach ($holders as $uid) {
 			$notification = $this->notificationFor(schema: $schema, grant: $grant)->setUser($uid);
 			$this->notifications->markProcessed($notification);
@@ -83,29 +83,27 @@ class ExternalGrantLapseNotifier {
 	}//end warn()
 
 	/**
-	 * The users who hold a grant: the user it names, or the members of the group it names.
+	 * The users who hold a grant, each once: the users it names and the members of the groups it names.
 	 *
 	 * The kind comes from the grant entry's own key, so a group is never warned
 	 * as a user of the same name, nor a user as a group.
 	 *
-	 * @param mixed $holder `{kind: user|group, id}` from ExternalGrantGuard::lapsingWithin().
+	 * @param array<int, array{kind: string, id: string}> $holders From ExternalGrantGuard::lapsingWithin().
 	 *
 	 * @return array<int, string> The user ids.
 	 */
-	private function holdersOf(mixed $holder): array {
-		if (is_array($holder) === false || is_string($holder['id'] ?? null) === false) {
-			return [];
+	private function holdersOf(array $holders): array {
+		$uids = [];
+		foreach ($holders as $holder) {
+			if ($holder['kind'] === 'user') {
+				$uids = array_merge($uids, $this->namedUser(uid: $holder['id']));
+				continue;
+			}
+
+			$uids = array_merge($uids, $this->groupMembers(gid: $holder['id']));
 		}
 
-		if (($holder['kind'] ?? '') === 'user') {
-			return $this->namedUser(uid: $holder['id']);
-		}
-
-		if (($holder['kind'] ?? '') === 'group') {
-			return $this->groupMembers(gid: $holder['id']);
-		}
-
-		return [];
+		return array_values(array_unique($uids));
 	}//end holdersOf()
 
 	/**

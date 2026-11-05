@@ -155,17 +155,29 @@ class ExternalGrantLapseNotifierTest extends TestCase {
 	}//end testAGroupHolderWarnsEachMember()
 
 	/**
-	 * A plain string names a group.
+	 * An entry naming both a user and a group warns both, each person once.
 	 *
 	 * @return void
 	 */
-	public function testAPlainStringIsAGroup(): void {
+	public function testAnEntryWithAUserAndAGroupWarnsBoth(): void {
 		$notifier = $this->notifier();
 
-		$notifier->warn(schema: $this->schema(), grant: $this->lapsing(entry: 'advisers'));
+		$this->assertSame(3, $notifier->warn(schema: $this->schema(), grant: $this->lapsing(entry: ['user' => 'adviser', 'group' => 'advisers'])));
+		$this->assertSame(['adviser', 'ann', 'bob'], $this->warned);
+	}//end testAnEntryWithAUserAndAGroupWarnsBoth()
 
-		$this->assertSame(['ann', 'bob'], $this->warned);
-	}//end testAPlainStringIsAGroup()
+	/**
+	 * A padded id grants nobody, so it warns nobody.
+	 *
+	 * @return void
+	 */
+	public function testAPaddedIdWarnsNobody(): void {
+		$notifier = $this->notifier();
+		$this->manager->expects($this->never())->method('notify');
+
+		$this->assertSame(0, $notifier->warn(schema: $this->schema(), grant: $this->lapsing(entry: ['user' => ' adviser '])));
+		$this->assertSame(0, $notifier->warn(schema: $this->schema(), grant: $this->lapsing(entry: ['group' => ' advisers '])));
+	}//end testAPaddedIdWarnsNobody()
 
 	/**
 	 * 🔴 A user and a group with the same name are never confused, either way.
@@ -200,15 +212,11 @@ class ExternalGrantLapseNotifierTest extends TestCase {
 	/**
 	 * The one lapsing grant ExternalGrantGuard reports for an entry ending in three days.
 	 *
-	 * @param mixed $entry The entry, without its `external` flag and end.
+	 * @param array<string, mixed> $entry The entry, without its `external` flag and end.
 	 *
 	 * @return array<string, mixed> The lapsing grant.
 	 */
-	private function lapsing(mixed $entry): array {
-		if (is_string($entry) === true) {
-			$entry = ['group' => $entry];
-		}
-
+	private function lapsing(array $entry): array {
 		$entry['external'] = true;
 		$entry['until'] = (new \DateTimeImmutable('+3 days'))->format(DATE_ATOM);
 
