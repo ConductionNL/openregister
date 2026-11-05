@@ -2518,16 +2518,7 @@ class RenderObject {
 			return $objectData;
 		}
 
-		return $this->extendObject(
-			entity: $entity,
-			_extend: $context->extend,
-			objectData: $objectData,
-			depth: $context->depth,
-			_filter: $context->filter,
-			_fields: $context->fields,
-			_unset: $context->unset,
-			visitedIds: $context->visitedIds
-		);
+		return $this->extendObject(entity: $entity, objectData: $objectData, context: $context);
 	}//end applyExtensions()
 
 	/**
@@ -4015,47 +4006,22 @@ class RenderObject {
 	/**
 	 * Extends an object with additional data based on the extension configuration
 	 *
-	 * @param ObjectEntity $entity The entity to extend
-	 * @param array $_extend Extension configuration
-	 * @param array $objectData Current object data
-	 * @param int $depth Current depth level
-	 * @param array|null $_filter Filters to apply
-	 * @param array|null $_fields Fields to include
-	 * @param array|null $_unset Properties to remove from the rendered entity
-	 * @param array|null $visitedIds ids of objects already handled
+	 * @param ObjectEntity  $entity     The entity to extend
+	 * @param array         $objectData Current object data
+	 * @param RenderContext $context    The render options: the extend list, the depth and the visited ids
 	 *
 	 * @return array The extended object data
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function extendObject(
-		ObjectEntity $entity,
-		array $_extend,
-		array $objectData,
-		int $depth,
-		?array $_filter = [],
-		?array $_fields = [],
-		?array $_unset = [],
-		?array $visitedIds = [],
-	): array {
+	private function extendObject(ObjectEntity $entity, array $objectData, RenderContext $context): array {
+		$_extend = $context->extend;
+
 		// Add register and schema context to @self if requested.
 		if (in_array('@self.register', $_extend) === true || in_array('@self.schema', $_extend) === true) {
 			$self = $objectData['@self'] ?? [];
-
-			if (in_array('@self.register', $_extend) === true) {
-				$register = $this->getRegister(id: $entity->getRegister());
-				if ($register !== null) {
-					$self['register'] = $register->jsonSerialize();
-				}
-			}
-
-			if (in_array('@self.schema', $_extend) === true) {
-				$schema = $this->getSchema(id: $entity->getSchema());
-				if ($schema !== null) {
-					$self['schema'] = $schema->jsonSerialize();
-				}
+			foreach ($this->extendedSelf(entity: $entity, extend: $_extend) as $key => $value) {
+				$self[$key] = $value;
 			}
 
 			$objectData['@self'] = $self;
@@ -4071,8 +4037,8 @@ class RenderObject {
 			entity: $entity,
 			_extend: $_extend,
 			objectData: $objectData,
-			depth: $depth,
-			visitedIds: ($visitedIds ?? [])
+			depth: $context->depth,
+			visitedIds: ($context->visitedIds ?? [])
 		);
 
 		// **PERFORMANCE OPTIMIZATION**: Batch preload all UUIDs that will be extended.
@@ -4082,45 +4048,87 @@ class RenderObject {
 		// every extend UUID for the whole page into $objectsCache, so re-collecting and
 		// re-preloading per row is wasted CPU. Skip it at depth 0 while a page render is
 		// active; nested (depth > 0) extends still preload their own children.
-		$skipPreload = ($this->pageRenderActive === true && $depth === 0);
-		$uuidsToPreload = [];
-		if ($skipPreload === false) {
-			$uuidsToPreload = $this->collectUuidsForExtend(objectData: $objectData, extend: $_extend);
-		}
-
-		if (empty($uuidsToPreload) === false) {
-			$preloadedObjects = $this->objectCacheService->preloadObjects(
-				identifiers: $uuidsToPreload,
-				registerId: $this->registerIdOf(entity: $entity)
-			);
-			// Add preloaded objects to local cache for immediate access.
-			foreach ($preloadedObjects as $object) {
-				$this->objectsCache[$object->getUuid()] = $object;
-				$this->objectsCache[$object->getId()] = $object;
-			}
-
-			$this->logger->debug(
-				message: '[RenderObject] Batch preloaded objects for extend',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'requestedUuids' => count($uuidsToPreload),
-					'loadedObjects' => count($preloadedObjects),
-				]
+		if (($this->pageRenderActive === true && $context->depth === 0) === false) {
+			$this->preloadExtendTargets(
+				entity: $entity,
+				uuids: $this->collectUuidsForExtend(objectData: $objectData, extend: $_extend)
 			);
 		}
 
-		$objectDataDot = $this->handleExtendDot(
+		return $this->handleExtendDot(
 			data: $objectData,
 			_extend: $_extend,
-			depth: $depth,
+			depth: $context->depth,
 			allFlag: in_array('all', $_extend, true),
-			visitedIds: $visitedIds,
+			visitedIds: $context->visitedIds,
 			exposures: $this->exposuresFor(schema: $this->getSchema(id: $entity->getSchema()))
 		);
-
-		return $objectDataDot;
 	}//end extendObject()
+
+	/**
+	 * The register and schema of an entity that its extend list asks to put on @self.
+	 *
+	 * @param ObjectEntity $entity The entity being extended.
+	 * @param array        $extend The extend list.
+	 *
+	 * @return array<string, array> The serialized register and schema, each only when asked for and found.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function extendedSelf(ObjectEntity $entity, array $extend): array {
+		$self = [];
+		if (in_array('@self.register', $extend) === true) {
+			$register = $this->getRegister(id: $entity->getRegister());
+			if ($register !== null) {
+				$self['register'] = $register->jsonSerialize();
+			}
+		}
+
+		if (in_array('@self.schema', $extend) === true) {
+			$schema = $this->getSchema(id: $entity->getSchema());
+			if ($schema !== null) {
+				$self['schema'] = $schema->jsonSerialize();
+			}
+		}
+
+		return $self;
+	}//end extendedSelf()
+
+	/**
+	 * Load the objects an extend will resolve in one query and keep them in the render's object cache.
+	 *
+	 * @param ObjectEntity $entity The entity being extended; its register scopes the load.
+	 * @param array        $uuids  The identifiers to load.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function preloadExtendTargets(ObjectEntity $entity, array $uuids): void {
+		if (empty($uuids) === true) {
+			return;
+		}
+
+		$preloadedObjects = $this->objectCacheService->preloadObjects(
+			identifiers: $uuids,
+			registerId: $this->registerIdOf(entity: $entity)
+		);
+		// Add preloaded objects to local cache for immediate access.
+		foreach ($preloadedObjects as $object) {
+			$this->objectsCache[$object->getUuid()] = $object;
+			$this->objectsCache[$object->getId()] = $object;
+		}
+
+		$this->logger->debug(
+			message: '[RenderObject] Batch preloaded objects for extend',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'requestedUuids' => count($uuids),
+				'loadedObjects' => count($preloadedObjects),
+			]
+		);
+	}//end preloadExtendTargets()
 
 	/**
 	 * The register id an entity lives in, or null when it has none.

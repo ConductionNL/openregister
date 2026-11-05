@@ -21,6 +21,8 @@ const FALLBACKS = {
 		objectDescriptionField: '',
 		objectSummaryField: '',
 		objectImageField: '',
+		objectSlugField: '',
+		objectSlugSuffix: false,
 		allowFiles: false,
 		allowedTags: [],
 		linkedTypes: [],
@@ -70,6 +72,8 @@ function schemaRulesShape() {
 			.object({
 				objectNameField: z.string().optional(),
 				objectDescriptionField: z.string().optional(),
+				objectSlugField: z.string().optional(),
+				objectSlugSuffix: z.boolean().optional(),
 			})
 			.optional(),
 		hardValidation: z.boolean(),
@@ -95,6 +99,8 @@ export class Schema implements TSchema {
 		objectDescriptionField?: string
 		objectSummaryField?: string
 		objectImageField?: string
+		objectSlugField?: string
+		objectSlugSuffix?: boolean
 		allowFiles?: boolean
 		allowedTags?: string[]
 		linkedTypes?: string[]

@@ -108,13 +108,95 @@ class SearchIndexMaintenance {
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public function tablesInScope(?int $registerId = null): array {
-		$tables = [];
-		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
-			if (($register instanceof Register) === false) {
-				continue;
+		return array_keys($this->schemaSlugsByTable(registerId: $registerId));
+	}//end tablesInScope()
+
+	/**
+	 * How many rows the tables in scope hold, in all and per schema slug.
+	 *
+	 * A slug of which one table cannot be counted is left out, and so is the total, so a caller never shows a
+	 * number that is too low.
+	 *
+	 * @return array{rowsInTables?: int, indexed: array<string, int>} The counts that could be made.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-the-search-index-status-names-how-many-rows-it-covers
+	 */
+	public function rowCounts(): array {
+		$slugs  = $this->schemaSlugsByTable(registerId: null);
+		$counts = new SearchIndexRowCounts();
+		foreach (array_chunk(array_keys($slugs), 200) as $chunk) {
+			$rows = $this->countRows(tableNames: $chunk);
+			foreach ($chunk as $table) {
+				$counts->add(slug: $slugs[$table], rows: ($rows[$table] ?? null));
+			}
+		}
+
+		return $counts->toArray();
+	}//end rowCounts()
+
+	/**
+	 * The rows of each table, in one query for the lot, or one per table when the lot cannot be read.
+	 *
+	 * @param array<int, string> $tableNames The bare table names.
+	 *
+	 * @return array<string, int> Rows by table; a table that cannot be counted is absent.
+	 */
+	private function countRows(array $tableNames): array {
+		$platform = $this->db->getDatabasePlatform();
+		$selects  = [];
+		foreach ($tableNames as $index => $table) {
+			$selects[$table] = 'SELECT '.$index.' AS t, COUNT(*) AS n FROM '.$platform->quoteIdentifier($this->prefix().$table);
+		}
+
+		try {
+			return $this->rowsByTable(sql: implode(' UNION ALL ', $selects), tableNames: $tableNames);
+		} catch (Throwable) {
+			$rows = [];
+			foreach ($selects as $table => $sql) {
+				try {
+					$rows += $this->rowsByTable(sql: $sql, tableNames: [array_search($table, $tableNames, true) => $table]);
+				} catch (Throwable $exception) {
+					$this->logger->warning(
+						message: '[SearchIndexMaintenance] Could not count the rows of a magic table',
+						context: ['file' => __FILE__, 'line' => __LINE__, 'table' => $table, 'error' => $exception->getMessage()]
+					);
+				}
 			}
 
-			if ($registerId !== null && (int)$register->getId() !== $registerId) {
+			return $rows;
+		}
+	}//end countRows()
+
+	/**
+	 * Run a row count query and key its answers by table.
+	 *
+	 * @param string             $sql        Selects `t` (the table's position in $tableNames) and `n` (its rows).
+	 * @param array<int, string> $tableNames The tables, by position.
+	 *
+	 * @return array<string, int> Rows by table.
+	 */
+	private function rowsByTable(string $sql, array $tableNames): array {
+		$rows = [];
+		foreach ($this->db->executeQuery($sql)->fetchAll() as $row) {
+			$rows[$tableNames[(int) $row['t']]] = (int) $row['n'];
+		}
+
+		return $rows;
+	}//end rowsByTable()
+
+	/**
+	 * Every magic table in scope, with the slug of the schema it holds.
+	 *
+	 * @param int|null $registerId Limit to one register, or null for all of them.
+	 *
+	 * @return array<string, string> Schema slug by bare table name.
+	 */
+	private function schemaSlugsByTable(?int $registerId): array {
+		$tables = [];
+		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
+			if (($register instanceof Register) === false
+				|| ($registerId !== null && (int)$register->getId() !== $registerId)
+			) {
 				continue;
 			}
 
@@ -125,32 +207,42 @@ class SearchIndexMaintenance {
 			);
 
 			foreach ($schemas as $schema) {
-				if (($schema instanceof Schema) === false) {
-					continue;
+				if ($schema instanceof Schema) {
+					$tables += $this->tableOf(register: $register, schema: $schema);
 				}
+			}
+		}
 
-				try {
-					$tables[] = $this->magicMapper->getTableNameForRegisterSchema(
-						register: $register,
-						schema: $schema
-					);
-				} catch (Throwable $exception) {
-					$this->logger->warning(
-						message: '[SearchIndexMaintenance] Could not resolve a magic table',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'register' => $register->getId(),
-							'schema' => $schema->getId(),
-							'error' => $exception->getMessage(),
-						]
-					);
-				}
-			}//end foreach
-		}//end foreach
+		return $tables;
+	}//end schemaSlugsByTable()
 
-		return array_values(array_unique($tables));
-	}//end tablesInScope()
+	/**
+	 * The magic table of one register and schema, with the schema's slug, or nothing when it cannot be resolved.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return array<string, string> At most one entry: schema slug by bare table name.
+	 */
+	private function tableOf(Register $register, Schema $schema): array {
+		try {
+			$table = $this->magicMapper->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		} catch (Throwable $exception) {
+			$this->logger->warning(
+				message: '[SearchIndexMaintenance] Could not resolve a magic table',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'register' => $register->getId(),
+					'schema' => $schema->getId(),
+					'error' => $exception->getMessage(),
+				]
+			);
+			return [];
+		}
+
+		return [$table => (string) ($schema->getSlug() ?? $schema->getId())];
+	}//end tableOf()
 
 	/**
 	 * The indexes that exist on one magic table, with their definitions.

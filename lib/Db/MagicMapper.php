@@ -48,6 +48,7 @@ use RuntimeException;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicCrossTableHit;
 use OCA\OpenRegister\Db\MagicMapper\MagicCrossTableScan;
+use OCA\OpenRegister\Db\MagicMapper\MagicIdentifierProbe;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectLookup;
@@ -1970,145 +1971,38 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @return array Raw result rows.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	private function runUnionBatch(array $query, array $registerSchemaPairs): array {
 		$qb = $this->db->getQueryBuilder();
 		$parts = [];
 
-		// Detect database platform for identifier quoting.
-		$platform = $this->db->getDatabasePlatform();
-		$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
-
 		// Collect superset of all property columns across all schemas for UNION compatibility.
 		// Each SELECT must include the same columns; schemas that lack a column get NULL AS alias.
-		$allPropertyColumns = $this->collectAllPropertyColumns(registerSchemaPairs: $registerSchemaPairs);
+		$allPropertyColumns = $this->unionPropertyColumns(registerSchemaPairs: $registerSchemaPairs);
 
-		// Postgres caps a SELECT target list at 1664 entries. Each UNION arm
-		// projects ~30 metadata columns plus this property superset, so with
-		// many schemas the superset alone blows the cap (SQLSTATE 54011) and
-		// the entire cross-schema search fails — e.g. the unified-search
-		// provider returns nothing. When the superset is too large, fall back
-		// to a metadata-only projection: each arm projects only the constant
-		// `_`-prefixed metadata columns (uuid / name / description / summary /
-		// register / schema / …), which is enough to build a result row. The
-		// search term still matches each table's OWN property columns in the
-		// WHERE/score clauses (see buildUnionSelectPart); a caller needing full
-		// property values re-hydrates by id.
-		$metadataOnly = false;
-		if (count($allPropertyColumns) > self::UNION_PROPERTY_COLUMN_BUDGET) {
-			$metadataOnly = true;
-			$allPropertyColumns = [];
-			$this->logger->warning(
-				message: '[MagicMapper] Cross-schema property superset exceeds the column budget; using metadata-only projection',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'budget' => self::UNION_PROPERTY_COLUMN_BUDGET,
-					'schemaCount' => count($registerSchemaPairs),
-				]
-			);
-		}
-
-		// Build a SELECT for each table.
 		foreach ($registerSchemaPairs as $pair) {
-			$register = $pair['register'] ?? null;
-			$schema = $pair['schema'] ?? null;
-
-			if ($register === null || $schema === null) {
+			$tableName = $this->unionTableForPair(pair: $pair);
+			if ($tableName === null) {
 				continue;
 			}
 
-			// Check if table exists (fast cache check).
-			if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-				// Check if magic mapping is enabled for this schema - if so, create the table.
-				$isMagicEnabled = $register->isMagicMappingEnabledForSchema(
-					schemaId: $schema->getId(),
-					schemaSlug: $schema->getSlug()
-				);
-				if ($isMagicEnabled !== true) {
-					continue;
-				}
-
-				$msg = '[MagicMapper] Register+schema table does not exist';
-				$msg .= ' but magic mapping enabled, creating table for cross-search';
-				$this->logger->debug(
-					message: $msg,
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'registerId' => $register->getId(),
-						'schemaId' => $schema->getId(),
-					]
-				);
-				$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
-			}//end if
-
-			$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-
 			// Build SELECT for this table with schema/register metadata and property columns.
-			$arm = new MagicUnionArm(tableName: $tableName, query: $query, schema: $schema, register: $register);
-			$arm->allPropertyColumns = $allPropertyColumns;
-			$arm->metadataOnly = $metadataOnly;
+			$arm = new MagicUnionArm(tableName: $tableName, query: $query, schema: $pair['schema'], register: $pair['register']);
+			$arm->allPropertyColumns = ($allPropertyColumns ?? []);
+			$arm->metadataOnly = ($allPropertyColumns === null);
 			$selectPart = $this->buildUnionSelectPart(arm: $arm);
 
 			if ($selectPart !== null) {
 				$parts[] = $selectPart;
 			}
-		}//end foreach
+		}
 
 		if (empty($parts) === true) {
 			return [];
 		}
 
-		// Combine all SELECTs with UNION ALL.
-		$unionSql = implode(' UNION ALL ', $parts);
-
-		// Apply global ORDER BY - supports _order parameter or defaults to search score.
-		// The keys come from one place so that the PHP-side merge of several
-		// batches sorts on exactly what the SQL would have sorted on.
-		$orderClauses = [];
-		foreach ($this->buildUnionOrderKeys(query: $query, isPostgres: $isPostgres) as $orderKey) {
-			$orderClauses[] = $orderKey['sql'] . ' ' . $orderKey['dir'];
-		}
-
-		$unionSql .= ' ORDER BY ' . implode(', ', $orderClauses);
-
-		// Apply LIMIT/OFFSET to final UNION result.
-		// Cast + clamp at the boundary so raw user input cannot reach the
-		// interpolated SQL string (SQL injection via _limit / _offset).
-		//
-		// UNLIMITED OMITS THE CLAUSE, it does not interpolate a large number.
-		// This SQL is built by string concatenation rather than bound
-		// parameters, so "unlimited" must never become a value that travels
-		// into the string — there is nothing to bind it to, and a sentinel like
-		// PHP_INT_MAX would be both a lie and a number some databases reject.
-		//
-		// The previous clamp answered `_limit=0` with ONE row (max(1, …)) and
-		// `_limit=5000` with a silent 1000. Both are gone; the offset clamp
-		// stays exactly as it was, because it is still interpolated.
-		$normalisedLimit = QueryLimit::normalise($query['_limit'] ?? null);
-		$offset = max(0, (int)($query['_offset'] ?? 0));
-		if ($normalisedLimit === null) {
-			// MySQL and MariaDB reject a bare OFFSET without a LIMIT, so an
-			// offset with no limit still needs the clause. The upper bound is
-			// the largest value the syntax accepts, which is the documented
-			// idiom for "everything from here on".
-			if ($offset > 0) {
-				$unionSql .= ' LIMIT 18446744073709551615 OFFSET ' . $offset;
-			}
-		} else {
-			// A NUMERIC limit is still clamped to the documented maximum. That
-			// clamp is a deliberate protection (objects-crud: "List page size is
-			// bounded by a hard maximum") against a client loading an
-			// arbitrarily large result set by accident, and asking for
-			// `_limit=1000000` is an accident. Saying `_limit=false` is not —
-			// that is the explicit opt-in this change adds, and it is the only
-			// way past the bound.
-			$limit = min($normalisedLimit, self::MAX_PAGE_SIZE);
-			$unionSql .= " LIMIT {$limit} OFFSET {$offset}";
-		}
+		$unionSql = implode(' UNION ALL ', $parts) . $this->unionOrderByClause(query: $query) . $this->unionLimitClause(query: $query);
 
 		// Execute the combined query.
 		$stmt = $qb->getConnection()->prepare($unionSql);
@@ -2127,6 +2021,156 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $rows;
 	}//end runUnionBatch()
+
+	/**
+	 * The property column superset every union arm projects, or null for a
+	 * metadata-only projection.
+	 *
+	 * Postgres caps a SELECT target list at 1664 entries. Each UNION arm
+	 * projects ~30 metadata columns plus this property superset, so with
+	 * many schemas the superset alone blows the cap (SQLSTATE 54011) and
+	 * the entire cross-schema search fails — e.g. the unified-search
+	 * provider returns nothing. When the superset is too large, fall back
+	 * to a metadata-only projection: each arm projects only the constant
+	 * `_`-prefixed metadata columns (uuid / name / description / summary /
+	 * register / schema / …), which is enough to build a result row. The
+	 * search term still matches each table's OWN property columns in the
+	 * WHERE/score clauses (see buildUnionSelectPart); a caller needing full
+	 * property values re-hydrates by id.
+	 *
+	 * @param array $registerSchemaPairs The register+schema pairs of the batch.
+	 *
+	 * @return array<string, string>|null Column name => property name, or null when over budget.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 */
+	private function unionPropertyColumns(array $registerSchemaPairs): ?array {
+		$allPropertyColumns = $this->collectAllPropertyColumns(registerSchemaPairs: $registerSchemaPairs);
+		if (count($allPropertyColumns) <= self::UNION_PROPERTY_COLUMN_BUDGET) {
+			return $allPropertyColumns;
+		}
+
+		$this->logger->warning(
+			message: '[MagicMapper] Cross-schema property superset exceeds the column budget; using metadata-only projection',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'budget' => self::UNION_PROPERTY_COLUMN_BUDGET,
+				'schemaCount' => count($registerSchemaPairs),
+			]
+		);
+
+		return null;
+	}//end unionPropertyColumns()
+
+	/**
+	 * The magic table a union arm reads for one register+schema pair.
+	 *
+	 * A missing table is created when magic mapping is enabled for the schema;
+	 * otherwise the pair is skipped.
+	 *
+	 * @param array $pair The pair, with 'register' and 'schema'.
+	 *
+	 * @return string|null The table name, or null to skip the pair.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 */
+	private function unionTableForPair(array $pair): ?string {
+		$register = $pair['register'] ?? null;
+		$schema = $pair['schema'] ?? null;
+
+		if ($register === null || $schema === null) {
+			return null;
+		}
+
+		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+			$isMagicEnabled = $register->isMagicMappingEnabledForSchema(
+				schemaId: $schema->getId(),
+				schemaSlug: $schema->getSlug()
+			);
+			if ($isMagicEnabled !== true) {
+				return null;
+			}
+
+			$msg = '[MagicMapper] Register+schema table does not exist';
+			$msg .= ' but magic mapping enabled, creating table for cross-search';
+			$this->logger->debug(
+				message: $msg,
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'registerId' => $register->getId(),
+					'schemaId' => $schema->getId(),
+				]
+			);
+			$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
+		}//end if
+
+		return $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+	}//end unionTableForPair()
+
+	/**
+	 * The ORDER BY clause of a union: the _order parameter, or search score.
+	 *
+	 * The keys come from buildUnionOrderKeys() so that the PHP-side merge of
+	 * several batches sorts on exactly what the SQL sorts on.
+	 *
+	 * @param array $query Search parameters.
+	 *
+	 * @return string The clause, with a leading space.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 */
+	private function unionOrderByClause(array $query): string {
+		$isPostgres = stripos($this->db->getDatabasePlatform()::class, 'PostgreSQL') !== false;
+
+		$orderClauses = [];
+		foreach ($this->buildUnionOrderKeys(query: $query, isPostgres: $isPostgres) as $orderKey) {
+			$orderClauses[] = $orderKey['sql'] . ' ' . $orderKey['dir'];
+		}
+
+		return ' ORDER BY ' . implode(', ', $orderClauses);
+	}//end unionOrderByClause()
+
+	/**
+	 * The LIMIT/OFFSET clause of a union.
+	 *
+	 * Both values are cast and clamped here, so raw user input cannot reach
+	 * the interpolated SQL string (SQL injection via _limit / _offset).
+	 *
+	 * Unlimited omits the clause rather than interpolating a large number:
+	 * this SQL is concatenated, not bound, and a sentinel like PHP_INT_MAX
+	 * is a number some databases reject.
+	 *
+	 * @param array $query Search parameters.
+	 *
+	 * @return string The clause with a leading space, or an empty string.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 */
+	private function unionLimitClause(array $query): string {
+		$normalisedLimit = QueryLimit::normalise($query['_limit'] ?? null);
+		$offset = max(0, (int)($query['_offset'] ?? 0));
+		if ($normalisedLimit !== null) {
+			// A NUMERIC limit is still clamped to the documented maximum. That
+			// clamp is a deliberate protection (objects-crud: "List page size is
+			// bounded by a hard maximum") against a client loading an
+			// arbitrarily large result set by accident. `_limit=false` is the
+			// explicit opt-in, and the only way past the bound.
+			$limit = min($normalisedLimit, self::MAX_PAGE_SIZE);
+			return " LIMIT {$limit} OFFSET {$offset}";
+		}
+
+		// MySQL and MariaDB reject a bare OFFSET without a LIMIT, so an
+		// offset with no limit still needs the clause. The upper bound is
+		// the largest value the syntax accepts, which is the documented
+		// idiom for "everything from here on".
+		if ($offset > 0) {
+			return ' LIMIT 18446744073709551615 OFFSET ' . $offset;
+		}
+
+		return '';
+	}//end unionLimitClause()
 
 	/**
 	 * Resolve the ORDER BY keys for a cross-schema UNION search.
@@ -7900,13 +7944,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			]
 		);
 
-		// `_id` is a bigint column, so a non-numeric identifier (a UUID, slug or URI)
-		// must never be bound against it: it would type-error on PostgreSQL. -1 is a
-		// sentinel that can never match a real row, leaving the string columns to match.
-		$idParam = -1;
-		if (is_numeric($identifier) === true) {
-			$idParam = (int)$identifier;
-		}
+		$probe = new MagicIdentifierProbe(identifier: (string)$identifier, includeDeleted: $includeDeleted);
 
 		// Two phases instead of one `SELECT *` per magic table (an N+1 of ~1,000
 		// queries on a live instance). LOCATE: one UNION ALL per chunk of
@@ -7914,12 +7952,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// one `SELECT *` from the table that holds the row. The shared metadata
 		// columns are what make the union across heterogeneous tables well-typed.
 		foreach (array_chunk($candidates, self::MAGIC_TABLE_SCAN_CHUNK_SIZE, true) as $chunk) {
-			$located = $this->locateIdentifierInMagicTables(
-				tables: array_keys($chunk),
-				identifier: (string)$identifier,
-				idParam: $idParam,
-				includeDeleted: $includeDeleted
-			);
+			$located = $this->locateIdentifierInMagicTables(tables: array_keys($chunk), probe: $probe);
 			if ($located === null) {
 				continue;
 			}
@@ -8224,96 +8257,29 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * plus the LIMIT keep the result set at a single tiny row regardless of how many
 	 * tables exist.
 	 *
-	 * @param string[] $tables Unprefixed magic table names to probe.
-	 * @param string $identifier The identifier to match against _uuid/_slug/_uri.
-	 * @param int $idParam Numeric identifier for the bigint _id column, or -1.
-	 * @param bool $includeDeleted Whether to include soft-deleted objects.
+	 * @param string[]             $tables Unprefixed magic table names to probe.
+	 * @param MagicIdentifierProbe $probe  What to look for.
 	 *
 	 * @return array{table: string, id: int}|null The matching table and row id, or null.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
-	private function locateIdentifierInMagicTables(
-		array $tables,
-		string $identifier,
-		int $idParam,
-		bool $includeDeleted,
-	): ?array {
+	private function locateIdentifierInMagicTables(array $tables, MagicIdentifierProbe $probe): ?array {
 		if (empty($tables) === true) {
 			return null;
 		}
 
-		$prefix = $this->getTablePrefix();
-		$platform = $this->db->getDatabasePlatform();
-		$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
-
-		$idCol = $this->quoteIdentifier(name: self::METADATA_PREFIX . 'id', isPostgres: $isPostgres);
-		$uuidCol = $this->quoteIdentifier(name: self::METADATA_PREFIX . 'uuid', isPostgres: $isPostgres);
-		$slugCol = $this->quoteIdentifier(name: self::METADATA_PREFIX . 'slug', isPostgres: $isPostgres);
-		$uriCol = $this->quoteIdentifier(name: self::METADATA_PREFIX . 'uri', isPostgres: $isPostgres);
-		$deletedCol = $this->quoteIdentifier(name: self::METADATA_PREFIX . 'deleted', isPostgres: $isPostgres);
-
-		// Exclude deleted unless requested.
-		$deletedCondition = ' AND ' . $deletedCol . ' IS NULL';
-		if ($includeDeleted === true) {
-			$deletedCondition = '';
-		}
-
-		$branches = [];
-
-		foreach ($tables as $tableName) {
-			// SAFETY GATE: only ever embed a table name that matches the strict magic
-			// table pattern. Names originate from information_schema and are re-validated
-			// here, so neither the FROM clause nor the src_table literal can be injected.
-			// The identifier itself is NEVER interpolated — it is always bound (below).
-			if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName) !== 1) {
-				continue;
-			}
-
-			$quotedTable = $this->quoteIdentifier(name: $prefix . $tableName, isPostgres: $isPostgres);
-
-			$branches[] = sprintf(
-				"(SELECT '%s' AS src_table, %s AS hit_id FROM %s WHERE (%s = ? OR %s = ? OR %s = ? OR %s = ?)%s)",
-				$tableName,
-				$idCol,
-				$quotedTable,
-				$idCol,
-				$uuidCol,
-				$slugCol,
-				$uriCol,
-				$deletedCondition
-			);
-		}//end foreach
-
+		$branches = $this->identifierUnionBranches(tables: $tables, probe: $probe);
 		if (empty($branches) === true) {
 			return null;
 		}
 
-		$sql = implode(' UNION ALL ', $branches) . ' LIMIT 1';
-
 		try {
-			$stmt = $this->db->prepare($sql);
-			$branchCount = count($branches);
-			$position = 1;
-
-			// Bind 4 parameters per branch, in branch order. The _id placeholder is bound
-			// as a true integer so a UUID never reaches the bigint column.
-			for ($branch = 0; $branch < $branchCount; $branch++) {
-				$stmt->bindValue($position, $idParam, IQueryBuilder::PARAM_INT);
-				$position++;
-				$stmt->bindValue($position, $identifier, IQueryBuilder::PARAM_STR);
-				$position++;
-				$stmt->bindValue($position, $identifier, IQueryBuilder::PARAM_STR);
-				$position++;
-				$stmt->bindValue($position, $identifier, IQueryBuilder::PARAM_STR);
-				$position++;
-			}
-
-			$result = $stmt->execute();
-			$row = $result->fetch();
-			$result->closeCursor();
+			$row = $this->runIdentifierUnion(branches: $branches, probe: $probe);
 		} catch (\Exception $e) {
 			// One structurally broken table fails the whole chunk query. Degrade to a
 			// per-table probe for THIS chunk only, so a single bad table cannot hide the
-			// other live tables in the chunk (the old code skipped bad tables one by one).
+			// other live tables in the chunk.
 			$this->logger->debug(
 				message: '[MagicMapper] findAcrossAllMagicTables: UNION locate failed, probing chunk per table',
 				context: [
@@ -8324,12 +8290,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				]
 			);
 
-			return $this->locateIdentifierPerTable(
-				tables: $tables,
-				identifier: $identifier,
-				idParam: $idParam,
-				includeDeleted: $includeDeleted
-			);
+			return $this->locateIdentifierPerTable(tables: $tables, probe: $probe);
 		}//end try
 
 		if ($row === false || $row === null) {
@@ -8350,75 +8311,110 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end locateIdentifierInMagicTables()
 
 	/**
+	 * Build one `UNION ALL` branch per magic table for the locate query.
+	 *
+	 * SAFETY GATE: only a table name that matches the strict magic table pattern is
+	 * ever embedded. Names originate from information_schema and are re-validated
+	 * here, so neither the FROM clause nor the src_table literal can be injected.
+	 * The identifier itself is never interpolated: it is always bound.
+	 *
+	 * @param string[]             $tables Unprefixed magic table names to probe.
+	 * @param MagicIdentifierProbe $probe  What to look for.
+	 *
+	 * @return string[] The branches, in table order.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	private function identifierUnionBranches(array $tables, MagicIdentifierProbe $probe): array {
+		$prefix = $this->getTablePrefix();
+		$isPostgres = stripos($this->db->getDatabasePlatform()::class, 'PostgreSQL') !== false;
+		$quote = fn (string $name): string => $this->quoteIdentifier(name: $name, isPostgres: $isPostgres);
+
+		[$idCol, $uuidCol, $slugCol, $uriCol, $deletedCol] = array_map(
+			fn (string $column): string => $quote(self::METADATA_PREFIX . $column),
+			['id', 'uuid', 'slug', 'uri', 'deleted']
+		);
+
+		$deletedCondition = ' AND ' . $deletedCol . ' IS NULL';
+		if ($probe->includeDeleted === true) {
+			$deletedCondition = '';
+		}
+
+		$where = sprintf('(%s = ? OR %s = ? OR %s = ? OR %s = ?)%s', $idCol, $uuidCol, $slugCol, $uriCol, $deletedCondition);
+
+		$branches = [];
+		foreach ($tables as $tableName) {
+			if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName) !== 1) {
+				continue;
+			}
+
+			$branches[] = sprintf(
+				"(SELECT '%s' AS src_table, %s AS hit_id FROM %s WHERE %s)",
+				$tableName,
+				$idCol,
+				$quote($prefix . $tableName),
+				$where
+			);
+		}
+
+		return $branches;
+	}//end identifierUnionBranches()
+
+	/**
+	 * Run the locate union and return its single row.
+	 *
+	 * Binds four parameters per branch, in branch order: _id as a true integer so
+	 * a UUID never reaches the bigint column, then _uuid, _slug and _uri.
+	 *
+	 * @param string[]             $branches The union branches.
+	 * @param MagicIdentifierProbe $probe    What to look for.
+	 *
+	 * @return mixed The fetched row, or false when nothing matched.
+	 *
+	 * @throws \Exception When the database rejects the query.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	private function runIdentifierUnion(array $branches, MagicIdentifierProbe $probe): mixed {
+		$stmt = $this->db->prepare(implode(' UNION ALL ', $branches) . ' LIMIT 1');
+
+		$parameterCount = (4 * count($branches));
+		for ($position = 1; $position <= $parameterCount; $position++) {
+			$value = $probe->identifier;
+			$type = IQueryBuilder::PARAM_STR;
+			if ($position % 4 === 1) {
+				$value = $probe->idParam;
+				$type = IQueryBuilder::PARAM_INT;
+			}
+
+			$stmt->bindValue($position, $value, $type);
+		}
+
+		$result = $stmt->execute();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		return $row;
+	}//end runIdentifierUnion()
+
+	/**
 	 * Locate an identifier by probing each magic table separately (chunk fallback).
 	 *
-	 * Used only when the chunked UNION query fails — typically because one table in
-	 * the chunk lacks the expected metadata columns. Mirrors the original per-table
-	 * behaviour: a table that errors is logged and skipped. Still selects only `_id`,
-	 * never the full row.
+	 * Used only when the chunked UNION query fails, typically because one table in
+	 * the chunk lacks the expected metadata columns. A table that errors is logged
+	 * and skipped.
 	 *
-	 * @param string[] $tables Unprefixed magic table names to probe.
-	 * @param string $identifier The identifier to match against _uuid/_slug/_uri.
-	 * @param int $idParam Numeric identifier for the bigint _id column, or -1.
-	 * @param bool $includeDeleted Whether to include soft-deleted objects.
+	 * @param string[]             $tables Unprefixed magic table names to probe.
+	 * @param MagicIdentifierProbe $probe  What to look for.
 	 *
 	 * @return array{table: string, id: int}|null The matching table and row id, or null.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
-	private function locateIdentifierPerTable(
-		array $tables,
-		string $identifier,
-		int $idParam,
-		bool $includeDeleted,
-	): ?array {
-		$idCol = self::METADATA_PREFIX . 'id';
-		$uuidCol = self::METADATA_PREFIX . 'uuid';
-		$slugCol = self::METADATA_PREFIX . 'slug';
-		$uriCol = self::METADATA_PREFIX . 'uri';
-		$deletedCol = self::METADATA_PREFIX . 'deleted';
-
+	private function locateIdentifierPerTable(array $tables, MagicIdentifierProbe $probe): ?array {
 		foreach ($tables as $tableName) {
 			try {
-				// NOTE: Use the unprefixed name because QueryBuilder adds the prefix.
-				$searchQb = $this->db->getQueryBuilder();
-				$searchQb->select($idCol)->from($tableName);
-
-				$idExpr = $searchQb->expr()->eq(
-					$idCol,
-					$searchQb->createNamedParameter($idParam, IQueryBuilder::PARAM_INT)
-				);
-				$uuidExpr = $searchQb->expr()->eq(
-					$uuidCol,
-					$searchQb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)
-				);
-				$slugExpr = $searchQb->expr()->eq(
-					$slugCol,
-					$searchQb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)
-				);
-				$uriExpr = $searchQb->expr()->eq(
-					$uriCol,
-					$searchQb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)
-				);
-				$searchQb->where(
-					$searchQb->expr()->orX($idExpr, $uuidExpr, $slugExpr, $uriExpr)
-				);
-
-				// Exclude deleted unless requested.
-				if ($includeDeleted === false) {
-					$searchQb->andWhere($searchQb->expr()->isNull($deletedCol));
-				}
-
-				$searchQb->setMaxResults(1);
-
-				$searchResult = $searchQb->executeQuery();
-				$row = $searchResult->fetch();
-				$searchResult->closeCursor();
-
-				if ($row !== false && $row !== null && isset($row[$idCol]) === true) {
-					return [
-						'table' => $tableName,
-						'id' => (int)$row[$idCol],
-					];
-				}
+				$hitId = $this->probeTableForIdentifier(tableName: $tableName, probe: $probe);
 			} catch (\Exception $e) {
 				// Table might not have the expected structure, skip it.
 				$this->logger->debug(
@@ -8431,11 +8427,66 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 					]
 				);
 				continue;
-			}//end try
+			}
+
+			if ($hitId !== null) {
+				return [
+					'table' => $tableName,
+					'id' => $hitId,
+				];
+			}
 		}//end foreach
 
 		return null;
 	}//end locateIdentifierPerTable()
+
+	/**
+	 * Look an identifier up in one magic table, selecting only `_id`.
+	 *
+	 * @param string               $tableName Unprefixed magic table name; the query builder adds the prefix.
+	 * @param MagicIdentifierProbe $probe     What to look for.
+	 *
+	 * @return int|null The matching row id, or null when the table holds no match.
+	 *
+	 * @throws \Exception When the database rejects the query.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	private function probeTableForIdentifier(string $tableName, MagicIdentifierProbe $probe): ?int {
+		$idCol = self::METADATA_PREFIX . 'id';
+		$searchQb = $this->db->getQueryBuilder();
+		$searchQb->select($idCol)->from($tableName);
+
+		$matches = [];
+		foreach (['id', 'uuid', 'slug', 'uri'] as $column) {
+			$value = $probe->identifier;
+			$type = IQueryBuilder::PARAM_STR;
+			if ($column === 'id') {
+				$value = $probe->idParam;
+				$type = IQueryBuilder::PARAM_INT;
+			}
+
+			$matches[] = $searchQb->expr()->eq(self::METADATA_PREFIX . $column, $searchQb->createNamedParameter($value, $type));
+		}
+
+		$searchQb->where($searchQb->expr()->orX(...$matches));
+
+		if ($probe->includeDeleted === false) {
+			$searchQb->andWhere($searchQb->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
+		}
+
+		$searchQb->setMaxResults(1);
+
+		$searchResult = $searchQb->executeQuery();
+		$row = $searchResult->fetch();
+		$searchResult->closeCursor();
+
+		if ($row !== false && $row !== null && isset($row[$idCol]) === true) {
+			return (int)$row[$idCol];
+		}
+
+		return null;
+	}//end probeTableForIdentifier()
 
 	/**
 	 * Fetch one full magic-table row by its primary key (phase 2 of the scan).

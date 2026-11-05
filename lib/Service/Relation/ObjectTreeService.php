@@ -190,40 +190,81 @@ class ObjectTreeService {
 		array $fields = [],
 		bool $_rbac = true
 	): array {
-		$registerId = (int)$root->getRegister();
-		$schemaId = (int)$root->getSchema();
-		$rootUuid = (string)$root->getUuid();
+		$answer = $this->rootAnswer(root: $root, walk: ['fields' => $fields, 'rbac' => $_rbac]);
+		$answer['direction'] = $direction;
+		$answer['requestedDepth'] = $depth;
 
-		$answer = [
+		$walk = $this->treeWalk(root: $root, depth: $depth);
+		if ($walk === null) {
+			return $answer;
+		}
+
+		$answer['parentProperty'] = $walk['property'];
+		$answer['maxDepth'] = $walk['maxDepth'];
+		$answer['depth'] = $walk['depth'];
+
+		return $this->withBranches(
+			answer: $answer,
+			walk: $walk + ['fields' => $fields, 'rbac' => $_rbac, 'root' => $root]
+		);
+	}//end tree()
+
+	/**
+	 * The tree answer with only the root, at level 0, and no declaration applied yet.
+	 *
+	 * @param ObjectEntity $root The object to walk from.
+	 * @param array        $walk `fields`: the properties to copy onto the node; `rbac`: whether to redact under read access.
+	 *
+	 * @return array<string, mixed> The answer; direction and requested depth still unset.
+	 *
+	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
+	 */
+	private function rootAnswer(ObjectEntity $root, array $walk): array {
+		$rootUuid = (string)$root->getUuid();
+		$redacted = $this->redacted(objects: [(string)$root->getUuid() => $root], fields: $walk['fields'], rbac: $walk['rbac']);
+
+		return [
 			'root' => $rootUuid,
-			'register' => $registerId,
-			'schema' => $schemaId,
+			'register' => (int)$root->getRegister(),
+			'schema' => (int)$root->getSchema(),
 			'parentProperty' => null,
-			'direction' => $direction,
+			'direction' => null,
 			'depth' => 0,
-			'requestedDepth' => $depth,
+			'requestedDepth' => null,
 			'maxDepth' => 0,
 			'nodes' => [
 				$this->node(
-					object: ($this->redacted(objects: [(string)$root->getUuid() => $root], fields: $fields, rbac: $_rbac)[$rootUuid] ?? null),
+					object: ($redacted[$rootUuid] ?? null),
 					level: 0,
 					parent: null,
-					fields: $fields,
+					fields: $walk['fields'],
 					uuid: $rootUuid
 				),
 			],
 			'truncated' => false,
 			'truncatedBy' => null,
 		];
+	}//end rootAnswer()
 
-		$context = $this->context(registerId: $registerId, schemaId: $schemaId);
+	/**
+	 * The register, schema, parent property and depths to walk from the root; null when there is no declaration.
+	 *
+	 * @param ObjectEntity $root  The object to walk from.
+	 * @param int|null     $depth The depth asked for; null means the declared bound.
+	 *
+	 * @return array{register: Register, schema: Schema, property: string, depth: int, maxDepth: int}|null The walk.
+	 *
+	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
+	 */
+	private function treeWalk(ObjectEntity $root, ?int $depth): ?array {
+		$context = $this->context(registerId: (int)$root->getRegister(), schemaId: (int)$root->getSchema());
 		if ($context === null) {
-			return $answer;
+			return null;
 		}
 
 		$declaration = $this->declarationFor(schema: $context['schema']);
 		if ($declaration === null) {
-			return $answer;
+			return null;
 		}
 
 		$effective = $declaration['maxDepth'];
@@ -231,27 +272,35 @@ class ObjectTreeService {
 			$effective = min(max(1, $depth), $declaration['maxDepth']);
 		}
 
-		$answer['parentProperty'] = $declaration['property'];
-		$answer['maxDepth'] = $declaration['maxDepth'];
-		$answer['depth'] = $effective;
-
-		$walk = [
+		return [
 			'register' => $context['register'],
 			'schema' => $context['schema'],
 			'property' => $declaration['property'],
 			'depth' => $effective,
-			'fields' => $fields,
-			'rbac' => $_rbac,
+			'maxDepth' => $declaration['maxDepth'],
 		];
+	}//end treeWalk()
 
+	/**
+	 * The answer with the ancestors and descendants its direction asks for, and whether a walk was cut short.
+	 *
+	 * @param array $answer The answer with the root node.
+	 * @param array $walk   The walk, with `fields`, `rbac` and the `root` entity.
+	 *
+	 * @return array<string, mixed> The answer.
+	 *
+	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
+	 */
+	private function withBranches(array $answer, array $walk): array {
+		$direction = $answer['direction'];
 		$ancestors = ['nodes' => [], 'truncatedBy' => null];
 		if ($direction === self::DIRECTION_ANCESTORS || $direction === self::DIRECTION_BOTH) {
-			$ancestors = $this->ancestors(root: $root, walk: $walk);
+			$ancestors = $this->ancestors(root: $walk['root'], walk: $walk);
 		}
 
 		$descendants = ['nodes' => [], 'truncatedBy' => null];
 		if ($direction === self::DIRECTION_DESCENDANTS || $direction === self::DIRECTION_BOTH) {
-			$descendants = $this->descendants(rootUuid: $rootUuid, walk: $walk);
+			$descendants = $this->descendants(rootUuid: $answer['root'], walk: $walk);
 		}
 
 		$answer['nodes'] = array_merge(
@@ -263,7 +312,7 @@ class ObjectTreeService {
 		$answer['truncated'] = ($answer['truncatedBy'] !== null);
 
 		return $answer;
-	}//end tree()
+	}//end withBranches()
 
 	/**
 	 * The register and schema of the root, or null when either does not resolve.
