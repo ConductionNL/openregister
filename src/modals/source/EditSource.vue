@@ -240,8 +240,8 @@ export default {
 		NcCheckboxRadioSwitch,
 		NcLoadingIcon,
 		NcNoteCard,
-		// Icons
 		CloseCancelButton,
+		// Icons
 		ContentSaveOutline,
 		Plus,
 		DatabaseCheckOutline,
