@@ -44,6 +44,7 @@ use PHPUnit\Framework\TestCase;
  * DeckLinksControllerTest.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @uses \OCA\OpenRegister\Service\LinkTarget
  */
 class DeckLinksControllerTest extends TestCase {
 
@@ -168,7 +169,7 @@ class DeckLinksControllerTest extends TestCase {
 		$link->setCardId(99);
 
 		$this->service->method('linkCard')
-			->with('abc-123', 1, 2, 99)
+			->with($this->equalTo((new LinkTarget('abc-123', 1))->inSchema(2)), 99)
 			->willReturn($link);
 
 		$response = $this->controller->link('reg', 'sch', 'obj');

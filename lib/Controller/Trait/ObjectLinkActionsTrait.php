@@ -162,7 +162,7 @@ trait ObjectLinkActionsTrait
 				return new JSONResponse(['error' => 'name is required'], 400);
 			}
 
-			$link = $create($object->getUuid(), (int)$object->getRegister(), (int)$object->getSchema(), $name);
+			$link = $create($this->linkTargetOf(object: $object), $name);
 			return new JSONResponse($link->jsonSerialize(), 201);
 		};
 	}//end namedLinkOf()

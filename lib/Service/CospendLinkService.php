@@ -162,9 +162,7 @@ class CospendLinkService {
 	 * Idempotent: a duplicate link raises a 409 Exception. Project name +
 	 * currency are cached at link time.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
+	 * @param LinkTarget $target The object to link to.
 	 * @param string $projectId NC Cospend project id.
 	 *
 	 * @return CospendLink The persisted link row.
@@ -174,7 +172,7 @@ class CospendLinkService {
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the link contract is owned by the integration-cospend capability.
 	 */
-	public function linkProject(string $objectUuid, int $registerId, int $schemaId, string $projectId): CospendLink {
+	public function linkProject(LinkTarget $target, string $projectId): CospendLink {
 		$uid = $this->requireUid();
 
 		if ($this->isCospendAvailable() === false) {
@@ -185,7 +183,7 @@ class CospendLinkService {
 			throw new Exception('Project id is required', 400);
 		}
 
-		$existing = $this->cospendLinkMapper->findDuplicate($objectUuid, self::ENTRY_PROJECT, $projectId, null);
+		$existing = $this->cospendLinkMapper->findDuplicate($target->objectUuid, self::ENTRY_PROJECT, $projectId, null);
 		if ($existing !== null) {
 			throw new Exception('Project already linked to this object', 409);
 		}
@@ -196,10 +194,8 @@ class CospendLinkService {
 		}
 
 		$link = $this->hydrateLink(
+			target: $target,
 			opts: [
-				'objectUuid' => $objectUuid,
-				'registerId' => $registerId,
-				'schemaId' => $schemaId,
 				'entryType' => self::ENTRY_PROJECT,
 				'projectId' => $projectId,
 				'billId' => null,
@@ -216,9 +212,7 @@ class CospendLinkService {
 	/**
 	 * Link a specific NC Cospend bill (under a project) to an OR object.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
+	 * @param LinkTarget $target The object to link to.
 	 * @param string $projectId NC Cospend project id.
 	 * @param int $billId NC Cospend bill id.
 	 *
@@ -229,13 +223,7 @@ class CospendLinkService {
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the link contract is owned by the integration-cospend capability.
 	 */
-	public function linkBill(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		string $projectId,
-		int $billId,
-	): CospendLink {
+	public function linkBill(LinkTarget $target, string $projectId, int $billId): CospendLink {
 		$uid = $this->requireUid();
 
 		if ($this->isCospendAvailable() === false) {
@@ -246,7 +234,7 @@ class CospendLinkService {
 			throw new Exception('Project id and bill id are required', 400);
 		}
 
-		$existing = $this->cospendLinkMapper->findDuplicate($objectUuid, self::ENTRY_BILL, $projectId, $billId);
+		$existing = $this->cospendLinkMapper->findDuplicate($target->objectUuid, self::ENTRY_BILL, $projectId, $billId);
 		if ($existing !== null) {
 			throw new Exception('Bill already linked to this object', 409);
 		}
@@ -260,10 +248,8 @@ class CospendLinkService {
 		$currency = $project['currency'] ?? null;
 
 		$link = $this->hydrateLink(
+			target: $target,
 			opts: [
-				'objectUuid' => $objectUuid,
-				'registerId' => $registerId,
-				'schemaId' => $schemaId,
 				'entryType' => self::ENTRY_BILL,
 				'projectId' => $projectId,
 				'billId' => $billId,
@@ -280,9 +266,7 @@ class CospendLinkService {
 	/**
 	 * Create a new NC Cospend project and link it to an OR object.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
+	 * @param LinkTarget $target The object to link to.
 	 * @param string $name New project name.
 	 * @param string $currency Project currency name.
 	 *
@@ -293,13 +277,7 @@ class CospendLinkService {
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link contract is owned by the integration-cospend capability.
 	 */
-	public function createAndLinkProject(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		string $name,
-		string $currency,
-	): CospendLink {
+	public function createAndLinkProject(LinkTarget $target, string $name, string $currency): CospendLink {
 		$uid = $this->requireUid();
 
 		$name = trim($name);
@@ -329,10 +307,8 @@ class CospendLinkService {
 		}
 
 		$link = $this->hydrateLink(
+			target: $target,
 			opts: [
-				'objectUuid' => $objectUuid,
-				'registerId' => $registerId,
-				'schemaId' => $schemaId,
 				'entryType' => self::ENTRY_PROJECT,
 				'projectId' => $projectId,
 				'billId' => null,
@@ -401,21 +377,18 @@ class CospendLinkService {
 	 * Uses an options array instead of 10 individual parameters to keep the
 	 * call sites readable and satisfy the PHPMD ExcessiveParameterList rule.
 	 *
-	 * Required keys: `objectUuid` (string), `registerId` (int),
-	 * `schemaId` (int), `entryType` (string), `projectId` (string),
+	 * Required keys: `entryType` (string), `projectId` (string),
 	 * `uid` (string).
 	 * Optional keys: `billId` (?int), `name` (string), `amount` (?float),
 	 * `currency` (?string).
 	 *
-	 * @param array<string,mixed> $opts Options map — see keys above.
+	 * @param LinkTarget          $target The object to link to.
+	 * @param array<string,mixed> $opts   Options map — see keys above.
 	 *
 	 * @return CospendLink
 	 */
-	private function hydrateLink(array $opts): CospendLink {
+	private function hydrateLink(LinkTarget $target, array $opts): CospendLink {
 		$link = new CospendLink();
-		$link->setObjectUuid((string)$opts['objectUuid']);
-		$link->setRegisterId((int)$opts['registerId']);
-		$link->setSchemaId((int)$opts['schemaId']);
 		$link->setEntryType((string)$opts['entryType']);
 		$link->setProjectId((string)$opts['projectId']);
 		$billId = null;
@@ -438,8 +411,7 @@ class CospendLinkService {
 
 		$link->setAmount($amount);
 		$link->setCurrency($currency);
-		$link->setLinkedBy((string)$opts['uid']);
-		$link->setLinkedAt(new DateTime());
+		$target->stamp(link: $link, linkedBy: (string)$opts['uid']);
 
 		return $link;
 	}//end hydrateLink()
