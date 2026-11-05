@@ -2085,6 +2085,8 @@ class FilesController extends Controller {
 	 *
 	 * @return JSONResponse|null A 404 when the source object is missing, else null.
 	 *
+	 * @throws DoesNotExistException When the route names an object that does not exist; the public action answers 404.
+	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function resolveTransferSource(FileTransfer $transfer): ?JSONResponse {
@@ -2103,6 +2105,8 @@ class FilesController extends Controller {
 	 * @param FileTransfer $transfer The copy or move.
 	 *
 	 * @return JSONResponse|null A 400 without a target id, a 404 when the target is missing, else null.
+	 *
+	 * @throws DoesNotExistException When the target object does not exist; the public action answers 404.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */

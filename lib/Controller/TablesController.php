@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -142,6 +143,8 @@ class TablesController extends Controller {
 	 * @param int|string $registerId The register ID or slug.
 	 *
 	 * @return Register The register
+	 *
+	 * @throws DoesNotExistException When neither an id nor a slug matches; sync() answers with its failure response.
 	 */
 	private function registerOf(int|string $registerId): Register {
 		if (is_numeric($registerId) === true) {

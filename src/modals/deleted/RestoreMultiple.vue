@@ -39,8 +39,8 @@ import Restore from 'vue-material-design-icons/Restore.vue'
 import BulkSelectionDialog from './BulkSelectionDialog.vue'
 import {
 	bulkDialogData,
+	bulkDialogLifecycle,
 	bulkDialogMethods,
-	opensWith,
 	reviewStateOf,
 	runBulkAction,
 } from './bulkSelection.js'
@@ -76,13 +76,7 @@ export default {
 		},
 	},
 
-	watch: {
-		'navigationStore.dialog': opensWith('restoreMultiple'),
-	},
-
-	mounted() {
-		this.initializeSelection()
-	},
+	...bulkDialogLifecycle('restoreMultiple'),
 
 	methods: {
 		...bulkDialogMethods,

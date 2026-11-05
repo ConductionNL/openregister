@@ -344,6 +344,51 @@ class ContactServiceTest extends TestCase {
 	}
 
 	/**
+	 * A role change scoped to an object is refused, and changes nothing, when the link belongs to another object.
+	 *
+	 * @return void
+	 */
+	public function testUpdateRoleRefusesALinkOfAnotherObject(): void {
+		$link = new ContactLink();
+		$link->setId(77);
+		$link->setObjectUuid('other-object');
+		$link->setAddressbookId(1);
+		$link->setContactUri('someone.vcf');
+
+		$this->contactLinkMapper->method('find')->with(77)->willReturn($link);
+		$this->cardDavBackend->expects($this->never())->method('getCard');
+		$this->cardDavBackend->expects($this->never())->method('updateCard');
+		$this->contactLinkMapper->expects($this->never())->method('update');
+
+		try {
+			$this->service->updateRole(77, 'applicant', 'abc-123');
+			$this->fail('Expected a 404');
+		} catch (Exception $e) {
+			$this->assertSame(404, $e->getCode());
+			$this->assertSame('Contact link not found', $e->getMessage());
+		}
+	}
+
+	/**
+	 * A role change scoped to the link's own object goes through.
+	 *
+	 * @return void
+	 */
+	public function testUpdateRoleChangesALinkOfTheGivenObject(): void {
+		$link = new ContactLink();
+		$link->setId(78);
+		$link->setObjectUuid('abc-123');
+		$link->setAddressbookId(1);
+		$link->setContactUri('jan.vcf');
+
+		$this->contactLinkMapper->method('find')->with(78)->willReturn($link);
+		$this->cardDavBackend->method('getCard')->willReturn(false);
+		$this->contactLinkMapper->expects($this->once())->method('update')->with($link)->willReturn($link);
+
+		$this->assertSame('applicant', $this->service->updateRole(78, 'applicant', 'abc-123')->getRole());
+	}
+
+	/**
 	 * A link id scoped to an object is refused, and left alone, when the link belongs to another object.
 	 *
 	 * @return void
