@@ -66,13 +66,7 @@ class ImportPreviewRowMapper extends QBMapper {
 			$qb->andWhere($qb->expr()->eq('decision', $qb->createNamedParameter($decision)));
 		}
 
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findByPreview()
