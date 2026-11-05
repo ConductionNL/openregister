@@ -35,6 +35,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<FormLink>
  */
 class FormLinkMapper extends QBMapper {
+
+	use ObjectKeyLinkTrait;
 	use FindLinksByObjectUuidTrait;
 	use DeleteLinksByObjectUuidTrait;
 	use CountLinksByObjectUuidTrait;
@@ -109,11 +111,6 @@ class FormLinkMapper extends QBMapper {
 	 * @return integer Number of deleted rows.
 	 */
 	public function deleteByObjectAndForm(string $objectUuid, int $formId): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('form_id', $qb->createNamedParameter($formId, IQueryBuilder::PARAM_INT)));
-
-		return $qb->executeStatement();
+		return $this->deleteObjectLinks(objectUuid: $objectUuid, key: new LinkColumn(name: 'form_id', value: $formId));
 	}//end deleteByObjectAndForm()
 }//end class
