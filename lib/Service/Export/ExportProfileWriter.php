@@ -36,6 +36,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use Throwable;
 
@@ -302,7 +303,7 @@ class ExportProfileWriter {
 			return;
 		}
 
-		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
+		if (UuidFormat::isCanonical(value: $value) === true) {
 			$uuids[] = $value;
 		}
 	}//end collectUuids()
