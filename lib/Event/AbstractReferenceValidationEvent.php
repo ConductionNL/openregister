@@ -51,6 +51,18 @@ abstract class AbstractReferenceValidationEvent extends Event {
 	}//end __construct()
 
 	/**
+	 * Register the reference was searched in.
+	 *
+	 * @return string|null Register identifier or null when no register
+	 *                     context applied to the lookup.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-5
+	 */
+	public function getTargetRegister(): ?string {
+		return $this->targetRegister;
+	}//end getTargetRegister()
+
+	/**
 	 * Schema property name that holds the validated reference.
 	 *
 	 * @return string Property name as declared on the schema.
@@ -60,17 +72,6 @@ abstract class AbstractReferenceValidationEvent extends Event {
 	public function getPropertyName(): string {
 		return $this->propertyName;
 	}//end getPropertyName()
-
-	/**
-	 * UUID that successfully resolved during validation.
-	 *
-	 * @return string The resolved UUID.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-5
-	 */
-	public function getReferencedUuid(): string {
-		return $this->referencedUuid;
-	}//end getReferencedUuid()
 
 	/**
 	 * Slug (or raw `$ref`) of the schema the reference targets.
@@ -84,14 +85,13 @@ abstract class AbstractReferenceValidationEvent extends Event {
 	}//end getTargetSchemaSlug()
 
 	/**
-	 * Register the reference was searched in.
+	 * UUID that successfully resolved during validation.
 	 *
-	 * @return string|null Register identifier or null when no register
-	 *                     context applied to the lookup.
+	 * @return string The resolved UUID.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-5
 	 */
-	public function getTargetRegister(): ?string {
-		return $this->targetRegister;
-	}//end getTargetRegister()
+	public function getReferencedUuid(): string {
+		return $this->referencedUuid;
+	}//end getReferencedUuid()
 }//end class
