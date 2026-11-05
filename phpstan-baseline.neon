@@ -3021,26 +3021,6 @@ parameters:
 			path: lib/Event/ViewUpdatedEvent.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\EventListener\\\\AbstractNodeFolderEventListener\\:\\:\\$fileService is never read, only written\\.$#"
-			count: 1
-			path: lib/EventListener/AbstractNodeFolderEventListener.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\EventListener\\\\AbstractNodeFolderEventListener\\:\\:\\$objectService is never read, only written\\.$#"
-			count: 1
-			path: lib/EventListener/AbstractNodeFolderEventListener.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\EventListener\\\\AbstractNodesFolderEventListener\\:\\:\\$fileService is never read, only written\\.$#"
-			count: 1
-			path: lib/EventListener/AbstractNodesFolderEventListener.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\EventListener\\\\AbstractNodesFolderEventListener\\:\\:\\$objectService is never read, only written\\.$#"
-			count: 1
-			path: lib/EventListener/AbstractNodesFolderEventListener.php
-
-		-
 			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Listener/ApprovalChainAdvanceListener.php
