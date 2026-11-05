@@ -43,6 +43,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
  * @uses \OCA\OpenRegister\Service\OrganisationContext
  * @uses \OCA\OpenRegister\Service\Audit\OrganisationContextAttribution
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
  */
 class AuditTrailToolInvocationInsertTest extends TestCase {
 
