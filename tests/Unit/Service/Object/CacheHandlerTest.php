@@ -129,7 +129,7 @@ class CacheHandlerTest extends TestCase {
 		$container = $this->createMock(\OCP\AppFramework\IAppContainer::class);
 		$container->method('get')
 			->willReturnCallback(function (string $class) {
-				if ($class === MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $this->objectMapper;
 				}
 				return $this->createMock($class);
@@ -246,7 +246,7 @@ class CacheHandlerTest extends TestCase {
 			$container = $this->createMock(\OCP\AppFramework\IAppContainer::class);
 			$container->method('get')
 				->willReturnCallback(function (string $class) {
-					if ($class === MagicMapper::class) {
+					if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 						return $this->objectMapper;
 					}
 					return $this->createMock($class);
@@ -2228,7 +2228,7 @@ class CacheHandlerTest extends TestCase {
 		$container = $this->createMock(\OCP\AppFramework\IAppContainer::class);
 		$container->method('get')
 			->willReturnCallback(function (string $class) {
-				if ($class === MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $this->objectMapper;
 				}
 				return $this->createMock($class);

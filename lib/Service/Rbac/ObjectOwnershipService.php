@@ -56,7 +56,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -133,7 +133,7 @@ class ObjectOwnershipService {
 	 * @param ObjectOwnerWriter $ownerWriter The targeted write of the owner column.
 	 * @param ObjectAuthorizationWriter $authorizationWriter The targeted write of the authorization block.
 	 * @param AuditTrailMapperInterface $auditTrailMapper The hash-sealed trail.
-	 * @param MagicMapper $magicMapper Resolves objects and their children.
+	 * @param MagicMapperInterface $magicMapper Resolves objects and their children.
 	 * @param RegisterMapperInterface $registerMapper Resolves a child's register.
 	 * @param SchemaMapperInterface $schemaMapper Resolves a child's schema.
 	 * @param INotificationManager $notificationManager Tells the previous owner.
@@ -152,7 +152,7 @@ class ObjectOwnershipService {
 		private readonly ObjectOwnerWriter $ownerWriter,
 		private readonly ObjectAuthorizationWriter $authorizationWriter,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly INotificationManager $notificationManager,
