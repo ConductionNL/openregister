@@ -21,6 +21,9 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Search\Service\ActivityWindow;
+use OCA\OpenRegister\Search\Service\DashboardPeriod;
+use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -442,10 +445,8 @@ class DashboardController extends Controller {
 			}
 
 			$data = $this->dashboardService->getAuditTrailActionChartData(
-				from: $fromDate,
-				till: $tillDate,
-				registerId: $registerId,
-				schemaId: $schemaId
+				period: new DashboardPeriod(from: $fromDate, till: $tillDate),
+				scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId)
 			);
 			return new JSONResponse(data: $data);
 		} catch (\Exception $e) {
@@ -575,8 +576,7 @@ class DashboardController extends Controller {
 
 		try {
 			$data = $this->dashboardService->getAuditTrailStatistics(
-				registerId: $registerId,
-				schemaId: $schemaId,
+				scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId),
 				hours: $hours
 			);
 			return new JSONResponse(data: $data);
@@ -611,8 +611,7 @@ class DashboardController extends Controller {
 
 		try {
 			$data = $this->dashboardService->getAuditTrailActionDistribution(
-				registerId: $registerId,
-				schemaId: $schemaId,
+				scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId),
 				hours: $hours
 			);
 			return new JSONResponse(data: $data);
@@ -653,10 +652,8 @@ class DashboardController extends Controller {
 
 		try {
 			$data = $this->dashboardService->getMostActiveObjects(
-				registerId: $registerId,
-				schemaId: $schemaId,
-				limit: $limit,
-				hours: $hours
+				scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId),
+				window: new ActivityWindow(limit: $limit, hours: $hours)
 			);
 			return new JSONResponse(data: $data);
 		} catch (\Exception $e) {

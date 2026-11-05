@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\DashboardController;
+use DateTime;
+use OCA\OpenRegister\Search\Service\ActivityWindow;
+use OCA\OpenRegister\Search\Service\DashboardPeriod;
+use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IGroupManager;
@@ -203,6 +207,23 @@ class DashboardControllerTest extends TestCase {
 		$result = $this->controller->getAuditTrailActionDistribution();
 
 		$this->assertEquals(200, $result->getStatus());
+	}
+
+	public function testAuditReadsHandTheirFiltersToTheService(): void {
+		$scope = new DashboardScope(registerId: 1, schemaId: 2);
+		$this->dashboardService->expects($this->once())->method('getAuditTrailActionChartData')
+			->with(new DashboardPeriod(new DateTime('2026-01-01'), new DateTime('2026-01-31')), $scope)->willReturn([]);
+		$this->dashboardService->expects($this->once())->method('getAuditTrailStatistics')
+			->with($scope, 48)->willReturn([]);
+		$this->dashboardService->expects($this->once())->method('getAuditTrailActionDistribution')
+			->with($scope, 72)->willReturn([]);
+		$this->dashboardService->expects($this->once())->method('getMostActiveObjects')
+			->with($scope, new ActivityWindow(limit: 5, hours: 96))->willReturn([]);
+
+		$this->controller->getAuditTrailActionChart('2026-01-01', '2026-01-31', 1, 2);
+		$this->controller->getAuditTrailStatistics(1, 2, 48);
+		$this->controller->getAuditTrailActionDistribution(1, 2, 72);
+		$this->controller->getMostActiveObjects(1, 2, 5, 96);
 	}
 
 	public function testGetMostActiveObjectsSuccess(): void {

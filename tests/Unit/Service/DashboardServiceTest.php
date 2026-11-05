@@ -13,6 +13,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\WebhookLogMapper;
+use OCA\OpenRegister\Search\Service\ActivityWindow;
+use OCA\OpenRegister\Search\Service\DashboardPeriod;
+use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -842,7 +845,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getActionChartData')
 			->willReturn($expected);
 
-		$result = $this->service->getAuditTrailActionChartData();
+		$result = $this->service->getAuditTrailActionChartData(new DashboardPeriod(), new DashboardScope());
 
 		$this->assertSame($expected, $result);
 	}
@@ -860,7 +863,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getActionChartData')
 			->willReturn($expected);
 
-		$result = $this->service->getAuditTrailActionChartData($from, $till, 1, 2);
+		$result = $this->service->getAuditTrailActionChartData(new DashboardPeriod($from, $till), new DashboardScope(1, 2));
 
 		$this->assertSame($expected, $result);
 	}
@@ -870,7 +873,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getActionChartData')
 			->willThrowException(new Exception('DB error'));
 
-		$result = $this->service->getAuditTrailActionChartData();
+		$result = $this->service->getAuditTrailActionChartData(new DashboardPeriod(), new DashboardScope());
 
 		$this->assertSame([], $result['labels']);
 		$this->assertSame([], $result['series']);
@@ -1009,7 +1012,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getDetailedStatistics')
 			->willReturn($expected);
 
-		$result = $this->service->getAuditTrailStatistics();
+		$result = $this->service->getAuditTrailStatistics(new DashboardScope());
 
 		$this->assertSame($expected, $result);
 	}
@@ -1021,7 +1024,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getDetailedStatistics')
 			->willReturn($expected);
 
-		$result = $this->service->getAuditTrailStatistics(1, 2, 48);
+		$result = $this->service->getAuditTrailStatistics(new DashboardScope(1, 2), 48);
 
 		$this->assertSame($expected, $result);
 	}
@@ -1031,7 +1034,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getDetailedStatistics')
 			->willThrowException(new Exception('error'));
 
-		$result = $this->service->getAuditTrailStatistics();
+		$result = $this->service->getAuditTrailStatistics(new DashboardScope());
 
 		$this->assertSame(0, $result['total']);
 		$this->assertSame(0, $result['creates']);
@@ -1055,7 +1058,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getActionDistribution')
 			->willReturn($expected);
 
-		$result = $this->service->getAuditTrailActionDistribution();
+		$result = $this->service->getAuditTrailActionDistribution(new DashboardScope());
 
 		$this->assertSame($expected, $result);
 	}
@@ -1067,7 +1070,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getActionDistribution')
 			->willReturn($expected);
 
-		$result = $this->service->getAuditTrailActionDistribution(1, 2, 48);
+		$result = $this->service->getAuditTrailActionDistribution(new DashboardScope(1, 2), 48);
 
 		$this->assertSame($expected, $result);
 	}
@@ -1077,7 +1080,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getActionDistribution')
 			->willThrowException(new Exception('error'));
 
-		$result = $this->service->getAuditTrailActionDistribution();
+		$result = $this->service->getAuditTrailActionDistribution(new DashboardScope());
 
 		$this->assertSame([], $result['actions']);
 	}
@@ -1097,7 +1100,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getMostActiveObjects')
 			->willReturn($expected);
 
-		$result = $this->service->getMostActiveObjects();
+		$result = $this->service->getMostActiveObjects(new DashboardScope(), new ActivityWindow());
 
 		$this->assertSame($expected, $result);
 	}
@@ -1109,7 +1112,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getMostActiveObjects')
 			->willReturn($expected);
 
-		$result = $this->service->getMostActiveObjects(1, 2, 5, 48);
+		$result = $this->service->getMostActiveObjects(new DashboardScope(1, 2), new ActivityWindow(5, 48));
 
 		$this->assertSame($expected, $result);
 	}
@@ -1119,7 +1122,7 @@ class DashboardServiceTest extends TestCase {
 			->method('getMostActiveObjects')
 			->willThrowException(new Exception('error'));
 
-		$result = $this->service->getMostActiveObjects();
+		$result = $this->service->getMostActiveObjects(new DashboardScope(), new ActivityWindow());
 
 		$this->assertSame([], $result['objects']);
 	}

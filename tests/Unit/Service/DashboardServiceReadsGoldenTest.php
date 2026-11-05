@@ -30,6 +30,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\WebhookLogMapper;
+use OCA\OpenRegister\Search\Service\ActivityWindow;
+use OCA\OpenRegister\Search\Service\DashboardPeriod;
+use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -38,6 +41,11 @@ use Psr\Log\LoggerInterface;
  * Pins what the dashboard reads return and log, success and failure, against a recorded golden.
  *
  * @covers \OCA\OpenRegister\Search\Service\DashboardService
+ * @uses   \OCA\OpenRegister\Search\Service\ActivityWindow
+ * @uses   \OCA\OpenRegister\Search\Service\DashboardPeriod
+ * @uses   \OCA\OpenRegister\Search\Service\DashboardScope
+ * @uses   \OCA\OpenRegister\Search\Service\RegisterSchemaPair
+ * @uses   \OCA\OpenRegister\Search\Service\SizeTally
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  */
@@ -130,13 +138,13 @@ class DashboardServiceReadsGoldenTest extends TestCase {
 		$service = $this->service(fail: $fail);
 		$out = ['registersWithSchemas' => array_map([$this, 'statsOnly'], $service->getRegistersWithSchemas())];
 		if ($fail === true) {
-			$out['actionChart'] = $service->getAuditTrailActionChartData();
+			$out['actionChart'] = $service->getAuditTrailActionChartData(new DashboardPeriod(), new DashboardScope());
 			$out['byRegister'] = $service->getObjectsByRegisterChartData();
 			$out['bySchema'] = $service->getObjectsBySchemaChartData();
 			$out['bySize'] = $service->getObjectsBySizeChartData();
-			$out['auditStats'] = $service->getAuditTrailStatistics();
-			$out['distribution'] = $service->getAuditTrailActionDistribution();
-			$out['mostActive'] = $service->getMostActiveObjects();
+			$out['auditStats'] = $service->getAuditTrailStatistics(new DashboardScope());
+			$out['distribution'] = $service->getAuditTrailActionDistribution(new DashboardScope());
+			$out['mostActive'] = $service->getMostActiveObjects(new DashboardScope(), new ActivityWindow());
 		}
 
 		$out['logged'] = $this->logged;

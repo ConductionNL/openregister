@@ -33,6 +33,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\AuthenticationException;
 use OCA\OpenRegister\Service\AuthenticationService;
 use OCA\OpenRegister\Service\AuthorizationService;
+use OCA\OpenRegister\Search\Service\ActivityWindow;
+use OCA\OpenRegister\Search\Service\DashboardPeriod;
+use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
 use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Service\Mcp\McpToolsService;
@@ -780,10 +783,8 @@ class ServicesIntegrationTest extends TestCase {
 		$service = \OC::$server->get(DashboardService::class);
 
 		$result = $service->getAuditTrailActionChartData(
-			new DateTime('-7 days'),
-			new DateTime('now'),
-			$this->testRegister->getId(),
-			$this->testSchema->getId()
+			new DashboardPeriod(new DateTime('-7 days'), new DateTime('now')),
+			new DashboardScope($this->testRegister->getId(), $this->testSchema->getId())
 		);
 
 		$this->assertArrayHasKey('labels', $result);
@@ -841,8 +842,7 @@ class ServicesIntegrationTest extends TestCase {
 		$service = \OC::$server->get(DashboardService::class);
 
 		$result = $service->getAuditTrailStatistics(
-			$this->testRegister->getId(),
-			$this->testSchema->getId(),
+			new DashboardScope($this->testRegister->getId(), $this->testSchema->getId()),
 			24
 		);
 
@@ -862,8 +862,7 @@ class ServicesIntegrationTest extends TestCase {
 		$service = \OC::$server->get(DashboardService::class);
 
 		$result = $service->getAuditTrailActionDistribution(
-			$this->testRegister->getId(),
-			$this->testSchema->getId(),
+			new DashboardScope($this->testRegister->getId(), $this->testSchema->getId()),
 			24
 		);
 
@@ -879,10 +878,8 @@ class ServicesIntegrationTest extends TestCase {
 		$service = \OC::$server->get(DashboardService::class);
 
 		$result = $service->getMostActiveObjects(
-			$this->testRegister->getId(),
-			$this->testSchema->getId(),
-			5,
-			24
+			new DashboardScope($this->testRegister->getId(), $this->testSchema->getId()),
+			new ActivityWindow(5, 24)
 		);
 
 		$this->assertArrayHasKey('objects', $result);
