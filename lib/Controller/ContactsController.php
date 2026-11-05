@@ -414,16 +414,22 @@ class ContactsController extends Controller {
 			schema: $schema,
 			id: $id,
 			handler: function (ObjectEntity $object) use ($contactUid): JSONResponse {
+				// An object without a uuid owns no links, and a null uuid would lift the object check.
+				$objectUuid = $object->getUuid();
+				if ($objectUuid === null || $objectUuid === '') {
+					return new JSONResponse(['error' => 'Contact link not found'], 404);
+				}
+
 				// Numeric param: legacy link-id path, limited to this object's links.
 				if (ctype_digit($contactUid) === true) {
-					$this->contactService->unlinkContact(linkId: (int)$contactUid, objectUuid: $object->getUuid());
+					$this->contactService->unlinkContact(linkId: (int)$contactUid, objectUuid: $objectUuid);
 
 					return new JSONResponse(['success' => true]);
 				}
 
 				// Non-numeric: the person's links on the object, one role or all.
 				$removed = $this->personLinks->unlink(
-					objectUuid: $object->getUuid(),
+					objectUuid: $objectUuid,
 					contactUid: $contactUid,
 					role: $this->optionalParam(name: 'role')
 				);
