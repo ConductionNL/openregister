@@ -42,6 +42,8 @@ use Throwable;
  *
  * @covers \OCA\OpenRegister\Service\Calculation\CalculationEvaluator
  * @uses   \OCA\OpenRegister\Service\Calculation\RateSchedule
+ * @uses   \OCA\OpenRegister\Service\Calculation\PayloadPathWalking
+ * @uses   \OCA\OpenRegister\Service\Calculation\PropNameReading
  * @uses   \OCA\OpenRegister\Service\Calculation\SequenceContext
  * @uses   \OCA\OpenRegister\Service\Calculation\EvaluationException
  * @uses   \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
@@ -121,8 +123,8 @@ class CalculationEvaluatorGoldenTest extends TestCase {
 			'dateAdd years' => ['dateAdd' => ['date' => '2024-02-29', 'amount' => 1, 'unit' => 'years']], 'dateAdd bad unit' => ['dateAdd' => ['date' => '2024-01-01', 'amount' => 1, 'unit' => 'ages']],
 			'dateAdd text amount' => ['dateAdd' => ['date' => '2024-01-01', 'amount' => 'x', 'unit' => 'days']], 'dateAdd negative' => ['dateAdd' => ['date' => '2024-01-01', 'amount' => -1, 'unit' => 'days']],
 			'dateAdd float' => ['dateAdd' => ['date' => '2024-01-01', 'amount' => 1.9, 'unit' => 'days']],
-			'max' => ['max' => [1, '3', null, 2.5]], 'max equal' => ['max' => [1, 1.0, '1']], 'max none' => ['max' => [null]], 'max empty' => ['max' => []], 'max bare' => ['max' => 1], 'max text' => ['max' => [1, 'x']],
-			'min' => ['min' => [3, null, '1', 2.5]], 'min equal' => ['min' => [1.0, 1]], 'min none' => ['min' => []], 'min text' => ['min' => ['x']], 'min bare' => ['min' => 'x'],
+			'max' => ['max' => [1, '3', null, 2.5]], 'max equal' => ['max' => [1, 1.0, '1']], 'max int first' => ['max' => [1, 1.0]], 'max float first' => ['max' => [1.0, 1]], 'max none' => ['max' => [null]], 'max empty' => ['max' => []], 'max bare' => ['max' => 1], 'max text' => ['max' => [1, 'x']],
+			'min' => ['min' => [3, null, '1', 2.5]], 'min equal' => ['min' => [1.0, 1]], 'min int first' => ['min' => [1, 1.0]], 'min none' => ['min' => []], 'min text' => ['min' => ['x']], 'min bare' => ['min' => 'x'],
 			'coalesce' => ['coalesce' => [null, $p('gone'), 0, 'x']], 'coalesce none' => ['coalesce' => [null]], 'coalesce bare' => ['coalesce' => 1],
 			'abs' => ['abs' => [-3]], 'abs bare' => ['abs' => '-2.5'], 'abs null' => ['abs' => [null]], 'abs text' => ['abs' => ['x']], 'abs dict' => ['abs' => ['prop' => 'n']], 'abs none' => ['abs' => []],
 			'round' => ['round' => [2.567, 2]], 'round default' => ['round' => ['2.5']], 'round null' => ['round' => [null, 'x']], 'round text' => ['round' => ['x']], 'round bare' => ['round' => 1],
@@ -145,6 +147,8 @@ class CalculationEvaluatorGoldenTest extends TestCase {
 				$out[$op.' '.$i] = [$op => $pair];
 			}
 			$out[$op.' dates'] = [$op => [['lit' => new DateTimeImmutable('2024-01-01')], '2024-01-02']];
+			$out[$op.' dates later'] = [$op => [['lit' => new DateTimeImmutable('2024-01-03')], '2024-01-02']];
+			$out[$op.' dates equal'] = [$op => [['lit' => new DateTimeImmutable('2024-01-02T00:00:00+00:00')], '2024-01-02T00:00:00+00:00']];
 			$out[$op.' arrays'] = [$op => [['lit' => ['a' => 1]], ['lit' => ['b' => 1]]]];
 		}
 		foreach (['years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds'] as $unit) {

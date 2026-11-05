@@ -470,6 +470,14 @@
         "type": "int",
         "value": 1
     },
+    "max int first": {
+        "type": "int",
+        "value": 1
+    },
+    "max float first": {
+        "type": "float",
+        "value": "1.0"
+    },
     "max none": {
         "type": "null",
         "value": null
@@ -493,6 +501,10 @@
     "min equal": {
         "type": "float",
         "value": "1.0"
+    },
+    "min int first": {
+        "type": "int",
+        "value": 1
     },
     "min none": {
         "type": "null",
@@ -762,6 +774,14 @@
         "type": "bool",
         "value": false
     },
+    "eq dates later": {
+        "type": "bool",
+        "value": false
+    },
+    "eq dates equal": {
+        "type": "bool",
+        "value": true
+    },
     "eq arrays": {
         "type": "bool",
         "value": false
@@ -821,6 +841,14 @@
     "ne dates": {
         "type": "bool",
         "value": true
+    },
+    "ne dates later": {
+        "type": "bool",
+        "value": true
+    },
+    "ne dates equal": {
+        "type": "bool",
+        "value": false
     },
     "ne arrays": {
         "type": "bool",
@@ -882,6 +910,14 @@
         "type": "bool",
         "value": true
     },
+    "lt dates later": {
+        "type": "bool",
+        "value": false
+    },
+    "lt dates equal": {
+        "type": "bool",
+        "value": false
+    },
     "lt arrays": {
         "type": "bool",
         "value": false
@@ -939,6 +975,14 @@
         "value": true
     },
     "lte dates": {
+        "type": "bool",
+        "value": true
+    },
+    "lte dates later": {
+        "type": "bool",
+        "value": false
+    },
+    "lte dates equal": {
         "type": "bool",
         "value": true
     },
@@ -1002,6 +1046,14 @@
         "type": "bool",
         "value": false
     },
+    "gt dates later": {
+        "type": "bool",
+        "value": true
+    },
+    "gt dates equal": {
+        "type": "bool",
+        "value": false
+    },
     "gt arrays": {
         "type": "bool",
         "value": false
@@ -1061,6 +1113,14 @@
     "gte dates": {
         "type": "bool",
         "value": false
+    },
+    "gte dates later": {
+        "type": "bool",
+        "value": true
+    },
+    "gte dates equal": {
+        "type": "bool",
+        "value": true
     },
     "gte arrays": {
         "type": "bool",
