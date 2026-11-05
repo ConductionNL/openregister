@@ -586,7 +586,8 @@ class FileValidationHandlerTest extends TestCase {
 		$this->assertFalse(method_exists(FileMapperInterface::class, 'setFileOwnership'));
 		$this->assertFalse(method_exists(FileMapper::class, 'setFileOwnership'));
 
-		// Not only those names: no query builder in lib/ may write either table.
+		// Not only those names: nothing in lib/ may write either table — through the
+		// query builder (with or without the table prefix) or through raw SQL.
 		$libDir = dirname(__DIR__, 4) . '/lib';
 		$offenders = [];
 		$files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($libDir, \FilesystemIterator::SKIP_DOTS));
@@ -596,7 +597,9 @@ class FileValidationHandlerTest extends TestCase {
 			}
 
 			$source = (string)file_get_contents($path);
-			if (preg_match('/->(update|insert|delete)\(\s*[\'"](storages|mounts)[\'"]/', $source) === 1) {
+			$builderWrite = '/->(update|insert|delete)\(\s*[\'"](\*PREFIX\*|oc_)?(storages|mounts)[\'"]/i';
+			$rawSqlWrite = '/(UPDATE|INSERT\s+INTO|DELETE\s+FROM)\s+[`"]?(\*PREFIX\*|oc_)?(storages|mounts)\b/i';
+			if (preg_match($builderWrite, $source) === 1 || preg_match($rawSqlWrite, $source) === 1) {
 				$offenders[] = substr($path, strlen($libDir) + 1);
 			}
 		}

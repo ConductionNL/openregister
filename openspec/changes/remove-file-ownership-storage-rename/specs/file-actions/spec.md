@@ -2,10 +2,8 @@
 
 ## RENAMED Requirements
 
-### Requirement: Uploaded files screened for executable content and ownership repaired safely
-
-FROM: Uploaded files screened for executable content and ownership repaired safely
-TO: Uploaded files screened for executable content and access gated on readability
+- FROM: `### Requirement: Uploaded files screened for executable content and ownership repaired safely`
+- TO: `### Requirement: Uploaded files screened for executable content and access gated on readability`
 
 <!-- The old title names a repair the requirement now forbids; the behaviour change is in the MODIFIED block below. -->
 
