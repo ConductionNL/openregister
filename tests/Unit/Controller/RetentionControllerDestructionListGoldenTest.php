@@ -38,6 +38,7 @@ use Throwable;
  * a placeholder. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\RetentionController
+ * @uses \OCA\OpenRegister\Controller\Support\DestructionListApproval
  * @uses \OCA\OpenRegister\Controller\Support\RetentionControllerServices
  * @uses \OCA\OpenRegister\Controller\Support\RetentionDomain
  * @uses \OCA\OpenRegister\Controller\Support\RetentionMappers
