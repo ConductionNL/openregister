@@ -9,6 +9,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use JsonSerializable;
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -20,6 +21,8 @@ use ReflectionClass;
  * Set UPDATE_GOLDEN=1 to rewrite fixtures/objects-response-values-golden.json.
  *
  * @covers \OCA\OpenRegister\Controller\ObjectsController
+ * @covers \OCA\OpenRegister\Controller\Support\EmptyValueStripper
+ * @covers \OCA\OpenRegister\Controller\Support\RenderedObjectUuids
  */
 class ObjectsControllerResponseValuesGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-response-values-golden.json';
@@ -85,7 +88,7 @@ class ObjectsControllerResponseValuesGoldenTest extends TestCase {
 
 	#[DataProvider('stripCases')]
 	public function testStrippedValuesMatchTheRecording(array $data): void {
-		$this->compare(key: 'strip ' . $this->dataName(), actual: $this->privateCall('stripEmptyValues', [$data]));
+		$this->compare(key: 'strip ' . $this->dataName(), actual: (new EmptyValueStripper())->stripped(data: $data));
 	}
 
 	public function testResultRowsMatchTheRecording(): void {
