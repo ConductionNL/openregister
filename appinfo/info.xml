@@ -527,6 +527,7 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- field-level-object-encryption: encrypt existing plaintext values of a newly-flagged property. -->
 		<command>OCA\OpenRegister\Command\EncryptFieldCommand</command>
 		<command>OCA\OpenRegister\Command\DedupeRegistersCommand</command>
+		<command>OCA\OpenRegister\Command\DedupeSharedSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\AdoptLeafOrganisationsCommand</command>
 		<command>OCA\OpenRegister\Command\PruneRetiredSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\RelinkRegisterSchemasCommand</command>
