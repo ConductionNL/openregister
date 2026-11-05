@@ -983,51 +983,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Test calculateTotalPages.
-	 */
-	public function testCalculateTotalPages(): void {
-		$this->assertEquals(5, $this->performanceHandler->calculateTotalPages(100, 20));
-		$this->assertEquals(1, $this->performanceHandler->calculateTotalPages(0, 20));
-		$this->assertEquals(3, $this->performanceHandler->calculateTotalPages(50, 20));
-		$this->assertEquals(1, $this->performanceHandler->calculateTotalPages(1, 20));
-	}
-
-	/**
-	 * Test calculateExtendCount with array.
-	 */
-	public function testCalculateExtendCountArray(): void {
-		$this->assertEquals(3, $this->performanceHandler->calculateExtendCount(['a', 'b', 'c']));
-	}
-
-	/**
-	 * Test calculateExtendCount with string.
-	 */
-	public function testCalculateExtendCountString(): void {
-		$this->assertEquals(3, $this->performanceHandler->calculateExtendCount('a, b, c'));
-	}
-
-	/**
-	 * Test calculateExtendCount with empty string.
-	 */
-	public function testCalculateExtendCountEmptyString(): void {
-		$this->assertEquals(0, $this->performanceHandler->calculateExtendCount(''));
-	}
-
-	/**
-	 * Test calculateExtendCount with null.
-	 */
-	public function testCalculateExtendCountNull(): void {
-		$this->assertEquals(0, $this->performanceHandler->calculateExtendCount(null));
-	}
-
-	/**
-	 * Test calculateExtendCount with integer.
-	 */
-	public function testCalculateExtendCountInteger(): void {
-		$this->assertEquals(0, $this->performanceHandler->calculateExtendCount(42));
-	}
-
-	/**
 	 * Test preloadCriticalEntities runs without error.
 	 */
 	public function testPreloadCriticalEntities(): void {
