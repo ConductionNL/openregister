@@ -8,7 +8,7 @@
  * not in a register, so the set writes it through the task service's trusted
  * path (it may be born completed) and records its uuid. Remove deletes the
  * tasks the record holds. A task may name the run of a set's flow that waits
- * on it, and the moment its assignee claimed it.
+ * on it, the moment its assignee claimed it, and the moment it was created.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -26,13 +26,13 @@
  *
  * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
  * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-task-may-name-the-run-it-waits-in-and-carry-its-claim
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-task-may-carry-the-moment-it-was-created
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
@@ -77,6 +77,7 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 		'nodeId',
 		'claimedBy',
 		'claimedAt',
+		'createdAt',
 	];
 
 
@@ -131,7 +132,7 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 				$this->peopleRefusal(data: $data, users: $users),
 				ExampleSetExternalTask::refusal(data: $data),
 				$this->stateRefusal(data: $data),
-				$this->datesRefusal(data: $data),
+				ExampleSetTaskDates::refusal(data: $data),
 				ExampleSetTaskChecklist::refusal(data: $data),
 			]
 		);
@@ -155,7 +156,7 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 				(new ExampleSetFlowRuns(container: $this->container))->taskRefusal(data: $data, context: $context),
 				(new ExampleSetTaskClaim(container: $this->container))->refusal(
 					data: $data,
-					moment: $this->moment(value: ($data['claimedAt'] ?? null))
+					moment: ExampleSetTaskDates::moment(value: ($data['claimedAt'] ?? null))
 				),
 			]
 		);
@@ -191,7 +192,7 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
 	 */
 	public function write(string $app, string $key, array $data): array {
-		$fields = array_diff_key($data, array_flip(['completedAt', 'completedBy', 'uploadRules', 'taskKey', 'claimedBy', 'claimedAt']));
+		$fields = array_diff_key($data, array_flip(['completedAt', 'completedBy', 'uploadRules', 'taskKey', 'claimedBy', 'claimedAt', 'createdAt']));
 		// An app that reads its tasks by engine key, such as a tenant's onboarding steps, names that key.
 		$fields['key'] = (string) ($data['taskKey'] ?? 'example-set:'.$app.'/'.$key);
 		$fields['appId'] = $app;
@@ -211,9 +212,9 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 		}
 
 		try {
-			$task = $this->service()->import(data: $fields, actor: $actor);
+			$task = $this->service()->import(data: $fields, actor: $actor, createdAt: ExampleSetTaskDates::moment(value: ($data['createdAt'] ?? null)));
 			if ($task->getIsTerminal() === true && isset($data['completedAt']) === true) {
-				$task->setCompletedAt($this->moment(value: $data['completedAt']));
+				$task->setCompletedAt(ExampleSetTaskDates::moment(value: $data['completedAt']));
 				$task->setCompletedBy((string) ($data['completedBy'] ?? $data['assignee'] ?? ''));
 				$this->mapper()->update($task);
 			}
@@ -245,7 +246,7 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 		(new ExampleSetTaskClaim(container: $this->container))->write(
 			task: $task,
 			data: $data,
-			moment: $this->moment(value: ($data['claimedAt'] ?? null))
+			moment: ExampleSetTaskDates::moment(value: ($data['claimedAt'] ?? null))
 		);
 	}//end waitAndClaim()
 
@@ -360,50 +361,6 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 
 		return '';
 	}//end stateRefusal()
-
-	/**
-	 * A due, expiry, completion or claim date that is not a date, or an expiry before the due date.
-	 *
-	 * @param array<string, mixed> $data The filled task fields.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-requester-and-expiry
-	 */
-	private function datesRefusal(array $data): string {
-		foreach (['dueAt', 'expiresAt', 'completedAt', 'claimedAt'] as $field) {
-			if (isset($data[$field]) === true && $this->moment(value: $data[$field]) === null) {
-				return $field.' "'.(string) $data[$field].'" is not a date';
-			}
-		}
-
-		if (isset($data['dueAt'], $data['expiresAt']) === true
-			&& $this->moment(value: $data['expiresAt']) < $this->moment(value: $data['dueAt'])
-		) {
-			return 'expiresAt lies before dueAt: a task that dies before it is due is a configuration error';
-		}
-
-		return '';
-	}//end datesRefusal()
-
-	/**
-	 * A date or date-time value as a moment, or null.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return DateTime|null
-	 */
-	private function moment(mixed $value): ?DateTime {
-		if (is_string($value) === false || trim($value) === '') {
-			return null;
-		}
-
-		try {
-			return new DateTime($value);
-		} catch (Throwable) {
-			return null;
-		}
-	}//end moment()
 
 	/**
 	 * The uuid of the task that holds a key, null when none does or it cannot be read.

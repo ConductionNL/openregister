@@ -351,6 +351,10 @@ class SettingsController extends Controller {
 	 * actually ran. `occ openregister:tables:search-index status` prints the
 	 * same report.
 	 *
+	 * It also says how many rows the tables in scope hold (`rowsInTables`) and
+	 * how many per schema slug (`indexed`); a count that cannot be made is left
+	 * out rather than answered too low.
+	 *
 	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse The index inventory and the last rebuild report.
@@ -358,6 +362,7 @@ class SettingsController extends Controller {
 	 * @psalm-return JSONResponse<200|500, array, array<never, never>>
 	 *
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-the-search-index-status-names-how-many-rows-it-covers
 	 */
 	public function getSearchIndexStatus(): JSONResponse {
 		try {
@@ -376,7 +381,7 @@ class SettingsController extends Controller {
 					'tableCount' => count($tables),
 					'indexCount' => $indexCount,
 					'lastRun' => $maintenance->lastRun(),
-				]
+				] + $maintenance->rowCounts()
 			);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
