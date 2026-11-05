@@ -39,6 +39,8 @@ use OCA\OpenRegister\Service\Rules\ConditionDialect;
  */
 final class LifecycleAnnotationValidator {
 
+	use LifecycleFieldCheck;
+
 	/**
 	 * Constructor.
 	 *
@@ -468,7 +470,7 @@ final class LifecycleAnnotationValidator {
 			];
 		}
 
-		$errors = array_merge($errors, $this->validateProviderField(annotation: $annotation, schema: $schema));
+		$errors = array_merge($errors, $this->declaredFieldErrors(annotation: $annotation, schema: $schema));
 
 		// `initial` (optional): accept the literal-string form or the object
 		// form `{ from, field }`, as graph mode does.
@@ -490,44 +492,6 @@ final class LifecycleAnnotationValidator {
 
 		return array_merge($errors, $this->validateProviderModeConflicts(annotation: $annotation));
 	}//end validateProviderMode()
-
-	/**
-	 * Check a provider-mode `field` against the schema's properties.
-	 *
-	 * `field` stays required and non-empty, but the `enum`/`type:string`
-	 * constraint is relaxed: in provider mode the app owns the state
-	 * vocabulary, so the schema has nothing to enumerate.
-	 *
-	 * @param array<string, mixed> $annotation The normalised annotation block.
-	 * @param array<string, mixed> $schema Full schema definition.
-	 *
-	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function validateProviderField(array $annotation, array $schema): array {
-		$field = ($annotation['field'] ?? null);
-		if (is_string($field) === false || $field === '') {
-			return [
-				[
-					'code' => 'lifecycle-missing-key',
-					'message' => 'x-openregister-lifecycle is missing required key "field".',
-				],
-			];
-		}
-
-		$properties = ($schema['properties'] ?? []);
-		if (is_array($properties) === true && isset($properties[$field]) === false) {
-			return [
-				[
-					'code' => 'lifecycle-field-missing',
-					'message' => sprintf('x-openregister-lifecycle.field "%s" is not declared in `properties`.', $field),
-				],
-			];
-		}
-
-		return [];
-	}//end validateProviderField()
 
 	/**
 	 * Refuse a second lifecycle mode declared beside `provider`.
