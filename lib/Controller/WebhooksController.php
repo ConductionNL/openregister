@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Controller\Support\WebhooksControllerServices;
 use OCA\OpenRegister\Controller\Support\WebhookLogQuery;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
@@ -433,30 +434,20 @@ class WebhooksController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
-	 * @param WebhookMapper $webhookMapper Webhook mapper
-	 * @param WebhookLogMapper $webhookLogMapper Webhook log mapper
-	 * @param WebhookService $webhookService Webhook service
-	 * @param LoggerInterface $logger Logger
-	 * @param IUserSession|null $userSession User session (for write-endpoint admin gate)
-	 * @param IGroupManager|null $groupManager Group manager (for admin check)
+	 * @param WebhooksControllerServices $services The webhooks controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		WebhookMapper $webhookMapper,
-		WebhookLogMapper $webhookLogMapper,
-		WebhookService $webhookService,
-		LoggerInterface $logger,
-		?IUserSession $userSession = null,
-		?IGroupManager $groupManager = null,
+		WebhooksControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
-		$this->webhookMapper = $webhookMapper;
-		$this->webhookLogMapper = $webhookLogMapper;
-		$this->webhookService = $webhookService;
-		$this->logger = $logger;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
+		$this->webhookMapper = $services->mappers->webhookMapper;
+		$this->webhookLogMapper = $services->mappers->webhookLogMapper;
+		$this->webhookService = $services->mappers->webhookService;
+		$this->logger = $services->mappers->logger;
+		$this->userSession = $services->platform->userSession;
+		$this->groupManager = $services->platform->groupManager;
 	}//end __construct()
 
 	/**
