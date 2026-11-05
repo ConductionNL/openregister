@@ -64,6 +64,7 @@ class AggregatePathsAskPermissionTest extends TestCase {
 		// belongs where the values are produced, not at every layer that passes
 		// a request along; repeating it would multiply the places it can drift.
 		'lib/Controller/AggregationController.php' => 'delegates to AggregationRunner',
+		'lib/Service/Aggregation/NamedAggregationRun.php' => 'holds the state of AggregationRunner::run(), which asks; computes nothing',
 		'lib/Controller/ObjectsController.php' => 'delegates to ObjectService and FacetHandler',
 		'lib/Db/MagicMapper.php' => 'delegates to its handlers',
 		'lib/Db/MagicMapperInterface.php' => 'the mapper\'s interface, declares, summarises nothing',
