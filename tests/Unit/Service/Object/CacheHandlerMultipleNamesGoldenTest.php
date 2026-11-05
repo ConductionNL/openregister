@@ -340,7 +340,7 @@ class CacheHandlerMultipleNamesGoldenTest extends TestCase {
 		);
 		$container = $this->createMock(IAppContainer::class);
 		$container->method('get')->willReturnCallback(
-			fn (string $class) => $class === MagicMapper::class ? $objectMapper : $this->createMock($class)
+			fn (string $class) => $class === \OCA\OpenRegister\Db\MagicMapperInterface::class ? $objectMapper : $this->createMock($class)
 		);
 
 		$register = new Register();

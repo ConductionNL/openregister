@@ -220,6 +220,35 @@ class FlowNodePreflight {
 	private const DEFAULT_ONERROR = 'stop';
 
 	/**
+	 * The refusal line per blocking reason. Arguments: 1 type, 2 step,
+	 * 3 detail (default "?"), 4 what the node reads, 5 the default onError,
+	 * 6 detail (default "no detail"), 7 the owning app.
+	 *
+	 * @var array<string, string>
+	 */
+	private const FINDING_LINES = [
+		self::REASON_CONFIG_UNKNOWN_KEY => '"%1$s" (step %2$s) — config key(s) %3$s, which that node never reads; '
+			. 'it reads %4$s. Ignored keys make the step a pass-through that reports success',
+		self::REASON_CONFIG_ONERROR_MISPLACED => '"%1$s" (step %2$s) — config.onError="%3$s" is read by nothing; the engine takes the policy '
+			. 'from the EDGE, beside "type". As written this step gets "%5$s"',
+		self::REASON_CONFIG_REJECTED => '"%1$s" (step %2$s) — the node exists but refuses this step\'s config: %6$s. '
+			. 'A config it cannot read makes the step a pass-through that reports success',
+		self::REASON_PRE_INVERSION_SHAPE => '"%1$s" (step %2$s) — the step is on an EDGE. A node is the action that runs and an edge is '
+			. 'sequence, so nothing reads this step. The flow has not been migrated; run '
+			. 'or-flow-migrate-definitions',
+		self::REASON_NOT_NAMESPACED => '"%1$s" (step %2$s) — not namespaced, so no app can provide it; '
+			. 'step types are "<app>.<node>", e.g. "openregister.route"',
+	];
+
+	/**
+	 * The refusal line for a type its owning app does not provide.
+	 *
+	 * @var string
+	 */
+	private const FINDING_LINE_NOT_PROVIDED = '"%1$s" (step %2$s) — app "%7$s" would own it and IS enabled here, but does not provide it; '
+		. 'that app is behind the flow';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FlowNodeRegistry $registry The live catalogue of node types.
@@ -588,78 +617,8 @@ class FlowNodePreflight {
 	public function describe(string $flow, array $blocking): string {
 		$lines = [];
 		foreach ($blocking as $finding) {
-			if ($finding['reason'] === self::REASON_CONFIG_UNKNOWN_KEY) {
-				// A node with an empty vocabulary needs saying in words:
-				// "it reads " followed by nothing reads like a truncated
-				// message, not like the deliberate answer it is.
-				$reads = (string)($finding['reads'] ?? '');
-				if ($reads === '') {
-					$reads = 'no config at all';
-				}
-
-				$lines[] = sprintf(
-					'"%s" (step %s) — config key(s) %s, which that node never reads; '
-					. 'it reads %s. Ignored keys make the step a pass-through that reports success',
-					$finding['type'],
-					$finding['step'],
-					($finding['detail'] ?? '?'),
-					$reads
-				);
-				continue;
-			}
-
-			if ($finding['reason'] === self::REASON_CONFIG_ONERROR_MISPLACED) {
-				$lines[] = sprintf(
-					'"%s" (step %s) — config.onError="%s" is read by nothing; the engine takes the policy '
-					. 'from the EDGE, beside "type". As written this step gets "%s"',
-					$finding['type'],
-					$finding['step'],
-					($finding['detail'] ?? '?'),
-					self::DEFAULT_ONERROR
-				);
-				continue;
-			}
-
-			if ($finding['reason'] === self::REASON_CONFIG_REJECTED) {
-				$lines[] = sprintf(
-					'"%s" (step %s) — the node exists but refuses this step\'s config: %s. '
-					. 'A config it cannot read makes the step a pass-through that reports success',
-					$finding['type'],
-					$finding['step'],
-					($finding['detail'] ?? 'no detail')
-				);
-				continue;
-			}
-
-			if ($finding['reason'] === self::REASON_PRE_INVERSION_SHAPE) {
-				$lines[] = sprintf(
-					'"%s" (step %s) — the step is on an EDGE. A node is the action that runs and an edge is '
-					. 'sequence, so nothing reads this step. The flow has not been migrated; run '
-					. 'or-flow-migrate-definitions',
-					$finding['type'],
-					$finding['step']
-				);
-				continue;
-			}
-
-			if ($finding['reason'] === self::REASON_NOT_NAMESPACED) {
-				$lines[] = sprintf(
-					'"%s" (step %s) — not namespaced, so no app can provide it; '
-					. 'step types are "<app>.<node>", e.g. "openregister.route"',
-					$finding['type'],
-					$finding['step']
-				);
-				continue;
-			}
-
-			$lines[] = sprintf(
-				'"%s" (step %s) — app "%s" would own it and IS enabled here, but does not provide it; '
-				. 'that app is behind the flow',
-				$finding['type'],
-				$finding['step'],
-				$finding['app']
-			);
-		}//end foreach
+			$lines[] = $this->describeFinding(finding: $finding);
+		}
 
 		return sprintf(
 			'Flow "%s" has %d step(s) this instance cannot run as written: %s. '
@@ -672,6 +631,36 @@ class FlowNodePreflight {
 		);
 
 	}//end describe()
+
+	/**
+	 * One finding of the refusal message, in the words of its reason.
+	 *
+	 * A node with an empty vocabulary is said in words: "it reads " followed
+	 * by nothing reads like a truncated message, not a deliberate answer.
+	 *
+	 * @param array<string, string> $finding The blocking finding.
+	 *
+	 * @return string The line.
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	private function describeFinding(array $finding): string {
+		$reads = (string)($finding['reads'] ?? '');
+		if ($reads === '') {
+			$reads = 'no config at all';
+		}
+
+		return sprintf(
+			(self::FINDING_LINES[$finding['reason']] ?? self::FINDING_LINE_NOT_PROVIDED),
+			$finding['type'],
+			$finding['step'],
+			($finding['detail'] ?? '?'),
+			$reads,
+			self::DEFAULT_ONERROR,
+			($finding['detail'] ?? 'no detail'),
+			($finding['app'] ?? null)
+		);
+	}//end describeFinding()
 
 	/**
 	 * Ask the node whether it can read this edge's config.

@@ -20,7 +20,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -51,10 +51,10 @@ class MigrationHandler {
 	/**
 	 * Constructor for MigrationHandler.
 	 *
-	 * @param MagicMapper $objectMapper Mapper for object entities.
+	 * @param MagicMapperInterface $objectMapper Mapper for object entities.
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schema entities.
 	 * @param RegisterMapperInterface $registerMapper Mapper for register entities.
-	 * @param SaveObject $saveHandler Handler for saving objects.
+	 * @param SaveObjectInterface $saveHandler Handler for saving objects.
 	 * @param UtilityHandler $utilityHandler Handler for utility operations.
 	 * @param DataManipulationHandler $dataManipHandler Handler for data manipulation.
 	 * @param LoggerInterface $logger Logger for logging operations.
@@ -62,10 +62,10 @@ class MigrationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SaveObject $saveHandler,
+		private readonly SaveObjectInterface $saveHandler,
 		private readonly UtilityHandler $utilityHandler,
 		private readonly DataManipulationHandler $dataManipHandler,
 		private readonly LoggerInterface $logger,
@@ -217,7 +217,7 @@ class MigrationHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	private function keepSlugFreeAtTarget(ObjectEntity $sourceObject, MigrationRun $run): void {
 		$register = $run->target->registerEntity;

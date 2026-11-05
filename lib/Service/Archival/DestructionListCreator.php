@@ -23,9 +23,9 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObjectInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use Psr\Log\LoggerInterface;
@@ -51,15 +51,15 @@ class DestructionListCreator {
 	 * Constructor.
 	 *
 	 * @param RetentionServiceInterface       $retention       Judges each object and builds the list.
-	 * @param MagicMapper            $objectMapper    Loads the named objects.
-	 * @param SaveObject             $saveObject      Stores the list as the sweep does.
+	 * @param MagicMapperInterface            $objectMapper    Loads the named objects.
+	 * @param SaveObjectInterface             $saveObject      Stores the list as the sweep does.
 	 * @param ObjectRetentionHandler $settingsHandler Names the destruction-list register and schema.
 	 * @param LoggerInterface        $logger          Records who asked for a list.
 	 */
 	public function __construct(
 		private readonly RetentionServiceInterface $retention,
-		private readonly MagicMapper $objectMapper,
-		private readonly SaveObject $saveObject,
+		private readonly MagicMapperInterface $objectMapper,
+		private readonly SaveObjectInterface $saveObject,
 		private readonly ObjectRetentionHandler $settingsHandler,
 		private readonly LoggerInterface $logger,
 	) {

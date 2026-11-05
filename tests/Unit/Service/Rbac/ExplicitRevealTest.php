@@ -50,6 +50,7 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker
  * @covers \OCA\OpenRegister\Service\PropertyRbacHandler
+ * @uses   \OCA\OpenRegister\Service\PropertyAccessRequest
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext

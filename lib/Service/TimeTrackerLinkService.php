@@ -240,14 +240,13 @@ class TimeTrackerLinkService {
 		}
 
 		$link = $this->hydrateLink(
-			objectUuid: $objectUuid,
-			registerId: $registerId,
-			schemaId: $schemaId,
 			entryType: $entryType,
 			id: $id,
-			info: $info,
-			uid: $uid
+			info: $info
 		);
+		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
+			->inSchema(schemaId: $schemaId)
+			->stamp(link: $link, linkedBy: $uid);
 
 		return $this->timeTrackerLinkMapper->insert($link);
 	}//end linkEntry()
@@ -301,14 +300,13 @@ class TimeTrackerLinkService {
 		];
 
 		$link = $this->hydrateLink(
-			objectUuid: $objectUuid,
-			registerId: $registerId,
-			schemaId: $schemaId,
 			entryType: self::ENTRY_CLIENT,
 			id: $clientUuid,
-			info: $info,
-			uid: $uid
+			info: $info
 		);
+		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
+			->inSchema(schemaId: $schemaId)
+			->stamp(link: $link, linkedBy: $uid);
 
 		return $this->timeTrackerLinkMapper->insert($link);
 	}//end createAndLinkClient()
@@ -355,31 +353,20 @@ class TimeTrackerLinkService {
 	/**
 	 * Build a TimeTrackerLink from normalised entry info.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
 	 * @param string $entryType Entry kind.
 	 * @param string $id Upstream entry uuid.
 	 * @param array<string,mixed> $info Normalised entry info.
-	 * @param string $uid The linking user id.
 	 *
 	 * @return TimeTrackerLink
 	 */
 	private function hydrateLink(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
 		string $entryType,
 		string $id,
 		array $info,
-		string $uid,
 	): TimeTrackerLink {
 		$components = $this->idComponents(entryType: $entryType, id: $id);
 
 		$link = new TimeTrackerLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setEntryType($entryType);
 		$link->setClientId($components['client_id']);
 		$link->setTaskId($components['task_id']);
@@ -388,8 +375,6 @@ class TimeTrackerLinkService {
 		$link->setDuration($info['duration'] ?? null);
 		$link->setBillable($info['billable'] ?? null);
 		$link->setStartedAt($info['startedAt'] ?? null);
-		$link->setLinkedBy($uid);
-		$link->setLinkedAt(new DateTime());
 
 		return $link;
 	}//end hydrateLink()

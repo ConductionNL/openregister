@@ -28,7 +28,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -65,7 +65,7 @@ class DeletedController extends Controller {
 	 *
 	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
-	 * @param MagicMapper $objectEntityMapper The object entity mapper
+	 * @param MagicMapperInterface $objectEntityMapper The object entity mapper
 	 * @param RegisterMapperInterface $registerMapper The register mapper
 	 * @param IUserSession $userSession The user session
 	 * @param AuditTrailMapperInterface $auditTrailMapper Reads back a destruction record and records a restore
@@ -78,7 +78,7 @@ class DeletedController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly IUserSession $userSession,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,

@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\PropertyRbacHandler
+ * @uses   \OCA\OpenRegister\Service\PropertyAccessRequest
  * @uses   \OCA\OpenRegister\Service\Calculation\CalculationEvaluator
  * @uses   \OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver
  * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal

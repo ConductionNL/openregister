@@ -28,7 +28,7 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Controller\Support\SchemasControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -187,9 +187,9 @@ class SchemasController extends Controller {
 	/**
 	 * The object entity mapper.
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface
 	 */
-	private readonly MagicMapper $objectEntityMapper;
+	private readonly MagicMapperInterface $objectEntityMapper;
 
 	/**
 	 * The audit trail mapper.

@@ -309,7 +309,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+			$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
 			$context = $magicMapper->findAcrossAllSources(
 				identifier: $id,
 				includeDeleted: true,
@@ -993,7 +993,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	private function crossTableSearch(array $registers, array $schemas, ObjectOperationsInterface $objectService): JSONResponse {
-		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
 		$pairs       = $this->crossTablePairs(registers: $registers, schemas: $schemas);
 		if (empty($pairs) === true) {
 			return new JSONResponse(
@@ -1643,7 +1643,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function indexFromMagicTable(array $listing, ObjectOperationsInterface $objectService): JSONResponse {
-		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
 		$registerEntity = $listing['resolved']['registerEntity'];
 		$schemaEntity = $listing['resolved']['schemaEntity'];
 
@@ -2322,7 +2322,7 @@ class ObjectsController extends Controller {
 			);
 
 			if ($isMagicMapped === true && $schemaEntity->getObjectSource() === null) {
-				$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+				$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
 
 				$countQuery = $query;
 				unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
@@ -2865,7 +2865,7 @@ class ObjectsController extends Controller {
 						|| in_array($schemaSlug, $magicMappingSchemas, true) === true)
 					) {
 						// Use MagicMapper for magic-mapped schemas.
-						$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+						$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
 
 						// Build search query with resolved numeric IDs.
 						$query = $objectService->buildSearchQuery(
@@ -3185,7 +3185,7 @@ class ObjectsController extends Controller {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Object retrieval with slug resolution + access checks requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 */
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
@@ -3451,7 +3451,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse The 409 response.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 */
 	private function ambiguousIdentifierResponse(string $id): JSONResponse {
 		return new JSONResponse(
@@ -3480,7 +3480,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return ObjectEntity|JSONResponse The object, or the 409/404 response.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) rbac and multi are the caller's access flags, passed through.
 	 */
