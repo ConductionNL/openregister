@@ -3249,19 +3249,17 @@ class MagicSearchHandler {
 				continue;
 			}
 
-			$columnName = $this->sanitizeColumnName(name: $field);
-			$propertyType = $properties[$field]['type'] ?? 'string';
+			$filter = new ObjectFieldFilter(
+				qb: $qb,
+				columnName: $this->sanitizeColumnName(name: $field),
+				propertyType: ($properties[$field]['type'] ?? 'string'),
+				isPostgres: $isPostgres
+			);
 
 			$conditions = NullFilter::conditionsFor(
 				criterion: $value,
-				column: "t.{$columnName}",
-				build: fn (mixed $criterion): array => $this->objectFieldPredicates(
-					qb: $qb,
-					columnName: $columnName,
-					propertyType: $propertyType,
-					value: $criterion,
-					isPostgres: $isPostgres
-				)
+				column: $filter->columnRef(),
+				build: fn (mixed $criterion): array => $this->objectFieldPredicates(field: $filter, value: $criterion)
 			);
 			foreach ($conditions as $condition) {
 				$qb->andWhere($condition);
@@ -3272,207 +3270,225 @@ class MagicSearchHandler {
 	/**
 	 * The predicates one object-field filter contributes on the QueryBuilder path
 	 *
-	 * @param IQueryBuilder $qb Query builder that binds the parameters
-	 * @param string $columnName Sanitized column name
-	 * @param string $propertyType The property's declared JSON-Schema type
-	 * @param mixed $value The filter value, without its `orNull` modifier
-	 * @param bool $isPostgres Whether the active platform is PostgreSQL
+	 * `like` matches the column's text, whatever the column type, so it is
+	 * applied ahead of the type-specific predicates and then taken out of the bag.
+	 *
+	 * @param ObjectFieldFilter $field The field being filtered
+	 * @param mixed             $value The filter value, without its `orNull` modifier
 	 *
 	 * @return list<string|\Stringable> The field's predicates, to be ANDed
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	private function objectFieldPredicates(
-		IQueryBuilder $qb,
-		string $columnName,
-		string $propertyType,
-		mixed $value,
-		bool $isPostgres,
-	): array {
-		$predicates = [];
-
+	private function objectFieldPredicates(ObjectFieldFilter $field, mixed $value): array {
 		if ($value === 'IS NOT NULL') {
-			$predicates[] = $qb->expr()->isNotNull("t.{$columnName}");
-			return $predicates;
+			return [$field->qb->expr()->isNotNull($field->columnRef())];
 		}
 
 		if ($value === 'IS NULL') {
-			$predicates[] = $qb->expr()->isNull("t.{$columnName}");
-			return $predicates;
+			return [$field->qb->expr()->isNull($field->columnRef())];
 		}
 
-		// `like` matches the column's text, whatever the column type, so it is
-		// applied ahead of the type-specific branches and then taken out of the bag.
+		$predicates = [];
 		if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
-			$likeCondition = $this->likeCondition(qb: $qb, columnRef: "t.{$columnName}", value: $value[LikeOperator::KEY]);
-			if ($likeCondition !== null) {
-				$predicates[] = $likeCondition;
-			}
-
+			$predicates = $this->likePredicates(field: $field, value: $value[LikeOperator::KEY]);
 			unset($value[LikeOperator::KEY]);
 			if ($value === []) {
 				return $predicates;
 			}
 		}
 
-		// Handle array type columns (JSON arrays in PostgreSQL).
-		if ($propertyType === 'array') {
-			$predicates[] = $this->jsonArrayCondition(qb: $qb, columnName: $columnName, value: $value);
-			return $predicates;
-		}
-
-		// Handle object type columns (JSON objects with 'value' key containing UUID).
-		if ($propertyType === 'object') {
-			$predicates[] = $this->jsonObjectCondition(qb: $qb, columnName: $columnName, value: $value, isPostgres: $isPostgres);
-			return $predicates;
-		}
-
-		// A PHP boolean compares in its string form (boolean-filter-values).
-		$value = FilterParams::comparableValue(value: $value, propertyType: $propertyType);
-
-		if (is_array($value) === true) {
-			$comparisonOperators = self::COMPARISON_OPERATORS;
-			if (empty(array_intersect(array_keys($value), $comparisonOperators)) === true) {
-				// Cast numeric columns to text when filtered by non-numeric
-				// (e.g. UUID) values so PostgreSQL does not abort with 22P02.
-				$columnRef = $this->buildFilterColumnRef(
-					columnRef: "t.{$columnName}",
-					propertyType: $propertyType,
-					value: $value,
-					isPostgres: $isPostgres
-				);
-				$predicates[] = $qb->expr()->in(
-					$columnRef,
-					$qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
-				);
-				return $predicates;
-			}
-
-			return array_merge(
-				$predicates,
-				$this->objectOperatorPredicates(
-					qb: $qb,
-					columnName: $columnName,
-					propertyType: $propertyType,
-					value: $value,
-					isPostgres: $isPostgres
-				)
-			);
-		}//end if
-
-		// Cast numeric columns to text when filtered by a non-numeric
-		// (e.g. UUID) value so PostgreSQL does not abort the query with
-		// SQLSTATE[22P02]; numeric values keep the indexed numeric path.
-		$columnRef = $this->buildFilterColumnRef(
-			columnRef: "t.{$columnName}",
-			propertyType: $propertyType,
-			value: $value,
-			isPostgres: $isPostgres
-		);
-		$predicates[] = $qb->expr()->eq($columnRef, $qb->createNamedParameter($value));
-		return $predicates;
+		return array_merge($predicates, $this->typedFieldPredicates(field: $field, value: $value));
 	}//end objectFieldPredicates()
 
 	/**
-	 * The predicates of one object field's operator bag on the QueryBuilder path
+	 * The `like` predicate of a field, when a term is left.
 	 *
-	 * @param IQueryBuilder $qb Query builder that binds the parameters
-	 * @param string $columnName Sanitized column name
-	 * @param string $propertyType The property's declared JSON-Schema type
-	 * @param array $value The operator bag, in its comparable form
-	 * @param bool $isPostgres Whether the active platform is PostgreSQL
+	 * @param ObjectFieldFilter $field The field being filtered
+	 * @param mixed             $value The value under the `like` key
 	 *
-	 * @return list<string|\Stringable> The predicates, to be ANDed
+	 * @return list<string> The predicate, or none.
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 */
+	private function likePredicates(ObjectFieldFilter $field, mixed $value): array {
+		$likeCondition = $this->likeCondition(qb: $field->qb, columnRef: $field->columnRef(), value: $value);
+		if ($likeCondition === null) {
+			return [];
+		}
+
+		return [$likeCondition];
+	}//end likePredicates()
+
+	/**
+	 * The predicates of a field by its type: JSON array, JSON object, list, operators or one value.
+	 *
+	 * @param ObjectFieldFilter $field The field being filtered
+	 * @param mixed             $value The filter value, without `like`
+	 *
+	 * @return list<string|\Stringable> The field's predicates.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FilterParams is the configured pure-reader exception.
+	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	private function objectOperatorPredicates(
-		IQueryBuilder $qb,
-		string $columnName,
-		string $propertyType,
-		array $value,
-		bool $isPostgres,
-	): array {
+	private function typedFieldPredicates(ObjectFieldFilter $field, mixed $value): array {
+		if ($field->propertyType === 'array') {
+			return [$this->jsonArrayCondition(qb: $field->qb, columnName: $field->columnName, value: $value)];
+		}
+
+		if ($field->propertyType === 'object') {
+			return [$this->jsonObjectCondition(qb: $field->qb, columnName: $field->columnName, value: $value, isPostgres: $field->isPostgres)];
+		}
+
+		// A PHP boolean compares in its string form (boolean-filter-values).
+		$value = FilterParams::comparableValue(value: $value, propertyType: $field->propertyType);
+		if (is_array($value) === false) {
+			return [$this->comparisonPredicate(field: $field, operator: 'eq', value: $value)];
+		}
+
+		if (empty(array_intersect(array_keys($value), self::COMPARISON_OPERATORS)) === true) {
+			return [$this->listPredicate(field: $field, operator: 'in', values: $value)];
+		}
+
+		return $this->objectOperatorPredicates(field: $field, value: $value);
+	}//end typedFieldPredicates()
+
+	/**
+	 * One comparison of a field against a bound value.
+	 *
+	 * Numeric columns are cast to text when compared with a non-numeric (e.g.
+	 * UUID) value, so PostgreSQL does not abort the query with SQLSTATE[22P02];
+	 * numeric values keep the indexed numeric path.
+	 *
+	 * @param ObjectFieldFilter $field    The field being filtered
+	 * @param string            $operator The expression builder method: eq, neq, gt, gte, lt or lte
+	 * @param mixed             $value    The value to compare with
+	 *
+	 * @return string The predicate.
+	 */
+	private function comparisonPredicate(ObjectFieldFilter $field, string $operator, mixed $value): string {
+		return $field->qb->expr()->$operator($this->filterColumnRef(field: $field, value: $value), $field->qb->createNamedParameter($value));
+	}//end comparisonPredicate()
+
+	/**
+	 * One `in` or `notIn` of a field against a bound list.
+	 *
+	 * @param ObjectFieldFilter $field    The field being filtered
+	 * @param string            $operator The expression builder method: in or notIn
+	 * @param array             $values   The list to compare with
+	 *
+	 * @return string The predicate.
+	 */
+	private function listPredicate(ObjectFieldFilter $field, string $operator, array $values): string {
+		return $field->qb->expr()->$operator(
+			$this->filterColumnRef(field: $field, value: $values),
+			$field->qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)
+		);
+	}//end listPredicate()
+
+	/**
+	 * The column reference a field is compared through, cast where the value needs it.
+	 *
+	 * @param ObjectFieldFilter $field The field being filtered
+	 * @param mixed             $value The value it is compared with
+	 *
+	 * @return string The column reference.
+	 */
+	private function filterColumnRef(ObjectFieldFilter $field, mixed $value): string {
+		return $this->buildFilterColumnRef(
+			columnRef: $field->columnRef(),
+			propertyType: $field->propertyType,
+			value: $value,
+			isPostgres: $field->isPostgres
+		);
+	}//end filterColumnRef()
+
+	/**
+	 * The predicates of an operator bag; multiple operators AND together, so {"gte":a,"lte":b} is a range.
+	 *
+	 * @param ObjectFieldFilter $field The field being filtered
+	 * @param array             $value The operator bag
+	 *
+	 * @return list<string> The predicates.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function objectOperatorPredicates(ObjectFieldFilter $field, array $value): array {
 		$predicates = [];
-		// Multiple operators AND together, so {"gte":a,"lte":b} is a range.
 		foreach (['gte', 'lte', 'gt', 'lt'] as $operator) {
 			if (isset($value[$operator]) === true) {
-				$columnRef = $this->buildFilterColumnRef(
-					columnRef: "t.{$columnName}",
-					propertyType: $propertyType,
-					value: $value[$operator],
-					isPostgres: $isPostgres
-				);
-				$predicates[] = $qb->expr()->$operator($columnRef, $qb->createNamedParameter($value[$operator]));
+				$predicates[] = $this->comparisonPredicate(field: $field, operator: $operator, value: $value[$operator]);
 			}
 		}
 
 		if (isset($value['in']) === true) {
-			$inValues = [$value['in']];
-			if (is_array($value['in']) === true) {
-				$inValues = $value['in'];
-			}
-
-			$columnRef = $this->buildFilterColumnRef(
-				columnRef: "t.{$columnName}",
-				propertyType: $propertyType,
-				value: $inValues,
-				isPostgres: $isPostgres
-			);
-			$predicates[] = $qb->expr()->in(
-				$columnRef,
-				$qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY)
-			);
+			$predicates[] = $this->listPredicate(field: $field, operator: 'in', values: $this->asList(value: $value['in']));
 		}
 
-		if (isset($value['notIn']) === true) {
-			$notInValues = [$value['notIn']];
-			if (is_array($value['notIn']) === true) {
-				$notInValues = $value['notIn'];
-			}
+		return array_merge($predicates, $this->exclusionPredicates(field: $field, value: $value));
+	}//end objectOperatorPredicates()
 
-			// An empty exclusion list excludes nothing, so skip the
-			// clause entirely — emitting `NOT IN ()` is a SQL error
-			// on some engines and a no-op-shaped clause on others.
-			if (count($notInValues) > 0) {
-				$columnRef = $this->buildFilterColumnRef(
-					columnRef: "t.{$columnName}",
-					propertyType: $propertyType,
-					value: $notInValues,
-					isPostgres: $isPostgres
-				);
-				$predicates[] = $qb->expr()->notIn(
-					$columnRef,
-					$qb->createNamedParameter($notInValues, IQueryBuilder::PARAM_STR_ARRAY)
-				);
-			}
-		}//end if
+	/**
+	 * The `notIn`, `ne` and `isnull` predicates of an operator bag.
+	 *
+	 * An empty exclusion list excludes nothing, so it adds no clause: `NOT IN ()`
+	 * is a SQL error on some engines. The null check reads the bare column,
+	 * because a cast would only obscure whether the column has a value at all.
+	 *
+	 * @param ObjectFieldFilter $field The field being filtered
+	 * @param array             $value The operator bag
+	 *
+	 * @return list<string> The predicates.
+	 */
+	private function exclusionPredicates(ObjectFieldFilter $field, array $value): array {
+		$predicates = [];
+		$notIn = $this->asList(value: $value['notIn'] ?? []);
+		if ($notIn !== []) {
+			$predicates[] = $this->listPredicate(field: $field, operator: 'notIn', values: $notIn);
+		}
 
 		if (isset($value['ne']) === true) {
-			$columnRef = $this->buildFilterColumnRef(
-				columnRef: "t.{$columnName}",
-				propertyType: $propertyType,
-				value: $value['ne'],
-				isPostgres: $isPostgres
-			);
-			$predicates[] = $qb->expr()->neq($columnRef, $qb->createNamedParameter($value['ne']));
+			$predicates[] = $this->comparisonPredicate(field: $field, operator: 'neq', value: $value['ne']);
 		}
 
 		if (isset($value['isnull']) === true) {
-			// The bare column, not `buildFilterColumnRef`: a null check
-			// asks whether the column has a value at all, and a cast
-			// would only obscure that.
-			if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
-				$predicates[] = $qb->expr()->isNull("t.{$columnName}");
-			} else {
-				$predicates[] = $qb->expr()->isNotNull("t.{$columnName}");
-			}
+			$predicates[] = $this->nullCheckPredicate(field: $field, flag: $value['isnull']);
 		}
 
 		return $predicates;
-	}//end objectOperatorPredicates()
+	}//end exclusionPredicates()
+
+	/**
+	 * The `isnull` predicate: IS NULL when the flag asks for null, IS NOT NULL otherwise.
+	 *
+	 * @param ObjectFieldFilter $field The field being filtered
+	 * @param mixed             $flag  The value under the `isnull` key
+	 *
+	 * @return string The predicate.
+	 */
+	private function nullCheckPredicate(ObjectFieldFilter $field, mixed $flag): string {
+		if ($this->isNullOperatorAsksForNull(value: $flag) === true) {
+			return $field->qb->expr()->isNull($field->columnRef());
+		}
+
+		return $field->qb->expr()->isNotNull($field->columnRef());
+	}//end nullCheckPredicate()
+
+	/**
+	 * A scalar as a one-element list; a list as it is.
+	 *
+	 * @param mixed $value The value
+	 *
+	 * @return array The list.
+	 */
+	private function asList(mixed $value): array {
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return [$value];
+	}//end asList()
 
 	/**
 	 * Apply filter for JSON array columns using PostgreSQL jsonb operators
