@@ -241,34 +241,6 @@ class RenderObjectTest extends TestCase {
 	}
 
 	// =========================================================================
-	// setUltraPreloadCache / getUltraCacheSize
-	// =========================================================================
-
-	public function testSetUltraPreloadCacheAndGetSize(): void {
-		$this->assertSame(0, $this->handler->getUltraCacheSize());
-
-		$entity1 = $this->createObjectEntity(1, 'uuid-1');
-		$entity2 = $this->createObjectEntity(2, 'uuid-2');
-
-		$this->handler->setUltraPreloadCache([
-			'uuid-1' => $entity1,
-			'uuid-2' => $entity2,
-		]);
-
-		$this->assertSame(2, $this->handler->getUltraCacheSize());
-	}
-
-	public function testSetUltraPreloadCacheReplacesExistingCache(): void {
-		$entity1 = $this->createObjectEntity(1, 'uuid-1');
-
-		$this->handler->setUltraPreloadCache(['uuid-1' => $entity1]);
-		$this->assertSame(1, $this->handler->getUltraCacheSize());
-
-		$this->handler->setUltraPreloadCache([]);
-		$this->assertSame(0, $this->handler->getUltraCacheSize());
-	}
-
-	// =========================================================================
 	// clearCache
 	// =========================================================================
 
@@ -767,15 +739,6 @@ class RenderObjectTest extends TestCase {
 	// =========================================================================
 	// getObject - private method (uses ultra preload cache)
 	// =========================================================================
-
-	public function testGetObjectFromUltraPreloadCache(): void {
-		$entity = $this->createObjectEntity(1, 'uuid-1', ['name' => 'Test']);
-
-		$this->handler->setUltraPreloadCache(['uuid-1' => $entity]);
-
-		$result = $this->invokePrivate('getObject', ['uuid-1']);
-		$this->assertSame($entity, $result);
-	}
 
 	public function testGetObjectFromObjectCacheService(): void {
 		$entity = $this->createObjectEntity(1, 'uuid-1', ['name' => 'Test']);

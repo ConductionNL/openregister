@@ -205,7 +205,7 @@ class AppHostSettingsService {
 				$this->appId,
 				$before,
 				$after,
-				$this->secretConfigKeys()
+				$this->secretKeysFor(auditor: $auditor)
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
@@ -344,6 +344,35 @@ class AppHostSettingsService {
 
 		return $service;
 	}//end featureToggles()
+
+	/**
+	 * The secret keys to mask: the hook's, plus those the register configuration declares.
+	 *
+	 * A declaration is an entry `"<key>": {"x-openregister-secret": true}` at
+	 * the top level of the app's register document. When no document resolves
+	 * (the loader returns null for a missing or unparseable file), only the
+	 * hook's keys apply. A resolver override that throws leaves the caller to
+	 * record nothing.
+	 *
+	 * @param object $auditor The settings auditor.
+	 *
+	 * @return array<int, string> The secret keys.
+	 *
+	 * @spec openspec/changes/settings-change-audit/specs/apphost-settings-plane/spec.md
+	 */
+	private function secretKeysFor(object $auditor): array {
+		$keys = $this->secretConfigKeys();
+		if (method_exists($auditor, 'secretKeysIn') === false) {
+			return $keys;
+		}
+
+		[$data] = $this->resolveRegisterConfiguration();
+		if (is_array($data) === true) {
+			$keys = array_merge($keys, $auditor->secretKeysIn($data));
+		}
+
+		return array_values(array_unique($keys));
+	}//end secretKeysFor()
 
 	/**
 	 * Which of this app's config keys hold a secret.

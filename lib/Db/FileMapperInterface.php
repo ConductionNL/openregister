@@ -111,22 +111,6 @@ interface FileMapperInterface {
 	public function incrementDownloadCount(int $fileId): File;
 
 	/**
-	 * Acquire a DB-backed lock on a Nextcloud file. Pass null for
-	 * `lockedBy` to release. The cache-backed `FileLockHandler` is
-	 * the canonical lock mechanism today; this surface lets operators
-	 * who prefer DB persistence over the distributed-cache TTL pattern
-	 * opt in.
-	 *
-	 * @param int $fileId The Nextcloud filecache fileid.
-	 * @param string|null $lockedBy User ID acquiring the lock, or null to release.
-	 * @param \DateTime|null $lockedAt Acquisition timestamp, or null to release.
-	 * @param \DateTime|null $lockExpires Expiry timestamp, or null to release.
-	 *
-	 * @return File The updated entity.
-	 */
-	public function setLockForFile(int $fileId, ?string $lockedBy, ?\DateTime $lockedAt, ?\DateTime $lockExpires): File;
-
-	/**
 	 * Bulk fetch OR-side `File` rows for a list of Nextcloud fileids.
 	 * One round trip vs. N+1.
 	 *

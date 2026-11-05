@@ -179,6 +179,23 @@ class MessageDispatchProviderTest extends TestCase {
 		$this->assertSame('whatsapp-cloud-api', $this->provider->getOpenConnectorSource());
 	}//end testDispatchSetsAndResetsTheTargetSource()
 
+	public function testTheRouterSeesThePerCallSourceDuringDispatch(): void {
+		$seen = [];
+		$this->router->expects($this->once())->method('call')->willReturnCallback(
+			function (object $provider) use (&$seen): array {
+				$seen[] = $provider->getOpenConnectorSource();
+				return ['ok' => true];
+			}
+		);
+
+		$this->provider->dispatch(source: 'cmcom-sms', body: ['x' => 1], path: 'message');
+
+		// The router resolves the source through the provider while the call
+		// runs, so the provider's own getOpenConnectorSource() must answer the
+		// per-call source, not the advertised default.
+		$this->assertSame(['cmcom-sms'], $seen);
+	}//end testTheRouterSeesThePerCallSourceDuringDispatch()
+
 	public function testDispatchRejectsUnknownSourceBeforeRouter(): void {
 		$this->router->expects($this->never())->method('call');
 

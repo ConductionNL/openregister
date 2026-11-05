@@ -41,6 +41,13 @@ class Version1Date20261103220000Test extends TestCase {
 	 * @return list<string> The added columns.
 	 */
 	private function applyStep(bool $hasTable, bool $hasColumn): array {
+		if (interface_exists(ITable::class) === false) {
+			// OCP\DB\Schema\ITable ships with Nextcloud 35. The unit suite also runs
+			// against the older servers info.xml declares (NC 32-34), whose OCP
+			// shadows the nextcloud/ocp dev dependency and has no ITable to mock.
+			$this->markTestSkipped(message: 'OCP\DB\Schema\ITable needs Nextcloud 35; the step is covered on the stable35 run.');
+		}
+
 		$added = [];
 		$table = $this->createMock(ITable::class);
 		$table->method('hasColumn')->with('owner')->willReturn($hasColumn);

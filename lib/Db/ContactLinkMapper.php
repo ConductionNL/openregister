@@ -29,6 +29,7 @@ use OCP\IDBConnection;
  * Class ContactLinkMapper
  *
  * @template-extends QBMapper<ContactLink>
+ * @method list<ContactLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) One named query per lookup the
  *   link table answers, and the party model added four: every object a party

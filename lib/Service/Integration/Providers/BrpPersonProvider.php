@@ -62,7 +62,6 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
-use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -78,6 +77,8 @@ use Throwable;
  *   surface (AD-23).
  */
 class BrpPersonProvider extends AbstractIntegrationProvider {
+
+	use ConnectorRoutedProviderTrait;
 
 	/**
 	 * OpenConnector source id this provider routes through.
@@ -180,63 +181,6 @@ class BrpPersonProvider extends AbstractIntegrationProvider {
 	public function getIcon(): string {
 		return 'AccountSearch';
 	}//end getIcon()
-
-	/**
-	 * Named group this integration belongs to (AD-16).
-	 *
-	 * @return string|null
-	 */
-	public function getGroup(): ?string {
-		return 'external';
-	}//end getGroup()
-
-	/**
-	 * Nextcloud app that must be installed for this integration to
-	 * function — OpenConnector carries the `brp-haalcentraal` source +
-	 * OAuth credentials + PKIoverheid client certificate.
-	 *
-	 * Returns the id the instance ACTUALLY registered, not the canonical name.
-	 * The value is published verbatim in the `integrations` capability and
-	 * read back client-side as `isAppInstalled(requiredApp)`, so a spelling the
-	 * instance does not answer to renders "not installed" over a connector that
-	 * is installed and working.
-	 *
-	 * @return string|null
-	 */
-	public function getRequiredApp(): ?string {
-		return (FleetAppId::resolve($this->appManager, self::REQUIRED_APP) ?? self::REQUIRED_APP);
-	}//end getRequiredApp()
-
-	/**
-	 * Storage strategy (AD-22) — `external`: no local link table; this is
-	 * a stateless person-lookup leaf routed through OpenConnector.
-	 *
-	 * @return string
-	 */
-	public function getStorageStrategy(): string {
-		return 'external';
-	}//end getStorageStrategy()
-
-	/**
-	 * OpenConnector source id this provider routes all calls through (AD-4).
-	 *
-	 * @return string|null
-	 */
-	public function getOpenConnectorSource(): ?string {
-		return self::SOURCE_ID;
-	}//end getOpenConnectorSource()
-
-	/**
-	 * Whether the integration is available — true iff OpenConnector is
-	 * installed (it owns the `brp-haalcentraal` source + credentials + cert).
-	 * The router still degrades gracefully if the source itself is missing or
-	 * HaalCentraal is down.
-	 *
-	 * @return bool
-	 */
-	public function isEnabled(): bool {
-		return FleetAppId::isInstalled($this->appManager, self::REQUIRED_APP);
-	}//end isEnabled()
 
 	/**
 	 * Auth requirements descriptor. `type: 'external'` — the OAuth2
@@ -358,20 +302,6 @@ class BrpPersonProvider extends AbstractIntegrationProvider {
 			'meta' => $this->shapeMeta(meta: ($envelope['meta'] ?? [])),
 		];
 	}//end lookupByBsn()
-
-	/**
-	 * Health descriptor — defers to the router's probe so admin UI / OCS
-	 * capabilities report the same status runtime callers would see.
-	 *
-	 * @return array{status: string, authStatus: string, message: ?string}
-	 *
-	 * @spec exclude Thin delegation to ExternalIntegrationRouter::probe
-	 *              (annotated to pluggable-integration-registry task-4);
-	 *              carries no provider-specific health behaviour.
-	 */
-	public function health(): array {
-		return $this->router->probe(provider: $this);
-	}//end health()
 
 	/**
 	 * Count the people the BRP registers at an address object.

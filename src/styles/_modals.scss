@@ -725,3 +725,21 @@
 	@include object-count-centered;
 	@include count-value;
 }
+@mixin config-section {
+	.config-section {
+		margin-bottom: 32px;
+
+		h3 {
+			margin: 0 0 8px 0;
+			font-size: 16px;
+			font-weight: 600;
+		}
+
+		.section-description {
+			margin: 0 0 16px 0;
+			color: var(--color-text-maxcontrast);
+			font-size: 14px;
+			line-height: 1.5;
+		}
+	}
+}

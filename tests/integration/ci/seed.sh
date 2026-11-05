@@ -58,6 +58,13 @@ fi
 if [ ! -d apps/notifications ]; then
 	git clone --quiet --depth 1 --branch "${SERVER_BRANCH}" https://github.com/nextcloud/notifications.git apps/notifications
 fi
+# Since stable35 the app keeps its runtime dependencies out of git
+# (composer.json requires web-push and psr7, vendor/ is ignored), so a bare
+# clone fails at app:enable with "Failed opening required
+# '.../notifications/composer/../vendor/autoload.php'".
+if [ -f apps/notifications/composer.json ] && [ ! -f apps/notifications/vendor/autoload.php ]; then
+	composer install --working-dir=apps/notifications --no-dev --no-interaction --no-progress --prefer-dist
+fi
 php occ app:enable notifications
 
 # Without --stop_after the worker keeps taking jobs of these classes for the rest of the job.

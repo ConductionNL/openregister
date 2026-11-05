@@ -10,6 +10,7 @@ import PurgeMultiple from './PurgeMultiple.vue'
 import RestoreMultiple from './RestoreMultiple.vue'
 import eventBus from '../../eventBus.js'
 import { deletedStore, navigationStore } from '../../store/store.js'
+import { objectTitle } from './bulkSelection.js'
 
 jest.mock('../../store/store.js', () => ({ deletedStore: {}, navigationStore: {} }))
 jest.mock('../../eventBus.js', () => ({ emit: jest.fn() }))
@@ -141,7 +142,6 @@ describe('bulk dialogs actions golden', () => {
 		})
 
 		it(`${name}: titles objects`, () => {
-			const ctx = context(component, [])
 			const objects = [
 				null,
 				{},
@@ -150,12 +150,12 @@ describe('bulk dialogs actions golden', () => {
 				{ name: 'N' },
 				{ object: { title: 'OT' } },
 				{ object: { name: 'ON' } },
+				{ object: { title: 'OT', name: 'ON' } },
+				{ title: '', fileName: 'f', object: { title: 'OT' } },
 				{ id: 7 },
 				{ id: 0 },
 			]
-			expect(
-				objects.map((object) => ctx.getObjectTitle(object)),
-			).toMatchSnapshot()
+			expect(objects.map((object) => objectTitle(object))).toMatchSnapshot()
 		})
 	}
 

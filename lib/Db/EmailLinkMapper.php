@@ -31,6 +31,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<EmailLink>
  */
 class EmailLinkMapper extends QBMapper {
+
+	use ObjectKeyLinkTrait;
 	use DeleteLinksByObjectUuidTrait;
 	use CountLinksByObjectUuidTrait;
 
@@ -171,22 +173,12 @@ class EmailLinkMapper extends QBMapper {
 	 * @return EmailLink|null The link or null if not found.
 	 */
 	public function findByObjectAndMessage(string $objectUuid, int $mailMessageId): ?EmailLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere(
-				$qb->expr()->eq(
-					'mail_message_id',
-					$qb->createNamedParameter($mailMessageId, IQueryBuilder::PARAM_INT)
-				)
-			);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			return null;
+		$link = $this->findObjectLink(objectUuid: $objectUuid, key: new LinkColumn(name: 'mail_message_id', value: $mailMessageId));
+		if ($link instanceof EmailLink) {
+			return $link;
 		}
+
+		return null;
 	}//end findByObjectAndMessage()
 
 	/**
