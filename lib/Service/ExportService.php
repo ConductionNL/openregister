@@ -1167,93 +1167,14 @@ class ExportService implements ObjectExporterInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
 	private function getObjectValue(ObjectEntity $object, string $header): ?string {
-		// Handle metadata fields with @self. prefix.
 		if (str_starts_with(haystack: $header, needle: '@self.') === true) {
-			// Remove the @self. prefix (6 characters).
-			$fieldName = substr(string: $header, offset: 6);
+			return $this->metadataValue(object: $object, fieldName: substr(string: $header, offset: 6));
+		}
 
-			// Get the object array which contains all metadata.
-			$objectArray = $object->getObjectArray();
-
-			// Check if the field exists in the object array.
-			if (($objectArray[$fieldName] ?? null) !== null) {
-				$value = $objectArray[$fieldName];
-
-				// Handle DateTime objects (they come as ISO strings from getObjectArray).
-				if (is_string($value) === true
-					&& str_contains(haystack: $value, needle: 'T') === true
-					&& str_contains(haystack: $value, needle: 'Z') === true
-				) {
-					// Convert ISO 8601 to our preferred format.
-					try {
-						$date = new DateTime($value);
-						return $date->format('Y-m-d H:i:s');
-					} catch (Exception $e) {
-						// Return as-is if parsing fails.
-						return $value;
-					}
-				}
-
-				// Handle arrays and objects.
-				if (is_array($value) === true || is_object($value) === true) {
-					return $this->convertValueToString(value: $value);
-				}
-
-				// Handle scalar values.
-				if ($value !== null) {
-					return (string)$value;
-				}
-
-				return null;
-			}//end if
-
-			// Fallback for fields that might not exist.
-			return null;
-		}//end if
-
-		// Handle legacy metadata fields with _ prefix for backward compatibility.
+		// Legacy metadata headers carry a `_` prefix.
 		if (str_starts_with(haystack: $header, needle: '_') === true) {
-			// Remove the _ prefix.
-			$fieldName = substr(string: $header, offset: 1);
-
-			// Get the object array which contains all metadata.
-			$objectArray = $object->getObjectArray();
-
-			// Check if the field exists in the object array.
-			if (($objectArray[$fieldName] ?? null) !== null) {
-				$value = $objectArray[$fieldName];
-
-				// Handle DateTime objects (they come as ISO strings from getObjectArray).
-				if (is_string($value) === true
-					&& str_contains(haystack: $value, needle: 'T') === true
-					&& str_contains(haystack: $value, needle: 'Z') === true
-				) {
-					// Convert ISO 8601 to our preferred format.
-					try {
-						$date = new DateTime($value);
-						return $date->format('Y-m-d H:i:s');
-					} catch (Exception $e) {
-						// Return as-is if parsing fails.
-						return $value;
-					}
-				}
-
-				// Handle arrays and objects.
-				if (is_array($value) === true || is_object($value) === true) {
-					return $this->convertValueToString(value: $value);
-				}
-
-				// Handle scalar values.
-				if ($value !== null) {
-					return (string)$value;
-				}
-
-				return null;
-			}//end if
-
-			// Fallback for fields that might not exist.
-			return null;
-		}//end if
+			return $this->metadataValue(object: $object, fieldName: substr(string: $header, offset: 1));
+		}
 
 		// Handle regular fields.
 		switch ($header) {
@@ -1280,6 +1201,50 @@ class ExportService implements ObjectExporterInterface {
 				return $this->convertValueToString(value: $value);
 		}
 	}//end getObjectValue()
+
+	/**
+	 * The export cell for one metadata field of an object.
+	 *
+	 * @param ObjectEntity $object    The object
+	 * @param string       $fieldName The metadata field, without its header prefix
+	 *
+	 * @return string|null
+	 */
+	private function metadataValue(ObjectEntity $object, string $fieldName): ?string {
+		$value = $object->getObjectArray()[$fieldName] ?? null;
+		if ($value === null) {
+			return null;
+		}
+
+		if (is_string($value) === true) {
+			return $this->isoDateCell(value: $value);
+		}
+
+		if (is_array($value) === true || is_object($value) === true) {
+			return $this->convertValueToString(value: $value);
+		}
+
+		return (string)$value;
+	}//end metadataValue()
+
+	/**
+	 * An ISO 8601 timestamp as `Y-m-d H:i:s`; any other string as it is.
+	 *
+	 * @param string $value The metadata value
+	 *
+	 * @return string
+	 */
+	private function isoDateCell(string $value): string {
+		if (str_contains(haystack: $value, needle: 'T') === false || str_contains(haystack: $value, needle: 'Z') === false) {
+			return $value;
+		}
+
+		try {
+			return (new DateTime($value))->format('Y-m-d H:i:s');
+		} catch (Exception $e) {
+			return $value;
+		}
+	}//end isoDateCell()
 
 	/**
 	 * Resolve the language list to use for translatable column emission.
