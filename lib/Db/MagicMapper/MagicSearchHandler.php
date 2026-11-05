@@ -100,6 +100,24 @@ class MagicSearchHandler {
 	private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull', LikeOperator::KEY];
 
 	/**
+	 * Metadata columns a search may order by under their own name.
+	 *
+	 * @var array<int, string>
+	 */
+	private const SORTABLE_METADATA_COLUMNS = [
+		'_created',
+		'_updated',
+		'_name',
+		'_description',
+		'_summary',
+		'_uuid',
+		'_register',
+		'_schema',
+		'_owner',
+		'_organisation',
+	];
+
+	/**
 	 * The metadata columns a row sets on its entity, in the order they are set, with how
 	 * each is stored: a scalar, a datetime, the deleted marker, a float, or JSON whose
 	 * fallback is an empty array (`json`) or null (`json-or-null`).
@@ -464,12 +482,10 @@ class MagicSearchHandler {
 		// indexes for ORDER BY … LIMIT instead of sorting the full result set.
 		$this->applyResultOrder(
 			qb: $queryBuilder,
-			order: $order,
-			schema: $schema,
-			searchTerm: $searchTerm,
-			recentViews: ($query['_recentViews'] ?? null),
-			dateTimeColumns: $dateTimeColumns,
-			sortLanguages: $this->sortLanguageChain(register: $register)
+			sort: new SortRequest(
+				order: $order, schema: $schema, searchTerm: $searchTerm, recentViews: ($query['_recentViews'] ?? null),
+				dateTimeColumns: $dateTimeColumns, sortLanguages: $this->sortLanguageChain(register: $register)
+			)
 		);
 
 		$queryBuilder->setMaxResults($limit)
@@ -3770,41 +3786,21 @@ class MagicSearchHandler {
 	 * because that method is already at its complexity budget, and because the
 	 * priority is the interesting part and belongs in one place.
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify.
-	 * @param array<int|string, mixed> $order The caller's requested order.
-	 * @param Schema|null $schema The schema being searched.
-	 * @param string|null $searchTerm The search term, for relevance ordering.
-	 * @param mixed $recentViews The read history ordering a `_recent` page (uuid => last read), or null.
-	 * @param array<int, string>|null $dateTimeColumns Columns whose real type is a date or timestamp; null when unknown.
-	 * @param array<int, string> $sortLanguages Language chain a translatable property sorts by.
+	 * @param IQueryBuilder $qb   Query builder to modify.
+	 * @param SortRequest   $sort The requested order and what ordering it needs.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
 	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 */
-	private function applyResultOrder(
-		IQueryBuilder $qb,
-		array $order,
-		?Schema $schema,
-		?string $searchTerm,
-		mixed $recentViews,
-		?array $dateTimeColumns = null,
-		array $sortLanguages = []
-	): void {
-		if (empty($order) === false) {
-			$this->applySorting(
-				qb: $qb,
-				order: $order,
-				schema: $schema,
-				searchTerm: $searchTerm,
-				dateTimeColumns: $dateTimeColumns,
-				sortLanguages: $sortLanguages
-			);
+	private function applyResultOrder(IQueryBuilder $qb, SortRequest $sort): void {
+		if (empty($sort->order) === false) {
+			$this->applySorting(qb: $qb, sort: $sort);
 			return;
 		}
 
-		if ($this->applyRecencyOrder(qb: $qb, recentViews: $recentViews) === true) {
+		if ($this->applyRecencyOrder(qb: $qb, recentViews: $sort->recentViews) === true) {
 			return;
 		}
 
@@ -4201,47 +4197,32 @@ class MagicSearchHandler {
 	/**
 	 * Apply sorting to the query
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify
-	 * @param array $order Sort order configuration
-	 * @param Schema $schema Schema for column mapping
-	 * @param string|null $searchTerm Search term for relevance sorting (optional)
-	 * @param array<int, string>|null $dateTimeColumns Columns whose real type is a date or timestamp; null when unknown
-	 * @param array<int, string> $sortLanguages Language chain a translatable property sorts by, first wins
+	 * @param IQueryBuilder $qb   Query builder to modify
+	 * @param SortRequest   $sort The requested order, its schema, search term, date columns and language chain
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/register-i18n/spec.md#requirement-ordering-by-a-text-property-must-ignore-case
 	 */
-	private function applySorting(
-		IQueryBuilder $qb,
-		array $order,
-		Schema $schema,
-		?string $searchTerm = null,
-		?array $dateTimeColumns = null,
-		array $sortLanguages = [],
-	): void {
-		$properties = $schema->getProperties();
+	private function applySorting(IQueryBuilder $qb, SortRequest $sort): void {
+		$properties = $sort->schema->getProperties();
 
-		foreach ($order as $field => $direction) {
+		foreach ($sort->order as $field => $direction) {
 			$direction = strtoupper($direction);
 			if (in_array($direction, ['ASC', 'DESC']) === false) {
 				$direction = 'ASC';
 			}
 
-			// Special handling for relevance sorting (requires pg_trgm extension and a search term).
-			// This uses PostgreSQL's similarity() function for fuzzy relevance scoring.
+			// Relevance sorting needs a search term and the pg_trgm extension;
+			// without them the field is skipped, as ordering by relevance
+			// without a search makes no sense.
 			if ($field === '_relevance') {
-				if ($searchTerm !== null && $this->hasPgTrgmExtension() === true) {
-					// Use named parameter for safety and proper escaping.
-					$paramName = $qb->createNamedParameter($searchTerm);
-					// Nextcloud's QueryBuilder.addOrderBy() accepts expressions through createFunction().
-					$similarityExpr = "similarity(t._name::text, {$paramName})";
-					$qb->addOrderBy($qb->createFunction($similarityExpr), $direction);
+				$relevance = $this->relevanceSortExpression(qb: $qb, sort: $sort);
+				if ($relevance !== null) {
+					$qb->addOrderBy($relevance, $direction);
 				}
 
-				// Skip _relevance if conditions aren't met (no search term or no pg_trgm).
-				// Silently ignore to avoid errors - relevance ordering without search makes no sense.
 				continue;
 			}
 
@@ -4250,23 +4231,7 @@ class MagicSearchHandler {
 				// @self.lastUserActivity → t._last_user_activity).
 				$metadataField = '_' . $this->sanitizeColumnName(name: str_replace('@self.', '', $field));
 				$qb->addOrderBy($this->metadataSortExpression(qb: $qb, column: $metadataField), $direction);
-			} elseif (in_array(
-				$field,
-				[
-					'_created',
-					'_updated',
-					'_name',
-					'_description',
-					'_summary',
-					'_uuid',
-					'_register',
-					'_schema',
-					'_owner',
-					'_organisation',
-				],
-				true
-			) === true
-			) {
+			} elseif (in_array($field, self::SORTABLE_METADATA_COLUMNS, true) === true) {
 				// Direct metadata column reference (e.g., _created → t._created).
 				$qb->addOrderBy($this->metadataSortExpression(qb: $qb, column: $field), $direction);
 			} elseif (is_array($properties[$field] ?? null) === true
@@ -4278,33 +4243,49 @@ class MagicSearchHandler {
 				// every map row: two sorted runs (dossiq case types, cloud
 				// check 8 October 2026). Order on the value a person sees.
 				// Lower-cased, like every text order (see buildPropertySortExpression()).
-				$columnName = $this->sanitizeColumnName(name: $field);
+				$column = $qb->getColumnName($this->sanitizeColumnName(name: $field), 't');
 				$qb->addOrderBy(
 					$qb->createFunction(
 						$this->lowerSql(
-							expression: $this->buildTranslatableSortSql(
-								column: $qb->getColumnName($columnName, 't'),
-								languages: $sortLanguages
-							)
+							expression: $this->buildTranslatableSortSql(column: $column, languages: $sort->sortLanguages)
 						)
 					),
 					$direction
 				);
 			} elseif (($properties[$field] ?? null) !== null) {
 				// Schema property field sorting.
-				$columnName = $this->sanitizeColumnName(name: $field);
 				$qb->addOrderBy(
 					$this->buildPropertySortExpression(
 						qb: $qb,
-						columnName: $columnName,
+						columnName: $this->sanitizeColumnName(name: $field),
 						propertyConfig: $properties[$field],
-						dateTimeColumns: $dateTimeColumns
+						dateTimeColumns: $sort->dateTimeColumns
 					),
 					$direction
 				);
 			}//end if
 		}//end foreach
 	}//end applySorting()
+
+	/**
+	 * The relevance order of a search: similarity of the name to the search term.
+	 *
+	 * @param IQueryBuilder $qb   Query builder the expression binds its parameter on.
+	 * @param SortRequest   $sort The requested order, carrying the search term.
+	 *
+	 * @return IQueryFunction|null The expression, or null without a search term or pg_trgm.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-multi-field-sorting-with-metadata-and-relevance-support
+	 */
+	private function relevanceSortExpression(IQueryBuilder $qb, SortRequest $sort): ?IQueryFunction {
+		if ($sort->searchTerm === null || $this->hasPgTrgmExtension() === false) {
+			return null;
+		}
+
+		// Nextcloud's QueryBuilder.addOrderBy() accepts expressions through createFunction().
+		$paramName = $qb->createNamedParameter($sort->searchTerm);
+		return $qb->createFunction("similarity(t._name::text, {$paramName})");
+	}//end relevanceSortExpression()
 
 	/**
 	 * The languages a translatable property sorts by, in the order rendering
