@@ -116,7 +116,7 @@ final class ScheduledFire {
 	) {
 		$this->schemaId = (int)$schema->getId();
 		$this->filter   = (array)($trigger['filter'] ?? []);
-		$this->seenAt   = DateTime::createFromImmutable($nowDt);
+		$this->seenAt   = new DateTime($nowDt->format('Y-m-d H:i:s.u'), $nowDt->getTimezone());
 	}//end __construct()
 
 	/**
