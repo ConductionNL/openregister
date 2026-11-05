@@ -88,6 +88,19 @@ def strip_strings_and_comments(src):
     return re.sub(pattern, blank, src, flags=re.S)
 
 
+DOC_TYPE_TAG = re.compile(r'@(?:param|return|var|throws|property|method|template|extends|implements|mixin|psalm-|phpstan-)')
+
+
+def reference_view(src):
+    """Blank string literals and comments except the lines of a type tag, which name classes as code does."""
+    def keep_tags(m):
+        if m.group(0)[:1] in ('\'', '"'):
+            return re.sub(r'[^\n]', ' ', m.group(0))
+        return '\n'.join(ln if DOC_TYPE_TAG.search(ln) else re.sub(r'.', ' ', ln) for ln in m.group(0).split('\n'))
+    pattern = r"/\*.*?\*/|//[^\n]*|#(?!\[)[^\n]*|'(?:[^'\\]|\\.)*'|\"(?:[^\"\\]|\\.)*\""
+    return re.sub(pattern, keep_tags, src, flags=re.S)
+
+
 def imported_names(src):
     """Short names a file imports or declares, so no `use` is added for them."""
     names = set()
@@ -268,13 +281,14 @@ def main():
         if fqcn in new_of:
             src = qualify_relative_names(src, old_ns, new_of, imported)
         needed = set()
+        refs = reference_view(src)
         for short, neighbour in by_ns[old_ns].items():
             if neighbour == fqcn or short in imported:
                 continue
             target = new_of.get(neighbour, neighbour)
             if split_fqcn(target)[0] == own_new_ns:
                 continue
-            if re.search(rf'(?<![\\\w$]){re.escape(short)}\b', src):
+            if re.search(rf'(?<![\\\w$]){re.escape(short)}\b', refs):
                 needed.add(target)
         clash = {split_fqcn(f)[1] for f in needed} & imported
         if clash:
