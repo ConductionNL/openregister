@@ -151,15 +151,8 @@ class EndpointService {
 	 */
 	public function testEndpoint(Endpoint $endpoint, array $testData = []): array {
 		try {
-			// Step 1: Check if user has permission to execute this endpoint.
-			// Validates user group membership and endpoint access permissions.
 			if ($this->canExecuteEndpoint(endpoint: $endpoint) === false) {
-				return [
-					'success' => false,
-					'statusCode' => 403,
-					'response' => null,
-					'error' => 'Access denied: You do not have permission to execute this endpoint.',
-				];
+				return $this->failure(statusCode: 403, error: 'Access denied: You do not have permission to execute this endpoint.');
 			}
 
 			return $this->runEndpointTest(endpoint: $endpoint, testData: $testData);
@@ -169,7 +162,7 @@ class EndpointService {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'endpoint_id' => $endpoint->getId(), 'trace' => $e->getTraceAsString()]
 			);
 			return $this->failure(statusCode: 500, error: $e->getMessage());
-		}//end try
+		}
 	}//end testEndpoint()
 
 	/**
@@ -188,7 +181,7 @@ class EndpointService {
 			'headers' => [],
 		];
 		$result = $this->executeEndpoint(endpoint: $endpoint, request: $request);
-		$this->logEndpointCall(endpoint: $endpoint, request: $request, result: $result);
+		$this->logEndpointCall(endpoint: $endpoint, exchange: new EndpointExchange(request: $request, result: $result));
 
 		return $result;
 	}//end runEndpointTest()
@@ -322,31 +315,34 @@ class EndpointService {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Permission check has multiple user and group conditions
 	 */
 	private function canExecuteEndpoint(Endpoint $endpoint): bool {
-		// Get current user.
 		$user = $this->userSession->getUser();
 		if ($user === null) {
-			// No user logged in - check if endpoint allows public access.
-			$groups = $endpoint->getGroups();
-			return empty($groups);
+			// Without a user only an endpoint open to everyone may run.
+			return empty($endpoint->getGroups());
 		}
 
-		// Get user's groups.
 		$userGroups = $this->groupManager->getUserGroupIds($user);
-
-		// Check if user is admin.
 		if (in_array('admin', $userGroups) === true) {
 			return true;
 		}
 
-		// Check endpoint groups configuration.
-		$endpointGroups = $endpoint->getGroups();
+		return $this->inAllowedGroup(userGroups: $userGroups, endpointGroups: $endpoint->getGroups());
+	}//end canExecuteEndpoint()
 
-		// If no groups defined, allow all authenticated users.
+	/**
+	 * Whether a user in these groups may run an endpoint limited to those groups;
+	 * an endpoint without groups is open to every authenticated user.
+	 *
+	 * @param array<int, string> $userGroups     The user's group ids.
+	 * @param array|null         $endpointGroups The endpoint's allowed groups.
+	 *
+	 * @return bool
+	 */
+	private function inAllowedGroup(array $userGroups, ?array $endpointGroups): bool {
 		if (empty($endpointGroups) === true) {
 			return true;
 		}
 
-		// Check if user is in any of the allowed groups.
 		foreach ($userGroups as $groupId) {
 			if (in_array($groupId, $endpointGroups) === true) {
 				return true;
@@ -354,86 +350,71 @@ class EndpointService {
 		}
 
 		return false;
-	}//end canExecuteEndpoint()
+	}//end inAllowedGroup()
 
 	/**
 	 * Log an endpoint call
 	 *
-	 * @param Endpoint $endpoint The endpoint that was called
-	 * @param array $request Request data
-	 * @param array $result Result data
+	 * @param Endpoint         $endpoint The endpoint that was called
+	 * @param EndpointExchange $exchange The request and its result
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	private function logEndpointCall(Endpoint $endpoint, array $request, array $result): void {
+	private function logEndpointCall(Endpoint $endpoint, EndpointExchange $exchange): void {
 		try {
-			$log = new EndpointLog();
-
-			// Generate UUID.
-			$log->setUuid(Uuid::v4()->toRfc4122());
-
-			// Set endpoint ID.
-			$log->setEndpointId($endpoint->getId());
-
-			// Set user info.
-			$user = $this->userSession->getUser();
-			if ($user !== null) {
-				$log->setUserId($user->getUID());
-			}
-
-			// Set request/response data.
-			$log->setRequest($request);
-			// POSITIONAL, deliberately. setResponse() is magic — EndpointLog
-			// declares the property, not the method — so it goes through
-			// Entity::__call(array $args), where a NAMED argument lands under
-			// its name and $args[0] is never set. Every endpoint log was
-			// storing a null response.
-			$log->setResponse(
-				[
-					'statusCode' => $result['statusCode'],
-					'body' => $result['response'],
-				]
-			);
-
-			// Set status.
-			$log->setStatusCode($result['statusCode']);
-			$log->setStatusMessage($result['error'] ?? 'Success');
-
-			// Set timestamps.
-			$log->setCreated(new DateTime());
-
-			// Set expiry (1 week from now).
-			$expires = new DateTime();
-			$expires->modify('+1 week');
-			$log->setExpires($expires);
-
-			// Calculate size.
-			$log->calculateSize();
-
-			// Insert log.
-			$this->endpointLogMapper->insert($log);
-
+			$this->endpointLogMapper->insert($this->endpointLog(endpoint: $endpoint, exchange: $exchange));
 			$this->logger->debug(
 				message: '[EndpointService] Endpoint call logged',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'endpoint_id' => $endpoint->getId(),
-					'status_code' => $result['statusCode'],
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'endpoint_id' => $endpoint->getId(), 'status_code' => $exchange->result['statusCode']]
 			);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[EndpointService] Error logging endpoint call: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'endpoint_id' => $endpoint->getId(),
-					'trace' => $e->getTraceAsString(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'endpoint_id' => $endpoint->getId(), 'trace' => $e->getTraceAsString()]
 			);
-		}//end try
+		}
 	}//end logEndpointCall()
+
+	/**
+	 * The log row of one endpoint call, kept for a week.
+	 *
+	 * @param Endpoint         $endpoint The endpoint that was called.
+	 * @param EndpointExchange $exchange The request and its result.
+	 *
+	 * @return EndpointLog
+	 */
+	private function endpointLog(Endpoint $endpoint, EndpointExchange $exchange): EndpointLog {
+		$log = $this->newEndpointLog();
+		$log->setEndpointId($endpoint->getId());
+		$user = $this->userSession->getUser();
+		if ($user !== null) {
+			$log->setUserId($user->getUID());
+		}
+
+		$log->setRequest($exchange->request);
+		// POSITIONAL: setResponse() is magic (Entity::__call), where a named argument never reaches $args[0].
+		$log->setResponse(['statusCode' => $exchange->result['statusCode'], 'body' => $exchange->result['response']]);
+		$log->setStatusCode($exchange->result['statusCode']);
+		$log->setStatusMessage($exchange->result['error'] ?? 'Success');
+		$log->calculateSize();
+
+		return $log;
+	}//end endpointLog()
+
+	/**
+	 * A new log row with its uuid, created now and expiring in a week.
+	 *
+	 * @return EndpointLog
+	 */
+	private function newEndpointLog(): EndpointLog {
+		$log = new EndpointLog();
+		$log->setUuid(Uuid::v4()->toRfc4122());
+		$log->setCreated(new DateTime());
+		$log->setExpires((new DateTime())->modify('+1 week'));
+
+		return $log;
+	}//end newEndpointLog()
+
 }//end class
