@@ -772,9 +772,6 @@
     }
   },
   "src/modals/settings/FileVectorizationModal.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    },
     "no-console": {
       "count": 2
     }
@@ -807,11 +804,8 @@
     }
   },
   "src/modals/settings/ObjectVectorizationModal.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    },
     "no-console": {
-      "count": 4
+      "count": 3
     }
   },
   "src/modals/settings/RebaseConfirmationModal.vue": {
@@ -821,6 +815,16 @@
   },
   "src/modals/settings/index.js": {
     "n/no-unpublished-import": {
+      "count": 1
+    }
+  },
+  "src/modals/settings/vectorization/VectorizationActions.vue": {
+    "@nextcloud/l10n-enforce-ellipsis": {
+      "count": 1
+    }
+  },
+  "src/modals/settings/vectorization/objectVectorizationApi.js": {
+    "no-console": {
       "count": 1
     }
   },
