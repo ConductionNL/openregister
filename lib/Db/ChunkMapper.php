@@ -173,15 +173,7 @@ class ChunkMapper extends QBMapper {
 	 * @return int Total chunk count
 	 */
 	public function countAll(): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->func()->count('id'))
-			->from($this->getTableName());
-
-		$result = $qb->executeQuery();
-		$count = (int)$result->fetchOne();
-		$result->closeCursor();
-
-		return $count;
+		return $this->countChunks(flag: null);
 	}//end countAll()
 
 	/**
@@ -192,24 +184,7 @@ class ChunkMapper extends QBMapper {
 	 * @return int Indexed chunk count
 	 */
 	public function countIndexed(): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->func()->count('id'))
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->eq(
-					'indexed',
-					$qb->createNamedParameter(
-						true,
-						\OCP\DB\QueryBuilder\IQueryBuilder::PARAM_BOOL
-					)
-				)
-			);
-
-		$result = $qb->executeQuery();
-		$count = (int)$result->fetchOne();
-		$result->closeCursor();
-
-		return $count;
+		return $this->countChunks(flag: 'indexed');
 	}//end countIndexed()
 
 	/**
@@ -220,25 +195,29 @@ class ChunkMapper extends QBMapper {
 	 * @return int Vectorized chunk count
 	 */
 	public function countVectorized(): int {
+		return $this->countChunks(flag: 'vectorized');
+	}//end countVectorized()
+
+	/**
+	 * Count the chunks, or only those with a boolean flag column set.
+	 *
+	 * @param string|null $flag The flag column (`indexed`, `vectorized`), or null for all chunks.
+	 *
+	 * @return int The count.
+	 */
+	private function countChunks(?string $flag): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('id'))
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->eq(
-					'vectorized',
-					$qb->createNamedParameter(
-						true,
-						\OCP\DB\QueryBuilder\IQueryBuilder::PARAM_BOOL
-					)
-				)
-			);
+			->from($this->getTableName());
+		if ($flag !== null) {
+			$qb->where($qb->expr()->eq($flag, $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)));
+		}
 
 		$result = $qb->executeQuery();
 		$count = (int)$result->fetchOne();
 		$result->closeCursor();
-
 		return $count;
-	}//end countVectorized()
+	}//end countChunks()
 
 	/**
 	 * Get file source summaries grouped by source_id.
