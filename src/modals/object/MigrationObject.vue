@@ -775,7 +775,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 .migration-step {
 	padding: 0;
 }
@@ -784,17 +786,9 @@ export default {
 	padding-top: 0 !important;
 }
 
-.step-title {
-	margin-top: 0 !important;
-	margin-bottom: 16px;
-	color: var(--color-main-text);
-}
+@include step-title;
 
-.report-title {
-	margin-top: 0 !important;
-	margin-bottom: 16px;
-	color: var(--color-main-text);
-}
+@include report-title;
 
 .migration-step h3 {
 	margin-bottom: 16px;
@@ -812,14 +806,7 @@ export default {
 	border-radius: 4px;
 }
 
-.selected-object-item {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 12px;
-	border-bottom: 1px solid var(--color-border);
-	background-color: var(--color-background-hover);
-}
+@include selected-object-item;
 
 .selected-object-item:last-child {
 	border-bottom: none;
@@ -989,42 +976,17 @@ export default {
 	font-style: italic;
 }
 
-.loading-container {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 16px;
-	padding: 40px;
-}
+@include loading-container;
 
-.object-info strong {
-	display: block;
-	margin-bottom: 4px;
-	color: var(--color-main-text);
-}
+@include object-info-strong;
 
-.object-id {
-	color: var(--color-text-maxcontrast);
-	font-size: 0.9em;
-	margin: 0;
-}
+@include object-id;
 
-.report-section {
-	margin-bottom: 20px;
-	padding: 16px;
-	background-color: var(--color-background-hover);
-	border-radius: 4px;
-}
+@include report-section;
 
-.report-section h4 {
-	margin-bottom: 12px;
-	color: var(--color-main-text);
-}
+@include report-section-h4;
 
-.report-section ul {
-	margin: 0;
-	padding-left: 20px;
-}
+@include report-section-ul;
 
 .report-section li {
 	margin-bottom: 4px;
@@ -1045,11 +1007,7 @@ export default {
 	margin: 16px 0;
 }
 
-.detail-item {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
+@include detail-item;
 
 .detail-label {
 	font-weight: bold;

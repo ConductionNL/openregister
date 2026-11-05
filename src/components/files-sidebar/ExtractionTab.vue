@@ -367,7 +367,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
+
 .extraction-tab {
 	padding: 10px;
 }
@@ -513,11 +515,7 @@ export default {
 	display: inline-flex;
 }
 
-.material-design-icon :deep(svg) {
-	width: 64px;
-	height: 64px;
-	fill: currentColor;
-}
+@include material-design-icon-deep-svg;
 
 @media (prefers-reduced-motion: reduce) {
 	.extraction-tab__chevron {

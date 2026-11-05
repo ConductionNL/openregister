@@ -120,12 +120,10 @@ export default {
 }
 </script>
 
-<style scoped>
-.section {
-	margin-bottom: 32px;
-	padding: 16px;
-	border-bottom: 1px solid var(--color-border);
-}
+<style scoped lang="scss">
+@use '../../../styles/views.scss' as *;
+
+@include section;
 
 .section__loading {
 	color: var(--color-text-maxcontrast);

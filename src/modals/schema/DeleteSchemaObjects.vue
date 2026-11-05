@@ -326,17 +326,12 @@ export default {
 }
 </script>
 
-<style scoped>
-.loading-container {
-	text-align: center;
-	padding: 2rem;
-}
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
 
-.loading-subtitle {
-	color: var(--color-text-lighter);
-	font-size: 0.9rem;
-	margin-top: 0.5rem;
-}
+@include loading-container-2;
+
+@include loading-subtitle;
 
 .success-container {
 	padding: 1rem 0;
@@ -359,13 +354,7 @@ export default {
 	border-radius: var(--border-radius);
 }
 
-.object-breakdown {
-	margin-top: 1rem;
-	padding: 1rem;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	border: 1px solid var(--color-border);
-}
+@include object-breakdown;
 
 .hard-delete-option {
 	margin-top: 1rem;
@@ -395,38 +384,19 @@ export default {
 	border-left: 4px solid var(--color-error);
 }
 
-.breakdown-item {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 0.5rem;
-}
+@include breakdown-item;
 
 .breakdown-item:last-child {
 	margin-bottom: 0;
 }
 
-.breakdown-label {
-	font-weight: 500;
-	color: var(--color-text);
-}
+@include breakdown-label;
 
-.breakdown-value {
-	font-weight: 600;
-	padding: 0.25rem 0.5rem;
-	border-radius: var(--border-radius);
-	background: var(--color-background-hover);
-}
+@include breakdown-value;
 
-.breakdown-value.invalid {
-	color: var(--color-warning);
-	background: var(--color-warning-light);
-}
+@include breakdown-value-invalid;
 
-.breakdown-value.deleted {
-	color: var(--color-error);
-	background: var(--color-error-light);
-}
+@include breakdown-value-deleted;
 
 .no-objects-info {
 	margin: 1rem 0;

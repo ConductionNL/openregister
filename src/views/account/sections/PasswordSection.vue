@@ -123,35 +123,21 @@ export default {
 }
 </script>
 
-<style scoped>
-.section {
-	margin-bottom: 32px;
-	padding: 16px;
-	border-bottom: 1px solid var(--color-border);
-}
+<style scoped lang="scss">
+@use '../../../styles/common.scss' as *;
+@use '../../../styles/views.scss' as *;
+
+@include section;
 
 .section__field {
 	margin-bottom: 12px;
 }
 
-.section__field label {
-	display: block;
-	margin-bottom: 4px;
-	font-weight: bold;
-}
+@include section-field-label;
 
-.section__disabled {
-	color: var(--color-text-maxcontrast);
-	font-style: italic;
-}
+@include section-disabled;
 
-.section__error {
-	color: var(--color-error);
-	margin-top: 8px;
-}
+@include section-error;
 
-.section__success {
-	color: var(--color-success);
-	margin-top: 8px;
-}
+@include section-success;
 </style>

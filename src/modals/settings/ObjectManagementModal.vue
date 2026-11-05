@@ -517,47 +517,15 @@ export default {
 </script>
 
 <style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 .object-config-content {
 	padding: 20px;
 	max-height: 70vh;
 	overflow-y: auto;
 }
 
-.info-box {
-	display: flex;
-	gap: 12px;
-	padding: 16px;
-	background: var(--color-background-hover);
-	border-radius: 8px;
-	margin-bottom: 24px;
-	align-items: flex-start;
-
-	p {
-		margin: 0;
-		color: var(--color-text-maxcontrast);
-	}
-
-	ul {
-		margin: 8px 0 0 0;
-		padding-left: 20px;
-		color: var(--color-text-maxcontrast);
-
-		li {
-			margin: 4px 0;
-		}
-	}
-
-	&.warning {
-		background: var(--color-warning-light);
-		border-left: 4px solid var(--color-warning);
-
-		strong {
-			color: var(--color-main-text);
-			display: block;
-			margin-bottom: 8px;
-		}
-	}
-}
+@include info-box;
 
 .config-section {
 	margin-bottom: 32px;
@@ -590,37 +558,7 @@ export default {
 	border-radius: 8px;
 }
 
-.form-group {
-	margin-bottom: 20px;
-
-	label {
-		display: block;
-		margin-bottom: 8px;
-		font-weight: 500;
-	}
-
-	.input-field {
-		width: 100%;
-		padding: 10px 12px;
-		border: 1px solid var(--color-border);
-		border-radius: 6px;
-		font-size: 14px;
-		background: var(--color-main-background);
-		color: var(--color-main-text);
-
-		&:focus {
-			outline: none;
-			border-color: var(--color-primary-element);
-		}
-	}
-
-	small {
-		display: block;
-		margin-top: 6px;
-		color: var(--color-text-maxcontrast);
-		font-size: 12px;
-	}
-}
+@include form-group;
 
 .view-selection {
 	margin-top: 20px;
@@ -717,54 +655,14 @@ export default {
 	}
 }
 
-.info-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-	gap: 16px;
-	margin-bottom: 16px;
-}
+@include info-grid;
 
-.info-item {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-	padding: 12px;
-	background: var(--color-background-hover);
-	border-radius: 6px;
+@include info-item;
 
-	.info-label {
-		font-size: 12px;
-		color: var(--color-text-maxcontrast);
-		font-weight: 500;
-	}
-
-	.info-value {
-		font-size: 14px;
-		color: var(--color-main-text);
-		font-weight: 600;
-	}
-}
-
-.info-note {
-	padding: 12px;
-	background: var(--color-background-dark);
-	border-radius: 6px;
-	margin-top: 16px;
-
-	small {
-		color: var(--color-text-maxcontrast);
-		font-size: 13px;
-	}
-}
+@include info-note;
 
 /* Actions layout */
-:deep(.dialog__actions) {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: 16px;
-	flex-wrap: wrap;
-}
+@include deep-dialog-actions;
 
 .actions-left {
 	display: flex;
@@ -772,11 +670,7 @@ export default {
 	align-items: center;
 }
 
-.actions-right {
-	display: flex;
-	gap: 8px;
-	margin-left: auto;
-}
+@include actions-right;
 
 .progress-indicator {
 	display: flex;
@@ -791,16 +685,5 @@ export default {
 	}
 }
 
-@media (max-width: 768px) {
-	:deep(.dialog__actions) {
-		flex-direction: column;
-		align-items: stretch;
-	}
-
-	.actions-left,
-	.actions-right {
-		width: 100%;
-		justify-content: center;
-	}
-}
+@include media-max-width-768px;
 </style>

@@ -610,7 +610,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/sidebars.scss' as *;
+
 .filterSection,
 .statsSection {
 	padding: 12px 0;
@@ -631,18 +633,9 @@ export default {
 	margin: 0 0 12px 0;
 }
 
-.filterGroup {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	padding: 0 16px;
-	margin-bottom: 16px;
-}
+@include filter-group;
 
-.filterGroup label {
-	font-size: 0.9em;
-	color: var(--color-text-maxcontrast);
-}
+@include filter-group-label;
 
 .filter-hint {
 	margin: 8px 16px;
@@ -661,25 +654,11 @@ export default {
 	font-size: 0.9rem;
 }
 
-.statCard {
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	padding: 16px;
-	margin-bottom: 12px;
-	text-align: center;
-}
+@include stat-card;
 
-.statNumber {
-	font-size: 2rem;
-	font-weight: bold;
-	color: var(--color-primary);
-	margin-bottom: 4px;
-}
+@include stat-number;
 
-.statLabel {
-	font-size: 0.9rem;
-	color: var(--color-text-maxcontrast);
-}
+@include stat-label;
 
 .topDeleters {
 	margin-top: 20px;

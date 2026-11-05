@@ -2057,18 +2057,12 @@ export default {
 }
 </script>
 
-<style scoped>
-.viewContainer {
-	padding: 20px;
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
 
-.viewHeader {
-	border-bottom: 1px solid var(--color-border);
-	padding-bottom: 12px;
-}
+@include view-container;
+
+@include view-header;
 
 .viewHeaderTitle {
 	display: flex;
@@ -2097,10 +2091,7 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
-.viewActions {
-	display: flex;
-	gap: 8px;
-}
+@include view-actions;
 
 .tableContainer {
 	border: 1px solid var(--color-border);
@@ -2139,10 +2130,7 @@ export default {
 	text-transform: uppercase;
 }
 
-.badge-status-published {
-	background: var(--color-success);
-	color: var(--color-primary-text);
-}
+@include badge-status-published;
 
 .badge-status-archived {
 	background: var(--color-warning);

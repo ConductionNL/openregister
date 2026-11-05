@@ -230,12 +230,10 @@ export default {
 }
 </script>
 
-<style>
-.formContainer {
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
-}
+<style lang="scss">
+@use '../../styles/modals.scss' as *;
+
+@include form-container;
 
 .formGroup {
 	display: flex;

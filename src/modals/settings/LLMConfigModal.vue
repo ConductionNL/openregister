@@ -1526,6 +1526,8 @@ export default {
 </script>
 
 <style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 .llm-config-content {
 	padding: 20px;
 	max-height: 70vh;
@@ -1744,13 +1746,7 @@ export default {
 }
 
 /* Actions layout */
-:deep(.dialog__actions) {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: 16px;
-	flex-wrap: wrap;
-}
+@include deep-dialog-actions;
 
 .actions-left {
 	display: flex;
@@ -1759,11 +1755,7 @@ export default {
 	flex-wrap: wrap;
 }
 
-.actions-right {
-	display: flex;
-	gap: 8px;
-	margin-left: auto;
-}
+@include actions-right;
 
 .test-result-inline {
 	padding: 8px 12px;

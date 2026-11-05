@@ -487,49 +487,25 @@ export default {
 }
 </script>
 
-<style scoped>
-.viewContainer {
-	padding: 20px;
-	max-width: 100%;
-}
+<style scoped lang="scss">
+@use '../../styles/common.scss' as *;
+@use '../../styles/views.scss' as *;
+
+@include view-container-2;
 
 .viewHeader {
 	margin-bottom: 20px;
 }
 
-.viewHeaderTitle {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	margin-bottom: 8px;
-}
+@include view-header-title;
 
-.viewHeaderTitleIndented {
-	margin: 0;
-	font-size: 28px;
-	font-weight: 600;
-}
+@include view-header-title-indented;
 
-.viewHeader p {
-	color: var(--color-text-maxcontrast);
-	margin: 0;
-}
+@include view-header-p;
 
-.viewActionsBar {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 20px;
-	padding: 12px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius-large);
-}
+@include view-actions-bar;
 
-.viewInfo {
-	display: flex;
-	gap: 12px;
-	align-items: center;
-}
+@include view-info;
 
 .viewTotalCount {
 	font-weight: 600;
@@ -541,51 +517,19 @@ export default {
 	align-items: center;
 }
 
-.tableContainer {
-	background: var(--color-main-background);
-	border-radius: var(--border-radius-large);
-	overflow-x: auto;
-	overflow-y: visible;
-	min-height: 200px;
-}
+@include table-container-2;
 
-.tableContainer.is-loading {
-	overflow: hidden;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
+@include table-container-is-loading;
 
-.loadingWrapper {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 100%;
-	padding: 40px;
-}
+@include loading-wrapper;
 
-.webhooksTable {
-	width: 100%;
-	border-collapse: collapse;
-	min-width: 100%;
-}
+@include webhooks-table;
 
-.webhooksTable thead {
-	background: var(--color-background-hover);
-	border-bottom: 2px solid var(--color-border);
-}
+@include webhooks-table-thead;
 
-.webhooksTable th {
-	padding: 12px 16px;
-	text-align: left;
-	font-weight: 600;
-	white-space: nowrap;
-}
+@include webhooks-table-th;
 
-.webhooksTable td {
-	padding: 12px 16px;
-	border-bottom: 1px solid var(--color-border);
-}
+@include webhooks-table-td;
 
 .webhooksTable tbody tr:hover {
 	background: var(--color-background-hover);
@@ -601,29 +545,15 @@ export default {
 	text-align: right;
 }
 
-.webhooksTable thead .column-actions {
-	position: sticky;
-	right: 0;
-	background: var(--color-background-hover);
-	z-index: 10;
-	min-width: 80px;
-	width: 80px;
-	text-align: right;
-}
+@include webhooks-table-thead-column-actions;
 
 .webhooksTable tbody tr:hover .column-actions {
 	background: var(--color-background-hover);
 }
 
-.status-success {
-	color: var(--color-success);
-	font-weight: 600;
-}
+@include status-success;
 
-.status-failed {
-	color: var(--color-error);
-	font-weight: 600;
-}
+@include status-failed;
 
 .event-class {
 	font-family: monospace;

@@ -770,18 +770,12 @@ export default {
 }
 </script>
 
-<style scoped>
-.viewContainer {
-	padding: 20px;
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
 
-.viewHeader {
-	border-bottom: 1px solid var(--color-border);
-	padding-bottom: 12px;
-}
+@include view-container;
+
+@include view-header;
 
 .viewHeaderTitle {
 	display: flex;

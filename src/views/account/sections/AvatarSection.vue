@@ -137,27 +137,16 @@ export default {
 }
 </script>
 
-<style scoped>
-.section {
-	margin-bottom: 32px;
-	padding: 16px;
-	border-bottom: 1px solid var(--color-border);
-}
+<style scoped lang="scss">
+@use '../../../styles/views.scss' as *;
 
-.section__disabled {
-	color: var(--color-text-maxcontrast);
-	font-style: italic;
-}
+@include section;
 
-.section__error {
-	color: var(--color-error);
-	margin-top: 8px;
-}
+@include section-disabled;
 
-.section__success {
-	color: var(--color-success);
-	margin-top: 8px;
-}
+@include section-error;
+
+@include section-success;
 
 .avatar-section {
 	display: flex;

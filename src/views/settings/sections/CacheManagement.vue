@@ -777,7 +777,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../styles/views.scss' as *;
+
 /* SettingsSection handles all action button positioning and spacing */
 
 .cache-unavailable {
@@ -1004,10 +1006,7 @@ export default {
 	margin: 0;
 }
 
-.loading-icon {
-	margin: 40px auto;
-	display: block;
-}
+@include loading-icon;
 
 /* Status classes */
 .status-enabled {

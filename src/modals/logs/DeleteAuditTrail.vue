@@ -184,7 +184,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 .audit-trail-info {
 	background: var(--color-background-hover);
 	padding: 16px;
@@ -196,17 +198,7 @@ export default {
 	margin: 8px 0;
 }
 
-.action-badge {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 0.75rem;
-	font-weight: 600;
-	color: white;
-	background: var(--color-text-maxcontrast);
-}
+@include action-badge;
 
 .action-badge.action-create {
 	background: var(--color-success);

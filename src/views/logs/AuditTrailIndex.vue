@@ -812,7 +812,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
+
 /* Row accent, keyed on the CnStatusBadge variant that getRowClass resolves from
    actionColorMap — so the accent colour is always the Action badge's colour.
 
@@ -847,21 +849,7 @@ export default {
 	animation: copySuccess 0.3s ease-in-out;
 }
 
-@keyframes copySuccess {
-	0% {
-		transform: scale(1);
-	}
-	50% {
-		transform: scale(1.2);
-	}
-	100% {
-		transform: scale(1);
-	}
-}
+@include keyframes-copy-success;
 
-@media (prefers-reduced-motion: reduce) {
-	:deep(.copySuccessIcon) {
-		animation: none;
-	}
-}
+@include media-prefers-reduced-motion-reduce-2;
 </style>

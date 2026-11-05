@@ -113,26 +113,18 @@ export default {
 }
 </script>
 
-<style scoped>
-.section {
-	margin-bottom: 32px;
-	padding: 16px;
-	border-bottom: 1px solid var(--color-border);
-}
+<style scoped lang="scss">
+@use '../../../styles/views.scss' as *;
+
+@include section;
 
 .section__loading {
 	color: var(--color-text-maxcontrast);
 }
 
-.section__error {
-	color: var(--color-error);
-	margin-top: 8px;
-}
+@include section-error;
 
-.section__success {
-	color: var(--color-success);
-	margin-top: 8px;
-}
+@include section-success;
 
 .notifications-section__toggle {
 	margin-bottom: 8px;

@@ -434,121 +434,56 @@ export default {
 }
 </script>
 
-<style scoped>
-.loading-container {
-	text-align: center;
-	padding: 2rem;
-}
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
 
-.loading-subtitle {
-	color: var(--color-text-lighter);
-	font-size: 0.9rem;
-	margin-top: 0.5rem;
-}
+@include loading-container-2;
+
+@include loading-subtitle;
 
 .confirmation-container {
 	padding: 1rem 0;
 }
 
-.object-count-section {
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	padding: 1rem;
-	margin-bottom: 2rem;
-}
+@include object-count-section;
 
-.object-count-section h4 {
-	margin-top: 0;
-	margin-bottom: 1rem;
-	color: var(--color-text);
-}
+@include object-count-section-h4;
 
-.object-count-centered {
-	display: flex;
-	align-items: baseline;
-	justify-content: center;
-	gap: 0.5rem;
-	font-size: 1.2rem;
-}
+@include object-count-centered;
 
-.count-value {
-	font-size: 2rem;
-	font-weight: bold;
-	color: var(--color-primary-element);
-}
+@include count-value;
 
 .count-label {
 	color: var(--color-text-lighter);
 }
 
-.loading-count {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 0.5rem;
-	color: var(--color-text-lighter);
-}
+@include loading-count;
 
-.object-breakdown {
-	margin-top: 1rem;
-	padding: 1rem;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	border: 1px solid var(--color-border);
-}
+@include object-breakdown;
 
-.breakdown-item {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 0.5rem;
-}
+@include breakdown-item;
 
 .breakdown-item:last-child {
 	margin-bottom: 0;
 }
 
-.breakdown-label {
-	font-weight: 500;
-	color: var(--color-text);
-}
+@include breakdown-label;
 
-.breakdown-value {
-	font-weight: 600;
-	padding: 0.25rem 0.5rem;
-	border-radius: var(--border-radius);
-	background: var(--color-background-hover);
-}
+@include breakdown-value;
 
-.breakdown-value.invalid {
-	color: var(--color-warning);
-	background: var(--color-warning-light);
-}
+@include breakdown-value-invalid;
 
-.breakdown-value.deleted {
-	color: var(--color-error);
-	background: var(--color-error-light);
-}
+@include breakdown-value-deleted;
 
 .steps-section {
 	margin-bottom: 2rem;
 }
 
-.steps-section h4 {
-	margin-bottom: 1rem;
-	color: var(--color-text);
-}
+@include steps-section-h4;
 
-.steps-list {
-	margin: 0;
-	padding-left: 1.5rem;
-	color: var(--color-text);
-}
+@include steps-list;
 
-.steps-list li {
-	margin-bottom: 0.5rem;
-	line-height: 1.5;
-}
+@include steps-list-li;
 
 .results-container {
 	padding: 1rem 0;

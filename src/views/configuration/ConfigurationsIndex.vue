@@ -831,7 +831,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/common.scss' as *;
+
 /* Badge styles for table view only (card view uses ConfigurationCard styles) */
 .configBadge {
 	display: inline-flex;
@@ -863,15 +865,9 @@ export default {
 }
 
 /* Sync status badges */
-.configBadge--sync-success {
-	background-color: var(--color-success-light);
-	color: var(--color-success-dark);
-}
+@include config-badge-sync-success;
 
-.configBadge--sync-failed {
-	background-color: var(--color-error-light);
-	color: var(--color-error-dark);
-}
+@include config-badge-sync-failed;
 
 .configBadge--sync-pending,
 .configBadge--sync-never {
@@ -880,10 +876,7 @@ export default {
 }
 
 /* Update available badge */
-.configBadge--update {
-	background-color: var(--color-warning);
-	color: var(--color-main-text);
-}
+@include config-badge-update;
 
 /* Badge container for table view */
 .statusPillsContainer {

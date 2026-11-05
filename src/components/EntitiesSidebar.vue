@@ -231,7 +231,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../styles/components.scss' as *;
+
 .entities-sidebar {
 	padding: 16px;
 	background: var(--color-main-background);
@@ -246,12 +248,7 @@ export default {
 	margin-bottom: 20px;
 }
 
-.sidebar-header h3 {
-	font-size: 18px;
-	font-weight: 600;
-	margin: 0;
-	color: var(--color-main-text);
-}
+@include sidebar-header-h3;
 
 .search-section {
 	margin-bottom: 24px;
@@ -261,18 +258,9 @@ export default {
 	margin-bottom: 24px;
 }
 
-.filter-section h4 {
-	font-size: 14px;
-	font-weight: 600;
-	color: var(--color-main-text);
-	margin: 0 0 12px 0;
-}
+@include filter-section-h4;
 
-.filter-options {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
+@include filter-options;
 
 .clear-filters {
 	margin-top: 20px;

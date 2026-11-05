@@ -575,6 +575,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@use '../../styles/sidebars.scss' as *;
+
 .section {
 	padding: 12px 0;
 	border-bottom: 1px solid var(--color-border);
@@ -584,20 +586,9 @@ export default {
 	}
 }
 
-.sectionTitle {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-	font-weight: bold;
-	padding: 0 16px;
-	margin: 0 0 12px 0;
-}
+@include section-title;
 
-.statsStack {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	padding: 0 8px;
-}
+@include stats-stack;
 
 .schemaList {
 	padding: 0 16px;

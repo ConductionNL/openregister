@@ -223,7 +223,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 .viewConfigurationDialog {
 	display: flex;
 	flex-direction: column;
@@ -255,45 +257,21 @@ export default {
 	border-radius: var(--border-radius);
 }
 
-.propertyItem {
-	display: flex;
-	gap: 0.5rem;
-}
+@include property-item;
 
-.propertyItem strong {
-	min-width: 120px;
-	color: var(--color-text-lighter);
-}
+@include property-item-strong;
 
 .tabContainer {
 	margin-top: 1rem;
 }
 
-.tabHeaders {
-	display: flex;
-	border-bottom: 1px solid var(--color-border);
-	margin-bottom: 1rem;
-}
+@include tab-headers;
 
-.tabHeader {
-	padding: 0.75rem 1rem;
-	background: none;
-	border: none;
-	cursor: pointer;
-	color: var(--color-text-lighter);
-	border-bottom: 2px solid transparent;
-	transition: all 0.2s ease;
-}
+@include tab-header;
 
-.tabHeader:hover {
-	color: var(--color-main-text);
-	background-color: var(--color-background-hover);
-}
+@include tab-header-hover;
 
-.tabHeader.active {
-	color: var(--color-primary);
-	border-bottom-color: var(--color-primary);
-}
+@include tab-header-active;
 
 .tabContent {
 	min-height: 200px;
@@ -333,16 +311,7 @@ export default {
 	color: var(--color-main-text);
 }
 
-.emptyTabContent {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	min-height: 200px;
-}
+@include empty-tab-content;
 
-@media (prefers-reduced-motion: reduce) {
-	.tabHeader {
-		transition: none;
-	}
-}
+@include media-prefers-reduced-motion-reduce;
 </style>

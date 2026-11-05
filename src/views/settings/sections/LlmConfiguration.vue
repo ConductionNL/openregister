@@ -1095,31 +1095,17 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../styles/common.scss' as *;
+@use '../../../styles/views.scss' as *;
+
 /* SettingsSection handles all action button positioning and spacing */
 
-.section-description-full {
-	background: var(--color-background-hover);
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius-large);
-	padding: 20px;
-	margin-bottom: 20px;
-}
+@include section-description-full;
 
-.main-description {
-	color: var(--color-text-light);
-	font-size: 14px;
-	line-height: 1.6;
-	margin: 0 0 16px 0;
-}
+@include main-description;
 
-.main-description.info-note {
-	background: var(--color-background-dark);
-	border-left: 4px solid var(--color-primary-element);
-	padding: 12px 16px;
-	border-radius: var(--border-radius);
-	margin-top: 16px;
-}
+@include main-description-info-note;
 
 .main-description.info-note strong {
 	color: var(--color-primary-element);
@@ -1176,10 +1162,7 @@ export default {
 	gap: 16px;
 }
 
-.loading-section p {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-}
+@include loading-section-p;
 
 .dashboard-section {
 	margin-top: 20px;

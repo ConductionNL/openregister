@@ -693,26 +693,18 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 /* EditApplication-specific styles */
 .tabContainer {
 	margin-top: 20px;
 }
 
 /* Tab title styling with icons */
-.tabContainer :deep(.nav-link) {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	justify-content: center;
-}
+@include tab-container-deep-nav-link;
 
-.form-editor {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding: 16px 0;
-}
+@include form-editor;
 
 .option-content {
 	display: flex;
@@ -730,40 +722,19 @@ export default {
 	color: var(--color-text-lighter);
 }
 
-.groups-select-container {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
+@include groups-select-container;
 
-.groups-label {
-	font-weight: 500;
-	color: var(--color-main-text);
-	font-size: 14px;
-}
+@include groups-label;
 
-.field-hint {
-	font-size: 12px;
-	color: var(--color-text-lighter);
-	margin: 0;
-}
+@include field-hint;
 
-.group-option {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
+@include group-option;
 
 .group-name {
 	font-weight: 500;
 }
 
-.security-section {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding: 16px 0;
-}
+@include security-section;
 
 .rbac-container {
 	display: flex;
@@ -772,71 +743,23 @@ export default {
 	padding: 0;
 }
 
-.rbac-section {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
+@include rbac-section;
 
-.rbac-description {
-	font-size: 14px;
-	color: var(--color-text-lighter);
-	margin: 0 0 16px 0;
-}
+@include rbac-description;
 
-.loading-groups {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	color: var(--color-text-lighter);
-	padding: 16px;
-}
+@include loading-groups;
 
-.groups-list {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
+@include groups-list;
 
-.groups-list h3 {
-	margin: 0;
-	font-size: 16px;
-	font-weight: 500;
-	color: var(--color-main-text);
-}
+@include groups-list-h3;
 
-.group-items {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
+@include group-items;
 
-.group-item {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 8px 12px;
-	background-color: var(--color-background-hover);
-	border-radius: var(--border-radius);
-}
+@include group-item;
 
-.group-badge {
-	display: inline-flex;
-	align-items: center;
-	padding: 4px 12px;
-	background-color: var(--color-primary-element-light);
-	color: var(--color-primary-element-text);
-	border-radius: 16px;
-	font-size: 13px;
-	font-weight: 500;
-}
+@include group-badge;
 
-.no-groups {
-	padding: 16px;
-	text-align: center;
-	color: var(--color-text-lighter);
-	font-style: italic;
-}
+@include no-groups;
 
 .no-groups p {
 	margin: 0;

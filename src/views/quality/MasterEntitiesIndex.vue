@@ -255,7 +255,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
+
 .viewContainer {
 	padding: 20px;
 	display: flex;
@@ -296,9 +298,5 @@ export default {
 	background-color: var(--color-background-hover);
 }
 
-.badge {
-	padding: 2px 8px;
-	border-radius: var(--border-radius-pill);
-	background-color: var(--color-background-dark);
-}
+@include badge-2;
 </style>
