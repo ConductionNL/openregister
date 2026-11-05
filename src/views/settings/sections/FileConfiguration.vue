@@ -1040,6 +1040,79 @@ function applyEnabledFileTypes(fileTypes, settings) {
 	})
 }
 
+/**
+ * The extraction settings to save.
+ *
+ * @param {object} settings The form state
+ * @return {object} The settings
+ */
+function extractionFields(settings) {
+	return {
+		extractionScope: settings.extractionScope?.id || 'objects',
+		textExtractor: settings.textExtractor?.id || 'llphant',
+		extractionMode: settings.extractionMode?.id || 'background',
+		includeInSearch: settings.includeInSearch,
+		maxFileSize: settings.maxFileSize,
+		chunkSize: settings.chunkSize,
+		chunkOverlap: settings.chunkOverlap,
+		chunkingStrategy: settings.chunkingStrategy,
+		batchSize: settings.batchSize,
+	}
+}
+
+/**
+ * The text recognition settings to save.
+ *
+ * @param {object} settings The form state
+ * @return {object} The settings
+ */
+function recognitionFields(settings) {
+	return {
+		dolphinApiEndpoint: settings.dolphinApiEndpoint || '',
+		dolphinApiKey: settings.dolphinApiKey || '',
+		entityRecognitionEnabled: settings.entityRecognitionEnabled,
+		entityRecognitionMethod: settings.entityRecognitionMethod?.id || 'regex',
+		presidioApiEndpoint: settings.presidioApiEndpoint || '',
+	}
+}
+
+/**
+ * The OpenAnonymiser settings to save, without the password.
+ *
+ * @param {object} settings The form state
+ * @return {object} The settings
+ */
+function openAnonymiserFields(settings) {
+	return {
+		openAnonymiserApiEndpoint: settings.openAnonymiserApiEndpoint || '',
+		openAnonymiserSource: settings.openAnonymiserSource || 'internal',
+		openAnonymiserUsername: settings.openAnonymiserUsername || '',
+	}
+}
+
+const FILE_COUNTS = [
+	'totalFiles',
+	'untrackedFiles',
+	'pendingFiles',
+	'processedFiles',
+	'failedFiles',
+	'totalChunks',
+]
+
+/**
+ * The extraction statistics to show, zero where the server gave none.
+ *
+ * @param {object} stats The server's statistics
+ * @return {object} The statistics
+ */
+function extractionStatsOf(stats) {
+	return {
+		...Object.fromEntries(FILE_COUNTS.map((key) => [key, stats[key] || 0])),
+		totalObjects: stats.totalObjects || stats.total_objects || 0,
+		totalEntities: stats.totalEntities || stats.total_entities || 0,
+	}
+}
+
 export default {
 	name: 'FileConfiguration',
 
@@ -1598,40 +1671,49 @@ export default {
 				const state = await this.settingsStore.getAnonymisationBackendState()
 				this.backendState = state
 				this.openAnonymiserError = null
-
-				// Resolve the invisible 'auto' (not-yet-configured) marker to the concrete
-				// recommended method so the dropdown shows a real choice; persisted on save.
-				const currentId = this.fileSettings.entityRecognitionMethod?.id
-				if (
-					state
-					&& (currentId === 'auto'
-						|| !this.entityRecognitionMethods.some(
-							(m) => m.id === currentId,
-						))
-				) {
-					const resolved = state.activeMethod || 'regex'
-					this.fileSettings.entityRecognitionMethod =
-						this.entityRecognitionMethods.find((m) => m.id === resolved)
-						|| this.entityRecognitionMethods[0]
-				}
-
-				// When the ExApp is not available, probe once to capture the precise reason
-				// (appapi_missing / exapp_not_installed / exapp_disabled) for the install hint.
-				if (
-					state
-					&& state.backends
-					&& state.backends.openanonymiser
-					&& state.backends.openanonymiser.available === false
-				) {
-					const probe =
-						await this.settingsStore.testAnonymisationBackend(
-							'openanonymiser',
-						)
-					this.openAnonymiserError = probe?.error || null
+				if (state) {
+					this.resolveRecognitionMethod(state)
+					await this.probeUnavailableOpenAnonymiser(state)
 				}
 			} catch (error) {
 				console.error('Failed to load anonymisation backend state:', error)
 			}
+		},
+
+		/**
+		 * Resolve the invisible 'auto' (not-yet-configured) marker, or a method
+		 * that is no longer offered, to the backend's active method so the
+		 * dropdown shows a real choice; persisted on save.
+		 *
+		 * @param {object} state The resolved backend state
+		 * @spec exclude UI plumbing — picks the recognition method shown in the dropdown.
+		 */
+		resolveRecognitionMethod(state) {
+			const currentId = this.fileSettings.entityRecognitionMethod?.id
+			const methods = this.entityRecognitionMethods
+			if (currentId !== 'auto' && methods.some((m) => m.id === currentId)) {
+				return
+			}
+			const resolved = state.activeMethod || 'regex'
+			this.fileSettings.entityRecognitionMethod =
+				methods.find((m) => m.id === resolved) || methods[0]
+		},
+
+		/**
+		 * When the ExApp is not available, probe once to capture the precise reason
+		 * (appapi_missing / exapp_not_installed / exapp_disabled) for the install hint.
+		 *
+		 * @param {object} state The resolved backend state
+		 * @spec exclude UI plumbing — store-delegated probe for the install hint.
+		 * @return {Promise<void>}
+		 */
+		async probeUnavailableOpenAnonymiser(state) {
+			if (state.backends?.openanonymiser?.available !== false) {
+				return
+			}
+			const probe =
+				await this.settingsStore.testAnonymisationBackend('openanonymiser')
+			this.openAnonymiserError = probe?.error || null
 		},
 
 		/**
@@ -1646,32 +1728,10 @@ export default {
 				this.testingBackendMethod = method
 				const probe =
 					await this.settingsStore.testAnonymisationBackend(method)
-
 				if (method === 'openanonymiser') {
 					this.openAnonymiserError = probe?.error || null
 				}
-
-				const reachable = Boolean(probe && probe.reachable)
-				// Persist a per-backend result so the row/button keep showing the outcome.
-				this.backendTestResults = {
-					...this.backendTestResults,
-					[method]: reachable ? 'success' : 'error',
-				}
-
-				if (reachable) {
-					this.showSaveMessage(
-						t('openregister', 'Connection successful'),
-						'success',
-					)
-				} else {
-					this.showSaveMessage(
-						t('openregister', 'Connection failed: {error}', {
-							error: probe?.error || 'unknown',
-						}),
-						'error',
-					)
-				}
-
+				this.reportProbe(method, probe)
 				// Refresh the resolved state so availability indicators reflect the probe.
 				const state = await this.settingsStore.getAnonymisationBackendState()
 				if (state) {
@@ -1679,16 +1739,52 @@ export default {
 				}
 			} catch (error) {
 				console.error('Failed to probe backend:', error)
-				this.backendTestResults = {
-					...this.backendTestResults,
-					[method]: 'error',
-				}
+				this.recordBackendTest(method, 'error')
 				this.showSaveMessage(
 					t('openregister', 'Connection test failed'),
 					'error',
 				)
 			} finally {
 				this.testingBackendMethod = ''
+			}
+		},
+
+		/**
+		 * Record and announce the outcome of a backend probe.
+		 *
+		 * @param {string} method The probed backend method
+		 * @param {object|null} probe The probe result
+		 * @spec exclude UI plumbing — formats a probe outcome message.
+		 */
+		reportProbe(method, probe) {
+			const reachable = Boolean(probe && probe.reachable)
+			this.recordBackendTest(method, reachable ? 'success' : 'error')
+			if (reachable) {
+				this.showSaveMessage(
+					t('openregister', 'Connection successful'),
+					'success',
+				)
+				return
+			}
+			this.showSaveMessage(
+				t('openregister', 'Connection failed: {error}', {
+					error: probe?.error || 'unknown',
+				}),
+				'error',
+			)
+		},
+
+		/**
+		 * Persist a per-backend result so the row/button keep showing the outcome.
+		 *
+		 * @param {string} method The backend method
+		 * @param {string} outcome 'success' or 'error'
+		 * @spec exclude UI plumbing — per-backend test outcome state.
+		 */
+		recordBackendTest(method, outcome) {
+			this.backendTestResults = {
+				...this.backendTestResults,
+				[method]: outcome,
 			}
 		},
 
@@ -1728,58 +1824,54 @@ export default {
 		 */
 		async saveSettings() {
 			try {
-				// The password is only sent when it was typed: a save without the
-				// key keeps the stored one, an empty string clears it.
-				const passwordField = this.openAnonymiserPasswordChanged
-					? { openAnonymiserPassword: this.openAnonymiserPassword }
-					: {}
-				const saved = await this.settingsStore.saveFileSettings({
-					...passwordField,
-					extractionScope:
-						this.fileSettings.extractionScope?.id || 'objects',
-					textExtractor: this.fileSettings.textExtractor?.id || 'llphant',
-					extractionMode:
-						this.fileSettings.extractionMode?.id || 'background',
-					includeInSearch: this.fileSettings.includeInSearch,
-					maxFileSize: this.fileSettings.maxFileSize,
-					chunkSize: this.fileSettings.chunkSize,
-					chunkOverlap: this.fileSettings.chunkOverlap,
-					chunkingStrategy: this.fileSettings.chunkingStrategy,
-					batchSize: this.fileSettings.batchSize,
-					dolphinApiEndpoint: this.fileSettings.dolphinApiEndpoint || '',
-					dolphinApiKey: this.fileSettings.dolphinApiKey || '',
-					entityRecognitionEnabled:
-						this.fileSettings.entityRecognitionEnabled,
-					entityRecognitionMethod:
-						this.fileSettings.entityRecognitionMethod?.id || 'regex',
-					presidioApiEndpoint: this.fileSettings.presidioApiEndpoint || '',
-					openAnonymiserApiEndpoint:
-						this.fileSettings.openAnonymiserApiEndpoint || '',
-					openAnonymiserSource:
-						this.fileSettings.openAnonymiserSource || 'internal',
-					openAnonymiserUsername:
-						this.fileSettings.openAnonymiserUsername || '',
-					enabledFileTypes: this.fileTypes
-						.filter((ft) => ft.enabled)
-						.map((ft) => ft.extension),
-				})
-
-				if (this.openAnonymiserPasswordChanged) {
-					this.openAnonymiserPassword = ''
-					this.openAnonymiserPasswordChanged = false
-				}
-				if (saved && typeof saved.openAnonymiserPasswordSet === 'boolean') {
-					this.fileSettings.openAnonymiserPasswordSet =
-						saved.openAnonymiserPasswordSet
-				}
-
+				const saved = await this.settingsStore.saveFileSettings(
+					this.fileSettingsPayload(),
+				)
+				this.applySavedSettings(saved)
 				// Refresh resolved backend state so the active/recommended indicators stay in sync.
 				await this.loadBackendState()
-
-				// Settings saved silently - no success message
 			} catch (error) {
 				console.error('Failed to save file settings:', error)
 				this.showSaveMessage('Failed to save settings', 'error')
+			}
+		},
+
+		/**
+		 * The file settings to save. The password is only sent when it was typed:
+		 * a save without the key keeps the stored one, an empty string clears it.
+		 *
+		 * @return {object} The settings
+		 * @spec exclude UI plumbing — builds the file settings payload.
+		 */
+		fileSettingsPayload() {
+			const passwordField = this.openAnonymiserPasswordChanged
+				? { openAnonymiserPassword: this.openAnonymiserPassword }
+				: {}
+			return {
+				...passwordField,
+				...extractionFields(this.fileSettings),
+				...recognitionFields(this.fileSettings),
+				...openAnonymiserFields(this.fileSettings),
+				enabledFileTypes: this.fileTypes
+					.filter((ft) => ft.enabled)
+					.map((ft) => ft.extension),
+			}
+		},
+
+		/**
+		 * Clear a sent password and take over whether the server now holds one.
+		 *
+		 * @param {object|null} saved The saved settings
+		 * @spec exclude UI plumbing — write-only credential field state after a save.
+		 */
+		applySavedSettings(saved) {
+			if (this.openAnonymiserPasswordChanged) {
+				this.openAnonymiserPassword = ''
+				this.openAnonymiserPasswordChanged = false
+			}
+			if (saved && typeof saved.openAnonymiserPasswordSet === 'boolean') {
+				this.fileSettings.openAnonymiserPasswordSet =
+					saved.openAnonymiserPasswordSet
 			}
 		},
 
@@ -1958,17 +2050,7 @@ export default {
 			try {
 				const stats = await this.settingsStore.getExtractionStats()
 				if (stats) {
-					this.extractionStats = {
-						totalFiles: stats.totalFiles || 0,
-						untrackedFiles: stats.untrackedFiles || 0,
-						pendingFiles: stats.pendingFiles || 0,
-						processedFiles: stats.processedFiles || 0,
-						failedFiles: stats.failedFiles || 0,
-						totalChunks: stats.totalChunks || 0,
-						totalObjects: stats.totalObjects || stats.total_objects || 0,
-						totalEntities:
-							stats.totalEntities || stats.total_entities || 0,
-					}
+					this.extractionStats = extractionStatsOf(stats)
 				}
 			} catch (error) {
 				console.error('Failed to load extraction stats:', error)
