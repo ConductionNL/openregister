@@ -1,0 +1,1867 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`EditSource golden closes and resets the form 1`] = `
+{
+  "actionLoading": false,
+  "actionMessage": "",
+  "actionMessageType": "success",
+  "connection": {
+    "credential": "",
+    "dbname": "",
+    "host": "",
+    "path": "",
+    "port": "",
+    "user": "",
+    "writable": false,
+  },
+  "driver": {
+    "id": "pdo_pgsql",
+    "label": "PostgreSQL",
+  },
+  "error": false,
+  "hasUpdated": false,
+  "loading": false,
+  "sourceItem": {
+    "databaseUrl": "",
+    "description": "",
+    "id": "",
+    "title": "",
+  },
+  "success": null,
+  "timer": null,
+  "type": {
+    "id": "internal",
+    "label": "Internal",
+  },
+}
+`;
+
+exports[`EditSource golden introspect: badJson 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/introspect",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Not JSON",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden introspect: failed 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/introspect",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Denied",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden introspect: failedBare 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/introspect",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "The action failed",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden introspect: ok 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/introspect",
+      {
+        "headers": {
+          "requesttoken": "",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Virtual register created: {created} new and {updated} updated schemas {"created":0,"updated":0}",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden introspect: okCounts 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/introspect",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Virtual register created: {created} new and {updated} updated schemas {"created":2,"updated":1}",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden introspect: thrown 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/introspect",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Offline",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden introspect: thrownBare 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/introspect",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "The action failed",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden opens on a internal source: dom 1`] = `""`;
+
+exports[`EditSource golden opens on a internal source: form 1`] = `
+{
+  "actionLoading": false,
+  "actionMessage": "",
+  "actionMessageType": "success",
+  "connection": {
+    "credential": "",
+    "dbname": "",
+    "host": "",
+    "path": "",
+    "port": "",
+    "user": "",
+    "writable": false,
+  },
+  "driver": {
+    "id": "pdo_mysql",
+    "label": "MySQL / MariaDB",
+  },
+  "error": false,
+  "hasUpdated": false,
+  "loading": false,
+  "sourceItem": {
+    "description": "d",
+    "id": 7,
+    "title": "Main",
+    "type": "internal",
+  },
+  "success": false,
+  "timer": null,
+  "type": {
+    "id": "internal",
+    "label": "Internal",
+  },
+}
+`;
+
+exports[`EditSource golden opens on a mysql source: dom 1`] = `""`;
+
+exports[`EditSource golden opens on a mysql source: form 1`] = `
+{
+  "actionLoading": false,
+  "actionMessage": "",
+  "actionMessageType": "success",
+  "connection": {
+    "credential": "cred",
+    "dbname": "shop",
+    "host": "db",
+    "path": "",
+    "port": 5432,
+    "user": "u",
+    "writable": true,
+  },
+  "driver": {
+    "id": "pdo_pgsql",
+    "label": "PostgreSQL",
+  },
+  "error": false,
+  "hasUpdated": false,
+  "loading": false,
+  "sourceItem": {
+    "authConfig": {
+      "credential": "cred",
+      "dbname": "shop",
+      "driver": "pdo_pgsql",
+      "host": "db",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "databaseUrl": "ignored",
+    "id": 9,
+    "title": "Shop",
+    "type": "database",
+  },
+  "success": false,
+  "timer": null,
+  "type": {
+    "id": "database",
+    "label": "Database (virtual register)",
+  },
+}
+`;
+
+exports[`EditSource golden opens on a noDriver source: dom 1`] = `""`;
+
+exports[`EditSource golden opens on a noDriver source: form 1`] = `
+{
+  "actionLoading": false,
+  "actionMessage": "",
+  "actionMessageType": "success",
+  "connection": {
+    "credential": "",
+    "dbname": "",
+    "host": "h",
+    "path": "",
+    "port": "",
+    "user": "",
+    "writable": false,
+  },
+  "driver": {
+    "id": "pdo_mysql",
+    "label": "MySQL / MariaDB",
+  },
+  "error": false,
+  "hasUpdated": false,
+  "loading": false,
+  "sourceItem": {
+    "authConfig": {
+      "driver": "oracle",
+      "host": "h",
+    },
+    "id": 11,
+    "title": "Bare",
+    "type": "database",
+  },
+  "success": false,
+  "timer": null,
+  "type": {
+    "id": "database",
+    "label": "Database (virtual register)",
+  },
+}
+`;
+
+exports[`EditSource golden opens on a none source: dom 1`] = `""`;
+
+exports[`EditSource golden opens on a none source: form 1`] = `
+{
+  "actionLoading": false,
+  "actionMessage": "",
+  "actionMessageType": "success",
+  "connection": {
+    "credential": "",
+    "dbname": "",
+    "host": "",
+    "path": "",
+    "port": "",
+    "user": "",
+    "writable": false,
+  },
+  "driver": {
+    "id": "pdo_mysql",
+    "label": "MySQL / MariaDB",
+  },
+  "error": false,
+  "hasUpdated": false,
+  "loading": false,
+  "sourceItem": {
+    "databaseUrl": "",
+    "description": "",
+    "title": "",
+  },
+  "success": false,
+  "timer": null,
+  "type": {
+    "id": "internal",
+    "label": "Internal",
+  },
+}
+`;
+
+exports[`EditSource golden opens on a sqlite source: dom 1`] = `""`;
+
+exports[`EditSource golden opens on a sqlite source: form 1`] = `
+{
+  "actionLoading": false,
+  "actionMessage": "",
+  "actionMessageType": "success",
+  "connection": {
+    "credential": "",
+    "dbname": "",
+    "host": "",
+    "path": "/x.db",
+    "port": "",
+    "user": "",
+    "writable": false,
+  },
+  "driver": {
+    "id": "pdo_sqlite",
+    "label": "SQLite",
+  },
+  "error": false,
+  "hasUpdated": false,
+  "loading": false,
+  "sourceItem": {
+    "authConfig": {
+      "driver": "pdo_sqlite",
+      "path": "/x.db",
+      "writable": "yes",
+    },
+    "id": 10,
+    "title": "Local",
+    "type": "database",
+  },
+  "success": false,
+  "timer": null,
+  "type": {
+    "id": "database",
+    "label": "Database (virtual register)",
+  },
+}
+`;
+
+exports[`EditSource golden opens on a unknownType source: dom 1`] = `""`;
+
+exports[`EditSource golden opens on a unknownType source: form 1`] = `
+{
+  "actionLoading": false,
+  "actionMessage": "",
+  "actionMessageType": "success",
+  "connection": {
+    "credential": "",
+    "dbname": "",
+    "host": "",
+    "path": "",
+    "port": "",
+    "user": "",
+    "writable": false,
+  },
+  "driver": {
+    "id": "pdo_mysql",
+    "label": "MySQL / MariaDB",
+  },
+  "error": false,
+  "hasUpdated": false,
+  "loading": false,
+  "sourceItem": {
+    "id": 8,
+    "title": "Odd",
+    "type": "ftp",
+  },
+  "success": false,
+  "timer": null,
+  "type": {
+    "id": "internal",
+    "label": "Internal",
+  },
+}
+`;
+
+exports[`EditSource golden renders the result notes 1`] = `""`;
+
+exports[`EditSource golden renders the result notes 2`] = `""`;
+
+exports[`EditSource golden renders the result notes 3`] = `""`;
+
+exports[`EditSource golden renders the result notes 4`] = `""`;
+
+exports[`EditSource golden saves a internal source: refused 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "",
+      "dbname": "",
+      "host": "",
+      "path": "",
+      "port": "",
+      "user": "",
+      "writable": false,
+    },
+    "driver": {
+      "id": "pdo_mysql",
+      "label": "MySQL / MariaDB",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "description": "d",
+      "id": 7,
+      "title": "Main",
+      "type": "internal",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "internal",
+      "label": "Internal",
+    },
+  },
+  "sent": [
+    [
+      {
+        "description": "d",
+        "id": 7,
+        "title": "Main",
+        "type": "internal",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a internal source: saved 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "",
+      "dbname": "",
+      "host": "",
+      "path": "",
+      "port": "",
+      "user": "",
+      "writable": false,
+    },
+    "driver": {
+      "id": "pdo_mysql",
+      "label": "MySQL / MariaDB",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "description": "d",
+      "id": 7,
+      "title": "Main",
+      "type": "internal",
+    },
+    "success": true,
+    "timer": "number",
+    "type": {
+      "id": "internal",
+      "label": "Internal",
+    },
+  },
+  "sent": [
+    [
+      {
+        "description": "d",
+        "id": 7,
+        "title": "Main",
+        "type": "internal",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a internal source: thrown 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "",
+      "dbname": "",
+      "host": "",
+      "path": "",
+      "port": "",
+      "user": "",
+      "writable": false,
+    },
+    "driver": {
+      "id": "pdo_mysql",
+      "label": "MySQL / MariaDB",
+    },
+    "error": "Network",
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "description": "d",
+      "id": 7,
+      "title": "Main",
+      "type": "internal",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "internal",
+      "label": "Internal",
+    },
+  },
+  "sent": [
+    [
+      {
+        "description": "d",
+        "id": 7,
+        "title": "Main",
+        "type": "internal",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a internal source: thrownBare 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "",
+      "dbname": "",
+      "host": "",
+      "path": "",
+      "port": "",
+      "user": "",
+      "writable": false,
+    },
+    "driver": {
+      "id": "pdo_mysql",
+      "label": "MySQL / MariaDB",
+    },
+    "error": "An error occurred while saving the source",
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "description": "d",
+      "id": 7,
+      "title": "Main",
+      "type": "internal",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "internal",
+      "label": "Internal",
+    },
+  },
+  "sent": [
+    [
+      {
+        "description": "d",
+        "id": 7,
+        "title": "Main",
+        "type": "internal",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a mysql source: refused 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+  "sent": [
+    [
+      {
+        "authConfig": {
+          "credential": "cred",
+          "dbname": "shop",
+          "driver": "pdo_pgsql",
+          "host": "db",
+          "path": "",
+          "port": 5432,
+          "user": "u",
+          "writable": true,
+        },
+        "id": 9,
+        "title": "Shop",
+        "type": "database",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a mysql source: saved 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": true,
+    "timer": "number",
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+  "sent": [
+    [
+      {
+        "authConfig": {
+          "credential": "cred",
+          "dbname": "shop",
+          "driver": "pdo_pgsql",
+          "host": "db",
+          "path": "",
+          "port": 5432,
+          "user": "u",
+          "writable": true,
+        },
+        "id": 9,
+        "title": "Shop",
+        "type": "database",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a mysql source: thrown 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": "Network",
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+  "sent": [
+    [
+      {
+        "authConfig": {
+          "credential": "cred",
+          "dbname": "shop",
+          "driver": "pdo_pgsql",
+          "host": "db",
+          "path": "",
+          "port": 5432,
+          "user": "u",
+          "writable": true,
+        },
+        "id": 9,
+        "title": "Shop",
+        "type": "database",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a mysql source: thrownBare 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": "An error occurred while saving the source",
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+  "sent": [
+    [
+      {
+        "authConfig": {
+          "credential": "cred",
+          "dbname": "shop",
+          "driver": "pdo_pgsql",
+          "host": "db",
+          "path": "",
+          "port": 5432,
+          "user": "u",
+          "writable": true,
+        },
+        "id": 9,
+        "title": "Shop",
+        "type": "database",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a sqlite source: refused 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "",
+      "dbname": "",
+      "host": "",
+      "path": "/x.db",
+      "port": "",
+      "user": "",
+      "writable": false,
+    },
+    "driver": {
+      "id": "pdo_sqlite",
+      "label": "SQLite",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "driver": "pdo_sqlite",
+        "path": "/x.db",
+        "writable": "yes",
+      },
+      "id": 10,
+      "title": "Local",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+  "sent": [
+    [
+      {
+        "authConfig": {
+          "credential": "",
+          "dbname": "",
+          "driver": "pdo_sqlite",
+          "host": "",
+          "path": "/x.db",
+          "port": "",
+          "user": "",
+          "writable": false,
+        },
+        "id": 10,
+        "title": "Local",
+        "type": "database",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a sqlite source: saved 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "",
+      "dbname": "",
+      "host": "",
+      "path": "/x.db",
+      "port": "",
+      "user": "",
+      "writable": false,
+    },
+    "driver": {
+      "id": "pdo_sqlite",
+      "label": "SQLite",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "driver": "pdo_sqlite",
+        "path": "/x.db",
+        "writable": "yes",
+      },
+      "id": 10,
+      "title": "Local",
+      "type": "database",
+    },
+    "success": true,
+    "timer": "number",
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+  "sent": [
+    [
+      {
+        "authConfig": {
+          "credential": "",
+          "dbname": "",
+          "driver": "pdo_sqlite",
+          "host": "",
+          "path": "/x.db",
+          "port": "",
+          "user": "",
+          "writable": false,
+        },
+        "id": 10,
+        "title": "Local",
+        "type": "database",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a sqlite source: thrown 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "",
+      "dbname": "",
+      "host": "",
+      "path": "/x.db",
+      "port": "",
+      "user": "",
+      "writable": false,
+    },
+    "driver": {
+      "id": "pdo_sqlite",
+      "label": "SQLite",
+    },
+    "error": "Network",
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "driver": "pdo_sqlite",
+        "path": "/x.db",
+        "writable": "yes",
+      },
+      "id": 10,
+      "title": "Local",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+  "sent": [
+    [
+      {
+        "authConfig": {
+          "credential": "",
+          "dbname": "",
+          "driver": "pdo_sqlite",
+          "host": "",
+          "path": "/x.db",
+          "port": "",
+          "user": "",
+          "writable": false,
+        },
+        "id": 10,
+        "title": "Local",
+        "type": "database",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a sqlite source: thrownBare 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "",
+      "dbname": "",
+      "host": "",
+      "path": "/x.db",
+      "port": "",
+      "user": "",
+      "writable": false,
+    },
+    "driver": {
+      "id": "pdo_sqlite",
+      "label": "SQLite",
+    },
+    "error": "An error occurred while saving the source",
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "driver": "pdo_sqlite",
+        "path": "/x.db",
+        "writable": "yes",
+      },
+      "id": 10,
+      "title": "Local",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+  "sent": [
+    [
+      {
+        "authConfig": {
+          "credential": "",
+          "dbname": "",
+          "driver": "pdo_sqlite",
+          "host": "",
+          "path": "/x.db",
+          "port": "",
+          "user": "",
+          "writable": false,
+        },
+        "id": 10,
+        "title": "Local",
+        "type": "database",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden testConnection: badJson 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/test-connection",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Not JSON",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden testConnection: failed 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/test-connection",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Denied",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden testConnection: failedBare 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/test-connection",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "The action failed",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden testConnection: ok 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/test-connection",
+      {
+        "headers": {
+          "requesttoken": "",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Connection successful",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden testConnection: okCounts 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/test-connection",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Connection successful",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden testConnection: thrown 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/test-connection",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Offline",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden testConnection: thrownBare 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/test-connection",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "The action failed",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
