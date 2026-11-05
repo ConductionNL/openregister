@@ -28,7 +28,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use Psr\Log\LoggerInterface;
 
@@ -41,12 +40,10 @@ class FlowLifecycleGuard {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapperInterface     $runs      Counts runs pinned to a version.
 	 * @param FlowNodePreflight $preflight Inspects a graph for dead ends.
 	 * @param LoggerInterface   $logger    Records every refusal and its reason.
 	 */
 	public function __construct(
-		private readonly FlowRunMapperInterface $runs,
 		private readonly FlowNodePreflight $preflight,
 		private readonly LoggerInterface $logger,
 	) {
@@ -172,33 +169,6 @@ class FlowLifecycleGuard {
 		);
 
 	}//end refusePublishOnDeadEnd()
-
-	/**
-	 * Refuse to remove a version a still-movable run is pinned to.
-	 *
-	 * @param string  $flowId  The flow.
-	 * @param integer $version The version being removed.
-	 *
-	 * @return void
-	 *
-	 * @throws FlowLifecycleRefused When a non-terminal run is pinned to it.
-	 *
-	 * @spec openspec/specs/flow-definition-versioning/spec.md
-	 */
-	public function refuseRemoveWhilePinned(string $flowId, int $version): void {
-		$pinned = $this->runs->countActivePinnedTo(flowUuid: $flowId, version: $version);
-		if ($pinned === 0) {
-			return;
-		}
-
-		$this->refuse(
-			reason: FlowLifecycleRefused::REASON_VERSION_IN_USE,
-			flowId: $flowId,
-			state: null,
-			detail: $pinned . ' run(s) are still pinned to version ' . $version . '.'
-		);
-
-	}//end refuseRemoveWhilePinned()
 
 	/**
 	 * Log the refusal, then throw it.

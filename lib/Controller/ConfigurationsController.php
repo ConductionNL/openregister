@@ -29,7 +29,6 @@ use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -357,60 +356,6 @@ class ConfigurationsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Failed to delete configuration: ' . $e->getMessage()], statusCode: 400);
 		}
 	}//end destroy()
-
-	/**
-	 * Export a configuration
-	 *
-	 * @param int $id Configuration ID.
-	 * @param bool $includeObjects Whether to include objects in the export.
-	 *
-	 * @return DataDownloadResponse|JSONResponse
-	 *
-	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
-	 *
-	 * @psalm-return DataDownloadResponse<200, 'application/json',
-	 *     array<never, never>>|JSONResponse<400|403, array{error: string},
-	 *     array<never, never>>
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to include/exclude objects in export
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
-	 */
-	public function export(int $id, bool $includeObjects = false): JSONResponse|DataDownloadResponse {
-		try {
-			// Find the configuration.
-			$configuration = $this->configurationMapper->find($id);
-
-			// Export the configuration and its related data.
-			$exportData = $this->configurationService->exportConfig(input: $configuration, includeObjects: $includeObjects);
-
-			// Convert to JSON.
-			$jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-			if ($jsonContent === false) {
-				throw new Exception('Failed to encode configuration data to JSON');
-			}
-
-			// Generate filename. `date()` rather than a DateTime instance: the
-			// two produce the same string from the same default timezone, and
-			// this was the class's fourteenth coupled type.
-			$filename = sprintf(
-				'configuration_%s_%s.json',
-				$configuration->getTitle() ?? 'unknown',
-				date('Y-m-d_His')
-			);
-
-			// Return as downloadable file.
-			return new DataDownloadResponse(
-				$jsonContent,
-				$filename,
-				'application/json'
-			);
-		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => 'Failed to export configuration: ' . $e->getMessage()], statusCode: 400);
-		}//end try
-	}//end export()
 
 	/**
 	 * Import a configuration from uploaded file or JSON data

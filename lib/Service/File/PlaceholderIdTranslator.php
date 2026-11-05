@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Service\File;
  *   appearance within one anonymise run (`perDocument()`); no persistence.
  * - **Per-dossier (opt-in):** the translator is pre-seeded with a map
  *   deterministically recomputed from the dossier's stored entity-relation
- *   rows (`forDossier()` / `withSeededMap()`), so every per-file call within
+ *   rows (`forDossier()`), so every per-file call within
  *   the dossier resolves the same person to the same number.
  *
  * @category Service
@@ -94,19 +94,6 @@ class PlaceholderIdTranslator {
 	public static function perDocument(): self {
 		return new self();
 	}//end perDocument()
-
-	/**
-	 * Create a translator pre-seeded with an explicit `e.id => number` map.
-	 *
-	 * @param array<int|string, int> $seed The seed map.
-	 *
-	 * @return self
-	 *
-	 * @spec openspec/changes/anonymisation-placeholder-id-scope/design.md (Decision 3)
-	 */
-	public static function withSeededMap(array $seed): self {
-		return new self($seed);
-	}//end withSeededMap()
 
 	/**
 	 * Build a per-dossier translator from the dossier's stored entity-relation
