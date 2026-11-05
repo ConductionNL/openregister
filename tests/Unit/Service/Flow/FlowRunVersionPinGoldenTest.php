@@ -35,6 +35,8 @@ use Throwable;
  * @covers \OCA\OpenRegister\Service\Flow\FlowRunVersionPin
  * @uses   \OCA\OpenRegister\Service\Flow\FlowLifecycleRefused
  * @uses   \OCA\OpenRegister\Service\Flow\FlowDeadEnd
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowDeadEndSteps
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowDeadEndVerdict
  * @uses   \OCA\OpenRegister\Db\Flow
  * @uses   \OCA\OpenRegister\Db\FlowVersion
  */

@@ -27,6 +27,7 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowLifecycleGuard
  * @uses   \OCA\OpenRegister\Service\Flow\FlowLifecycleRefused
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowDeadEndSteps
  */
 class FlowLifecycleGuardGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/flow-lifecycle-guard-golden.json';
