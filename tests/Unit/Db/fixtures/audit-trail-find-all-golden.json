@@ -1,0 +1,2984 @@
+{
+    "none / default / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "none / default / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "none / default / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "none / default / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "none / default / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = %zaak%, 2",
+            "#1 expr.like(changed, :p1, NULL)",
+            "#1 andWhere(like(changed, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "none / default / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = %zaak%, 2",
+            "#1 expr.like(changed, :p1, NULL)",
+            "#1 andWhere(like(changed, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "none / null / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "none / null / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "none / null / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "none / null / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "none / null / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = %zaak%, 2",
+            "#1 expr.like(changed, :p1, NULL)",
+            "#1 andWhere(like(changed, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "none / null / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = %zaak%, 2",
+            "#1 expr.like(changed, :p1, NULL)",
+            "#1 andWhere(like(changed, :p1, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "none / mixed / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "none / mixed / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "none / mixed / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "none / mixed / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "none / mixed / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = %zaak%, 2",
+            "#1 expr.like(changed, :p1, NULL)",
+            "#1 andWhere(like(changed, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "none / mixed / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = %zaak%, 2",
+            "#1 expr.like(changed, :p1, NULL)",
+            "#1 andWhere(like(changed, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null / default / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null / default / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null / default / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null / default / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null / default / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = %zaak%, 2",
+            "#1 expr.like(changed, :p1, NULL)",
+            "#1 andWhere(like(changed, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null / default / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = %zaak%, 2",
+            "#1 expr.like(changed, :p1, NULL)",
+            "#1 andWhere(like(changed, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null / null / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null / null / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null / null / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null / null / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null / null / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = %zaak%, 2",
+            "#1 expr.like(changed, :p1, NULL)",
+            "#1 andWhere(like(changed, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "null / null / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = %zaak%, 2",
+            "#1 expr.like(changed, :p1, NULL)",
+            "#1 andWhere(like(changed, :p1, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null / mixed / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null / mixed / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null / mixed / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null / mixed / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null / mixed / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = %zaak%, 2",
+            "#1 expr.like(changed, :p1, NULL)",
+            "#1 andWhere(like(changed, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null / mixed / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = %zaak%, 2",
+            "#1 expr.like(changed, :p1, NULL)",
+            "#1 andWhere(like(changed, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "scalars / default / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(object, :p1, NULL)",
+            "#1 andWhere(eq(object, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user, :p2, NULL)",
+            "#1 andWhere(eq(user, :p2, NULL))",
+            "#1 param :p3 = 3, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "scalars / default / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(object, :p1, NULL)",
+            "#1 andWhere(eq(object, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user, :p2, NULL)",
+            "#1 andWhere(eq(user, :p2, NULL))",
+            "#1 param :p3 = 3, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "scalars / default / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(object, :p1, NULL)",
+            "#1 andWhere(eq(object, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user, :p2, NULL)",
+            "#1 andWhere(eq(user, :p2, NULL))",
+            "#1 param :p3 = 3, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "scalars / default / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(object, :p1, NULL)",
+            "#1 andWhere(eq(object, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user, :p2, NULL)",
+            "#1 andWhere(eq(user, :p2, NULL))",
+            "#1 param :p3 = 3, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "scalars / default / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(object, :p1, NULL)",
+            "#1 andWhere(eq(object, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user, :p2, NULL)",
+            "#1 andWhere(eq(user, :p2, NULL))",
+            "#1 param :p3 = 3, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 param :p4 = %zaak%, 2",
+            "#1 expr.like(changed, :p4, NULL)",
+            "#1 andWhere(like(changed, :p4, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "scalars / default / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(object, :p1, NULL)",
+            "#1 andWhere(eq(object, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user, :p2, NULL)",
+            "#1 andWhere(eq(user, :p2, NULL))",
+            "#1 param :p3 = 3, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 param :p4 = %zaak%, 2",
+            "#1 expr.like(changed, :p4, NULL)",
+            "#1 andWhere(like(changed, :p4, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "scalars / null / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(object, :p1, NULL)",
+            "#1 andWhere(eq(object, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user, :p2, NULL)",
+            "#1 andWhere(eq(user, :p2, NULL))",
+            "#1 param :p3 = 3, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "scalars / null / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(object, :p1, NULL)",
+            "#1 andWhere(eq(object, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user, :p2, NULL)",
+            "#1 andWhere(eq(user, :p2, NULL))",
+            "#1 param :p3 = 3, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "scalars / null / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(object, :p1, NULL)",
+            "#1 andWhere(eq(object, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user, :p2, NULL)",
+            "#1 andWhere(eq(user, :p2, NULL))",
+            "#1 param :p3 = 3, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "scalars / null / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(object, :p1, NULL)",
+            "#1 andWhere(eq(object, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user, :p2, NULL)",
+            "#1 andWhere(eq(user, :p2, NULL))",
+            "#1 param :p3 = 3, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "scalars / null / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(object, :p1, NULL)",
+            "#1 andWhere(eq(object, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user, :p2, NULL)",
+            "#1 andWhere(eq(user, :p2, NULL))",
+            "#1 param :p3 = 3, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 param :p4 = %zaak%, 2",
+            "#1 expr.like(changed, :p4, NULL)",
+            "#1 andWhere(like(changed, :p4, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "scalars / null / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(object, :p1, NULL)",
+            "#1 andWhere(eq(object, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user, :p2, NULL)",
+            "#1 andWhere(eq(user, :p2, NULL))",
+            "#1 param :p3 = 3, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 param :p4 = %zaak%, 2",
+            "#1 expr.like(changed, :p4, NULL)",
+            "#1 andWhere(like(changed, :p4, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "scalars / mixed / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(object, :p1, NULL)",
+            "#1 andWhere(eq(object, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user, :p2, NULL)",
+            "#1 andWhere(eq(user, :p2, NULL))",
+            "#1 param :p3 = 3, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "scalars / mixed / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(object, :p1, NULL)",
+            "#1 andWhere(eq(object, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user, :p2, NULL)",
+            "#1 andWhere(eq(user, :p2, NULL))",
+            "#1 param :p3 = 3, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "scalars / mixed / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(object, :p1, NULL)",
+            "#1 andWhere(eq(object, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user, :p2, NULL)",
+            "#1 andWhere(eq(user, :p2, NULL))",
+            "#1 param :p3 = 3, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "scalars / mixed / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(object, :p1, NULL)",
+            "#1 andWhere(eq(object, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user, :p2, NULL)",
+            "#1 andWhere(eq(user, :p2, NULL))",
+            "#1 param :p3 = 3, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "scalars / mixed / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(object, :p1, NULL)",
+            "#1 andWhere(eq(object, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user, :p2, NULL)",
+            "#1 andWhere(eq(user, :p2, NULL))",
+            "#1 param :p3 = 3, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 param :p4 = %zaak%, 2",
+            "#1 expr.like(changed, :p4, NULL)",
+            "#1 andWhere(like(changed, :p4, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "scalars / mixed / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(object, :p1, NULL)",
+            "#1 andWhere(eq(object, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user, :p2, NULL)",
+            "#1 andWhere(eq(user, :p2, NULL))",
+            "#1 param :p3 = 3, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 param :p4 = %zaak%, 2",
+            "#1 expr.like(changed, :p4, NULL)",
+            "#1 andWhere(like(changed, :p4, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "system and unknown / default / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "system and unknown / default / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "system and unknown / default / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "system and unknown / default / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "system and unknown / default / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "system and unknown / default / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "system and unknown / null / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "system and unknown / null / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "system and unknown / null / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "system and unknown / null / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "system and unknown / null / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "system and unknown / null / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "system and unknown / mixed / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "system and unknown / mixed / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "system and unknown / mixed / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "system and unknown / mixed / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "system and unknown / mixed / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "system and unknown / mixed / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null checks / default / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.isNotNull(object_uuid)",
+            "#1 andWhere(isNotNull(object_uuid))",
+            "#1 expr.isNull(session)",
+            "#1 andWhere(isNull(session))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null checks / default / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.isNotNull(object_uuid)",
+            "#1 andWhere(isNotNull(object_uuid))",
+            "#1 expr.isNull(session)",
+            "#1 andWhere(isNull(session))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null checks / default / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.isNotNull(object_uuid)",
+            "#1 andWhere(isNotNull(object_uuid))",
+            "#1 expr.isNull(session)",
+            "#1 andWhere(isNull(session))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null checks / default / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.isNotNull(object_uuid)",
+            "#1 andWhere(isNotNull(object_uuid))",
+            "#1 expr.isNull(session)",
+            "#1 andWhere(isNull(session))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null checks / default / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.isNotNull(object_uuid)",
+            "#1 andWhere(isNotNull(object_uuid))",
+            "#1 expr.isNull(session)",
+            "#1 andWhere(isNull(session))",
+            "#1 param :p1 = %zaak%, 2",
+            "#1 expr.like(changed, :p1, NULL)",
+            "#1 andWhere(like(changed, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null checks / default / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.isNotNull(object_uuid)",
+            "#1 andWhere(isNotNull(object_uuid))",
+            "#1 expr.isNull(session)",
+            "#1 andWhere(isNull(session))",
+            "#1 param :p1 = %zaak%, 2",
+            "#1 expr.like(changed, :p1, NULL)",
+            "#1 andWhere(like(changed, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null checks / null / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.isNotNull(object_uuid)",
+            "#1 andWhere(isNotNull(object_uuid))",
+            "#1 expr.isNull(session)",
+            "#1 andWhere(isNull(session))",
+            "#1 executeQuery()"
+        ]
+    },
+    "null checks / null / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.isNotNull(object_uuid)",
+            "#1 andWhere(isNotNull(object_uuid))",
+            "#1 expr.isNull(session)",
+            "#1 andWhere(isNull(session))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null checks / null / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.isNotNull(object_uuid)",
+            "#1 andWhere(isNotNull(object_uuid))",
+            "#1 expr.isNull(session)",
+            "#1 andWhere(isNull(session))",
+            "#1 executeQuery()"
+        ]
+    },
+    "null checks / null / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.isNotNull(object_uuid)",
+            "#1 andWhere(isNotNull(object_uuid))",
+            "#1 expr.isNull(session)",
+            "#1 andWhere(isNull(session))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null checks / null / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.isNotNull(object_uuid)",
+            "#1 andWhere(isNotNull(object_uuid))",
+            "#1 expr.isNull(session)",
+            "#1 andWhere(isNull(session))",
+            "#1 param :p1 = %zaak%, 2",
+            "#1 expr.like(changed, :p1, NULL)",
+            "#1 andWhere(like(changed, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "null checks / null / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.isNotNull(object_uuid)",
+            "#1 andWhere(isNotNull(object_uuid))",
+            "#1 expr.isNull(session)",
+            "#1 andWhere(isNull(session))",
+            "#1 param :p1 = %zaak%, 2",
+            "#1 expr.like(changed, :p1, NULL)",
+            "#1 andWhere(like(changed, :p1, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null checks / mixed / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.isNotNull(object_uuid)",
+            "#1 andWhere(isNotNull(object_uuid))",
+            "#1 expr.isNull(session)",
+            "#1 andWhere(isNull(session))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null checks / mixed / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.isNotNull(object_uuid)",
+            "#1 andWhere(isNotNull(object_uuid))",
+            "#1 expr.isNull(session)",
+            "#1 andWhere(isNull(session))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null checks / mixed / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.isNotNull(object_uuid)",
+            "#1 andWhere(isNotNull(object_uuid))",
+            "#1 expr.isNull(session)",
+            "#1 andWhere(isNull(session))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null checks / mixed / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.isNotNull(object_uuid)",
+            "#1 andWhere(isNotNull(object_uuid))",
+            "#1 expr.isNull(session)",
+            "#1 andWhere(isNull(session))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null checks / mixed / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.isNotNull(object_uuid)",
+            "#1 andWhere(isNotNull(object_uuid))",
+            "#1 expr.isNull(session)",
+            "#1 andWhere(isNull(session))",
+            "#1 param :p1 = %zaak%, 2",
+            "#1 expr.like(changed, :p1, NULL)",
+            "#1 andWhere(like(changed, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "null checks / mixed / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 expr.isNotNull(object_uuid)",
+            "#1 andWhere(isNotNull(object_uuid))",
+            "#1 expr.isNull(session)",
+            "#1 andWhere(isNull(session))",
+            "#1 param :p1 = %zaak%, 2",
+            "#1 expr.like(changed, :p1, NULL)",
+            "#1 andWhere(like(changed, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "action prefix / default / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = portaliq.%, 2",
+            "#1 expr.like(action, :p1, NULL)",
+            "#1 andWhere(like(action, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "action prefix / default / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = portaliq.%, 2",
+            "#1 expr.like(action, :p1, NULL)",
+            "#1 andWhere(like(action, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "action prefix / default / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = portaliq.%, 2",
+            "#1 expr.like(action, :p1, NULL)",
+            "#1 andWhere(like(action, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "action prefix / default / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = portaliq.%, 2",
+            "#1 expr.like(action, :p1, NULL)",
+            "#1 andWhere(like(action, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "action prefix / default / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = portaliq.%, 2",
+            "#1 expr.like(action, :p1, NULL)",
+            "#1 andWhere(like(action, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "action prefix / default / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = portaliq.%, 2",
+            "#1 expr.like(action, :p1, NULL)",
+            "#1 andWhere(like(action, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "action prefix / null / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = portaliq.%, 2",
+            "#1 expr.like(action, :p1, NULL)",
+            "#1 andWhere(like(action, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "action prefix / null / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = portaliq.%, 2",
+            "#1 expr.like(action, :p1, NULL)",
+            "#1 andWhere(like(action, :p1, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "action prefix / null / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = portaliq.%, 2",
+            "#1 expr.like(action, :p1, NULL)",
+            "#1 andWhere(like(action, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "action prefix / null / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = portaliq.%, 2",
+            "#1 expr.like(action, :p1, NULL)",
+            "#1 andWhere(like(action, :p1, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "action prefix / null / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = portaliq.%, 2",
+            "#1 expr.like(action, :p1, NULL)",
+            "#1 andWhere(like(action, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "action prefix / null / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = portaliq.%, 2",
+            "#1 expr.like(action, :p1, NULL)",
+            "#1 andWhere(like(action, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "action prefix / mixed / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = portaliq.%, 2",
+            "#1 expr.like(action, :p1, NULL)",
+            "#1 andWhere(like(action, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "action prefix / mixed / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = portaliq.%, 2",
+            "#1 expr.like(action, :p1, NULL)",
+            "#1 andWhere(like(action, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "action prefix / mixed / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = portaliq.%, 2",
+            "#1 expr.like(action, :p1, NULL)",
+            "#1 andWhere(like(action, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "action prefix / mixed / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = portaliq.%, 2",
+            "#1 expr.like(action, :p1, NULL)",
+            "#1 andWhere(like(action, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "action prefix / mixed / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = portaliq.%, 2",
+            "#1 expr.like(action, :p1, NULL)",
+            "#1 andWhere(like(action, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "action prefix / mixed / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = portaliq.%, 2",
+            "#1 expr.like(action, :p1, NULL)",
+            "#1 andWhere(like(action, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "non-action prefix / default / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob.*, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "non-action prefix / default / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob.*, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "non-action prefix / default / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob.*, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "non-action prefix / default / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob.*, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "non-action prefix / default / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob.*, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "non-action prefix / default / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob.*, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "non-action prefix / null / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob.*, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "non-action prefix / null / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob.*, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "non-action prefix / null / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob.*, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "non-action prefix / null / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob.*, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "non-action prefix / null / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob.*, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "non-action prefix / null / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob.*, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "non-action prefix / mixed / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob.*, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "non-action prefix / mixed / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob.*, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "non-action prefix / mixed / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob.*, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "non-action prefix / mixed / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob.*, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "non-action prefix / mixed / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob.*, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "non-action prefix / mixed / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = bob.*, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "comma list / default / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\",\"delete\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "comma list / default / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\",\"delete\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "comma list / default / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\",\"delete\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "comma list / default / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\",\"delete\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "comma list / default / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\",\"delete\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 param :p3 = %zaak%, 2",
+            "#1 expr.like(changed, :p3, NULL)",
+            "#1 andWhere(like(changed, :p3, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "comma list / default / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\",\"delete\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 param :p3 = %zaak%, 2",
+            "#1 expr.like(changed, :p3, NULL)",
+            "#1 andWhere(like(changed, :p3, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "comma list / null / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\",\"delete\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "comma list / null / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\",\"delete\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "comma list / null / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\",\"delete\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "comma list / null / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\",\"delete\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "comma list / null / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\",\"delete\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 param :p3 = %zaak%, 2",
+            "#1 expr.like(changed, :p3, NULL)",
+            "#1 andWhere(like(changed, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "comma list / null / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\",\"delete\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 param :p3 = %zaak%, 2",
+            "#1 expr.like(changed, :p3, NULL)",
+            "#1 andWhere(like(changed, :p3, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "comma list / mixed / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\",\"delete\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "comma list / mixed / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\",\"delete\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "comma list / mixed / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\",\"delete\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "comma list / mixed / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\",\"delete\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "comma list / mixed / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\",\"delete\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 param :p3 = %zaak%, 2",
+            "#1 expr.like(changed, :p3, NULL)",
+            "#1 andWhere(like(changed, :p3, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "comma list / mixed / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\",\"delete\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = 4, 2",
+            "#1 expr.eq(register, :p2, NULL)",
+            "#1 andWhere(eq(register, :p2, NULL))",
+            "#1 param :p3 = %zaak%, 2",
+            "#1 expr.like(changed, :p3, NULL)",
+            "#1 andWhere(like(changed, :p3, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "list / default / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "list / default / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "list / default / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "list / default / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "list / default / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "list / default / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "list / null / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "list / null / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "list / null / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "list / null / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "list / null / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "list / null / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "list / mixed / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "list / mixed / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "list / mixed / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "list / mixed / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "list / mixed / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "list / mixed / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "not in / default / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 func.lower(action)",
+            "#1 param :p1 = [\"read\",\"lock\"], 102",
+            "#1 expr.notIn(lower(action), :p1, NULL)",
+            "#1 andWhere(notIn(lower(action), :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "not in / default / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 func.lower(action)",
+            "#1 param :p1 = [\"read\",\"lock\"], 102",
+            "#1 expr.notIn(lower(action), :p1, NULL)",
+            "#1 andWhere(notIn(lower(action), :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "not in / default / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 func.lower(action)",
+            "#1 param :p1 = [\"read\",\"lock\"], 102",
+            "#1 expr.notIn(lower(action), :p1, NULL)",
+            "#1 andWhere(notIn(lower(action), :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "not in / default / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 func.lower(action)",
+            "#1 param :p1 = [\"read\",\"lock\"], 102",
+            "#1 expr.notIn(lower(action), :p1, NULL)",
+            "#1 andWhere(notIn(lower(action), :p1, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "not in / default / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 func.lower(action)",
+            "#1 param :p1 = [\"read\",\"lock\"], 102",
+            "#1 expr.notIn(lower(action), :p1, NULL)",
+            "#1 andWhere(notIn(lower(action), :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "not in / default / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 func.lower(action)",
+            "#1 param :p1 = [\"read\",\"lock\"], 102",
+            "#1 expr.notIn(lower(action), :p1, NULL)",
+            "#1 andWhere(notIn(lower(action), :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "not in / null / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 func.lower(action)",
+            "#1 param :p1 = [\"read\",\"lock\"], 102",
+            "#1 expr.notIn(lower(action), :p1, NULL)",
+            "#1 andWhere(notIn(lower(action), :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "not in / null / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 func.lower(action)",
+            "#1 param :p1 = [\"read\",\"lock\"], 102",
+            "#1 expr.notIn(lower(action), :p1, NULL)",
+            "#1 andWhere(notIn(lower(action), :p1, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "not in / null / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 func.lower(action)",
+            "#1 param :p1 = [\"read\",\"lock\"], 102",
+            "#1 expr.notIn(lower(action), :p1, NULL)",
+            "#1 andWhere(notIn(lower(action), :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "not in / null / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 func.lower(action)",
+            "#1 param :p1 = [\"read\",\"lock\"], 102",
+            "#1 expr.notIn(lower(action), :p1, NULL)",
+            "#1 andWhere(notIn(lower(action), :p1, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "not in / null / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 func.lower(action)",
+            "#1 param :p1 = [\"read\",\"lock\"], 102",
+            "#1 expr.notIn(lower(action), :p1, NULL)",
+            "#1 andWhere(notIn(lower(action), :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "not in / null / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 func.lower(action)",
+            "#1 param :p1 = [\"read\",\"lock\"], 102",
+            "#1 expr.notIn(lower(action), :p1, NULL)",
+            "#1 andWhere(notIn(lower(action), :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "not in / mixed / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 func.lower(action)",
+            "#1 param :p1 = [\"read\",\"lock\"], 102",
+            "#1 expr.notIn(lower(action), :p1, NULL)",
+            "#1 andWhere(notIn(lower(action), :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "not in / mixed / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 func.lower(action)",
+            "#1 param :p1 = [\"read\",\"lock\"], 102",
+            "#1 expr.notIn(lower(action), :p1, NULL)",
+            "#1 andWhere(notIn(lower(action), :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "not in / mixed / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 func.lower(action)",
+            "#1 param :p1 = [\"read\",\"lock\"], 102",
+            "#1 expr.notIn(lower(action), :p1, NULL)",
+            "#1 andWhere(notIn(lower(action), :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "not in / mixed / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 func.lower(action)",
+            "#1 param :p1 = [\"read\",\"lock\"], 102",
+            "#1 expr.notIn(lower(action), :p1, NULL)",
+            "#1 andWhere(notIn(lower(action), :p1, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "not in / mixed / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 func.lower(action)",
+            "#1 param :p1 = [\"read\",\"lock\"], 102",
+            "#1 expr.notIn(lower(action), :p1, NULL)",
+            "#1 andWhere(notIn(lower(action), :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "not in / mixed / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 func.lower(action)",
+            "#1 param :p1 = [\"read\",\"lock\"], 102",
+            "#1 expr.notIn(lower(action), :p1, NULL)",
+            "#1 andWhere(notIn(lower(action), :p1, NULL))",
+            "#1 param :p2 = %zaak%, 2",
+            "#1 expr.like(changed, :p2, NULL)",
+            "#1 andWhere(like(changed, :p2, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "empty strings / default / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = , 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = [\"\",\"\"], 102",
+            "#1 expr.in(action, :p2, NULL)",
+            "#1 andWhere(in(action, :p2, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "empty strings / default / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = , 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = [\"\",\"\"], 102",
+            "#1 expr.in(action, :p2, NULL)",
+            "#1 andWhere(in(action, :p2, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "empty strings / default / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = , 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = [\"\",\"\"], 102",
+            "#1 expr.in(action, :p2, NULL)",
+            "#1 andWhere(in(action, :p2, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "empty strings / default / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = , 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = [\"\",\"\"], 102",
+            "#1 expr.in(action, :p2, NULL)",
+            "#1 andWhere(in(action, :p2, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "empty strings / default / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = , 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = [\"\",\"\"], 102",
+            "#1 expr.in(action, :p2, NULL)",
+            "#1 andWhere(in(action, :p2, NULL))",
+            "#1 param :p3 = %zaak%, 2",
+            "#1 expr.like(changed, :p3, NULL)",
+            "#1 andWhere(like(changed, :p3, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "empty strings / default / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = , 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = [\"\",\"\"], 102",
+            "#1 expr.in(action, :p2, NULL)",
+            "#1 andWhere(in(action, :p2, NULL))",
+            "#1 param :p3 = %zaak%, 2",
+            "#1 expr.like(changed, :p3, NULL)",
+            "#1 andWhere(like(changed, :p3, NULL))",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "empty strings / null / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = , 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = [\"\",\"\"], 102",
+            "#1 expr.in(action, :p2, NULL)",
+            "#1 andWhere(in(action, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "empty strings / null / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = , 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = [\"\",\"\"], 102",
+            "#1 expr.in(action, :p2, NULL)",
+            "#1 andWhere(in(action, :p2, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "empty strings / null / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = , 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = [\"\",\"\"], 102",
+            "#1 expr.in(action, :p2, NULL)",
+            "#1 andWhere(in(action, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "empty strings / null / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = , 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = [\"\",\"\"], 102",
+            "#1 expr.in(action, :p2, NULL)",
+            "#1 andWhere(in(action, :p2, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "empty strings / null / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = , 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = [\"\",\"\"], 102",
+            "#1 expr.in(action, :p2, NULL)",
+            "#1 andWhere(in(action, :p2, NULL))",
+            "#1 param :p3 = %zaak%, 2",
+            "#1 expr.like(changed, :p3, NULL)",
+            "#1 andWhere(like(changed, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "empty strings / null / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = , 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = [\"\",\"\"], 102",
+            "#1 expr.in(action, :p2, NULL)",
+            "#1 andWhere(in(action, :p2, NULL))",
+            "#1 param :p3 = %zaak%, 2",
+            "#1 expr.like(changed, :p3, NULL)",
+            "#1 andWhere(like(changed, :p3, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "empty strings / mixed / NULL / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = , 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = [\"\",\"\"], 102",
+            "#1 expr.in(action, :p2, NULL)",
+            "#1 andWhere(in(action, :p2, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "empty strings / mixed / NULL / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = , 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = [\"\",\"\"], 102",
+            "#1 expr.in(action, :p2, NULL)",
+            "#1 andWhere(in(action, :p2, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "empty strings / mixed / '' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = , 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = [\"\",\"\"], 102",
+            "#1 expr.in(action, :p2, NULL)",
+            "#1 andWhere(in(action, :p2, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "empty strings / mixed / '' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = , 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = [\"\",\"\"], 102",
+            "#1 expr.in(action, :p2, NULL)",
+            "#1 andWhere(in(action, :p2, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "empty strings / mixed / 'zaak' / -": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = , 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = [\"\",\"\"], 102",
+            "#1 expr.in(action, :p2, NULL)",
+            "#1 andWhere(in(action, :p2, NULL))",
+            "#1 param :p3 = %zaak%, 2",
+            "#1 expr.like(changed, :p3, NULL)",
+            "#1 andWhere(like(changed, :p3, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "empty strings / mixed / 'zaak' / 10-20": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = , 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = [\"\",\"\"], 102",
+            "#1 expr.in(action, :p2, NULL)",
+            "#1 andWhere(in(action, :p2, NULL))",
+            "#1 param :p3 = %zaak%, 2",
+            "#1 expr.like(changed, :p3, NULL)",
+            "#1 andWhere(like(changed, :p3, NULL))",
+            "#1 addOrderBy(action, DESC)",
+            "#1 addOrderBy(user, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    }
+}

@@ -35,7 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Relation;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
 use OCA\OpenRegister\Db\ObjectRelationMapper;
@@ -109,7 +109,7 @@ class RelationGraphService {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $objectEntityMapper Mapper for object entities.
+	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entities.
 	 * @param ObjectRelationMapper $relationMapper Mapper for stored relation rows.
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schemas.
 	 * @param RelationTypeResolver $relationTypes Resolves what a relation is called.
@@ -119,7 +119,7 @@ class RelationGraphService {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly ObjectRelationMapper $relationMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RelationTypeResolver $relationTypes,

@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hinge;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -62,7 +62,7 @@ class ReferencedByService {
 	/**
 	 * Wire the mappers the reverse view reads through.
 	 *
-	 * @param MagicMapper     $magicMapper    Object storage, one table per register+schema.
+	 * @param MagicMapperInterface     $magicMapper    Object storage, one table per register+schema.
 	 * @param RegisterMapperInterface  $registerMapper Register lookup for each candidate table.
 	 * @param SchemaMapperInterface    $schemaMapper   Schema lookup for each candidate table.
 	 * @param LoggerInterface $logger         PSR logger for per-table failures.
@@ -72,7 +72,7 @@ class ReferencedByService {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,

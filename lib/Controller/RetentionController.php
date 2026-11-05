@@ -31,10 +31,10 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\DestructionService;
-use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObjectInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Controller;
@@ -62,8 +62,8 @@ class RetentionController extends Controller {
 	 * @param IRequest $request Request
 	 * @param RetentionServiceInterface $retentionService Retention service
 	 * @param ObjectRetentionHandler $settingsHandler Settings handler
-	 * @param SaveObject $saveObject Save object service
-	 * @param MagicMapper $objectMapper Object mapper
+	 * @param SaveObjectInterface $saveObject Save object service
+	 * @param MagicMapperInterface $objectMapper Object mapper
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper
 	 * @param AuditTrailMapperInterface $auditMapper Audit trail mapper
 	 * @param DestructionService $destructionService Withholds entries a reviewer decided against
@@ -78,8 +78,8 @@ class RetentionController extends Controller {
 		IRequest $request,
 		private readonly RetentionServiceInterface $retentionService,
 		private readonly ObjectRetentionHandler $settingsHandler,
-		private readonly SaveObject $saveObject,
-		private readonly MagicMapper $objectMapper,
+		private readonly SaveObjectInterface $saveObject,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly AuditTrailMapperInterface $auditMapper,
 		private readonly DestructionService $destructionService,

@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service\Object;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -80,7 +80,7 @@ use stdClass;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class ValidateObject {
+class ValidateObject implements ValidateObjectInterface {
 	/**
 	 * Default validation error message.
 	 *
@@ -383,7 +383,7 @@ class ValidateObject {
 	 * Constructor for ValidateObject
 	 *
 	 * @param IAppConfig $config Configuration service.
-	 * @param MagicMapper $objectMapper Object mapper.
+	 * @param MagicMapperInterface $objectMapper Object mapper.
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper.
 	 * @param IURLGenerator $urlGenerator URL generator.
 	 * @param LoggerInterface $logger Logger for logging operations.
@@ -394,7 +394,7 @@ class ValidateObject {
 	 */
 	public function __construct(
 		private IAppConfig $config,
-		private MagicMapper $objectMapper,
+		private MagicMapperInterface $objectMapper,
 		private SchemaMapperInterface $schemaMapper,
 		private IURLGenerator $urlGenerator,
 		private LoggerInterface $logger,

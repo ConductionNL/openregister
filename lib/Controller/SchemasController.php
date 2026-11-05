@@ -28,7 +28,7 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -185,7 +185,7 @@ class SchemasController extends Controller {
 	 * @param IAppConfig $config App configuration for settings
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for database operations
 	 * @param RegisterMapperInterface $registerMapper Register mapper for register lookups and schema linkage
-	 * @param MagicMapper $objectEntityMapper Object entity mapper for object queries
+	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper for object queries
 	 * @param UploadService $uploadService Upload service for file uploads
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for log statistics
 	 * @param OrganisationServiceInterface $organisationService Organisation service for multi-tenancy
@@ -210,7 +210,7 @@ class SchemasController extends Controller {
 		private readonly IAppConfig $config,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly UploadService $uploadService,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly OrganisationServiceInterface $organisationService,

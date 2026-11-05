@@ -44,7 +44,7 @@ class CascadingHandler {
 	/**
 	 * Constructor for CascadingHandler.
 	 *
-	 * @param SaveObject $saveHandler Handler for saving objects.
+	 * @param SaveObjectInterface $saveHandler Handler for saving objects.
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schema entities.
 	 * @param UtilityHandler $utilityHandler Handler for utility operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
@@ -52,7 +52,7 @@ class CascadingHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly SaveObject $saveHandler,
+		private readonly SaveObjectInterface $saveHandler,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly UtilityHandler $utilityHandler,
 		private readonly LoggerInterface $logger,

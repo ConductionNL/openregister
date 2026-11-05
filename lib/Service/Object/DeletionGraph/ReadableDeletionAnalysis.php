@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\DeletionGraph;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 
 /**
@@ -57,9 +57,9 @@ final class ReadableDeletionAnalysis {
 	/**
 	 * Start a redaction for the signed-in caller.
 	 *
-	 * @param MagicMapper $mapper The mapper whose default read is the caller's own.
+	 * @param MagicMapperInterface $mapper The mapper whose default read is the caller's own.
 	 */
-	public function __construct(private readonly MagicMapper $mapper) {
+	public function __construct(private readonly MagicMapperInterface $mapper) {
 	}//end __construct()
 
 	/**

@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -64,13 +64,13 @@ class MetadataHydrationHandler {
 	 * Constructor for MetadataHydrationHandler.
 	 *
 	 * @param LoggerInterface $logger Logger interface for logging operations.
-	 * @param CacheHandler $cacheHandler Cache handler for UUID-to-name resolution.
+	 * @param CacheHandlerInterface $cacheHandler Cache handler for UUID-to-name resolution.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly CacheHandler $cacheHandler,
+		private readonly CacheHandlerInterface $cacheHandler,
 	) {
 	}//end __construct()
 
