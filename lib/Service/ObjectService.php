@@ -82,6 +82,7 @@ use OCA\OpenRegister\Service\Geo\GeoJsonGeometryValidator;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\AuditHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\CrudHandler;
 use OCA\OpenRegister\Service\Object\FacetHandler;
@@ -6870,14 +6871,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
-        return $this->relationHandler->getUses(
-            objectId: $objectId,
-            query: $query,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy,
-            _registerId: $this->currentRegister?->getId(),
-            _schemaId: $this->currentSchema?->getId()
-        );
+        $lookup = (new RelationLookup(objectId: $objectId, query: $query))
+            ->filteredBy(rbac: $_rbac, multitenancy: $_multitenancy)
+            ->pinnedTo(registerId: $this->currentRegister?->getId(), schemaId: $this->currentSchema?->getId());
+        return $this->relationHandler->getUses(lookup: $lookup);
     }//end getObjectUses()
 
     /**
@@ -6900,14 +6897,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
-        return $this->relationHandler->getUsedBy(
-            objectId: $objectId,
-            query: $query,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy,
-            _registerId: $this->currentRegister?->getId(),
-            _schemaId: $this->currentSchema?->getId()
-        );
+        $lookup = (new RelationLookup(objectId: $objectId, query: $query))
+            ->filteredBy(rbac: $_rbac, multitenancy: $_multitenancy)
+            ->pinnedTo(registerId: $this->currentRegister?->getId(), schemaId: $this->currentSchema?->getId());
+        return $this->relationHandler->getUsedBy(lookup: $lookup);
     }//end getObjectUsedBy()
 
     /**

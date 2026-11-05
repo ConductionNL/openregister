@@ -40,6 +40,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Service\Object\RelationLookup;
 
 /**
  * Unit tests for RelationHandler.
@@ -52,6 +53,7 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Object\RelatedObjectSet
  * @uses \OCA\OpenRegister\Service\Object\RelationLink
  * @uses \OCA\OpenRegister\Service\Object\RelationSource
+ * @uses \OCA\OpenRegister\Service\Object\RelationLookup
  */
 class RelationHandlerTest extends TestCase {
 	private RelationHandler $handler;
@@ -559,7 +561,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->objectMapper->method('find')->willReturn($entity);
 
-		$result = $this->handler->getUses('550e8400-e29b-41d4-a716-446655440000');
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: '550e8400-e29b-41d4-a716-446655440000'));
 
 		$this->assertSame([], $result['results']);
 		$this->assertSame(0, $result['total']);
@@ -579,7 +581,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->objectMapper->method('find')->willReturn($entity);
 
-		$result = $this->handler->getUses($ownUuid);
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: $ownUuid));
 
 		$this->assertSame([], $result['results']);
 		$this->assertSame(0, $result['total']);
@@ -597,7 +599,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('error');
 
-		$result = $this->handler->getUses('missing-uuid', ['_limit' => 5, '_offset' => 2]);
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: 'missing-uuid', query: ['_limit' => 5, '_offset' => 2]));
 
 		$this->assertSame([], $result['results']);
 		$this->assertSame(0, $result['total']);
@@ -617,7 +619,7 @@ class RelationHandlerTest extends TestCase {
 		$this->logger->expects($this->never())->method('error');
 
 		$this->expectException(\OCP\AppFramework\Db\MultipleObjectsReturnedException::class);
-		$this->handler->getUses('dubbel');
+		$this->handler->getUses(lookup: new RelationLookup(objectId: 'dubbel'));
 	}//end testGetUsesPropagatesAnAmbiguousIdentifier()
 
 	/**
@@ -631,7 +633,7 @@ class RelationHandlerTest extends TestCase {
 		$this->logger->expects($this->never())->method('error');
 
 		$this->expectException(\OCP\AppFramework\Db\MultipleObjectsReturnedException::class);
-		$this->handler->getUsedBy('dubbel');
+		$this->handler->getUsedBy(lookup: new RelationLookup(objectId: 'dubbel'));
 	}//end testGetUsedByPropagatesAnAmbiguousIdentifier()
 
 	/**
@@ -646,7 +648,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->objectMapper->method('find')->willReturn($entity);
 
-		$result = $this->handler->getUses('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'));
 
 		$this->assertSame(30, $result['limit']);
 		$this->assertSame(0, $result['offset']);
@@ -670,7 +672,7 @@ class RelationHandlerTest extends TestCase {
 		// getUses calls \OC::$server for RegisterMapper and MagicMapper -- this path will
 		// throw a fatal if OC is not available in unit tests, so we assert on the
 		// error-fallback path which still returns the correct structure.
-		$result = $this->handler->getUses($ownUuid);
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: $ownUuid));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -692,7 +694,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('error');
 
-		$result = $this->handler->getUsedBy('missing-uuid', ['_limit' => 5, '_offset' => 2]);
+		$result = $this->handler->getUsedBy(lookup: new RelationLookup(objectId: 'missing-uuid', query: ['_limit' => 5, '_offset' => 2]));
 
 		$this->assertSame([], $result['results']);
 		$this->assertSame(0, $result['total']);
@@ -712,7 +714,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('error');
 
-		$result = $this->handler->getUsedBy('missing-uuid');
+		$result = $this->handler->getUsedBy(lookup: new RelationLookup(objectId: 'missing-uuid'));
 
 		$this->assertSame(30, $result['limit']);
 		$this->assertSame(0, $result['offset']);
@@ -730,7 +732,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('error');
 
-		$result = $this->handler->getUsedBy('some-uuid');
+		$result = $this->handler->getUsedBy(lookup: new RelationLookup(objectId: 'some-uuid'));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -958,7 +960,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->objectMapper->method('find')->willReturn($entity);
 
-		$result = $this->handler->getUses('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', []);
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', query: []));
 
 		$this->assertSame(30, $result['limit']);
 		$this->assertSame(0, $result['offset']);
@@ -982,7 +984,7 @@ class RelationHandlerTest extends TestCase {
 
 		// getUses will attempt \OC::$server calls, which may fail in unit test context.
 		// We just assert the response has the required structure.
-		$result = $this->handler->getUses($ownUuid);
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: $ownUuid));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -1002,7 +1004,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('error');
 
-		$result = $this->handler->getUses('bad-uuid', ['_limit' => 10, '_offset' => 2]);
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: 'bad-uuid', query: ['_limit' => 10, '_offset' => 2]));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -1038,10 +1040,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('error');
 
-		$result = $this->handler->getUsedBy(
-			'dddddddd-dddd-dddd-dddd-dddddddddddd',
-			['_limit' => 15, '_offset' => 3]
-		);
+		$result = $this->handler->getUsedBy(lookup: new RelationLookup(objectId: 'dddddddd-dddd-dddd-dddd-dddddddddddd', query: ['_limit' => 15, '_offset' => 3]));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -1303,14 +1302,7 @@ class RelationHandlerTest extends TestCase {
 		$this->objectMapper->method('find')->willReturn($entity);
 
 		// Even with register/schema IDs that may fail internally, the response is correct.
-		$result = $this->handler->getUses(
-			'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
-			[],
-			true,
-			true,
-			999,
-			888
-		);
+		$result = $this->handler->getUses(lookup: (new RelationLookup(objectId: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', query: []))->filteredBy(rbac: true, multitenancy: true)->pinnedTo(registerId: 999, schemaId: 888));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -1334,7 +1326,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->objectMapper->method('find')->willReturn($entity);
 
-		$result = $this->handler->getUses($ownUuid);
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: $ownUuid));
 
 		$this->assertSame([], $result['results']);
 		$this->assertSame(0, $result['total']);
@@ -1356,14 +1348,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('error');
 
-		$result = $this->handler->getUsedBy(
-			'some-uuid',
-			['_limit' => 20, '_offset' => 5],
-			true,
-			true,
-			999,
-			888
-		);
+		$result = $this->handler->getUsedBy(lookup: (new RelationLookup(objectId: 'some-uuid', query: ['_limit' => 20, '_offset' => 5]))->filteredBy(rbac: true, multitenancy: true)->pinnedTo(registerId: 999, schemaId: 888));
 
 		$this->assertSame([], $result['results']);
 		$this->assertSame(0, $result['total']);
@@ -1383,12 +1368,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('error');
 
-		$result = $this->handler->getUsedBy(
-			'some-uuid',
-			[],
-			false,
-			false
-		);
+		$result = $this->handler->getUsedBy(lookup: (new RelationLookup(objectId: 'some-uuid', query: []))->filteredBy(rbac: false, multitenancy: false));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -1414,7 +1394,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->objectMapper->method('find')->willReturn($entity);
 
-		$result = $this->handler->getUses('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'));
 
 		$this->assertSame([], $result['results']);
 		$this->assertSame(0, $result['total']);
