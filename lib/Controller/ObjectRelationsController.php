@@ -146,7 +146,7 @@ class ObjectRelationsController extends Controller {
 		parent::__construct(appName: $appName, request: $request);
 		$this->relations = $services->graph->relations;
 		$this->graphs = $services->graph->graphs;
-		$this->affectedSet = $services->graph->affected;
+		$this->affectedSet = new AffectedSet();
 		$this->objectService = $services->graph->objectService;
 		$this->exportGate = $services->graph->exportGate;
 		$this->access = $services->guards->access;
