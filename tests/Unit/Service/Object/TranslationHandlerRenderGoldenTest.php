@@ -28,6 +28,7 @@ use Psr\Log\LoggerInterface;
  * Pins the language chain (resolved, register languages, register default), the any-variant fallback and the fallback flag.
  *
  * @covers \OCA\OpenRegister\Service\Object\TranslationHandler
+ * @uses   \OCA\OpenRegister\Service\Object\LanguageKeyedMap
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  */

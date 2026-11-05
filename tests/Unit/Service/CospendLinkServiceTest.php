@@ -75,7 +75,6 @@ class CospendLinkServiceTest extends TestCase {
 			->onlyMethods(
 				[
 					'findByObjectUuid',
-					'findByObjectAndId',
 					'findDuplicate',
 					'deleteByObjectAndId',
 					'insert',

@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCP\App\IAppManager;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 
@@ -35,14 +34,12 @@ final class SettingsRuntime {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param IAppManager     $appManager The app manager.
-	 * @param LoggerInterface $logger     The logger.
-	 * @param ?IL10N          $l10n       The localization service.
+	 * @param LoggerInterface $logger The logger.
+	 * @param ?IL10N          $l10n   The localization service.
 	 *
 	 * @spec openspec/specs/production-observability/spec.md
 	 */
 	public function __construct(
-		public readonly IAppManager $appManager,
 		public readonly LoggerInterface $logger,
 		public readonly ?IL10N $l10n = null,
 	) {

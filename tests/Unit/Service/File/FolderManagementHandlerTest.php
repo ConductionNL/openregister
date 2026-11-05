@@ -270,31 +270,6 @@ class FolderManagementHandlerTest extends TestCase {
 	}
 
 	// =========================================================================
-	// getNodeTypeFromFolder tests
-	// =========================================================================
-
-	#[Test]
-	public function testGetNodeTypeFromFolderReturnsFolder(): void {
-		$folderNode = $this->createMock(Folder::class);
-		$result = $this->handler->getNodeTypeFromFolder($folderNode);
-		$this->assertEquals('folder', $result);
-	}
-
-	#[Test]
-	public function testGetNodeTypeFromFolderReturnsFile(): void {
-		$fileNode = $this->createMock(\OCP\Files\File::class);
-		$result = $this->handler->getNodeTypeFromFolder($fileNode);
-		$this->assertEquals('file', $result);
-	}
-
-	#[Test]
-	public function testGetNodeTypeFromFolderReturnsUnknown(): void {
-		$node = $this->createMock(Node::class);
-		$result = $this->handler->getNodeTypeFromFolder($node);
-		$this->assertEquals('unknown', $result);
-	}
-
-	// =========================================================================
 	// getOpenRegisterUserFolder tests
 	// =========================================================================
 

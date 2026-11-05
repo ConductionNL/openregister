@@ -44,31 +44,6 @@ class CospendLinkMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Find a cospend link by id, scoped to the owning object UUID.
-	 *
-	 * The object UUID scope guards against deleting another object's link
-	 * by guessing an entry id.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param int $entryId The link row id.
-	 *
-	 * @return CospendLink|null The link or null if not found.
-	 */
-	public function findByObjectAndId(string $objectUuid, int $entryId): ?CospendLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('id', $qb->createNamedParameter($entryId, IQueryBuilder::PARAM_INT)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
-		}
-	}//end findByObjectAndId()
-
-	/**
 	 * Find a duplicate link by the composite-unique tuple.
 	 *
 	 * Bill rows match on (object_uuid, entry_type, project_id, bill_id);

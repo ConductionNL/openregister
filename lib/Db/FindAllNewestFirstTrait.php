@@ -42,13 +42,7 @@ trait FindAllNewestFirstTrait {
 			->from($this->getTableName())
 			->orderBy('created', 'DESC');
 
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findAll()

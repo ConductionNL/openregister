@@ -48,6 +48,15 @@ use Throwable;
  */
 class TablesTableReader {
 
+	use ContainerServiceLookup;
+
+	/**
+	 * Label the warnings of this reader carry.
+	 *
+	 * @var string
+	 */
+	private const SOURCE_LABEL = 'tables';
+
 	/**
 	 * NC app id whose install-state gates the reader.
 	 *
@@ -501,32 +510,6 @@ class TablesTableReader {
 
 		return array_values(array_filter($options, static fn (string $label) => $label !== ''));
 	}//end selectionOptions()
-
-	/**
-	 * Resolve one of Tables' service classes from the container, or null.
-	 *
-	 * @param string $class The fully-qualified Tables service class name.
-	 *
-	 * @return object|null The resolved service, or null when Tables is absent.
-	 *
-	 * @spec openspec/specs/tables-virtual-register/spec.md
-	 */
-	private function resolveService(string $class): ?object {
-		if (class_exists($class) === false) {
-			return null;
-		}
-
-		try {
-			$service = $this->container->get($class);
-			if (is_object($service) === true) {
-				return $service;
-			}
-		} catch (Throwable $e) {
-			$this->logger->warning('[ObjectSource:tables] could not resolve ' . $class . ': ' . $e->getMessage());
-		}
-
-		return null;
-	}//end resolveService()
 
 	/**
 	 * Read an integer getter from a Tables entity, guarded (magic getters).

@@ -40,23 +40,6 @@ class FlowLinkMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Find flow links by operation id.
-	 *
-	 * @param int $operationId The operation id.
-	 *
-	 * @return FlowLink[] Array of flow links.
-	 */
-	public function findByOperationId(int $operationId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('operation_id', $qb->createNamedParameter($operationId, IQueryBuilder::PARAM_INT)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByOperationId()
-
-	/**
 	 * Find a specific flow link by object UUID and operation id.
 	 *
 	 * @param string $objectUuid The object UUID.

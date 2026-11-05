@@ -633,20 +633,6 @@ class ControllersIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Test RegistersController::objects returns objects for register+schema
-	 *
-	 * @return void
-	 */
-	public function testRegistersObjects(): void {
-		$response = $this->registersController->objects(
-			$this->testRegister->getId(),
-			$this->testSchema->getId()
-		);
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-	}
-
-	/**
 	 * Test RegistersController::destroy deletes a register
 	 *
 	 * @return void
@@ -1385,27 +1371,6 @@ class ControllersIntegrationTest extends TestCase {
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$this->assertTrue(in_array($response->getStatus(), [200, 422]));
-	}
-
-	/**
-	 * Test SettingsController::getObjectService
-	 *
-	 * @return void
-	 */
-	public function testSettingsGetObjectService(): void {
-		// openregister is installed, so it should return null.
-		$result = $this->settingsController->getObjectService();
-		$this->assertNull($result);
-	}
-
-	/**
-	 * Test SettingsController::getConfigurationService
-	 *
-	 * @return void
-	 */
-	public function testSettingsGetConfigurationService(): void {
-		$result = $this->settingsController->getConfigurationService();
-		$this->assertNotNull($result);
 	}
 
 	/**

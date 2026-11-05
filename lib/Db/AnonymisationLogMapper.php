@@ -95,13 +95,7 @@ class AnonymisationLogMapper extends QBMapper {
 			->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
 			->orderBy('created', 'DESC');
 
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findByFileId()
@@ -125,13 +119,7 @@ class AnonymisationLogMapper extends QBMapper {
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->orderBy('created', 'DESC');
 
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findByObjectUuid()

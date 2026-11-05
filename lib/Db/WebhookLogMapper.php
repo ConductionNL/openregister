@@ -97,13 +97,7 @@ class WebhookLogMapper extends QBMapper {
 			->where($qb->expr()->eq('webhook', $qb->createNamedParameter($webhookId, IQueryBuilder::PARAM_INT)))
 			->orderBy('created', 'DESC');
 
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findByWebhook()

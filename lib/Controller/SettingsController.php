@@ -26,7 +26,6 @@ use Exception;
 use OCA\OpenRegister\Controller\Support\SettingsControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
-use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -122,7 +121,7 @@ use RuntimeException;
  *   delegation methods each containing a single try/catch; the overall score exceeds the threshold
  *   purely from method count, not from deep conditional logic in any single method.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   NC AppFramework controller requires DI for
- *   AppFramework types (IRequest, IAppConfig, IDBConnection, ContainerInterface, IAppManager)
+ *   AppFramework types (IRequest, IAppConfig, IDBConnection, ContainerInterface)
  *   plus SettingsService, LoggerInterface, and IL10N — all are single-call
  *   dependencies that cannot be cohesively grouped without hiding the NC DI contract.
  */
@@ -155,13 +154,6 @@ class SettingsController extends Controller {
 	 * @var ContainerInterface
 	 */
 	private readonly ContainerInterface $container;
-
-	/**
-	 * The app manager.
-	 *
-	 * @var IAppManager
-	 */
-	private readonly IAppManager $appManager;
 
 	/**
 	 * The settings service.
@@ -200,50 +192,10 @@ class SettingsController extends Controller {
 		$this->config = $services->store->config;
 		$this->db = $services->store->db;
 		$this->container = $services->store->container;
-		$this->appManager = $services->runtime->appManager;
 		$this->settingsService = $services->store->settingsService;
 		$this->logger = $services->runtime->logger;
 		$this->l10n = $services->runtime->l10n;
 	}//end __construct()
-
-	/**
-	 * Attempts to retrieve the OpenRegister service from the container.
-	 *
-	 * @return null The OpenRegister service if available, null otherwise.
-	 *
-	 * @throws \RuntimeException If the service is not available.
-	 *
-	 * @spec exclude DI service accessor (not a routed endpoint): returns the OpenRegister ObjectService from the container.
-	 */
-	public function getObjectService() {
-		if (in_array(needle: 'openregister', haystack: $this->appManager->getInstalledApps()) === true) {
-			// CIRCULAR FIX: returning the service here would close a container
-			// cycle, so callers resolve it themselves.
-			return null;
-		}
-
-		throw new RuntimeException('OpenRegister service is not available.');
-	}//end getObjectService()
-
-	/**
-	 * Attempts to retrieve the Configuration service from the container.
-	 *
-	 * @return \OCA\OpenRegister\Service\ConfigurationServiceInterface|null The Configuration service if available, null otherwise.
-	 * @throws \RuntimeException If the service is not available.
-	 *
-	 * @spec exclude DI service accessor (not a routed endpoint): returns the ConfigurationService from the container.
-	 */
-	public function getConfigurationService(): ?\OCA\OpenRegister\Service\ConfigurationServiceInterface {
-		// Check if the 'openregister' app is installed.
-		if (in_array(needle: 'openregister', haystack: $this->appManager->getInstalledApps()) === true) {
-			// Retrieve the ConfigurationService from the container.
-			$configurationService = $this->container->get('OCA\OpenRegister\Service\ConfigurationService');
-			return $configurationService;
-		}
-
-		// Throw an exception if the service is not available.
-		throw new RuntimeException('Configuration service is not available.');
-	}//end getConfigurationService()
 
 	/**
 	 * Retrieve the current settings.

@@ -39,24 +39,6 @@ class TalkLinkMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Find talk links by room token (reverse lookup — which objects is
-	 * this room linked to?).
-	 *
-	 * @param string $roomToken The Talk room token.
-	 *
-	 * @return TalkLink[] Array of talk links.
-	 */
-	public function findByRoomToken(string $roomToken): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('room_token', $qb->createNamedParameter($roomToken)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByRoomToken()
-
-	/**
 	 * Find a specific talk link by object UUID and room token.
 	 *
 	 * @param string $objectUuid The object UUID.

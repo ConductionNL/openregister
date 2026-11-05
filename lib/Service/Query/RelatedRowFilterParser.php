@@ -89,8 +89,8 @@ class RelatedRowFilterParser {
 	/**
 	 * The operators a row condition may use.
 	 *
-	 * The same six the object query already accepts, spelled the same way, read
-	 * off `MariaDbSearchHandler::convertToSqlOperator()`. A filter over a
+	 * The same ones the object query already accepts, spelled the same way, as
+	 * listed in `MagicSearchHandler::COMPARISON_OPERATORS`. A filter over a
 	 * related row is not a second query language, and a caller who learned `gte`
 	 * on the object's own fields must not have to learn something else here.
 	 *
