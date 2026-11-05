@@ -175,6 +175,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\Notifications\BackgroundJob\PresenceExpiryJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ConnectionSeamReportJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\AvgRetentionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ProcessingLogRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DsarRetentionSweepJob</job>
 		<job>OCA\OpenRegister\Search\BackgroundJob\ReportRenderJob</job>
 		<job>OCA\OpenRegister\Notifications\BackgroundJob\NotificationQueueFlushJob</job>
