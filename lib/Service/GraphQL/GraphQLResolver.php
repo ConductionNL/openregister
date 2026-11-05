@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Service\Object\GetObject;
@@ -148,15 +149,7 @@ class GraphQLResolver {
 			// Apply property-level RBAC filtering.
 			return $this->filterProperties(schema: $schema, item: $object);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			$schemaTitle = $schema->getTitle();
-			if ($schemaTitle === null || $schemaTitle === '') {
-				$schemaTitle = $schema->getSlug();
-			}
-
-			throw GraphQLErrorFormatter::notFound(
-				$schemaTitle,
-				$id
-			);
+			throw $this->notFoundError(schema: $schema, id: $id);
 		}//end try
 
 	}//end resolveSingle()
@@ -533,15 +526,7 @@ class GraphQLResolver {
 
 			return $this->objectToArray(object: $object);
 		} catch (\OCA\OpenRegister\Exception\ValidationException $e) {
-			throw new Error(
-				$e->getMessage(),
-				null,
-				null,
-				[],
-				null,
-				$e,
-				['code' => 'VALIDATION_ERROR']
-			);
+			throw $this->validationError(cause: $e);
 		}
 
 	}//end resolveCreate()
@@ -598,25 +583,9 @@ class GraphQLResolver {
 
 			return $this->objectToArray(object: $object);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			$schemaTitle = $schema->getTitle();
-			if ($schemaTitle === null || $schemaTitle === '') {
-				$schemaTitle = $schema->getSlug();
-			}
-
-			throw GraphQLErrorFormatter::notFound(
-				$schemaTitle,
-				$id
-			);
+			throw $this->notFoundError(schema: $schema, id: $id);
 		} catch (\OCA\OpenRegister\Exception\ValidationException $e) {
-			throw new Error(
-				$e->getMessage(),
-				null,
-				null,
-				[],
-				null,
-				$e,
-				['code' => 'VALIDATION_ERROR']
-			);
+			throw $this->validationError(cause: $e);
 		}//end try
 
 	}//end resolveUpdate()
@@ -639,15 +608,7 @@ class GraphQLResolver {
 		try {
 			return $this->objectService->deleteObject($args['id']);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			$schemaTitle = $schema->getTitle();
-			if ($schemaTitle === null || $schemaTitle === '') {
-				$schemaTitle = $schema->getSlug();
-			}
-
-			throw GraphQLErrorFormatter::notFound(
-				$schemaTitle,
-				$args['id']
-			);
+			throw $this->notFoundError(schema: $schema, id: $args['id']);
 		}
 
 	}//end resolveDelete()
@@ -720,6 +681,34 @@ class GraphQLResolver {
 		}
 
 	}//end flushRelationBuffer()
+
+	/**
+	 * The NOT_FOUND error for a record of a schema, named by its title or else its slug.
+	 *
+	 * @param Schema $schema The schema.
+	 * @param string $id     The requested id.
+	 *
+	 * @return Error The error.
+	 */
+	private function notFoundError(Schema $schema, string $id): Error {
+		$schemaTitle = $schema->getTitle();
+		if ($schemaTitle === null || $schemaTitle === '') {
+			$schemaTitle = $schema->getSlug();
+		}
+
+		return GraphQLErrorFormatter::notFound($schemaTitle, $id);
+	}//end notFoundError()
+
+	/**
+	 * The VALIDATION_ERROR error for a failed save.
+	 *
+	 * @param ValidationException $cause The validation failure.
+	 *
+	 * @return Error The error.
+	 */
+	private function validationError(ValidationException $cause): Error {
+		return new Error($cause->getMessage(), null, null, [], null, $cause, ['code' => 'VALIDATION_ERROR']);
+	}//end validationError()
 
 	/**
 	 * Check schema-level RBAC permission.
