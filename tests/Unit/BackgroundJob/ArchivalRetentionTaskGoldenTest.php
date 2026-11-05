@@ -44,6 +44,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\BackgroundJob\ArchivalRetentionTask
  * @uses   \OCA\OpenRegister\Service\Archival\RetentionEvaluator
  * @uses   \OCA\OpenRegister\BackgroundJob\ArchivalSweep
+ * @uses   \OCA\OpenRegister\BackgroundJob\ArchivalRowExpiry
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema

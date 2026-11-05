@@ -61,7 +61,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -149,11 +148,11 @@ class ArchivalRetentionTask extends TimedJob {
 	private readonly LoggerInterface $logger;
 
 	/**
-	 * Cached retention evaluator (stateless apart from DI).
+	 * Expiry of each scanned row.
 	 *
-	 * @var RetentionEvaluator
+	 * @var ArchivalRowExpiry
 	 */
-	private RetentionEvaluator $retentionEvaluator;
+	private readonly ArchivalRowExpiry $rowExpiry;
 
 	/**
 	 * Constructor.
@@ -190,7 +189,7 @@ class ArchivalRetentionTask extends TimedJob {
 		$this->container = $container;
 		$this->logger = $logger;
 
-		$this->retentionEvaluator = new RetentionEvaluator(logger: $logger);
+		$this->rowExpiry = new ArchivalRowExpiry(logger: $logger);
 
 		// Run every hour (3600 seconds).
 		$this->setInterval(seconds: 3600);
@@ -386,7 +385,7 @@ class ArchivalRetentionTask extends TimedJob {
 	private function sweepRow(ArchivalSweep $sweep, array $row): void {
 		$sweep->scanned++;
 
-		$expiresAt = $this->expiryOf(sweep: $sweep, row: $row);
+		$expiresAt = $this->rowExpiry->expiryOf(sweep: $sweep, row: $row);
 		if ($expiresAt === null || $expiresAt >= $sweep->now) {
 			return;
 		}
@@ -398,58 +397,6 @@ class ArchivalRetentionTask extends TimedJob {
 			$this->disposeExpired(sweep: $sweep, uuid: $uuid);
 		}
 	}//end sweepRow()
-
-	/**
-	 * The row's expiry, or null when it cannot be computed.
-	 *
-	 * @param ArchivalSweep        $sweep The schema being swept.
-	 * @param array<string, mixed> $row   Raw table row.
-	 *
-	 * @return DateTimeImmutable|null
-	 */
-	private function expiryOf(ArchivalSweep $sweep, array $row): ?DateTimeImmutable {
-		$createdAt = $this->createdAtOf(sweep: $sweep, row: $row);
-		if ($createdAt === null) {
-			return null;
-		}
-
-		try {
-			$row    = $this->stripMetadataColumns(row: $row);
-			$result = $this->retentionEvaluator->evaluate(annotation: $sweep->annotation, row: $row, createdAt: $createdAt);
-		} catch (Exception $error) {
-			$this->warn(message: sprintf('Skipping row on "%s": %s', $sweep->schemaSlug, $error->getMessage()));
-			return null;
-		}
-
-		return new DateTimeImmutable($result['expiresAt']);
-	}//end expiryOf()
-
-	/**
-	 * The row's `_created` time, or null when it is absent or unparseable.
-	 *
-	 * A ROW WITH NO `_created` IS NEVER SWEPT: without a creation timestamp
-	 * there is no expiry to compute.
-	 *
-	 * @param ArchivalSweep        $sweep The schema being swept.
-	 * @param array<string, mixed> $row   Raw table row.
-	 *
-	 * @return DateTimeImmutable|null
-	 */
-	private function createdAtOf(ArchivalSweep $sweep, array $row): ?DateTimeImmutable {
-		$createdRaw = ($row['_created'] ?? null);
-		if ($createdRaw === null) {
-			return null;
-		}
-
-		try {
-			return new DateTimeImmutable((string)$createdRaw);
-		} catch (Exception $error) {
-			$this->warn(
-				message: sprintf('Row with unparseable _created skipped on "%s": %s', $sweep->schemaSlug, $error->getMessage())
-			);
-			return null;
-		}
-	}//end createdAtOf()
 
 	/**
 	 * Delete an expired row unless it is held or cannot be loaded.
@@ -640,25 +587,4 @@ class ArchivalRetentionTask extends TimedJob {
 		return $notification;
 	}//end describeHoldSkip()
 
-	/**
-	 * Drop the magic-table metadata columns (`_uuid`, `_created`, ...) from a
-	 * raw row so the row passed to the condition evaluator carries only the
-	 * schema-declared fields.
-	 *
-	 * @param array<string, mixed> $row Raw row as returned by the QueryBuilder cursor.
-	 *
-	 * @return array<string, mixed> Filtered row.
-	 */
-	private function stripMetadataColumns(array $row): array {
-		$filtered = [];
-		foreach ($row as $key => $value) {
-			if (is_string($key) === true && str_starts_with($key, '_') === true) {
-				continue;
-			}
-
-			$filtered[$key] = $value;
-		}
-
-		return $filtered;
-	}//end stripMetadataColumns()
 }//end class
