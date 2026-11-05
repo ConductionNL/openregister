@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ApiTokenSettingsControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\LlmSettingsControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\EdepotSettingsControllerFactory;
 use OCA\OpenRegister\Controller\Settings\ApiTokenSettingsController;
@@ -226,7 +227,7 @@ class SettingsConnectionReportTest extends TestCase {
 			$clientService->method('newClient')->willReturn($client);
 		}
 
-		return new ApiTokenSettingsController(
+		return ApiTokenSettingsControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			config: $config,

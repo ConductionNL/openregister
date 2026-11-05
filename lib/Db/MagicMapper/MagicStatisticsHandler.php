@@ -58,6 +58,7 @@ use Psr\Log\LoggerInterface;
  * Statistics methods from MagicMapper retain inherent query complexity.
  */
 class MagicStatisticsHandler {
+	use MagicColumnNameTrait;
 
 	/**
 	 * Per-request memo of the magic-table list from information_schema.
@@ -811,36 +812,6 @@ class MagicStatisticsHandler {
 			context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field]
 		);
 	}//end skipUnknownMetadataField()
-
-	/**
-	 * Sanitize column name for safe database usage
-	 *
-	 * @param string $name Column name to sanitize
-	 *
-	 * @return string Sanitized column name
-	 */
-	private function sanitizeColumnName(string $name): string {
-		// Convert camelCase to snake_case.
-		// Insert underscore before uppercase letters, then lowercase everything.
-		$name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name);
-		$name = strtolower($name);
-
-		// Replace any remaining invalid characters with underscore.
-		$name = preg_replace('/[^a-z0-9_]/', '_', $name);
-
-		// Ensure it starts with a letter or underscore.
-		if (preg_match('/^[a-z_]/', $name) === false) {
-			$name = 'col_' . $name;
-		}
-
-		// Remove consecutive underscores.
-		$name = preg_replace('/_+/', '_', $name);
-
-		// Remove trailing underscores.
-		$name = rtrim($name, '_');
-
-		return $name;
-	}//end sanitizeColumnName()
 
 	/**
 	 * Convert snake_case column name back to camelCase property name.
