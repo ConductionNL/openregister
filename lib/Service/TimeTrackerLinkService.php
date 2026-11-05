@@ -254,9 +254,7 @@ class TimeTrackerLinkService {
 	/**
 	 * Create a new NC TimeManager client and link it to an OR object.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
+	 * @param LinkTarget $target The object to link to.
 	 * @param string $name New client name.
 	 *
 	 * @return TimeTrackerLink The persisted link row.
@@ -267,12 +265,7 @@ class TimeTrackerLinkService {
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link-client contract is
 	 *       owned by the integration-time-tracker capability.
 	 */
-	public function createAndLinkClient(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		string $name,
-	): TimeTrackerLink {
+	public function createAndLinkClient(LinkTarget $target, string $name): TimeTrackerLink {
 		$uid = $this->requireUid();
 
 		$name = trim($name);
@@ -304,9 +297,7 @@ class TimeTrackerLinkService {
 			id: $clientUuid,
 			info: $info
 		);
-		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
-			->inSchema(schemaId: $schemaId)
-			->stamp(link: $link, linkedBy: $uid);
+		$target->stamp(link: $link, linkedBy: $uid);
 
 		return $this->timeTrackerLinkMapper->insert($link);
 	}//end createAndLinkClient()

@@ -124,9 +124,7 @@ class PhotoLinksController extends Controller {
 				}
 
 				$link = $this->photoLinkService->linkAlbum(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
+					$this->linkTargetOf(object: $object),
 					$albumId
 				);
 

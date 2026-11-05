@@ -2009,6 +2009,73 @@
                 ]
             ],
             [
+                "find",
+                [
+                    "d1",
+                    "Register#1",
+                    "Schema#3",
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    1,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schema.find",
+                [
+                    0,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "find",
+                [
+                    "n1",
+                    "Register#1",
+                    "Schema#0",
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    0,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schema.find",
+                [
+                    3,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "find",
+                [
+                    "x1",
+                    "Register#0",
+                    "Schema#3",
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
                 "schema.find",
                 [
                     3,
@@ -2310,6 +2377,73 @@
                         "_limit": 200
                     },
                     []
+                ]
+            ],
+            [
+                "find",
+                [
+                    "d1",
+                    "Register#1",
+                    "Schema#3",
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    1,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schema.find",
+                [
+                    0,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "find",
+                [
+                    "n1",
+                    "Register#1",
+                    "Schema#0",
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    0,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schema.find",
+                [
+                    3,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "find",
+                [
+                    "x1",
+                    "Register#0",
+                    "Schema#3",
+                    false,
+                    true,
+                    true
                 ]
             ],
             [
@@ -2725,15 +2859,6 @@
                 ]
             ],
             [
-                "schema.find",
-                [
-                    5,
-                    [],
-                    false,
-                    false
-                ]
-            ],
-            [
                 "log.debug",
                 [
                     "[RelationHandler::getUses] Found related objects",
@@ -2797,22 +2922,9 @@
                         "owner": "alice",
                         "schema": "3"
                     }
-                },
-                {
-                    "id": "c1",
-                    "relation": {
-                        "descriptor": null,
-                        "direction": "outgoing",
-                        "path": "many.0"
-                    },
-                    "@self": {
-                        "name": "c1",
-                        "owner": "carol",
-                        "schema": "5"
-                    }
                 }
             ],
-            "total": 2,
+            "total": 1,
             "limit": 30,
             "offset": 0
         },
@@ -2951,80 +3063,6 @@
                 ]
             ],
             [
-                "schema.find",
-                [
-                    5,
-                    [],
-                    false,
-                    false
-                ]
-            ],
-            [
-                "hasPermission",
-                [
-                    "Schema#5",
-                    "read",
-                    "carol",
-                    {
-                        "id": "c1",
-                        "@self": {
-                            "id": "c1",
-                            "slug": null,
-                            "name": "c1",
-                            "description": null,
-                            "summary": null,
-                            "image": null,
-                            "uri": null,
-                            "version": null,
-                            "register": "4",
-                            "schema": "5",
-                            "schemaVersion": null,
-                            "files": [],
-                            "relations": [],
-                            "locked": null,
-                            "owner": "carol",
-                            "organisation": null,
-                            "groups": [],
-                            "authorization": {
-                                "read": [
-                                    "group-x"
-                                ]
-                            },
-                            "folder": null,
-                            "application": null,
-                            "validation": [],
-                            "quality": [],
-                            "geo": [],
-                            "retention": [],
-                            "tmlo": [],
-                            "size": null,
-                            "updated": null,
-                            "lastUserActivity": null,
-                            "created": null,
-                            "deleted": [],
-                            "archived": [],
-                            "frozen": [],
-                            "status": null,
-                            "source": null,
-                            "mail": null,
-                            "contacts": null,
-                            "notes": null,
-                            "todos": null,
-                            "calendar": null,
-                            "talk": null,
-                            "deck": null,
-                            "expires": null
-                        }
-                    },
-                    {
-                        "read": [
-                            "group-x"
-                        ]
-                    },
-                    "c1"
-                ]
-            ],
-            [
                 "log.debug",
                 [
                     "[RelationHandler::getUses] Found related objects",
@@ -3035,7 +3073,7 @@
                             "2": "https://x/objects/c2",
                             "4": "https://x/b2"
                         },
-                        "foundCount": 2
+                        "foundCount": 1
                     }
                 ]
             ],
@@ -3064,22 +3102,6 @@
                     },
                     "outgoing",
                     "one"
-                ]
-            ],
-            [
-                "descriptorFor",
-                [
-                    "Schema#2",
-                    "many.0",
-                    "nl"
-                ]
-            ],
-            [
-                "row",
-                [
-                    null,
-                    "outgoing",
-                    "many.0"
                 ]
             ]
         ]
@@ -3214,6 +3236,17 @@
                         "_limit": 200
                     },
                     []
+                ]
+            ],
+            [
+                "find",
+                [
+                    "c1",
+                    "Register#4",
+                    "Schema#5",
+                    false,
+                    true,
+                    true
                 ]
             ],
             [
@@ -3883,6 +3916,28 @@
                 ]
             ],
             [
+                "find",
+                [
+                    "b1",
+                    "Register#1",
+                    "Schema#3",
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "find",
+                [
+                    "c1",
+                    "Register#4",
+                    "Schema#5",
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
                 "schema.find",
                 [
                     3,
@@ -4227,6 +4282,28 @@
                         "_limit": 200
                     },
                     []
+                ]
+            ],
+            [
+                "find",
+                [
+                    "c1",
+                    "Register#4",
+                    "Schema#5",
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "find",
+                [
+                    "c1",
+                    "Register#4",
+                    "Schema#5",
+                    false,
+                    true,
+                    true
                 ]
             ],
             [
@@ -6709,27 +6786,9 @@
                         "owner": "carol",
                         "schema": "5"
                     }
-                },
-                {
-                    "title": "B1",
-                    "_owner": "mallory",
-                    "_organisation": "forged",
-                    "id": "b1",
-                    "relation": {
-                        "descriptor": {
-                            "label": "L:one"
-                        },
-                        "direction": "outgoing",
-                        "path": "one"
-                    },
-                    "@self": {
-                        "name": "b1",
-                        "owner": "alice",
-                        "schema": "3"
-                    }
                 }
             ],
-            "total": 2,
+            "total": 1,
             "limit": 30,
             "offset": 0
         },
@@ -6894,73 +6953,6 @@
                 ]
             ],
             [
-                "schema.find",
-                [
-                    3,
-                    [],
-                    false,
-                    false
-                ]
-            ],
-            [
-                "hasPermission",
-                [
-                    "Schema#3",
-                    "read",
-                    "alice",
-                    {
-                        "id": "b1",
-                        "title": "B1",
-                        "@self": {
-                            "id": "b1",
-                            "slug": null,
-                            "name": "b1",
-                            "description": null,
-                            "summary": null,
-                            "image": null,
-                            "uri": null,
-                            "version": null,
-                            "register": "1",
-                            "schema": "3",
-                            "schemaVersion": null,
-                            "files": [],
-                            "relations": [],
-                            "locked": null,
-                            "owner": "alice",
-                            "organisation": null,
-                            "groups": [],
-                            "authorization": [],
-                            "folder": null,
-                            "application": null,
-                            "validation": [],
-                            "quality": [],
-                            "geo": [],
-                            "retention": [],
-                            "tmlo": [],
-                            "size": null,
-                            "updated": null,
-                            "lastUserActivity": null,
-                            "created": null,
-                            "deleted": [],
-                            "archived": [],
-                            "frozen": [],
-                            "status": null,
-                            "source": null,
-                            "mail": null,
-                            "contacts": null,
-                            "notes": null,
-                            "todos": null,
-                            "calendar": null,
-                            "talk": null,
-                            "deck": null,
-                            "expires": null
-                        }
-                    },
-                    [],
-                    "b1"
-                ]
-            ],
-            [
                 "log.debug",
                 [
                     "[RelationHandler::getUses] Found related objects",
@@ -6971,7 +6963,7 @@
                             "2": "https://x/objects/c2",
                             "4": "https://x/b2"
                         },
-                        "foundCount": 2
+                        "foundCount": 1
                     }
                 ]
             ],
@@ -6998,24 +6990,6 @@
                     null,
                     "outgoing",
                     "many.0"
-                ]
-            ],
-            [
-                "descriptorFor",
-                [
-                    "Schema#2",
-                    "one",
-                    "nl"
-                ]
-            ],
-            [
-                "row",
-                [
-                    {
-                        "label": "L:one"
-                    },
-                    "outgoing",
-                    "one"
                 ]
             ]
         ]

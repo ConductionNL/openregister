@@ -126,9 +126,7 @@ class MapLinksController extends Controller {
 				}
 
 				$link = $this->mapLinkService->linkPoi(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
+					$this->linkTargetOf(object: $object),
 					$favoriteId
 				);
 
