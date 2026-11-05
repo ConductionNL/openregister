@@ -175,56 +175,90 @@ class RelationGraphService {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function graph(string $rootUuid, int $depth = 1, string $language = 'nl'): array {
-		$maxDepth = $this->maximumDepth();
-		$requested = max(1, $depth);
-		$effective = min($requested, $maxDepth);
-
 		$walk = new GraphWalk();
-		$walk->maxNodes = $this->maximumNodes();
-		if ($requested > $maxDepth) {
-			$walk->truncatedBy = self::TRUNCATED_DEPTH;
-		}
-
-		$frontier = [$rootUuid];
-		$walk->visited = [$rootUuid => true];
-		$walk->nodes[$rootUuid] = $this->node(uuid: $rootUuid, object: $this->loadObject(uuid: $rootUuid), distance: 0);
-
-		// The bound of the walk: at most the effective depth, and no further once the node cap stopped it.
-		for ($walk->level = 0; $walk->level < $effective; $walk->level++) {
-			if ($frontier === [] || $walk->truncatedBy === self::TRUNCATED_CAP) {
-				break;
-			}
-
-			$walk->next = [];
-			foreach ($this->edgesFrom(uuids: $frontier, language: $language) as $edge) {
-				if ($this->followEdge(walk: $walk, edge: $edge) === false) {
-					break;
-				}
-			}
-
-			$frontier = $walk->next;
-		}
+		$walk->maxDepth = $this->maximumDepth();
+		$walk->requestedDepth = max(1, $depth);
+		$walk->depth = min($walk->requestedDepth, $walk->maxDepth);
+		$walk->language = $language;
+		$this->startAt(walk: $walk, rootUuid: $rootUuid);
+		$this->walkLevels(walk: $walk);
 
 		// A walk that still had an UNVISITED neighbour when the requested depth
 		// ran out is truncated by that depth, even within the administered
 		// maximum. A non-empty frontier alone is not enough: the last level
 		// almost always sits in it, and a flag that is always true tells a
 		// reader nothing.
-		if ($walk->truncatedBy === null && $this->hasMore(frontier: $frontier, visited: $walk->visited, language: $language) === true) {
+		if ($walk->truncatedBy === null && $this->hasMore(frontier: $walk->frontier, visited: $walk->visited, language: $language) === true) {
 			$walk->truncatedBy = self::TRUNCATED_DEPTH;
 		}
 
+		return $this->graphResult(walk: $walk);
+	}//end graph()
+
+	/**
+	 * Start a walk at its root: the node cap, a depth cut when more was asked
+	 * than is allowed, and the root as the only reached node.
+	 *
+	 * @param GraphWalk $walk     The walk, with its depths set.
+	 * @param string    $rootUuid The root UUID.
+	 *
+	 * @return void
+	 */
+	private function startAt(GraphWalk $walk, string $rootUuid): void {
+		$walk->maxNodes = $this->maximumNodes();
+		if ($walk->requestedDepth > $walk->maxDepth) {
+			$walk->truncatedBy = self::TRUNCATED_DEPTH;
+		}
+
+		$walk->root = $rootUuid;
+		$walk->frontier = [$rootUuid];
+		$walk->visited = [$rootUuid => true];
+		$walk->nodes[$rootUuid] = $this->node(uuid: $rootUuid, object: $this->loadObject(uuid: $rootUuid), distance: 0);
+	}//end startAt()
+
+	/**
+	 * Walk level by level: at most the walk's depth, and no further once the node cap stopped it.
+	 *
+	 * @param GraphWalk $walk The walk.
+	 *
+	 * @return void
+	 */
+	private function walkLevels(GraphWalk $walk): void {
+		for ($walk->level = 0; $walk->level < $walk->depth; $walk->level++) {
+			if ($walk->frontier === [] || $walk->truncatedBy === self::TRUNCATED_CAP) {
+				break;
+			}
+
+			$walk->next = [];
+			foreach ($this->edgesFrom(uuids: $walk->frontier, language: $walk->language) as $edge) {
+				if ($this->followEdge(walk: $walk, edge: $edge) === false) {
+					break;
+				}
+			}
+
+			$walk->frontier = $walk->next;
+		}
+	}//end walkLevels()
+
+	/**
+	 * The graph answer of a finished walk.
+	 *
+	 * @param GraphWalk $walk The finished walk.
+	 *
+	 * @return array{root: string, depth: int, requestedDepth: int, maxDepth: int, nodes: list<array>, edges: array, truncated: bool, truncatedBy: string|null}
+	 */
+	private function graphResult(GraphWalk $walk): array {
 		return [
-			'root' => $rootUuid,
-			'depth' => $effective,
-			'requestedDepth' => $requested,
-			'maxDepth' => $maxDepth,
+			'root' => $walk->root,
+			'depth' => $walk->depth,
+			'requestedDepth' => $walk->requestedDepth,
+			'maxDepth' => $walk->maxDepth,
 			'nodes' => array_values($walk->nodes),
 			'edges' => $walk->edges,
 			'truncated' => ($walk->truncatedBy !== null),
 			'truncatedBy' => $walk->truncatedBy,
 		];
-	}//end graph()
+	}//end graphResult()
 
 	/**
 	 * Walk one edge: record it once, and reach its other end unless that is visited or the node cap is hit.
