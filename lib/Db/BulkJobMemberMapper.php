@@ -291,19 +291,4 @@ class BulkJobMemberMapper extends QBMapper {
 
 		return $this->update(entity: $member);
 	}//end save()
-
-	/**
-	 * Delete every member of a job.
-	 *
-	 * @param int $jobId The job id.
-	 *
-	 * @return int The number of deleted rows.
-	 */
-	public function deleteByJob(int $jobId): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('job_id', $qb->createNamedParameter($jobId, IQueryBuilder::PARAM_INT)));
-
-		return $qb->executeStatement();
-	}//end deleteByJob()
 }//end class

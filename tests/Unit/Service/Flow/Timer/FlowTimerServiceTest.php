@@ -667,7 +667,6 @@ class FlowTimerServiceTest extends TestCase {
 		$mapper = $this->store->timerMapper();
 		self::assertSame([], $mapper->findDueExpiries(now: $start->modify('+400 days'), limit: 100));
 		self::assertSame([$successor], $mapper->findDueRungs(now: $start->modify('+400 days'), limit: 100));
-		self::assertSame([$successor], $mapper->findSuccessors(uuid: $uuid));
 		self::assertSame(FlowTimerEvent::TYPE_SUPERSEDED, $this->service->history(uuid: $uuid)[1]->getType());
 	}//end testAMovedAnchorSupersedesTheTimerAndInheritsOnlyTheRungsStillInThePast()
 

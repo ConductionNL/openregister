@@ -967,25 +967,4 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 
 		return $matches;
 	}//end getAllRegisterIdsWithSchema()
-
-	/**
-	 * Check if a register has a schema with a specific title
-	 *
-	 * @param int $registerId The ID of the register
-	 * @param string $schemaTitle The title of the schema to look for
-	 *
-	 * @return Schema|null The schema if found, multi: null otherwise
-	 */
-	public function hasSchemaWithTitle(int $registerId, string $schemaTitle): ?Schema {
-		$schemas = $this->getSchemasByRegisterId(registerId: $registerId);
-
-		// Check each schema for a matching title.
-		foreach ($schemas as $schema) {
-			if ($schema->getTitle() === $schemaTitle) {
-				return $schema;
-			}
-		}
-
-		return null;
-	}//end hasSchemaWithTitle()
 }//end class

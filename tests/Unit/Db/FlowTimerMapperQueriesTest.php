@@ -137,10 +137,6 @@ class FlowTimerMapperQueriesTest extends TestCase {
 		self::assertTrue($this->saw('expr.in', 'state'), 'a run read only reaches open timers');
 
 		$mapper = new FlowTimerMapper(db: $this->connectionWith(rows: []));
-		$mapper->findSuccessors(uuid: 'timer-11');
-		self::assertTrue($this->saw('expr.eq', 'supersedes_uuid'));
-
-		$mapper = new FlowTimerMapper(db: $this->connectionWith(rows: []));
 		$mapper->findByStatePaged(state: FlowTimer::STATE_ARMED, afterId: 40, limit: 500);
 		self::assertTrue($this->saw('expr.gt', 'id'));
 		self::assertTrue($this->saw('setMaxResults', 500));
