@@ -46,6 +46,7 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
 use RuntimeException;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicBulkSaveGroup;
 use OCA\OpenRegister\Db\MagicMapper\MagicCrossTableHit;
 use OCA\OpenRegister\Db\MagicMapper\MagicCrossTableScan;
 use OCA\OpenRegister\Db\MagicMapper\MagicIdentifierProbe;
@@ -12250,13 +12251,10 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				foreach ($schemaGroups as $groupKey => $groupObjects) {
 					[$groupRegisterId, $groupSchemaId] = explode('_', $groupKey);
 
-					$groupResults = $this->ultraFastBulkSaveSingleSchema(
-						insertObjects: $groupObjects,
-						updateObjects: [],
-						register: $this->bulkGroupRegister(register: $register, registerId: $groupRegisterId),
-						schema: $this->bulkGroupSchema(schemaId: $groupSchemaId),
-						needsPreUpdateState: $needsPreUpdateState
-					);
+					$group = new MagicBulkSaveGroup(insertObjects: $groupObjects, needsPreUpdateState: $needsPreUpdateState);
+					$group->register = $this->bulkGroupRegister(register: $register, registerId: $groupRegisterId);
+					$group->schema   = $this->bulkGroupSchema(schemaId: $groupSchemaId);
+					$groupResults    = $this->ultraFastBulkSaveSingleSchema(group: $group);
 
 					$allResults = array_merge($allResults, $groupResults);
 				}
@@ -12265,13 +12263,10 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			}//end if
 		}//end if
 
-		return $this->ultraFastBulkSaveSingleSchema(
-			insertObjects: $insertObjects,
-			updateObjects: $updateObjects,
-			register: $register,
-			schema: $schema,
-			needsPreUpdateState: $needsPreUpdateState
-		);
+		$group = new MagicBulkSaveGroup(insertObjects: $insertObjects, needsPreUpdateState: $needsPreUpdateState);
+		$group->register = $register;
+		$group->schema   = $schema;
+		return $this->ultraFastBulkSaveSingleSchema(group: $group);
 	}//end ultraFastBulkSave()
 
 	/**
@@ -12342,71 +12337,82 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	/**
 	 * Ultra-fast bulk save for a single schema (internal method).
 	 *
-	 * @param array $insertObjects Objects to insert/upsert
-	 * @param array $updateObjects Objects to update
-	 * @param Register|null $register Register context
-	 * @param Schema|null $schema Schema context
-	 * @param bool $needsPreUpdateState Whether anything downstream will read the
-	 *                                  pre-update rows (audit changeset or update
-	 *                                  event). False narrows the fetch to the uuid.
+	 * A register or schema the group lacks is read from the `@self` of its
+	 * first object.
+	 *
+	 * @param MagicBulkSaveGroup $group The objects and their table context.
+	 *
+	 * @throws Exception When the register or schema cannot be resolved.
 	 *
 	 * @return array Array of complete objects with object_status field
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function ultraFastBulkSaveSingleSchema(
-		array $insertObjects,
-		array $updateObjects,
-		?Register $register,
-		?Schema $schema,
-		bool $needsPreUpdateState = true,
-	): array {
-		if ($register === null || $schema === null) {
-			$firstObject = $insertObjects[0] ?? [];
-			$registerId = $firstObject['@self']['register'] ?? null;
-			$schemaId = $firstObject['@self']['schema'] ?? null;
+	private function ultraFastBulkSaveSingleSchema(MagicBulkSaveGroup $group): array {
+		$self = ($group->insertObjects[0] ?? [])['@self'] ?? [];
+		$group->register ??= $this->findBulkRegister(id: $self['register'] ?? null);
+		$group->schema   ??= $this->findBulkSchema(id: $self['schema'] ?? null);
 
-			if ($registerId !== null && $register === null) {
-				try {
-					$register = $this->registerMapper->find(id: $registerId, _multitenancy: false);
-				} catch (\Exception $e) {
-					$this->logger->warning(
-						message: '[MagicMapper] Failed to resolve register',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $registerId]
-					);
-				}
-			}
-
-			if ($schemaId !== null && $schema === null) {
-				try {
-					$schema = $this->schemaMapper->find(id: $schemaId, _multitenancy: false);
-				} catch (\Exception $e) {
-					$this->logger->warning(
-						message: '[MagicMapper] Failed to resolve schema',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $schemaId]
-					);
-				}
-			}
-		}//end if
-
+		$register = $group->register;
+		$schema   = $group->schema;
 		if ($register === null || $schema === null) {
 			throw new Exception('Cannot bulk save without register and schema context');
 		}
 
-		$tableName = 'openregister_table_' . $register->getId() . '_' . $schema->getId();
-
 		$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
 
-		$result = $this->bulkUpsert(
-			objects: $insertObjects,
+		return $this->bulkUpsert(
+			objects: $group->insertObjects,
 			register: $register,
 			schema: $schema,
-			tableName: $tableName,
-			needsPreUpdateState: $needsPreUpdateState
+			tableName: 'openregister_table_' . $register->getId() . '_' . $schema->getId(),
+			needsPreUpdateState: $group->needsPreUpdateState
 		);
-
-		return $result;
 	}//end ultraFastBulkSaveSingleSchema()
+
+	/**
+	 * The register a bulk save names in its first object, or null.
+	 *
+	 * @param mixed $id The register id from `@self`, or null.
+	 *
+	 * @return Register|null The register, or null when absent or not found.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function findBulkRegister(mixed $id): ?Register {
+		if ($id === null) {
+			return null;
+		}
+
+		try {
+			return $this->registerMapper->find(id: $id, _multitenancy: false);
+		} catch (\Exception $e) {
+			$this->logger->warning(message: '[MagicMapper] Failed to resolve register', context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id]);
+			return null;
+		}
+	}//end findBulkRegister()
+
+	/**
+	 * The schema a bulk save names in its first object, or null.
+	 *
+	 * @param mixed $id The schema id from `@self`, or null.
+	 *
+	 * @return Schema|null The schema, or null when absent or not found.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function findBulkSchema(mixed $id): ?Schema {
+		if ($id === null) {
+			return null;
+		}
+
+		try {
+			return $this->schemaMapper->find(id: $id, _multitenancy: false);
+		} catch (\Exception $e) {
+			$this->logger->warning(message: '[MagicMapper] Failed to resolve schema', context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id]);
+			return null;
+		}
+	}//end findBulkSchema()
 
 	/**
 	 * Delete multiple objects.
