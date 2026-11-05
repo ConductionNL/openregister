@@ -26,6 +26,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Controller\ObjectsController
  * @uses   \OCA\OpenRegister\Exception\SearchTermSyntaxException
  * @uses   \OCA\OpenRegister\Service\Search\SearchTermParser
+ * @uses   \OCA\OpenRegister\Service\Search\SearchTermNode
  */
 class ObjectsControllerMagicListingGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-magic-listing-golden.json';
