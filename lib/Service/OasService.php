@@ -199,6 +199,26 @@ class OasService {
 	private const ERROR_CONTENT = ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Error']]];
 
 	/**
+	 * The tail of a collection response's description, after "List of <schema>".
+	 *
+	 * @var string
+	 */
+	private const COLLECTION_RESPONSE_NOTE = ' objects with pagination metadata. '
+		. 'Send `Accept: application/ld+json` to receive a JSON-LD `@graph` '
+		. 'document (pagination under `or:` terms); the default '
+		. '`application/json` representation is unchanged (json-ld-output).';
+
+	/**
+	 * The 200 response of a JSON-LD `@context` document endpoint.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const CONTEXT_DOCUMENT_RESPONSE = [
+		'description' => 'JSON-LD context document of the form `{"@context": {…}}`.',
+		'content' => ['application/ld+json' => ['schema' => ['type' => 'object', 'properties' => ['@context' => ['type' => 'object']]]]],
+	];
+
+	/**
 	 * The JSON-LD `@graph` response schema of a collection.
 	 *
 	 * @var array<string, mixed>
@@ -280,6 +300,20 @@ class OasService {
 	 * @var OasRbacAnnotator
 	 */
 	private OasRbacAnnotator $rbacAnnotator;
+
+	/**
+	 * The RBAC groups (createGroups, readGroups, updateGroups, deleteGroups) of the schema whose paths are being added.
+	 *
+	 * @var array<string, array>
+	 */
+	private array $pathRbac = [];
+
+	/**
+	 * The operationId prefix of the register whose paths are being added; empty for none.
+	 *
+	 * @var string
+	 */
+	private string $operationIdPrefix = '';
 
 	/**
 	 * Constructor for OasService
@@ -549,9 +583,9 @@ class OasService {
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function addRegisterPaths(object $register, array $context): void {
-		$operationIdPrefix = '';
+		$this->operationIdPrefix = '';
 		if ($context['prefixed'] === true) {
-			$operationIdPrefix = $this->pascalCase(string: $register->getTitle());
+			$this->operationIdPrefix = $this->pascalCase(string: $register->getTitle());
 		}
 
 		$noGroups = ['createGroups' => [], 'readGroups' => [], 'updateGroups' => [], 'deleteGroups' => []];
@@ -561,12 +595,8 @@ class OasService {
 				continue;
 			}
 
-			$this->addCrudPaths(
-				register: $register,
-				schema: $schema,
-				rbac: ($context['rbac'][$schemaId] ?? $noGroups),
-				operationIdPrefix: $operationIdPrefix
-			);
+			$this->pathRbac = ($context['rbac'][$schemaId] ?? $noGroups);
+			$this->addCrudPaths(register: $register, schema: $schema);
 			$this->addExtendedPaths(register: $register, schema: $schema);
 			$this->addJsonLdContextPaths(register: $register, schema: $schema);
 		}
@@ -958,74 +988,76 @@ class OasService {
 	 *
 	 * @param object $register The register object
 	 * @param object $schema The schema object
-	 * @param array $rbac RBAC groups {createGroups, readGroups, updateGroups, deleteGroups}
-	 * @param string $operationIdPrefix Prefix for operationId to ensure uniqueness across registers
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
-	private function addCrudPaths(object $register, object $schema, array $rbac = [], string $operationIdPrefix = ''): void {
-		$registerSlugValue = $register->getSlug();
-		$registerSlug = $this->slugify(string: $register->getTitle());
-		if ($registerSlugValue !== null && $registerSlugValue !== '') {
-			$registerSlug = $registerSlugValue;
-		}
-
-		$schemaSlugValue = $schema->getSlug();
-		$schemaSlug = $this->slugify(string: $schema->getTitle());
-		if ($schemaSlugValue !== null && $schemaSlugValue !== '') {
-			$schemaSlug = $schemaSlugValue;
-		}
-
-		$basePath = '/objects/' . $registerSlug . '/' . $schemaSlug;
-
-		// Collection endpoints (tags are inside individual operations).
-		$getCollection = $this->createGetCollectionOperation(schema: $schema);
-		$postOn = $this->createPostOperation(schema: $schema);
-
-		// Apply operationId prefix for uniqueness across registers.
-		if ($operationIdPrefix !== '') {
-			$getCollection['operationId'] = $operationIdPrefix . $getCollection['operationId'];
-			$postOn['operationId'] = $operationIdPrefix . $postOn['operationId'];
-		}
-
-		// Append RBAC group info to descriptions and add 403 responses.
-		$this->rbacAnnotator->applyRbacToOperation(operation: $getCollection, groups: $rbac['readGroups'] ?? []);
-		$this->rbacAnnotator->applyRbacToOperation(operation: $postOn, groups: $rbac['createGroups'] ?? []);
-
+	private function addCrudPaths(object $register, object $schema): void {
+		$basePath = $this->basePathOf(register: $register, schema: $schema);
 		$this->oas['paths'][$basePath] = [
-			'get' => $getCollection,
-			'post' => $postOn,
+			'get' => $this->finishOperation(operation: $this->createGetCollectionOperation(schema: $schema), groupsKey: 'readGroups'),
+			'post' => $this->finishOperation(operation: $this->createPostOperation(schema: $schema), groupsKey: 'createGroups'),
 		];
-
-		// Individual resource endpoints (tags are inside individual operations).
-		$getOn = $this->createGetOperation(schema: $schema);
-		$putOn = $this->createPutOperation(schema: $schema);
-		$patchOn = $this->createPatchOperation(schema: $schema);
-		$deleteOn = $this->createDeleteOperation(schema: $schema);
-
-		// Apply operationId prefix for uniqueness across registers.
-		if ($operationIdPrefix !== '') {
-			$getOn['operationId'] = $operationIdPrefix . $getOn['operationId'];
-			$putOn['operationId'] = $operationIdPrefix . $putOn['operationId'];
-			$patchOn['operationId'] = $operationIdPrefix . $patchOn['operationId'];
-			$deleteOn['operationId'] = $operationIdPrefix . $deleteOn['operationId'];
-		}
-
-		// Append RBAC group info to descriptions and add 403 responses.
-		$this->rbacAnnotator->applyRbacToOperation(operation: $getOn, groups: $rbac['readGroups'] ?? []);
-		$this->rbacAnnotator->applyRbacToOperation(operation: $putOn, groups: $rbac['updateGroups'] ?? []);
-		$this->rbacAnnotator->applyRbacToOperation(operation: $patchOn, groups: $rbac['updateGroups'] ?? []);
-		$this->rbacAnnotator->applyRbacToOperation(operation: $deleteOn, groups: $rbac['deleteGroups'] ?? []);
-
 		$this->oas['paths'][$basePath . '/{id}'] = [
-			'get' => $getOn,
-			'put' => $putOn,
-			'patch' => $patchOn,
-			'delete' => $deleteOn,
+			'get' => $this->finishOperation(operation: $this->createGetOperation(schema: $schema), groupsKey: 'readGroups'),
+			'put' => $this->finishOperation(operation: $this->createPutOperation(schema: $schema), groupsKey: 'updateGroups'),
+			'patch' => $this->finishOperation(operation: $this->createPatchOperation(schema: $schema), groupsKey: 'updateGroups'),
+			'delete' => $this->finishOperation(operation: $this->createDeleteOperation(schema: $schema), groupsKey: 'deleteGroups'),
 		];
 	}//end addCrudPaths()
+
+	/**
+	 * The operation with the register's operationId prefix and the schema's groups under the given key applied.
+	 *
+	 * @param array  $operation The OpenAPI operation.
+	 * @param string $groupsKey The RBAC key whose groups may call it.
+	 *
+	 * @return array The finished operation.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function finishOperation(array $operation, string $groupsKey): array {
+		if ($this->operationIdPrefix !== '') {
+			$operation['operationId'] = $this->operationIdPrefix . $operation['operationId'];
+		}
+
+		$this->rbacAnnotator->applyRbacToOperation(operation: $operation, groups: $this->pathRbac[$groupsKey] ?? []);
+		return $operation;
+	}//end finishOperation()
+
+	/**
+	 * The `/objects/{register}/{schema}` base path of a register/schema pair.
+	 *
+	 * @param object $register The register object.
+	 * @param object $schema   The schema object.
+	 *
+	 * @return string The base path.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function basePathOf(object $register, object $schema): string {
+		return '/objects/' . $this->slugOf(entity: $register) . '/' . $this->slugOf(entity: $schema);
+	}//end basePathOf()
+
+	/**
+	 * The slug of a register or schema; its slugified title when it has none.
+	 *
+	 * @param object $entity The register or schema.
+	 *
+	 * @return string The slug.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function slugOf(object $entity): string {
+		$fallback = $this->slugify(string: $entity->getTitle());
+		$slug     = $entity->getSlug();
+		if ($slug === null || $slug === '') {
+			return $fallback;
+		}
+
+		return $slug;
+	}//end slugOf()
 
 	/**
 	 * Add the JSON-LD `@context` document endpoints for a register/schema
@@ -1040,53 +1072,27 @@ class OasService {
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
 	private function addJsonLdContextPaths(object $register, object $schema): void {
-		$registerSlug = $register->getSlug();
-		if ($registerSlug === null || $registerSlug === '') {
-			$registerSlug = $this->slugify(string: $register->getTitle());
-		}
-
-		$schemaSlug = $schema->getSlug();
-		if ($schemaSlug === null || $schemaSlug === '') {
-			$schemaSlug = $this->slugify(string: $schema->getTitle());
-		}
-
-		$contextResponse = [
-			'200' => [
-				'description' => 'JSON-LD context document of the form `{"@context": {…}}`.',
-				'content' => [
-					'application/ld+json' => [
-						'schema' => [
-							'type' => 'object',
-							'properties' => [
-								'@context' => ['type' => 'object'],
-							],
-						],
-					],
-				],
-			],
-			'404' => $this->errorResponse(description: 'Register or schema not found'),
-		];
+		$registerSlug = $this->slugOf(entity: $register);
+		$schemaSlug   = $this->slugOf(entity: $schema);
+		$operationId  = 'getContext' . $this->pascalCase(string: $registerSlug);
+		$responses    = ['200' => self::CONTEXT_DOCUMENT_RESPONSE, '404' => $this->errorResponse(description: 'Register or schema not found')];
 
 		// Register-wide context document (idempotent across schemas of a register).
-		$this->oas['paths']['/contexts/' . $registerSlug] = [
-			'get' => [
-				'summary' => 'JSON-LD context for register ' . $registerSlug,
-				'operationId' => 'getContext' . $this->pascalCase(string: (string)$registerSlug),
-				'tags' => ['JSON-LD'],
-				'description' => 'Dereferenceable register-wide JSON-LD @context document.',
-				'responses' => $contextResponse,
-			],
+		$this->oas['paths']['/contexts/' . $registerSlug]['get'] = [
+			'summary' => 'JSON-LD context for register ' . $registerSlug,
+			'operationId' => $operationId,
+			'tags' => ['JSON-LD'],
+			'description' => 'Dereferenceable register-wide JSON-LD @context document.',
+			'responses' => $responses,
 		];
 
 		// Per-schema context document.
-		$this->oas['paths']['/contexts/' . $registerSlug . '/' . $schemaSlug] = [
-			'get' => [
-				'summary' => 'JSON-LD context for ' . $schemaSlug,
-				'operationId' => 'getContext' . $this->pascalCase(string: (string)$registerSlug) . $this->pascalCase(string: (string)$schemaSlug),
-				'tags' => ['JSON-LD'],
-				'description' => 'Dereferenceable per-schema JSON-LD @context document.',
-				'responses' => $contextResponse,
-			],
+		$this->oas['paths']['/contexts/' . $registerSlug . '/' . $schemaSlug]['get'] = [
+			'summary' => 'JSON-LD context for ' . $schemaSlug,
+			'operationId' => $operationId . $this->pascalCase(string: $schemaSlug),
+			'tags' => ['JSON-LD'],
+			'description' => 'Dereferenceable per-schema JSON-LD @context document.',
+			'responses' => $responses,
 		];
 	}//end addJsonLdContextPaths()
 
@@ -1104,54 +1110,38 @@ class OasService {
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function addExtendedPaths(object $register, object $schema): void {
-		$registerSlugValue = $register->getSlug();
-		$registerSlug = $this->slugify(string: $register->getTitle());
-		if ($registerSlugValue !== null && $registerSlugValue !== '') {
-			$registerSlug = $registerSlugValue;
-		}
-
-		$schemaSlugValue = $schema->getSlug();
-		$schemaSlug = $this->slugify(string: $schema->getTitle());
-		if ($schemaSlugValue !== null && $schemaSlugValue !== '') {
-			$schemaSlug = $schemaSlugValue;
-		}
-
-		$basePath = '/objects/' . $registerSlug . '/' . $schemaSlug;
-
-		// Only add whitelisted extended endpoints.
+		$basePath = $this->basePathOf(register: $register, schema: $schema);
 		foreach (self::INCLUDED_EXTENDED_ENDPOINTS ?? [] as $endpoint) {
-			switch ($endpoint) {
-				case 'audit-trails':
-					$this->oas['paths'][$basePath . '/{id}/audit-trails'] = [
-						'get' => $this->createLogsOperation(schema: $schema),
-					];
-					break;
-
-				case 'files':
-					$this->oas['paths'][$basePath . '/{id}/files'] = [
-						'get' => $this->createGetFilesOperation(schema: $schema),
-						'post' => $this->createPostFileOperation(schema: $schema),
-					];
-					break;
-
-				case 'lock':
-					$this->oas['paths'][$basePath . '/{id}/lock'] = [
-						'post' => $this->createLockOperation(schema: $schema),
-					];
-					break;
-
-				case 'unlock':
-					$this->oas['paths'][$basePath . '/{id}/unlock'] = [
-						'post' => $this->createUnlockOperation(schema: $schema),
-					];
-					break;
-			}//end switch
-		}//end foreach
+			$pathItem = $this->extendedPathItem(endpoint: $endpoint, schema: $schema);
+			if ($pathItem !== null) {
+				$this->oas['paths'][$basePath . '/{id}/' . $endpoint] = $pathItem;
+			}
+		}
 
 		// Note: By default, NO extended endpoints are included.
 		// To include them, add them to INCLUDED_EXTENDED_ENDPOINTS constant.
 		// This ensures a clean, minimal API specification focused on core CRUD operations.
 	}//end addExtendedPaths()
+
+	/**
+	 * The path item of an extended endpoint (audit-trails, files, lock, unlock); null for any other.
+	 *
+	 * @param string $endpoint The endpoint name, also its path segment.
+	 * @param object $schema   The schema object.
+	 *
+	 * @return array|null The path item.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function extendedPathItem(string $endpoint, object $schema): ?array {
+		return match ($endpoint) {
+			'audit-trails' => ['get' => $this->createLogsOperation(schema: $schema)],
+			'files' => ['get' => $this->createGetFilesOperation(schema: $schema), 'post' => $this->createPostFileOperation(schema: $schema)],
+			'lock' => ['post' => $this->createLockOperation(schema: $schema)],
+			'unlock' => ['post' => $this->createUnlockOperation(schema: $schema)],
+			default => null,
+		};
+	}//end extendedPathItem()
 
 	/**
 	 * Create common query parameters for object operations.
@@ -1312,13 +1302,6 @@ class OasService {
 			$schemaTitle = 'UnknownSchema';
 		}
 
-		$sanitizedSchemaName = $this->sanitizeSchemaName(title: $schemaTitle);
-
-		// Validate that we have a proper schema reference.
-		if (empty($sanitizedSchemaName) === true) {
-			$sanitizedSchemaName = 'UnknownSchema';
-		}
-
 		return [
 			'summary' => 'Get all ' . $schemaTitle . ' objects',
 			'operationId' => 'getAll' . $this->pascalCase(string: $schemaTitle),
@@ -1327,38 +1310,31 @@ class OasService {
 			'parameters' => $this->createCommonQueryParameters(isCollection: true, schema: $schema),
 			'responses' => [
 				'200' => [
-					'description' => 'List of ' . $schemaTitle . ' objects with pagination metadata. '
-						. 'Send `Accept: application/ld+json` to receive a JSON-LD `@graph` '
-						. 'document (pagination under `or:` terms); the default '
-						. '`application/json` representation is unchanged (json-ld-output).',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'allOf' => [
-									[
-										'$ref' => '#/components/schemas/PaginatedResponse',
-									],
-									[
-										'type' => 'object',
-										'properties' => [
-											'results' => [
-												'type' => 'array',
-												'items' => [
-													'$ref' => '#/components/schemas/' . $sanitizedSchemaName,
-												],
-											],
-										],
-									],
-								],
-							],
-						],
-						'application/ld+json' => ['schema' => self::JSON_LD_COLLECTION_SCHEMA],
-					],
+					'description' => 'List of ' . $schemaTitle . self::COLLECTION_RESPONSE_NOTE,
+					'content' => $this->paginatedContent(schemaTitle: $schemaTitle),
 				],
 				'400' => $this->errorResponse(description: 'Invalid query parameters'),
 			],
 		];
 	}//end createGetCollectionOperation()
+
+	/**
+	 * The JSON and JSON-LD content of a paginated collection of a schema's objects.
+	 *
+	 * @param string $schemaTitle The schema title.
+	 *
+	 * @return array<string, mixed> OpenAPI content map
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md#scenario-standard-http-methods-documented-api-01
+	 */
+	private function paginatedContent(string $schemaTitle): array {
+		$items = ['$ref' => '#/components/schemas/' . $this->sanitizeSchemaName(title: $schemaTitle)];
+		$page  = ['type' => 'object', 'properties' => ['results' => ['type' => 'array', 'items' => $items]]];
+		return [
+			'application/json' => ['schema' => ['allOf' => [['$ref' => '#/components/schemas/PaginatedResponse'], $page]]],
+			'application/ld+json' => ['schema' => self::JSON_LD_COLLECTION_SCHEMA],
+		];
+	}//end paginatedContent()
 
 	/**
 	 * Create GET operation.
