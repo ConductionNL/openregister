@@ -1,12 +1,11 @@
 <?php
 
 /**
- * Seals audit-trail rows that were left unsealed on the write path.
+ * Seals audit-trail rows, which the write path leaves unsealed on purpose.
  *
- * `sealRow()` and `sealRows()` are fail-soft: when the seal lock cannot be
- * acquired they log, leave the row unsealed, and say "a later seal pass will
- * chain it". Until this job existed there was no later pass — nothing swept
- * unsealed rows, so every fail-soft skip was permanent. Measured on the instance
+ * This job is the only sealer: inserting a row does not seal it (see
+ * `AuditTrailMapper::insertHashChained()`). Before it existed nothing swept
+ * unsealed rows, so every one stayed unsealed for good. Measured on the instance
  * this was written against: 49,123 of 308,937 audit rows (15.9%) had no hash.
  *
  * A row with no hash is a row the chain cannot vouch for. The point of hash

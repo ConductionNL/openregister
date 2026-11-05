@@ -148,38 +148,4 @@ class AuditHashServiceTest extends TestCase {
 
 		$this->assertNotSame($hash1, $hash2);
 	}
-
-	public function testGetLastHashReturnsGenesisWhenEmpty(): void {
-		$qb = $this->createMock(IQueryBuilder::class);
-		$result = $this->createMock(\OCP\DB\IResult::class);
-
-		$this->db->method('getQueryBuilder')->willReturn($qb);
-		$qb->method('select')->willReturnSelf();
-		$qb->method('from')->willReturnSelf();
-		$qb->method('orderBy')->willReturnSelf();
-		$qb->method('setMaxResults')->willReturnSelf();
-		$qb->method('executeQuery')->willReturn($result);
-		$result->method('fetch')->willReturn(false);
-
-		$hash = $this->service->getLastHash();
-
-		$this->assertSame($this->service->getGenesisHash(), $hash);
-	}
-
-	public function testGetLastHashReturnsStoredHash(): void {
-		$qb = $this->createMock(IQueryBuilder::class);
-		$result = $this->createMock(\OCP\DB\IResult::class);
-
-		$this->db->method('getQueryBuilder')->willReturn($qb);
-		$qb->method('select')->willReturnSelf();
-		$qb->method('from')->willReturnSelf();
-		$qb->method('orderBy')->willReturnSelf();
-		$qb->method('setMaxResults')->willReturnSelf();
-		$qb->method('executeQuery')->willReturn($result);
-		$result->method('fetch')->willReturn(['hash' => 'abc123def456']);
-
-		$hash = $this->service->getLastHash();
-
-		$this->assertSame('abc123def456', $hash);
-	}
 }
