@@ -9,6 +9,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\RegistersController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\RegistersControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
@@ -117,7 +118,7 @@ class RegistersControllerTest extends TestCase {
 			return null;
 		});
 
-		$this->controller = new RegistersController(
+		$this->controller = RegistersControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->registerService,

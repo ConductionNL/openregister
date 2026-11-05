@@ -95,6 +95,7 @@ use OCP\AppFramework\Db\Entity;
  * relation behind four mappers and make the graph read a four-way union.
  */
 class ObjectRelation extends Entity implements JsonSerializable {
+	use HydrateBySettersTrait;
 	/**
 	 * The row names another object in this register.
 	 *
@@ -321,29 +322,6 @@ class ObjectRelation extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'updated', type: 'datetime');
 
 	}//end __construct()
-
-	/**
-	 * Hydrate the entity from an array.
-	 *
-	 * @param array<string, mixed> $object The source data.
-	 *
-	 * @return static This entity, hydrated.
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	public function hydrate(array $object): static {
-		foreach ($object as $key => $value) {
-			$method = 'set'.ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
-
-		return $this;
-	}//end hydrate()
 
 	/**
 	 * JSON serialisation.
