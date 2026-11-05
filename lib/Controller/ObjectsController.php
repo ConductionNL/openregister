@@ -1330,32 +1330,62 @@ class ObjectsController extends Controller {
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	private function refuseMalformedSearchTerm(array $params): ?JSONResponse {
+		$term = $this->parsedSearchTerm(params: $params);
+		if ($term === null) {
+			return null;
+		}
+
+		try {
+			(new SearchTermParser())->parse(term: $term);
+		} catch (SearchTermSyntaxException $exception) {
+			return $this->searchSyntaxRefusal(exception: $exception);
+		}
+
+		return null;
+	}//end refuseMalformedSearchTerm()
+
+	/**
+	 * The `_search` term, trimmed, when the boolean parser has to read it.
+	 *
+	 * @param array $params The request params.
+	 *
+	 * @return string|null The term, or null when there is nothing to parse.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function parsedSearchTerm(array $params): ?string {
 		$search = ($params['_search'] ?? null);
 		if (is_string($search) === false || trim($search) === '') {
 			return null;
 		}
 
-		$parser = new SearchTermParser();
 		$term = trim($search);
-		if ($parser->needsParsing(term: $term) === false) {
-			return null;
-		}
-
-		try {
-			$parser->parse(term: $term);
-		} catch (SearchTermSyntaxException $exception) {
-			return new JSONResponse(
-				data: [
-					'error' => $exception->getMessage(),
-					'position' => $exception->getPosition(),
-					'term' => $exception->getTerm(),
-				],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+		if ((new SearchTermParser())->needsParsing(term: $term) === true) {
+			return $term;
 		}
 
 		return null;
-	}//end refuseMalformedSearchTerm()
+	}//end parsedSearchTerm()
+
+	/**
+	 * The 400 for a search term the parser cannot read.
+	 *
+	 * @param SearchTermSyntaxException $exception The parser's refusal.
+	 *
+	 * @return JSONResponse The refusal, naming the position and the term.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function searchSyntaxRefusal(SearchTermSyntaxException $exception): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => $exception->getMessage(),
+				'position' => $exception->getPosition(),
+				'term' => $exception->getTerm(),
+			],
+			statusCode: Http::STATUS_BAD_REQUEST
+		);
+	}//end searchSyntaxRefusal()
 
 	/**
 	 * Refuse a history filter over a property that has no history.
@@ -1835,16 +1865,6 @@ class ObjectsController extends Controller {
 	private function paginateMagicResults(array $listing): array {
 		$query = $listing['query'];
 		$limit = (int)($query['_limit'] ?? 20);
-		$offset = $query['_offset'] ?? null;
-		$page = $query['_page'] ?? null;
-
-		// Convert page to offset if page is provided but offset is not.
-		if ($page !== null && $offset === null && $limit > 0) {
-			$offset = ((int)$page - 1) * $limit;
-		} else {
-			$offset = (int)($offset ?? 0);
-		}
-
 		$total = $this->countMagicTotal(listing: $listing);
 		if ($limit <= 0) {
 			return ['total' => $total, 'pages' => 1, 'page' => 1, 'limit' => $limit];
@@ -1855,13 +1875,26 @@ class ObjectsController extends Controller {
 			$pages = (int)ceil($total / $limit);
 		}
 
-		// Calculate page from offset if not explicitly provided.
-		if ($page === null) {
-			$page = (int)floor($offset / $limit) + 1;
+		return ['total' => $total, 'pages' => $pages, 'page' => $this->magicPage(query: $query, limit: $limit), 'limit' => $limit];
+	}//end paginateMagicResults()
+
+	/**
+	 * The page of a magic-table query: the one asked for, or the one its offset falls on.
+	 *
+	 * @param array $query The search query.
+	 * @param int   $limit The page size, above zero.
+	 *
+	 * @return int The page.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function magicPage(array $query, int $limit): int {
+		if (($query['_page'] ?? null) !== null) {
+			return (int)$query['_page'];
 		}
 
-		return ['total' => $total, 'pages' => $pages, 'page' => (int)$page, 'limit' => $limit];
-	}//end paginateMagicResults()
+		return ((int)floor((int)($query['_offset'] ?? 0) / $limit) + 1);
+	}//end magicPage()
 
 	/**
 	 * The grand total of a magic-table listing, or null when the caller does not want it.
@@ -1922,33 +1955,47 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function buildMagicResponse(array $page, array $listing): array {
-		$query = $listing['query'];
 		$responseData = [
 			'results' => $page['results'],
 			'total' => $page['total'],
 			'pages' => $page['pages'],
 			'page' => $page['page'],
 			'limit' => $page['limit'],
-			'@self' => [
-				'source' => 'magic_mapper',
-				'register' => $listing['register'],
-				'schema' => $listing['schema'],
-				'query' => $query,
-				'rbac' => $listing['rbac'],
-				'multi' => $listing['multi'],
-				'deleted' => $listing['deleted'],
-				'activeOrganisation' => $this->activeOrganisationUuid(),
-			],
+			'@self' => $this->magicSelfBlock(listing: $listing),
 		];
 
 		// The `_recent` lens report: whether it could answer, and why not
 		// (`read-history-on-audit-trail`). Present only when asked.
-		if (is_array($query['_recentLens'] ?? null) === true) {
-			$responseData['@self']['lenses']['recent'] = $query['_recentLens'];
+		if (is_array($listing['query']['_recentLens'] ?? null) === true) {
+			$responseData['@self']['lenses']['recent'] = $listing['query']['_recentLens'];
 		}
 
 		return $responseData;
 	}//end buildMagicResponse()
+
+	/**
+	 * The `@self` block of a magic-table listing.
+	 *
+	 * @param array $listing The listing scope, with its search query.
+	 *
+	 * @psalm-param array<string, mixed> $listing
+	 *
+	 * @return array The block.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function magicSelfBlock(array $listing): array {
+		return [
+			'source' => 'magic_mapper',
+			'register' => $listing['register'],
+			'schema' => $listing['schema'],
+			'query' => $listing['query'],
+			'rbac' => $listing['rbac'],
+			'multi' => $listing['multi'],
+			'deleted' => $listing['deleted'],
+			'activeOrganisation' => $this->activeOrganisationUuid(),
+		];
+	}//end magicSelfBlock()
 
 	/**
 	 * The active organisation's UUID for the debugging metadata, or null when unavailable.
@@ -1994,10 +2041,23 @@ class ObjectsController extends Controller {
 
 		$controlParams = ['limit', 'offset', 'page', 'order', 'sort', 'search', 'extend', 'fields', 'unset'];
 		$mistakenParams = array_intersect($ignoredFilters, $controlParams);
-		if (empty($mistakenParams) === true) {
-			return $responseData;
+		if (empty($mistakenParams) === false) {
+			$responseData['@self']['hint'] = $this->controlParamHint(mistakenParams: $mistakenParams);
 		}
 
+		return $responseData;
+	}//end addIgnoredFilterHint()
+
+	/**
+	 * The hint for control parameters sent without their underscore.
+	 *
+	 * @param array $mistakenParams The parameters.
+	 *
+	 * @return string The hint.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function controlParamHint(array $mistakenParams): string {
 		$suggestions = array_map(fn ($param) => "_{$param}", $mistakenParams);
 		$hint = 'Query returned 0 results because ';
 		$hint .= implode(', ', $mistakenParams);
@@ -2006,10 +2066,9 @@ class ObjectsController extends Controller {
 		$hint .= implode(', ', $suggestions);
 		$hint .= '? Control parameters require an';
 		$hint .= ' underscore prefix (e.g. _limit, _offset, _page).';
-		$responseData['@self']['hint'] = $hint;
 
-		return $responseData;
-	}//end addIgnoredFilterHint()
+		return $hint;
+	}//end controlParamHint()
 
 	/**
 	 * Add the magic table's facets when `_facets` asks for them.
@@ -2030,11 +2089,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$facets = $listing['magicMapper']->getSimpleFacetsFromRegisterSchemaTable(
-				query: $listing['query'],
-				register: $listing['resolved']['registerEntity'],
-				schema: $listing['resolved']['schemaEntity']
-			);
+			$facets = $this->magicFacets(listing: $listing);
 			if (empty($facets) === false) {
 				$responseData['facets'] = $facets;
 			}
@@ -2044,6 +2099,25 @@ class ObjectsController extends Controller {
 
 		return $responseData;
 	}//end addMagicFacets()
+
+	/**
+	 * The facets of a magic-table listing.
+	 *
+	 * @param array $listing The listing scope, with its search query and mapper.
+	 *
+	 * @psalm-param array<string, mixed> $listing
+	 *
+	 * @return array The facets.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function magicFacets(array $listing): array {
+		return $listing['magicMapper']->getSimpleFacetsFromRegisterSchemaTable(
+			query: $listing['query'],
+			register: $listing['resolved']['registerEntity'],
+			schema: $listing['resolved']['schemaEntity']
+		);
+	}//end magicFacets()
 
 	/**
 	 * Strip empty values from every row, serializing ObjectEntity rows first.
