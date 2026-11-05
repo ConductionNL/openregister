@@ -73,9 +73,9 @@ class RetentionController extends Controller {
 	/**
 	 * Save object service
 	 *
-	 * @var SaveObject
+	 * @var SaveObjectInterface
 	 */
-	private readonly SaveObject $saveObject;
+	private readonly SaveObjectInterface $saveObject;
 
 	/**
 	 * Object mapper
