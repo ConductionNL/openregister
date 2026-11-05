@@ -39,6 +39,8 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\BackgroundJob\BlobMigrationJob
  * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\BackgroundJob\BlobMigrationRun
+ * @uses   \OCA\OpenRegister\BackgroundJob\BlobGroup
  * @uses   \OCA\OpenRegister\Db\Schema
  */
 class BlobMigrationJobGoldenTest extends TestCase
@@ -79,6 +81,7 @@ class BlobMigrationJobGoldenTest extends TestCase
             'groups and failures' => [['rows' => $rows, 'processed' => '7', 'remaining' => '12']],
             'save throws'         => [['rows' => [$rows[0]], 'saveThrows' => true]],
             'table check throws'  => [['table' => 'throw']],
+            'postgres, empty'     => [['rows' => [], 'platform' => 'postgres']],
         ];
     }//end cases()
 
@@ -231,6 +234,10 @@ class BlobMigrationJobGoldenTest extends TestCase
                 $this->record('getDatabasePlatform', []);
                 if (($case['table'] ?? true) === 'throw') {
                     throw new RuntimeException('platform down');
+                }
+
+                if (($case['platform'] ?? null) === 'postgres') {
+                    return $this->createMock(\Doctrine\DBAL\Platforms\PostgreSQL100Platform::class);
                 }
 
                 return new \stdClass();

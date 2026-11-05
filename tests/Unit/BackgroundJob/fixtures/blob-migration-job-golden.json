@@ -528,6 +528,107 @@
             ]
         }
     ],
+    "postgres, empty": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "get": [
+                "IDBConnection"
+            ]
+        },
+        {
+            "get": [
+                "IAppConfig"
+            ]
+        },
+        {
+            "get": [
+                "RegisterMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "SchemaMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] Starting blob-to-magic migration batch",
+                {
+                    "file": "X",
+                    "line": "X"
+                }
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "blob_migration_complete",
+                "false"
+            ]
+        },
+        {
+            "getDatabasePlatform": []
+        },
+        {
+            "prepare": [
+                "SELECT 1 FROM information_schema.tables WHERE table_name = 'oc_openregister_objects' AND table_schema = current_schema() LIMIT 1"
+            ]
+        },
+        {
+            "select": [
+                "*"
+            ]
+        },
+        {
+            "from": [
+                "openregister_objects",
+                null
+            ]
+        },
+        {
+            "setMaxResults": [
+                100
+            ]
+        },
+        {
+            "executeQuery": []
+        },
+        {
+            "closeCursor": []
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] No objects remaining in blob table, marking migration complete",
+                {
+                    "file": "X",
+                    "line": "X"
+                }
+            ]
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "blob_migration_complete",
+                "true"
+            ]
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "blob_migration_remaining",
+                "0"
+            ]
+        }
+    ],
     "save throws": [
         {
             "get": [
