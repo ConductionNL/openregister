@@ -318,6 +318,8 @@ class AgentMapper extends QBMapper {
 	 * @throws \Exception If user doesn't have read permission
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Agent>
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $order = []): array {
 		// Verify RBAC permission to read.
@@ -331,10 +333,51 @@ class AgentMapper extends QBMapper {
 		$qb->select('*')
 			->from($this->tableName);
 
-		$this->applyAgentFilters(qb: $qb, filters: $filters);
+		// Apply filters.
+		if (empty($filters) === false) {
+			foreach ($filters as $field => $value) {
+				if ($value !== null && $field !== '_route') {
+					if ($field === 'active') {
+						$qb->andWhere(
+							$qb->expr()->eq($field, $qb->createNamedParameter((bool)$value, IQueryBuilder::PARAM_BOOL))
+						);
+						continue;
+					}
 
-		$this->applyAgentOrder(qb: $qb, order: $order);
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+					if (is_array($value) === true) {
+						$qb->andWhere(
+							$qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY))
+						);
+						continue;
+					}
+
+					$qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
+				}
+			}
+		}//end if
+
+		// Apply ordering.
+		if (empty($order) === false) {
+			foreach ($order as $field => $direction) {
+				// NC 35 types addOrderBy() as (string|..., string|SortDirection|null):
+				// an int key (a list-shaped sort) or a non-string direction is a
+				// TypeError there, so both are normalised here.
+				$qb->addOrderBy((string)$field, $this->normaliseSortDirection(direction: $direction));
+			}
+		}
+
+		if (empty($order) === true) {
+			$qb->orderBy('created', 'DESC');
+		}
+
+		// Apply pagination.
+		if ($limit !== null) {
+			$qb->setMaxResults($limit);
+		}
+
+		if ($offset !== null) {
+			$qb->setFirstResult($offset);
+		}
 
 		// Apply organisation filter, allowing NULL organisation for legacy/global agents.
 		$this->applyOrganisationFilter(
@@ -345,29 +388,6 @@ class AgentMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findAll()
-
-	/**
-	 * Order an agent read by the given fields, or newest first when none are given.
-	 *
-	 * NC 35 types addOrderBy() as (string|..., string|SortDirection|null): an
-	 * int key (a list-shaped sort) or a non-string direction is a TypeError
-	 * there, so both are normalised here.
-	 *
-	 * @param IQueryBuilder $qb    The builder to order.
-	 * @param array|null    $order Field to direction.
-	 *
-	 * @return void
-	 */
-	private function applyAgentOrder(IQueryBuilder $qb, ?array $order): void {
-		if (empty($order) === true) {
-			$qb->orderBy('created', 'DESC');
-			return;
-		}
-
-		foreach ($order as $field => $direction) {
-			$qb->addOrderBy((string)$field, $this->normaliseSortDirection(direction: $direction));
-		}
-	}//end applyAgentOrder()
 
 	/**
 	 * Insert a new agent
@@ -510,43 +530,34 @@ class AgentMapper extends QBMapper {
 		$qb->select($qb->createFunction('COUNT(*)'))
 			->from($this->tableName);
 
-		$this->applyAgentFilters(qb: $qb, filters: $filters);
+		// Apply filters.
+		if (empty($filters) === false) {
+			foreach ($filters as $field => $value) {
+				if ($value !== null && $field !== '_route') {
+					if ($field === 'active') {
+						$qb->andWhere(
+							$qb->expr()->eq($field, $qb->createNamedParameter((bool)$value, IQueryBuilder::PARAM_BOOL))
+						);
+						continue;
+					}
+
+					if (is_array($value) === true) {
+						$qb->andWhere(
+							$qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY))
+						);
+						continue;
+					}
+
+					$qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
+				}
+			}
+		}//end if
 
 		// Apply organisation filter (all users including admins must have active org).
 		$this->applyOrganisationFilter(qb: $qb);
 
 		return (int)$qb->executeQuery()->fetchOne();
 	}//end count()
-
-	/**
-	 * Add a condition per agent filter, skipping null values and the `_route` key.
-	 *
-	 * `active` compares as a boolean, a list value as IN, anything else as a string.
-	 *
-	 * @param IQueryBuilder $qb      The builder to add the conditions to.
-	 * @param array|null    $filters Column name to value.
-	 *
-	 * @return void
-	 */
-	private function applyAgentFilters(IQueryBuilder $qb, ?array $filters): void {
-		foreach ($filters ?? [] as $field => $value) {
-			if ($value === null || $field === '_route') {
-				continue;
-			}
-
-			if ($field === 'active') {
-				$qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter((bool)$value, IQueryBuilder::PARAM_BOOL)));
-				continue;
-			}
-
-			if (is_array($value) === true) {
-				$qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
-				continue;
-			}
-
-			$qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
-		}
-	}//end applyAgentFilters()
 
 	/**
 	 * Normalise a caller-supplied sort direction to 'ASC' or 'DESC'.
