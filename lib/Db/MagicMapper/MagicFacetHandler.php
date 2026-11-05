@@ -76,6 +76,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class MagicFacetHandler {
+	use MagicColumnNameTrait;
 
 	/**
 	 * Reserved query parameters that are never object field filters.
@@ -1242,36 +1243,6 @@ class MagicFacetHandler {
 
 		return $mergedConfig;
 	}//end expandFacetConfigFromAllSchemas()
-
-	/**
-	 * Sanitize column name for database compatibility.
-	 *
-	 * Converts camelCase to snake_case for PostgreSQL compatibility.
-	 * This matches MagicMapper::sanitizeColumnName().
-	 *
-	 * @param string $name The property name to sanitize.
-	 *
-	 * @return string The sanitized column name.
-	 */
-	private function sanitizeColumnName(string $name): string {
-		// Convert camelCase to snake_case.
-		$name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name);
-		$name = strtolower($name);
-
-		// Replace any remaining invalid characters with underscore.
-		$name = preg_replace('/[^a-z0-9_]/', '_', $name);
-
-		// Ensure it starts with a letter or underscore.
-		if (preg_match('/^[a-z_]/', $name) === 0) {
-			$name = 'col_' . $name;
-		}
-
-		// Remove consecutive underscores.
-		$name = preg_replace('/_+/', '_', $name);
-
-		// Remove trailing underscores.
-		return rtrim($name, '_');
-	}//end sanitizeColumnName()
 
 	/**
 	 * Whether the caller may be offered a facet over this property.

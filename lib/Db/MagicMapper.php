@@ -44,6 +44,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use RuntimeException;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicCrossTableHit;
@@ -183,6 +184,8 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.LongVariable)
  */
 class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
+	use MagicColumnNameTrait;
+
 	/**
 	 * Hard ceiling on a NUMERIC page size, per the objects-crud requirement
 	 * "List page size is bounded by a hard maximum".
@@ -5414,46 +5417,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	public function tableExistsForRegisterSchema(Register $register, Schema $schema): bool {
 		return $this->tableHandler->tableExistsForRegisterSchema(register: $register, schema: $schema);
 	}//end tableExistsForRegisterSchema()
-
-	/**
-	 * Sanitize column name for database compatibility.
-	 *
-	 * Converts camelCase to snake_case for PostgreSQL compatibility while
-	 * maintaining readability. OpenRegister properties are typically camelCase,
-	 * but PostgreSQL lowercases unquoted identifiers, so we explicitly convert
-	 * to snake_case.
-	 *
-	 * Examples:
-	 * - inStock -> in_stock
-	 * - firstName -> first_name
-	 * - isActive -> is_active
-	 *
-	 * @param string $name The property name to sanitize
-	 *
-	 * @return string The sanitized column name
-	 */
-	private function sanitizeColumnName(string $name): string {
-		// Convert camelCase to snake_case.
-		// Insert underscore before uppercase letters, then lowercase everything.
-		$name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name);
-		$name = strtolower($name);
-
-		// Replace any remaining invalid characters with underscore.
-		$name = preg_replace('/[^a-z0-9_]/', '_', $name);
-
-		// Ensure it starts with a letter or underscore.
-		if (preg_match('/^[a-z_]/', $name) === false) {
-			$name = 'col_' . $name;
-		}
-
-		// Remove consecutive underscores.
-		$name = preg_replace('/_+/', '_', $name);
-
-		// Remove trailing underscores.
-		$name = rtrim($name, '_');
-
-		return $name;
-	}//end sanitizeColumnName()
 
 	/**
 	 * Convert snake_case column name back to camelCase property name.
