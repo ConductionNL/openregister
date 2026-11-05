@@ -736,21 +736,18 @@ class ContactService {
 	/**
 	 * Update the role on a contact-object link.
 	 *
-	 * @param int $linkId The link ID.
-	 * @param string $role The new role.
+	 * @param int         $linkId     The link ID.
+	 * @param string      $role       The new role.
+	 * @param string|null $objectUuid When given, the object the link must belong to.
 	 *
 	 * @return ContactLink The updated link.
 	 *
-	 * @throws Exception If link not found.
+	 * @throws Exception If the link isn't found, or belongs to another object (404).
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function updateRole(int $linkId, string $role): ContactLink {
-		try {
-			$link = $this->contactLinkMapper->find($linkId);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			throw new Exception('Contact link not found', 404);
-		}
+	public function updateRole(int $linkId, string $role, ?string $objectUuid = null): ContactLink {
+		$link = $this->findLinkOf(linkId: $linkId, objectUuid: $objectUuid);
 
 		// Update vCard role property; a user link has no vCard.
 		try {
@@ -797,15 +794,7 @@ class ContactService {
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
 	public function unlinkContact(int $linkId, ?string $objectUuid = null): void {
-		try {
-			$link = $this->contactLinkMapper->find($linkId);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			throw new Exception('Contact link not found', 404);
-		}
-
-		if ($objectUuid !== null && $link->getObjectUuid() !== $objectUuid) {
-			throw new Exception('Contact link not found', 404);
-		}
+		$link = $this->findLinkOf(linkId: $linkId, objectUuid: $objectUuid);
 
 		// Best-effort: remove X-OPENREGISTER-* from the vCard. If the
 		// vCard is gone or unreadable, skip the cleanup and proceed with
@@ -836,6 +825,30 @@ class ContactService {
 
 		$this->contactLinkMapper->delete($link);
 	}//end unlinkContact()
+
+	/**
+	 * A link by id, optionally only when it belongs to the given object.
+	 *
+	 * @param int         $linkId     The link ID.
+	 * @param string|null $objectUuid When given, the object the link must belong to.
+	 *
+	 * @return ContactLink The link.
+	 *
+	 * @throws Exception If the link isn't found, or belongs to another object (404).
+	 */
+	private function findLinkOf(int $linkId, ?string $objectUuid): ContactLink {
+		try {
+			$link = $this->contactLinkMapper->find($linkId);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			throw new Exception('Contact link not found', 404);
+		}
+
+		if ($objectUuid !== null && $link->getObjectUuid() !== $objectUuid) {
+			throw new Exception('Contact link not found', 404);
+		}
+
+		return $link;
+	}//end findLinkOf()
 
 	/**
 	 * Unlink a contact from a specific object by contact uid.
