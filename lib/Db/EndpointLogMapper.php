@@ -91,15 +91,43 @@ class EndpointLogMapper extends QBMapper {
 	 * @return EndpointLog[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\EndpointLog>
+	 *
+	 * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
 	 */
 	public function findByEndpoint(int $endpointId, ?int $limit = null, ?int $offset = null): array {
+		return $this->findByEndpoints(endpointIds: [$endpointId], limit: $limit, offset: $offset);
+	}//end findByEndpoint()
+
+	/**
+	 * Find logs of any of the given endpoints, newest first
+	 *
+	 * @param int[]    $endpointIds Endpoint IDs to filter logs by; an empty list matches nothing
+	 * @param int|null $limit       Maximum number of results to return (null = no limit)
+	 * @param int|null $offset      Starting offset for pagination (null = no offset)
+	 *
+	 * @return EndpointLog[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\EndpointLog>
+	 *
+	 * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
+	 */
+	public function findByEndpoints(array $endpointIds, ?int $limit = null, ?int $offset = null): array {
+		if ($endpointIds === []) {
+			return [];
+		}
+
 		// Step 1: Get query builder instance.
 		$qb = $this->db->getQueryBuilder();
 
 		// Step 2: Build SELECT query with endpoint ID filter.
 		$qb->select('*')
 			->from($this->getTableName())
-			->where($qb->expr()->eq('endpoint_id', $qb->createNamedParameter($endpointId, IQueryBuilder::PARAM_INT)))
+			->where(
+				$qb->expr()->in(
+					'endpoint_id',
+					$qb->createNamedParameter(array_values($endpointIds), IQueryBuilder::PARAM_INT_ARRAY)
+				)
+			)
 			->orderBy('created', 'DESC');
 
 		// Step 3: Apply pagination if limit specified.
@@ -114,7 +142,7 @@ class EndpointLogMapper extends QBMapper {
 
 		// Step 5: Execute query and return entities.
 		return $this->findEntities(query: $qb);
-	}//end findByEndpoint()
+	}//end findByEndpoints()
 
 	/**
 	 * Find a single log by ID

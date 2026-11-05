@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Db\EndpointMapper;
 use OCA\OpenRegister\Service\EndpointService;
@@ -796,6 +797,8 @@ class EndpointsController extends Controller {
 	 * Retrieves endpoint execution logs with optional filtering by endpoint ID.
 	 * Supports pagination via limit and offset parameters.
 	 * Returns logs for specific endpoint if endpoint_id provided, otherwise all logs.
+	 * A non-admin only sees logs of endpoints visible to them (the organisation-scoped
+	 * endpoint list); an endpoint_id outside that list yields an empty result.
 	 *
 	 * @NoAdminRequired
 	 *
@@ -825,31 +828,20 @@ class EndpointsController extends Controller {
 			$logs = [];
 			$total = 0;
 
+			$visibleIds = $this->visibleEndpointIds();
+
 			// If endpoint_id is provided and valid, filter logs by endpoint.
 			if ($endpointId !== null && $endpointId !== '' && $endpointId !== '0') {
-				// Convert endpoint ID to integer for database query.
-				$endpointIdInt = (int)$endpointId;
-				$logs = $this->endpointLogMapper->findByEndpoint(
-					endpointId: $endpointIdInt,
+				[$logs, $total] = $this->logsOfEndpoint(
+					endpointId: (int)$endpointId,
+					visibleIds: $visibleIds,
 					limit: $limit,
 					offset: $offset
 				);
-				// Get total count for this endpoint.
-				$allLogsForEndpoint = $this->endpointLogMapper->findByEndpoint(
-					endpointId: $endpointIdInt,
-					limit: null,
-					offset: null
-				);
-				$total = count($allLogsForEndpoint);
 			}
 
 			if ($endpointId === null || $endpointId === '' || $endpointId === '0') {
-				// No endpoint filter - get all logs from all endpoints.
-				$logs = $this->endpointLogMapper->findAll(limit: $limit, offset: $offset);
-
-				// Get total count for all logs (without pagination).
-				$allLogs = $this->endpointLogMapper->findAll(limit: null, offset: null);
-				$total = count($allLogs);
+				[$logs, $total] = $this->logsOfEndpoints(endpointIds: $visibleIds, limit: $limit, offset: $offset);
 			}
 
 			// Return successful response with logs and total count.
@@ -880,4 +872,60 @@ class EndpointsController extends Controller {
 			);
 		}//end try
 	}//end allLogs()
+
+	/**
+	 * The ids of the endpoints the current user can see, or null for an admin (no restriction).
+	 *
+	 * @return list<int>|null The visible endpoint ids.
+	 */
+	private function visibleEndpointIds(): ?array {
+		if ($this->isCurrentUserAdmin() === true) {
+			return null;
+		}
+
+		return array_values(
+			array_map(
+				static fn (Endpoint $endpoint): int => (int)$endpoint->getId(),
+				$this->endpointMapper->findAll()
+			)
+		);
+	}//end visibleEndpointIds()
+
+	/**
+	 * One page of logs of one endpoint, newest first, and its total; nothing when the endpoint is not visible.
+	 *
+	 * @param int            $endpointId The endpoint.
+	 * @param list<int>|null $visibleIds The endpoints the caller can see, or null for all.
+	 * @param int            $limit      Page size.
+	 * @param int            $offset     Page start.
+	 *
+	 * @return array{0: array<\OCA\OpenRegister\Db\EndpointLog>, 1: int<0, max>} The page and the total.
+	 */
+	private function logsOfEndpoint(int $endpointId, ?array $visibleIds, int $limit, int $offset): array {
+		if ($visibleIds !== null && in_array($endpointId, $visibleIds, true) === false) {
+			return [[], 0];
+		}
+
+		$logs = $this->endpointLogMapper->findByEndpoint(endpointId: $endpointId, limit: $limit, offset: $offset);
+		return [$logs, count($this->endpointLogMapper->findByEndpoint(endpointId: $endpointId, limit: null, offset: null))];
+	}//end logsOfEndpoint()
+
+	/**
+	 * One page of logs of the given endpoints, newest first, and their total.
+	 *
+	 * @param list<int>|null $endpointIds The endpoints, or null for all endpoints.
+	 * @param int            $limit       Page size.
+	 * @param int            $offset      Page start.
+	 *
+	 * @return array{0: array<\OCA\OpenRegister\Db\EndpointLog>, 1: int<0, max>} The page and the total.
+	 */
+	private function logsOfEndpoints(?array $endpointIds, int $limit, int $offset): array {
+		if ($endpointIds === null) {
+			$logs = $this->endpointLogMapper->findAll(limit: $limit, offset: $offset);
+			return [$logs, count($this->endpointLogMapper->findAll(limit: null, offset: null))];
+		}
+
+		$logs = $this->endpointLogMapper->findByEndpoints(endpointIds: $endpointIds, limit: $limit, offset: $offset);
+		return [$logs, count($this->endpointLogMapper->findByEndpoints(endpointIds: $endpointIds))];
+	}//end logsOfEndpoints()
 }//end class
