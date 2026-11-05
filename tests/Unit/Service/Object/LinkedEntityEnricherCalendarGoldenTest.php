@@ -32,7 +32,8 @@ use RuntimeException;
 class LinkedEntityEnricherCalendarGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/linked-entity-enricher-calendar-golden.json';
 
-	private const VEVENT = "BEGIN:VEVENT\nSUMMARY:Board meeting\nDTSTART;TZID=Europe/Amsterdam:20260301T100000\nDTEND:20260301T110000\nLOCATION:Room 4\nEND:VEVENT";
+	private const VEVENT = "BEGIN:VEVENT\nSUMMARY:Board meeting\nDTSTART;TZID=Europe/Amsterdam:20260301T100000\n"
+		. "DTEND:20260301T110000\nLOCATION:Room 4\nEND:VEVENT";
 
 	private const VTODO = "BEGIN:VTODO\nSUMMARY:Write minutes\nSTATUS:COMPLETED\nDUE:20260302\nEND:VTODO";
 
