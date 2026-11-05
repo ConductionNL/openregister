@@ -31,6 +31,7 @@ use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\ObjectGovernanceServices;
+use OCA\OpenRegister\Controller\Support\ObjectRequestParams;
 use OCA\OpenRegister\Controller\Support\LinkedDataServices;
 use OCA\OpenRegister\Controller\Support\GeoServices;
 use OCA\OpenRegister\Controller\Support\ObjectsControllerServices;
@@ -455,25 +456,7 @@ class ObjectsController extends Controller {
 			return $data;
 		}
 
-		foreach ($data as $key => $value) {
-			if (is_string($value) === false) {
-				continue;
-			}
-
-			$trimmed = trim($value);
-
-			// Only attempt decode on values that look like JSON arrays or objects.
-			if (($trimmed[0] ?? '') !== '[' && ($trimmed[0] ?? '') !== '{') {
-				continue;
-			}
-
-			$decoded = json_decode($trimmed, associative: true);
-			if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
-				$data[$key] = $decoded;
-			}
-		}
-
-		return $data;
+		return (new ObjectRequestParams())->decodedFormValues(data: $data);
 	}//end normalizeFormDataValues()
 
 	/**
@@ -588,7 +571,7 @@ class ObjectsController extends Controller {
 		}
 
 		$uploadedFile = $this->request->getUploadedFile($fieldName);
-		if ($uploadedFile === null || isset($uploadedFile['tmp_name']) === false) {
+		if (isset($uploadedFile['tmp_name']) === false) {
 			return null;
 		}
 
@@ -758,218 +741,20 @@ class ObjectsController extends Controller {
 	}//end paginate()
 
 	/**
-	 * Helper method to get configuration array from the current request (LEGACY)
+	 * The listing configuration of this request.
 	 *
-	 * @param string|null $_register Optional register identifier (unused).
-	 * @param string|null $_schema Optional schema identifier (unused).
-	 * @param array|null $ids Optional array of specific IDs to filter
-	 *
-	 * @return (array|int|mixed|null)[] Configuration array containing:
+	 * @return array The configuration, see ObjectRequestParams::listing().
 	 *
 	 * @deprecated Use buildSearchQuery() instead for faceting-enabled endpoints
-	 *               - limit: (int) Maximum number of items per page
-	 *               - offset: (int|null) Number of items to skip
-	 *               - page: (int|null) Current page number
-	 *               - filters: (array) Filter parameters
-	 *               - sort: (array) Sort parameters
-	 *               - search: (string|null) Search term
-	 *               - _extend: (array|null) Properties to extend
-	 *               - fields: (array|null) Fields to include
-	 *               - unset: (array|null) Fields to exclude
-	 *               - register: (string|null) Register identifier
-	 *               - schema: (string|null) Schema identifier
-	 *               - ids: (array|null) Specific IDs to filter
-	 *
-	 * @psalm-return array{
-	 *     limit: int,
-	 *     offset: int|null,
-	 *     page: int|null,
-	 *     filters: array,
-	 *     sort: array<never, never>|mixed,
-	 *     _search: mixed|null,
-	 *     _extend: mixed|null,
-	 *     _fields: mixed|null,
-	 *     _unset: mixed|null,
-	 *     ids: array|null
-	 * }
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
-	private function getConfig(?string $_register = null, ?string $_schema = null, ?array $ids = null): array {
+	private function getConfig(): array {
 		$params = $this->request->getParams();
 
 		unset($params['id']);
 		unset($params['_route']);
 
-		// Extract and normalize parameters.
-		$limit = (int)($params['limit'] ?? $params['_limit'] ?? 20);
-		$offset = null;
-		if (($params['_offset'] ?? null) !== null) {
-			$offset = (int)$params['_offset'];
-		}
-
-		if (($params['offset'] ?? null) !== null) {
-			$offset = (int)$params['offset'];
-		}
-
-		$page = null;
-		if (($params['_page'] ?? null) !== null) {
-			$page = (int)$params['_page'];
-		}
-
-		if (($params['page'] ?? null) !== null) {
-			$page = (int)$params['page'];
-		}
-
-		// If we have a page but no offset, calculate the offset.
-		if ($page !== null && $offset === null) {
-			$offset = ($page - 1) * $limit;
-		}
-
-		return [
-			'limit' => $limit,
-			'offset' => $offset,
-			'page' => $page,
-			'filters' => $params,
-			'sort' => $this->normalizeOrderParameter(order: $params['order'] ?? $params['_order'] ?? []),
-			'_search' => ($params['_search'] ?? null),
-			'_extend' => $this->normalizeExtendParameter(extend: $params['extend'] ?? $params['_extend'] ?? null),
-			'_fields' => ($params['fields'] ?? $params['_fields'] ?? null),
-			'_unset' => ($params['unset'] ?? $params['_unset'] ?? null),
-			'ids' => $ids,
-		];
+		return (new ObjectRequestParams())->listing(params: $params);
 	}//end getConfig()
-
-	/**
-	 * Normalize order parameter from request.
-	 *
-	 * The _order parameter may arrive as a JSON-encoded string from URL query
-	 * parameters (e.g., _order={"deadline":"asc"}). This method ensures it
-	 * is always returned as an array.
-	 *
-	 * @param mixed $order The order parameter from the request.
-	 *
-	 * @return array The normalized order array.
-	 */
-	private function normalizeOrderParameter(mixed $order): array {
-		if (is_array($order) === true) {
-			return $order;
-		}
-
-		if (is_string($order) === true && $order !== '') {
-			$decoded = json_decode($order, true);
-			if (is_array($decoded) === true) {
-				return $decoded;
-			}
-		}
-
-		return [];
-	}//end normalizeOrderParameter()
-
-	/**
-	 * Normalize extend parameter for backwards compatibility
-	 *
-	 * Converts old @self.schema format to new _schema format.
-	 * Supports both single strings and arrays of extend values.
-	 *
-	 * @param mixed $extend The extend parameter from request (string, array, or null)
-	 *
-	 * @return array|null Normalized extend array or null
-	 */
-	private function normalizeExtendParameter(mixed $extend): ?array {
-		if ($extend === null) {
-			return null;
-		}
-
-		// Convert string to array.
-		if (is_string($extend) === true) {
-			$extend = explode(',', $extend);
-		}
-
-		// Ensure it's an array.
-		if (is_array($extend) === false) {
-			return null;
-		}
-
-		// Normalize each extend value for backwards compatibility.
-		$normalized = [];
-		foreach ($extend as $key => $value) {
-			// Skip if not a string.
-			if (is_string($value) === false) {
-				$normalized[$key] = $value;
-				continue;
-			}
-
-			// Convert @self.schema to _schema for backwards compatibility.
-			if ($value === '@self.schema') {
-				$normalized[$key] = '_schema';
-				continue;
-			}
-
-			// Convert @self.register to _register for backwards compatibility.
-			if ($value === '@self.register') {
-				$normalized[$key] = '_register';
-				continue;
-			}
-
-			// Keep original value.
-			$normalized[$key] = $value;
-		}//end foreach
-
-		return $normalized;
-	}//end normalizeExtendParameter()
-
-	/**
-	 * Helper method to resolve register and schema slugs to numeric IDs
-	 *
-	 * This ensures consistent slug-to-ID conversion across all controller methods
-	 * and prevents the discrepancy between slug-based and ID-based API calls.
-	 *
-	 * @param string $register Register slug or ID
-	 * @param string $schema Schema slug or ID
-	 * @param ObjectOperationsInterface $objectService Object service instance
-	 *
-	 * @return array Array with resolved register and schema IDs: ['register' => int, 'schema' => int]
-	 *
-	 * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException
-	 * @throws \OCA\OpenRegister\Exception\SchemaNotFoundException
-	 *
-	 * @psalm-return   array{register: int, schema: int, registerEntity: mixed, schemaEntity: mixed}
-	 * @phpstan-return array{register: int, schema: int, registerEntity: mixed, schemaEntity: mixed}
-	 */
-
-	/**
-	 * Parse multi-value parameter (array or comma-separated).
-	 *
-	 * Supports both formats:
-	 * - Array: schemas[]=1&schemas[]=2
-	 * - Comma-separated: schemas=1,2,3
-	 *
-	 * @param mixed $param The parameter value (string, array, or null).
-	 * @param string $defaultValue Default value to use if param is null.
-	 *
-	 * @return array Array of values.
-	 */
-	private function parseMultiValue($param, string $defaultValue): array {
-		// If no parameter provided, use default.
-		if ($param === null || $param === '') {
-			return [$defaultValue];
-		}
-
-		// If already an array, return as-is.
-		if (is_array($param) === true) {
-			return array_values(array_unique(array_filter($param)));
-			// Remove empty values and duplicates.
-		}
-
-		// If string contains comma, split on comma.
-		if (is_string($param) === true && str_contains($param, ',') === true) {
-			return array_values(array_unique(array_filter(array_map('trim', explode(',', $param)))));
-		}
-
-		// Single value.
-		return [$param];
-	}//end parseMultiValue()
 
 	/**
 	 * Perform cross-table search across multiple register+schema combinations.
@@ -1532,12 +1317,12 @@ class ObjectsController extends Controller {
 	private function crossTableTargets(array $params, array $urlPath): ?array {
 		$schemasList = [];
 		if (($params['schemas'] ?? null) !== null) {
-			$schemasList = $this->parseMultiValue(param: $params['schemas'], defaultValue: $urlPath['schema']);
+			$schemasList = (new ObjectRequestParams())->multiValue(param: $params['schemas'], defaultValue: $urlPath['schema']);
 		}
 
 		$registersList = [];
 		if (($params['registers'] ?? null) !== null) {
-			$registersList = $this->parseMultiValue(param: $params['registers'], defaultValue: $urlPath['register']);
+			$registersList = (new ObjectRequestParams())->multiValue(param: $params['registers'], defaultValue: $urlPath['register']);
 		}
 
 		if (count($schemasList) <= 1 && count($registersList) <= 1) {
@@ -2127,7 +1912,7 @@ class ObjectsController extends Controller {
 	 * Batched object-count endpoint — POST /api/objects/counts.
 	 *
 	 * Accepts a JSON body of the shape
-	 * `{ "counts": [ { "register": <id|slug>, "schema": <id|slug>, "filter": <object?> } ] }`
+	 * `{ "counts": [ { "register": <id|slug>, "schema": <id|slug>, "filter": <object|null> } ] }`
 	 * and returns `{ "results": [ { "register": ..., "schema": ..., "count": <int|null> } ] }`
 	 * with exactly one result per input entry, in the same order as the
 	 * request array. Identical `(register, schema, filter)` triples are
@@ -2782,13 +2567,13 @@ class ObjectsController extends Controller {
 		$registersList = [];
 
 		if ($schemasParam !== null) {
-			$schemasList = $this->parseMultiValue(param: $schemasParam, defaultValue: $schemaParam ?? '');
+			$schemasList = (new ObjectRequestParams())->multiValue(param: $schemasParam, defaultValue: $schemaParam ?? '');
 		} elseif ($schemaParam !== null) {
 			$schemasList = [$schemaParam];
 		}
 
 		if ($registersParam !== null) {
-			$registersList = $this->parseMultiValue(param: $registersParam, defaultValue: $registerParam ?? '');
+			$registersList = (new ObjectRequestParams())->multiValue(param: $registersParam, defaultValue: $registerParam ?? '');
 		} elseif ($registerParam !== null) {
 			$registersList = [$registerParam];
 		}
@@ -3213,7 +2998,7 @@ class ObjectsController extends Controller {
 		$unset = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
 
 		// Normalize extend parameter for backwards compatibility (@self.schema -> _schema).
-		$extend = $this->normalizeExtendParameter(extend: $extend);
+		$extend = (new ObjectRequestParams())->extend(extend: $extend);
 
 		// Convert fields to array if it's a string.
 		if (is_string($fields) === true) {
@@ -5183,7 +4968,7 @@ class ObjectsController extends Controller {
 		}
 
 		// Get config and fetch logs.
-		$config = $this->getConfig(_register: $register, _schema: $schema);
+		$config = $this->getConfig();
 		$logs = $objectService->getLogs(uuid: $id, filters: $config['filters']);
 
 		// An explicit-reveal value reads masked for an administrator too.
@@ -5220,7 +5005,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
 	 */
 	private function logsForReader(string $register, string $schema, string $id): JSONResponse {
-		$config = $this->getConfig(_register: $register, _schema: $schema);
+		$config = $this->getConfig();
 		$search = null;
 		if ($config['_search'] !== null) {
 			$search = (string)$config['_search'];

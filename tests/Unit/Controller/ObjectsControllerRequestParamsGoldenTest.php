@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Controller\Support\ObjectRequestParams;
 use OCP\IRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -21,6 +22,7 @@ use ReflectionClass;
  * the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\ObjectsController
+ * @covers \OCA\OpenRegister\Controller\Support\ObjectRequestParams
  */
 class ObjectsControllerRequestParamsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-request-params-golden.json';
@@ -155,14 +157,12 @@ class ObjectsControllerRequestParamsGoldenTest extends TestCase {
 
 	#[DataProvider('extendCases')]
 	public function testExtendMatchesTheRecording(mixed $extend): void {
-		$request = $this->createMock(IRequest::class);
-		$this->compare(key: 'extend ' . $this->dataName(), actual: $this->privateCall(request: $request, method: 'normalizeExtendParameter', args: [$extend]));
+		$this->compare(key: 'extend ' . $this->dataName(), actual: (new ObjectRequestParams())->extend(extend: $extend));
 	}
 
 	#[DataProvider('multiValueCases')]
 	public function testMultiValueMatchesTheRecording(mixed $param, string $default): void {
-		$request = $this->createMock(IRequest::class);
-		$this->compare(key: 'multi ' . $this->dataName(), actual: $this->privateCall(request: $request, method: 'parseMultiValue', args: [$param, $default]));
+		$this->compare(key: 'multi ' . $this->dataName(), actual: (new ObjectRequestParams())->multiValue(param: $param, defaultValue: $default));
 	}
 
 	#[DataProvider('formCases')]
