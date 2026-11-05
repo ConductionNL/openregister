@@ -72,6 +72,8 @@ class ObjectsControllerGeoRoutesGoldenTest extends TestCase {
 			'results not an array' => [['params' => [], 'listing' => ['results' => 'x']]],
 			'property' => [['params' => ['geo.property' => 'location'], 'listing' => $rows]],
 			'number property' => [['params' => ['geo.property' => 5], 'listing' => $rows]],
+			'empty property' => [['params' => ['geo.property' => ''], 'listing' => $rows]],
+			'zero property' => [['params' => ['geo.property' => '0'], 'listing' => $rows]],
 			'fields string' => [['params' => ['_fields' => 'a, b,,c '], 'listing' => $rows]],
 			'fields array' => [['params' => ['_fields' => ['a', 2]], 'listing' => $rows]],
 			'empty fields' => [['params' => ['_fields' => ''], 'listing' => $rows]],
