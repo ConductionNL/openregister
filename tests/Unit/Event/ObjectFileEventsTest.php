@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Each file-action event is an Event that hands back the object, file and data it was given.
  *
+ * @covers \OCA\OpenRegister\Event\AbstractObjectFileEvent
  * @covers \OCA\OpenRegister\Event\FileCopiedEvent
  * @covers \OCA\OpenRegister\Event\FileLockedEvent
  * @covers \OCA\OpenRegister\Event\FileMovedEvent
