@@ -1215,8 +1215,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'registerId' => $register->getId(),
-				'schemaId' => $schema->getId(),
+				...$this->tableIds(register: $register, schema: $schema),
 				'tableName' => $tableName,
 				'objectCount' => count($objects),
 			]
@@ -1272,38 +1271,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @psalm-return list<ObjectEntity>
 	 */
 	public function searchObjectsInRegisterSchemaTable(array $query, Register $register, Schema $schema): array {
-		// Use fast cached existence check.
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			// Check if magic mapping is enabled for this schema.
-			$isMagicEnabled = $register->isMagicMappingEnabledForSchema(
-				schemaId: $schema->getId(),
-				schemaSlug: $schema->getSlug()
-			);
-			if ($isMagicEnabled !== true) {
-				$this->logger->debug(
-					message: '[MagicMapper] Register+schema table does not exist, should use generic storage',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'registerId' => $register->getId(),
-						'schemaId' => $schema->getId(),
-					]
-				);
-				return [];
-			}
-
-			// Create the table since magic mapping is enabled.
+		if ($this->ensureTableWhenMagicEnabled(register: $register, schema: $schema) === false) {
 			$this->logger->debug(
-				message: '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'registerId' => $register->getId(),
-					'schemaId' => $schema->getId(),
-				]
+				message: '[MagicMapper] Register+schema table does not exist, should use generic storage',
+				context: ['file' => __FILE__, 'line' => __LINE__, ...$this->tableIds(register: $register, schema: $schema)]
 			);
-			$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
-		}//end if
+			return [];
+		}
 
 		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
@@ -1455,38 +1429,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
 	 */
 	private function resolveCountTable(Register $register, Schema $schema): ?string {
-		// Use fast cached existence check.
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			// Check if magic mapping is enabled for this schema.
-			$isMagicEnabled = $register->isMagicMappingEnabledForSchema(
-				schemaId: $schema->getId(),
-				schemaSlug: $schema->getSlug()
-			);
-			if ($isMagicEnabled !== true) {
-				$this->logger->debug(
-					message: '[MagicMapper] Register+schema table does not exist for count, returning 0',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'registerId' => $register->getId(),
-						'schemaId' => $schema->getId(),
-					]
-				);
-				return null;
-			}
-
-			// Create the table since magic mapping is enabled.
+		if ($this->ensureTableWhenMagicEnabled(register: $register, schema: $schema) === false) {
 			$this->logger->debug(
-				message: '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'registerId' => $register->getId(),
-					'schemaId' => $schema->getId(),
-				]
+				message: '[MagicMapper] Register+schema table does not exist for count, returning 0',
+				context: ['file' => __FILE__, 'line' => __LINE__, ...$this->tableIds(register: $register, schema: $schema)]
 			);
-			$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
-		}//end if
+			return null;
+		}
 
 		return $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 	}//end resolveCountTable()
@@ -1540,12 +1489,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			if ($isMagicEnabled !== true) {
 				$this->logger->debug(
 					message: '[MagicMapper] Register+schema table does not exist for facets, returning empty',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'registerId' => $register->getId(),
-						'schemaId' => $schema->getId(),
-					]
+					context: ['file' => __FILE__, 'line' => __LINE__, ...$this->tableIds(register: $register, schema: $schema)]
 				);
 				return [];
 			}
@@ -1554,12 +1498,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$msg .= ' but magic mapping enabled, creating table for facets';
 			$this->logger->debug(
 				message: $msg,
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'registerId' => $register->getId(),
-					'schemaId' => $schema->getId(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, ...$this->tableIds(register: $register, schema: $schema)]
 			);
 			$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
 		}//end if
@@ -2095,12 +2034,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$msg .= ' but magic mapping enabled, creating table for cross-search';
 			$this->logger->debug(
 				message: $msg,
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'registerId' => $register->getId(),
-					'schemaId' => $schema->getId(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, ...$this->tableIds(register: $register, schema: $schema)]
 			);
 			$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
 		}//end if
@@ -2789,8 +2723,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'registerId' => $register->getId(),
-					'schemaId' => $schema->getId(),
+					...$this->tableIds(register: $register, schema: $schema),
 					'error' => $e->getMessage(),
 				]
 			);
@@ -5416,6 +5349,20 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end tableExistsForRegisterSchema()
 
 	/**
+	 * The register and schema ids of a magic table, as log context.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return array{registerId: int|null, schemaId: int|null} The ids.
+	 *
+	 * @spec exclude logging plumbing, not a capability of its own
+	 */
+	private function tableIds(Register $register, Schema $schema): array {
+		return ['registerId' => $register->getId(), 'schemaId' => $schema->getId()];
+	}//end tableIds()
+
+	/**
 	 * Sanitize column name for database compatibility.
 	 *
 	 * Converts camelCase to snake_case for PostgreSQL compatibility while
@@ -7003,11 +6950,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param Register $register The register context.
 	 * @param Schema   $schema   The schema context.
 	 *
-	 * @return void
+	 * @return bool False when the table is missing and magic mapping is off.
 	 */
-	private function ensureTableWhenMagicEnabled(Register $register, Schema $schema): void {
+	private function ensureTableWhenMagicEnabled(Register $register, Schema $schema): bool {
 		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === true) {
-			return;
+			return true;
 		}
 
 		$isMagicEnabled = $register->isMagicMappingEnabledForSchema(
@@ -7015,19 +6962,15 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			schemaSlug: $schema->getSlug()
 		);
 		if ($isMagicEnabled === false) {
-			return;
+			return false;
 		}
 
 		$this->logger->debug(
 			message: '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'registerId' => $register->getId(),
-				'schemaId' => $schema->getId(),
-			]
+			context: ['file' => __FILE__, 'line' => __LINE__, ...$this->tableIds(register: $register, schema: $schema)]
 		);
 		$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
+		return true;
 	}//end ensureTableWhenMagicEnabled()
 
 	/**
