@@ -46,6 +46,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ObjectShareLinkControllerServices;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
@@ -91,26 +92,52 @@ class ObjectShareLinkController extends Controller {
 	];
 
 	/**
+	 * Core share manager — validates the token.
+	 *
+	 * @var IManager
+	 */
+	private readonly IManager $shareManager;
+
+	/**
+	 * Loads the addressed object.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Projects the object onto what an anonymous caller may read.
+	 *
+	 * @var AccessLinkReader
+	 */
+	private readonly AccessLinkReader $reader;
+
+	/**
+	 * Brute-force throttler for rejected tokens.
+	 *
+	 * @var IThrottler
+	 */
+	private readonly IThrottler $throttler;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
-	 * @param IManager $shareManager Core share manager — validates the token.
-	 * @param ObjectOperationsInterface $objectService Loads the addressed object.
-	 * @param AccessLinkReader $reader Projects the object onto what an anonymous caller may read.
-	 * @param IThrottler $throttler Brute-force throttler for rejected tokens.
+	 * @param ObjectShareLinkControllerServices $services The object share link controller services.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly IManager $shareManager,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly AccessLinkReader $reader,
-		private readonly IThrottler $throttler,
+		ObjectShareLinkControllerServices $services,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->shareManager = $services->shareManager;
+		$this->objectService = $services->objectService;
+		$this->reader = $services->reader;
+		$this->throttler = $services->throttler;
 	}//end __construct()
 
 	/**

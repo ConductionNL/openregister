@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FederationControllerFactory;
 use OCA\OpenRegister\Controller\FederationController;
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapper;
@@ -35,6 +36,7 @@ use Psr\Log\LoggerInterface;
  * A share the caller may not grant or revoke is answered 403.
  *
  * @covers \OCA\OpenRegister\Controller\FederationController
+ * @uses \OCA\OpenRegister\Controller\Support\FederationControllerServices
  * @uses   \OCA\OpenRegister\Db\FederatedShare
  * @uses   \OCA\OpenRegister\Exception\NotAuthorizedException
  */
@@ -44,7 +46,7 @@ class FederationControllerShareRightsTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(static fn (string $key, $default = null) => $default);
 
-		return new FederationController(
+		return FederationControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(FederatedShareMapper::class),
@@ -75,7 +77,7 @@ class FederationControllerShareRightsTest extends TestCase {
 		});
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(static fn (string $key, $default = null) => $default);
-		$controller = new FederationController('openregister', $request, $mapper, $objects, $this->createMock(FederationShareService::class), $this->createMock(IThrottler::class), $this->createMock(LoggerInterface::class));
+		$controller = FederationControllerFactory::create('openregister', $request, $mapper, $objects, $this->createMock(FederationShareService::class), $this->createMock(IThrottler::class), $this->createMock(LoggerInterface::class));
 
 		$this->assertSame(200, $controller->objects(shareToken: 't')->getStatus());
 		$this->assertSame(['status' => 'open'], $seen);

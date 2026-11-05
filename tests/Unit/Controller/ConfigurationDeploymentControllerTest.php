@@ -32,6 +32,7 @@ namespace Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ConfigurationDeploymentControllerFactory;
 use OCA\OpenRegister\Controller\ConfigurationDeploymentController;
 use OCA\OpenRegister\Db\ConfigurationDeployment;
 use OCA\OpenRegister\Db\ConfigurationDraftSet;
@@ -108,7 +109,7 @@ final class ConfigurationDeploymentControllerTest extends TestCase {
 		?ConfigurationExplainer $explainer = null,
 		?DeploymentPreviewService $previews = null
 	): ConfigurationDeploymentController {
-		return new ConfigurationDeploymentController(
+		return ConfigurationDeploymentControllerFactory::create(
 			'openregister',
 			$request,
 			($drafts ?? $this->createMock(ConfigurationDraftService::class)),

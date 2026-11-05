@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectFolderControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\ObjectFolderController;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -278,7 +279,7 @@ class ObjectFolderControllerTest extends TestCase {
 
 		$browser = new ObjectFolderBrowser(fileService: $this->fileService);
 
-		return new ObjectFolderController(
+		return ObjectFolderControllerFactory::create(
 			'openregister',
 			$this->request,
 			new ObjectFileAccess(

@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FederationControllerFactory;
 use OCA\OpenRegister\Controller\FederationController;
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapper;
@@ -46,6 +47,7 @@ use Psr\Log\LoggerInterface;
  * Object-scope enforcement on the single-object federation endpoints.
  *
  * @covers \OCA\OpenRegister\Controller\FederationController
+ * @uses \OCA\OpenRegister\Controller\Support\FederationControllerServices
  * @uses \OCA\OpenRegister\Db\FederatedShare
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\WriteCause
@@ -84,7 +86,7 @@ class FederationControllerScopeTest extends TestCase {
 		$this->shareMapper = $this->createMock(FederatedShareMapper::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 
-		$this->controller = new FederationController(
+		$this->controller = FederationControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->shareMapper,

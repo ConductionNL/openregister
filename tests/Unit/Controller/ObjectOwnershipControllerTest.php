@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectOwnershipControllerFactory;
 use OCA\OpenRegister\Controller\ObjectOwnershipController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -99,7 +100,7 @@ class ObjectOwnershipControllerTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn(new Schema());
 
-		$this->controller = new ObjectOwnershipController(
+		$this->controller = ObjectOwnershipControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objectService,

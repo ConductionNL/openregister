@@ -9,6 +9,7 @@ namespace Unit\Controller;
 // phpcs:disable Squiz.PHP.DisallowInlineIf.Found -- PHPUnit fixture defaults.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\NotesControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\NotesController;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -57,7 +58,7 @@ class NotesControllerTest extends TestCase {
 		$this->timeline = $this->createMock(TimelineWriteService::class);
 		$this->entries = $this->createMock(TimelineEntryService::class);
 
-		$this->controller = new NotesController(
+		$this->controller = NotesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->noteService,

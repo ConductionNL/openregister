@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FederationControllerFactory;
 use OCA\OpenRegister\Controller\FederationController;
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapper;
@@ -37,6 +38,7 @@ use Psr\Log\LoggerInterface;
  * The findAll double treats `ids` as MagicMapper::findAll does: written over `filters['_ids']`.
  *
  * @covers \OCA\OpenRegister\Controller\FederationController
+ * @uses \OCA\OpenRegister\Controller\Support\FederationControllerServices
  * @uses   \OCA\OpenRegister\Db\FederatedShare
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Service\WriteCause
@@ -99,7 +101,7 @@ class FederationControllerQueryIdsTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn(['title' => 'changed']);
 
-		return new FederationController(
+		return FederationControllerFactory::create(
 			'openregister',
 			$request,
 			$mapper,

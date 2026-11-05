@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\CaseControllerServices;
 use OCA\OpenRegister\Exception\CaseAccessDeniedException;
 use OCA\OpenRegister\Exception\CaseCascadeBoundException;
 use OCA\OpenRegister\Exception\CaseTransitionException;
@@ -72,26 +73,52 @@ use Throwable;
 class CaseController extends Controller {
 
 	/**
+	 * The authorized case layer.
+	 *
+	 * @var CasePlanService
+	 */
+	private readonly CasePlanService $plans;
+
+	/**
+	 * The pure zaaktype mapping.
+	 *
+	 * @var ZaaktypeCaseSkeletonMapper
+	 */
+	private readonly ZaaktypeCaseSkeletonMapper $zaaktypes;
+
+	/**
+	 * Identity checks for the anchorless route.
+	 *
+	 * @var CasePlanAuthorizationService
+	 */
+	private readonly CasePlanAuthorizationService $authorization;
+
+	/**
+	 * Names the acting identity.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param CasePlanService $plans The authorized case layer.
-	 * @param ZaaktypeCaseSkeletonMapper $zaaktypes The pure zaaktype mapping.
-	 * @param CasePlanAuthorizationService $authorization Identity checks for the anchorless route.
-	 * @param IUserSession $userSession Names the acting identity.
+	 * @param CaseControllerServices $services The case controller services.
 	 * @param LoggerInterface|null $logger Where an unexpected failure's detail goes, INSTEAD of the response.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly CasePlanService $plans,
-		private readonly ZaaktypeCaseSkeletonMapper $zaaktypes,
-		private readonly CasePlanAuthorizationService $authorization,
-		private readonly IUserSession $userSession,
+		CaseControllerServices $services,
 		private readonly ?LoggerInterface $logger = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->plans = $services->plans;
+		$this->zaaktypes = $services->zaaktypes;
+		$this->authorization = $services->authorization;
+		$this->userSession = $services->userSession;
 
 	}//end __construct()
 
