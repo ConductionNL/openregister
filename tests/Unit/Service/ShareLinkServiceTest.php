@@ -47,6 +47,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use Exception;
 use OCA\OpenRegister\Service\ShareLinkService;
+use OCA\OpenRegister\Service\ShareDraft;
 use OCP\Files\FileInfo;
 use OCP\Files\Folder;
 use OCP\Files\Node;
@@ -251,7 +252,7 @@ class ShareLinkServiceTest extends TestCase {
 		);
 
 		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
-		$result = $service->createShare('uuid-1', 1, 1, 10, IShare::TYPE_USER, 'bob', 1, null, null);
+		$result = $service->createShare('uuid-1', (new ShareDraft(10, IShare::TYPE_USER))->withRecipient('bob', 1));
 
 		$this->assertSame('s99', $result->getId());
 	}//end testCreateShareHappyPath()
@@ -273,7 +274,7 @@ class ShareLinkServiceTest extends TestCase {
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(404);
-		$service->createShare('uuid-1', 1, 1, 999, IShare::TYPE_USER, 'bob', 1, null, null);
+		$service->createShare('uuid-1', (new ShareDraft(999, IShare::TYPE_USER))->withRecipient('bob', 1));
 	}//end testCreateShareFileNotInFolderThrows404()
 
 	public function testCreateShareMissingRecipientThrows400(): void {
@@ -296,7 +297,7 @@ class ShareLinkServiceTest extends TestCase {
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
-		$service->createShare('uuid-1', 1, 1, 10, IShare::TYPE_USER, null, 1, null, null);
+		$service->createShare('uuid-1', (new ShareDraft(10, IShare::TYPE_USER))->withRecipient(null, 1));
 	}//end testCreateShareMissingRecipientThrows400()
 
 	public function testRevokeShareHappyPath(): void {

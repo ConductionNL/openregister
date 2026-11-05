@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\RenderContext;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\SystemTag\ISystemTag;
@@ -3543,7 +3544,7 @@ class RenderObjectTest extends TestCase {
 		$extend = ['@self.register', '@self.schema'];
 
 		$result = $this->invokePrivate('extendObject', [
-			$entity, $extend, $objectData, 0, [], [], [], [],
+			$entity, $objectData, new RenderContext($extend, 0, [], [], [], null, null, null, [], true),
 		]);
 
 		$this->assertArrayHasKey('@self', $result);
@@ -3571,7 +3572,7 @@ class RenderObjectTest extends TestCase {
 		$extend = ['ref'];
 
 		$result = $this->invokePrivate('extendObject', [
-			$entity, $extend, $objectData, 0, [], [], [], [],
+			$entity, $objectData, new RenderContext($extend, 0, [], [], [], null, null, null, [], true),
 		]);
 
 		// ref should be extended to the full object.
@@ -3599,7 +3600,7 @@ class RenderObjectTest extends TestCase {
 		$extend = ['all'];
 
 		$result = $this->invokePrivate('extendObject', [
-			$entity, $extend, $objectData, 0, [], [], [], [],
+			$entity, $objectData, new RenderContext($extend, 0, [], [], [], null, null, null, [], true),
 		]);
 
 		$this->assertIsArray($result);

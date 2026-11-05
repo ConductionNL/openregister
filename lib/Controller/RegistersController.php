@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -177,7 +177,7 @@ class RegistersController extends Controller {
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param RegisterService $registerService Register service for business logic
-	 * @param MagicMapper $objectEntityMapper Object entity mapper for database operations
+	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper for database operations
 	 * @param UploadService $uploadService Upload service for file uploads
 	 * @param LoggerInterface $logger Logger for error tracking
 	 * @param IUserSession $userSession User session service
@@ -204,7 +204,7 @@ class RegistersController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly RegisterService $registerService,
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly UploadService $uploadService,
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,

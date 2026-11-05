@@ -141,7 +141,8 @@
             "improvement_status": "existing",
             "issues": [
                 "Type mismatch: current type is 'string', recommended type is 'integer'",
-                "maximum_too_low"
+                "missing_minimum",
+                "missing_maximum"
             ],
             "suggestions": [
                 {
@@ -153,10 +154,17 @@
                 },
                 {
                     "type": "constraint",
+                    "field": "minimum",
+                    "current": "unlimited",
+                    "recommended": 1,
+                    "description": "Observed range starts at 1"
+                },
+                {
+                    "type": "constraint",
                     "field": "maximum",
-                    "current": null,
+                    "current": "unlimited",
                     "recommended": 9,
-                    "description": "Schema maximum () is lower than observed max (9)"
+                    "description": "Observed range ends at 9"
                 }
             ],
             "examples": [
@@ -218,41 +226,6 @@
             "type_variations": null
         },
         {
-            "property_name": "numMinFalseFlat",
-            "confidence": "medium",
-            "usage_percentage": 60,
-            "usage_count": 6,
-            "recommended_type": "integer",
-            "current_type": "integer",
-            "improvement_status": "existing",
-            "issues": [
-                "maximum_too_low"
-            ],
-            "suggestions": [
-                {
-                    "type": "constraint",
-                    "field": "maximum",
-                    "current": false,
-                    "recommended": 4,
-                    "description": "Schema maximum () is lower than observed max (4)"
-                }
-            ],
-            "examples": [
-                1,
-                2,
-                3
-            ],
-            "max_length": null,
-            "min_length": 3,
-            "detected_format": null,
-            "string_patterns": [],
-            "numeric_range": {
-                "min": 4,
-                "max": 4
-            },
-            "type_variations": null
-        },
-        {
             "property_name": "numTight",
             "confidence": "medium",
             "usage_percentage": 60,
@@ -304,15 +277,23 @@
             "current_type": "integer",
             "improvement_status": "existing",
             "issues": [
-                "maximum_too_low"
+                "missing_minimum",
+                "missing_maximum"
             ],
             "suggestions": [
                 {
                     "type": "constraint",
+                    "field": "minimum",
+                    "current": "unlimited",
+                    "recommended": -3,
+                    "description": "Observed range starts at -3"
+                },
+                {
+                    "type": "constraint",
                     "field": "maximum",
-                    "current": null,
+                    "current": "unlimited",
                     "recommended": 9,
-                    "description": "Schema maximum () is lower than observed max (9)"
+                    "description": "Observed range ends at 9"
                 }
             ],
             "examples": [
@@ -341,7 +322,8 @@
             "issues": [
                 "Type mismatch: current type is 'integer', recommended type is 'string'",
                 "missing_max_length",
-                "maximum_too_low"
+                "missing_minimum",
+                "missing_maximum"
             ],
             "suggestions": [
                 {
@@ -360,10 +342,17 @@
                 },
                 {
                     "type": "constraint",
+                    "field": "minimum",
+                    "current": "unlimited",
+                    "recommended": 2,
+                    "description": "Observed range starts at 2"
+                },
+                {
+                    "type": "constraint",
                     "field": "maximum",
-                    "current": null,
+                    "current": "unlimited",
                     "recommended": 8,
-                    "description": "Schema maximum () is lower than observed max (8)"
+                    "description": "Observed range ends at 8"
                 }
             ],
             "examples": [
@@ -434,7 +423,8 @@
             "issues": [
                 "Type mismatch: current type is 'string', recommended type is 'integer'",
                 "missing_max_length",
-                "maximum_too_low"
+                "missing_minimum",
+                "missing_maximum"
             ],
             "suggestions": [
                 {
@@ -453,10 +443,17 @@
                 },
                 {
                     "type": "constraint",
+                    "field": "minimum",
+                    "current": "unlimited",
+                    "recommended": 1,
+                    "description": "Observed range starts at 1"
+                },
+                {
+                    "type": "constraint",
                     "field": "maximum",
-                    "current": null,
+                    "current": "unlimited",
                     "recommended": 9,
-                    "description": "Schema maximum () is lower than observed max (9)"
+                    "description": "Observed range ends at 9"
                 }
             ],
             "examples": [
@@ -861,7 +858,8 @@
             "improvement_status": "existing",
             "issues": [
                 "Type mismatch: current type is 'string', recommended type is 'integer'",
-                "maximum_too_low"
+                "missing_minimum",
+                "missing_maximum"
             ],
             "suggestions": [
                 {
@@ -873,10 +871,17 @@
                 },
                 {
                     "type": "constraint",
+                    "field": "minimum",
+                    "current": "unlimited",
+                    "recommended": 1,
+                    "description": "Observed range starts at 1"
+                },
+                {
+                    "type": "constraint",
                     "field": "maximum",
-                    "current": null,
+                    "current": "unlimited",
                     "recommended": 9,
-                    "description": "Schema maximum () is lower than observed max (9)"
+                    "description": "Observed range ends at 9"
                 }
             ],
             "examples": [
@@ -940,43 +945,7 @@
             "type_variations": null
         }
     ],
-    "numMinFalseFlat": [
-        {
-            "property_name": "numMinFalseFlat",
-            "confidence": "medium",
-            "usage_percentage": 60,
-            "usage_count": 6,
-            "recommended_type": "integer",
-            "current_type": "integer",
-            "improvement_status": "existing",
-            "issues": [
-                "maximum_too_low"
-            ],
-            "suggestions": [
-                {
-                    "type": "constraint",
-                    "field": "maximum",
-                    "current": false,
-                    "recommended": 4,
-                    "description": "Schema maximum () is lower than observed max (4)"
-                }
-            ],
-            "examples": [
-                1,
-                2,
-                3
-            ],
-            "max_length": null,
-            "min_length": 3,
-            "detected_format": null,
-            "string_patterns": [],
-            "numeric_range": {
-                "min": 4,
-                "max": 4
-            },
-            "type_variations": null
-        }
-    ],
+    "numMinFalseFlat": [],
     "numTight": [
         {
             "property_name": "numTight",
@@ -1033,15 +1002,23 @@
             "current_type": "integer",
             "improvement_status": "existing",
             "issues": [
-                "maximum_too_low"
+                "missing_minimum",
+                "missing_maximum"
             ],
             "suggestions": [
                 {
                     "type": "constraint",
+                    "field": "minimum",
+                    "current": "unlimited",
+                    "recommended": -3,
+                    "description": "Observed range starts at -3"
+                },
+                {
+                    "type": "constraint",
                     "field": "maximum",
-                    "current": null,
+                    "current": "unlimited",
                     "recommended": 9,
-                    "description": "Schema maximum () is lower than observed max (9)"
+                    "description": "Observed range ends at 9"
                 }
             ],
             "examples": [
@@ -1073,7 +1050,8 @@
             "issues": [
                 "Type mismatch: current type is 'integer', recommended type is 'string'",
                 "missing_max_length",
-                "maximum_too_low"
+                "missing_minimum",
+                "missing_maximum"
             ],
             "suggestions": [
                 {
@@ -1092,10 +1070,17 @@
                 },
                 {
                     "type": "constraint",
+                    "field": "minimum",
+                    "current": "unlimited",
+                    "recommended": 2,
+                    "description": "Observed range starts at 2"
+                },
+                {
+                    "type": "constraint",
                     "field": "maximum",
-                    "current": null,
+                    "current": "unlimited",
                     "recommended": 8,
-                    "description": "Schema maximum () is lower than observed max (8)"
+                    "description": "Observed range ends at 8"
                 }
             ],
             "examples": [
@@ -1175,7 +1160,8 @@
             "issues": [
                 "Type mismatch: current type is 'string', recommended type is 'integer'",
                 "missing_max_length",
-                "maximum_too_low"
+                "missing_minimum",
+                "missing_maximum"
             ],
             "suggestions": [
                 {
@@ -1194,10 +1180,17 @@
                 },
                 {
                     "type": "constraint",
+                    "field": "minimum",
+                    "current": "unlimited",
+                    "recommended": 1,
+                    "description": "Observed range starts at 1"
+                },
+                {
+                    "type": "constraint",
                     "field": "maximum",
-                    "current": null,
+                    "current": "unlimited",
                     "recommended": 9,
-                    "description": "Schema maximum () is lower than observed max (9)"
+                    "description": "Observed range ends at 9"
                 }
             ],
             "examples": [

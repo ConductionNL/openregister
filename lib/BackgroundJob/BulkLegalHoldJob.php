@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
@@ -74,7 +74,7 @@ class BulkLegalHoldJob extends QueuedJob {
 
 		try {
 			$retentionService = $this->container->get(RetentionServiceInterface::class);
-			$objectMapper = $this->container->get(MagicMapper::class);
+			$objectMapper = $this->container->get(MagicMapperInterface::class);
 
 			$objects = $objectMapper->findAll(
 				filters: [],

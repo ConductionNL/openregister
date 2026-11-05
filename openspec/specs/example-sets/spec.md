@@ -1221,6 +1221,24 @@ A fragment's task MAY declare `requester` and `expiresAt`. The check SHALL refus
 - **WHEN** the set is checked
 - **THEN** the check SHALL refuse the task and write nothing
 
+### Requirement: A fragment's flow may quote its own uuid
+
+Inside a fragment's flow, `{{flow:self.uuid}}` and its alias `{{flow:self}}` SHALL fill to the uuid the flow is written with, so a step can stamp it on what it makes later (a case's `handoffSource: planned-series:<uuid>`). A refresh SHALL keep the same uuid, so it counts as no change. Outside a flow the token names no flow and SHALL be refused like any unresolvable placeholder.
+
+#### Scenario: A yearly series stamps its cases
+- **GIVEN** a fragment's flow whose case-opening step sets `handoffSource` to `planned-series:{{flow:self.uuid}}`
+- **WHEN** the set is installed
+- **THEN** that step SHALL carry `planned-series:` followed by the flow's own uuid
+
+### Requirement: A fragment's flow may name its application and be switched on
+
+A fragment's flow MAY declare `applicationSlug` (text) and `enabled` (true or false, default false). Install SHALL write the slug on the flow, publish the flow, and only then switch it on when `enabled` is true. The check SHALL refuse an `enabled` or `publish` that is not true or false, an `applicationSlug` that is not text, and a flow that is switched on but not published. A refresh SHALL leave a held flow on or off as it is.
+
+#### Scenario: A planned quarterly follow-up
+- **GIVEN** a fragment declares a schedule flow with `applicationSlug` `dossiq-planned-follow-up` and `enabled` true
+- **WHEN** the set is installed
+- **THEN** the flow SHALL carry that slug, be published, and be switched on, and it SHALL first run at its next cron date, not at install
+
 ### Requirement: A fragment's task may carry the moment it was created
 
 A fragment's task MAY declare `createdAt`. The check SHALL refuse a `createdAt` that is not a date or lies in the future, and a `claimedAt` or `completedAt` before it. Install SHALL write the task with that moment as its creation, and its create audit entry with the same moment, since the audit cannot be changed afterwards. A task created over HTTP SHALL NOT name its creation moment.

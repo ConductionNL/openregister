@@ -40,7 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -60,14 +60,14 @@ class PurgeObjectCommand extends Command {
 	/**
 	 * Wire the mappers.
 	 *
-	 * @param MagicMapper      $objectMapper     Magic-table object lookup and delete.
+	 * @param MagicMapperInterface      $objectMapper     Magic-table object lookup and delete.
 	 * @param SchemaMapperInterface     $schemaMapper     Schema lookup, to read the archival annotation.
 	 * @param AuditTrailMapperInterface $auditTrailMapper Resolves the objects an import job created.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 	) {

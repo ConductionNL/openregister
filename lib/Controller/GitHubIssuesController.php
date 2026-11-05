@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\GitHubIssuesControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubGuards;
 use OCA\OpenRegister\Service\Configuration\GitHubRequestValidator;
@@ -78,32 +79,54 @@ class GitHubIssuesController extends Controller {
 	private ICache $readCache;
 
 	/**
+	 * Policy guards (feature flag, repo allowlist, GET rate limit)
+	 *
+	 * @var GitHubGuards
+	 */
+	private readonly GitHubGuards $guards;
+
+	/**
+	 * Pure-function input validators
+	 *
+	 * @var GitHubRequestValidator
+	 */
+	private readonly GitHubRequestValidator $validator;
+
+	/**
+	 * Cache-backed rate limiter with fail-closed contract
+	 *
+	 * @var RateLimiterService
+	 */
+	private readonly RateLimiterService $rateLimiter;
+
+	/**
+	 * The controller's injected services.
+	 *
+	 * @var GitHubIssuesControllerServices
+	 */
+	private readonly GitHubIssuesControllerServices $services;
+
+	/**
 	 * GitHubIssuesController constructor.
 	 *
 	 * @param string $appName Nextcloud app name (DI-injected)
 	 * @param IRequest $request Current HTTP request
-	 * @param GitHubClientInterface $githubHandler Reused HTTP client / token / attribution logic
-	 * @param GitHubGuards $guards Policy guards (feature flag, repo allowlist, GET rate limit)
-	 * @param GitHubRequestValidator $validator Pure-function input validators
-	 * @param RateLimiterService $rateLimiter Cache-backed rate limiter with fail-closed contract
-	 * @param IUserSession $userSession Resolves the submitting NC user
+	 * @param GitHubIssuesControllerServices $services The git hub issues controller services.
 	 * @param ICacheFactory $cacheFactory Distributed cache factory (read-response cache)
-	 * @param LoggerInterface $logger Structured logger
 	 *
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-3
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly GitHubClientInterface $githubHandler,
-		private readonly GitHubGuards $guards,
-		private readonly GitHubRequestValidator $validator,
-		private readonly RateLimiterService $rateLimiter,
-		private readonly IUserSession $userSession,
+		GitHubIssuesControllerServices $services,
 		ICacheFactory $cacheFactory,
-		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->services = $services;
+		$this->guards = $services->domain->guards;
+		$this->validator = $services->domain->validator;
+		$this->rateLimiter = $services->domain->rateLimiter;
 		$this->readCache = $cacheFactory->createDistributed('openregister_github_issues');
 	}//end __construct()
 
@@ -170,7 +193,7 @@ class GitHubIssuesController extends Controller {
 		}
 
 		try {
-			$result = $this->githubHandler->listIssues(
+			$result = $this->services->domain->githubHandler->listIssues(
 				owner: $owner,
 				repo: $repoName,
 				state: $state,
@@ -209,7 +232,7 @@ class GitHubIssuesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function create(): JSONResponse {
-		$user = $this->userSession->getUser();
+		$user = $this->services->platform->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(['error' => 'unauthenticated'], Http::STATUS_UNAUTHORIZED);
 		}
@@ -235,7 +258,7 @@ class GitHubIssuesController extends Controller {
 		[$owner, $repoName] = explode('/', $repo, 2);
 
 		try {
-			$result = $this->githubHandler->createIssue(
+			$result = $this->services->domain->githubHandler->createIssue(
 				owner: $owner,
 				repo: $repoName,
 				title: $title,
@@ -410,7 +433,7 @@ class GitHubIssuesController extends Controller {
 			}
 		}
 
-		$this->logger->error(
+		$this->services->platform->logger->error(
 			message: '[GitHubIssuesController] GitHub proxy error',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'error_class' => $exception::class]
 		);

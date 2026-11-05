@@ -304,6 +304,104 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 	}//end testACheckRefusesAFaultyFlowAndWritesNothing()
 
 	/**
+	 * A flow may name the application it belongs to and be switched on: it is published first, then switched on.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-flow-may-name-its-application-and-be-switched-on
+	 */
+	public function testAFlowMayNameItsApplicationAndBeSwitchedOn(): void {
+		$this->app(app: 'alpha', fragment: ['flows' => [[
+			'key'  => 'kwartaal',
+			'data' => self::flow(
+				extra: ['trigger' => 'schedule', 'cron' => '0 0 1 */3 *', 'applicationSlug' => 'dossiq-planned-follow-up', 'enabled' => true]
+			),
+		]]]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$flow = array_values($this->flows)[0];
+		$this->assertSame(expected: 'dossiq-planned-follow-up', actual: $flow->getApplicationSlug());
+		$this->assertTrue(condition: (bool) $flow->getEnabled());
+		$this->assertSame(
+			expected: [['uuid' => (string) $flow->getUuid(), 'enabled' => true, 'published' => true]],
+			actual: $this->flowUpdates,
+			message: 'switched on once, after it was published'
+		);
+	}//end testAFlowMayNameItsApplicationAndBeSwitchedOn()
+
+	/**
+	 * A flow that does not say it is on stays off, and is saved once.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-flow-may-name-its-application-and-be-switched-on
+	 */
+	public function testAFlowThatDoesNotSayItIsOnStaysOff(): void {
+		$this->app(app: 'alpha', fragment: ['flows' => [['key' => 'k', 'data' => self::flow(extra: ['enabled' => false])]]]);
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$this->assertFalse(condition: (bool) array_values($this->flows)[0]->getEnabled());
+		$this->assertSame(expected: [], actual: $this->flowUpdates);
+	}//end testAFlowThatDoesNotSayItIsOnStaysOff()
+
+	/**
+	 * A flow's own steps may quote its uuid, as `{{flow:self}}` or `{{flow:self.uuid}}`: the written flow carries it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-flow-may-quote-its-own-uuid
+	 */
+	public function testAFlowQuotesItsOwnUuid(): void {
+		$nodes    = self::flow()['nodes'];
+		$nodes[1] = [
+			'id'     => 'status',
+			'type'   => 'dossiq.openCase',
+			'config' => ['handoffSource' => 'planned-series:{{flow:self.uuid}}', 'series' => '{{flow:self}}'],
+		];
+		$this->app(app: 'alpha', fragment: ['flows' => [['key' => 'reeks', 'data' => self::flow(extra: ['nodes' => $nodes])]]]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$flow = array_values($this->flows)[0];
+		$uuid = (string) $flow->getUuid();
+		$this->assertSame(expected: ['handoffSource' => 'planned-series:'.$uuid, 'series' => $uuid], actual: $flow->getNodes()[1]['config']);
+
+		$this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$refreshed = $this->flows[$uuid]->getNodes()[1]['config']['handoffSource'];
+		$this->assertSame(expected: 'planned-series:'.$uuid, actual: $refreshed, message: 'a refresh keeps it');
+		$this->assertSame(expected: [$uuid], actual: $this->publishedFlows, message: 'the refresh found nothing changed');
+	}//end testAFlowQuotesItsOwnUuid()
+
+	/**
+	 * Outside a flow, `{{flow:self}}` names no flow, so the row is refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-flow-may-quote-its-own-uuid
+	 */
+	public function testSelfOutsideAFlowIsRefused(): void {
+		$this->store->offer(register: 'cases', schema: 'caseType');
+		$this->app(app: 'alpha', fragment: [
+			'objects' => [['key' => 'woo', 'register' => 'cases', 'schema' => 'caseType', 'data' => ['title' => 'Woo-verzoek']]],
+			'flows'   => [['key' => 'zienswijze', 'data' => self::flow()]],
+			'changes' => [['key' => 'c', 'register' => 'cases', 'schema' => 'caseType', 'object' => 'woo', 'set' => ['startableFlows' => ['{{flow:self}}']]]],
+		]);
+
+		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+
+		$this->assertCount(expectedCount: 1, haystack: $refusals);
+		$this->assertStringContainsString(needle: 'cannot resolve {{flow:self}}', haystack: $refusals[0]);
+	}//end testSelfOutsideAFlowIsRefused()
+
+	/**
 	 * The faulty flows and a part of their refusal.
 	 *
 	 * @return array<string, array{0: array<string, mixed>, 1: string}>
@@ -320,6 +418,9 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 			'a run on nothing'    => [self::flow(extra: ['runs' => [['status' => 'completed']]]), 'needs the object it ran on'],
 			'a run field'         => [self::flow(extra: ['runs' => [['status' => 'completed', 'subject' => 'c', 'marking' => []]]]), 'field "marking"'],
 			'publish as a word'   => [self::flow(extra: ['publish' => 'ja']), 'publish is true or false'],
+			'enabled as a word'   => [self::flow(extra: ['enabled' => 'ja']), 'enabled is true or false'],
+			'on but not published' => [self::flow(extra: ['enabled' => true, 'publish' => false]), 'a flow that is switched on is published'],
+			'a slug that is not text' => [self::flow(extra: ['applicationSlug' => 7]), 'applicationSlug is text'],
 		];
 	}//end refusedFlows()
 }//end class
