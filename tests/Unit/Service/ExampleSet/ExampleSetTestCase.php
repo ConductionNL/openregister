@@ -52,11 +52,11 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckStore;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries;
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetTimelineEntries;
-use OCA\OpenRegister\Db\TimelineEntry;
-use OCA\OpenRegister\Db\TimelineEntryMapper;
-use OCA\OpenRegister\Service\Timeline\TimelineKindService;
-use OCA\OpenRegister\Service\Timeline\TimelineValidationException;
+use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries;
+use OCA\OpenRegister\Notifications\Db\TimelineEntry;
+use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineKindService;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
@@ -99,8 +99,9 @@ use OCA\OpenRegister\Db\ObjectReadStateMapper;
 use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
 use OCP\Comments\NotFoundException as CommentNotFoundException;
-use OCA\OpenRegister\Db\Watcher;
-use OCA\OpenRegister\Db\WatcherMapper;
+use OCA\OpenRegister\Notifications\Db\Watcher;
+use OCA\OpenRegister\Notifications\Db\WatcherMapper;
+use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapper;
@@ -206,6 +207,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<int, string> The uuids of the flows published, in order. */
 	protected array $publishedFlows = [];
 
+	/** @var array<int, array{uuid: string, enabled: bool, published: bool}> Each flow update, as it was saved. */
+	protected array $flowUpdates = [];
+
 	/** @var array<string, array<int, array<string, mixed>>> The Deck rows written, by kind (boards, stacks, labels, cards), keyed by id. */
 	protected array $deck = ['boards' => [], 'stacks' => [], 'labels' => [], 'cards' => []];
 
@@ -301,7 +305,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			TaskMapper::class         => $this->taskMapper(),
 			ViewService::class        => $this->viewService(),
 			ViewMapperInterface::class         => $this->viewMapper(),
-			WatcherMapper::class      => $this->watcherMapper(),
+			WatcherMapperInterface::class      => $this->watcherMapper(),
 			PartyRoleService::class   => $this->partyRoles(),
 			PartyService::class       => $this->partyService(),
 			ContactLinkMapper::class  => $this->contactLinks(),
@@ -618,6 +622,15 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function flowMapper(): FlowMapper {
 		$mapper = $this->createMock(FlowMapper::class);
 		$mapper->method('insert')->willReturnCallback(function (Flow $flow): Flow {
+			$this->flows[(string) $flow->getUuid()] = $flow;
+			return $flow;
+		});
+		$mapper->method('update')->willReturnCallback(function (Flow $flow): Flow {
+			$this->flowUpdates[] = [
+				'uuid'      => (string) $flow->getUuid(),
+				'enabled'   => (bool) $flow->getEnabled(),
+				'published' => in_array((string) $flow->getUuid(), $this->publishedFlows, true),
+			];
 			$this->flows[(string) $flow->getUuid()] = $flow;
 			return $flow;
 		});

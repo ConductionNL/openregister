@@ -20,7 +20,7 @@ declare(strict_types=1);
 namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -34,8 +34,8 @@ use Psr\Log\LoggerInterface;
  * `fixtures/preference-resolve-golden.json`. Set `OR_GOLDEN_WRITE=1` to
  * regenerate the fixture.
  *
- * @covers \OCA\OpenRegister\Service\Notification\NotificationPreferenceService
- * @covers \OCA\OpenRegister\Service\Notification\PreferenceLookup
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\PreferenceLookup
  */
 final class NotificationPreferenceResolveGoldenTest extends TestCase {
 

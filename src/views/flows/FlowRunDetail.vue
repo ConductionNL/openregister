@@ -915,7 +915,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
+
 .runPage {
 	display: flex;
 	flex-direction: column;
@@ -1170,10 +1172,7 @@ pre {
 	overflow-wrap: anywhere;
 }
 
-.mono {
-	font-family: var(--font-face-monospace, monospace);
-	font-size: 13px;
-}
+@include mono;
 
 @media (max-width: 600px) {
 	.runPage {

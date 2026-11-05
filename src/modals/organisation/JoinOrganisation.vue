@@ -607,7 +607,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/common.scss' as *;
+
 /* JoinOrganisation-specific styles */
 .selection-section {
 	display: flex;
@@ -615,11 +617,7 @@ export default {
 	gap: 20px;
 }
 
-.field-group {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
+@include field-group;
 
 .field-group label {
 	font-weight: 600;

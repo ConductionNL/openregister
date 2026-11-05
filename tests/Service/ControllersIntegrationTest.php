@@ -42,7 +42,7 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterService;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\SearchTrailService;
@@ -630,20 +630,6 @@ class ControllersIntegrationTest extends TestCase {
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$this->assertEquals(404, $response->getStatus());
-	}
-
-	/**
-	 * Test RegistersController::objects returns objects for register+schema
-	 *
-	 * @return void
-	 */
-	public function testRegistersObjects(): void {
-		$response = $this->registersController->objects(
-			$this->testRegister->getId(),
-			$this->testSchema->getId()
-		);
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
 	}
 
 	/**
@@ -1385,27 +1371,6 @@ class ControllersIntegrationTest extends TestCase {
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$this->assertTrue(in_array($response->getStatus(), [200, 422]));
-	}
-
-	/**
-	 * Test SettingsController::getObjectService
-	 *
-	 * @return void
-	 */
-	public function testSettingsGetObjectService(): void {
-		// openregister is installed, so it should return null.
-		$result = $this->settingsController->getObjectService();
-		$this->assertNull($result);
-	}
-
-	/**
-	 * Test SettingsController::getConfigurationService
-	 *
-	 * @return void
-	 */
-	public function testSettingsGetConfigurationService(): void {
-		$result = $this->settingsController->getConfigurationService();
-		$this->assertNotNull($result);
 	}
 
 	/**

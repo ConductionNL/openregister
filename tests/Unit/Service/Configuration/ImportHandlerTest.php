@@ -1570,21 +1570,6 @@ class ImportHandlerTest extends TestCase {
 	// =========================================================================
 
 	/**
-	 * setObjectService() replaces the objectService dependency.
-	 */
-	public function testSetObjectService(): void {
-		$newService = $this->createMock(ObjectService::class);
-		$this->handler->setObjectService($newService);
-
-		$ref = new ReflectionClass($this->handler);
-		$prop = $ref->getProperty('objectService');
-		$prop->setAccessible(true);
-
-		$this->assertSame($newService, $prop->getValue($this->handler));
-
-	}//end testSetObjectService()
-
-	/**
 	 * setOpenConnectorConfigurationService() stores the connector service.
 	 */
 	public function testSetOpenConnectorConfigurationService(): void {

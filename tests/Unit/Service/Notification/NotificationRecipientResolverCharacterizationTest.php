@@ -20,7 +20,7 @@ declare(strict_types=1);
 namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -34,7 +34,7 @@ use Psr\Log\LoggerInterface;
  * reaches every recipient kind. Expected results live in
  * `fixtures/notification-recipient-resolver-golden.json`.
  *
- * @coversDefaultClass \OCA\OpenRegister\Service\Notification\NotificationRecipientResolver
+ * @coversDefaultClass \OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver
  */
 class NotificationRecipientResolverCharacterizationTest extends TestCase {
 

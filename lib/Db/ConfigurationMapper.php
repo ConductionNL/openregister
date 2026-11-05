@@ -59,6 +59,8 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ConfigurationMapper extends QBMapper {
+
+	use ColumnFiltersTrait;
 	use MultiTenancyTrait;
 
 	/**
@@ -507,19 +509,7 @@ class ConfigurationMapper extends QBMapper {
 			->orderBy('created', 'DESC');
 
 		// Apply filters.
-		foreach ($filters ?? [] as $filter => $value) {
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull($filter));
-				continue;
-			}
-
-			if ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-				continue;
-			}
-
-			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-		}
+		$this->applyColumnFilters(qb: $qb, filters: $filters);
 
 		// Apply search conditions.
 		if (empty($searchConditions) === false) {

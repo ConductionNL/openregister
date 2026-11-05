@@ -648,48 +648,15 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.viewContainer {
-	padding: 20px;
-	max-width: 100%;
-}
+@use '../../styles/views.scss' as *;
+
+@include view-container-2;
 
 .viewHeader {
 	margin-bottom: 20px;
 }
 
-.viewHeaderTitle {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	margin-bottom: 8px;
-}
-
-.viewHeaderTitleIndented {
-	margin: 0;
-	font-size: 28px;
-	font-weight: 600;
-}
-
-.viewHeader p {
-	color: var(--color-text-maxcontrast);
-	margin: 0;
-}
-
-.viewActionsBar {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 20px;
-	padding: 12px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius-large);
-}
-
-.viewInfo {
-	display: flex;
-	gap: 12px;
-	align-items: center;
-}
+@include view-header-title-rules;
 
 .viewTotalCount {
 	font-weight: 600;
@@ -699,10 +666,7 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
-.viewActions {
-	display: flex;
-	gap: 8px;
-}
+@include view-actions;
 
 /* Cards Grid */
 .cardGrid {
@@ -823,24 +787,7 @@ export default {
 }
 
 /* Badges */
-.badge {
-	display: inline-block;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 12px;
-	font-weight: 600;
-	text-transform: uppercase;
-}
-
-.badge-type {
-	background: var(--color-primary-light);
-	color: var(--color-primary-element);
-}
-
-.badge-category {
-	background: var(--color-background-dark);
-	color: var(--color-text-maxcontrast);
-}
+@include badge-rules-2;
 
 /* Column sizes for table view */
 .tableColumnCheckbox {

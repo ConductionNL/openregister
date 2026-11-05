@@ -1313,7 +1313,7 @@ class ImportService implements ObjectImporterInterface {
 		$summary['found'] = count($allObjects);
 
 		if (empty($allObjects) === false && $import['register'] !== null && $import['schema'] !== null) {
-			$summary = $this->saveSpreadsheetObjects(
+			$summary = $this->saveImportedObjects(
 				objects: $allObjects,
 				import: $import + ['summary' => $summary, 'sheetTitle' => $sheet->getTitle()]
 			);
@@ -1372,41 +1372,6 @@ class ImportService implements ObjectImporterInterface {
 
 		return $objects;
 	}//end spreadsheetRowObjects()
-
-	/**
-	 * Save the parsed sheet objects in one bulk save and fill the summary from its result.
-	 *
-	 * The publish flag is a deprecated no-op: publication control is handled via RBAC
-	 * authorization rules.
-	 *
-	 * @param list<array> $objects The parsed objects
-	 * @param array       $import  The import options with the summary so far and the sheetTitle
-	 *
-	 * @return array The summary with created, updated, unchanged and validation errors
-	 */
-	private function saveSpreadsheetObjects(array $objects, array $import): array {
-		if ($import['publish'] === true) {
-			$this->logger->warning(
-				message: '[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead.',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}
-
-		$saveResult = $this->bulkSaveWithNotifyPush(objects: $objects, import: $import);
-		$summary = $this->withSaveOutcome(summary: $import['summary'], saveResult: $saveResult);
-		if ($import['validation'] === true && empty($saveResult['invalid'] ?? []) === false) {
-			foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
-				$summary['errors'][] = [
-					'sheet' => $import['sheetTitle'],
-					'object' => $invalidItem['object'] ?? $invalidItem,
-					'error' => $invalidItem['error'] ?? 'Validation failed',
-					'type' => $invalidItem['type'] ?? 'ValidationException',
-				];
-			}
-		}
-
-		return $summary;
-	}//end saveSpreadsheetObjects()
 
 	/**
 	 * Process CSV sheet and import all objects in batches
@@ -1542,30 +1507,57 @@ class ImportService implements ObjectImporterInterface {
 			]
 		);
 
+		return $this->saveImportedObjects(objects: $objects, import: ['sheetTitle' => null] + $import);
+	}//end saveCsvObjects()
+
+	/**
+	 * Bulk-save parsed objects and fill the summary from the result. A validation
+	 * error carries the sheet title first when `$import['sheetTitle']` is set.
+	 *
+	 * @param list<array> $objects The parsed objects
+	 * @param array       $import  The import options with the summary so far and the sheetTitle (null for CSV)
+	 *
+	 * @return array The summary with created, updated, unchanged and validation errors
+	 */
+	private function saveImportedObjects(array $objects, array $import): array {
 		if ($import['publish'] === true) {
 			$this->logger->warning(
 				message: '[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead.',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 		}
 
 		$saveResult = $this->bulkSaveWithNotifyPush(objects: $objects, import: $import);
 		$summary = $this->withSaveOutcome(summary: $import['summary'], saveResult: $saveResult);
-		if ($import['validation'] === true && empty($saveResult['invalid'] ?? []) === false) {
+		if ($import['validation'] === true) {
 			foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
-				$summary['errors'][] = [
-					'object' => $invalidItem['object'] ?? $invalidItem,
-					'error' => $invalidItem['error'] ?? 'Validation failed',
-					'type' => $invalidItem['type'] ?? 'ValidationException',
-				];
+				$summary['errors'][] = $this->validationError(invalidItem: $invalidItem, sheetTitle: $import['sheetTitle']);
 			}
 		}
 
 		return $summary;
-	}//end saveCsvObjects()
+	}//end saveImportedObjects()
+
+	/**
+	 * One summary error for an object the bulk save rejected, with the sheet title first when there is one.
+	 *
+	 * @param mixed       $invalidItem The rejected item from the save result
+	 * @param string|null $sheetTitle  The sheet title, null for CSV
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function validationError(mixed $invalidItem, ?string $sheetTitle): array {
+		$error = [
+			'object' => $invalidItem['object'] ?? $invalidItem,
+			'error' => $invalidItem['error'] ?? 'Validation failed',
+			'type' => $invalidItem['type'] ?? 'ValidationException',
+		];
+		if ($sheetTitle === null) {
+			return $error;
+		}
+
+		return ['sheet' => $sheetTitle] + $error;
+	}//end validationError()
 
 	/**
 	 * Bulk-save objects with per-object notify_push events suppressed, then flush one collection event.
@@ -1774,9 +1766,6 @@ class ImportService implements ObjectImporterInterface {
 	 * something other than what the write does, which is the failure D-1
 	 * exists to prevent.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Row transformation requires many type-specific branches
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple column types and transformations create execution paths
-	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
 	public function transformCsvRowToObject(
@@ -1785,43 +1774,16 @@ class ImportService implements ObjectImporterInterface {
 		Schema $schema,
 		?IUser $currentUser = null,
 	): array {
-		// Use instance cache instead of static to prevent issues between requests.
 		$schemaId = $schema->getId();
-		// Ensure schemaId is string for array key.
-		$schemaIdKey = (string)$schemaId;
+		$schemaProperties = $this->cachedSchemaProperties(schema: $schema);
 
-		if (isset($this->schemaPropertiesCache[$schemaIdKey]) === false) {
-			$properties = $schema->getProperties();
-			$this->schemaPropertiesCache[$schemaIdKey] = $properties ?? [];
-		}
-
-		$schemaProperties = $this->schemaPropertiesCache[$schemaIdKey];
-
-		// Pre-allocate arrays for better performance.
 		$objectData = [];
 		$selfData = [
 			'register' => $register->getId(),
 			'schema' => $schemaId,
 		];
 
-		// Single pass through row data with proper column filtering.
-		$isAdmin = $this->isUserAdmin(user: $currentUser);
-
-		// Debug log to verify admin status.
-		$importUsername = 'null';
-		if ($currentUser !== null) {
-			$importUsername = $currentUser->getUID();
-		}
-
-		$this->logger->debug(
-			message: '[ImportService] Processing CSV row',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'isAdmin' => $isAdmin,
-				'username' => $importUsername,
-			]
-		);
+		$isAdmin = $this->isRowImporterAdmin(user: $currentUser);
 
 		// Translatable-property pre-pass (register-i18n Phase 3 wire-in):
 		// turn flat `field_lang` columns into the nested `field: {lang: value}`
@@ -1830,49 +1792,22 @@ class ImportService implements ObjectImporterInterface {
 		// columns; the rest of this loop sees the un-flattened shape.
 		$rowData = $this->translationCsvCodec->unflattenFromCsv($rowData, $schema);
 
-		foreach ($rowData as $key => $value) {
-			// Skip empty values early.
-			if ($value === null || $value === '') {
+		$cells = array_filter($rowData, static fn ($value): bool => $value !== null && $value !== '');
+		foreach ($cells as $key => $value) {
+			$firstChar = ((string)$key)[0] ?? '';
+
+			// `_` columns are ignored; of the `@` columns only `@self.*`, and only for an admin.
+			$selfPropertyName = $this->selfColumnProperty(key: $key, isAdmin: $isAdmin);
+			if ($selfPropertyName !== null) {
+				$selfData[$selfPropertyName] = $this->transformSelfProperty(propertyName: $selfPropertyName, value: $value);
+			}
+
+			if ($firstChar === '_' || $firstChar === '@') {
 				continue;
 			}
 
-			// Ensure $key is a string before accessing as array.
-			$keyString = (string)$key;
-			if (is_string($key) === true) {
-				$keyString = $key;
-			}
-
-			$firstChar = $keyString[0] ?? '';
-
-			if ($firstChar === '_') {
-				// REQUIREMENT: Columns starting with _ are completely ignored.
-				continue;
-			} elseif ($firstChar === '@') {
-				// REQUIREMENT: @ columns only processed if user is admin.
-				if ($isAdmin === false) {
-					continue;
-					// Skip @ columns for non-admin users.
-				}
-
-				if (str_starts_with($key, '@self.') === true) {
-					// Move properties starting with @self. to @self array and remove the @self. prefix.
-					$selfPropertyName = substr($key, 6);
-
-					// Transform special @self properties.
-					$selfData[$selfPropertyName] = $this->transformSelfProperty(
-						propertyName: $selfPropertyName,
-						value: $value
-					);
-				}
-
-				// Note: Other @ columns that don't start with @self. are ignored.
-				continue;
-			}//end if
-
-			// Regular properties - transform based on schema if needed.
 			$objectData[$key] = $value;
-			$hasSchemaProperty = ($schemaProperties[$key] ?? null) !== null;
-			if (is_array($schemaProperties) === true && $hasSchemaProperty === true) {
+			if (($schemaProperties[$key] ?? null) !== null) {
 				$objectData[$key] = $this->transformValueByType(value: $value, propertyDef: $schemaProperties[$key]);
 			}
 		}//end foreach
@@ -1890,6 +1825,60 @@ class ImportService implements ObjectImporterInterface {
 
 		return $objectData;
 	}//end transformCsvRowToObject()
+
+	/**
+	 * The @self property an `@self.<name>` column sets, for an admin; null for any other column.
+	 *
+	 * @param int|string $key     The column name.
+	 * @param bool       $isAdmin Whether the importing user is an admin.
+	 *
+	 * @return string|null The property name.
+	 */
+	private function selfColumnProperty(int|string $key, bool $isAdmin): ?string {
+		if ($isAdmin === false || is_string($key) === false || str_starts_with($key, '@self.') === false) {
+			return null;
+		}
+
+		return substr($key, 6);
+	}//end selfColumnProperty()
+
+	/**
+	 * A schema's properties, cached per schema id on this instance.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array The property definitions.
+	 */
+	private function cachedSchemaProperties(Schema $schema): array {
+		$schemaIdKey = (string)$schema->getId();
+		if (isset($this->schemaPropertiesCache[$schemaIdKey]) === false) {
+			$this->schemaPropertiesCache[$schemaIdKey] = $schema->getProperties() ?? [];
+		}
+
+		return $this->schemaPropertiesCache[$schemaIdKey];
+	}//end cachedSchemaProperties()
+
+	/**
+	 * Whether the importing user is an admin, logged at debug level per row.
+	 *
+	 * @param IUser|null $user The importing user.
+	 *
+	 * @return bool
+	 */
+	private function isRowImporterAdmin(?IUser $user): bool {
+		$isAdmin = $this->isUserAdmin(user: $user);
+		$this->logger->debug(
+			message: '[ImportService] Processing CSV row',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'isAdmin' => $isAdmin,
+				'username' => $user?->getUID() ?? 'null',
+			]
+		);
+
+		return $isAdmin;
+	}//end isRowImporterAdmin()
 
 	/**
 	 * Transform datetime values from various formats to MySQL datetime format

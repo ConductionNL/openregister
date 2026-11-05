@@ -9,6 +9,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\SchemasController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -18,7 +19,7 @@ use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\UploadService;
@@ -60,7 +61,7 @@ class SchemasControllerTest extends TestCase {
 
 	private SchemaCacheHandler&MockObject $schemaCacheService;
 
-	private FacetCacheHandler&MockObject $facetCacheSvc;
+	private FacetResultCacheClearer&MockObject $facetCacheSvc;
 
 	private SchemaService&MockObject $schemaService;
 
@@ -99,7 +100,7 @@ class SchemasControllerTest extends TestCase {
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
 		$this->organisationService = $this->createMock(OrganisationService::class);
 		$this->schemaCacheService = $this->createMock(SchemaCacheHandler::class);
-		$this->facetCacheSvc = $this->createMock(FacetCacheHandler::class);
+		$this->facetCacheSvc = $this->createMock(FacetResultCacheClearer::class);
 		$this->schemaService = $this->createMock(SchemaService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->schemaVersioningService = $this->createMock(SchemaVersioningService::class);
@@ -146,7 +147,7 @@ class SchemasControllerTest extends TestCase {
 			}
 		);
 
-		$this->controller = new SchemasController(
+		$this->controller = SchemasControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,
@@ -1332,9 +1333,7 @@ class SchemasControllerTest extends TestCase {
 		$this->schemaCacheService->expects($this->once())
 			->method('invalidate')
 			->with(1);
-		$this->facetCacheSvc->expects($this->once())
-			->method('invalidateForSchemaChange')
-			->with(1, 'update');
+		$this->facetCacheSvc->expects($this->once())->method('clearAll');
 
 		$result = $this->controller->update(1);
 
@@ -1419,9 +1418,7 @@ class SchemasControllerTest extends TestCase {
 		$this->schemaCacheService->expects($this->once())
 			->method('invalidate')
 			->with(1);
-		$this->facetCacheSvc->expects($this->once())
-			->method('invalidateForSchemaChange')
-			->with(1, 'delete');
+		$this->facetCacheSvc->expects($this->once())->method('clearAll');
 
 		$result = $this->controller->destroy(1);
 
@@ -1801,7 +1798,7 @@ class SchemasControllerTest extends TestCase {
 			null
 		);
 
-		return new SchemasController(
+		return SchemasControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,

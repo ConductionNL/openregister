@@ -76,7 +76,10 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class RegisterMapper extends QBMapper implements RegisterMapperInterface {
+
+	use ColumnFiltersTrait;
 	use MultiTenancyTrait;
+	use SlugIdLookupTrait;
 
 	/**
 	 * Maximum number of expressions allowed in a single SQL IN() list.
@@ -558,19 +561,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			->setMaxResults($limit)
 			->setFirstResult($offset ?? 0);
 
-		foreach ($filters ?? [] as $filter => $value) {
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull($filter));
-				continue;
-			}
-
-			if ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-				continue;
-			}
-
-			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-		}
+		$this->applyColumnFilters(qb: $qb, filters: $filters);
 
 		if (empty($searchConditions) === false) {
 			$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
@@ -966,110 +957,4 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 
 		return $matches;
 	}//end getAllRegisterIdsWithSchema()
-
-	/**
-	 * Check if a register has a schema with a specific title
-	 *
-	 * @param int $registerId The ID of the register
-	 * @param string $schemaTitle The title of the schema to look for
-	 *
-	 * @return Schema|null The schema if found, multi: null otherwise
-	 */
-	public function hasSchemaWithTitle(int $registerId, string $schemaTitle): ?Schema {
-		$schemas = $this->getSchemasByRegisterId(registerId: $registerId);
-
-		// Check each schema for a matching title.
-		foreach ($schemas as $schema) {
-			if ($schema->getTitle() === $schemaTitle) {
-				return $schema;
-			}
-		}
-
-		return null;
-	}//end hasSchemaWithTitle()
-
-	/**
-	 * Get all register ID to slug mappings
-	 *
-	 * @return array<string,string> Array mapping register IDs to their slugs
-	 */
-	public function getIdToSlugMap(): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id', 'slug')
-			->from($this->getTableName());
-
-		$result = $qb->executeQuery();
-		$mappings = [];
-		while (($row = $result->fetch()) !== false) {
-			$mappings[$row['id']] = $row['slug'];
-		}
-
-		return $mappings;
-	}//end getIdToSlugMap()
-
-	/**
-	 * Get all register slug to ID mappings
-	 *
-	 * @return array<string,string> Array mapping register slugs to their IDs
-	 */
-	public function getSlugToIdMap(): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id', 'slug')
-			->from($this->getTableName());
-
-		$result = $qb->executeQuery();
-		$mappings = [];
-		while (($row = $result->fetch()) !== false) {
-			$mappings[$row['slug']] = $row['id'];
-		}
-
-		return $mappings;
-	}//end getSlugToIdMap()
-
-	/**
-	 * Resolve a bounded set of register slugs to their primary-key ids.
-	 *
-	 * The register twin of {@see SchemaMapper::findIdsBySlugs()}; see that
-	 * docblock for why filtered event subscription must not use
-	 * {@see getSlugToIdMap()} on the write path.
-	 *
-	 * @param array<int,string> $slugs Register slugs to resolve.
-	 *
-	 * @return array<string,array<int,string>> Lower-cased slug => matching ids.
-	 *                                         Empty when $slugs is empty.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 */
-	public function findIdsBySlugs(array $slugs): array {
-		if ($slugs === []) {
-			return [];
-		}
-
-		$lowered = array_values(array_unique(array_map('strtolower', $slugs)));
-
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id', 'slug')
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->in(
-					$qb->func()->lower('slug'),
-					$qb->createNamedParameter(value: $lowered, type: IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			);
-
-		$result = $qb->executeQuery();
-		$map = array_fill_keys($lowered, []);
-		while (($row = $result->fetch()) !== false) {
-			$key = strtolower((string)$row['slug']);
-			if (isset($map[$key]) === false) {
-				$map[$key] = [];
-			}
-
-			$map[$key][] = (string)$row['id'];
-		}
-
-		$result->closeCursor();
-
-		return $map;
-	}//end findIdsBySlugs()
 }//end class

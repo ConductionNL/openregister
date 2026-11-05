@@ -361,7 +361,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/common.scss' as *;
+
 .logDetailsContainer {
 	padding: 20px;
 }
@@ -413,15 +415,7 @@ export default {
 	font-size: 12px;
 }
 
-.status-success {
-	color: var(--color-success);
-	font-weight: 600;
-}
-
-.status-failed {
-	color: var(--color-error);
-	font-weight: 600;
-}
+@include status-success-rules;
 
 .text-muted {
 	color: var(--color-text-maxcontrast);

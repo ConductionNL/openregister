@@ -33,8 +33,8 @@ use LLPhant\OllamaConfig;
 use LLPhant\OpenAIConfig;
 use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
-use OCA\OpenRegister\Db\Message;
-use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Notifications\Db\Message;
+use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
@@ -79,9 +79,9 @@ class ConversationManagementHandler {
 	/**
 	 * Message mapper
 	 *
-	 * @var MessageMapper
+	 * @var MessageMapperInterface
 	 */
-	private MessageMapper $messageMapper;
+	private MessageMapperInterface $messageMapper;
 
 	/**
 	 * Settings service
@@ -108,7 +108,7 @@ class ConversationManagementHandler {
 	 * Constructor
 	 *
 	 * @param ConversationMapper $conversationMapper Conversation mapper.
-	 * @param MessageMapper $messageMapper Message mapper.
+	 * @param MessageMapperInterface $messageMapper Message mapper.
 	 * @param SettingsServiceInterface $settingsService Settings service.
 	 * @param ResponseGenerationHandler $responseHandler Response handler for API calls.
 	 * @param LoggerInterface $logger Logger.
@@ -119,7 +119,7 @@ class ConversationManagementHandler {
 	 */
 	public function __construct(
 		ConversationMapper $conversationMapper,
-		MessageMapper $messageMapper,
+		MessageMapperInterface $messageMapper,
 		SettingsServiceInterface $settingsService,
 		ResponseGenerationHandler $responseHandler,
 		LoggerInterface $logger,

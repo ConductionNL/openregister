@@ -1,0 +1,277 @@
+{
+    "empty tmp name": {
+        "calls": [
+            {
+                "request.getUploadedFile": "doc"
+            }
+        ],
+        "files": [],
+        "keys": []
+    },
+    "mixed": {
+        "calls": [
+            {
+                "request.getUploadedFile": "doc"
+            },
+            {
+                "request.getUploadedFile": "pics"
+            },
+            {
+                "request.getUploadedFile": "extra"
+            }
+        ],
+        "files": {
+            "doc": {
+                "name": "a.pdf",
+                "type": "application/pdf",
+                "tmp_name": "/tmp/a",
+                "error": 0,
+                "size": 3
+            },
+            "pics[0]": {
+                "name": "x.png",
+                "type": "image/png",
+                "tmp_name": "/tmp/x",
+                "error": 0,
+                "size": 1
+            },
+            "pics[2]": {
+                "name": "z.png",
+                "type": "",
+                "tmp_name": "/tmp/z",
+                "error": 0,
+                "size": 2
+            },
+            "extra": {
+                "name": "a.pdf",
+                "type": "application/pdf",
+                "tmp_name": "/tmp/a",
+                "error": 0,
+                "size": 3
+            }
+        },
+        "keys": [
+            "string",
+            "string",
+            "string",
+            "string"
+        ]
+    },
+    "multiple files": {
+        "calls": [
+            {
+                "request.getUploadedFile": "pics"
+            }
+        ],
+        "files": {
+            "pics[0]": {
+                "name": "x.png",
+                "type": "image/png",
+                "tmp_name": "/tmp/x",
+                "error": 0,
+                "size": 1
+            },
+            "pics[2]": {
+                "name": "z.png",
+                "type": "",
+                "tmp_name": "/tmp/z",
+                "error": 0,
+                "size": 2
+            }
+        },
+        "keys": [
+            "string",
+            "string"
+        ]
+    },
+    "multiple files also in params": {
+        "calls": [
+            {
+                "request.getUploadedFile": "pics"
+            },
+            {
+                "request.getUploadedFile": "pics"
+            },
+            {
+                "request.getUploadedFile": "title"
+            }
+        ],
+        "files": {
+            "pics[0]": {
+                "name": "x.png",
+                "type": "image/png",
+                "tmp_name": "/tmp/x",
+                "error": 0,
+                "size": 1
+            },
+            "pics[2]": {
+                "name": "z.png",
+                "type": "",
+                "tmp_name": "/tmp/z",
+                "error": 0,
+                "size": 2
+            }
+        },
+        "keys": [
+            "string",
+            "string"
+        ]
+    },
+    "multiple with scalar parts": {
+        "calls": [
+            {
+                "request.getUploadedFile": "pics"
+            }
+        ],
+        "files": {
+            "pics[0]": {
+                "name": "p",
+                "type": "",
+                "tmp_name": "/tmp/p",
+                "error": 4,
+                "size": 0
+            },
+            "pics[1]": {
+                "name": "q",
+                "type": "",
+                "tmp_name": "/tmp/q",
+                "error": 4,
+                "size": 0
+            }
+        },
+        "keys": [
+            "string",
+            "string"
+        ]
+    },
+    "multiple without tmp names": {
+        "calls": [
+            {
+                "request.getUploadedFile": "pics"
+            }
+        ],
+        "files": [],
+        "keys": []
+    },
+    "no tmp name": {
+        "calls": [
+            {
+                "request.getUploadedFile": "doc"
+            }
+        ],
+        "files": [],
+        "keys": []
+    },
+    "no upload": {
+        "calls": [
+            {
+                "request.getUploadedFile": "doc"
+            },
+            {
+                "request.getUploadedFile": "doc"
+            }
+        ],
+        "files": [],
+        "keys": []
+    },
+    "nothing": {
+        "calls": [],
+        "files": [],
+        "keys": []
+    },
+    "numeric field names": {
+        "calls": [
+            {
+                "request.getUploadedFile": "7"
+            },
+            {
+                "request.getUploadedFile": "8"
+            }
+        ],
+        "files": {
+            "7": {
+                "name": "a.pdf",
+                "type": "application/pdf",
+                "tmp_name": "/tmp/a",
+                "error": 0,
+                "size": 3
+            },
+            "8": {
+                "name": "a.pdf",
+                "type": "application/pdf",
+                "tmp_name": "/tmp/a",
+                "error": 0,
+                "size": 3
+            }
+        },
+        "keys": [
+            "integer",
+            "integer"
+        ]
+    },
+    "one file": {
+        "calls": [
+            {
+                "request.getUploadedFile": "doc"
+            }
+        ],
+        "files": {
+            "doc": {
+                "name": "a.pdf",
+                "type": "application/pdf",
+                "tmp_name": "/tmp/a",
+                "error": 0,
+                "size": 3
+            }
+        },
+        "keys": [
+            "string"
+        ]
+    },
+    "param-only upload": {
+        "calls": [
+            {
+                "request.getUploadedFile": "attachment"
+            },
+            {
+                "request.getUploadedFile": "other"
+            }
+        ],
+        "files": {
+            "attachment": {
+                "name": "a.pdf",
+                "type": "application/pdf",
+                "tmp_name": "/tmp/a",
+                "error": 0,
+                "size": 3
+            }
+        },
+        "keys": [
+            "string"
+        ]
+    },
+    "same field in both": {
+        "calls": [
+            {
+                "request.getUploadedFile": "doc"
+            }
+        ],
+        "files": {
+            "doc": {
+                "name": "a.pdf",
+                "type": "application/pdf",
+                "tmp_name": "/tmp/a",
+                "error": 0,
+                "size": 3
+            }
+        },
+        "keys": [
+            "string"
+        ]
+    },
+    "system field skipped": {
+        "calls": [],
+        "files": [],
+        "keys": []
+    }
+}

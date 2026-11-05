@@ -47,6 +47,7 @@ use ReflectionClass;
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
  * @covers \OCA\OpenRegister\Service\Object\CascadingHandler
+ * @uses   \OCA\OpenRegister\Service\Object\CascadeTarget
  * @uses   \OCA\OpenRegister\Service\Object\PermissionHandler
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
@@ -58,6 +59,7 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses   \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses   \OCA\OpenRegister\Db\ObjectHandling
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
  */
 class CascadeCreateRightsTest extends TestCase {
 

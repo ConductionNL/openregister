@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SettingsControllerFactory;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use OCA\OpenRegister\Controller\SettingsController;
 use OCA\OpenRegister\Service\SettingsService;
@@ -76,13 +77,12 @@ class SettingsControllerTest extends TestCase {
 			}
 		);
 
-		$this->controller = new SettingsController(
+		$this->controller = SettingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,
 			$this->db,
 			$this->container,
-			$this->appManager,
 			$this->settingsService,
 			$this->logger,
 			$this->l10n
@@ -399,62 +399,6 @@ class SettingsControllerTest extends TestCase {
 		$data = $response->getData();
 		$this->assertIsArray($data);
 		$this->assertArrayHasKey('error', $data);
-	}
-
-	/**
-	 * Test getObjectService returns null when app is installed
-	 *
-	 * @return void
-	 */
-	public function testGetObjectServiceReturnsNullWhenInstalled(): void {
-		$this->appManager->method('getInstalledApps')
-			->willReturn(['openregister']);
-
-		$result = $this->controller->getObjectService();
-
-		$this->assertNull($result);
-	}
-
-	/**
-	 * Test getObjectService throws when app not installed
-	 *
-	 * @return void
-	 */
-	public function testGetObjectServiceThrowsWhenNotInstalled(): void {
-		$this->appManager->method('getInstalledApps')
-			->willReturn(['other-app']);
-
-		$this->expectException(\RuntimeException::class);
-		$this->controller->getObjectService();
-	}
-
-	/**
-	 * Test getConfigurationService returns service when app is installed
-	 *
-	 * @return void
-	 */
-	public function testGetConfigurationServiceReturnsService(): void {
-		$this->appManager->method('getInstalledApps')
-			->willReturn(['openregister']);
-		$mockConfigService = $this->createMock(\OCA\OpenRegister\Service\ConfigurationService::class);
-		$this->container->method('get')->willReturn($mockConfigService);
-
-		$result = $this->controller->getConfigurationService();
-
-		$this->assertSame($mockConfigService, $result);
-	}
-
-	/**
-	 * Test getConfigurationService throws when app not installed
-	 *
-	 * @return void
-	 */
-	public function testGetConfigurationServiceThrowsWhenNotInstalled(): void {
-		$this->appManager->method('getInstalledApps')
-			->willReturn(['other-app']);
-
-		$this->expectException(\RuntimeException::class);
-		$this->controller->getConfigurationService();
 	}
 
 	/**

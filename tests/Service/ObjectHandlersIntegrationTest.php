@@ -638,14 +638,6 @@ class ObjectHandlersIntegrationTest extends TestCase {
 		$this->assertEquals(0, $result['total']);
 	}
 
-	/**
-	 * Test extractRelatedData delegation.
-	 */
-	public function testExtractRelatedDataEmpty(): void {
-		$result = $this->relationHandler->extractRelatedData([], false, false);
-		$this->assertIsArray($result);
-	}
-
 	// =========================================================================
 	// FacetHandler Tests
 	// =========================================================================
@@ -715,44 +707,6 @@ class ObjectHandlersIntegrationTest extends TestCase {
 		$result = $this->facetHandler->getFacetableFields([]);
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('@self', $result);
-	}
-
-	/**
-	 * Test getMetadataFacetableFields.
-	 */
-	public function testGetMetadataFacetableFields(): void {
-		$result = $this->facetHandler->getMetadataFacetableFields();
-		$this->assertIsArray($result);
-		$this->assertContains('register', $result);
-		$this->assertContains('schema', $result);
-		$this->assertContains('owner', $result);
-		$this->assertContains('organisation', $result);
-		$this->assertContains('created', $result);
-		$this->assertContains('updated', $result);
-	}
-
-	/**
-	 * Test getFacetCount with no facets.
-	 */
-	public function testGetFacetCountNoFacets(): void {
-		$result = $this->facetHandler->getFacetCount(false, []);
-		$this->assertEquals(0, $result);
-	}
-
-	/**
-	 * Test getFacetCount with facets.
-	 */
-	public function testGetFacetCountWithFacets(): void {
-		$result = $this->facetHandler->getFacetCount(true, ['_facets' => ['a', 'b', 'c']]);
-		$this->assertEquals(3, $result);
-	}
-
-	/**
-	 * Test getFacetCount with non-array facets.
-	 */
-	public function testGetFacetCountWithNonArrayFacets(): void {
-		$result = $this->facetHandler->getFacetCount(true, ['_facets' => 'single']);
-		$this->assertEquals(0, $result);
 	}
 
 	/**

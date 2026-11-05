@@ -125,9 +125,7 @@ class AnalyticsLinksController extends Controller {
 				}
 
 				$link = $this->analyticsLinkService->linkReport(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
+					$this->linkTargetOf(object: $object),
 					$reportId
 				);
 
@@ -172,9 +170,7 @@ class AnalyticsLinksController extends Controller {
 				}
 
 				$link = $this->analyticsLinkService->createAndLinkReport(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
+					$this->linkTargetOf(object: $object),
 					$name,
 					$typeInt
 				);

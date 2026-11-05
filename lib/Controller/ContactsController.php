@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\ContactsControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCA\OpenRegister\Service\ContactService;
@@ -65,68 +66,32 @@ class ContactsController extends Controller {
 	private readonly ObjectOperationsInterface $objectService;
 
 	/**
-	 * Contact matching service.
+	 * The controller's injected services.
 	 *
-	 * @var ContactMatcherInterface
+	 * @var ContactsControllerServices
 	 */
-	private readonly ContactMatcherInterface $matchingService;
-
-	/**
-	 * Deep link registry service.
-	 *
-	 * @var DeepLinkRegistryService
-	 */
-	private readonly DeepLinkRegistryService $deepLinkRegistry;
-
-	/**
-	 * Localization service.
-	 *
-	 * @var IL10N
-	 */
-	private readonly IL10N $l10n;
-
-	/**
-	 * Logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
+	private readonly ContactsControllerServices $services;
 
 	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
-	 * @param ContactService $contactService Contact service
-	 * @param ObjectOperationsInterface $objectService Object service
-	 * @param ContactMatcherInterface $matchingService Contact matching service
-	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry
-	 * @param IL10N $l10n Localization service
-	 * @param LoggerInterface $logger Logger
-	 * @param PersonLinkService $personLinks People on objects: user and contact links
+	 * @param ContactsControllerServices $services The contacts controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		ContactService $contactService,
-		ObjectOperationsInterface $objectService,
-		ContactMatcherInterface $matchingService,
-		DeepLinkRegistryService $deepLinkRegistry,
-		IL10N $l10n,
-		LoggerInterface $logger,
-		PersonLinkService $personLinks,
+		ContactsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->services = $services;
 
-		$this->contactService = $contactService;
-		$this->personLinks = $personLinks;
-		$this->objectService = $objectService;
-		$this->matchingService = $matchingService;
-		$this->deepLinkRegistry = $deepLinkRegistry;
-		$this->l10n = $l10n;
-		$this->logger = $logger;
+		$this->contactService = $services->domain->contactService;
+		$this->personLinks = $services->platform->personLinks;
+		$this->objectService = $services->domain->objectService;
 	}//end __construct()
 
 	/**
@@ -449,9 +414,9 @@ class ContactsController extends Controller {
 			schema: $schema,
 			id: $id,
 			handler: function (ObjectEntity $object) use ($contactUid): JSONResponse {
-				// Numeric param: legacy link-id path.
+				// Numeric param: legacy link-id path, limited to this object's links.
 				if (ctype_digit($contactUid) === true) {
-					$this->contactService->unlinkContact((int)$contactUid);
+					$this->contactService->unlinkContact(linkId: (int)$contactUid, objectUuid: $object->getUuid());
 
 					return new JSONResponse(['success' => true]);
 				}
@@ -542,7 +507,7 @@ class ContactsController extends Controller {
 
 		if (empty($email) === true && empty($name) === true) {
 			return new JSONResponse(
-				['error' => $this->l10n->t('At least email or name must be provided'), 'matches' => [], 'total' => 0],
+				['error' => $this->services->platform->l10n->t('At least email or name must be provided'), 'matches' => [], 'total' => 0],
 				400
 			);
 		}
@@ -558,7 +523,7 @@ class ContactsController extends Controller {
 				$organizationValue = (string)$organization;
 			}
 
-			$matches = $this->matchingService->matchContact(
+			$matches = $this->services->domain->matchingService->matchContact(
 				(string)$email,
 				$nameValue,
 				$organizationValue
@@ -567,10 +532,10 @@ class ContactsController extends Controller {
 
 			return new JSONResponse(['matches' => $enrichedMatches, 'total' => count($enrichedMatches)]);
 		} catch (\Exception $e) {
-			$this->logger->error('[ContactsAPI] Match failed: {error}', ['error' => $e->getMessage(), 'exception' => $e]);
+			$this->services->platform->logger->error('[ContactsAPI] Match failed: {error}', ['error' => $e->getMessage(), 'exception' => $e]);
 
 			return new JSONResponse(
-				['error' => $this->l10n->t('Internal server error'), 'matches' => [], 'total' => 0],
+				['error' => $this->services->platform->l10n->t('Internal server error'), 'matches' => [], 'total' => 0],
 				500
 			);
 		}//end try
@@ -590,8 +555,8 @@ class ContactsController extends Controller {
 			function (array $match): array {
 				$registerId = (int)($match['register']['id'] ?? 0);
 				$schemaId = (int)($match['schema']['id'] ?? 0);
-				$match['url'] = $this->deepLinkRegistry->resolveUrl($registerId, $schemaId, $match);
-				$match['icon'] = $this->deepLinkRegistry->resolveIcon($registerId, $schemaId);
+				$match['url'] = $this->services->domain->deepLinkRegistry->resolveUrl($registerId, $schemaId, $match);
+				$match['icon'] = $this->services->domain->deepLinkRegistry->resolveIcon($registerId, $schemaId);
 
 				return $match;
 			},

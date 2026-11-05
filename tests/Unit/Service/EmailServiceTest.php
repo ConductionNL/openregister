@@ -5,7 +5,7 @@ namespace Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
-use OCA\OpenRegister\Service\EmailService;
+use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUser;

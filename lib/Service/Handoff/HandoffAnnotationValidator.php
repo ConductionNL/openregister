@@ -10,7 +10,7 @@
  * optional degradation mode, and an optional post-success source update.
  *
  * Mirrors the error style of the sibling annotation validators
- * ({@see \OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator})
+ * ({@see \OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator})
  * — `validate()` returns an aggregated array of `{code, message}` errors —
  * and the ADR-048 dialect precedent
  * ({@see \OCA\OpenRegister\Service\Integration\PropertyReferenceTypeValidator}).

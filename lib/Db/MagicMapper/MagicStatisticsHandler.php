@@ -58,6 +58,7 @@ use Psr\Log\LoggerInterface;
  * Statistics methods from MagicMapper retain inherent query complexity.
  */
 class MagicStatisticsHandler {
+	use MagicColumnNameTrait;
 
 	/**
 	 * Per-request memo of the magic-table list from information_schema.
@@ -475,51 +476,13 @@ class MagicStatisticsHandler {
 	 * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
 	 */
 	public function getRegisterChartData(?int $registerId = null, ?int $schemaId = null): array {
-		$labels = [];
-		$series = [];
-
-		$allPairs = $this->getAllRegisterSchemaPairs();
-		$registerCounts = [];
-
-		foreach ($allPairs as $pair) {
-			$pairRegisterId = (int)$pair['registerId'];
-			$pairSchemaId = (int)$pair['schemaId'];
-
-			if ($registerId !== null && $pairRegisterId !== $registerId) {
-				continue;
-			}
-
-			if ($schemaId !== null && $pairSchemaId !== $schemaId) {
-				continue;
-			}
-
-			try {
-				$register = $this->registerMapper->find($pairRegisterId, _multitenancy: false, _rbac: false);
-				$schema = $this->schemaMapper->find($pairSchemaId, _multitenancy: false, _rbac: false);
-
-				$count = $this->countObjectsInRegisterSchemaTable(
-					query: [],
-					register: $register,
-					schema: $schema
-				);
-
-				$regName = $register->getTitle() ?? 'Register ' . $pairRegisterId;
-				if (isset($registerCounts[$regName]) === false) {
-					$registerCounts[$regName] = 0;
-				}
-
-				$registerCounts[$regName] += $count;
-			} catch (\Exception $e) {
-				// Skip.
-			}
-		}//end foreach
-
-		foreach ($registerCounts as $name => $count) {
-			$labels[] = $name;
-			$series[] = $count;
+		$counts = [];
+		foreach ($this->countedPairs(filter: new RegisterSchemaFilter(registerId: $registerId, schemaId: $schemaId)) as $pair) {
+			$name = $pair['register']->getTitle() ?? 'Register ' . $pair['registerId'];
+			$counts[$name] = ($counts[$name] ?? 0) + $pair['count'];
 		}
 
-		return ['labels' => $labels, 'series' => $series];
+		return $this->chartOf(counts: $counts);
 	}//end getRegisterChartData()
 
 	/**
@@ -533,52 +496,70 @@ class MagicStatisticsHandler {
 	 * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
 	 */
 	public function getSchemaChartData(?int $registerId = null, ?int $schemaId = null): array {
-		$labels = [];
-		$series = [];
-
-		$allPairs = $this->getAllRegisterSchemaPairs();
-		$schemaCounts = [];
-
-		foreach ($allPairs as $pair) {
-			$pairRegisterId = (int)$pair['registerId'];
-			$pairSchemaId = (int)$pair['schemaId'];
-
-			if ($registerId !== null && $pairRegisterId !== $registerId) {
-				continue;
-			}
-
-			if ($schemaId !== null && $pairSchemaId !== $schemaId) {
-				continue;
-			}
-
-			try {
-				$register = $this->registerMapper->find($pairRegisterId, _multitenancy: false, _rbac: false);
-				$schema = $this->schemaMapper->find($pairSchemaId, _multitenancy: false, _rbac: false);
-
-				$count = $this->countObjectsInRegisterSchemaTable(
-					query: [],
-					register: $register,
-					schema: $schema
-				);
-
-				$schName = $schema->getTitle() ?? 'Schema ' . $pairSchemaId;
-				if (isset($schemaCounts[$schName]) === false) {
-					$schemaCounts[$schName] = 0;
-				}
-
-				$schemaCounts[$schName] += $count;
-			} catch (\Exception $e) {
-				// Skip.
-			}
-		}//end foreach
-
-		foreach ($schemaCounts as $name => $count) {
-			$labels[] = $name;
-			$series[] = $count;
+		$counts = [];
+		foreach ($this->countedPairs(filter: new RegisterSchemaFilter(registerId: $registerId, schemaId: $schemaId)) as $pair) {
+			$name = $pair['schema']->getTitle() ?? 'Schema ' . $pair['schemaId'];
+			$counts[$name] = ($counts[$name] ?? 0) + $pair['count'];
 		}
 
-		return ['labels' => $labels, 'series' => $series];
+		return $this->chartOf(counts: $counts);
 	}//end getSchemaChartData()
+
+	/**
+	 * The register-schema pairs that pass the filters, each with its object count.
+	 *
+	 * A pair whose register or schema cannot be read, or whose count fails, is left out.
+	 *
+	 * @param RegisterSchemaFilter $filter The pairs to cover.
+	 *
+	 * @return array<int, array{registerId: int, schemaId: int, register: Register, schema: Schema, count: int}>
+	 */
+	private function countedPairs(RegisterSchemaFilter $filter): array {
+		$counted = [];
+		foreach ($this->getAllRegisterSchemaPairs() as $pair) {
+			$ids = [(int)$pair['registerId'], (int)$pair['schemaId']];
+			$entry = null;
+			if ($filter->matches(ids: $ids) === true) {
+				$entry = $this->countedPair(ids: $ids);
+			}
+
+			if ($entry !== null) {
+				$counted[] = $entry;
+			}
+		}
+
+		return $counted;
+	}//end countedPairs()
+
+	/**
+	 * Read one pair's register and schema, bypassing RBAC and multitenancy, and count its objects.
+	 *
+	 * @param array{0: int, 1: int} $ids The register id and the schema id.
+	 *
+	 * @return array{registerId: int, schemaId: int, register: Register, schema: Schema, count: int}|null Null when a read or the count fails.
+	 */
+	private function countedPair(array $ids): ?array {
+		try {
+			$register = $this->registerMapper->find($ids[0], _multitenancy: false, _rbac: false);
+			$schema = $this->schemaMapper->find($ids[1], _multitenancy: false, _rbac: false);
+			$count = $this->countObjectsInRegisterSchemaTable(query: [], register: $register, schema: $schema);
+		} catch (Exception $e) {
+			return null;
+		}
+
+		return ['registerId' => $ids[0], 'schemaId' => $ids[1], 'register' => $register, 'schema' => $schema, 'count' => $count];
+	}//end countedPair()
+
+	/**
+	 * Chart data from counts by label, in label order of first appearance.
+	 *
+	 * @param array<string, int> $counts Count per label.
+	 *
+	 * @return array{labels: array<int, int|string>, series: array<int, int>}
+	 */
+	private function chartOf(array $counts): array {
+		return ['labels' => array_keys($counts), 'series' => array_values($counts)];
+	}//end chartOf()
 
 	/**
 	 * Convert a database row from a magic mapper table to an ObjectEntity.
@@ -811,36 +792,6 @@ class MagicStatisticsHandler {
 			context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field]
 		);
 	}//end skipUnknownMetadataField()
-
-	/**
-	 * Sanitize column name for safe database usage
-	 *
-	 * @param string $name Column name to sanitize
-	 *
-	 * @return string Sanitized column name
-	 */
-	private function sanitizeColumnName(string $name): string {
-		// Convert camelCase to snake_case.
-		// Insert underscore before uppercase letters, then lowercase everything.
-		$name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name);
-		$name = strtolower($name);
-
-		// Replace any remaining invalid characters with underscore.
-		$name = preg_replace('/[^a-z0-9_]/', '_', $name);
-
-		// Ensure it starts with a letter or underscore.
-		if (preg_match('/^[a-z_]/', $name) === false) {
-			$name = 'col_' . $name;
-		}
-
-		// Remove consecutive underscores.
-		$name = preg_replace('/_+/', '_', $name);
-
-		// Remove trailing underscores.
-		$name = rtrim($name, '_');
-
-		return $name;
-	}//end sanitizeColumnName()
 
 	/**
 	 * Convert snake_case column name back to camelCase property name.

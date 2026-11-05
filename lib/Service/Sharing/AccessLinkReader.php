@@ -50,8 +50,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
-use OCA\OpenRegister\Service\Timeline\PublicTimeline;
-use OCA\OpenRegister\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
 use OCA\OpenRegister\Service\File\FileRestrictionStore;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -106,7 +105,7 @@ class AccessLinkReader {
 	 * @param ObjectOperationsInterface $objects The object read path.
 	 * @param SchemaMapperInterface $schemas Resolves the schema whose rules apply.
 	 * @param PropertyRbacHandler $properties Strips write-only and unreadable properties.
-	 * @param PublicTimeline $timeline Reads and projects the public half of the timeline.
+	 * @param PublicTimelineInterface $timeline Reads and projects the public half of the timeline.
 	 * @param AccessLinkSubject $subjects Reads which object a subject names.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param FileRestrictionStore|null $restrictions Refuses a restricted file to a link. Null only in legacy fixtures.
@@ -115,7 +114,7 @@ class AccessLinkReader {
 		private readonly ObjectOperationsInterface $objects,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly PropertyRbacHandler $properties,
-		private readonly PublicTimeline $timeline,
+		private readonly PublicTimelineInterface $timeline,
 		private readonly AccessLinkSubject $subjects,
 		private readonly LoggerInterface $logger,
 		private readonly ?FileRestrictionStore $restrictions = null,

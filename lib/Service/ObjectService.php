@@ -58,7 +58,6 @@ use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
@@ -84,7 +83,6 @@ use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\AuditHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\MergeHandler;
-use OCA\OpenRegister\Service\Object\VectorizationHandler;
 use OCA\OpenRegister\Service\Object\CrudHandler;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
@@ -419,6 +417,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @param string|null       $objectOwner Object owner ID
      * @param bool              $_rbac       Whether to enforce RBAC checks
      * @param ObjectEntity|null $object      Optional object entity for conditional authorization matching
+     * @param string|null       $register    The register written to, for a check whose object names none
      *
      * @return void
      *
@@ -430,7 +429,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         ?string $userId=null,
         ?string $objectOwner=null,
         bool $_rbac=true,
-        ?ObjectEntity $object=null
+        ?ObjectEntity $object=null,
+        ?string $register=null
     ): void {
         $this->permissionHandler->checkPermission(
             schema: $schema,
@@ -438,9 +438,25 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             userId: $userId,
             objectOwner: $objectOwner,
             _rbac: $_rbac,
-            object: $object
+            object: $object,
+            register: $register
         );
     }//end checkPermission()
+
+    /**
+     * The id of the register this service is set to, or null when none is set.
+     *
+     * @return string|null The register id.
+     */
+    private function currentRegisterId(): ?string
+    {
+        $id = $this->currentRegister?->getId();
+        if ($id === null) {
+            return null;
+        }
+
+        return (string) $id;
+    }//end currentRegisterId()
 
     /**
      * Run a callable as a trusted system operation.
@@ -1495,6 +1511,33 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end logProcessingRead()
 
     /**
+     * AVG / GDPR read logging for a list or search result.
+     *
+     * @param mixed $objects The listed objects; anything but an array is not a list and is skipped.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md#requirement-reads-of-personal-data-are-registered-through-the-one-read-registration
+     */
+    private function logProcessingReadList(mixed $objects): void
+    {
+        if (is_array($objects) === false) {
+            return;
+        }
+
+        try {
+            $this->container->get(\OCA\OpenRegister\Service\Interaction\ReadHistoryService::class)
+                ->registerProcessingReadList(objects: $objects);
+        } catch (\Throwable $e) {
+            // Fail-soft: read logging never breaks the list.
+            $this->logger->debug(
+                message: '[AVG] processing-log list read hook skipped',
+                context: ['exception' => $e->getMessage()]
+            );
+        }
+    }//end logProcessingReadList()
+
+    /**
      * Gets an object by its ID without creating an audit trail.
      *
      * This method is used internally by other operations (like UPDATE) that need to
@@ -2431,7 +2474,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 userId: null,
                 objectOwner: null,
                 _rbac: $_rbac,
-                object: $incoming
+                object: $incoming,
+                register: $this->currentRegisterId()
             );
             return null;
         }
@@ -2472,7 +2516,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 userId: null,
                 objectOwner: null,
                 _rbac: $_rbac,
-                object: $incoming
+                object: $incoming,
+                register: $this->currentRegisterId()
             );
 
             // Stored but hidden: the write lands on that row, so it must keep to
@@ -3685,7 +3730,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                     action: 'delete',
                     userId: $request->actingUserId(),
                     objectOwner: null,
-                    _rbac: $request->rbac
+                    _rbac: $request->rbac,
+                    register: $this->currentRegisterId()
                 );
             }
 
@@ -3743,7 +3789,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             action: 'delete',
             userId: $request->actingUserId(),
             objectOwner: null,
-            _rbac: $request->rbac
+            _rbac: $request->rbac,
+            register: $this->currentRegisterId()
         );
 
         return $this->deleteHandler->deleteObject(
@@ -4563,6 +4610,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $result = $this->extendSearchResult(result: $result, query: $query);
 
         $this->recordSearchTrail(query: $query, result: $result, startTime: $searchStartTime);
+        $this->logProcessingReadList(objects: ($result['results'] ?? []));
 
         return $result;
     }//end searchObjectsPaginated()

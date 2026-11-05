@@ -173,15 +173,7 @@ class ChunkMapper extends QBMapper {
 	 * @return int Total chunk count
 	 */
 	public function countAll(): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->func()->count('id'))
-			->from($this->getTableName());
-
-		$result = $qb->executeQuery();
-		$count = (int)$result->fetchOne();
-		$result->closeCursor();
-
-		return $count;
+		return $this->countChunks(flag: null);
 	}//end countAll()
 
 	/**
@@ -192,53 +184,8 @@ class ChunkMapper extends QBMapper {
 	 * @return int Indexed chunk count
 	 */
 	public function countIndexed(): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->func()->count('id'))
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->eq(
-					'indexed',
-					$qb->createNamedParameter(
-						true,
-						\OCP\DB\QueryBuilder\IQueryBuilder::PARAM_BOOL
-					)
-				)
-			);
-
-		$result = $qb->executeQuery();
-		$count = (int)$result->fetchOne();
-		$result->closeCursor();
-
-		return $count;
+		return $this->countChunks(flag: 'indexed');
 	}//end countIndexed()
-
-	/**
-	 * Count unindexed chunks.
-	 *
-	 * Chunks that have been extracted but not yet indexed in the search engine.
-	 *
-	 * @return int Unindexed chunk count
-	 */
-	public function countUnindexed(): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->func()->count('id'))
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->eq(
-					'indexed',
-					$qb->createNamedParameter(
-						false,
-						\OCP\DB\QueryBuilder\IQueryBuilder::PARAM_BOOL
-					)
-				)
-			);
-
-		$result = $qb->executeQuery();
-		$count = (int)$result->fetchOne();
-		$result->closeCursor();
-
-		return $count;
-	}//end countUnindexed()
 
 	/**
 	 * Count vectorized chunks.
@@ -248,25 +195,29 @@ class ChunkMapper extends QBMapper {
 	 * @return int Vectorized chunk count
 	 */
 	public function countVectorized(): int {
+		return $this->countChunks(flag: 'vectorized');
+	}//end countVectorized()
+
+	/**
+	 * Count the chunks, or only those with a boolean flag column set.
+	 *
+	 * @param string|null $flag The flag column (`indexed`, `vectorized`), or null for all chunks.
+	 *
+	 * @return int The count.
+	 */
+	private function countChunks(?string $flag): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('id'))
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->eq(
-					'vectorized',
-					$qb->createNamedParameter(
-						true,
-						\OCP\DB\QueryBuilder\IQueryBuilder::PARAM_BOOL
-					)
-				)
-			);
+			->from($this->getTableName());
+		if ($flag !== null) {
+			$qb->where($qb->expr()->eq($flag, $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)));
+		}
 
 		$result = $qb->executeQuery();
 		$count = (int)$result->fetchOne();
 		$result->closeCursor();
-
 		return $count;
-	}//end countVectorized()
+	}//end countChunks()
 
 	/**
 	 * Get file source summaries grouped by source_id.
@@ -328,13 +279,7 @@ class ChunkMapper extends QBMapper {
 			);
 		}
 
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		$result = $qb->executeQuery();
 		$rows = [];
@@ -391,44 +336,6 @@ class ChunkMapper extends QBMapper {
 	}//end countFileSourceSummaries()
 
 	/**
-	 * Find unindexed chunks.
-	 *
-	 * Retrieves chunks that need to be indexed.
-	 *
-	 * @param int|null $limit Maximum number of chunks to return
-	 * @param int|null $offset Offset for pagination
-	 *
-	 * @return Chunk[] Array of unindexed chunks
-	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\Chunk>
-	 */
-	public function findUnindexed(?int $limit = null, ?int $offset = null): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->eq(
-					'indexed',
-					$qb->createNamedParameter(
-						false,
-						\OCP\DB\QueryBuilder\IQueryBuilder::PARAM_BOOL
-					)
-				)
-			)
-			->orderBy('created_at', 'ASC');
-
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
-
-		return $this->findEntities(query: $qb);
-	}//end findUnindexed()
-
-	/**
 	 * Find unvectorized chunks.
 	 *
 	 * Retrieves chunks that have been extracted but not yet vectorized, in
@@ -459,13 +366,7 @@ class ChunkMapper extends QBMapper {
 			)
 			->orderBy('created_at', 'ASC');
 
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findUnvectorized()

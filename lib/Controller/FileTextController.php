@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\FileTextControllerServices;
 use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
 use OCA\OpenRegister\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Exception\ManualEntityException;
@@ -38,7 +40,6 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
-use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -63,34 +64,90 @@ class FileTextController extends Controller {
 	use RequiresJsonBodyTrait;
 
 	/**
+	 * Text extraction service
+	 *
+	 * @var TextExtractionService
+	 */
+	private readonly TextExtractionService $textExtractor;
+
+	/**
+	 * File service for file operations
+	 *
+	 * @var FileService
+	 */
+	private readonly FileService $fileService;
+
+	/**
+	 * Entity relation mapper
+	 *
+	 * @var EntityRelationMapperInterface
+	 */
+	private readonly EntityRelationMapperInterface $entityRelationMapper;
+
+	/**
+	 * Logger
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Orchestrator for the manual-entity write path
+	 *
+	 * @var ManualEntityService
+	 */
+	private readonly ManualEntityService $manualEntityService;
+
+	/**
+	 * The session bundle, which answers the admin check.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
+
+	/**
+	 * Session user accessor (for the manual-entity endpoint)
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Root folder for per-user file access checks
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * The object read rule for an object's file.
+	 *
+	 * @var ?\OCA\OpenRegister\Service\File\FileReadScope
+	 */
+	private readonly ?\OCA\OpenRegister\Service\File\FileReadScope $fileReadScope;
+
+	/**
 	 * Constructor
 	 *
 	 * @param string $appName App name
 	 * @param IRequest $request Request object
-	 * @param TextExtractionService $textExtractor Text extraction service
-	 * @param FileService $fileService File service for file operations
-	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper
-	 * @param LoggerInterface $logger Logger
-	 * @param ManualEntityService $manualEntityService Orchestrator for the manual-entity write path
-	 * @param IUserSession $userSession Session user accessor (for the manual-entity endpoint)
-	 * @param IRootFolder $rootFolder Root folder for per-user file access checks
-	 * @param IGroupManager $groupManager Group manager for admin checks
-	 * @param \OCA\OpenRegister\Service\File\FileReadScope|null $fileReadScope The object read rule for an object's file.
+	 * @param FileTextControllerServices $services The file text controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly TextExtractionService $textExtractor,
-		private readonly FileService $fileService,
-		private readonly EntityRelationMapperInterface $entityRelationMapper,
-		private readonly LoggerInterface $logger,
-		private readonly ManualEntityService $manualEntityService,
-		private readonly IUserSession $userSession,
-		private readonly IRootFolder $rootFolder,
-		private readonly IGroupManager $groupManager,
-		private readonly ?\OCA\OpenRegister\Service\File\FileReadScope $fileReadScope = null,
+		FileTextControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->textExtractor = $services->domain->textExtractor;
+		$this->fileService = $services->domain->fileService;
+		$this->entityRelationMapper = $services->mappers->entityRelationMapper;
+		$this->logger = $services->session->logger;
+		$this->manualEntityService = $services->domain->manualEntityService;
+		$this->userSession = $services->session->userSession;
+		$this->session = $services->session;
+		$this->rootFolder = $services->platform->rootFolder;
+		$this->fileReadScope = $services->domain->fileReadScope;
 	}//end __construct()
 
 	/**
@@ -130,12 +187,7 @@ class FileTextController extends Controller {
 	 * @return bool True if a user is signed in and belongs to the admin group.
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->session->isAdmin();
 	}//end isCurrentUserAdmin()
 
 	/**

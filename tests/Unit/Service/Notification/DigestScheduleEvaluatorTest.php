@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Unit\Service\Notification;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Service\Notification\DigestScheduleEvaluator;
-use OCA\OpenRegister\Service\Notification\NotificationDeliveryWindowService;
+use OCA\OpenRegister\Notifications\Service\Notification\DigestScheduleEvaluator;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
 use OCP\IConfig;
 use PHPUnit\Framework\TestCase;
 

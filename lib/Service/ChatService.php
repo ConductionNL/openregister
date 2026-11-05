@@ -32,8 +32,8 @@ use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
-use OCA\OpenRegister\Db\Message;
-use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Notifications\Db\Message;
+use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use OCA\OpenRegister\Service\Chat\ContextRetrievalHandler;
 use OCA\OpenRegister\Service\Chat\ConversationManagementHandler;
 use OCA\OpenRegister\Service\Chat\MessageHistoryHandler;
@@ -87,9 +87,9 @@ class ChatService {
 	/**
 	 * Message mapper
 	 *
-	 * @var MessageMapper
+	 * @var MessageMapperInterface
 	 */
-	private MessageMapper $messageMapper;
+	private MessageMapperInterface $messageMapper;
 
 	/**
 	 * Agent mapper
@@ -144,7 +144,7 @@ class ChatService {
 	 * Constructor
 	 *
 	 * @param ConversationMapper $conversationMapper Conversation mapper.
-	 * @param MessageMapper $messageMapper Message mapper.
+	 * @param MessageMapperInterface $messageMapper Message mapper.
 	 * @param AgentMapper $agentMapper Agent mapper.
 	 * @param ContextRetrievalHandler $contextHandler Context handler.
 	 * @param ResponseGenerationHandler $responseHandler Response handler.
@@ -157,7 +157,7 @@ class ChatService {
 	 */
 	public function __construct(
 		ConversationMapper $conversationMapper,
-		MessageMapper $messageMapper,
+		MessageMapperInterface $messageMapper,
 		AgentMapper $agentMapper,
 		ContextRetrievalHandler $contextHandler,
 		ResponseGenerationHandler $responseHandler,

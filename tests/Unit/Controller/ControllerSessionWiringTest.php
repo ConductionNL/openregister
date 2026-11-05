@@ -41,9 +41,9 @@ class ControllerSessionWiringTest extends TestCase {
 	 */
 	public static function controllerProvider(): array {
 		$cases = [];
-		foreach (glob(__DIR__ . '/../../../lib/Controller/{,*/}*Controller.php', GLOB_BRACE) as $file) {
-			$relative = substr($file, strpos($file, 'lib/Controller/') + strlen('lib/Controller/'), -4);
-			$class    = 'OCA\\OpenRegister\\Controller\\' . str_replace('/', '\\', $relative);
+		foreach (glob(__DIR__ . '/../../../lib/{,*/}Controller/{,*/}*Controller.php', GLOB_BRACE) as $file) {
+			$relative = substr($file, strpos($file, 'lib/') + strlen('lib/'), -4);
+			$class    = 'OCA\\OpenRegister\\' . str_replace('/', '\\', $relative);
 			$ctor     = (new ReflectionClass($class))->getConstructor();
 			foreach ($ctor?->getParameters() ?? [] as $param) {
 				$type = $param->getType();
@@ -84,7 +84,7 @@ class ControllerSessionWiringTest extends TestCase {
 				continue;
 			}
 
-			$args[] = $type->getName() === ControllerSession::class ? $session : $this->createMock($type->getName());
+			$args[] = $type->getName() === ControllerSession::class ? $session : $this->standIn($type->getName());
 		}
 
 		$controller = new $class(...$args);
@@ -107,4 +107,31 @@ class ControllerSessionWiringTest extends TestCase {
 
 		$this->assertGreaterThan(0, $wired, $class . ' keeps none of the bundled services');
 	}//end testTheBundleIsWiredIntoTheController()
+
+	/**
+	 * A test double for a constructor argument; a final services bundle is built from doubles of its own arguments.
+	 *
+	 * @param class-string $type The argument type.
+	 *
+	 * @return object
+	 */
+	private function standIn(string $type): object {
+		$reflection = new ReflectionClass($type);
+		if ($reflection->isFinal() === false) {
+			return $this->createMock(originalClassName: $type);
+		}
+
+		$args = [];
+		foreach ($reflection->getConstructor()?->getParameters() ?? [] as $param) {
+			$paramType = $param->getType();
+			if ($paramType instanceof ReflectionNamedType === false || $paramType->isBuiltin() === true) {
+				$args[] = null;
+				continue;
+			}
+
+			$args[] = $this->standIn(type: $paramType->getName());
+		}
+
+		return $reflection->newInstanceArgs($args);
+	}//end standIn()
 }//end class

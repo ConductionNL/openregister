@@ -61,7 +61,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -69,7 +68,9 @@ use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
+use OCP\IUser;
 use OCP\Notification\IManager as INotificationManager;
+use OCP\Notification\INotification;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -147,11 +148,11 @@ class ArchivalRetentionTask extends TimedJob {
 	private readonly LoggerInterface $logger;
 
 	/**
-	 * Cached retention evaluator (stateless apart from DI).
+	 * Expiry of each scanned row.
 	 *
-	 * @var RetentionEvaluator
+	 * @var ArchivalRowExpiry
 	 */
-	private RetentionEvaluator $retentionEvaluator;
+	private readonly ArchivalRowExpiry $rowExpiry;
 
 	/**
 	 * Constructor.
@@ -188,7 +189,7 @@ class ArchivalRetentionTask extends TimedJob {
 		$this->container = $container;
 		$this->logger = $logger;
 
-		$this->retentionEvaluator = new RetentionEvaluator(logger: $logger);
+		$this->rowExpiry = new ArchivalRowExpiry(logger: $logger);
 
 		// Run every hour (3600 seconds).
 		$this->setInterval(seconds: 3600);
@@ -213,51 +214,75 @@ class ArchivalRetentionTask extends TimedJob {
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	protected function run($argument): void {
-		$now = new DateTimeImmutable();
-
-		try {
-			$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
-		} catch (Exception $error) {
-			$this->logger->error(
-				'[ArchivalRetentionTask] Failed to load registers: ' . $error->getMessage(),
-				['app' => 'openregister', 'exception' => $error]
-			);
+		$now       = new DateTimeImmutable();
+		$registers = $this->loadRegisters();
+		if ($registers === null) {
 			return;
 		}
 
 		foreach ($registers as $register) {
 			// Defensive: findAll() returns Register[] per docblock; this
 			// guard simply hardens the loop against future mapper changes.
-			if (($register instanceof Register) === false) {
+			if (($register instanceof Register) === true) {
+				$this->sweepRegister(register: $register, now: $now);
+			}
+		}
+	}//end run()
+
+	/**
+	 * Every register, read unscoped; null (with an error log) when they cannot be read.
+	 *
+	 * @return array|null
+	 */
+	private function loadRegisters(): ?array {
+		try {
+			return $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
+		} catch (Exception $error) {
+			$this->logger->error(
+				'[ArchivalRetentionTask] Failed to load registers: '.$error->getMessage(),
+				['app' => 'openregister', 'exception' => $error]
+			);
+			return null;
+		}
+	}//end loadRegisters()
+
+	/**
+	 * Sweep every archival-annotated schema of one register.
+	 *
+	 * @param Register          $register Register to sweep.
+	 * @param DateTimeInterface $now      Sweep wall-clock anchor.
+	 *
+	 * @return void
+	 */
+	private function sweepRegister(Register $register, DateTimeInterface $now): void {
+		foreach (($register->getSchemas() ?? []) as $schemaId) {
+			$schema = $this->loadSchema(schemaId: $schemaId);
+			if ($schema === null) {
 				continue;
 			}
 
-			foreach (($register->getSchemas() ?? []) as $schemaId) {
-				try {
-					$schema = $this->schemaMapper->find((int)$schemaId);
-				} catch (Exception $error) {
-					$this->logger->warning(
-						sprintf('[ArchivalRetentionTask] Schema #%s not loadable: %s', (string)$schemaId, $error->getMessage()),
-						['app' => 'openregister']
-					);
-					continue;
-				}
+			$annotation = $this->extractArchivalAnnotation(schema: $schema);
+			if ($annotation !== null) {
+				$this->sweepSchema(sweep: new ArchivalSweep(register: $register, schema: $schema, annotation: $annotation, now: $now));
+			}
+		}
+	}//end sweepRegister()
 
-				$annotation = $this->extractArchivalAnnotation(schema: $schema);
-				if ($annotation === null) {
-					continue;
-				}
-
-				$this->sweepSchema(
-					register: $register,
-					schema: $schema,
-					annotation: $annotation,
-					now: $now
-				);
-			}//end foreach
-		}//end foreach
-
-	}//end run()
+	/**
+	 * Load a schema of a register, or null (with a warning) when it cannot be loaded.
+	 *
+	 * @param mixed $schemaId Schema id as stored on the register.
+	 *
+	 * @return Schema|null
+	 */
+	private function loadSchema(mixed $schemaId): ?Schema {
+		try {
+			return $this->schemaMapper->find((int)$schemaId);
+		} catch (Exception $error) {
+			$this->warn(message: sprintf('Schema #%s not loadable: %s', (string)$schemaId, $error->getMessage()));
+			return null;
+		}
+	}//end loadSchema()
 
 	/**
 	 * Return the `x-openregister-archival` annotation when present, or null.
@@ -288,226 +313,195 @@ class ArchivalRetentionTask extends TimedJob {
 	 * hold keeps them. Logs a per-schema summary
 	 * `{schemaSlug, scanned, expired, deleted, held, unresolved}`.
 	 *
-	 * A ROW WITH NO `_created` IS NEVER SWEPT. Without a creation timestamp
-	 * there is no expiry to compute, so the row is counted as scanned and left
-	 * alone rather than treated as due.
-	 *
-	 * @param Register $register Register the schema belongs to.
-	 * @param Schema $schema Schema being swept.
-	 * @param array<string, mixed> $annotation `x-openregister-archival` annotation.
-	 * @param DateTimeInterface $now Sweep wall-clock anchor.
+	 * @param ArchivalSweep $sweep The schema being swept and its counters.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
-	private function sweepSchema(
-		Register $register,
-		Schema $schema,
-		array $annotation,
-		DateTimeInterface $now,
-	): void {
-		$schemaSlug = $schema->getSlug() ?? (string)$schema->getId();
+	private function sweepSchema(ArchivalSweep $sweep): void {
+		// Skip a schema whose magic table has not been materialised yet.
+		if ($this->tableReady(sweep: $sweep) === false) {
+			return;
+		}
 
-		// Resolve table name; skip if the magic table has not been
-		// materialised yet (e.g. brand-new schema with no rows).
+		$this->scanTable(sweep: $sweep);
+		$this->logSweepSummary(sweep: $sweep);
+
+		if ($sweep->held > 0) {
+			$this->notifySkippedHolds(sweep: $sweep);
+		}
+	}//end sweepSchema()
+
+	/**
+	 * Whether the schema's magic table exists; false when that cannot be checked.
+	 *
+	 * @param ArchivalSweep $sweep The schema being swept.
+	 *
+	 * @return bool
+	 */
+	private function tableReady(ArchivalSweep $sweep): bool {
 		try {
-			$tableExists = $this->magicMapper->tableExistsForRegisterSchema(
-				register: $register,
-				schema: $schema
-			);
+			return $this->magicMapper->tableExistsForRegisterSchema(register: $sweep->register, schema: $sweep->schema);
 		} catch (Exception $error) {
-			$this->logger->warning(
-				sprintf(
-					'[ArchivalRetentionTask] Cannot check magic-table existence for schema "%s": %s',
-					$schemaSlug,
-					$error->getMessage()
-				),
-				['app' => 'openregister']
+			$this->warn(
+				message: sprintf('Cannot check magic-table existence for schema "%s": %s', $sweep->schemaSlug, $error->getMessage())
 			);
-			return;
+			return false;
 		}
+	}//end tableReady()
 
-		if ($tableExists === false) {
-			return;
-		}
-
-		$tableName = MagicMapperInterface::TABLE_PREFIX . ((string)$register->getId()) . '_' . ((string)$schema->getId());
-
-		$scanned = 0;
-		$expired = 0;
-		$deleted = 0;
-		$held = 0;
-		$unresolved = 0;
-
+	/**
+	 * Read every row of the schema's table and sweep it.
+	 *
+	 * Pulling `*` keeps the scan table-shape-agnostic.
+	 *
+	 * @param ArchivalSweep $sweep The schema being swept.
+	 *
+	 * @return void
+	 */
+	private function scanTable(ArchivalSweep $sweep): void {
 		try {
-			// Native SELECT — using the QueryBuilder so the table name goes
-			// through the platform-aware quoter. We only need the uuid +
-			// _created + the row's hydrated field columns; pulling `*` keeps
-			// the implementation table-shape-agnostic.
 			$qb = $this->db->getQueryBuilder();
-			$qb->select('*')->from($tableName);
-
+			$qb->select('*')->from($sweep->tableName);
 			$cursor = $qb->executeQuery();
 			while (($row = $cursor->fetch()) !== false) {
-				$scanned++;
-
-				$createdRaw = ($row['_created'] ?? null);
-				if ($createdRaw === null) {
-					// Without a created timestamp we cannot decide expiry.
-					continue;
-				}
-
-				try {
-					$createdAt = new DateTimeImmutable((string)$createdRaw);
-				} catch (Exception $error) {
-					$this->logger->warning(
-						sprintf(
-							'[ArchivalRetentionTask] Row with unparseable _created skipped on "%s": %s',
-							$schemaSlug,
-							$error->getMessage()
-						),
-						['app' => 'openregister']
-					);
-					continue;
-				}
-
-				try {
-					$result = $this->retentionEvaluator->evaluate(
-						annotation: $annotation,
-						row: $this->stripMetadataColumns(row: $row),
-						createdAt: $createdAt
-					);
-				} catch (Exception $error) {
-					$this->logger->warning(
-						sprintf(
-							'[ArchivalRetentionTask] Skipping row on "%s": %s',
-							$schemaSlug,
-							$error->getMessage()
-						),
-						['app' => 'openregister']
-					);
-					continue;
-				}
-
-				$expiresAt = new DateTimeImmutable($result['expiresAt']);
-				if ($expiresAt >= $now) {
-					continue;
-				}
-
-				$expired++;
-
-				$uuid = (string)($row['_uuid'] ?? '');
-				if ($uuid === '') {
-					continue;
-				}
-
-				// A HELD RECORD IS NEVER SWEPT. The delete below hands
-				// `_retentionSweep: true` to ObjectService, which is the flag
-				// that waves the row past the archival immutability gate, so
-				// this is the last place the hold can still be asked about.
-				$object = $this->loadSweepTarget(
-					register: $register,
-					schema: $schema,
-					uuid: $uuid,
-					schemaSlug: $schemaSlug
-				);
-
-				if ($object === null) {
-					// FAILS CLOSED: a row we cannot load is a row we cannot
-					// ask about its hold.
-					$unresolved++;
-					continue;
-				}
-
-				if ($this->retentionService->hasActiveLegalHold(object: $object) === true) {
-					$held++;
-					$this->logger->info(
-						sprintf(
-							'[ArchivalRetentionTask] legal hold kept row schema="%s" uuid="%s" past retention',
-							$schemaSlug,
-							$uuid
-						),
-						['app' => 'openregister', 'schemaSlug' => $schemaSlug, 'uuid' => $uuid]
-					);
-					continue;
-				}
-
-				try {
-					// Re-anchor ObjectService at the (register, schema) we
-					// are sweeping so the delete pipeline sees the right
-					// context. setSchema / setRegister are idempotent.
-					$this->objectService->setRegister(register: $register);
-					$this->objectService->setSchema(schema: $schema);
-
-					$deleteOk = $this->objectService->deleteObject(
-						uuid: $uuid,
-						_rbac: false,
-						_multitenancy: false,
-						_retentionSweep: true
-					);
-
-					if ($deleteOk === true) {
-						$deleted++;
-					}
-				} catch (Exception $error) {
-					$this->logger->warning(
-						sprintf(
-							'[ArchivalRetentionTask] Delete failed on schema "%s" uuid "%s": %s',
-							$schemaSlug,
-							$uuid,
-							$error->getMessage()
-						),
-						['app' => 'openregister']
-					);
-				}//end try
-			}//end while
+				$this->sweepRow(sweep: $sweep, row: $row);
+			}
 
 			$cursor->closeCursor();
 		} catch (Exception $error) {
-			$this->logger->error(
-				sprintf(
-					'[ArchivalRetentionTask] Sweep failed on schema "%s": %s',
-					$schemaSlug,
-					$error->getMessage()
-				),
-				['app' => 'openregister', 'exception' => $error]
-			);
-		}//end try
+			$message = sprintf('[ArchivalRetentionTask] Sweep failed on schema "%s": %s', $sweep->schemaSlug, $error->getMessage());
+			$this->logger->error($message, ['app' => 'openregister', 'exception' => $error]);
+		}
+	}//end scanTable()
 
-		// SKIPPING MUST BE VISIBLE. A sweep that quietly passes over held
-		// records, with no count and no signal, is how somebody later concludes
-		// the sweep is broken. `held` and `unresolved` are counted apart from
-		// `deleted` for the same reason DestructionExecutionJob counts
-		// `skippedHolds` apart from `destroyedCount`.
-		$this->logger->info(
-			sprintf(
-				'[ArchivalRetentionTask] schema="%s" scanned=%d expired=%d deleted=%d held=%d unresolved=%d',
-				$schemaSlug,
-				$scanned,
-				$expired,
-				$deleted,
-				$held,
-				$unresolved
-			),
-			[
-				'app' => 'openregister',
-				'schemaSlug' => $schemaSlug,
-				'scanned' => $scanned,
-				'expired' => $expired,
-				'deleted' => $deleted,
-				'held' => $held,
-				'unresolved' => $unresolved,
-			]
-		);
+	/**
+	 * Count one row and, when it is past its retention, dispose of it.
+	 *
+	 * @param ArchivalSweep        $sweep The schema being swept.
+	 * @param array<string, mixed> $row   Raw table row.
+	 *
+	 * @return void
+	 */
+	private function sweepRow(ArchivalSweep $sweep, array $row): void {
+		$sweep->scanned++;
 
-		if ($held > 0) {
-			$this->notifySkippedHolds(schemaSlug: $schemaSlug, skippedCount: $held);
+		$expiresAt = $this->rowExpiry->expiryOf(sweep: $sweep, row: $row);
+		if ($expiresAt === null || $expiresAt >= $sweep->now) {
+			return;
 		}
 
-	}//end sweepSchema()
+		$sweep->expired++;
+
+		$uuid = (string)($row['_uuid'] ?? '');
+		if ($uuid !== '') {
+			$this->disposeExpired(sweep: $sweep, uuid: $uuid);
+		}
+	}//end sweepRow()
+
+	/**
+	 * Delete an expired row unless it is held or cannot be loaded.
+	 *
+	 * A HELD RECORD IS NEVER SWEPT. The delete hands `_retentionSweep: true`
+	 * to ObjectService, which is the flag that waves the row past the archival
+	 * immutability gate, so this is the last place the hold can still be asked
+	 * about. A row whose object cannot be loaded FAILS CLOSED: it cannot be
+	 * asked about its hold, so it is kept.
+	 *
+	 * @param ArchivalSweep $sweep The schema being swept.
+	 * @param string        $uuid  Row uuid.
+	 *
+	 * @return void
+	 */
+	private function disposeExpired(ArchivalSweep $sweep, string $uuid): void {
+		$object = $this->loadSweepTarget(sweep: $sweep, uuid: $uuid);
+		if ($object === null) {
+			$sweep->unresolved++;
+			return;
+		}
+
+		if ($this->retentionService->hasActiveLegalHold(object: $object) === true) {
+			$sweep->held++;
+			$this->logHeld(sweep: $sweep, uuid: $uuid);
+			return;
+		}
+
+		$this->deleteExpired(sweep: $sweep, uuid: $uuid);
+	}//end disposeExpired()
+
+	/**
+	 * Log that a legal hold kept a row past its retention.
+	 *
+	 * @param ArchivalSweep $sweep The schema being swept.
+	 * @param string        $uuid  Row uuid.
+	 *
+	 * @return void
+	 */
+	private function logHeld(ArchivalSweep $sweep, string $uuid): void {
+		$this->logger->info(
+			sprintf('[ArchivalRetentionTask] legal hold kept row schema="%s" uuid="%s" past retention', $sweep->schemaSlug, $uuid),
+			['app' => 'openregister', 'schemaSlug' => $sweep->schemaSlug, 'uuid' => $uuid]
+		);
+	}//end logHeld()
+
+	/**
+	 * Delete an expired row through ObjectService, past the immutability gate.
+	 *
+	 * ObjectService is re-anchored at the swept `(register, schema)` first, so
+	 * the delete pipeline sees the right context.
+	 *
+	 * @param ArchivalSweep $sweep The schema being swept.
+	 * @param string        $uuid  Row uuid.
+	 *
+	 * @return void
+	 */
+	private function deleteExpired(ArchivalSweep $sweep, string $uuid): void {
+		try {
+			$this->objectService->setRegister(register: $sweep->register);
+			$this->objectService->setSchema(schema: $sweep->schema);
+
+			$deleteOk = $this->objectService->deleteObject(uuid: $uuid, _rbac: false, _multitenancy: false, _retentionSweep: true);
+			if ($deleteOk === true) {
+				$sweep->deleted++;
+			}
+		} catch (Exception $error) {
+			$this->warn(
+				message: sprintf('Delete failed on schema "%s" uuid "%s": %s', $sweep->schemaSlug, $uuid, $error->getMessage())
+			);
+		}
+	}//end deleteExpired()
+
+	/**
+	 * Log the per-schema counters.
+	 *
+	 * SKIPPING MUST BE VISIBLE: `held` and `unresolved` are counted apart from
+	 * `deleted`, as DestructionExecutionJob counts `skippedHolds` apart from
+	 * `destroyedCount`.
+	 *
+	 * @param ArchivalSweep $sweep The schema that was swept.
+	 *
+	 * @return void
+	 */
+	private function logSweepSummary(ArchivalSweep $sweep): void {
+		$counts = $sweep->counts();
+		$this->logger->info(
+			vsprintf(
+				'[ArchivalRetentionTask] schema="%s" scanned=%d expired=%d deleted=%d held=%d unresolved=%d',
+				[$sweep->schemaSlug, ...array_values($counts)]
+			),
+			['app' => 'openregister', 'schemaSlug' => $sweep->schemaSlug] + $counts
+		);
+	}//end logSweepSummary()
+
+	/**
+	 * Log a warning under the task's prefix.
+	 *
+	 * @param string $message Message after the prefix.
+	 *
+	 * @return void
+	 */
+	private function warn(string $message): void {
+		$this->logger->warning('[ArchivalRetentionTask] '.$message, ['app' => 'openregister']);
+	}//end warn()
 
 	/**
 	 * Load the object behind an expired row, or null when it cannot be read.
@@ -517,41 +511,25 @@ class ArchivalRetentionTask extends TimedJob {
 	 * cron has no session at all: an RBAC- or tenant-scoped read would answer
 	 * "not found" for a row that plainly exists.
 	 *
-	 * @param Register $register Register the row belongs to.
-	 * @param Schema $schema Schema the row belongs to.
-	 * @param string $uuid Row uuid.
-	 * @param string $schemaSlug Schema slug, for the log line.
+	 * @param ArchivalSweep $sweep The schema being swept.
+	 * @param string        $uuid  Row uuid.
 	 *
 	 * @return ObjectEntity|null The object, or null when it cannot be loaded.
 	 */
-	private function loadSweepTarget(
-		Register $register,
-		Schema $schema,
-		string $uuid,
-		string $schemaSlug,
-	): ?ObjectEntity {
+	private function loadSweepTarget(ArchivalSweep $sweep, string $uuid): ?ObjectEntity {
 		try {
-			return $this->magicMapper->find(
-				$uuid,
-				$register,
-				$schema,
-				false,
-				false,
-				false
-			);
+			return $this->magicMapper->find($uuid, $sweep->register, $sweep->schema, false, false, false);
 		} catch (\Throwable $error) {
-			$this->logger->warning(
-				sprintf(
-					'[ArchivalRetentionTask] Kept row on "%s" uuid "%s": its legal-hold status could not be read: %s',
-					$schemaSlug,
+			$this->warn(
+				message: sprintf(
+					'Kept row on "%s" uuid "%s": its legal-hold status could not be read: %s',
+					$sweep->schemaSlug,
 					$uuid,
 					$error->getMessage()
-				),
-				['app' => 'openregister']
+				)
 			);
-
 			return null;
-		}//end try
+		}
 	}//end loadSweepTarget()
 
 	/**
@@ -560,61 +538,53 @@ class ArchivalRetentionTask extends TimedJob {
 	 * Mirrors `DestructionExecutionJob::notifySkippedHolds()`: a skipped hold
 	 * that only ever reaches the cron log is a skip nobody acts on.
 	 *
-	 * @param string $schemaSlug Schema the sweep was running over.
-	 * @param int $skippedCount Number of rows kept because of a hold.
+	 * @param ArchivalSweep $sweep The schema whose holds were skipped.
 	 *
 	 * @return void
 	 */
-	private function notifySkippedHolds(string $schemaSlug, int $skippedCount): void {
+	private function notifySkippedHolds(ArchivalSweep $sweep): void {
 		try {
 			$notificationManager = $this->container->get(INotificationManager::class);
-			$group = $this->container->get(IGroupManager::class)->get('archivaris');
-			if ($group === null) {
-				return;
-			}
-
-			foreach ($group->getUsers() as $user) {
+			foreach ($this->archivists() as $user) {
 				$notification = $notificationManager->createNotification();
-				$notification->setApp('openregister')
-					->setUser($user->getUID())
-					->setDateTime(new DateTime())
-					->setObject('retention_sweep', $schemaSlug)
-					->setSubject(
-						'retention_holds_skipped',
-						[
-							'schemaSlug' => $schemaSlug,
-							'skippedCount' => $skippedCount,
-						]
-					);
-				$notificationManager->notify($notification);
+				$notification->setApp('openregister')->setUser($user->getUID());
+				$notificationManager->notify($this->describeHoldSkip(sweep: $sweep, notification: $notification));
 			}
 		} catch (\Throwable $error) {
 			$this->logger->warning(
-				'[ArchivalRetentionTask] Hold notify error: ' . $error->getMessage(),
+				'[ArchivalRetentionTask] Hold notify error: '.$error->getMessage(),
 				['app' => 'openregister']
 			);
-		}//end try
+		}
 	}//end notifySkippedHolds()
 
 	/**
-	 * Drop the magic-table metadata columns (`_uuid`, `_created`, ...) from a
-	 * raw row so the row passed to the condition evaluator carries only the
-	 * schema-declared fields.
+	 * Members of the archivist group; none when the group does not exist.
 	 *
-	 * @param array<string, mixed> $row Raw row as returned by the QueryBuilder cursor.
-	 *
-	 * @return array<string, mixed> Filtered row.
+	 * @return IUser[]
 	 */
-	private function stripMetadataColumns(array $row): array {
-		$filtered = [];
-		foreach ($row as $key => $value) {
-			if (is_string($key) === true && str_starts_with($key, '_') === true) {
-				continue;
-			}
-
-			$filtered[$key] = $value;
+	private function archivists(): array {
+		$group = $this->container->get(IGroupManager::class)->get('archivaris');
+		if ($group === null) {
+			return [];
 		}
 
-		return $filtered;
-	}//end stripMetadataColumns()
+		return $group->getUsers();
+	}//end archivists()
+
+	/**
+	 * Fill in the time, object and subject of a skipped-hold notification.
+	 *
+	 * @param ArchivalSweep $sweep        The schema whose holds were skipped.
+	 * @param INotification $notification Notification addressed to one archivist.
+	 *
+	 * @return INotification The same notification.
+	 */
+	private function describeHoldSkip(ArchivalSweep $sweep, INotification $notification): INotification {
+		$notification->setDateTime(new DateTime())
+			->setObject('retention_sweep', $sweep->schemaSlug)
+			->setSubject('retention_holds_skipped', ['schemaSlug' => $sweep->schemaSlug, 'skippedCount' => $sweep->held]);
+		return $notification;
+	}//end describeHoldSkip()
+
 }//end class

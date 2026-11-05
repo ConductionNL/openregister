@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
-use OCA\OpenRegister\BackgroundJob\ScheduledNotificationJob;
+use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationJob;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\NotificationDedupeState;
-use OCA\OpenRegister\Db\NotificationDedupeStateMapper;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeState;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
-use OCA\OpenRegister\Service\Notification\ScheduledFilterEvaluator;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use OCP\ICache;

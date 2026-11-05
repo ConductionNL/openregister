@@ -32,6 +32,10 @@ use OCP\IDBConnection;
  */
 class EmailLinkMapper extends QBMapper {
 
+	use ObjectKeyLinkTrait;
+	use DeleteLinksByObjectUuidTrait;
+	use CountLinksByObjectUuidTrait;
+
 	/**
 	 * Cache for tableExists() result. The schema doesn't change at
 	 * runtime so we can memoise the check.
@@ -138,36 +142,10 @@ class EmailLinkMapper extends QBMapper {
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->orderBy('mail_date', 'DESC');
 
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findByObjectUuid()
-
-	/**
-	 * Count email links for an object.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Count of links.
-	 */
-	public function countByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->createFunction('COUNT(*)'))
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		$result = $qb->executeQuery();
-		$count = (int)$result->fetchOne();
-		$result->closeCursor();
-
-		return $count;
-	}//end countByObjectUuid()
 
 	/**
 	 * Find email links by sender address.
@@ -195,22 +173,12 @@ class EmailLinkMapper extends QBMapper {
 	 * @return EmailLink|null The link or null if not found.
 	 */
 	public function findByObjectAndMessage(string $objectUuid, int $mailMessageId): ?EmailLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere(
-				$qb->expr()->eq(
-					'mail_message_id',
-					$qb->createNamedParameter($mailMessageId, IQueryBuilder::PARAM_INT)
-				)
-			);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			return null;
+		$link = $this->findObjectLink(objectUuid: $objectUuid, key: new LinkColumn(name: 'mail_message_id', value: $mailMessageId));
+		if ($link instanceof EmailLink) {
+			return $link;
 		}
+
+		return null;
 	}//end findByObjectAndMessage()
 
 	/**
@@ -298,19 +266,4 @@ class EmailLinkMapper extends QBMapper {
 
 		return $qb->executeStatement();
 	}//end deleteByObjectAndId()
-
-	/**
-	 * Delete all email links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 }//end class

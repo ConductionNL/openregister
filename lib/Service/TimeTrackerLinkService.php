@@ -8,7 +8,7 @@
  * `OCA\TimeManager\Db\ClientMapper` + `TaskMapper` to expose the Tier-2
  * surface:
  *
- *   - linkEntry(uuid, registerId, schemaId, entryType, id)
+ *   - linkEntry(target, entryType, id)
  *       — link an existing client / task / time entry
  *   - createAndLinkClient(uuid, registerId, schemaId, name)
  *       — create a new TimeManager client and link it
@@ -188,11 +188,9 @@ class TimeTrackerLinkService {
 	 * Idempotent: a duplicate link raises a 409 Exception. Entry metadata
 	 * (name/duration/billable/started_at) is cached at link time.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
-	 * @param string $entryType Entry kind (`client`|`task`|`time`).
-	 * @param string $id Upstream entry uuid.
+	 * @param LinkTarget $target    The object to link to.
+	 * @param string     $entryType Entry kind (`client`|`task`|`time`).
+	 * @param string     $id        Upstream entry uuid.
 	 *
 	 * @return TimeTrackerLink The persisted link row.
 	 *
@@ -202,16 +200,33 @@ class TimeTrackerLinkService {
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the link-entry contract is owned by the integration-time-tracker capability.
 	 */
-	public function linkEntry(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		string $entryType,
-		string $id,
-	): TimeTrackerLink {
-		$uid = $this->requireUid();
+	public function linkEntry(LinkTarget $target, string $entryType, string $id): TimeTrackerLink {
+		$uid       = $this->requireUid();
 		$entryType = $this->normaliseEntryType(entryType: $entryType);
+		$id        = $this->requireEntryId(id: $id);
+		$this->assertEntryUnlinked(target: $target, key: $this->hydrateLink(entryType: $entryType, id: $id, info: []));
 
+		$info = $this->fetchEntryInfo(entryType: $entryType, id: $id, uid: $uid);
+		if ($info === null) {
+			throw new Exception('TimeManager entry not found', 404);
+		}
+
+		$link = $this->hydrateLink(entryType: $entryType, id: $id, info: $info);
+		$target->stamp(link: $link, linkedBy: $uid);
+
+		return $this->timeTrackerLinkMapper->insert($link);
+	}//end linkEntry()
+
+	/**
+	 * The trimmed entry id, once TimeManager is known to be available.
+	 *
+	 * @param string $id The raw upstream entry uuid.
+	 *
+	 * @return string The trimmed id.
+	 *
+	 * @throws Exception On an empty id (400) or TimeManager unavailable (503).
+	 */
+	private function requireEntryId(string $id): string {
 		$id = trim($id);
 		if ($id === '') {
 			throw new Exception('Entry id is required', 400);
@@ -221,43 +236,36 @@ class TimeTrackerLinkService {
 			throw new Exception('NC TimeManager is not available', 503);
 		}
 
-		$components = $this->idComponents(entryType: $entryType, id: $id);
+		return $id;
+	}//end requireEntryId()
 
+	/**
+	 * Refuse a link when the entry is already linked to the object.
+	 *
+	 * @param LinkTarget      $target The object to link to.
+	 * @param TimeTrackerLink $key    An unsaved row carrying the entry type and ids.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception On a duplicate (409).
+	 */
+	private function assertEntryUnlinked(LinkTarget $target, TimeTrackerLink $key): void {
 		$existing = $this->timeTrackerLinkMapper->findByObjectAndEntry(
-			$objectUuid,
-			$entryType,
-			$components['client_id'],
-			$components['task_id'],
-			$components['time_id']
+			$target->objectUuid,
+			$key->getEntryType(),
+			$key->getClientId(),
+			$key->getTaskId(),
+			$key->getTimeId()
 		);
 		if ($existing !== null) {
 			throw new Exception('Entry already linked to this object', 409);
 		}
-
-		$info = $this->fetchEntryInfo(entryType: $entryType, id: $id, uid: $uid);
-		if ($info === null) {
-			throw new Exception('TimeManager entry not found', 404);
-		}
-
-		$link = $this->hydrateLink(
-			objectUuid: $objectUuid,
-			registerId: $registerId,
-			schemaId: $schemaId,
-			entryType: $entryType,
-			id: $id,
-			info: $info,
-			uid: $uid
-		);
-
-		return $this->timeTrackerLinkMapper->insert($link);
-	}//end linkEntry()
+	}//end assertEntryUnlinked()
 
 	/**
 	 * Create a new NC TimeManager client and link it to an OR object.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
+	 * @param LinkTarget $target The object to link to.
 	 * @param string $name New client name.
 	 *
 	 * @return TimeTrackerLink The persisted link row.
@@ -268,12 +276,7 @@ class TimeTrackerLinkService {
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link-client contract is
 	 *       owned by the integration-time-tracker capability.
 	 */
-	public function createAndLinkClient(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		string $name,
-	): TimeTrackerLink {
+	public function createAndLinkClient(LinkTarget $target, string $name): TimeTrackerLink {
 		$uid = $this->requireUid();
 
 		$name = trim($name);
@@ -301,14 +304,11 @@ class TimeTrackerLinkService {
 		];
 
 		$link = $this->hydrateLink(
-			objectUuid: $objectUuid,
-			registerId: $registerId,
-			schemaId: $schemaId,
 			entryType: self::ENTRY_CLIENT,
 			id: $clientUuid,
-			info: $info,
-			uid: $uid
+			info: $info
 		);
+		$target->stamp(link: $link, linkedBy: $uid);
 
 		return $this->timeTrackerLinkMapper->insert($link);
 	}//end createAndLinkClient()
@@ -355,31 +355,20 @@ class TimeTrackerLinkService {
 	/**
 	 * Build a TimeTrackerLink from normalised entry info.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
 	 * @param string $entryType Entry kind.
 	 * @param string $id Upstream entry uuid.
 	 * @param array<string,mixed> $info Normalised entry info.
-	 * @param string $uid The linking user id.
 	 *
 	 * @return TimeTrackerLink
 	 */
 	private function hydrateLink(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
 		string $entryType,
 		string $id,
 		array $info,
-		string $uid,
 	): TimeTrackerLink {
 		$components = $this->idComponents(entryType: $entryType, id: $id);
 
 		$link = new TimeTrackerLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setEntryType($entryType);
 		$link->setClientId($components['client_id']);
 		$link->setTaskId($components['task_id']);
@@ -388,8 +377,6 @@ class TimeTrackerLinkService {
 		$link->setDuration($info['duration'] ?? null);
 		$link->setBillable($info['billable'] ?? null);
 		$link->setStartedAt($info['startedAt'] ?? null);
-		$link->setLinkedBy($uid);
-		$link->setLinkedAt(new DateTime());
 
 		return $link;
 	}//end hydrateLink()

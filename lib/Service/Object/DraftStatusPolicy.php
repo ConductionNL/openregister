@@ -76,7 +76,7 @@ class DraftStatusPolicy {
 	 * Object uuids whose save is moving them out of draft right now.
 	 *
 	 * Set by the one save that used the allowance and read by the mapper,
-	 * which makes the stored status part of its UPDATE (see isLeaving()).
+	 * which makes the stored status part of its UPDATE (see consumeLeaving()).
 	 *
 	 * @var array<string, true>
 	 */
@@ -123,27 +123,6 @@ class DraftStatusPolicy {
 		self::$promotions = [];
 		self::$leaving = [];
 	}//end resetPromotions()
-
-	/**
-	 * Whether the save in progress moves this object out of draft.
-	 *
-	 * The allowance is request-scoped, so two requests on one draft can both
-	 * pass the read that says it is still a draft and both use their own
-	 * allowance. The mapper asks here and, when the answer is yes, writes the
-	 * status change as a compare-and-swap (`... AND _status = 'draft'`): the
-	 * database lets exactly one of them change a row, and the other finds
-	 * nothing to change and is refused as DraftAlreadyLeftException, so only
-	 * one request announces the creation.
-	 *
-	 * @param string $uuid The object.
-	 *
-	 * @return bool True while a save that leaves draft is writing it.
-	 *
-	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
-	 */
-	public static function isLeaving(string $uuid): bool {
-		return isset(self::$leaving[$uuid]) === true;
-	}//end isLeaving()
 
 	/**
 	 * Whether this write is the one that moves the object out of draft, and forget it.

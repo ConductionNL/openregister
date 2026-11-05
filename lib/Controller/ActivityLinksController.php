@@ -37,7 +37,7 @@ use OCA\OpenRegister\Controller\Trait\ResolvesLinkedObjectTrait;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ActivityFilterService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -59,14 +59,14 @@ class ActivityLinksController extends Controller {
 	 * @param IRequest $request HTTP request.
 	 * @param ActivityFilterService $filterService Backing service.
 	 * @param ObjectOperationsInterface $objectService OR object resolver.
-	 * @param TimelineVisibilityService $visibility Internal/public filter for the feed.
+	 * @param TimelineVisibilityServiceInterface $visibility Internal/public filter for the feed.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly ActivityFilterService $filterService,
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly TimelineVisibilityService $visibility,
+		private readonly TimelineVisibilityServiceInterface $visibility,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

@@ -42,8 +42,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Service\Notification\ForcedChannelPolicy;
-use OCA\OpenRegister\Service\Notification\RecipientAudience;
+use OCA\OpenRegister\Notifications\Service\Notification\ForcedChannelPolicy;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientAudience;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -241,7 +241,7 @@ class ForcedChannelPolicyTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheRulesReachTheValidatorTheSaveCalls(): void {
-		$validator = new \OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator();
+		$validator = new \OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator();
 
 		$errors = $validator->validate([
 			'x-openregister-notifications' => [

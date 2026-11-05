@@ -330,7 +330,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
+
 .loadingContainer,
 .errorContainer {
 	display: flex;
@@ -455,10 +457,7 @@ export default {
 	border-radius: 4px;
 }
 
-.status-active {
-	color: var(--color-success);
-	font-weight: 600;
-}
+@include status-active;
 
 .status-inactive {
 	color: var(--color-text-lighter);

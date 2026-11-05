@@ -42,6 +42,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\WriteCause
  * @uses \OCA\OpenRegister\Service\Audit\OrganisationContextAttribution
  * @uses \OCA\OpenRegister\Service\OrganisationContext
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */

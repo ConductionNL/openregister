@@ -84,6 +84,10 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class Application extends Entity implements JsonSerializable {
+	use IsoTimestampsTrait;
+	use AuthorizationRulesTrait;
+	use JsonFieldsTrait;
+	use HydrateEmptyJsonAsNullTrait;
 
 	/**
 	 * Unique identifier for the application
@@ -119,13 +123,6 @@ class Application extends Entity implements JsonSerializable {
 	 * @var string|null Organisation UUID
 	 */
 	protected ?string $organisation = null;
-
-	/**
-	 * Configuration that manages this application (transient, not stored in DB)
-	 *
-	 * @var Configuration|null
-	 */
-	private ?Configuration $managedByConfig = null;
 
 	/**
 	 * Array of configuration IDs associated with this application
@@ -270,24 +267,6 @@ class Application extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
-	 * Validate UUID format
-	 *
-	 * @param string $uuid The UUID to validate
-	 *
-	 * @return bool True if UUID format is valid
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::fromString is standard Symfony UID pattern
-	 */
-	public static function isValidUuid(string $uuid): bool {
-		try {
-			Uuid::fromString($uuid);
-			return true;
-		} catch (\InvalidArgumentException $e) {
-			return false;
-		}
-	}//end isValidUuid()
-
-	/**
 	 * Get the organisation UUID
 	 *
 	 * @return string|null The organisation UUID
@@ -425,55 +404,6 @@ class Application extends Entity implements JsonSerializable {
 	}//end setGroups()
 
 	/**
-	 * Get JSON fields from the entity
-	 *
-	 * Returns all fields that are of type 'json'
-	 *
-	 * @return string[] List of JSON field names
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
-
-	/**
-	 * Hydrate the entity with data from an array
-	 *
-	 * Sets entity properties based on input array values
-	 *
-	 * @param array $object The data array to hydrate from
-	 *
-	 * @return static Returns $this for method chaining
-	 */
-	public function hydrate(array $object): static {
-		$jsonFields = $this->getJsonFields();
-
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields) === true && $value === []) {
-				$value = null;
-			}
-
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
-
-		return $this;
-	}//end hydrate()
-
-	/**
 	 * Get default authorization structure for applications
 	 *
 	 * Provides sensible defaults with empty arrays for all CRUD permissions
@@ -501,34 +431,6 @@ class Application extends Entity implements JsonSerializable {
 	public function getAuthorization(): array {
 		return $this->authorization ?? $this->getDefaultAuthorization();
 	}//end getAuthorization()
-
-	/**
-	 * Set authorization rules for this application
-	 *
-	 * @param array|string|null $authorization Authorization rules structure or JSON string
-	 *
-	 * @return static Returns this application for method chaining
-	 */
-	public function setAuthorization(array|string|null $authorization): static {
-		// Handle JSON string from database (type safety).
-		if (is_string($authorization) === true) {
-			try {
-				$decoded = json_decode($authorization, true);
-				// Invalid JSON, use default.
-				$authorization = null;
-				if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
-					$authorization = $decoded;
-				}
-			} catch (\Exception $e) {
-				// If decoding fails, use default.
-				$authorization = null;
-			}
-		}
-
-		$this->authorization = $authorization ?? $this->getDefaultAuthorization();
-		$this->markFieldUpdated(attribute: 'authorization');
-		return $this;
-	}//end setAuthorization()
 
 	/**
 	 * Set the quota allocations from the nested API structure
@@ -633,7 +535,7 @@ class Application extends Entity implements JsonSerializable {
 			'authorization' => $this->authorization ?? $this->getDefaultAuthorization(),
 			'created' => $this->getCreatedFormatted(),
 			'updated' => $this->getUpdatedFormatted(),
-			'managedByConfiguration' => $this->getManagedByConfigurationData(),
+			'managedByConfiguration' => null,
 		];
 	}//end jsonSerialize()
 
@@ -653,26 +555,6 @@ class Application extends Entity implements JsonSerializable {
 
 		return $this->uuid;
 	}//end __toString()
-
-	/**
-	 * Get the configuration that manages this application (transient property)
-	 *
-	 * @return Configuration|null The managing configuration or null
-	 */
-	public function getManagedByConfigurationEntity(): ?Configuration {
-		return $this->managedByConfig;
-	}//end getManagedByConfigurationEntity()
-
-	/**
-	 * Set the configuration that manages this application (transient property)
-	 *
-	 * @param Configuration|null $configuration The managing configuration
-	 *
-	 * @return void
-	 */
-	public function setManagedByConfigurationEntity(?Configuration $configuration): void {
-		$this->managedByConfig = $configuration;
-	}//end setManagedByConfigurationEntity()
 
 	/**
 	 * Check if this application is managed by a configuration
@@ -769,49 +651,4 @@ class Application extends Entity implements JsonSerializable {
 			'groups' => count($groups ?? []),
 		];
 	}//end getUsageData()
-
-	/**
-	 * Get formatted created date for JSON serialization
-	 *
-	 * @return string|null Formatted date or null
-	 */
-	private function getCreatedFormatted(): ?string {
-		if ($this->created !== null) {
-			return $this->created->format('c');
-		}
-
-		return null;
-	}//end getCreatedFormatted()
-
-	/**
-	 * Get formatted updated date for JSON serialization
-	 *
-	 * @return string|null Formatted date or null
-	 */
-	private function getUpdatedFormatted(): ?string {
-		if ($this->updated !== null) {
-			return $this->updated->format('c');
-		}
-
-		return null;
-	}//end getUpdatedFormatted()
-
-	/**
-	 * Get managed by configuration data for JSON serialization
-	 *
-	 * @return (int|null|string)[]|null Configuration data or null
-	 *
-	 * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
-	 */
-	private function getManagedByConfigurationData(): ?array {
-		if ($this->managedByConfig !== null) {
-			return [
-				'id' => $this->managedByConfig->getId(),
-				'uuid' => $this->managedByConfig->getUuid(),
-				'title' => $this->managedByConfig->getTitle(),
-			];
-		}
-
-		return null;
-	}//end getManagedByConfigurationData()
 }//end class

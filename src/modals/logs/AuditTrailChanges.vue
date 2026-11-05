@@ -426,7 +426,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 .audit-trail-changes {
 	padding: 16px 0;
 }
@@ -451,17 +453,7 @@ export default {
 	flex-wrap: wrap;
 }
 
-.action-badge {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 0.75rem;
-	font-weight: 600;
-	color: white;
-	background: var(--color-text-maxcontrast);
-}
+@include action-badge;
 
 .action-badge.action-create {
 	background: var(--color-success);

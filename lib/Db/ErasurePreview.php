@@ -72,6 +72,7 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class ErasurePreview extends Entity implements JsonSerializable {
+	use HydrateBySettersTrait;
 	/**
 	 * Recorded, not yet approved. An erasure refuses on it.
 	 *
@@ -219,29 +220,6 @@ class ErasurePreview extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'updated', type: 'datetime');
 
 	}//end __construct()
-
-	/**
-	 * Hydrate the entity from an array.
-	 *
-	 * @param array<string, mixed> $object The source data.
-	 *
-	 * @return static This entity, hydrated.
-	 *
-	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
-	 */
-	public function hydrate(array $object): static {
-		foreach ($object as $key => $value) {
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
-
-		return $this;
-	}//end hydrate()
 
 	/**
 	 * Whether an erasure may run from this preview.

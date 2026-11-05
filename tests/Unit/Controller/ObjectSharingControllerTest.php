@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectSharingControllerFactory;
 use OCA\OpenRegister\Controller\ObjectSharingController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -88,7 +89,7 @@ class ObjectSharingControllerTest extends TestCase {
 		$this->objectService->method('setSchema')->willReturnSelf();
 		$this->objectService->method('setObject')->willReturnSelf();
 
-		$this->controller = new ObjectSharingController(
+		$this->controller = ObjectSharingControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objectService,

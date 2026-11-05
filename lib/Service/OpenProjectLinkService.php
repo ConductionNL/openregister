@@ -147,9 +147,7 @@ class OpenProjectLinkService {
 	 * metadata is cached at link time, pulled fresh from OpenProject when
 	 * the source is configured.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
+	 * @param LinkTarget $target The object to link to.
 	 * @param int $workPackageId OpenProject work-package id.
 	 *
 	 * @return OpenProjectLink The persisted link row.
@@ -159,14 +157,14 @@ class OpenProjectLinkService {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
-	public function linkWorkPackage(string $objectUuid, int $registerId, int $schemaId, int $workPackageId): OpenProjectLink {
+	public function linkWorkPackage(LinkTarget $target, int $workPackageId): OpenProjectLink {
 		$uid = $this->requireUid();
 
 		if ($workPackageId === 0) {
 			throw new Exception('workPackageId is required', 400);
 		}
 
-		$existing = $this->openProjectLinkMapper->findByObjectAndWorkPackage($objectUuid, $workPackageId);
+		$existing = $this->openProjectLinkMapper->findByObjectAndWorkPackage($target->objectUuid, $workPackageId);
 		if ($existing !== null) {
 			throw new Exception('Work package already linked to this object', 409);
 		}
@@ -175,20 +173,17 @@ class OpenProjectLinkService {
 		// down we still persist the link with the id so the row survives,
 		// then refresh later (wave-5.2 graceful degradation).
 		$info = $this->fetchWorkPackage(
-			register: (string)$registerId,
-			schema: (string)$schemaId,
-			objectUuid: $objectUuid,
+			register: (string)$target->registerId,
+			schema: (string)$target->schemaId(),
+			objectUuid: $target->objectUuid,
 			workPackageId: $workPackageId
 		);
 
 		$link = $this->hydrateLink(
-			objectUuid: $objectUuid,
-			registerId: $registerId,
-			schemaId: $schemaId,
 			workPackageId: $workPackageId,
-			info: ($info ?? ['subject' => '#' . $workPackageId]),
-			uid: $uid
+			info: ($info ?? ['subject' => '#' . $workPackageId])
 		);
+		$target->stamp(link: $link, linkedBy: $uid);
 
 		return $this->openProjectLinkMapper->insert($link);
 	}//end linkWorkPackage()
@@ -196,9 +191,7 @@ class OpenProjectLinkService {
 	/**
 	 * Create a new OpenProject work package and link it to an OR object.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
+	 * @param LinkTarget $target The object to link to.
 	 * @param string $projectId Target OpenProject project id.
 	 * @param string $subject New work-package subject.
 	 * @param string $type Optional work-package type (id or label).
@@ -211,9 +204,7 @@ class OpenProjectLinkService {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function createAndLinkWorkPackage(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
+		LinkTarget $target,
 		string $projectId,
 		string $subject,
 		string $type = '',
@@ -237,9 +228,9 @@ class OpenProjectLinkService {
 
 		try {
 			$created = $this->provider->create(
-				register: (string)$registerId,
-				schema: (string)$schemaId,
-				objectId: $objectUuid,
+				register: (string)$target->registerId,
+				schema: (string)$target->schemaId(),
+				objectId: $target->objectUuid,
 				payload: $payload
 			);
 		} catch (ProviderUnavailableException $e) {
@@ -257,13 +248,10 @@ class OpenProjectLinkService {
 		$info = $this->normaliseRow(row: $created);
 
 		$link = $this->hydrateLink(
-			objectUuid: $objectUuid,
-			registerId: $registerId,
-			schemaId: $schemaId,
 			workPackageId: $workPackageId,
-			info: $info,
-			uid: $uid
+			info: $info
 		);
+		$target->stamp(link: $link, linkedBy: $uid);
 
 		return $this->openProjectLinkMapper->insert($link);
 	}//end createAndLinkWorkPackage()
@@ -271,27 +259,16 @@ class OpenProjectLinkService {
 	/**
 	 * Build an OpenProjectLink from normalised work-package info.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
 	 * @param int $workPackageId OpenProject work-package id.
 	 * @param array<string,mixed> $info Normalised work-package info.
-	 * @param string $uid The linking user id.
 	 *
 	 * @return OpenProjectLink
 	 */
 	private function hydrateLink(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
 		int $workPackageId,
 		array $info,
-		string $uid,
 	): OpenProjectLink {
 		$link = new OpenProjectLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setWorkPackageId($workPackageId);
 		$link->setSubject((string)($info['subject'] ?? ('#' . $workPackageId)));
 		$link->setType($this->stringOrNull(value: ($info['type'] ?? null)));
@@ -301,8 +278,6 @@ class OpenProjectLinkService {
 		$link->setProject($this->stringOrNull(value: ($info['project'] ?? null)));
 		$link->setUrl($this->stringOrNull(value: ($info['url'] ?? null)));
 		$link->setCachedAt(new DateTime());
-		$link->setLinkedBy($uid);
-		$link->setLinkedAt(new DateTime());
 
 		return $link;
 	}//end hydrateLink()

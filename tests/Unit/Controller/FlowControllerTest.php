@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowControllerFactory;
 use OCA\OpenRegister\Controller\FlowController;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
@@ -43,6 +44,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Controller\FlowController
+ * @uses \OCA\OpenRegister\Controller\Support\FlowCatalogue
+ * @uses \OCA\OpenRegister\Controller\Support\FlowDefinitions
+ * @uses \OCA\OpenRegister\Controller\Support\FlowControllerServices
  *
  * The uses-list below is load-bearing, not decoration. phpunit.xml sets
  * `beStrictAboutCoverageMetadata`, so a covers-tagged test that executes an
@@ -160,7 +164,7 @@ class FlowControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($adminUser);
 		$this->groupManager->method('isAdmin')->willReturn(true);
 
-		$this->controller = new FlowController(
+		$this->controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->eventCatalog,
@@ -323,7 +327,7 @@ class FlowControllerTest extends TestCase {
 
 		$this->request->method('getParam')->willReturn('slots');
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -374,7 +378,7 @@ class FlowControllerTest extends TestCase {
 		$this->flows->method('find')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('No such flow'));
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -411,7 +415,7 @@ class FlowControllerTest extends TestCase {
 		$this->flows->method('find')->willReturn(new \OCA\OpenRegister\Db\Flow());
 		$this->request->method('getParam')->willReturn('');
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -460,7 +464,7 @@ class FlowControllerTest extends TestCase {
 				]
 			);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -496,7 +500,7 @@ class FlowControllerTest extends TestCase {
 		);
 		$this->request->method('getParam')->willReturn('');
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -523,7 +527,7 @@ class FlowControllerTest extends TestCase {
 
 		$this->request->method('getParam')->willReturn('');
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -658,7 +662,7 @@ class FlowControllerTest extends TestCase {
 			->with(IManager::SCOPE_USER)
 			->willReturn([]);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -693,7 +697,7 @@ class FlowControllerTest extends TestCase {
 			->with(IManager::SCOPE_USER)
 			->willReturn([]);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -726,7 +730,7 @@ class FlowControllerTest extends TestCase {
 			->with(IManager::SCOPE_USER)
 			->willReturn([]);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -759,7 +763,7 @@ class FlowControllerTest extends TestCase {
 		$denying = $this->createMock(\OCA\OpenRegister\Service\OpenRegisterActionAuthService::class);
 		$denying->method('can')->willReturn(false);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -1046,7 +1050,7 @@ class FlowControllerTest extends TestCase {
 		$denying = $this->createMock(\OCA\OpenRegister\Service\OpenRegisterActionAuthService::class);
 		$denying->method('can')->willReturn(false);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),
@@ -1074,7 +1078,7 @@ class FlowControllerTest extends TestCase {
 		$anonymous = $this->createMock(IUserSession::class);
 		$anonymous->method('getUser')->willReturn(null);
 
-		$controller = new FlowController(
+		$controller = FlowControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(EventCatalogService::class),

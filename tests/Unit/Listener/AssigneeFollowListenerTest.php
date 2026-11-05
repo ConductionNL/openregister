@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Listener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\Watcher;
+use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Listener\AssigneeFollowListener;

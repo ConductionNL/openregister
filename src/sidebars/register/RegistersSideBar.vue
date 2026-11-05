@@ -483,6 +483,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@use '../../styles/sidebars.scss' as *;
+
 .section {
 	padding: 12px 0;
 	border-bottom: 1px solid var(--color-border);
@@ -492,13 +494,7 @@ export default {
 	border-bottom: none;
 }
 
-.sectionTitle {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-	font-weight: bold;
-	padding: 0 16px;
-	margin: 0 0 12px 0;
-}
+@include section-title;
 
 .loadingContainer {
 	display: flex;
@@ -508,12 +504,7 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
-.statsStack {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	padding: 0 8px;
-}
+@include stats-stack;
 
 .filterSection {
 	display: flex;

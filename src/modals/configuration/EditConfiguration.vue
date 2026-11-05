@@ -78,14 +78,9 @@ import {
 								"
 								@update:modelValue="updateType">
 								<template #option="{ label, description }">
-									<div class="option-content">
-										<span class="option-title">{{ label }}</span>
-										<span
-											v-if="description"
-											class="option-description"
-											>{{ description }}</span
-										>
-									</div>
+									<SelectOption
+										:title="label"
+										:description="description" />
 								</template>
 							</NcSelect>
 							<p class="field-hint">
@@ -151,14 +146,9 @@ import {
 								@searchChange="searchRegisters"
 								@update:modelValue="updateRegisters">
 								<template #option="{ title, description }">
-									<div class="option-content">
-										<span class="option-title">{{ title }}</span>
-										<span
-											v-if="description"
-											class="option-description"
-											>{{ description }}</span
-										>
-									</div>
+									<SelectOption
+										:title="title"
+										:description="description" />
 								</template>
 								<template #no-options>
 									<span v-if="loadingRegisters">{{
@@ -194,14 +184,9 @@ import {
 								@searchChange="searchSchemas"
 								@update:modelValue="updateSchemas">
 								<template #option="{ title, description }">
-									<div class="option-content">
-										<span class="option-title">{{ title }}</span>
-										<span
-											v-if="description"
-											class="option-description"
-											>{{ description }}</span
-										>
-									</div>
+									<SelectOption
+										:title="title"
+										:description="description" />
 								</template>
 								<template #no-options>
 									<span v-if="loadingSchemas">{{
@@ -241,14 +226,9 @@ import {
 								@searchChange="searchObjects"
 								@update:modelValue="updateObjects">
 								<template #option="{ title, description }">
-									<div class="option-content">
-										<span class="option-title">{{ title }}</span>
-										<span
-											v-if="description"
-											class="option-description"
-											>{{ description }}</span
-										>
-									</div>
+									<SelectOption
+										:title="title"
+										:description="description" />
 								</template>
 								<template #no-options>
 									<span v-if="loadingObjects">{{
@@ -305,14 +285,9 @@ import {
 								@searchChange="searchSources"
 								@update:modelValue="updateSources">
 								<template #option="{ title, description }">
-									<div class="option-content">
-										<span class="option-title">{{ title }}</span>
-										<span
-											v-if="description"
-											class="option-description"
-											>{{ description }}</span
-										>
-									</div>
+									<SelectOption
+										:title="title"
+										:description="description" />
 								</template>
 								<template #no-options>
 									<span v-if="loadingSources">{{
@@ -348,14 +323,9 @@ import {
 								@searchChange="searchAgents"
 								@update:modelValue="updateAgents">
 								<template #option="{ name, description }">
-									<div class="option-content">
-										<span class="option-title">{{ name }}</span>
-										<span
-											v-if="description"
-											class="option-description"
-											>{{ description }}</span
-										>
-									</div>
+									<SelectOption
+										:title="name"
+										:description="description" />
 								</template>
 								<template #no-options>
 									<span v-if="loadingAgents">{{
@@ -391,14 +361,9 @@ import {
 								@searchChange="searchViews"
 								@update:modelValue="updateViews">
 								<template #option="{ name, description }">
-									<div class="option-content">
-										<span class="option-title">{{ name }}</span>
-										<span
-											v-if="description"
-											class="option-description"
-											>{{ description }}</span
-										>
-									</div>
+									<SelectOption
+										:title="name"
+										:description="description" />
 								</template>
 								<template #no-options>
 									<span v-if="loadingViews">Searching...</span>
@@ -432,14 +397,9 @@ import {
 								@searchChange="searchApplications"
 								@update:modelValue="updateManagedApplications">
 								<template #option="{ name, description }">
-									<div class="option-content">
-										<span class="option-title">{{ name }}</span>
-										<span
-											v-if="description"
-											class="option-description"
-											>{{ description }}</span
-										>
-									</div>
+									<SelectOption
+										:title="name"
+										:description="description" />
 								</template>
 								<template #no-options>
 									<span v-if="loadingApplications"
@@ -479,14 +439,9 @@ import {
 								"
 								@update:modelValue="updateSourceType">
 								<template #option="{ label, description }">
-									<div class="option-content">
-										<span class="option-title">{{ label }}</span>
-										<span
-											v-if="description"
-											class="option-description"
-											>{{ description }}</span
-										>
-									</div>
+									<SelectOption
+										:title="label"
+										:description="description" />
 								</template>
 							</NcSelect>
 							<p class="field-hint">
@@ -543,14 +498,9 @@ import {
 								"
 								@update:modelValue="updateApplication">
 								<template #option="{ name, description }">
-									<div class="option-content">
-										<span class="option-title">{{ name }}</span>
-										<span
-											v-if="description"
-											class="option-description"
-											>{{ description }}</span
-										>
-									</div>
+									<SelectOption
+										:title="name"
+										:description="description" />
 								</template>
 							</NcSelect>
 							<p v-if="selectedApplication" class="field-hint">
@@ -740,8 +690,10 @@ import CloudSync from 'vue-material-design-icons/CloudSync.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Database from 'vue-material-design-icons/Database.vue'
+import SelectOption from '../../components/shared/SelectOption.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
+import { freshState } from '../../services/initialState.js'
 
 /**
  * The entities a configuration links to: its key and API path, the selection
@@ -806,6 +758,51 @@ function newConfiguration() {
 	}
 }
 
+/**
+ * The state every instance of this component starts from.
+ */
+const INITIAL_STATE = {
+	loading: false,
+	error: null,
+	activeTab: 0,
+	selectedRegisters: [],
+	selectedSchemas: [],
+	selectedObjects: [],
+	selectedSources: [],
+	selectedAgents: [],
+	selectedViews: [],
+	selectedManagedApplications: [],
+	selectedApplication: null,
+	selectedType: null,
+	// Management tab selections
+	selectedSourceType: null,
+	selectedNotificationGroups: [],
+	// Loading states for searches
+	loadingRegisters: false,
+	loadingSchemas: false,
+	loadingObjects: false,
+	loadingSources: false,
+	loadingAgents: false,
+	loadingViews: false,
+	loadingApplications: false,
+	// Search results
+	registerOptions: [],
+	schemaOptions: [],
+	objectOptions: [],
+	sourceOptions: [],
+	agentOptions: [],
+	viewOptions: [],
+	applicationOptions: [],
+	// Debounce timers
+	registerSearchDebounce: null,
+	schemaSearchDebounce: null,
+	objectSearchDebounce: null,
+	sourceSearchDebounce: null,
+	agentSearchDebounce: null,
+	viewSearchDebounce: null,
+	applicationSearchDebounce: null,
+}
+
 export default {
 	name: 'EditConfiguration',
 	components: {
@@ -818,6 +815,7 @@ export default {
 		NcTextField,
 		NcTextArea,
 		AppTabs,
+		SelectOption,
 		AppTab,
 		// Icons
 		Cancel,
@@ -828,47 +826,7 @@ export default {
 	},
 
 	data() {
-		return {
-			loading: false,
-			error: null,
-			activeTab: 0,
-			selectedRegisters: [],
-			selectedSchemas: [],
-			selectedObjects: [],
-			selectedSources: [],
-			selectedAgents: [],
-			selectedViews: [],
-			selectedManagedApplications: [],
-			selectedApplication: null,
-			selectedType: null,
-			// Management tab selections
-			selectedSourceType: null,
-			selectedNotificationGroups: [],
-			// Loading states for searches
-			loadingRegisters: false,
-			loadingSchemas: false,
-			loadingObjects: false,
-			loadingSources: false,
-			loadingAgents: false,
-			loadingViews: false,
-			loadingApplications: false,
-			// Search results
-			registerOptions: [],
-			schemaOptions: [],
-			objectOptions: [],
-			sourceOptions: [],
-			agentOptions: [],
-			viewOptions: [],
-			applicationOptions: [],
-			// Debounce timers
-			registerSearchDebounce: null,
-			schemaSearchDebounce: null,
-			objectSearchDebounce: null,
-			sourceSearchDebounce: null,
-			agentSearchDebounce: null,
-			viewSearchDebounce: null,
-			applicationSearchDebounce: null,
-		}
+		return freshState(INITIAL_STATE)
 	},
 
 	computed: {
@@ -1650,24 +1608,6 @@ export default {
 	font-size: 0.875rem;
 	color: var(--color-text-maxcontrast);
 	margin: 0;
-}
-
-.option-content {
-	display: flex;
-	flex-direction: column;
-	gap: 0.25rem;
-}
-
-.option-title {
-	font-weight: 500;
-}
-
-.option-description {
-	font-size: 0.875rem;
-	color: var(--color-text-maxcontrast);
-	max-width: 100%;
-	white-space: normal;
-	overflow-wrap: break-word;
 }
 </style>
 

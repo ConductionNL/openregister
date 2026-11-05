@@ -235,33 +235,22 @@ final class PortalTaskConfig {
 	 * cycle, previous task and reason ride under `metadata` so "asked three
 	 * times" is a read, not a reconstruction.
 	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 * @param array $items The input items; the first is the representative.
-	 * @param string $nodeId The node raising the task.
+	 * @param PortalTaskRound $round The ask: items, configuration, node, cycle,
+	 *                               matched party and, on a re-ask, the previous
+	 *                               task and the reason.
 	 * @param string $nodeType The node's catalogue id.
-	 * @param string $partyReference The frozen party reference (`party:<ref>`).
-	 * @param int $cycle This ask's cycle number, 1 for the first.
-	 * @param string|null $previousTaskUuid The previous cycle's task, on a re-ask.
-	 * @param string|null $reason The re-ask reason, on a re-ask.
 	 *
 	 * @return array<string, mixed> The creation payload.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-portal-task-step-creates-one-external-task-and-suspends-the-run
 	 */
-	public function taskData(
-		array $config,
-		array $items,
-		string $nodeId,
-		string $nodeType,
-		string $partyReference,
-		int $cycle = 1,
-		?string $previousTaskUuid = null,
-		?string $reason = null,
-	): array {
-		$json = $this->representativeJson(items: $items);
+	public function taskData(PortalTaskRound $round, string $nodeType): array {
+		$config = $round->config;
+		$json = $this->representativeJson(items: $round->items);
+		$partyReference = $round->partyReference();
 
 		$data = [
-			'title' => $this->renderedTitle(config: $config, items: $items),
+			'title' => $this->renderedTitle(config: $config, items: $round->items),
 			'description' => $this->renderedOrNull(value: ($config['description'] ?? null), json: $json),
 			'state' => Task::STATE_ACTIVE,
 			'performerType' => Task::PERFORMER_EXTERNAL,
@@ -273,13 +262,13 @@ final class PortalTaskConfig {
 			'onReject' => $this->behaviourOrNull(value: ($config['onReject'] ?? '')),
 			'metadata' => [
 				'flowNodeType' => $nodeType,
-				'flowNode' => $nodeId,
+				'flowNode' => $round->nodeId(),
 				'outcomeKey' => $this->outcomeKey(config: $config),
 				'partyRole' => $this->partyRole(config: $config),
 				'partyReference' => $partyReference,
-				'cycle' => $cycle,
-				'previousTaskUuid' => $previousTaskUuid,
-				'reaskReason' => $reason,
+				'cycle' => $round->cycle(),
+				'previousTaskUuid' => $round->previousTaskUuid(),
+				'reaskReason' => $round->reason(),
 				'upload' => $this->uploadConstraints(config: $config),
 			],
 		];
@@ -295,26 +284,22 @@ final class PortalTaskConfig {
 	 * reference, so a resume POSTed at the run is refused for everyone, which
 	 * is the contract (the resume endpoint cannot answer for a resident).
 	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 * @param array $items The input items.
+	 * @param PortalTaskRound $round The ask the task was created for.
 	 * @param string $taskUuid The created task.
-	 * @param string $partyReference The frozen party reference.
-	 * @param int $cycle The cycle number.
-	 * @param string|null $previousTaskUuid The previous cycle's task, on a re-ask.
 	 *
 	 * @return array<string, mixed> The slot values.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-re-ask-creates-a-new-task-carrying-a-mandatory-reason
 	 */
-	public function slotValues(array $config, array $items, string $taskUuid, string $partyReference, int $cycle, ?string $previousTaskUuid): array {
+	public function slotValues(PortalTaskRound $round, string $taskUuid): array {
 		return [
 			FlowTaskBridge::SLOT_TASK_UUID => $taskUuid,
 			FlowTaskBridge::SLOT_ASKED_AT => (new DateTime())->format('c'),
-			FlowTaskBridge::SLOT_ADVANCE => FlowAdvanceBudget::fromConfig(config: $config)->toStored(),
-			'assignee' => $partyReference,
-			'title' => $this->renderedTitle(config: $config, items: $items),
-			self::SLOT_CYCLE => $cycle,
-			self::SLOT_PREVIOUS_TASK_UUID => $previousTaskUuid,
+			FlowTaskBridge::SLOT_ADVANCE => FlowAdvanceBudget::fromConfig(config: $round->config)->toStored(),
+			'assignee' => $round->partyReference(),
+			'title' => $this->renderedTitle(config: $round->config, items: $round->items),
+			self::SLOT_CYCLE => $round->cycle(),
+			self::SLOT_PREVIOUS_TASK_UUID => $round->previousTaskUuid(),
 			self::SLOT_PASSED_AT => null,
 		];
 	}//end slotValues()

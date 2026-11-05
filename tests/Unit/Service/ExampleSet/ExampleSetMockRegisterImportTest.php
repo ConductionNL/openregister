@@ -85,7 +85,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetParties
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
  * @uses \OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks

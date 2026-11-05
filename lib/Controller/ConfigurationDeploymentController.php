@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ConfigDeploymentControllerServices;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
@@ -55,26 +56,52 @@ use OCP\IRequest;
 class ConfigurationDeploymentController extends Controller {
 
 	/**
+	 * The pending values.
+	 *
+	 * @var ConfigurationDraftService
+	 */
+	private readonly ConfigurationDraftService $drafts;
+
+	/**
+	 * The diff.
+	 *
+	 * @var DeploymentPreviewService
+	 */
+	private readonly DeploymentPreviewService $previews;
+
+	/**
+	 * The apply and the rollback.
+	 *
+	 * @var DeploymentService
+	 */
+	private readonly DeploymentService $deployments;
+
+	/**
+	 * The effective-configuration read.
+	 *
+	 * @var ConfigurationExplainer
+	 */
+	private readonly ConfigurationExplainer $explainer;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                    $appName    The app name.
 	 * @param IRequest                  $request    The request.
-	 * @param ConfigurationDraftService $drafts     The pending values.
-	 * @param DeploymentPreviewService  $previews   The diff.
-	 * @param DeploymentService         $deployments The apply and the rollback.
-	 * @param ConfigurationExplainer    $explainer  The effective-configuration read.
+	 * @param ConfigDeploymentControllerServices $services The configuration deployment controller services.
 	 * @param ConfigurationKeyRegistry  $registry   The draftable vocabulary.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ConfigurationDraftService $drafts,
-		private readonly DeploymentPreviewService $previews,
-		private readonly DeploymentService $deployments,
-		private readonly ConfigurationExplainer $explainer,
+		ConfigDeploymentControllerServices $services,
 		private readonly ConfigurationKeyRegistry $registry,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->drafts = $services->drafts;
+		$this->previews = $services->previews;
+		$this->deployments = $services->deployments;
+		$this->explainer = $services->explainer;
 
 	}//end __construct()
 

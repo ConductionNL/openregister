@@ -305,6 +305,59 @@ class PdfTextReplacerTest extends TestCase {
 	}//end testValidateOutputReturnsResidualsWhenStrict()
 
 	/**
+	 * A strict run refuses an output the parser cannot re-read: the residual
+	 * check cannot run, so no unchecked file may be written. The refusal
+	 * carries counts only, never document text.
+	 *
+	 * @return void
+	 */
+	public function testValidateOutputRefusesUnreadableOutputWhenStrict(): void {
+		$unreadable = 'Jan Jansen is not a PDF';
+
+		try {
+			$this->replacer->validateOutput(
+				outputBytes: $unreadable,
+				substitutions: ['Jan Jansen' => '[PERSON: 1]'],
+				replaceStats: [],
+				strict: true
+			);
+			self::fail(message: 'A strict run must refuse an output it cannot re-read.');
+		} catch (PdfAnonymisationException $e) {
+			self::assertSame(expected: PdfAnonymisationException::REASON_VALIDATION_FAILED, actual: $e->getReason());
+			self::assertSame(
+				expected: ['stage' => 'validate.extract', 'output_bytes' => strlen($unreadable)],
+				actual: $e->getDiagnostic()
+			);
+			self::assertStringNotContainsString(needle: 'Jansen', haystack: $e->getMessage());
+		}
+	}//end testValidateOutputRefusesUnreadableOutputWhenStrict()
+
+	/**
+	 * A lenient run returns an unreadable output unchecked, with a PII-free warning.
+	 *
+	 * @return void
+	 */
+	public function testValidateOutputSkipsUnreadableOutputWhenLenient(): void {
+		$this->logger
+			->expects(matcher: self::once())
+			->method(constraint: 'warning')
+			->with(
+				self::matchesRegularExpression(pattern: '/re-extraction skipped/i'),
+				self::callback(callback: static function (array $context): bool {
+					return strpos((string)json_encode($context), 'Jansen') === false
+						&& ($context['stage'] ?? null) === 'validate.extract';
+				})
+			);
+
+		$residuals = $this->replacer->validateOutput(
+			outputBytes: 'Jan Jansen is not a PDF',
+			substitutions: ['Jan Jansen' => '[PERSON: 1]']
+		);
+
+		self::assertSame(expected: [], actual: $residuals);
+	}//end testValidateOutputSkipsUnreadableOutputWhenLenient()
+
+	/**
 	 * Validation gate passes silently when the PDF contains only the
 	 * placeholder and no residual entity text.
 	 *

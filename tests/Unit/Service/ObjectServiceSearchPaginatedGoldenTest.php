@@ -21,6 +21,7 @@ use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
@@ -65,6 +66,7 @@ use Psr\Log\LoggerInterface;
  * Set OR_GOLDEN_RECORD=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\ObjectService
+ * @uses   \OCA\OpenRegister\Service\ObjectSourceRead
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Exception\NotAuthorizedException
@@ -248,6 +250,10 @@ class ObjectServiceSearchPaginatedGoldenTest extends TestCase {
 	 * @return ObjectService
 	 */
 	private function service(): ObjectService {
+		// The list-read hook resolves the read registration from the container; a stub keeps it silent.
+		$container = $this->createMock(IAppContainer::class);
+		$container->method('get')->willReturn($this->createStub(ReadHistoryService::class));
+
 		$queryHandler = $this->createMock(QueryHandler::class);
 		$queryHandler->method('searchObjectsPaginatedDatabase')->willReturnCallback(
 			function (array $query = [], bool $_rbac = true, bool $_multitenancy = true, bool $deleted = false, ?array $ids = null, ?string $uses = null): array {
@@ -384,7 +390,7 @@ class ObjectServiceSearchPaginatedGoldenTest extends TestCase {
 			cacheHandler: $cacheHandler,
 			settingsService: $this->createMock(SettingsService::class),
 			dateTimeNormalizer: $this->createMock(DateTimeNormalizer::class),
-			container: $this->createMock(IAppContainer::class),
+			container: $container,
 			objectSourceRegistry: $objectSourceRegistry
 		);
 	}//end service()

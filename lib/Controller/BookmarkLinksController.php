@@ -31,6 +31,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\BookmarkDraft;
 use OCA\OpenRegister\Service\BookmarkLinkService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
@@ -118,9 +119,7 @@ class BookmarkLinksController extends Controller {
 				}
 
 				$link = $this->bookmarkLinkService->linkBookmark(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
+					$this->linkTargetOf(object: $object),
 					$bookmarkId
 				);
 
@@ -178,13 +177,8 @@ class BookmarkLinksController extends Controller {
 				}
 
 				$link = $this->bookmarkLinkService->createAndLinkBookmark(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
-					$title,
-					$url,
-					$description,
-					$tags
+					$this->linkTargetOf(object: $object),
+					(new BookmarkDraft(title: $title, url: $url))->withDetails(description: $description, tags: $tags)
 				);
 
 				return new JSONResponse($link->jsonSerialize(), 201);

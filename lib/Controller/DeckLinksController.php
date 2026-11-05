@@ -35,6 +35,7 @@ use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\DeckLinkService;
+use OCA\OpenRegister\Service\CardDraft;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
@@ -124,9 +125,7 @@ class DeckLinksController extends Controller {
 				}
 
 				$link = $this->deckLinkService->linkCard(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
+					$this->linkTargetOf(object: $object),
 					$cardId
 				);
 
@@ -190,14 +189,10 @@ class DeckLinksController extends Controller {
 				}
 
 				$link = $this->deckLinkService->createAndLinkCard(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
-					$boardId,
-					$stackId,
-					$title,
-					$descriptionStr,
-					$duedateStr
+					target: $this->linkTargetOf(object: $object),
+					card: (new CardDraft(title: $title, stackId: $stackId))
+						->onBoard(boardId: $boardId)
+						->withDetails(description: $descriptionStr, duedate: $duedateStr)
 				);
 
 				// AD-1: persist sticky schema-level default after each successful create.

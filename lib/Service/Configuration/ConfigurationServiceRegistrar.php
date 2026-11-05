@@ -47,7 +47,6 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
@@ -363,7 +362,6 @@ final class ConfigurationServiceRegistrar {
 					logger: $container->get('Psr\Log\LoggerInterface'),
 					organisationMapper: $container->get(OrganisationMapperInterface::class),
 					schemaCacheService: $container->get(SchemaCacheHandler::class),
-					facetCacheSvc: $container->get(FacetCacheHandler::class),
 					searchTrailMapper: $container->get(SearchTrailMapper::class),
 					userManager: $container->get('OCP\IUserManager'),
 					db: $container->get('OCP\IDBConnection'),

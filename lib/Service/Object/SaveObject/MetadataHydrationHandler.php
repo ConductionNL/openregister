@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
+use OCA\OpenRegister\Service\Object\LanguageKeyedMap;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -353,10 +354,8 @@ class MetadataHydrationHandler {
 	/**
 	 * Whether every key of an array is a BCP 47 language tag.
 	 *
-	 * Kept identical, deliberately, to TranslationHandler's own predicate: the
-	 * two must agree on what a language map IS, or a value one of them resolves
-	 * the other would encode. TranslationHandler cannot simply be injected
-	 * here — it is request-scoped through LanguageService, and this runs on the
+	 * Shares LanguageKeyedMap with TranslationHandler, which cannot be injected
+	 * here: it is request-scoped through LanguageService, and this runs on the
 	 * save path, including from `occ` where there is no request at all.
 	 *
 	 * @param array $value The candidate value.
@@ -366,22 +365,7 @@ class MetadataHydrationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function isLanguageKeyedObject(array $value): bool {
-		if (empty($value) === true) {
-			return false;
-		}
-
-		foreach (array_keys($value) as $key) {
-			if (is_string($key) === false) {
-				return false;
-			}
-
-			// BCP 47 language tag: 2-3 lowercase letters, optional subtags.
-			if (preg_match('/^[a-z]{2,3}(-[a-zA-Z0-9]{2,8})*$/', $key) !== 1) {
-				return false;
-			}
-		}
-
-		return true;
+		return (new LanguageKeyedMap(value: $value))->isLanguageKeyed();
 	}//end isLanguageKeyedObject()
 
 	/**
@@ -454,81 +438,79 @@ class MetadataHydrationHandler {
 	public function processTwigLikeTemplate(array $data, string $template, array $schemaProperties = []): ?string {
 		// Extract all {{ fieldName }} patterns.
 		preg_match_all('/\{\{\s*([^}]+)\s*\}\}/', $template, $matches);
-
 		if (empty($matches[0]) === true) {
 			return null;
 		}
 
+		$source = new TemplateSource(data: $data, schemaProperties: $schemaProperties);
 		$result = $template;
 		$hasValues = false;
-
-		// Replace each {{ fieldName }} with its value.
 		foreach ($matches[0] as $index => $fullMatch) {
-			$fieldExpression = trim($matches[1][$index]);
-
-			// Check if this expression uses the ifFilled filter: "field | ifFilled: valIfFilled, valIfEmpty".
-			$ifFilledRegex = '/^(.+?)\|\s*ifFilled\s*:\s*(.+)$/s';
-			$mapRegex = '/^(.+?)\|\s*map\s*:\s*(.+)$/s';
-			// Default: simple field path lookup with relation resolution.
-			$value = $this->getValueFromPath(data: $data, path: $fieldExpression);
-			$value = $this->resolveRelationValue(
-				fieldName: $fieldExpression,
-				value: $value,
-				schemaProperties: $schemaProperties
-			);
-
-			if (preg_match($ifFilledRegex, $fieldExpression, $ifFilledMatch) === 1) {
-				$value = $this->processIfFilledFilter(
-					data: $data,
-					fieldName: trim($ifFilledMatch[1]),
-					definition: trim($ifFilledMatch[2])
-				);
-			} elseif (preg_match($mapRegex, $fieldExpression, $mapMatch) === 1) {
-				// Check if this expression uses the map filter
-				// syntax: "field | map: key1=val1, key2=val2".
-				$value = $this->processMapFilter(
-					data: $data,
-					fieldName: trim($mapMatch[1]),
-					mapDefinition: trim($mapMatch[2])
-				);
-			} elseif (str_contains($fieldExpression, '|') === true) {
-				// Pipe without "map:" means fallback syntax.
-				$value = $this->processFieldWithFallbacks(
-					data: $data,
-					fieldChain: $fieldExpression,
-					schemaProperties: $schemaProperties
-				);
-			}//end if
-
-			// Convert arrays to string representation if still an array at this point.
-			if (is_array($value) === true) {
-				$value = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-			}
-
-			if ($value !== null && is_string($value) === true && trim($value) !== '') {
-				$result = str_replace($fullMatch, trim($value), $result);
-				$hasValues = true;
-				continue;
-			}
-
-			// Replace with empty string for missing/empty values.
-			$result = str_replace($fullMatch, '', $result);
-		}//end foreach
-
-		if ($hasValues === false) {
-			return null;
+			$value = $this->templateValue(expression: trim($matches[1][$index]), source: $source);
+			$result = str_replace($fullMatch, $value, $result);
+			$hasValues = ($hasValues === true || $value !== '');
 		}
 
 		// Clean up excess whitespace and normalize spaces.
-		$result = preg_replace('/\s+/', ' ', $result);
-		$result = trim($result);
-
-		if ($result !== '') {
-			return $result;
+		$result = trim(preg_replace('/\s+/', ' ', $result));
+		if ($hasValues === false || $result === '') {
+			return null;
 		}
 
-		return null;
+		return $result;
 	}//end processTwigLikeTemplate()
+
+	/**
+	 * The trimmed text one placeholder renders to, or '' when it has no value.
+	 *
+	 * @param string         $expression The placeholder expression, without braces
+	 * @param TemplateSource $source     The object data and schema properties
+	 *
+	 * @return string The text for the placeholder
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function templateValue(string $expression, TemplateSource $source): string {
+		$value = $this->filteredTemplateValue(expression: $expression, source: $source);
+		if ($value !== null && trim($value) !== '') {
+			return trim($value);
+		}
+
+		return '';
+	}//end templateValue()
+
+	/**
+	 * The value of one placeholder: "field | ifFilled: valIfFilled, valIfEmpty",
+	 * "field | map: key1=val1, key2=val2", "a | b | c" (first filled field), or a
+	 * plain field path, with a relation resolved to the related object's name.
+	 *
+	 * The plain path is always resolved first, also when a filter replaces it.
+	 *
+	 * @param string         $expression The placeholder expression, without braces
+	 * @param TemplateSource $source     The object data and schema properties
+	 *
+	 * @return string|null The value
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function filteredTemplateValue(string $expression, TemplateSource $source): ?string {
+		$value = $this->getValueFromPath(data: $source->data, path: $expression);
+		$value = $this->resolveRelationValue(fieldName: $expression, value: $value, schemaProperties: $source->schemaProperties);
+
+		if (preg_match('/^(.+?)\|\s*ifFilled\s*:\s*(.+)$/s', $expression, $match) === 1) {
+			return $this->processIfFilledFilter(data: $source->data, fieldName: trim($match[1]), definition: trim($match[2]));
+		}
+
+		if (preg_match('/^(.+?)\|\s*map\s*:\s*(.+)$/s', $expression, $match) === 1) {
+			return $this->processMapFilter(data: $source->data, fieldName: trim($match[1]), mapDefinition: trim($match[2]));
+		}
+
+		if (str_contains($expression, '|') === true) {
+			return $this->processFieldWithFallbacks(data: $source->data, fieldChain: $expression, schemaProperties: $source->schemaProperties);
+		}
+
+		return $value;
+	}//end filteredTemplateValue()
 
 	/**
 	 * Processes a map filter expression by looking up a field value in a key-value map.

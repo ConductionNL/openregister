@@ -1107,6 +1107,15 @@ import {
 } from '../../store/modules/avg.js'
 import { avgStore } from '../../store/store.js'
 
+/**
+ * The icon of each escalation tier; any other tier is on track.
+ */
+const TIER_ICONS = {
+	breached: 'AlertCircleOutline',
+	escalation: 'AlertOutline',
+	reminder: 'ClockOutline',
+}
+
 export default {
 	name: 'AvgIndex',
 
@@ -1838,16 +1847,9 @@ export default {
 		 * @return {string}
 		 */
 		tierIcon(tier) {
-			switch (tier) {
-				case 'breached':
-					return 'AlertCircleOutline'
-				case 'escalation':
-					return 'AlertOutline'
-				case 'reminder':
-					return 'ClockOutline'
-				default:
-					return 'CheckboxMarkedCircleOutline'
-			}
+			return Object.hasOwn(TIER_ICONS, tier)
+				? TIER_ICONS[tier]
+				: 'CheckboxMarkedCircleOutline'
 		},
 
 		/**
@@ -2057,18 +2059,10 @@ export default {
 }
 </script>
 
-<style scoped>
-.viewContainer {
-	padding: 20px;
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
 
-.viewHeader {
-	border-bottom: 1px solid var(--color-border);
-	padding-bottom: 12px;
-}
+@include view-container-rules;
 
 .viewHeaderTitle {
 	display: flex;
@@ -2097,10 +2091,7 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
-.viewActions {
-	display: flex;
-	gap: 8px;
-}
+@include view-actions;
 
 .tableContainer {
 	border: 1px solid var(--color-border);
@@ -2139,10 +2130,7 @@ export default {
 	text-transform: uppercase;
 }
 
-.badge-status-published {
-	background: var(--color-success);
-	color: var(--color-primary-text);
-}
+@include badge-status-published;
 
 .badge-status-archived {
 	background: var(--color-warning);

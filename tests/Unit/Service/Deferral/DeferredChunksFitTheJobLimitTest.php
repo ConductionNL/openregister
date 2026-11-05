@@ -37,7 +37,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Tests\Support\ShutdownFunctionSpy;
 use OCP\BackgroundJob\IJobList;

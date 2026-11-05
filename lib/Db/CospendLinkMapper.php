@@ -32,6 +32,10 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<CospendLink>
  */
 class CospendLinkMapper extends QBMapper {
+
+	use ObjectKeyLinkTrait;
+	use FindLinksByObjectUuidTrait;
+	use DeleteLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -40,48 +44,6 @@ class CospendLinkMapper extends QBMapper {
 	public function __construct(IDBConnection $db) {
 		parent::__construct(db: $db, tableName: 'openregister_cospend_links', entityClass: CospendLink::class);
 	}//end __construct()
-
-	/**
-	 * Find cospend links by object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return CospendLink[] Array of cospend links.
-	 */
-	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
-
-	/**
-	 * Find a cospend link by id, scoped to the owning object UUID.
-	 *
-	 * The object UUID scope guards against deleting another object's link
-	 * by guessing an entry id.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param int $entryId The link row id.
-	 *
-	 * @return CospendLink|null The link or null if not found.
-	 */
-	public function findByObjectAndId(string $objectUuid, int $entryId): ?CospendLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('id', $qb->createNamedParameter($entryId, IQueryBuilder::PARAM_INT)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
-		}
-	}//end findByObjectAndId()
 
 	/**
 	 * Find a duplicate link by the composite-unique tuple.
@@ -126,21 +88,6 @@ class CospendLinkMapper extends QBMapper {
 	}//end findDuplicate()
 
 	/**
-	 * Delete all cospend links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
-
-	/**
 	 * Delete a cospend link by object UUID + link row id (Tier-2 unlink path).
 	 *
 	 * Returns the number of rows actually deleted so callers can
@@ -152,11 +99,6 @@ class CospendLinkMapper extends QBMapper {
 	 * @return int Number of deleted rows.
 	 */
 	public function deleteByObjectAndId(string $objectUuid, int $entryId): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('id', $qb->createNamedParameter($entryId, IQueryBuilder::PARAM_INT)));
-
-		return $qb->executeStatement();
+		return $this->deleteObjectLinks(objectUuid: $objectUuid, key: new LinkColumn(name: 'id', value: $entryId));
 	}//end deleteByObjectAndId()
 }//end class

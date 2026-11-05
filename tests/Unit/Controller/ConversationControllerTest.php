@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ConversationControllerFactory;
 use OCA\OpenRegister\Controller\ConversationController;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\FeedbackMapper;
-use OCA\OpenRegister\Db\Message;
-use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Notifications\Db\Message;
+use OCA\OpenRegister\Notifications\Db\MessageMapper;
 use OCA\OpenRegister\Service\ChatService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -42,7 +43,7 @@ class ConversationControllerTest extends TestCase {
 		$this->chatService = $this->createMock(ChatService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new ConversationController(
+		$this->controller = ConversationControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->conversationMapper,

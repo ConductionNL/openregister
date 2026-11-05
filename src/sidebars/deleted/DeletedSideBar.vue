@@ -200,7 +200,30 @@ import AccountCircle from 'vue-material-design-icons/AccountCircle.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import eventBus from '../../eventBus.js'
-import { addDateRange, addScope } from '../../services/routeQuery.js'
+import {
+	addDateRange,
+	addScope,
+	queriesEqual,
+	routeDate,
+} from '../../services/routeQuery.js'
+import { applyRouteScope } from '../../services/routeScope.js'
+import {
+	registerSelect,
+	schemaSelect,
+	scopeOption,
+} from '../../services/scopeSelect.js'
+
+/**
+ * The ids of the selected register and schema, null when none is selected.
+ *
+ * @return {{register: (string|number|null), schema: (string|number|null)}} The ids
+ */
+function selectedScopeIds() {
+	return {
+		register: registerStore.registerItem?.id || null,
+		schema: schemaStore.schemaItem?.id || null,
+	}
+}
 
 export default {
 	name: 'DeletedSideBar',
@@ -235,25 +258,7 @@ export default {
 		 * @return {object} NcSelect options bag for registers
 		 */
 		registerOptions() {
-			return {
-				options: registerStore.registerList.map((register) => ({
-					value: register.id,
-					label: register.title,
-					title: register.title,
-					register,
-				})),
-
-				reduce: (option) => option.register,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.register && option.register.title)
-						|| option.label
-						|| ''
-					)
-				},
-			}
+			return registerSelect(registerStore.registerList)
 		},
 
 		/**
@@ -263,33 +268,7 @@ export default {
 		 * @return {object} NcSelect options bag for schemas
 		 */
 		schemaOptions() {
-			if (!registerStore.registerItem) return { options: [] }
-
-			return {
-				options: schemaStore.schemaList
-					.filter((schema) =>
-						registerStore.registerItem.schemas.some(
-							(registerSchema) => registerSchema.id === schema.id,
-						),
-					)
-					.map((schema) => ({
-						value: schema.id,
-						label: schema.title,
-						title: schema.title,
-						schema,
-					})),
-
-				reduce: (option) => option.schema,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.schema && option.schema.title)
-						|| option.label
-						|| ''
-					)
-				},
-			}
+			return schemaSelect(registerStore.registerItem, schemaStore.schemaList)
 		},
 
 		/**
@@ -299,14 +278,7 @@ export default {
 		 * @return {object|null} Selected register option, or null
 		 */
 		selectedRegisterValue() {
-			if (!registerStore.registerItem) return null
-			const register = registerStore.registerItem
-			return {
-				value: register.id,
-				label: register.title,
-				title: register.title,
-				register,
-			}
+			return scopeOption(registerStore.registerItem, 'register')
 		},
 
 		/**
@@ -316,14 +288,7 @@ export default {
 		 * @return {object|null} Selected schema option, or null
 		 */
 		selectedSchemaValue() {
-			if (!schemaStore.schemaItem) return null
-			const schema = schemaStore.schemaItem
-			return {
-				value: schema.id,
-				label: schema.title,
-				title: schema.title,
-				schema,
-			}
+			return scopeOption(schemaStore.schemaItem, 'schema')
 		},
 
 		/**
@@ -505,14 +470,7 @@ export default {
 		 * @return {boolean} Whether the two query objects are equal
 		 */
 		queriesEqual(a, b) {
-			const ka = Object.keys(a || {}).sort()
-			const kb = Object.keys(b || {}).sort()
-			if (ka.length !== kb.length) return false
-			for (let i = 0; i < ka.length; i++) {
-				if (ka[i] !== kb[i]) return false
-				if (String(a[ka[i]]) !== String(b[kb[i]])) return false
-			}
-			return true
+			return queriesEqual(a, b)
 		},
 
 		/**
@@ -539,55 +497,16 @@ export default {
 		 */
 		applyQueryParamsFromRoute() {
 			if (this.$route.path !== '/deleted') return
-			const { register, schema, deletedBy, dateFrom, dateTo } =
-				this.$route.query || {}
-
-			// Dates
-			this.dateFrom =
-				dateFrom && new Date(dateFrom).getDate() ? new Date(dateFrom) : null
-			this.dateTo =
-				dateTo && new Date(dateTo).getDate() ? new Date(dateTo) : null
-
-			// Deleted by
-			if (typeof deletedBy === 'string' && deletedBy.length > 0) {
-				this.selectedDeletedBy = { value: deletedBy, label: deletedBy }
-			} else {
-				this.selectedDeletedBy = null
-			}
-
-			// Registers and schemas depend on lists being loaded
-			const applyRegister = () => {
-				if (!register) return true
-				if (!registerStore.registerList.length) return false
-				const reg = registerStore.registerList.find(
-					(r) => String(r.id) === String(register),
-				)
-				if (reg) registerStore.setRegisterItem(reg)
-				return true
-			}
-			const applySchema = () => {
-				if (!schema) return true
-				if (!schemaStore.schemaList.length) return false
-				const sch = schemaStore.schemaList.find(
-					(s) => String(s.id) === String(schema),
-				)
-				if (sch) schemaStore.setSchemaItem(sch)
-				return true
-			}
-
-			const tryApply = (attempt = 0) => {
-				const regOk = applyRegister()
-				const schOk = applySchema()
-				if (regOk && schOk) {
-					// Once state is set from URL, emit filters for legacy compatibility
-					this.applyFiltersToStore()
-					return
-				}
-				if (attempt < 10) {
-					setTimeout(() => tryApply(attempt + 1), 200)
-				}
-			}
-			tryApply()
+			const query = this.$route.query || {}
+			this.dateFrom = routeDate(query.dateFrom)
+			this.dateTo = routeDate(query.dateTo)
+			const deletedBy = query.deletedBy
+			this.selectedDeletedBy =
+				typeof deletedBy === 'string' && deletedBy.length > 0
+					? { value: deletedBy, label: deletedBy }
+					: null
+			// Once state is set from URL, emit filters for legacy compatibility
+			applyRouteScope(query, () => this.applyFiltersToStore())
 		},
 
 		/**
@@ -598,8 +517,7 @@ export default {
 		 */
 		applyFiltersToStore() {
 			const filters = {
-				register: registerStore.registerItem?.id || null,
-				schema: schemaStore.schemaItem?.id || null,
+				...selectedScopeIds(),
 				deletedBy: this.selectedDeletedBy?.value || null,
 				dateFrom: this.dateFrom || null,
 				dateTo: this.dateTo || null,
@@ -610,7 +528,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/sidebars.scss' as *;
+
 .filterSection,
 .statsSection {
 	padding: 12px 0;
@@ -631,18 +551,7 @@ export default {
 	margin: 0 0 12px 0;
 }
 
-.filterGroup {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	padding: 0 16px;
-	margin-bottom: 16px;
-}
-
-.filterGroup label {
-	font-size: 0.9em;
-	color: var(--color-text-maxcontrast);
-}
+@include filter-group-rules;
 
 .filter-hint {
 	margin: 8px 16px;
@@ -661,25 +570,9 @@ export default {
 	font-size: 0.9rem;
 }
 
-.statCard {
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	padding: 16px;
-	margin-bottom: 12px;
-	text-align: center;
-}
+@include stat-card;
 
-.statNumber {
-	font-size: 2rem;
-	font-weight: bold;
-	color: var(--color-primary);
-	margin-bottom: 4px;
-}
-
-.statLabel {
-	font-size: 0.9rem;
-	color: var(--color-text-maxcontrast);
-}
+@include stat-number-rules;
 
 .topDeleters {
 	margin-top: 20px;

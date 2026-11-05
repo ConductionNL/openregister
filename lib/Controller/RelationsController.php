@@ -22,11 +22,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\RelationsControllerServices;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeckCardService;
-use OCA\OpenRegister\Service\EmailService;
+use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
@@ -168,9 +169,9 @@ class RelationsController extends Controller {
 	/**
 	 * Email service.
 	 *
-	 * @var EmailService
+	 * @var EmailServiceInterface
 	 */
-	private readonly EmailService $emailService;
+	private readonly EmailServiceInterface $emailService;
 
 	/**
 	 * Calendar event service.
@@ -212,15 +213,7 @@ class RelationsController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
-	 * @param ObjectOperationsInterface $objectService Object service
-	 * @param NoteService $noteService Note service
-	 * @param ObjectCalendarTasksInterface $taskService Task service
-	 * @param EmailService $emailService Email service
-	 * @param ObjectCalendarEventsInterface $calendarEventService Calendar event service
-	 * @param ContactService $contactService Contact service
-	 * @param DeckCardService $deckCardService Deck card service
-	 * @param LoggerInterface $logger PSR-3 logger
-	 * @param ContainerInterface $container App container the leaf link services are resolved from
+	 * @param RelationsControllerServices $services The relations controller services.
 	 *
 	 * @return void
 	 *
@@ -229,27 +222,19 @@ class RelationsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		ObjectOperationsInterface $objectService,
-		NoteService $noteService,
-		ObjectCalendarTasksInterface $taskService,
-		EmailService $emailService,
-		ObjectCalendarEventsInterface $calendarEventService,
-		ContactService $contactService,
-		DeckCardService $deckCardService,
-		LoggerInterface $logger,
-		ContainerInterface $container,
+		RelationsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
-		$this->objectService = $objectService;
-		$this->noteService = $noteService;
-		$this->taskService = $taskService;
-		$this->emailService = $emailService;
-		$this->calendarEventService = $calendarEventService;
-		$this->contactService = $contactService;
-		$this->deckCardService = $deckCardService;
-		$this->logger = $logger;
-		$this->container = $container;
+		$this->objectService = $services->records->objectService;
+		$this->noteService = $services->records->noteService;
+		$this->taskService = $services->records->taskService;
+		$this->emailService = $services->records->emailService;
+		$this->calendarEventService = $services->collaboration->calendarEventService;
+		$this->contactService = $services->collaboration->contactService;
+		$this->deckCardService = $services->collaboration->deckCardService;
+		$this->logger = $services->platform->logger;
+		$this->container = $services->platform->container;
 	}//end __construct()
 
 	/**

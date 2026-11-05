@@ -198,14 +198,12 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 .form-group {
 	margin-bottom: 1rem;
 }
 
-.form-group label {
-	display: block;
-	margin-bottom: 0.5rem;
-	font-weight: bold;
-}
+@include form-group-label;
 </style>

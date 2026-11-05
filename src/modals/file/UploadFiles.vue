@@ -421,6 +421,15 @@ const { openFileUpload, files, reset, setTags } = useFileSelection({
 	dropzone,
 })
 
+/**
+ * The settings of a label multiselect before its options are loaded.
+ *
+ * @return {{inputLabel: string, multiple: boolean}} The settings
+ */
+function labelSelect() {
+	return { inputLabel: 'Labels', multiple: true }
+}
+
 export default {
 	name: 'UploadFiles',
 	components: {
@@ -450,16 +459,8 @@ export default {
 			share: false,
 			editingTags: null,
 			editedTags: [],
-			labelOptions: {
-				inputLabel: 'Labels',
-				multiple: true,
-			},
-
-			labelOptionsEdit: {
-				inputLabel: 'Labels',
-				multiple: true,
-			},
-
+			labelOptions: labelSelect(),
+			labelOptionsEdit: labelSelect(),
 			tagsLoading: false,
 		}
 	},
@@ -598,20 +599,12 @@ export default {
 		 * @spec exclude Mutual-exclusion guard for the tag multiselect ("No label" vs real tags); UI selection helper.
 		 */
 		isSelectable(option) {
-			if (
-				this.labelOptions.value?.includes(t('openregister', 'No label'))
-				&& option !== t('openregister', 'No label')
-			) {
-				return false
+			const noLabel = t('openregister', 'No label')
+			const chosen = this.labelOptions.value
+			if (chosen?.includes(noLabel)) {
+				return option === noLabel
 			}
-			if (
-				this.labelOptions.value?.length >= 1
-				&& !this.labelOptions.value?.includes(t('openregister', 'No label'))
-				&& option === t('openregister', 'No label')
-			) {
-				return false
-			}
-			return true
+			return !(chosen?.length >= 1 && option === noLabel)
 		},
 
 		/**
@@ -635,23 +628,24 @@ export default {
 			// this avoids the waiting time in later calls
 			objectStore
 				.fetchTags()
-				.then((tags) => {
-					const newLabelOptions = new Set()
-					const newLabelOptionsEdit = new Set()
-
-					// add labels to set
-					newLabelOptions.add(t('openregister', 'No label'))
-
-					tags.map((tag) => newLabelOptions.add(tag))
-					tags.map((tag) => newLabelOptionsEdit.add(tag))
-
-					// convert set to array
-					this.labelOptions.options = Array.from(newLabelOptions)
-					this.labelOptionsEdit.options = Array.from(newLabelOptionsEdit)
-				})
+				.then((tags) => this.applyTags(tags))
 				.finally(() => {
 					this.tagsLoading = false
 				})
+		},
+
+		/**
+		 * Offer the stored tags as labels: with "No label" first when adding,
+		 * without it when editing, each tag once.
+		 *
+		 * @param {Array<string>} tags The stored tags
+		 * @spec exclude Fills the label multiselects; UI form-loading plumbing.
+		 * @return {void}
+		 */
+		applyTags(tags) {
+			const noLabel = t('openregister', 'No label')
+			this.labelOptions.options = Array.from(new Set([noLabel, ...tags]))
+			this.labelOptionsEdit.options = Array.from(new Set(tags))
 		},
 
 		/**
@@ -718,100 +712,150 @@ export default {
 		 * @param {File|null} specificFile
 		 * @spec exclude Uploads queued attachments to the object via objectStore; entity-file persistence lives in the store, this is modal orchestration plumbing.
 		 */
-		async addAttachments(specificFile = null) {
-			if (!this.registerId || !this.schemaId || !this.objectId) {
+		async addAttachments(specificFile) {
+			if (!this.hasObjectContext()) {
 				this.error = 'Missing object context'
 				return
 			}
 			this.loading = true
 			this.error = null
-
 			try {
-				let filesToUpload = []
-
-				// only get the specific file if it is passed
-				if (specificFile) {
-					filesToUpload = [specificFile]
-				} else {
-					// filter out successful and pending files
-					filesToUpload = this.filesComputed.filter(
-						(file) =>
-							file.status !== 'uploaded'
-							&& file.status !== 'uploading',
-					)
-
-					// filter out files too large
-					filesToUpload = filesToUpload.filter(
-						(file) => !this.getTooBigFiles(file.size),
-					)
-				}
-
-				if (filesToUpload.length === 0) {
-					this.loading = false
-					return
-				}
-
-				// Build and register the type
-				const type = `${this.registerId}-${this.schemaId}`
-				if (!objectStore.objectTypes?.includes(type)) {
-					objectStore.registerObjectType(
-						type,
-						this.schemaId,
-						this.registerId,
-					)
-				}
-
-				// file calls
-				const calls = await Promise.all(
-					filesToUpload.map(async (file) => {
-						file.status = 'uploading'
-
-						try {
-							const formData = new FormData()
-							formData.append('files[]', file)
-							if (Array.isArray(file.tags)) {
-								file.tags.forEach((tag) =>
-									formData.append('tags[]', tag),
-								)
-							}
-							if (this.share) {
-								formData.append('share', '1')
-							}
-
-							const responseJson = await objectStore.uploadFiles(
-								type,
-								this.objectId,
-								formData,
-							)
-
-							file.status = 'uploaded'
-
-							return [true, responseJson]
-						} catch (error) {
-							file.status = 'failed'
-							return [false, error]
-						}
-					}),
-				)
-
-				this.getAllTags()
-
-				// Refresh files for the object
-				await objectStore.fetchFiles(type, this.objectId)
-
-				const failed = calls.filter((result) => result[0] === false)
-
-				if (failed.length > 0) {
-					this.error = failed[0][1].message
-				} else {
-					this.success = true
-				}
+				await this.uploadAll(this.filesToSend(specificFile))
 			} catch (err) {
 				// This block generally catches unexpected errors.
 				this.error = err.response?.data?.error ?? err
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * The files an upload sends: the one given, or every uploadable queued file.
+		 *
+		 * @param {File|null} specificFile The one file to send, if any
+		 * @return {Array<File>} The files
+		 * @spec exclude UI state helper selecting the files to upload
+		 */
+		filesToSend(specificFile) {
+			return specificFile ? [specificFile] : this.uploadableFiles()
+		},
+
+		/**
+		 * Whether the modal knows the register, schema and object to upload to.
+		 *
+		 * @return {boolean} Whether all three are set
+		 * @spec exclude UI state guard for the upload action
+		 */
+		hasObjectContext() {
+			return Boolean(this.registerId && this.schemaId && this.objectId)
+		},
+
+		/**
+		 * The queued files that are not uploaded or uploading yet and not too big.
+		 *
+		 * @return {Array<File>} The files
+		 * @spec exclude UI state helper selecting the files to upload
+		 */
+		uploadableFiles() {
+			return this.filesComputed
+				.filter(
+					(file) =>
+						file.status !== 'uploaded' && file.status !== 'uploading',
+				)
+				.filter((file) => !this.getTooBigFiles(file.size))
+		},
+
+		/**
+		 * Upload files to the object, refresh its files and record the outcome.
+		 *
+		 * @param {Array<File>} files The files
+		 * @spec exclude Uploads attachments via objectStore; modal orchestration plumbing.
+		 */
+		async uploadAll(files) {
+			if (files.length === 0) {
+				return
+			}
+			const type = this.objectType()
+			const calls = await Promise.all(
+				files.map((file) => this.uploadOne(type, file)),
+			)
+			this.getAllTags()
+			await objectStore.fetchFiles(type, this.objectId)
+			this.recordUploads(calls)
+		},
+
+		/**
+		 * The object type of the register and schema, registered with the
+		 * object store when it does not know it yet.
+		 *
+		 * @return {string} The object type
+		 * @spec exclude Uploads attachments via objectStore; modal orchestration plumbing.
+		 */
+		objectType() {
+			const type = `${this.registerId}-${this.schemaId}`
+			if (!objectStore.objectTypes?.includes(type)) {
+				objectStore.registerObjectType(type, this.schemaId, this.registerId)
+			}
+			return type
+		},
+
+		/**
+		 * Record the outcome of the uploads: the first failure, or success.
+		 *
+		 * @param {Array} calls The upload results, each [succeeded, error]
+		 * @spec exclude Uploads attachments via objectStore; modal orchestration plumbing.
+		 * @return {void}
+		 */
+		recordUploads(calls) {
+			const failed = calls.filter((result) => result[0] === false)
+			if (failed.length > 0) {
+				this.error = failed[0][1].message
+			} else {
+				this.success = true
+			}
+		},
+
+		/**
+		 * Upload one file and track its status on the file.
+		 *
+		 * @param {string} type The register-schema object type
+		 * @param {File} file The file
+		 * @return {Promise<Array>} [true, response] or [false, error]
+		 * @spec exclude Uploads one attachment via objectStore; modal orchestration plumbing.
+		 */
+		async uploadOne(type, file) {
+			file.status = 'uploading'
+			try {
+				const responseJson = await objectStore.uploadFiles(
+					type,
+					this.objectId,
+					this.uploadForm(file),
+				)
+				file.status = 'uploaded'
+				return [true, responseJson]
+			} catch (error) {
+				file.status = 'failed'
+				return [false, error]
+			}
+		},
+
+		/**
+		 * The form data that uploads one file with its tags.
+		 *
+		 * @param {File} file The file
+		 * @return {FormData} The form data
+		 * @spec exclude UI plumbing building the upload form data
+		 */
+		uploadForm(file) {
+			const formData = new FormData()
+			formData.append('files[]', file)
+			if (Array.isArray(file.tags)) {
+				file.tags.forEach((tag) => formData.append('tags[]', tag))
+			}
+			if (this.share) {
+				formData.append('share', '1')
+			}
+			return formData
 		},
 	},
 }

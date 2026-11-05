@@ -148,26 +148,16 @@
       <code><![CDATA[$col]]></code>
     </StringIncrement>
   </file>
-  <file src="lib/Service/File/Pdf/PdfTextReplacer.php">
-    <AssignmentToVoid>
-      <code><![CDATA[$residualEntities]]></code>
-    </AssignmentToVoid>
-  </file>
   <file src="lib/Service/GraphQL/GraphQLResolver.php">
     <InvalidPropertyAssignmentValue>
       <code><![CDATA[$this->relationCache]]></code>
     </InvalidPropertyAssignmentValue>
   </file>
-  <file src="lib/Service/Notification/SystemEntityObjectAdapter.php">
+  <file src="lib/Notifications/Service/Notification/SystemEntityObjectAdapter.php">
     <ConstructorSignatureMismatch>
       <code><![CDATA[public function __construct(Entity $entity, string $systemSlug) {]]></code>
       <code><![CDATA[public function __construct(Entity $entity, string $systemSlug) {]]></code>
     </ConstructorSignatureMismatch>
-  </file>
-  <file src="lib/Service/OasService.php">
-    <UnsupportedPropertyReferenceUsage>
-      <code><![CDATA[$operation = &$this->oas['paths'][$pathName][$method]]]></code>
-    </UnsupportedPropertyReferenceUsage>
   </file>
   <file src="lib/Service/Object/SaveObjects.php">
     <ImplicitToStringCast>

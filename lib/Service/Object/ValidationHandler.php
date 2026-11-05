@@ -22,6 +22,7 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use Psr\Log\LoggerInterface;
@@ -115,87 +116,54 @@ class ValidationHandler {
 	 *     invalid: array<int, array{id: int, uuid: string,
 	 *     name: string|null, data: array<string, mixed>, error: string}>}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple exception types require separate handling
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function validateObjectsBySchema(int $schemaId, callable $saveCallback): array {
-		// Use the mapper's findBySchema method to get all objects for this schema.
-		// This bypasses RBAC and multi-tenancy automatically.
-		$objects = $this->objectEntityMapper->findBySchema($schemaId);
+		$result = ['valid' => [], 'invalid' => []];
 
-		$validObjects = [];
-		$invalidObjects = [];
+		// The mapper's findBySchema() bypasses RBAC and multi-tenancy.
+		foreach ($this->objectEntityMapper->findBySchema($schemaId) as $object) {
+			$data = $object->getObject();
+			$error = $this->silentSaveError(
+				object: $object,
+				save: static fn () => $saveCallback($data, [], $object->getRegister(), $schemaId, $object->getUuid(), false, false, true)
+			);
+			$entry = ['id' => $object->getId(), 'uuid' => $object->getUuid(), 'name' => $object->getName(), 'data' => $data];
+			if ($error === null) {
+				$result['valid'][] = $entry;
+				continue;
+			}
 
-		foreach ($objects as $object) {
-			$objectData = [];
-			try {
-				// Get the object data for validation.
-				$objectData = $object->getObject();
+			$result['invalid'][] = $entry + ['error' => $error];
+		}
 
-				// Use saveCallback with silent=true to validate without actually saving.
-				// This will trigger validation and return any errors.
-				$saveCallback(
-					$objectData,
-					[],
-					// Extend.
-					$object->getRegister(),
-					// Register.
-					$schemaId,
-					// Schema.
-					$object->getUuid(),
-					// UUID.
-					false,
-					// Rbac.
-					false,
-					// Multitenancy.
-					true
-					// Silent.
-				);
-
-				// If saveCallback succeeded, the object is valid.
-				$validObjects[] = [
-					'id' => $object->getId(),
-					'uuid' => $object->getUuid(),
-					'name' => $object->getName(),
-					'data' => $objectData,
-				];
-			} catch (ValidationException|CustomValidationException $e) {
-				// If validation failed, add to invalid objects with error details.
-				$invalidObjects[] = [
-					'id' => $object->getId(),
-					'uuid' => $object->getUuid(),
-					'name' => $object->getName(),
-					'data' => $objectData,
-					'error' => $e->getMessage(),
-				];
-			} catch (\Exception $e) {
-				// Handle other exceptions.
-				$this->logger->error(
-					message: '[ValidationHandler] Unexpected error during validation',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'app' => 'openregister',
-						'objectId' => $object->getId(),
-						'error' => $e->getMessage(),
-					]
-				);
-				$invalidObjects[] = [
-					'id' => $object->getId(),
-					'uuid' => $object->getUuid(),
-					'name' => $object->getName(),
-					'data' => $objectData,
-					'error' => 'Unexpected error: ' . $e->getMessage(),
-				];
-			}//end try
-		}//end foreach
-
-		return [
-			'valid' => $validObjects,
-			'invalid' => $invalidObjects,
-		];
+		return $result;
 	}//end validateObjectsBySchema()
+
+	/**
+	 * Run a silent save (no RBAC, no multitenancy) of one object and return why it failed.
+	 *
+	 * @param ObjectEntity $object The object, for the log line
+	 * @param callable     $save   The save of the object's data
+	 *
+	 * @return string|null The validation message, 'Unexpected error: ...' for any other failure, or null when valid
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function silentSaveError(ObjectEntity $object, callable $save): ?string {
+		try {
+			$save();
+			return null;
+		} catch (ValidationException|CustomValidationException $e) {
+			return $e->getMessage();
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[ValidationHandler] Unexpected error during validation',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister', 'objectId' => $object->getId(), 'error' => $e->getMessage()]
+			);
+			return 'Unexpected error: ' . $e->getMessage();
+		}
+	}//end silentSaveError()
 
 	/**
 	 * Validate and save all objects for a schema with chunked processing
@@ -237,81 +205,71 @@ class ValidationHandler {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function validateAndSaveObjectsBySchema(
-		int $registerId,
-		int $schemaId,
-		array $saveCallback,
-		?int $limit = null,
-		int $offset = 0,
-	): array {
+	public function validateAndSaveObjectsBySchema(int $registerId, int $schemaId, array $saveCallback, ?int $limit = null, int $offset = 0): array {
 		$loaded = $this->loadSchemaAndRegister(registerId: $registerId, schemaId: $schemaId);
 		if ($loaded === null) {
-			return [
-				'processed' => 0,
-				'updated' => 0,
-				'failed' => 0,
-				'errors' => [['error' => 'Failed to load schema or register']],
-			];
+			return ['processed' => 0, 'updated' => 0, 'failed' => 0, 'errors' => [['error' => 'Failed to load schema or register']]];
 		}
 
 		$run = new ValidationRun(registerId: $registerId, schemaId: $schemaId);
 		$run->saveCallback = $saveCallback;
-		$run->limit = $limit;
-		$run->offset = $offset;
+		$run->limit        = $limit;
+		$run->offset       = $offset;
 
+		return $this->validateLoaded(loaded: $loaded, run: $run);
+	}//end validateAndSaveObjectsBySchema()
+
+	/**
+	 * Load the schema's objects, then validate and save them chunk by chunk.
+	 *
+	 * @param array         $loaded The loaded schema and register.
+	 * @param ValidationRun $run    The run: schema, save callback, limit and offset.
+	 *
+	 * @return array{processed: int, updated: int, failed: int, total: int, errors: array}
+	 */
+	private function validateLoaded(array $loaded, ValidationRun $run): array {
 		// All objects are stored in magic tables.
 		$this->logger->info(
 			message: '[ValidationHandler] Loading objects for validation',
 			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'schema_id' => $schemaId,
-				'storage_type' => 'magic_table',
-				'limit' => $limit,
-				'offset' => $offset,
+				'file' => __FILE__, 'line' => __LINE__, 'schema_id' => $run->schemaId,
+				'storage_type' => 'magic_table', 'limit' => $run->limit, 'offset' => $run->offset,
 			]
 		);
 
-		$allObjects = $this->loadObjectsForValidation(loaded: $loaded, schemaId: $schemaId);
+		$allObjects = $this->loadObjectsForValidation(loaded: $loaded, schemaId: $run->schemaId);
 		if ($allObjects === null) {
-			return [
-				'processed' => 0,
-				'updated' => 0,
-				'failed' => 0,
-				'total' => 0,
-				'errors' => [['error' => 'Failed to load objects for validation']],
-			];
+			$errors = [['error' => 'Failed to load objects for validation']];
+			return ['processed' => 0, 'updated' => 0, 'failed' => 0, 'total' => 0, 'errors' => $errors];
 		}
 
 		$run->totalObjects = count($allObjects);
-		$allObjects = $this->applyLimitOffset(allObjects: $allObjects, run: $run);
+		$allObjects        = $this->applyLimitOffset(allObjects: $allObjects, run: $run);
 		$this->planChunks(allObjects: $allObjects, run: $run);
-		$totals = $this->processAllChunks(allObjects: $allObjects, run: $run);
+		return $this->completed(totals: $this->processAllChunks(allObjects: $allObjects, run: $run), run: $run);
+	}//end validateLoaded()
 
-		unset($allObjects);
+	/**
+	 * Log and answer the totals of a finished run.
+	 *
+	 * @param array{processed: int, updated: int, failed: int} $totals The chunk totals.
+	 * @param ValidationRun                                     $run    The run.
+	 *
+	 * @return array{processed: int, updated: int, failed: int, total: int, errors: array}
+	 */
+	private function completed(array $totals, ValidationRun $run): array {
 		gc_collect_cycles();
-
 		$this->logger->info(
 			message: '[ValidationHandler] Validation and save completed',
 			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'schema_id' => $schemaId,
-				'total_in_schema' => $run->totalObjects,
-				'objects_processed' => $totals['processed'],
-				'objects_updated' => $totals['updated'],
-				'objects_failed' => $totals['failed'],
+				'file' => __FILE__, 'line' => __LINE__, 'schema_id' => $run->schemaId, 'total_in_schema' => $run->totalObjects,
+				'objects_processed' => $totals['processed'], 'objects_updated' => $totals['updated'], 'objects_failed' => $totals['failed'],
 			]
 		);
 
-		return [
-			'processed' => $totals['processed'],
-			'updated' => $totals['updated'],
-			'failed' => $totals['failed'],
-			'total' => $run->totalObjects,
-			'errors' => [],
-		];
-	}//end validateAndSaveObjectsBySchema()
+		$result = ['processed' => $totals['processed'], 'updated' => $totals['updated'], 'failed' => $totals['failed']];
+		return $result + ['total' => $run->totalObjects, 'errors' => []];
+	}//end completed()
 
 	/**
 	 * Load schema and register entities by their IDs.
@@ -510,69 +468,89 @@ class ValidationHandler {
 	 */
 	private function processValidationChunk(ValidationChunk $chunk, ValidationRun $run): array {
 		$objectsData = $this->convertChunkToArrays(objectsChunk: $chunk->objects);
-
-		// Only called from the chunk loop, so there is always at least one object to process.
-		$progressPct = round(($chunk->offset / $run->objectsToProcess) * 100, 1);
-
-		$this->logger->info(
-			message: '[ValidationHandler] Processing validation chunk',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'schema_id' => $run->schemaId,
-				'chunk' => $run->chunkLabel(chunkOffset: $chunk->offset),
-				'chunk_size' => count($chunk->objects),
-				'progress_pct' => $progressPct,
-				'memory_usage' => round(memory_get_usage(true) / 1024 / 1024) . ' MB',
-			]
-		);
+		$context = $this->chunkLogContext(chunk: $chunk, run: $run);
+		$started = $this->chunkStartDetails(chunk: $chunk, run: $run);
+		$this->logger->info(message: '[ValidationHandler] Processing validation chunk', context: $context + $started);
 
 		try {
-			$statistics = ($this->bulkSave(objectsData: $objectsData, run: $run)['statistics'] ?? []);
-			$chunkProcessed = count($objectsData);
-			$chunkUpdated = ($statistics['saved'] ?? 0) + ($statistics['updated'] ?? 0);
-			$chunkFailed = $statistics['failed'] ?? 0;
-
-			$this->logger->info(
-				message: '[ValidationHandler] Chunk validation completed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schema_id' => $run->schemaId,
-					'chunk' => $run->chunkLabel(chunkOffset: $chunk->offset),
-					'chunk_processed' => $chunkProcessed,
-					'chunk_updated' => $chunkUpdated,
-					'chunk_failed' => $chunkFailed,
-					'total_progress' => $chunkProcessed . '/' . $run->objectsToProcess,
-					'memory_after' => round(memory_get_usage(true) / 1024 / 1024) . ' MB',
-				]
-			);
-
-			return [
-				'processed' => $chunkProcessed,
-				'updated' => $chunkUpdated,
-				'failed' => $chunkFailed,
-			];
+			$counts = $this->bulkSaveCounts(objectsData: $objectsData, run: $run);
+			$done = $this->chunkDoneDetails(counts: $counts, run: $run);
+			$this->logger->info(message: '[ValidationHandler] Chunk validation completed', context: $context + $done);
+			return $counts;
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ValidationHandler] Chunk validation failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schema_id' => $run->schemaId,
-					'chunk' => $run->chunkLabel(chunkOffset: $chunk->offset),
-					'chunkOffset' => $chunk->offset,
-					'error' => $e->getMessage(),
-				]
+				context: $context + ['chunkOffset' => $chunk->offset, 'error' => $e->getMessage()]
 			);
-
-			return [
-				'processed' => 0,
-				'updated' => 0,
-				'failed' => count($chunk->objects),
-			];
-		}//end try
+			return ['processed' => 0, 'updated' => 0, 'failed' => count($chunk->objects)];
+		}
 	}//end processValidationChunk()
+
+	/**
+	 * The log context every line about one chunk starts with.
+	 *
+	 * @param ValidationChunk $chunk The chunk.
+	 * @param ValidationRun   $run   The run.
+	 *
+	 * @return array{file: string, line: int, schema_id: int, chunk: string}
+	 */
+	private function chunkLogContext(ValidationChunk $chunk, ValidationRun $run): array {
+		return ['file' => __FILE__, 'line' => __LINE__, 'schema_id' => $run->schemaId, 'chunk' => $run->chunkLabel(chunkOffset: $chunk->offset)];
+	}//end chunkLogContext()
+
+	/**
+	 * Size, progress and memory logged when a chunk starts.
+	 *
+	 * Only called from the chunk loop, so there is always at least one object to process.
+	 *
+	 * @param ValidationChunk $chunk The chunk.
+	 * @param ValidationRun   $run   The run.
+	 *
+	 * @return array{chunk_size: int, progress_pct: float, memory_usage: string}
+	 */
+	private function chunkStartDetails(ValidationChunk $chunk, ValidationRun $run): array {
+		return [
+			'chunk_size' => count($chunk->objects),
+			'progress_pct' => round(($chunk->offset / $run->objectsToProcess) * 100, 1),
+			'memory_usage' => round(memory_get_usage(true) / 1024 / 1024) . ' MB',
+		];
+	}//end chunkStartDetails()
+
+	/**
+	 * Bulk-save one chunk and count it: processed objects, saved plus updated, failed.
+	 *
+	 * @param array         $objectsData The chunk's object data.
+	 * @param ValidationRun $run         The run.
+	 *
+	 * @return array{processed: int, updated: int, failed: int}
+	 */
+	private function bulkSaveCounts(array $objectsData, ValidationRun $run): array {
+		$statistics = ($this->bulkSave(objectsData: $objectsData, run: $run)['statistics'] ?? []);
+
+		return [
+			'processed' => count($objectsData),
+			'updated' => ($statistics['saved'] ?? 0) + ($statistics['updated'] ?? 0),
+			'failed' => $statistics['failed'] ?? 0,
+		];
+	}//end bulkSaveCounts()
+
+	/**
+	 * Counts, overall progress and memory logged when a chunk is done.
+	 *
+	 * @param array{processed: int, updated: int, failed: int} $counts The chunk's counts.
+	 * @param ValidationRun                                    $run    The run.
+	 *
+	 * @return array<string, int|string>
+	 */
+	private function chunkDoneDetails(array $counts, ValidationRun $run): array {
+		return [
+			'chunk_processed' => $counts['processed'],
+			'chunk_updated' => $counts['updated'],
+			'chunk_failed' => $counts['failed'],
+			'total_progress' => $counts['processed'] . '/' . $run->objectsToProcess,
+			'memory_after' => round(memory_get_usage(true) / 1024 / 1024) . ' MB',
+		];
+	}//end chunkDoneDetails()
 
 	/**
 	 * Hand one chunk to the bulk save of the run's save callback, without RBAC, multitenancy or events.

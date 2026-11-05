@@ -46,7 +46,8 @@ use OCA\OpenRegister\Db\CaseToken;
 use OCA\OpenRegister\Db\CaseTokenMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\CaseTokenService;
-use OCA\OpenRegister\Service\Timeline\PublicTimeline;
+use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
+use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -324,7 +325,7 @@ class CaseTokenServiceTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 			container: $this->buildContainer([
 				'OCA\\OpenRegister\\Service\\ObjectService' => $this->buildObjectService(['title' => 'Public View']),
-				PublicTimeline::class => $reader,
+				PublicTimelineInterface::class => $reader,
 			]),
 		);
 

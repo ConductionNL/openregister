@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SettingsControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\SettingsController;
 use OCA\OpenRegister\Db\ChunkMapper;
@@ -34,6 +35,9 @@ use Psr\Log\LoggerInterface;
  * rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\SettingsController
+ * @uses \OCA\OpenRegister\Controller\Support\SettingsStore
+ * @uses \OCA\OpenRegister\Controller\Support\SettingsRuntime
+ * @uses \OCA\OpenRegister\Controller\Support\SettingsControllerServices
  */
 class SettingsControllerHybridDiagnosticsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/settings-hybrid-diagnostics-golden.json';
@@ -112,13 +116,12 @@ class SettingsControllerHybridDiagnosticsGoldenTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnCallback(static fn (string $text, array $params = []): string => vsprintf($text, $params));
 
-		$controller = new SettingsController(
+		$controller = SettingsControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(IAppConfig::class),
 			$this->connection($case['sql'] ?? []),
 			$container,
-			$this->createMock(IAppManager::class),
 			$this->createMock(SettingsService::class),
 			$logger,
 			$l10n

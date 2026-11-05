@@ -22,10 +22,12 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Controller\Support\ConfigurationControllerServices;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
@@ -37,9 +39,7 @@ use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -110,42 +110,34 @@ class ConfigurationController extends Controller {
 	private IAppManager $appManager;
 
 	/**
+	 * The session bundle, which answers the admin check.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
+
+	/**
 	 * Constructor
 	 *
 	 * @param string $appName The app name
 	 * @param IRequest $request The request object
-	 * @param ConfigurationMapper $configurationMapper Configuration mapper
-	 * @param ConfigurationServiceInterface $configurationService Configuration service
-	 * @param NotificationService $notificationService Notification service
-	 * @param GitHubClientInterface $githubHandler GitHub handler
-	 * @param GitLabHandler $gitlabHandler GitLab handler
-	 * @param IAppManager $appManager App manager
-	 * @param LoggerInterface $logger Logger
-	 * @param IUserSession $userSession User session for admin checks
-	 * @param IGroupManager $groupManager Group manager for admin checks
+	 * @param ConfigurationControllerServices $services The configuration controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		ConfigurationMapper $configurationMapper,
-		ConfigurationServiceInterface $configurationService,
-		NotificationService $notificationService,
-		GitHubClientInterface $githubHandler,
-		GitLabHandler $gitlabHandler,
-		IAppManager $appManager,
-		LoggerInterface $logger,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		ConfigurationControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->session = $services->session;
 
-		$this->configurationMapper = $configurationMapper;
-		$this->configurationService = $configurationService;
-		$this->notificationService = $notificationService;
-		$this->githubHandler = $githubHandler;
-		$this->gitlabHandler = $gitlabHandler;
-		$this->appManager = $appManager;
-		$this->logger = $logger;
+		$this->configurationMapper = $services->mappers->configurationMapper;
+		$this->configurationService = $services->domain->configurationService;
+		$this->notificationService = $services->domain->notificationService;
+		$this->githubHandler = $services->domain->githubHandler;
+		$this->gitlabHandler = $services->domain->gitlabHandler;
+		$this->appManager = $services->platform->appManager;
+		$this->logger = $services->session->logger;
 	}//end __construct()
 
 	/**
@@ -154,12 +146,7 @@ class ConfigurationController extends Controller {
 	 * @return bool True if a user is signed in and belongs to the admin group.
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->session->isAdmin();
 	}//end isCurrentUserAdmin()
 
 	/**

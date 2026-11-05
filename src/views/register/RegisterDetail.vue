@@ -854,6 +854,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@use '../../styles/views.scss' as *;
+
 .loadingContainer {
 	display: flex;
 	align-items: center;
@@ -870,19 +872,7 @@ export default {
 	padding: 20px;
 }
 
-.chartCard {
-	background: var(--color-main-background);
-	border-radius: 8px;
-	padding: 20px;
-	box-shadow: 0 2px 8px var(--color-box-shadow);
-	border: 1px solid var(--color-border);
-
-	h3 {
-		margin: 0 0 20px 0;
-		font-size: 1.2em;
-		color: var(--color-main-text);
-	}
-}
+@include chart-card;
 
 .cardGrid {
 	display: grid;
@@ -950,11 +940,7 @@ export default {
 	font-weight: 600;
 }
 
-@media screen and (max-width: 1024px) {
-	.chartGrid {
-		grid-template-columns: 1fr;
-	}
-}
+@include media-screen-and-max-width-1024px;
 
 .schemaChart {
 	margin-top: 16px;

@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace Unit\Service\Notification;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Service\Notification\ScheduledFilterEvaluator;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 

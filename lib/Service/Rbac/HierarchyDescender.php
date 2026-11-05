@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -59,6 +60,7 @@ use Throwable;
  * @spec openspec/specs/rbac-scopes/spec.md
  */
 class HierarchyDescender {
+	use MagicColumnNameTrait;
 
 	/**
 	 * How many parent uuids may go into one level's `IN (...)`.
@@ -408,12 +410,7 @@ class HierarchyDescender {
 	}//end parentOf()
 
 	/**
-	 * The column a property is stored in.
-	 *
-	 * The same camelCase to snake_case rendering
-	 * {@see \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler::propertyToColumnName()}
-	 * uses. Two renderings of one rule drift, so if that one ever changes this
-	 * one has to move with it, which is what the shared test pins.
+	 * The column a property is stored in, by the rule the table writer uses.
 	 *
 	 * @param string $property The declared property name.
 	 *
@@ -422,7 +419,7 @@ class HierarchyDescender {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function columnFor(string $property): string {
-		return strtolower((string)preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $property));
+		return $this->sanitizeColumnName(name: $property);
 	}//end columnFor()
 
 	/**

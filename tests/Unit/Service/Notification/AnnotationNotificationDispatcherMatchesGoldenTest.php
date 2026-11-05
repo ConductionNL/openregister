@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -30,8 +30,8 @@ use ReflectionMethod;
  * per event (the empty event is keyed `(empty)`), one character per context: T (true), F (false) or E (error).
  * Set `OR_GOLDEN_WRITE=1` to regenerate the fixture.
  *
- * @coversDefaultClass \OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher
- * @uses \OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher
+ * @coversDefaultClass \OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher
  */
 final class AnnotationNotificationDispatcherMatchesGoldenTest extends TestCase {
 

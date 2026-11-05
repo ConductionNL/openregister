@@ -784,6 +784,8 @@ export default {
 </script>
 
 <style scoped lang="scss">
+@use '../../styles/views.scss' as *;
+
 /* Table row accent for the active organisation. Drawn with an inset box-shadow,
    never border-left: a border adds layout width and shifts the row's cell
    content sideways, while box-shadow paints inside the box. Matches
@@ -835,15 +837,7 @@ export default {
 	white-space: nowrap;
 }
 
-.defaultBadge {
-	background: var(--color-warning);
-	color: var(--color-primary-text);
-}
-
-.activeBadge {
-	background: var(--color-success);
-	color: white;
-}
+@include default-badge-rules;
 
 /* Cards styling */
 .active-org-card {
@@ -883,13 +877,7 @@ export default {
 }
 
 /* Title with badges layout */
-.titleWithBadges {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	flex-wrap: wrap;
-	margin-bottom: 4px;
-}
+@include title-with-badges;
 
 .statusActive {
 	color: var(--color-success);

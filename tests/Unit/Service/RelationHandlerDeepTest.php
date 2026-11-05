@@ -65,7 +65,6 @@ class RelationHandlerDeepTest extends TestCase {
 		$this->handler = new RelationHandler(
 			$this->objectMapper,
 			$this->schemaMapper,
-			$this->performanceHandler,
 			$this->rbacHandler,
 			$this->logger,
 			$this->registerMapper
@@ -111,23 +110,6 @@ class RelationHandlerDeepTest extends TestCase {
 	// =========================================================================
 	// extractRelatedData
 	// =========================================================================
-
-	/**
-	 * Test extractRelatedData delegates to PerformanceHandler
-	 *
-	 * @return void
-	 */
-	public function testExtractRelatedDataDelegates(): void {
-		$expected = ['related' => ['uuid1', 'uuid2']];
-		$this->performanceHandler->expects($this->once())
-			->method('extractRelatedData')
-			->with(['result1'], true, false)
-			->willReturn($expected);
-
-		$result = $this->handler->extractRelatedData(['result1'], true, false);
-		$this->assertEquals($expected, $result);
-
-	}//end testExtractRelatedDataDelegates()
 
 	// =========================================================================
 	// extractAllRelationshipIds

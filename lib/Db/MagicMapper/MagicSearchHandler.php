@@ -49,7 +49,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\LikeOperator;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\WatcherMapper;
+use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
@@ -86,6 +86,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
 class MagicSearchHandler {
+	use MagicColumnNameTrait;
 
 	/**
 	 * Comparison operators accepted inside a filter's value bag.
@@ -98,6 +99,24 @@ class MagicSearchHandler {
 	 * @var string[]
 	 */
 	private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull', LikeOperator::KEY];
+
+	/**
+	 * Metadata columns a search may order by under their own name.
+	 *
+	 * @var array<int, string>
+	 */
+	private const SORTABLE_METADATA_COLUMNS = [
+		'_created',
+		'_updated',
+		'_name',
+		'_description',
+		'_summary',
+		'_uuid',
+		'_register',
+		'_schema',
+		'_owner',
+		'_organisation',
+	];
 
 	/**
 	 * The metadata columns a row sets on its entity, in the order they are set, with how
@@ -464,12 +483,10 @@ class MagicSearchHandler {
 		// indexes for ORDER BY … LIMIT instead of sorting the full result set.
 		$this->applyResultOrder(
 			qb: $queryBuilder,
-			order: $order,
-			schema: $schema,
-			searchTerm: $searchTerm,
-			recentViews: ($query['_recentViews'] ?? null),
-			dateTimeColumns: $dateTimeColumns,
-			sortLanguages: $this->sortLanguageChain(register: $register)
+			sort: new SortRequest(
+				order: $order, schema: $schema, searchTerm: $searchTerm, recentViews: ($query['_recentViews'] ?? null),
+				dateTimeColumns: $dateTimeColumns, sortLanguages: $this->sortLanguageChain(register: $register)
+			)
 		);
 
 		$queryBuilder->setMaxResults($limit)
@@ -886,7 +903,7 @@ class MagicSearchHandler {
 		// path honours it, the cross-table UNION included.
 		$this->applyPersonalLensFilter(
 			qb: $qb,
-			table: WatcherMapper::TABLE,
+			table: WatcherMapperInterface::TABLE,
 			userId: ($query['_watchingFor'] ?? null)
 		);
 
@@ -1043,17 +1060,11 @@ class MagicSearchHandler {
 
 		// 4. Full-text search filter with optional fuzzy matching.
 		if ($search !== null && trim($search) !== '') {
-			$searchCondition = $this->buildSearchConditionSql(
-				search: trim($search),
-				schema: $schema,
-				query: $query,
-				connection: $connection,
-				isPostgres: $isPostgres,
-				existingColumns: $existingColumns
-			);
-			if ($searchCondition !== null) {
-				$conditions[] = $searchCondition;
-			}
+			$scope = new SearchLeafScope(schema: $schema, isPostgres: $isPostgres);
+			$scope->fuzzyEnabled = $this->isFuzzySearchEnabled(fuzzyParam: $query['_fuzzy'] ?? null);
+			$scope->connection = $connection;
+			$scope->existingColumns = $existingColumns;
+			$conditions[] = $this->buildSearchConditionSql(search: trim($search), scope: $scope);
 		}
 
 		// 5. Object field filters (non-reserved, non-metadata).
@@ -1639,175 +1650,118 @@ class MagicSearchHandler {
 	 * Without _fuzzy=true: ~140ms (ILIKE only)
 	 * With _fuzzy=true: ~160ms (ILIKE + similarity on _name)
 	 *
-	 * @param string $search Trimmed search term
-	 * @param Schema $schema Schema for determining searchable columns
-	 * @param array $query Full query array for extracting _fuzzy param
-	 * @param object $connection Database connection for value quoting
-	 * @param bool $isPostgres Whether the active platform is PostgreSQL
-	 * @param array|null $existingColumns Optional list of existing column names.
+	 * A term carrying AND/OR/NOT, brackets, a quoted phrase or a wildcard is
+	 * parsed and compiled; anything else keeps the substring match this search
+	 * has always applied, byte for byte.
 	 *
-	 * @return string|null SQL condition or null if no search conditions generated
+	 * @param string          $search Trimmed search term
+	 * @param SearchLeafScope $scope  The schema, connection, platform, columns and fuzzy flag
+	 *
+	 * @return string The SQL condition.
 	 */
-	private function buildSearchConditionSql(
-		string $search,
-		Schema $schema,
-		array $query,
-		object $connection,
-		bool $isPostgres,
-		?array $existingColumns = null,
-	): ?string {
-		// Check if fuzzy search is explicitly requested via _fuzzy=true parameter.
-		$fuzzyEnabled = $this->isFuzzySearchEnabled(fuzzyParam: $query['_fuzzy'] ?? null);
-
-		// A term carrying AND/OR/NOT, brackets, a quoted phrase or a wildcard is
-		// parsed and compiled; anything else keeps the substring match this
-		// search has always applied, byte for byte.
+	private function buildSearchConditionSql(string $search, SearchLeafScope $scope): string {
 		if ($this->termParser->needsParsing(term: $search) === true) {
-			$node = $this->termParser->parse(term: $search);
-
 			return $this->termCompiler->compile(
-				node: $node,
-				leafBuilder: function (string $pattern, string $literal) use (
-					$schema,
-					$connection,
-					$isPostgres,
-					$existingColumns,
-					$fuzzyEnabled
-				): string {
-					return $this->buildSearchLeafSql(
-						pattern: $pattern,
-						literal: $literal,
-						schema: $schema,
-						connection: $connection,
-						isPostgres: $isPostgres,
-						existingColumns: $existingColumns,
-						fuzzyEnabled: $fuzzyEnabled,
-						nullSafe: true
-					);
-				}
+				node: $this->termParser->parse(term: $search),
+				leafBuilder: fn (string $pattern, string $literal): string => $this->buildSearchLeafSql(
+					leaf: $scope->nullSafeTerm(pattern: $pattern, literal: $literal)
+				)
 			);
-		}//end if
+		}
 
-		return $this->buildSearchLeafSql(
-			pattern: ('%' . $search . '%'),
-			literal: $search,
-			schema: $schema,
-			connection: $connection,
-			isPostgres: $isPostgres,
-			existingColumns: $existingColumns,
-			fuzzyEnabled: $fuzzyEnabled,
-			nullSafe: false
-		);
+		return $this->buildSearchLeafSql(leaf: $scope->term(pattern: ('%' . $search . '%'), literal: $search));
 	}//end buildSearchConditionSql()
 
 	/**
 	 * Build the SQL for one literal term across every searchable column.
 	 *
-	 * Extracted from buildSearchConditionSql() so the boolean compiler can call
-	 * it once per leaf while the column rules stay in one place.
+	 * The boolean compiler calls it once per leaf while the column rules stay in one place.
 	 *
-	 * @param string      $pattern         The LIKE pattern, unquoted.
-	 * @param string      $literal         The literal text, for the fuzzy arm.
-	 * @param Schema      $schema          Schema for determining searchable columns.
-	 * @param object      $connection      Database connection for value quoting.
-	 * @param bool        $isPostgres      Whether the active platform is PostgreSQL.
-	 * @param array|null  $existingColumns Optional list of existing column names.
-	 * @param bool        $fuzzyEnabled    Whether `_fuzzy=true` was requested.
-	 * @param bool        $nullSafe        Wrap every column in COALESCE so NOT can negate it.
-	 *
-	 * @phpstan-param array<int, string>|null $existingColumns
-	 *
-	 * @psalm-param array<int, string>|null $existingColumns
+	 * @param SearchLeaf $leaf The term in its scope.
 	 *
 	 * @return string The SQL condition, already parenthesised.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)    PropertySearchProfile reads a property array and
-	 *                                         holds no state. Injecting it would add a
-	 *                                         constructor argument to two classes to satisfy a
-	 *                                         linter, not to make anything substitutable.
-	 * @SuppressWarnings(PHPMD.NPathComplexity) One branch per match type, plus the column rules
-	 *                                         the two platforms need.
 	 */
-	private function buildSearchLeafSql(
-		string $pattern,
-		string $literal,
-		Schema $schema,
-		object $connection,
-		bool $isPostgres,
-		?array $existingColumns,
-		bool $fuzzyEnabled,
-		bool $nullSafe,
-	): string {
-		$searchConditions = [];
-		$likePattern = $connection->quote($pattern);
-		$quotedTerm = $connection->quote($literal);
-
-		// Which properties the scan reads, and how each one compares, is the
-		// property's own business. A property that declares nothing is judged by
-		// the rule this scan has always used, so its SQL is unchanged.
-		$properties = $schema->getProperties() ?? [];
-		foreach ($properties as $propName => $propDef) {
-			if (is_array($propDef) === false
-				|| PropertySearchProfile::participatesInFreeText(property: $propDef) === false
-			) {
-				continue;
-			}
-
-			$columnName = $this->sanitizeColumnName(name: $propName);
-			// In UNION contexts, only search columns that actually exist in this table.
-			if ($existingColumns !== null && in_array($columnName, $existingColumns, true) === false) {
-				continue;
-			}
-
-			// Quote column name to handle reserved words (e.g., 'case', 'status').
-			$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-			$matchType = PropertySearchProfile::matchTypeFor(property: $propDef);
-
-			if ($matchType === PropertySearchProfile::MATCH_FUZZY && $isPostgres === true) {
-				$column = $quotedCol;
-				if ($nullSafe === true) {
-					$column = "COALESCE({$quotedCol}::text, '')";
-				}
-
-				$searchConditions[] = "similarity({$column}, {$quotedTerm}) > 0.1";
-				continue;
-			}
-
-			$searchConditions[] = $this->columnMatchSql(
-				column: $quotedCol,
-				likePattern: $connection->quote(
-					$this->patternForMatchType(matchType: $matchType, pattern: $pattern, literal: $literal)
-				),
-				isPostgres: $isPostgres,
-				nullSafe: $nullSafe
-			);
-		}//end foreach
+	private function buildSearchLeafSql(SearchLeaf $leaf): string {
+		$searchConditions = $this->propertyLeafConditions(leaf: $leaf);
 
 		// Search in metadata text fields.
+		$likePattern = $leaf->quote(value: $leaf->pattern);
 		foreach (['_name', '_description', '_summary'] as $metadataColumn) {
-			$searchConditions[] = $this->columnMatchSql(
-				column: $metadataColumn,
-				likePattern: $likePattern,
-				isPostgres: $isPostgres,
-				nullSafe: $nullSafe
-			);
+			$searchConditions[] = $leaf->columnMatch(column: $metadataColumn, likePattern: $likePattern);
 		}
 
 		// Add fuzzy matching ONLY for _name when explicitly requested via _fuzzy=true.
 		// This uses pg_trgm similarity() for typo tolerance at ~13% performance cost.
-		if ($fuzzyEnabled === true) {
-			$fuzzyColumn = '_name::text';
-			if ($nullSafe === true) {
-				$fuzzyColumn = "COALESCE(_name::text, '')";
-			}
-
-			$searchConditions[] = "similarity({$fuzzyColumn}, {$quotedTerm}) > 0.1";
+		if ($leaf->scope->fuzzyEnabled === true) {
+			$searchConditions[] = $leaf->similarity(plain: '_name::text', text: '_name::text');
 		}
 
-		// Both branches above push three conditions, so $searchConditions is
-		// never empty here and the old null return was unreachable.
 		return '(' . implode(' OR ', $searchConditions) . ')';
 	}//end buildSearchLeafSql()
+
+	/**
+	 * The raw-SQL conditions of one term over the schema's own columns.
+	 *
+	 * @param SearchLeaf $leaf The term in its scope.
+	 *
+	 * @return array<int, string> One condition per searchable column.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) PropertySearchProfile reads a property array and holds no state.
+	 */
+	private function propertyLeafConditions(SearchLeaf $leaf): array {
+		$conditions = [];
+		foreach ($this->searchableProperties(scope: $leaf->scope) as $propName => $propDef) {
+			$quotedCol = $this->searchColumn(scope: $leaf->scope, propName: $propName);
+			$matchType = PropertySearchProfile::matchTypeFor(property: $propDef);
+			if ($matchType === PropertySearchProfile::MATCH_FUZZY && $leaf->scope->isPostgres === true) {
+				$conditions[] = $leaf->similarity(plain: $quotedCol, text: "{$quotedCol}::text");
+				continue;
+			}
+
+			$pattern = $this->patternForMatchType(matchType: $matchType, leaf: $leaf);
+			$conditions[] = $leaf->columnMatch(column: $quotedCol, likePattern: $leaf->quote(value: $pattern));
+		}
+
+		return $conditions;
+	}//end propertyLeafConditions()
+
+	/**
+	 * The schema properties a free-text term is matched against, in schema order.
+	 *
+	 * Which properties the scan reads is the property's own business; in UNION
+	 * contexts only the columns that exist in the table take part.
+	 *
+	 * @param SearchLeafScope $scope The search scope.
+	 *
+	 * @return array<string, array> The searchable property definitions, by name.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) PropertySearchProfile reads a property array and holds no state.
+	 */
+	private function searchableProperties(SearchLeafScope $scope): array {
+		$searchable = [];
+		foreach (($scope->schema->getProperties() ?? []) as $propName => $propDef) {
+			if (is_array($propDef) === true
+				&& PropertySearchProfile::participatesInFreeText(property: $propDef) === true
+				&& $scope->hasColumn(columnName: $this->sanitizeColumnName(name: $propName)) === true
+			) {
+				$searchable[$propName] = $propDef;
+			}
+		}
+
+		return $searchable;
+	}//end searchableProperties()
+
+	/**
+	 * The quoted column of a property, so reserved words (e.g. 'case', 'status') stay valid SQL.
+	 *
+	 * @param SearchLeafScope $scope    The search scope.
+	 * @param string          $propName The property name.
+	 *
+	 * @return string The quoted column name.
+	 */
+	private function searchColumn(SearchLeafScope $scope, string $propName): string {
+		return $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $propName), isPostgres: $scope->isPostgres);
+	}//end searchColumn()
 
 	/**
 	 * The LIKE pattern one property wants for this term.
@@ -1817,9 +1771,8 @@ class MagicSearchHandler {
 	 * identifier column that declares `exact` should not answer to half an
 	 * identifier, whatever the caller typed around it.
 	 *
-	 * @param string $matchType The resolved match type.
-	 * @param string $pattern   The pattern the parsed term produced.
-	 * @param string $literal   The literal text of the term.
+	 * @param string     $matchType The resolved match type.
+	 * @param SearchLeaf $leaf      The term.
 	 *
 	 * @return string The pattern to compare this column against.
 	 *
@@ -1829,60 +1782,17 @@ class MagicSearchHandler {
 	 *                                      string, shared so a declared match type escapes a
 	 *                                      user's `%` exactly as a parsed term does.
 	 */
-	private function patternForMatchType(string $matchType, string $pattern, string $literal): string {
+	private function patternForMatchType(string $matchType, SearchLeaf $leaf): string {
 		if ($matchType === PropertySearchProfile::MATCH_EXACT) {
-			return SearchTermNode::likeEscape(value: $literal);
+			return SearchTermNode::likeEscape(value: $leaf->literal);
 		}
 
 		if ($matchType === PropertySearchProfile::MATCH_PREFIX) {
-			return SearchTermNode::likeEscape(value: $literal) . '%';
+			return SearchTermNode::likeEscape(value: $leaf->literal) . '%';
 		}
 
-		return $pattern;
+		return $leaf->pattern;
 	}//end patternForMatchType()
-
-	/**
-	 * Match one column against a LIKE pattern, per platform.
-	 *
-	 * When $nullSafe is true the column is wrapped in COALESCE. A NULL column
-	 * makes LIKE evaluate to NULL, and `NOT NULL` is NULL rather than TRUE — so
-	 * without this a record whose searchable columns are empty would silently
-	 * fall out of a `NOT` term, which is the exact silent wrong answer the
-	 * boolean grammar exists to remove. The plain path keeps the historical SQL
-	 * unchanged, since it has no negation to get wrong.
-	 *
-	 * @param string $column      The already-quoted column reference.
-	 * @param string $likePattern The already-quoted LIKE pattern.
-	 * @param bool   $isPostgres  Whether the active platform is PostgreSQL.
-	 * @param bool   $nullSafe    Whether to wrap the column in COALESCE.
-	 *
-	 * @return string The SQL condition for this column.
-	 */
-	private function columnMatchSql(
-		string $column,
-		string $likePattern,
-		bool $isPostgres,
-		bool $nullSafe,
-	): string {
-		if ($isPostgres === true) {
-			// ILIKE is always case-insensitive on PostgreSQL.
-			$expression = "{$column}::text";
-			if ($nullSafe === true) {
-				$expression = "COALESCE({$column}::text, '')";
-			}
-
-			return "{$expression} ILIKE {$likePattern}";
-		}
-
-		// CAST + LOWER on both sides keeps MySQL case-insensitive regardless of
-		// collation (e.g., utf8mb4_bin), matching applyFullTextSearch().
-		$expression = "LOWER(CAST({$column} AS CHAR))";
-		if ($nullSafe === true) {
-			$expression = "LOWER(CAST(COALESCE({$column}, '') AS CHAR))";
-		}
-
-		return "{$expression} LIKE LOWER({$likePattern})";
-	}//end columnMatchSql()
 
 	/**
 	 * Build a `like` condition with bound parameters.
@@ -3232,19 +3142,17 @@ class MagicSearchHandler {
 				continue;
 			}
 
-			$columnName = $this->sanitizeColumnName(name: $field);
-			$propertyType = $properties[$field]['type'] ?? 'string';
+			$filter = new ObjectFieldFilter(
+				qb: $qb,
+				columnName: $this->sanitizeColumnName(name: $field),
+				propertyType: ($properties[$field]['type'] ?? 'string'),
+				isPostgres: $isPostgres
+			);
 
 			$conditions = NullFilter::conditionsFor(
 				criterion: $value,
-				column: "t.{$columnName}",
-				build: fn (mixed $criterion): array => $this->objectFieldPredicates(
-					qb: $qb,
-					columnName: $columnName,
-					propertyType: $propertyType,
-					value: $criterion,
-					isPostgres: $isPostgres
-				)
+				column: $filter->columnRef(),
+				build: fn (mixed $criterion): array => $this->objectFieldPredicates(field: $filter, value: $criterion)
 			);
 			foreach ($conditions as $condition) {
 				$qb->andWhere($condition);
@@ -3255,207 +3163,225 @@ class MagicSearchHandler {
 	/**
 	 * The predicates one object-field filter contributes on the QueryBuilder path
 	 *
-	 * @param IQueryBuilder $qb Query builder that binds the parameters
-	 * @param string $columnName Sanitized column name
-	 * @param string $propertyType The property's declared JSON-Schema type
-	 * @param mixed $value The filter value, without its `orNull` modifier
-	 * @param bool $isPostgres Whether the active platform is PostgreSQL
+	 * `like` matches the column's text, whatever the column type, so it is
+	 * applied ahead of the type-specific predicates and then taken out of the bag.
+	 *
+	 * @param ObjectFieldFilter $field The field being filtered
+	 * @param mixed             $value The filter value, without its `orNull` modifier
 	 *
 	 * @return list<string|\Stringable> The field's predicates, to be ANDed
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	private function objectFieldPredicates(
-		IQueryBuilder $qb,
-		string $columnName,
-		string $propertyType,
-		mixed $value,
-		bool $isPostgres,
-	): array {
-		$predicates = [];
-
+	private function objectFieldPredicates(ObjectFieldFilter $field, mixed $value): array {
 		if ($value === 'IS NOT NULL') {
-			$predicates[] = $qb->expr()->isNotNull("t.{$columnName}");
-			return $predicates;
+			return [$field->qb->expr()->isNotNull($field->columnRef())];
 		}
 
 		if ($value === 'IS NULL') {
-			$predicates[] = $qb->expr()->isNull("t.{$columnName}");
-			return $predicates;
+			return [$field->qb->expr()->isNull($field->columnRef())];
 		}
 
-		// `like` matches the column's text, whatever the column type, so it is
-		// applied ahead of the type-specific branches and then taken out of the bag.
+		$predicates = [];
 		if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
-			$likeCondition = $this->likeCondition(qb: $qb, columnRef: "t.{$columnName}", value: $value[LikeOperator::KEY]);
-			if ($likeCondition !== null) {
-				$predicates[] = $likeCondition;
-			}
-
+			$predicates = $this->likePredicates(field: $field, value: $value[LikeOperator::KEY]);
 			unset($value[LikeOperator::KEY]);
 			if ($value === []) {
 				return $predicates;
 			}
 		}
 
-		// Handle array type columns (JSON arrays in PostgreSQL).
-		if ($propertyType === 'array') {
-			$predicates[] = $this->jsonArrayCondition(qb: $qb, columnName: $columnName, value: $value);
-			return $predicates;
-		}
-
-		// Handle object type columns (JSON objects with 'value' key containing UUID).
-		if ($propertyType === 'object') {
-			$predicates[] = $this->jsonObjectCondition(qb: $qb, columnName: $columnName, value: $value, isPostgres: $isPostgres);
-			return $predicates;
-		}
-
-		// A PHP boolean compares in its string form (boolean-filter-values).
-		$value = FilterParams::comparableValue(value: $value, propertyType: $propertyType);
-
-		if (is_array($value) === true) {
-			$comparisonOperators = self::COMPARISON_OPERATORS;
-			if (empty(array_intersect(array_keys($value), $comparisonOperators)) === true) {
-				// Cast numeric columns to text when filtered by non-numeric
-				// (e.g. UUID) values so PostgreSQL does not abort with 22P02.
-				$columnRef = $this->buildFilterColumnRef(
-					columnRef: "t.{$columnName}",
-					propertyType: $propertyType,
-					value: $value,
-					isPostgres: $isPostgres
-				);
-				$predicates[] = $qb->expr()->in(
-					$columnRef,
-					$qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
-				);
-				return $predicates;
-			}
-
-			return array_merge(
-				$predicates,
-				$this->objectOperatorPredicates(
-					qb: $qb,
-					columnName: $columnName,
-					propertyType: $propertyType,
-					value: $value,
-					isPostgres: $isPostgres
-				)
-			);
-		}//end if
-
-		// Cast numeric columns to text when filtered by a non-numeric
-		// (e.g. UUID) value so PostgreSQL does not abort the query with
-		// SQLSTATE[22P02]; numeric values keep the indexed numeric path.
-		$columnRef = $this->buildFilterColumnRef(
-			columnRef: "t.{$columnName}",
-			propertyType: $propertyType,
-			value: $value,
-			isPostgres: $isPostgres
-		);
-		$predicates[] = $qb->expr()->eq($columnRef, $qb->createNamedParameter($value));
-		return $predicates;
+		return array_merge($predicates, $this->typedFieldPredicates(field: $field, value: $value));
 	}//end objectFieldPredicates()
 
 	/**
-	 * The predicates of one object field's operator bag on the QueryBuilder path
+	 * The `like` predicate of a field, when a term is left.
 	 *
-	 * @param IQueryBuilder $qb Query builder that binds the parameters
-	 * @param string $columnName Sanitized column name
-	 * @param string $propertyType The property's declared JSON-Schema type
-	 * @param array $value The operator bag, in its comparable form
-	 * @param bool $isPostgres Whether the active platform is PostgreSQL
+	 * @param ObjectFieldFilter $field The field being filtered
+	 * @param mixed             $value The value under the `like` key
 	 *
-	 * @return list<string|\Stringable> The predicates, to be ANDed
+	 * @return list<string> The predicate, or none.
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 */
+	private function likePredicates(ObjectFieldFilter $field, mixed $value): array {
+		$likeCondition = $this->likeCondition(qb: $field->qb, columnRef: $field->columnRef(), value: $value);
+		if ($likeCondition === null) {
+			return [];
+		}
+
+		return [$likeCondition];
+	}//end likePredicates()
+
+	/**
+	 * The predicates of a field by its type: JSON array, JSON object, list, operators or one value.
+	 *
+	 * @param ObjectFieldFilter $field The field being filtered
+	 * @param mixed             $value The filter value, without `like`
+	 *
+	 * @return list<string|\Stringable> The field's predicates.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FilterParams is the configured pure-reader exception.
+	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	private function objectOperatorPredicates(
-		IQueryBuilder $qb,
-		string $columnName,
-		string $propertyType,
-		array $value,
-		bool $isPostgres,
-	): array {
+	private function typedFieldPredicates(ObjectFieldFilter $field, mixed $value): array {
+		if ($field->propertyType === 'array') {
+			return [$this->jsonArrayCondition(qb: $field->qb, columnName: $field->columnName, value: $value)];
+		}
+
+		if ($field->propertyType === 'object') {
+			return [$this->jsonObjectCondition(qb: $field->qb, columnName: $field->columnName, value: $value, isPostgres: $field->isPostgres)];
+		}
+
+		// A PHP boolean compares in its string form (boolean-filter-values).
+		$value = FilterParams::comparableValue(value: $value, propertyType: $field->propertyType);
+		if (is_array($value) === false) {
+			return [$this->comparisonPredicate(field: $field, operator: 'eq', value: $value)];
+		}
+
+		if (empty(array_intersect(array_keys($value), self::COMPARISON_OPERATORS)) === true) {
+			return [$this->listPredicate(field: $field, operator: 'in', values: $value)];
+		}
+
+		return $this->objectOperatorPredicates(field: $field, value: $value);
+	}//end typedFieldPredicates()
+
+	/**
+	 * One comparison of a field against a bound value.
+	 *
+	 * Numeric columns are cast to text when compared with a non-numeric (e.g.
+	 * UUID) value, so PostgreSQL does not abort the query with SQLSTATE[22P02];
+	 * numeric values keep the indexed numeric path.
+	 *
+	 * @param ObjectFieldFilter $field    The field being filtered
+	 * @param string            $operator The expression builder method: eq, neq, gt, gte, lt or lte
+	 * @param mixed             $value    The value to compare with
+	 *
+	 * @return string The predicate.
+	 */
+	private function comparisonPredicate(ObjectFieldFilter $field, string $operator, mixed $value): string {
+		return $field->qb->expr()->$operator($this->filterColumnRef(field: $field, value: $value), $field->qb->createNamedParameter($value));
+	}//end comparisonPredicate()
+
+	/**
+	 * One `in` or `notIn` of a field against a bound list.
+	 *
+	 * @param ObjectFieldFilter $field    The field being filtered
+	 * @param string            $operator The expression builder method: in or notIn
+	 * @param array             $values   The list to compare with
+	 *
+	 * @return string The predicate.
+	 */
+	private function listPredicate(ObjectFieldFilter $field, string $operator, array $values): string {
+		return $field->qb->expr()->$operator(
+			$this->filterColumnRef(field: $field, value: $values),
+			$field->qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)
+		);
+	}//end listPredicate()
+
+	/**
+	 * The column reference a field is compared through, cast where the value needs it.
+	 *
+	 * @param ObjectFieldFilter $field The field being filtered
+	 * @param mixed             $value The value it is compared with
+	 *
+	 * @return string The column reference.
+	 */
+	private function filterColumnRef(ObjectFieldFilter $field, mixed $value): string {
+		return $this->buildFilterColumnRef(
+			columnRef: $field->columnRef(),
+			propertyType: $field->propertyType,
+			value: $value,
+			isPostgres: $field->isPostgres
+		);
+	}//end filterColumnRef()
+
+	/**
+	 * The predicates of an operator bag; multiple operators AND together, so {"gte":a,"lte":b} is a range.
+	 *
+	 * @param ObjectFieldFilter $field The field being filtered
+	 * @param array             $value The operator bag
+	 *
+	 * @return list<string> The predicates.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function objectOperatorPredicates(ObjectFieldFilter $field, array $value): array {
 		$predicates = [];
-		// Multiple operators AND together, so {"gte":a,"lte":b} is a range.
 		foreach (['gte', 'lte', 'gt', 'lt'] as $operator) {
 			if (isset($value[$operator]) === true) {
-				$columnRef = $this->buildFilterColumnRef(
-					columnRef: "t.{$columnName}",
-					propertyType: $propertyType,
-					value: $value[$operator],
-					isPostgres: $isPostgres
-				);
-				$predicates[] = $qb->expr()->$operator($columnRef, $qb->createNamedParameter($value[$operator]));
+				$predicates[] = $this->comparisonPredicate(field: $field, operator: $operator, value: $value[$operator]);
 			}
 		}
 
 		if (isset($value['in']) === true) {
-			$inValues = [$value['in']];
-			if (is_array($value['in']) === true) {
-				$inValues = $value['in'];
-			}
-
-			$columnRef = $this->buildFilterColumnRef(
-				columnRef: "t.{$columnName}",
-				propertyType: $propertyType,
-				value: $inValues,
-				isPostgres: $isPostgres
-			);
-			$predicates[] = $qb->expr()->in(
-				$columnRef,
-				$qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY)
-			);
+			$predicates[] = $this->listPredicate(field: $field, operator: 'in', values: $this->asList(value: $value['in']));
 		}
 
-		if (isset($value['notIn']) === true) {
-			$notInValues = [$value['notIn']];
-			if (is_array($value['notIn']) === true) {
-				$notInValues = $value['notIn'];
-			}
+		return array_merge($predicates, $this->exclusionPredicates(field: $field, value: $value));
+	}//end objectOperatorPredicates()
 
-			// An empty exclusion list excludes nothing, so skip the
-			// clause entirely — emitting `NOT IN ()` is a SQL error
-			// on some engines and a no-op-shaped clause on others.
-			if (count($notInValues) > 0) {
-				$columnRef = $this->buildFilterColumnRef(
-					columnRef: "t.{$columnName}",
-					propertyType: $propertyType,
-					value: $notInValues,
-					isPostgres: $isPostgres
-				);
-				$predicates[] = $qb->expr()->notIn(
-					$columnRef,
-					$qb->createNamedParameter($notInValues, IQueryBuilder::PARAM_STR_ARRAY)
-				);
-			}
-		}//end if
+	/**
+	 * The `notIn`, `ne` and `isnull` predicates of an operator bag.
+	 *
+	 * An empty exclusion list excludes nothing, so it adds no clause: `NOT IN ()`
+	 * is a SQL error on some engines. The null check reads the bare column,
+	 * because a cast would only obscure whether the column has a value at all.
+	 *
+	 * @param ObjectFieldFilter $field The field being filtered
+	 * @param array             $value The operator bag
+	 *
+	 * @return list<string> The predicates.
+	 */
+	private function exclusionPredicates(ObjectFieldFilter $field, array $value): array {
+		$predicates = [];
+		$notIn = $this->asList(value: $value['notIn'] ?? []);
+		if ($notIn !== []) {
+			$predicates[] = $this->listPredicate(field: $field, operator: 'notIn', values: $notIn);
+		}
 
 		if (isset($value['ne']) === true) {
-			$columnRef = $this->buildFilterColumnRef(
-				columnRef: "t.{$columnName}",
-				propertyType: $propertyType,
-				value: $value['ne'],
-				isPostgres: $isPostgres
-			);
-			$predicates[] = $qb->expr()->neq($columnRef, $qb->createNamedParameter($value['ne']));
+			$predicates[] = $this->comparisonPredicate(field: $field, operator: 'neq', value: $value['ne']);
 		}
 
 		if (isset($value['isnull']) === true) {
-			// The bare column, not `buildFilterColumnRef`: a null check
-			// asks whether the column has a value at all, and a cast
-			// would only obscure that.
-			if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
-				$predicates[] = $qb->expr()->isNull("t.{$columnName}");
-			} else {
-				$predicates[] = $qb->expr()->isNotNull("t.{$columnName}");
-			}
+			$predicates[] = $this->nullCheckPredicate(field: $field, flag: $value['isnull']);
 		}
 
 		return $predicates;
-	}//end objectOperatorPredicates()
+	}//end exclusionPredicates()
+
+	/**
+	 * The `isnull` predicate: IS NULL when the flag asks for null, IS NOT NULL otherwise.
+	 *
+	 * @param ObjectFieldFilter $field The field being filtered
+	 * @param mixed             $flag  The value under the `isnull` key
+	 *
+	 * @return string The predicate.
+	 */
+	private function nullCheckPredicate(ObjectFieldFilter $field, mixed $flag): string {
+		if ($this->isNullOperatorAsksForNull(value: $flag) === true) {
+			return $field->qb->expr()->isNull($field->columnRef());
+		}
+
+		return $field->qb->expr()->isNotNull($field->columnRef());
+	}//end nullCheckPredicate()
+
+	/**
+	 * A scalar as a one-element list; a list as it is.
+	 *
+	 * @param mixed $value The value
+	 *
+	 * @return array The list.
+	 */
+	private function asList(mixed $value): array {
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return [$value];
+	}//end asList()
 
 	/**
 	 * Apply filter for JSON array columns using PostgreSQL jsonb operators
@@ -3770,41 +3696,21 @@ class MagicSearchHandler {
 	 * because that method is already at its complexity budget, and because the
 	 * priority is the interesting part and belongs in one place.
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify.
-	 * @param array<int|string, mixed> $order The caller's requested order.
-	 * @param Schema|null $schema The schema being searched.
-	 * @param string|null $searchTerm The search term, for relevance ordering.
-	 * @param mixed $recentViews The read history ordering a `_recent` page (uuid => last read), or null.
-	 * @param array<int, string>|null $dateTimeColumns Columns whose real type is a date or timestamp; null when unknown.
-	 * @param array<int, string> $sortLanguages Language chain a translatable property sorts by.
+	 * @param IQueryBuilder $qb   Query builder to modify.
+	 * @param SortRequest   $sort The requested order and what ordering it needs.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
 	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 */
-	private function applyResultOrder(
-		IQueryBuilder $qb,
-		array $order,
-		?Schema $schema,
-		?string $searchTerm,
-		mixed $recentViews,
-		?array $dateTimeColumns = null,
-		array $sortLanguages = []
-	): void {
-		if (empty($order) === false) {
-			$this->applySorting(
-				qb: $qb,
-				order: $order,
-				schema: $schema,
-				searchTerm: $searchTerm,
-				dateTimeColumns: $dateTimeColumns,
-				sortLanguages: $sortLanguages
-			);
+	private function applyResultOrder(IQueryBuilder $qb, SortRequest $sort): void {
+		if (empty($sort->order) === false) {
+			$this->applySorting(qb: $qb, sort: $sort);
 			return;
 		}
 
-		if ($this->applyRecencyOrder(qb: $qb, recentViews: $recentViews) === true) {
+		if ($this->applyRecencyOrder(qb: $qb, recentViews: $sort->recentViews) === true) {
 			return;
 		}
 
@@ -4037,25 +3943,15 @@ class MagicSearchHandler {
 		// unchanged, which is what makes an operator-free term mean exactly what
 		// it meant before this change.
 		if ($this->termParser->needsParsing(term: $search) === true) {
-			$node = $this->termParser->parse(term: $search);
+			$scope = new SearchLeafScope(schema: $schema, isPostgres: $isPostgres);
+			$scope->fuzzyEnabled = $fuzzyEnabled;
 			$qb->andWhere(
 				$this->termCompiler->compile(
-					node: $node,
-					leafBuilder: function (string $pattern, string $literal) use (
-						$qb,
-						$schema,
-						$isPostgres,
-						$fuzzyEnabled
-					): string {
-						return $this->buildSearchLeafQbSql(
-							qb: $qb,
-							pattern: $pattern,
-							literal: $literal,
-							schema: $schema,
-							isPostgres: $isPostgres,
-							fuzzyEnabled: $fuzzyEnabled
-						);
-					}
+					node: $this->termParser->parse(term: $search),
+					leafBuilder: fn (string $pattern, string $literal): string => $this->buildSearchLeafQbSql(
+						qb: $qb,
+						leaf: $scope->term(pattern: $pattern, literal: $literal)
+					)
 				)
 			);
 
@@ -4124,63 +4020,37 @@ class MagicSearchHandler {
 	/**
 	 * Build the SQL for one literal term on the QueryBuilder path.
 	 *
-	 * Mirrors the column rules of applyFullTextSearch() exactly — the same
-	 * encrypted-property skip, the same date-format skip, the same `t.` alias —
-	 * and emits raw SQL so the boolean compiler can wrap it in AND, OR and NOT.
+	 * Mirrors the column rules of the UNION path, with the `t.` alias, and
+	 * emits raw SQL so the boolean compiler can wrap it in AND, OR and NOT.
 	 * Values still travel as bound parameters.
 	 *
 	 * Every column is wrapped in COALESCE. LIKE against a NULL column is NULL,
 	 * and NOT NULL is NULL rather than TRUE, so without this a record with no
 	 * text at all would silently fall out of `NOT geweigerd`.
 	 *
-	 * @param IQueryBuilder $qb           The query builder, for parameter binding.
-	 * @param string        $pattern      The LIKE pattern.
-	 * @param string        $literal      The literal text, for the fuzzy arm.
-	 * @param Schema        $schema       Schema for determining searchable columns.
-	 * @param bool          $isPostgres   Whether the active platform is PostgreSQL.
-	 * @param bool          $fuzzyEnabled Whether `_fuzzy=true` was requested.
+	 * @param IQueryBuilder $qb   The query builder, for parameter binding.
+	 * @param SearchLeaf    $leaf The term in its scope.
 	 *
 	 * @return string The SQL condition, already parenthesised.
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Same pure reader as buildSearchLeafSql(), and it has
 	 *                                      to be the same one or the two paths could disagree.
 	 */
-	private function buildSearchLeafQbSql(
-		IQueryBuilder $qb,
-		string $pattern,
-		string $literal,
-		Schema $schema,
-		bool $isPostgres,
-		bool $fuzzyEnabled,
-	): string {
-		$patternParam = $qb->createNamedParameter($pattern);
+	private function buildSearchLeafQbSql(IQueryBuilder $qb, SearchLeaf $leaf): string {
+		$patternParam = $qb->createNamedParameter($leaf->pattern);
 		$conditions = [];
-
-		foreach (($schema->getProperties() ?? []) as $field => $propertyConfig) {
-			// Encrypted properties get no dedicated magic-table column, and a
-			// range is a pair of bounds rather than a term. Both are decided by
-			// the property, in one place, for both search paths.
-			if (is_array($propertyConfig) === false
-				|| PropertySearchProfile::participatesInFreeText(property: $propertyConfig) === false
-			) {
-				continue;
-			}
-
-			$columnName = $this->sanitizeColumnName(name: $field);
-			$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
+		foreach ($this->searchableProperties(scope: $leaf->scope) as $field => $propertyConfig) {
+			$quotedCol = $this->searchColumn(scope: $leaf->scope, propName: $field);
 			$matchType = PropertySearchProfile::matchTypeFor(property: $propertyConfig);
-
-			if ($matchType === PropertySearchProfile::MATCH_FUZZY && $isPostgres === true) {
-				$fuzzyParam = $qb->createNamedParameter($literal);
+			if ($matchType === PropertySearchProfile::MATCH_FUZZY && $leaf->scope->isPostgres === true) {
+				$fuzzyParam = $qb->createNamedParameter($leaf->literal);
 				$conditions[] = "similarity(COALESCE(t.{$quotedCol}::text, ''), {$fuzzyParam}) > 0.1";
 				continue;
 			}
 
 			$columnPattern = $patternParam;
 			if ($matchType !== PropertySearchProfile::MATCH_FULLTEXT) {
-				$columnPattern = $qb->createNamedParameter(
-					$this->patternForMatchType(matchType: $matchType, pattern: $pattern, literal: $literal)
-				);
+				$columnPattern = $qb->createNamedParameter($this->patternForMatchType(matchType: $matchType, leaf: $leaf));
 			}
 
 			$conditions[] = "LOWER(COALESCE(t.{$quotedCol}, '')) LIKE {$columnPattern}";
@@ -4190,8 +4060,8 @@ class MagicSearchHandler {
 			$conditions[] = "LOWER(COALESCE(t.{$metadataColumn}, '')) LIKE {$patternParam}";
 		}
 
-		if ($fuzzyEnabled === true) {
-			$literalParam = $qb->createNamedParameter($literal);
+		if ($leaf->scope->fuzzyEnabled === true) {
+			$literalParam = $qb->createNamedParameter($leaf->literal);
 			$conditions[] = "similarity(COALESCE(t._name::text, ''), {$literalParam}) > 0.1";
 		}
 
@@ -4201,47 +4071,32 @@ class MagicSearchHandler {
 	/**
 	 * Apply sorting to the query
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify
-	 * @param array $order Sort order configuration
-	 * @param Schema $schema Schema for column mapping
-	 * @param string|null $searchTerm Search term for relevance sorting (optional)
-	 * @param array<int, string>|null $dateTimeColumns Columns whose real type is a date or timestamp; null when unknown
-	 * @param array<int, string> $sortLanguages Language chain a translatable property sorts by, first wins
+	 * @param IQueryBuilder $qb   Query builder to modify
+	 * @param SortRequest   $sort The requested order, its schema, search term, date columns and language chain
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/register-i18n/spec.md#requirement-ordering-by-a-text-property-must-ignore-case
 	 */
-	private function applySorting(
-		IQueryBuilder $qb,
-		array $order,
-		Schema $schema,
-		?string $searchTerm = null,
-		?array $dateTimeColumns = null,
-		array $sortLanguages = [],
-	): void {
-		$properties = $schema->getProperties();
+	private function applySorting(IQueryBuilder $qb, SortRequest $sort): void {
+		$properties = $sort->schema->getProperties();
 
-		foreach ($order as $field => $direction) {
+		foreach ($sort->order as $field => $direction) {
 			$direction = strtoupper($direction);
 			if (in_array($direction, ['ASC', 'DESC']) === false) {
 				$direction = 'ASC';
 			}
 
-			// Special handling for relevance sorting (requires pg_trgm extension and a search term).
-			// This uses PostgreSQL's similarity() function for fuzzy relevance scoring.
+			// Relevance sorting needs a search term and the pg_trgm extension;
+			// without them the field is skipped, as ordering by relevance
+			// without a search makes no sense.
 			if ($field === '_relevance') {
-				if ($searchTerm !== null && $this->hasPgTrgmExtension() === true) {
-					// Use named parameter for safety and proper escaping.
-					$paramName = $qb->createNamedParameter($searchTerm);
-					// Nextcloud's QueryBuilder.addOrderBy() accepts expressions through createFunction().
-					$similarityExpr = "similarity(t._name::text, {$paramName})";
-					$qb->addOrderBy($qb->createFunction($similarityExpr), $direction);
+				$relevance = $this->relevanceSortExpression(qb: $qb, sort: $sort);
+				if ($relevance !== null) {
+					$qb->addOrderBy($relevance, $direction);
 				}
 
-				// Skip _relevance if conditions aren't met (no search term or no pg_trgm).
-				// Silently ignore to avoid errors - relevance ordering without search makes no sense.
 				continue;
 			}
 
@@ -4250,23 +4105,7 @@ class MagicSearchHandler {
 				// @self.lastUserActivity → t._last_user_activity).
 				$metadataField = '_' . $this->sanitizeColumnName(name: str_replace('@self.', '', $field));
 				$qb->addOrderBy($this->metadataSortExpression(qb: $qb, column: $metadataField), $direction);
-			} elseif (in_array(
-				$field,
-				[
-					'_created',
-					'_updated',
-					'_name',
-					'_description',
-					'_summary',
-					'_uuid',
-					'_register',
-					'_schema',
-					'_owner',
-					'_organisation',
-				],
-				true
-			) === true
-			) {
+			} elseif (in_array($field, self::SORTABLE_METADATA_COLUMNS, true) === true) {
 				// Direct metadata column reference (e.g., _created → t._created).
 				$qb->addOrderBy($this->metadataSortExpression(qb: $qb, column: $field), $direction);
 			} elseif (is_array($properties[$field] ?? null) === true
@@ -4278,33 +4117,49 @@ class MagicSearchHandler {
 				// every map row: two sorted runs (dossiq case types, cloud
 				// check 8 October 2026). Order on the value a person sees.
 				// Lower-cased, like every text order (see buildPropertySortExpression()).
-				$columnName = $this->sanitizeColumnName(name: $field);
+				$column = $qb->getColumnName($this->sanitizeColumnName(name: $field), 't');
 				$qb->addOrderBy(
 					$qb->createFunction(
 						$this->lowerSql(
-							expression: $this->buildTranslatableSortSql(
-								column: $qb->getColumnName($columnName, 't'),
-								languages: $sortLanguages
-							)
+							expression: $this->buildTranslatableSortSql(column: $column, languages: $sort->sortLanguages)
 						)
 					),
 					$direction
 				);
 			} elseif (($properties[$field] ?? null) !== null) {
 				// Schema property field sorting.
-				$columnName = $this->sanitizeColumnName(name: $field);
 				$qb->addOrderBy(
 					$this->buildPropertySortExpression(
 						qb: $qb,
-						columnName: $columnName,
+						columnName: $this->sanitizeColumnName(name: $field),
 						propertyConfig: $properties[$field],
-						dateTimeColumns: $dateTimeColumns
+						dateTimeColumns: $sort->dateTimeColumns
 					),
 					$direction
 				);
 			}//end if
 		}//end foreach
 	}//end applySorting()
+
+	/**
+	 * The relevance order of a search: similarity of the name to the search term.
+	 *
+	 * @param IQueryBuilder $qb   Query builder the expression binds its parameter on.
+	 * @param SortRequest   $sort The requested order, carrying the search term.
+	 *
+	 * @return IQueryFunction|null The expression, or null without a search term or pg_trgm.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-multi-field-sorting-with-metadata-and-relevance-support
+	 */
+	private function relevanceSortExpression(IQueryBuilder $qb, SortRequest $sort): ?IQueryFunction {
+		if ($sort->searchTerm === null || $this->hasPgTrgmExtension() === false) {
+			return null;
+		}
+
+		// Nextcloud's QueryBuilder.addOrderBy() accepts expressions through createFunction().
+		$paramName = $qb->createNamedParameter($sort->searchTerm);
+		return $qb->createFunction("similarity(t._name::text, {$paramName})");
+	}//end relevanceSortExpression()
 
 	/**
 	 * The languages a translatable property sorts by, in the order rendering
@@ -4949,37 +4804,6 @@ class MagicSearchHandler {
 
 		return '`' . $name . '`';
 	}//end quoteIdentifier()
-
-	/**
-	 * Sanitize column name for safe database usage
-	 *
-	 * @param string $name Column name to sanitize
-	 *
-	 * @return string Sanitized column name
-	 */
-	private function sanitizeColumnName(string $name): string {
-		// Convert camelCase to snake_case (must match MagicMapper::sanitizeColumnName).
-		// Insert underscore before uppercase letters, then lowercase everything.
-		$name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name);
-		$name = strtolower($name);
-
-		// Replace any remaining invalid characters with underscore.
-		$name = preg_replace('/[^a-z0-9_]/', '_', $name);
-
-		// Ensure it starts with a letter or underscore.
-		if (preg_match('/^[a-z_]/', $name) === 0) {
-			$name = 'col_' . $name;
-		}
-
-		// Remove consecutive underscores.
-		$name = preg_replace('/_+/', '_', $name);
-
-		// Remove trailing underscores.
-		$name = rtrim($name, '_');
-
-		// Limit length to 64 characters (MySQL limit).
-		return substr($name, 0, 64);
-	}//end sanitizeColumnName()
 
 	/**
 	 * Convert snake_case column name to camelCase property name

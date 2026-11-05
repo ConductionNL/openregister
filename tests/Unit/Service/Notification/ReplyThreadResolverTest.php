@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Service\Notification\ReplyThreadResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\ReplyThreadResolver;
 use PHPUnit\Framework\TestCase;
 
 /**

@@ -20,7 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Notification\SystemSchemaRules;
+use OCA\OpenRegister\Notifications\Service\Notification\SystemSchemaRules;
 use PHPUnit\Framework\TestCase;
 
 /**

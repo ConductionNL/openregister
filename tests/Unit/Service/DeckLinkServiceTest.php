@@ -29,6 +29,8 @@ use Exception;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCA\OpenRegister\Service\DeckLinkService;
+use OCA\OpenRegister\Service\CardDraft;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -42,6 +44,8 @@ use Psr\Log\LoggerInterface;
  * DeckLinkServiceTest.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @uses \OCA\OpenRegister\Service\LinkTarget
+ * @uses \OCA\OpenRegister\Service\DeckRowMapper
  */
 class DeckLinkServiceTest extends TestCase {
 	private DeckLinkMapper&MockObject $mapper;
@@ -98,7 +102,7 @@ class DeckLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('No user logged in');
 
-		$this->service->linkCard('abc-123', 1, 2, 5);
+		$this->service->linkCard((new LinkTarget('abc-123', 1))->inSchema(2), 5);
 	}
 
 	public function testLinkCardThrowsOnDuplicate(): void {
@@ -110,7 +114,7 @@ class DeckLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(409);
 		$this->expectExceptionMessage('Card already linked to this object');
 
-		$this->service->linkCard('abc-123', 1, 2, 5);
+		$this->service->linkCard((new LinkTarget('abc-123', 1))->inSchema(2), 5);
 	}
 
 	public function testLinkCardThrowsWhenCardCannotBeResolved(): void {
@@ -124,7 +128,7 @@ class DeckLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 
 		try {
-			$this->service->linkCard('abc-123', 1, 2, 5);
+			$this->service->linkCard((new LinkTarget('abc-123', 1))->inSchema(2), 5);
 			$this->fail('Expected exception was not thrown');
 		} catch (Exception $exception) {
 			$this->assertContains($exception->getCode(), [404, 503]);
@@ -233,7 +237,7 @@ class DeckLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('No user logged in');
 
-		$this->service->createAndLinkCard('abc-123', 1, 2, 10, 20, 'Test', null, null);
+		$this->service->createAndLinkCard((new LinkTarget('abc-123', 1))->inSchema(2), (new CardDraft('Test', 20))->onBoard(10)->withDetails(null, null));
 	}
 
 	public function testCreateAndLinkCardThrowsWhenDeckOperationFails(): void {
@@ -246,7 +250,7 @@ class DeckLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 
 		try {
-			$this->service->createAndLinkCard('abc-123', 1, 2, 10, 20, 'Test', null, null);
+			$this->service->createAndLinkCard((new LinkTarget('abc-123', 1))->inSchema(2), (new CardDraft('Test', 20))->onBoard(10)->withDetails(null, null));
 			$this->fail('Expected exception was not thrown');
 		} catch (Exception $exception) {
 			$this->assertContains($exception->getCode(), [500, 503]);

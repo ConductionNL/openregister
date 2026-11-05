@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -38,7 +39,8 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\PresenceService;
+use OCA\OpenRegister\Notifications\Service\PresenceService;
+use OCA\OpenRegister\Notifications\Service\PresenceServiceInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByService;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\App\IAppManager;
@@ -77,10 +79,10 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 		$presence->method('depart')->willReturn(true);
 		$presence->method('present')->willReturn([]);
 		$container->method('get')->willReturnCallback(
-			fn (string $id) => ($id === PresenceService::class) ? $presence : $this->createMock(MagicMapper::class)
+			fn (string $id) => ($id === PresenceServiceInterface::class) ? $presence : $this->createMock(MagicMapper::class)
 		);
 
-		return new ObjectsController(
+		return ObjectsControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(IAppConfig::class),

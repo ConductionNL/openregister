@@ -64,7 +64,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetStore
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
  * @uses \OCA\OpenRegister\Service\WriteCause
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks

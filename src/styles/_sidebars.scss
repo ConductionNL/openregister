@@ -1,0 +1,83 @@
+// SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+// SPDX-License-Identifier: EUPL-1.2
+// Style rules shared verbatim by several components under src/sidebars.
+// Each mixin emits one complete rule; a component includes it where the rule belongs.
+
+@mixin filter-group {
+	.filterGroup {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		padding: 0 16px;
+		margin-bottom: 16px;
+	}
+}
+
+@mixin filter-group-label {
+	.filterGroup label {
+		font-size: 0.9em;
+		color: var(--color-text-maxcontrast);
+	}
+}
+
+@mixin stat-card {
+	.statCard {
+		background: var(--color-background-hover);
+		border-radius: var(--border-radius);
+		padding: 16px;
+		margin-bottom: 12px;
+		text-align: center;
+	}
+}
+
+@mixin stat-number {
+	.statNumber {
+		font-size: 2rem;
+		font-weight: bold;
+		color: var(--color-primary);
+		margin-bottom: 4px;
+	}
+}
+
+@mixin stat-label {
+	.statLabel {
+		font-size: 0.9rem;
+		color: var(--color-text-maxcontrast);
+	}
+}
+
+@mixin action-group {
+	.actionGroup {
+		padding: 0 16px;
+		margin-bottom: 12px;
+	}
+}
+
+@mixin section-title {
+	.sectionTitle {
+		color: var(--color-text-maxcontrast);
+		font-size: 14px;
+		font-weight: bold;
+		padding: 0 16px;
+		margin: 0 0 12px 0;
+	}
+}
+
+@mixin stats-stack {
+	.statsStack {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 0 8px;
+	}
+}
+
+@mixin filter-group-rules {
+	@include filter-group;
+	@include filter-group-label;
+}
+
+@mixin stat-number-rules {
+	@include stat-number;
+	@include stat-label;
+}

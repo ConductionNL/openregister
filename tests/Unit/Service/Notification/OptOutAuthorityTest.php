@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
 use OCA\Integriq\Event\OutboundSendDecisionRequestedEvent;
-use OCA\OpenRegister\Service\Notification\OptOutAuthority;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -37,7 +37,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
- * @covers \OCA\OpenRegister\Service\Notification\OptOutAuthority
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority
  */
 class OptOutAuthorityTest extends TestCase {
 

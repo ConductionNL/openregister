@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
+use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries;
 
 /**
  * Tasks and saved views of an example set, together.

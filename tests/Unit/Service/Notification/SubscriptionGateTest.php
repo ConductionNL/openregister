@@ -19,13 +19,13 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Db\NotificationSubscriptionMapper;
+use OCA\OpenRegister\Notifications\Db\NotificationSubscriptionMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
-use OCA\OpenRegister\Service\Notification\NcNotificationSender;
-use OCA\OpenRegister\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\Http\Client\IClientService;
 use OCP\IGroupManager;

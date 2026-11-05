@@ -16,7 +16,6 @@ import { useSchemaStore } from '../store/modules/schema.js'
 import { useSearchTrailStore } from '../store/modules/searchTrail.js'
 import { stringToDate } from './dateUtils.js'
 import { updateFileMetadata } from './fileMetadata.js'
-import { representativePoint } from './geo/mapData.js'
 import { suggestedPropertyConfig } from './schemaExploration.js'
 
 jest.mock('@nextcloud/axios', () => ({
@@ -181,36 +180,6 @@ describe('branchy helpers golden', () => {
 			}
 		}
 		expect({ calls, results }).toMatchSnapshot()
-	})
-
-	it('finds representative points of polygons', () => {
-		const rings = [
-			[],
-			[[1, 2]],
-			[
-				[0, 0],
-				[2, 0],
-				[2, 2],
-				[0, 2],
-			],
-			[[0, 0], 'x', [1], [null, 1], [1, 'a'], [4, 6, 9]],
-			[['a', 'b']],
-			[
-				[0.1, 0.2],
-				[0.3, 0.4],
-				[0.5, 0.6],
-			],
-		]
-		const out = []
-		for (const ring of rings) {
-			out.push(representativePoint({ type: 'Polygon', coordinates: [ring] }))
-			out.push(
-				representativePoint({ type: 'MultiPolygon', coordinates: [[ring]] }),
-			)
-		}
-		out.push(representativePoint({ type: 'Polygon', coordinates: ['nope'] }))
-		out.push(representativePoint({ type: 'MultiPolygon', coordinates: [] }))
-		expect(out).toMatchSnapshot()
 	})
 
 	it('maps search trail statistics', () => {

@@ -519,30 +519,6 @@ class FormLinkService {
 	}//end getAvailableForms()
 
 	/**
-	 * Resolve the link rows for a (object, form) pair into a single
-	 * combined record carrying the form-level link (if any) and its
-	 * submission-level children. Used by the controller's index path
-	 * when the caller wants one form's view (rather than the full list).
-	 *
-	 * @param string $objectUuid The OR object UUID.
-	 * @param integer $formId The NC Forms form id.
-	 *
-	 * @return array<string,mixed>|null
-	 *
-	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the single-form view contract is owned by the integration-forms capability.
-	 */
-	public function getLinkedForm(string $objectUuid, int $formId): ?array {
-		$allForms = $this->getLinkedForms(objectUuid: $objectUuid);
-		foreach ($allForms as $form) {
-			if ((int)$form['formId'] === $formId) {
-				return $form;
-			}
-		}
-
-		return null;
-	}//end getLinkedForm()
-
-	/**
 	 * Snapshot form metadata (title / status / hash / expiresAt) from
 	 * the NC Forms tables at link-time. Defensive: returns nulls when
 	 * the Forms app isn't installed or the row doesn't exist.

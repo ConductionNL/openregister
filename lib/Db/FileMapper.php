@@ -85,6 +85,45 @@ use OCP\IDBConnection;
 class FileMapper extends QBMapper implements FileMapperInterface {
 
 	/**
+	 * The text patterns of the untracked-file filter, in the order they are bound.
+	 */
+	private const UNTRACKED_FILE_PATTERNS = [
+		'dirType'     => 'httpd/unix-directory',
+		'homePattern' => 'home::%',
+		'trashPat'    => '%files_trashbin%',
+		'appdataPat'  => 'appdata_%',
+		'versionPat'  => '%files_versions%',
+		'cachePat'    => '%cache%',
+		'thumbPat'    => '%thumbnails%',
+		'filesPat'    => 'files/%',
+	];
+
+	/**
+	 * The filecache, mimetype, share and storage columns a file read returns.
+	 */
+	private const FILECACHE_COLUMNS = [
+		'fc.fileid',
+		'fc.storage',
+		'fc.path',
+		'fc.path_hash',
+		'fc.parent',
+		'fc.name',
+		'mt.mimetype',
+		'mp.mimetype as mimepart',
+		'fc.size',
+		'fc.mtime',
+		'fc.storage_mtime',
+		'fc.encrypted',
+		'fc.unencrypted_size',
+		'fc.etag',
+		'fc.permissions',
+		'fc.checksum',
+		's.token as share_token',
+		's.stime as share_stime',
+		'st.id as storage_id',
+	];
+
+	/**
 	 * Builds share and file links for the host the visitor used
 	 *
 	 * @var ShareUrlBuilder
@@ -244,34 +283,6 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 	}//end incrementDownloadCount()
 
 	/**
-	 * Acquire a DB-backed lock on a Nextcloud file. Pass null for
-	 * `lockedBy` to release. The cache-backed `FileLockHandler` is
-	 * the canonical lock mechanism today; this surface lets operators
-	 * who prefer DB persistence over the distributed-cache TTL pattern
-	 * opt in.
-	 *
-	 * @param int $fileId The Nextcloud filecache fileid.
-	 * @param string|null $lockedBy User ID acquiring the lock, or null to release.
-	 * @param \DateTime|null $lockedAt Acquisition timestamp, or null to release.
-	 * @param \DateTime|null $lockExpires Expiry timestamp, or null to release.
-	 *
-	 * @return File The updated entity.
-	 */
-	public function setLockForFile(
-		int $fileId,
-		?string $lockedBy,
-		?\DateTime $lockedAt,
-		?\DateTime $lockExpires,
-	): File {
-		$file = $this->findOrCreateByFileId(fileId: $fileId);
-		$file->setLockedBy($lockedBy);
-		$file->setLockedAt($lockedAt);
-		$file->setLockExpires($lockExpires);
-		$file->setUpdated(new DateTime());
-		return $this->update(entity: $file);
-	}//end setLockForFile()
-
-	/**
 	 * Bulk fetch OR-side `File` rows for a list of Nextcloud fileids.
 	 * One round trip vs. N+1.
 	 *
@@ -316,96 +327,17 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 	 * @phpstan-return list<FilecacheRow>
 	 */
 	public function getFiles(?int $node = null, ?array $ids = null): array {
-		// Create a new query builder instance.
 		$qb = $this->db->getQueryBuilder();
-
-		// Select all filecache fields, share information, mimetype strings, and owner information.
-		$qb->select(
-			'fc.fileid',
-			'fc.storage',
-			'fc.path',
-			'fc.path_hash',
-			'fc.parent',
-			'fc.name',
-			'mt.mimetype',
-			'mp.mimetype as mimepart',
-			'fc.size',
-			'fc.mtime',
-			'fc.storage_mtime',
-			'fc.encrypted',
-			'fc.unencrypted_size',
-			'fc.etag',
-			'fc.permissions',
-			'fc.checksum',
-			's.token as share_token',
-			's.stime as share_stime',
-			'st.id as storage_id'
-		)
-			->from('filecache', 'fc')
-			->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
-			->leftJoin('fc', 'mimetypes', 'mp', $qb->expr()->eq('fc.mimepart', 'mp.id'))
-			->leftJoin(
-				'fc',
-				'share',
-				's',
-				$qb->expr()->andX(
-					$qb->expr()->eq('s.file_source', 'fc.fileid'),
-					$qb->expr()->eq('s.share_type', $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT))
-					// 3 = public link.
-				)
-			)
-			->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'));
-
-		// Add condition for node/parent if provided.
+		$this->selectFilecacheWithShares(qb: $qb);
 		if ($node !== null) {
 			$qb->andWhere($qb->expr()->eq('fc.parent', $qb->createNamedParameter($node, IQueryBuilder::PARAM_INT)));
 		}
 
-		// Add condition for file IDs if provided.
 		if ($ids !== null && count($ids) > 0) {
 			$qb->andWhere($qb->expr()->in('fc.fileid', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY)));
 		}
 
-		// Execute the query and fetch all results using proper Nextcloud method.
-		$result = $qb->executeQuery();
-		$files = [];
-
-		// Fetch all rows manually and process share information and owner data.
-		$row = $result->fetch();
-		while ($row !== false) {
-			// Add share-related fields (public URLs if shared).
-			// Add authenticated URLs for non-shared files (requires login).
-			$row['accessUrl'] = $this->generateAuthenticatedAccessUrl(fileId: $row['fileid']);
-			$row['downloadUrl'] = $this->generateAuthenticatedDownloadUrl(fileId: $row['fileid']);
-			if (empty($row['share_token']) === false) {
-				$row['accessUrl'] = $this->generateShareUrl(token: $row['share_token']);
-				$row['downloadUrl'] = $this->generateShareUrl(token: $row['share_token']) . '/download';
-			}
-
-			$row['published'] = null;
-			if (empty($row['share_stime']) === false) {
-				$row['published'] = (new DateTime())->setTimestamp($row['share_stime'])->format('c');
-			}
-
-			// Extract owner from storage ID (format is usually "home::username").
-			$row['owner'] = null;
-			if (empty($row['storage_id']) === false) {
-				// Fallback to full storage ID.
-				$row['owner'] = $row['storage_id'];
-				if (str_starts_with($row['storage_id'], 'home::') === true) {
-					// Remove "home::" prefix.
-					$row['owner'] = substr($row['storage_id'], 6);
-				}
-			}
-
-			$files[] = $row;
-			$row = $result->fetch();
-		}//end while
-
-		$result->closeCursor();
-
-		// Return the list of files with share information.
-		return $files;
+		return array_map(fn (array $row): array => $this->withLinksAndOwner(row: $row), $this->fetchRows(qb: $qb));
 	}//end getFiles()
 
 	/**
@@ -422,43 +354,8 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 		// Create a new query builder instance.
 		$qb = $this->db->getQueryBuilder();
 
-		// Select all filecache fields, share information, mimetype strings, and owner information.
-		$qb->select(
-			'fc.fileid',
-			'fc.storage',
-			'fc.path',
-			'fc.path_hash',
-			'fc.parent',
-			'fc.name',
-			'mt.mimetype',
-			'mp.mimetype as mimepart',
-			'fc.size',
-			'fc.mtime',
-			'fc.storage_mtime',
-			'fc.encrypted',
-			'fc.unencrypted_size',
-			'fc.etag',
-			'fc.permissions',
-			'fc.checksum',
-			's.token as share_token',
-			's.stime as share_stime',
-			'st.id as storage_id'
-		)
-			->from('filecache', 'fc')
-			->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
-			->leftJoin('fc', 'mimetypes', 'mp', $qb->expr()->eq('fc.mimepart', 'mp.id'))
-			->leftJoin(
-				'fc',
-				'share',
-				's',
-				$qb->expr()->andX(
-					$qb->expr()->eq('s.file_source', 'fc.fileid'),
-					$qb->expr()->eq('s.share_type', $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT))
-					// 3 = public link.
-				)
-			)
-			->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
-			->where($qb->expr()->eq('fc.fileid', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
+		$this->selectFilecacheWithShares(qb: $qb);
+		$qb->where($qb->expr()->eq('fc.fileid', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
 
 		// Execute the query and fetch the result using proper Nextcloud method.
 		$result = $qb->executeQuery();
@@ -470,33 +367,74 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 			return null;
 		}
 
-		// Add share-related fields (public URLs if shared).
-		// Add authenticated URLs for non-shared files (requires login).
-		$file['accessUrl'] = $this->generateAuthenticatedAccessUrl(fileId: $file['fileid']);
-		$file['downloadUrl'] = $this->generateAuthenticatedDownloadUrl(fileId: $file['fileid']);
-		if (empty($file['share_token']) === false) {
-			$file['accessUrl'] = $this->generateShareUrl(token: $file['share_token']);
-			$file['downloadUrl'] = $this->generateShareUrl(token: $file['share_token']) . '/download';
-		}
-
-		$file['published'] = null;
-		if (empty($file['share_stime']) === false) {
-			$file['published'] = (new DateTime())->setTimestamp($file['share_stime'])->format('c');
-		}
-
-		// Extract owner from storage ID (format is usually "home::username").
-		$file['owner'] = null;
-		if (empty($file['storage_id']) === false) {
-			// Fallback to full storage ID.
-			$file['owner'] = $file['storage_id'];
-			if (str_starts_with($file['storage_id'], 'home::') === true) {
-				// Remove "home::" prefix.
-				$file['owner'] = substr($file['storage_id'], 6);
-			}
-		}
-
-		return $file;
+		return $this->withLinksAndOwner(row: $file);
 	}//end getFile()
+
+	/**
+	 * Select filecache rows with their mimetype, public link share and storage.
+	 *
+	 * @param IQueryBuilder $qb The builder to select on.
+	 *
+	 * @return void
+	 */
+	private function selectFilecacheWithShares(IQueryBuilder $qb): void {
+		$qb->select(...self::FILECACHE_COLUMNS)
+			->from('filecache', 'fc')
+			->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
+			->leftJoin('fc', 'mimetypes', 'mp', $qb->expr()->eq('fc.mimepart', 'mp.id'));
+		$publicLink = $qb->expr()->andX(
+			$qb->expr()->eq('s.file_source', 'fc.fileid'),
+			$qb->expr()->eq('s.share_type', $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT))
+		);
+		$qb->leftJoin('fc', 'share', 's', $publicLink)
+			->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'));
+	}//end selectFilecacheWithShares()
+
+	/**
+	 * Add the access and download links, publication time and owner to a filecache row.
+	 *
+	 * A row with a public link share gets the share links, any other row the
+	 * links that need a login.
+	 *
+	 * @param array $row The filecache row as selected by selectFilecacheWithShares().
+	 *
+	 * @return array The row with accessUrl, downloadUrl, published and owner.
+	 */
+	private function withLinksAndOwner(array $row): array {
+		$row['accessUrl'] = $this->generateAuthenticatedAccessUrl(fileId: $row['fileid']);
+		$row['downloadUrl'] = $this->generateAuthenticatedDownloadUrl(fileId: $row['fileid']);
+		if (empty($row['share_token']) === false) {
+			$row['accessUrl'] = $this->generateShareUrl(token: $row['share_token']);
+			$row['downloadUrl'] = $this->generateShareUrl(token: $row['share_token']) . '/download';
+		}
+
+		$row['published'] = null;
+		if (empty($row['share_stime']) === false) {
+			$row['published'] = (new DateTime())->setTimestamp($row['share_stime'])->format('c');
+		}
+
+		$row['owner'] = $this->storageOwner(storageId: $row['storage_id']);
+		return $row;
+	}//end withLinksAndOwner()
+
+	/**
+	 * The owner a storage id names: the user of a `home::<user>` storage, else the id itself.
+	 *
+	 * @param string|null $storageId The storage id.
+	 *
+	 * @return string|null The owner, or null for an empty storage id.
+	 */
+	private function storageOwner(?string $storageId): ?string {
+		if (empty($storageId) === true) {
+			return null;
+		}
+
+		if (str_starts_with($storageId, 'home::') === true) {
+			return substr($storageId, 6);
+		}
+
+		return $storageId;
+	}//end storageOwner()
 
 	/**
 	 * Batch-load multiple files by their fileids in a single query (PERF-1).
@@ -1140,76 +1078,36 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 	public function findUntrackedFiles(int $limit = 100, int $offset = 0): array {
 		$qb = $this->db->getQueryBuilder();
 
-		// Pre-create common parameters for cleaner query building.
-		$dirType = $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR);
-		$homePattern = $qb->createNamedParameter('home::%', IQueryBuilder::PARAM_STR);
-		$trashPat = $qb->createNamedParameter('%files_trashbin%', IQueryBuilder::PARAM_STR);
-		$appdataPat = $qb->createNamedParameter('appdata_%', IQueryBuilder::PARAM_STR);
-		$versionPat = $qb->createNamedParameter('%files_versions%', IQueryBuilder::PARAM_STR);
-		$cachePat = $qb->createNamedParameter('%cache%', IQueryBuilder::PARAM_STR);
-		$thumbPat = $qb->createNamedParameter('%thumbnails%', IQueryBuilder::PARAM_STR);
-		$filesPat = $qb->createNamedParameter('files/%', IQueryBuilder::PARAM_STR);
-		$zeroSize = $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT);
-
-		// Select files from oc_filecache that don't exist in oc_openregister_file_texts.
-		$qb->select(
-			'fc.fileid',
-			'fc.path',
-			'fc.name',
-			'mt.mimetype',
-			'fc.size',
-			'fc.mtime',
-			'fc.checksum'
-		)
-			->from('filecache', 'fc')
-			->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
-			->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
-			->leftJoin(
-				'fc',
-				'openregister_chunks',
-				'ch',
-				$qb->expr()->andX(
-					$qb->expr()->eq('fc.fileid', 'ch.source_id'),
-					$qb->expr()->eq('ch.source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR))
-				)
-			)
-			->where($qb->expr()->isNull('ch.id'))
-			// No corresponding record in chunks.
-			->andWhere($qb->expr()->neq('mt.mimetype', $dirType))
-			// Exclude directories.
-			->andWhere($qb->expr()->like('st.id', $homePattern))
-			// Only user home storages.
-			->andWhere($qb->expr()->notLike('fc.path', $trashPat))
-			// Exclude trash.
-			->andWhere($qb->expr()->notLike('fc.path', $appdataPat))
-			// Exclude system appdata.
-			->andWhere($qb->expr()->notLike('fc.path', $versionPat))
-			// Exclude file versions.
-			->andWhere($qb->expr()->notLike('fc.path', $cachePat))
-			// Exclude cache.
-			->andWhere($qb->expr()->notLike('fc.path', $thumbPat))
-			// Exclude thumbnails.
-			->andWhere($qb->expr()->like('fc.path', $filesPat))
-			// Only files in 'files/' directory.
-			->andWhere($qb->expr()->gt('fc.size', $zeroSize))
-			// Exclude empty files.
-			->setMaxResults($limit)
+		$params = $this->untrackedFileParameters(qb: $qb);
+		$qb->select('fc.fileid', 'fc.path', 'fc.name', 'mt.mimetype', 'fc.size', 'fc.mtime', 'fc.checksum');
+		$this->joinFilesWithoutChunks(qb: $qb);
+		$this->whereUntrackedUserFile(qb: $qb, params: $params);
+		$qb->setMaxResults($limit)
 			->setFirstResult($offset)
 			->orderBy('fc.fileid', 'ASC');
 
-		$result = $qb->executeQuery();
-		$files = [];
+		return $this->fetchRows(qb: $qb);
+	}//end findUntrackedFiles()
 
+	/**
+	 * Run a select and return all of its rows.
+	 *
+	 * @param IQueryBuilder $qb The select.
+	 *
+	 * @return array<int, array<string, mixed>> The rows, in order.
+	 */
+	private function fetchRows(IQueryBuilder $qb): array {
+		$result = $qb->executeQuery();
+		$rows = [];
 		$row = $result->fetch();
 		while ($row !== false) {
-			$files[] = $row;
+			$rows[] = $row;
 			$row = $result->fetch();
 		}
 
 		$result->closeCursor();
-
-		return $files;
-	}//end findUntrackedFiles()
+		return $rows;
+	}//end fetchRows()
 
 	/**
 	 * Count untracked files
@@ -1221,41 +1119,10 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 	public function countUntrackedFiles(): int {
 		$qb = $this->db->getQueryBuilder();
 
-		// Same query as findUntrackedFiles but with COUNT.
-		// Pre-create common parameters for cleaner query building.
-		$dirType = $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR);
-		$homePattern = $qb->createNamedParameter('home::%', IQueryBuilder::PARAM_STR);
-		$trashPat = $qb->createNamedParameter('%files_trashbin%', IQueryBuilder::PARAM_STR);
-		$appdataPat = $qb->createNamedParameter('appdata_%', IQueryBuilder::PARAM_STR);
-		$versionPat = $qb->createNamedParameter('%files_versions%', IQueryBuilder::PARAM_STR);
-		$cachePat = $qb->createNamedParameter('%cache%', IQueryBuilder::PARAM_STR);
-		$thumbPat = $qb->createNamedParameter('%thumbnails%', IQueryBuilder::PARAM_STR);
-		$filesPat = $qb->createNamedParameter('files/%', IQueryBuilder::PARAM_STR);
-		$zeroSize = $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT);
-
-		$qb->select($qb->createFunction('COUNT(DISTINCT fc.fileid) as count'))
-			->from('filecache', 'fc')
-			->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
-			->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
-			->leftJoin(
-				'fc',
-				'openregister_chunks',
-				'ch',
-				$qb->expr()->andX(
-					$qb->expr()->eq('fc.fileid', 'ch.source_id'),
-					$qb->expr()->eq('ch.source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR))
-				)
-			)
-			->where($qb->expr()->isNull('ch.id'))
-			->andWhere($qb->expr()->neq('mt.mimetype', $dirType))
-			->andWhere($qb->expr()->like('st.id', $homePattern))
-			->andWhere($qb->expr()->notLike('fc.path', $trashPat))
-			->andWhere($qb->expr()->notLike('fc.path', $appdataPat))
-			->andWhere($qb->expr()->notLike('fc.path', $versionPat))
-			->andWhere($qb->expr()->notLike('fc.path', $cachePat))
-			->andWhere($qb->expr()->notLike('fc.path', $thumbPat))
-			->andWhere($qb->expr()->like('fc.path', $filesPat))
-			->andWhere($qb->expr()->gt('fc.size', $zeroSize));
+		$params = $this->untrackedFileParameters(qb: $qb);
+		$qb->select($qb->createFunction('COUNT(DISTINCT fc.fileid) as count'));
+		$this->joinFilesWithoutChunks(qb: $qb);
+		$this->whereUntrackedUserFile(qb: $qb, params: $params);
 
 		$result = $qb->executeQuery();
 		$count = (int)$result->fetchOne();
@@ -1263,4 +1130,60 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 
 		return $count;
 	}//end countUntrackedFiles()
+
+	/**
+	 * The bound values of the untracked-file filter, created in a fixed order.
+	 *
+	 * @param IQueryBuilder $qb The builder the parameters belong to.
+	 *
+	 * @return array<string, mixed> The parameters by name.
+	 */
+	private function untrackedFileParameters(IQueryBuilder $qb): array {
+		$params = [];
+		foreach (self::UNTRACKED_FILE_PATTERNS as $name => $pattern) {
+			$params[$name] = $qb->createNamedParameter($pattern, IQueryBuilder::PARAM_STR);
+		}
+
+		$params['zeroSize'] = $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT);
+		return $params;
+	}//end untrackedFileParameters()
+
+	/**
+	 * Read filecache rows with their mimetype and storage, keeping only files without a chunk.
+	 *
+	 * @param IQueryBuilder $qb The builder to add the source and joins to.
+	 *
+	 * @return void
+	 */
+	private function joinFilesWithoutChunks(IQueryBuilder $qb): void {
+		$qb->from('filecache', 'fc')
+			->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
+			->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'));
+		$fileChunk = $qb->expr()->andX(
+			$qb->expr()->eq('fc.fileid', 'ch.source_id'),
+			$qb->expr()->eq('ch.source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR))
+		);
+		$qb->leftJoin('fc', 'openregister_chunks', 'ch', $fileChunk)
+			->where($qb->expr()->isNull('ch.id'));
+	}//end joinFilesWithoutChunks()
+
+	/**
+	 * Keep non-empty files under a user's `files/` folder, outside trash, appdata,
+	 * versions, caches and thumbnails, and never directories.
+	 *
+	 * @param IQueryBuilder $qb The builder to filter.
+	 * @param array<string, mixed> $params The parameters from untrackedFileParameters().
+	 *
+	 * @return void
+	 */
+	private function whereUntrackedUserFile(IQueryBuilder $qb, array $params): void {
+		$qb->andWhere($qb->expr()->neq('mt.mimetype', $params['dirType']))
+			->andWhere($qb->expr()->like('st.id', $params['homePattern']));
+		foreach (['trashPat', 'appdataPat', 'versionPat', 'cachePat', 'thumbPat'] as $excluded) {
+			$qb->andWhere($qb->expr()->notLike('fc.path', $params[$excluded]));
+		}
+
+		$qb->andWhere($qb->expr()->like('fc.path', $params['filesPat']))
+			->andWhere($qb->expr()->gt('fc.size', $params['zeroSize']));
+	}//end whereUntrackedUserFile()
 }//end class

@@ -38,7 +38,9 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
 use Exception;
+use OCA\OpenRegister\Service\CardDraft;
 use OCA\OpenRegister\Service\DeckLinkService;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -141,17 +143,13 @@ class DeckProvider extends AbstractIntegrationProvider {
 	public function create(string $register, string $schema, string $objectId, array $payload): array {
 		$registerId = (int)($payload['registerId'] ?? $register);
 		$schemaId = (int)($payload['schemaId'] ?? $schema);
+		$target = (new LinkTarget(objectUuid: $objectId, registerId: $registerId))->inSchema(schemaId: $schemaId);
 
 		$hasCardId = (empty($payload['cardId']) === false);
 		$hasBoardData = (empty($payload['boardId']) === false && empty($payload['stackId']) === false);
 
 		if ($hasCardId === true) {
-			$link = $this->deckLinkService->linkCard(
-				$objectId,
-				$registerId,
-				$schemaId,
-				(int)$payload['cardId']
-			);
+			$link = $this->deckLinkService->linkCard(target: $target, cardId: (int)$payload['cardId']);
 
 			return $link->jsonSerialize();
 		}
@@ -168,14 +166,10 @@ class DeckProvider extends AbstractIntegrationProvider {
 			}
 
 			$link = $this->deckLinkService->createAndLinkCard(
-				$objectId,
-				$registerId,
-				$schemaId,
-				(int)$payload['boardId'],
-				(int)$payload['stackId'],
-				(string)($payload['title'] ?? 'Untitled'),
-				$description,
-				$duedate
+				target: $target,
+				card: (new CardDraft(title: (string)($payload['title'] ?? 'Untitled'), stackId: (int)$payload['stackId']))
+					->onBoard(boardId: (int)$payload['boardId'])
+					->withDetails(description: $description, duedate: $duedate)
 			);
 
 			return $link->jsonSerialize();
@@ -211,19 +205,6 @@ class DeckProvider extends AbstractIntegrationProvider {
 	 *       the health/OCS contract is owned by pluggable-integration-registry task-2.
 	 */
 	public function health(): array {
-		$available = $this->deckLinkService->isDeckAvailable();
-
-		$status = 'unavailable';
-		$message = 'NC Deck app is not installed';
-		if ($available === true) {
-			$status = 'ok';
-			$message = null;
-		}
-
-		return [
-			'status' => $status,
-			'authStatus' => 'configured',
-			'message' => $message,
-		];
+		return $this->installedHealth(available: $this->deckLinkService->isDeckAvailable(), missing: 'NC Deck app is not installed');
 	}//end health()
 }//end class

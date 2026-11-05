@@ -37,8 +37,8 @@ use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
-use OCA\OpenRegister\Service\Webhook\CloudEventFormatter;
-use OCA\OpenRegister\Service\Webhook\WebhookInterceptionCache;
+use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
+use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
@@ -107,9 +107,9 @@ class WebhookService {
 	/**
 	 * CloudEvent formatter
 	 *
-	 * @var CloudEventFormatter|null
+	 * @var CloudEventFormatterInterface|null
 	 */
-	private ?CloudEventFormatter $cloudEventFormatter;
+	private ?CloudEventFormatterInterface $cloudEventFormatter;
 
 	/**
 	 * Job list used to enqueue asynchronous webhook delivery.
@@ -152,7 +152,7 @@ class WebhookService {
 	 * @param MappingService $mappingService Mapping service
 	 * @param MappingMapper $mappingMapper Mapping mapper
 	 * @param IJobList $jobList Background job list for async delivery
-	 * @param CloudEventFormatter|null $cloudEventFormatter CloudEvent formatter (optional)
+	 * @param CloudEventFormatterInterface|null $cloudEventFormatter CloudEvent formatter (optional)
 	 * @param WebhookInterceptionCache|null $interceptionCache Interception-flag cache (optional)
 	 *
 	 * @return void
@@ -164,7 +164,7 @@ class WebhookService {
 		MappingService $mappingService,
 		MappingMapper $mappingMapper,
 		IJobList $jobList,
-		?CloudEventFormatter $cloudEventFormatter = null,
+		?CloudEventFormatterInterface $cloudEventFormatter = null,
 		?WebhookInterceptionCache $interceptionCache = null,
 	) {
 		$this->webhookMapper = $webhookMapper;
@@ -1027,58 +1027,13 @@ class WebhookService {
 		// in $options below, which honours the same per-hook flag.
 		$this->assertSafeWebhookUri(uri: $webhook->getUrl(), allowPrivate: $allowPrivate);
 
-		$headers = array_merge(
-			[
-				'Content-Type' => 'application/json',
-				'User-Agent' => 'OpenRegister-Webhooks/1.0',
-			],
-			$webhook->getHeadersArray()
-		);
-
-		// Add signature if secret is configured.
-		if ($webhook->getSecret() !== null) {
-			$signature = $this->generateSignature(payload: $payload, secret: $webhook->getSecret());
-			$headers['X-Webhook-Signature'] = $signature;
-		}
-
-		$options = [
-			'headers' => $headers,
-			'timeout' => $webhook->getTimeout(),
-		];
-
-		// Hard-cap connect + total timeout for request-blocking deliveries
-		// (interception). The cap never RAISES a webhook's own shorter timeout,
-		// but a non-positive per-webhook timeout (Guzzle: 0 = wait forever)
-		// must not escape the cap either.
-		if ($timeoutCapSeconds !== null) {
-			$webhookTimeout = (int)$webhook->getTimeout();
-			$options['timeout'] = $timeoutCapSeconds;
-			if ($webhookTimeout > 0 && $webhookTimeout < $timeoutCapSeconds) {
-				$options['timeout'] = $webhookTimeout;
+		$request = new WebhookRequestOptions(webhook: $webhook, timeoutCapSeconds: $timeoutCapSeconds);
+		$options = ['headers' => $request->headers(payload: $payload)] + $request->timeouts();
+		$options['allow_redirects'] = $request->redirects(
+			assertSafe: function (string $uri) use ($allowPrivate): void {
+				$this->assertSafeWebhookUri(uri: $uri, allowPrivate: $allowPrivate);
 			}
-
-			$options['connect_timeout'] = $timeoutCapSeconds;
-		}
-
-		// Override the shared client's redirect guard per-request so the
-		// on_redirect callback can see this hook's allowPrivate flag. Mirrors
-		// the client default (max/strict/protocols) from initializeHttpClient();
-		// the only difference is the flag-aware re-validation. The shared client
-		// default keeps allowPrivate = false as the safe fallback.
-		$options['allow_redirects'] = [
-			'max' => 5,
-			'strict' => true,
-			'referer' => false,
-			'protocols' => ['http', 'https'],
-			'track_redirects' => true,
-			'on_redirect' => function (
-				RequestInterface $request,
-				ResponseInterface $response,
-				\Psr\Http\Message\UriInterface $uri,
-			) use ($allowPrivate): void {
-				$this->assertSafeWebhookUri(uri: (string)$uri, allowPrivate: $allowPrivate);
-			},
-		];
+		);
 
 		// For GET requests, use query parameters; for others, send JSON body.
 		$payloadKey = 'json';
@@ -1101,18 +1056,6 @@ class WebhookService {
 			'body' => $this->capResponseBody(body: (string)$response->getBody()),
 		];
 	}//end sendRequest()
-
-	/**
-	 * Generate HMAC signature for payload
-	 *
-	 * @param array $payload Payload to sign
-	 * @param string $secret Secret key
-	 *
-	 * @return string
-	 */
-	private function generateSignature(array $payload, string $secret): string {
-		return hash_hmac('sha256', json_encode($payload), $secret);
-	}//end generateSignature()
 
 	/**
 	 * Intercept request and send to webhooks

@@ -22,6 +22,7 @@ use Closure;
 use Exception;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 
@@ -68,6 +69,18 @@ trait ObjectLinkActionsTrait
 			return $this->mapException(exception: $e);
 		}
 	}//end onLinkedObject()
+
+	/**
+	 * The link target (uuid, register, schema) of a stored object.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return LinkTarget The target.
+	 */
+	private function linkTargetOf(ObjectEntity $object): LinkTarget {
+		return (new LinkTarget(objectUuid: $object->getUuid(), registerId: (int)$object->getRegister()))
+			->inSchema(schemaId: (int)$object->getSchema());
+	}//end linkTargetOf()
 
 	/**
 	 * Run a listing on the object its route names; a failure answers 500 with its message.
@@ -149,7 +162,7 @@ trait ObjectLinkActionsTrait
 				return new JSONResponse(['error' => 'name is required'], 400);
 			}
 
-			$link = $create($object->getUuid(), (int)$object->getRegister(), (int)$object->getSchema(), $name);
+			$link = $create($this->linkTargetOf(object: $object), $name);
 			return new JSONResponse($link->jsonSerialize(), 201);
 		};
 	}//end namedLinkOf()

@@ -34,6 +34,8 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
 
 /**
  * Resolves and mails the addresses an `email` recipient entry names.
@@ -91,22 +93,22 @@ class ReferencedAddressNotifier {
 	/**
 	 * integriq did not answer, which is refused like an opt-out.
 	 */
-	public const OUTCOME_AUTHORITY_UNAVAILABLE = OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE;
+	public const OUTCOME_AUTHORITY_UNAVAILABLE = OptOutAuthorityInterface::CODE_AUTHORITY_UNAVAILABLE;
 
 	/**
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface          $objects The object layer, for the referenced object.
-	 * @param EmailSender            $email   The email channel.
-	 * @param OptOutAuthority        $optOut  Asks integriq whether an address may be mailed.
+	 * @param EmailSenderInterface            $email   The email channel.
+	 * @param OptOutAuthorityInterface        $optOut  Asks integriq whether an address may be mailed.
 	 * @param LoggerInterface        $logger  Logger.
 	 * @param SchemaMapperInterface           $schemas The schemas, for the properties of a referenced object.
 	 * @param RelationCascadeHandler $refs    Resolves a property's `$ref` to a schema id.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objects,
-		private readonly EmailSender $email,
-		private readonly OptOutAuthority $optOut,
+		private readonly EmailSenderInterface $email,
+		private readonly OptOutAuthorityInterface $optOut,
 		private readonly LoggerInterface $logger,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly RelationCascadeHandler $refs,
@@ -280,7 +282,7 @@ class ReferencedAddressNotifier {
 
 		$decision = $this->optOut->decisionFor(decisions: $decisions, address: $entry['address']);
 		if (($decision['send'] ?? false) !== true) {
-			if (($decision['code'] ?? '') === OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE) {
+			if (($decision['code'] ?? '') === OptOutAuthorityInterface::CODE_AUTHORITY_UNAVAILABLE) {
 				return self::OUTCOME_AUTHORITY_UNAVAILABLE;
 			}
 

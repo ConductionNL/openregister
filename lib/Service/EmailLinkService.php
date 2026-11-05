@@ -111,11 +111,11 @@ class EmailLinkService implements EmailLinkReaderInterface {
 	private const MAX_LIMIT = 200;
 
 	/**
-	 * Mail recipient type for "from".
+	 * Queries over the Mail app's tables.
 	 *
-	 * @var int
+	 * @var MailTableQueries
 	 */
-	private const RECIPIENT_TYPE_FROM = 0;
+	private readonly MailTableQueries $mailQueries;
 
 	/**
 	 * Constructor.
@@ -133,6 +133,7 @@ class EmailLinkService implements EmailLinkReaderInterface {
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->mailQueries = new MailTableQueries(db: $db);
 	}//end __construct()
 
 	/**
@@ -161,32 +162,17 @@ class EmailLinkService implements EmailLinkReaderInterface {
 	 * harvested from Mail's tables at link-time so the list path can
 	 * render without a join.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id (nullable in storage).
-	 * @param int $mailAccountId Mail account id.
-	 * @param string $messageId Mail message id (numeric string).
-	 * @param string $messageUid Mail message UID (IMAP UID, opaque).
+	 * @param LinkTarget      $target  The object to link to.
+	 * @param EmailMessageRef $message The Mail message (account, id, optional uid).
 	 *
 	 * @return EmailLink The persisted link row.
 	 *
 	 * @throws Exception On missing user (401), Mail unavailable (503),
 	 *                   or message-not-found (404).
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sequential guard
-	 *     clauses for the four required preconditions (user, Mail
-	 *     available, message exists, upsert idempotency).
-	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function linkEmail(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		int $mailAccountId,
-		string $messageId,
-		string $messageUid,
-	): EmailLink {
+	public function linkEmail(LinkTarget $target, EmailMessageRef $message): EmailLink {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in', 401);
@@ -196,23 +182,17 @@ class EmailLinkService implements EmailLinkReaderInterface {
 			throw new Exception('NC Mail app is not installed', 503);
 		}
 
-		$messageIdInt = (int)$messageId;
-		if ($messageIdInt <= 0) {
+		if ($message->messageNumber() <= 0) {
 			throw new Exception('Invalid mail message id', 400);
-		}
-
-		$uidForMatch = null;
-		if ($messageUid !== '') {
-			$uidForMatch = $messageUid;
 		}
 
 		// Idempotent path: return the existing row if the composite key
 		// already exists.
 		$existing = $this->mapper->findByObjectAccountMessageUid(
-			objectUuid: $objectUuid,
-			mailAccountId: $mailAccountId,
-			mailMessageId: $messageIdInt,
-			mailMessageUid: $uidForMatch
+			objectUuid: $target->objectUuid,
+			mailAccountId: $message->mailAccountId,
+			mailMessageId: $message->messageNumber(),
+			mailMessageUid: $message->uidForMatch()
 		);
 		if ($existing !== null) {
 			return $existing;
@@ -220,83 +200,69 @@ class EmailLinkService implements EmailLinkReaderInterface {
 
 		// Harvest the metadata at link-time so the list path is one
 		// SELECT against the link table.
-		$message = $this->fetchMessageRow(
-			mailAccountId: $mailAccountId,
-			mailMessageId: $messageIdInt
+		$row = $this->fetchMessageRow(
+			mailAccountId: $message->mailAccountId,
+			mailMessageId: $message->messageNumber()
 		);
-		if ($message === null) {
+		if ($row === null) {
 			throw new Exception('Mail message not found', 404);
 		}
 
-		$link = $this->buildNewLink(
-			objectUuid: $objectUuid,
-			registerId: $registerId,
-			schemaId: $schemaId,
-			mailAccountId: $mailAccountId,
-			messageIdInt: $messageIdInt,
-			uidForMatch: $uidForMatch,
-			message: $message,
-			userId: $user->getUID()
-		);
+		$link = $this->buildNewLink(target: $target, message: $message);
+		$this->applyHarvest(link: $link, row: $row);
+		$link->setLinkedBy($user->getUID());
+		$link->setLinkedAt(new DateTime());
 
 		return $this->mapper->insert($link);
 	}//end linkEmail()
 
 	/**
-	 * Build a new EmailLink entity from link parameters and harvested message metadata.
+	 * Build a new EmailLink entity for the target and message.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id (0 = none).
-	 * @param int $mailAccountId Mail account id.
-	 * @param int $messageIdInt Mail message id.
-	 * @param string|null $uidForMatch Explicit UID or null to fall back from message row.
-	 * @param array<string,mixed> $message Harvested message metadata row.
-	 * @param string $userId Linking user's NC uid.
+	 * @param LinkTarget      $target  The object to link to.
+	 * @param EmailMessageRef $message The Mail message.
 	 *
 	 * @return EmailLink Unsaved link entity.
 	 */
-	private function buildNewLink(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		int $mailAccountId,
-		int $messageIdInt,
-		?string $uidForMatch,
-		array $message,
-		string $userId,
-	): EmailLink {
+	private function buildNewLink(LinkTarget $target, EmailMessageRef $message): EmailLink {
 		$link = new EmailLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		if ($schemaId > 0) {
-			$link->setSchemaId($schemaId);
+		$link->setObjectUuid($target->objectUuid);
+		$link->setRegisterId($target->registerId);
+		if ($target->schemaId() > 0) {
+			$link->setSchemaId($target->schemaId());
 		}
 
-		$link->setMailAccountId($mailAccountId);
-		$link->setMailMessageId($messageIdInt);
-		$effectiveUid = $message['uid'];
-		if ($uidForMatch !== null || $message['uid'] === '') {
-			$effectiveUid = $uidForMatch;
+		$link->setMailAccountId($message->mailAccountId);
+		$link->setMailMessageId($message->messageNumber());
+		$link->setMailMessageUid($message->uidForMatch());
+
+		return $link;
+	}//end buildNewLink()
+
+	/**
+	 * Copy the harvested message metadata onto the link; the row's uid is used when none was given.
+	 *
+	 * @param EmailLink           $link The unsaved link.
+	 * @param array<string,mixed> $row  Harvested message metadata row.
+	 *
+	 * @return void
+	 */
+	private function applyHarvest(EmailLink $link, array $row): void {
+		if ($link->getMailMessageUid() === null && $row['uid'] !== '') {
+			$link->setMailMessageUid($row['uid']);
 		}
 
-		$link->setMailMessageUid($effectiveUid);
-		$link->setSubject($message['subject']);
-		$link->setSender($message['sender']);
+		$link->setSubject($row['subject']);
+		$link->setSender($row['sender']);
 
-		if ($message['date'] !== null) {
+		if ($row['date'] !== null) {
 			try {
-				$link->setMailDate(new DateTime($message['date']));
+				$link->setMailDate(new DateTime($row['date']));
 			} catch (Throwable $e) {
 				// Leave date null when the mail date string is unparseable.
 			}
 		}
-
-		$link->setLinkedBy($userId);
-		$link->setLinkedAt(new DateTime());
-
-		return $link;
-	}//end buildNewLink()
+	}//end applyHarvest()
 
 	/**
 	 * Unlink a Mail message from an OR object.
@@ -386,50 +352,18 @@ class EmailLinkService implements EmailLinkReaderInterface {
 	 */
 	public function getAvailableAccounts(): array {
 		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return [];
-		}
-
-		if ($this->isMailAvailable() === false) {
+		if ($user === null || $this->isMailAvailable() === false) {
 			return [];
 		}
 
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('id', 'name', 'email')
-				->from('mail_accounts')
-				->where($qb->expr()->eq('user_id', $qb->createNamedParameter($user->getUID())))
-				->orderBy('name', 'ASC');
-
-			$result = $qb->executeQuery();
-			$rows = $result->fetchAll();
-			$result->closeCursor();
+			$rows = $this->mailQueries->rowsOf(qb: $this->mailQueries->accountsQuery(userId: $user->getUID()));
 		} catch (Throwable $e) {
 			$this->logger->warning('[EmailLinkService] getAvailableAccounts failed: ' . $e->getMessage());
 			return [];
 		}
 
-		$out = [];
-		foreach ($rows as $row) {
-			$id = (int)($row['id'] ?? 0);
-			$email = (string)($row['email'] ?? '');
-			$label = (string)($row['name'] ?? '');
-			if ($id <= 0) {
-				continue;
-			}
-
-			if ($label === '') {
-				$label = $email;
-			}
-
-			$out[] = [
-				'id' => $id,
-				'label' => $label,
-				'email' => $email,
-			];
-		}
-
-		return $out;
+		return array_values(array_filter(array_map(fn (array $row): ?array => $this->accountItem(row: $row), $rows)));
 	}//end getAvailableAccounts()
 
 	/**
@@ -452,41 +386,13 @@ class EmailLinkService implements EmailLinkReaderInterface {
 		$this->assertAccountOwnership(accountId: $accountId);
 
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('id', 'name')
-				->from('mail_mailboxes')
-				->where(
-					$qb->expr()->eq(
-						'account_id',
-						$qb->createNamedParameter($accountId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)
-					)
-				)
-				->orderBy('name', 'ASC');
-
-			$result = $qb->executeQuery();
-			$rows = $result->fetchAll();
-			$result->closeCursor();
+			$rows = $this->mailQueries->rowsOf(qb: $this->mailQueries->mailboxesQuery(accountId: $accountId));
 		} catch (Throwable $e) {
 			$this->logger->warning('[EmailLinkService] getMailboxesForAccount failed: ' . $e->getMessage());
 			return [];
 		}
 
-		$out = [];
-		foreach ($rows as $row) {
-			$id = (int)($row['id'] ?? 0);
-			$name = (string)($row['name'] ?? '');
-			if ($id <= 0 || $name === '') {
-				continue;
-			}
-
-			$out[] = [
-				'id' => $id,
-				'name' => $name,
-				'displayName' => $this->formatMailboxName(name: $name),
-			];
-		}
-
-		return $out;
+		return array_values(array_filter(array_map(fn (array $row): ?array => $this->mailboxItem(row: $row), $rows)));
 	}//end getMailboxesForAccount()
 
 	/**
@@ -521,106 +427,57 @@ class EmailLinkService implements EmailLinkReaderInterface {
 		}
 
 		$this->assertAccountOwnership(accountId: $accountId);
+		$page = (new MailboxPage(accountId: $accountId, mailbox: $mailbox))
+			->startingAfter(afterCursor: $afterCursor, limit: max(1, min($limit, self::MAX_LIMIT)));
 
-		$limit = max(1, min($limit, self::MAX_LIMIT));
+		return $this->messagePage(page: $page, rows: $this->fetchMailboxRows(page: $page));
+	}//end getMessagesForMailbox()
 
-		$rows = $this->fetchMailboxRows(
-			accountId: $accountId,
-			mailbox: $mailbox,
-			afterCursor: $afterCursor,
-			fetch: $limit + 1
-		);
-
+	/**
+	 * Shape fetched message rows as a picker page.
+	 *
+	 * @param MailboxPage                         $page The requested page.
+	 * @param array<int,array<string,mixed>>|null $rows Up to one row more than the page size; null on failure.
+	 *
+	 * @return array{items: array<int,array<string,mixed>>, nextCursor: ?int}
+	 */
+	private function messagePage(MailboxPage $page, ?array $rows): array {
 		if ($rows === null) {
 			return ['items' => [], 'nextCursor' => null];
 		}
 
-		$hasMore = count($rows) > $limit;
-		if ($hasMore === true) {
-			$rows = array_slice($rows, 0, $limit);
-		}
-
-		$items = $this->normalizeMessageRows(rows: $rows);
+		$items = $this->normalizeMessageRows(rows: array_slice($rows, 0, $page->limit()));
 		$nextCursor = null;
-		if ($hasMore === true && $items !== []) {
+		if (count($rows) > $page->limit() && $items !== []) {
 			$nextCursor = $items[count($items) - 1]['id'];
 		}
 
-		return [
-			'items' => $items,
-			'nextCursor' => $nextCursor,
-		];
-	}//end getMessagesForMailbox()
+		return ['items' => $items, 'nextCursor' => $nextCursor];
+	}//end messagePage()
 
 	/**
 	 * Execute the mailbox message query and return the raw rows.
 	 *
 	 * Returns null when the mailbox cannot be resolved or the query fails.
 	 *
-	 * @param int $accountId Mail account id.
-	 * @param string $mailbox Mailbox name.
-	 * @param string|null $afterCursor Opaque cursor (message id) or null.
-	 * @param int $fetch Number of rows to fetch (limit + 1 for hasMore detection).
+	 * @param MailboxPage $page The requested page.
 	 *
 	 * @return array<int,array<string,mixed>>|null Raw DB rows or null on failure.
 	 */
-	private function fetchMailboxRows(int $accountId, string $mailbox, ?string $afterCursor, int $fetch): ?array {
+	private function fetchMailboxRows(MailboxPage $page): ?array {
 		try {
-			$mailboxId = $this->resolveMailboxId(accountId: $accountId, mailbox: $mailbox);
+			$mailboxId = $this->resolveMailboxId(accountId: $page->accountId, mailbox: $page->mailbox);
 			if ($mailboxId === 0) {
 				return null;
 			}
 
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('m.id', 'm.uid', 'm.subject', 'm.sent_at')
-				->addSelect('r.email AS sender_email')
-				->from('mail_messages', 'm')
-				->leftJoin(
-					'm',
-					'mail_recipients',
-					'r',
-					$qb->expr()->andX(
-						$qb->expr()->eq('r.message_id', 'm.id'),
-						$qb->expr()->eq(
-							'r.type',
-							$qb->createNamedParameter(self::RECIPIENT_TYPE_FROM)
-						)
-					)
-				)
-				->where(
-					$qb->expr()->eq(
-						'm.mailbox_id',
-						$qb->createNamedParameter($mailboxId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)
-					)
-				)
-				->orderBy('m.sent_at', 'DESC')
-				->addOrderBy('m.id', 'DESC')
-				->setMaxResults($fetch);
-
-			$cursorId = 0;
-			if ($afterCursor !== null && $afterCursor !== '') {
-				$cursorId = (int)$afterCursor;
-			}
-
-			if ($cursorId > 0) {
-				$qb->andWhere(
-					$qb->expr()->lt(
-						'm.id',
-						$qb->createNamedParameter($cursorId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)
-					)
-				);
-			}
-
-			$result = $qb->executeQuery();
-			$rows = $result->fetchAll();
-			$result->closeCursor();
-
-			return $rows;
+			return $this->mailQueries->rowsOf(qb: $this->mailQueries->mailboxMessagesQuery(mailboxId: $mailboxId, page: $page));
 		} catch (Throwable $e) {
 			$this->logger->warning('[EmailLinkService] getMessagesForMailbox failed: ' . $e->getMessage());
 			return null;
-		}//end try
+		}
 	}//end fetchMailboxRows()
+
 
 	/**
 	 * Normalise raw DB message rows to the API item shape.
@@ -632,19 +489,7 @@ class EmailLinkService implements EmailLinkReaderInterface {
 	private function normalizeMessageRows(array $rows): array {
 		$items = [];
 		foreach ($rows as $row) {
-			$id = (int)($row['id'] ?? 0);
-			$sentAt = null;
-			if (isset($row['sent_at']) === true) {
-				$sentAt = date('c', (int)$row['sent_at']);
-			}
-
-			$items[] = [
-				'id' => $id,
-				'uid' => (string)($row['uid'] ?? ''),
-				'subject' => $row['subject'] ?? null,
-				'sender' => $row['sender_email'] ?? null,
-				'date' => $sentAt,
-			];
+			$items[] = ['id' => (int)($row['id'] ?? 0)] + $this->messageItem(row: $row);
 		}
 
 		return $items;
@@ -663,32 +508,19 @@ class EmailLinkService implements EmailLinkReaderInterface {
 	 */
 	private function resolveMailboxId(int $accountId, string $mailbox): int {
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('id')
-				->from('mail_mailboxes')
-				->where(
-					$qb->expr()->eq(
-						'account_id',
-						$qb->createNamedParameter($accountId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)
-					)
-				)
-				->andWhere($qb->expr()->eq('name', $qb->createNamedParameter($mailbox)))
-				->setMaxResults(1);
-
-			$result = $qb->executeQuery();
-			$row = $result->fetch();
-			$result->closeCursor();
-
-			if ($row === false) {
-				return 0;
-			}
-
-			return (int)($row['id'] ?? 0);
+			$row = $this->mailQueries->firstRowOf(qb: $this->mailQueries->mailboxIdQuery(accountId: $accountId, mailbox: $mailbox));
 		} catch (Throwable $e) {
 			$this->logger->warning('[EmailLinkService] resolveMailboxId failed: ' . $e->getMessage());
 			return 0;
-		}//end try
+		}
+
+		if ($row === false) {
+			return 0;
+		}
+
+		return (int)($row['id'] ?? 0);
 	}//end resolveMailboxId()
+
 
 	/**
 	 * Verify the active user owns the Mail account; throw on mismatch.
@@ -710,20 +542,7 @@ class EmailLinkService implements EmailLinkReaderInterface {
 		}
 
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('user_id')
-				->from('mail_accounts')
-				->where(
-					$qb->expr()->eq(
-						'id',
-						$qb->createNamedParameter($accountId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)
-					)
-				)
-				->setMaxResults(1);
-
-			$result = $qb->executeQuery();
-			$row = $result->fetch();
-			$result->closeCursor();
+			$row = $this->mailQueries->firstRowOf(qb: $this->mailQueries->accountOwnerQuery(accountId: $accountId));
 		} catch (Throwable $e) {
 			$this->logger->warning('[EmailLinkService] assertAccountOwnership lookup failed: ' . $e->getMessage());
 			throw new Exception('Mail account not found', 404);
@@ -747,66 +566,19 @@ class EmailLinkService implements EmailLinkReaderInterface {
 	 */
 	private function fetchMessageRow(int $mailAccountId, int $mailMessageId): ?array {
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('m.id', 'm.uid', 'm.subject', 'm.sent_at')
-				->addSelect('r.email AS sender_email')
-				->from('mail_messages', 'm')
-				->innerJoin(
-					'm',
-					'mail_mailboxes',
-					'mb',
-					$qb->expr()->andX(
-						$qb->expr()->eq('mb.id', 'm.mailbox_id'),
-						$qb->expr()->eq(
-							'mb.account_id',
-							$qb->createNamedParameter($mailAccountId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)
-						)
-					)
-				)
-				->leftJoin(
-					'm',
-					'mail_recipients',
-					'r',
-					$qb->expr()->andX(
-						$qb->expr()->eq('r.message_id', 'm.id'),
-						$qb->expr()->eq(
-							'r.type',
-							$qb->createNamedParameter(self::RECIPIENT_TYPE_FROM)
-						)
-					)
-				)
-				->where(
-					$qb->expr()->eq(
-						'm.id',
-						$qb->createNamedParameter($mailMessageId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)
-					)
-				)
-				->setMaxResults(1);
-
-			$result = $qb->executeQuery();
-			$row = $result->fetch();
-			$result->closeCursor();
+			$row = $this->mailQueries->firstRowOf(qb: $this->mailQueries->messageQuery(accountId: $mailAccountId, messageId: $mailMessageId));
 		} catch (Throwable $e) {
 			$this->logger->warning('[EmailLinkService] fetchMessageRow failed: ' . $e->getMessage());
 			return null;
-		}//end try
+		}
 
 		if ($row === false) {
 			return null;
 		}
 
-		$sentAt = null;
-		if (isset($row['sent_at']) === true) {
-			$sentAt = date('c', (int)$row['sent_at']);
-		}
-
-		return [
-			'uid' => (string)($row['uid'] ?? ''),
-			'subject' => $row['subject'] ?? null,
-			'sender' => $row['sender_email'] ?? null,
-			'date' => $sentAt,
-		];
+		return $this->messageItem(row: $row);
 	}//end fetchMessageRow()
+
 
 	/**
 	 * Best-effort prettified mailbox display name.
@@ -828,4 +600,82 @@ class EmailLinkService implements EmailLinkReaderInterface {
 
 		return (string)$last;
 	}//end formatMailboxName()
+
+
+
+
+
+
+	/**
+	 * Picker item for an account row; null when the row has no valid id.
+	 *
+	 * @param array<string,mixed> $row Account row.
+	 *
+	 * @return array{id:int,label:string,email:string}|null The item.
+	 */
+	private function accountItem(array $row): ?array {
+		$id = (int)($row['id'] ?? 0);
+		if ($id <= 0) {
+			return null;
+		}
+
+		$email = (string)($row['email'] ?? '');
+		$label = (string)($row['name'] ?? '');
+		if ($label === '') {
+			$label = $email;
+		}
+
+		return ['id' => $id, 'label' => $label, 'email' => $email];
+	}//end accountItem()
+
+	/**
+	 * Picker item for a mailbox row; null when the row has no valid id or name.
+	 *
+	 * @param array<string,mixed> $row Mailbox row.
+	 *
+	 * @return array{id:int,name:string,displayName:string}|null The item.
+	 */
+	private function mailboxItem(array $row): ?array {
+		$id = (int)($row['id'] ?? 0);
+		$name = (string)($row['name'] ?? '');
+		if ($id <= 0 || $name === '') {
+			return null;
+		}
+
+		return ['id' => $id, 'name' => $name, 'displayName' => $this->formatMailboxName(name: $name)];
+	}//end mailboxItem()
+
+	/**
+	 * Uid, subject, sender and send time of a message row.
+	 *
+	 * @param array<string,mixed> $row Message row.
+	 *
+	 * @return array{uid:string,subject:?string,sender:?string,date:?string} The fields.
+	 */
+	private function messageItem(array $row): array {
+		return [
+			'uid' => (string)($row['uid'] ?? ''),
+			'subject' => $row['subject'] ?? null,
+			'sender' => $row['sender_email'] ?? null,
+			'date' => $this->sentAtOf(row: $row),
+		];
+	}//end messageItem()
+
+	/**
+	 * The send time of a message row as an ISO 8601 string; null when unknown.
+	 *
+	 * @param array<string,mixed> $row Message row.
+	 *
+	 * @return string|null The send time.
+	 */
+	private function sentAtOf(array $row): ?string {
+		if (isset($row['sent_at']) === false) {
+			return null;
+		}
+
+		return date('c', (int)$row['sent_at']);
+	}//end sentAtOf()
+
+
+
 }//end class

@@ -53,8 +53,8 @@ use OCA\OpenRegister\BackgroundJob\BulkJobRunner;
 use OCA\OpenRegister\BackgroundJob\RecordsItsRuns;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
-use OCA\OpenRegister\Db\NotificationHistoryMapper;
-use OCA\OpenRegister\Db\QueuedNotificationMapper;
+use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapperInterface;
+use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapperInterface;
 use OCA\OpenRegister\Db\RuleRun;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
@@ -148,8 +148,8 @@ class OperationsConsoleService {
 	 *
 	 * @param BulkJobMapper                $bulkJobs      The bulk job records.
 	 * @param IJobList                     $jobList       Nextcloud's registered background jobs.
-	 * @param NotificationHistoryMapper    $dispatches    The notification dispatch history.
-	 * @param QueuedNotificationMapper     $queue         The notifications waiting to go out.
+	 * @param NotificationHistoryMapperInterface    $dispatches    The notification dispatch history.
+	 * @param QueuedNotificationMapperInterface     $queue         The notifications waiting to go out.
 	 * @param NotificationTemplateRegistry $templates     The shipped notification texts.
 	 * @param RuleRunMapper                $ruleRuns      The rules engine's run log.
 	 * @param RuleRunSummaryMapper         $ruleSummaries One row per rule, with its last error.
@@ -160,8 +160,8 @@ class OperationsConsoleService {
 	public function __construct(
 		private readonly BulkJobMapper $bulkJobs,
 		private readonly IJobList $jobList,
-		private readonly NotificationHistoryMapper $dispatches,
-		private readonly QueuedNotificationMapper $queue,
+		private readonly NotificationHistoryMapperInterface $dispatches,
+		private readonly QueuedNotificationMapperInterface $queue,
 		private readonly NotificationTemplateRegistry $templates,
 		private readonly RuleRunMapper $ruleRuns,
 		private readonly RuleRunSummaryMapper $ruleSummaries,

@@ -30,7 +30,6 @@ use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
@@ -236,12 +235,6 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 */
 	private SchemaCacheHandler $schemaCacheService;
 
-	/**
-	 * Schema facet cache service
-	 *
-	 * @var FacetCacheHandler|null
-	 */
-	private ?FacetCacheHandler $schemaFacetCacheService = null;
 
 	/**
 	 * Search trail mapper
@@ -341,7 +334,6 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * @param LoggerInterface $logger Logger
 	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
 	 * @param SchemaCacheHandler $schemaCacheService Schema cache handler
-	 * @param FacetCacheHandler $facetCacheSvc Schema facet cache service
 	 * @param SearchTrailMapper $searchTrailMapper Search trail mapper
 	 * @param IUserManager $userManager User manager
 	 * @param IDBConnection $db Database connection
@@ -369,7 +361,6 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 		// REMOVED: ObjectEntityMapper $objectEntityMapper (unused, caused circular dependency).
 		OrganisationMapperInterface $organisationMapper,
 		SchemaCacheHandler $schemaCacheService,
-		FacetCacheHandler $facetCacheSvc,
 		SearchTrailMapper $searchTrailMapper,
 		IUserManager $userManager,
 		IDBConnection $db,
@@ -392,7 +383,6 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 		// REMOVED: objectEntityMapper assignment (unused, caused circular dependency).
 		$this->organisationMapper = $organisationMapper;
 		$this->schemaCacheService = $schemaCacheService;
-		$this->schemaFacetCacheService = $facetCacheSvc;
 		$this->searchTrailMapper = $searchTrailMapper;
 		$this->userManager = $userManager;
 		$this->db = $db;
@@ -894,7 +884,8 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 		$run = new MassValidationRun(
 			objectMapper: $this->container->get(MagicMapperInterface::class),
 			settings: $this,
-			logger: $this->logger
+			logger: $this->logger,
+			container: $this->container
 		);
 		return $run->run(
 			config: [

@@ -19,6 +19,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ApiTokenSettingsControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\LlmSettingsControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\BulkControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ChatControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ConversationControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\GdprEntitiesControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FileExtractionControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FileTextControllerFactory;
 use OC\Files\AppData\Factory;
 use OCA\OpenRegister\Controller\BulkController;
 use OCA\OpenRegister\Controller\ChatController;
@@ -38,7 +48,7 @@ use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
-use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Notifications\Db\MessageMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -1755,7 +1765,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return ChatController
 	 */
 	private function buildChatController(): ChatController {
-		return new ChatController(
+		return ChatControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(ChatService::class),
@@ -1776,7 +1786,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return ConversationController
 	 */
 	private function buildConversationController(): ConversationController {
-		return new ConversationController(
+		return ConversationControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(ConversationMapper::class),
@@ -1796,7 +1806,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return GdprEntitiesController
 	 */
 	private function buildGdprEntitiesController(): GdprEntitiesController {
-		return new GdprEntitiesController(
+		return GdprEntitiesControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(GdprEntityMapper::class),
@@ -1816,7 +1826,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return WebhooksController
 	 */
 	private function buildWebhooksController(): WebhooksController {
-		return new WebhooksController(
+		return WebhooksControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(WebhookMapper::class),
@@ -1832,7 +1842,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return OrganisationController
 	 */
 	private function buildOrganisationController(): OrganisationController {
-		return new OrganisationController(
+		return OrganisationControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(OrganisationService::class),
@@ -1853,7 +1863,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return FileTextController
 	 */
 	private function buildFileTextController(): FileTextController {
-		return new FileTextController(
+		return FileTextControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(TextExtractionService::class),
@@ -1873,7 +1883,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return FileExtractionController
 	 */
 	private function buildFileExtractionController(): FileExtractionController {
-		return new FileExtractionController(
+		return FileExtractionControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(TextExtractionService::class),
@@ -1939,7 +1949,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return BulkController
 	 */
 	private function buildBulkController(): BulkController {
-		return new BulkController(
+		return BulkControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(ObjectService::class),
@@ -1972,7 +1982,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return LlmSettingsController
 	 */
 	private function buildLlmSettingsController(): LlmSettingsController {
-		return new LlmSettingsController(
+		return LlmSettingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->db,
@@ -2009,7 +2019,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return ApiTokenSettingsController
 	 */
 	private function buildApiTokenSettingsController(): ApiTokenSettingsController {
-		return new ApiTokenSettingsController(
+		return ApiTokenSettingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->appConfig,

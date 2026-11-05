@@ -192,26 +192,6 @@ class MacroActionResolver {
 	}//end nextFor()
 
 	/**
-	 * The `next` hint after a macro ran on a selection.
-	 *
-	 * After a selection the person is on a list, so `list` unless the flow
-	 * declares otherwise; with no bound flow found at all, `list`.
-	 *
-	 * @param string|null $flowUuid The bound flow, when any object had one.
-	 *
-	 * @return string One of FlowNextHint::HINTS.
-	 *
-	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
-	 */
-	public function nextAfterSelection(?string $flowUuid): string {
-		if ($flowUuid === null) {
-			return FlowNextHint::LIST;
-		}
-
-		return $this->nextFor(flowUuid: $flowUuid);
-	}//end nextAfterSelection()
-
-	/**
 	 * The EFFECTIVE `next` hint of a finished run.
 	 *
 	 * The end node the run reached wins when it declares a hint; an end node

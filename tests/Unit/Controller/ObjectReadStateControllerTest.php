@@ -24,7 +24,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
-use OCA\OpenRegister\Service\Notification\NotificationClearingService;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;

@@ -39,6 +39,7 @@ use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\MapLinkService;
+use OCA\OpenRegister\Service\PoiDraft;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -125,9 +126,7 @@ class MapLinksController extends Controller {
 				}
 
 				$link = $this->mapLinkService->linkPoi(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
+					$this->linkTargetOf(object: $object),
 					$favoriteId
 				);
 
@@ -168,14 +167,10 @@ class MapLinksController extends Controller {
 				[$name, $lat, $lng, $category, $comment] = $params;
 
 				$link = $this->mapLinkService->createAndLinkPoi(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
-					$name,
-					$lat,
-					$lng,
-					$category,
-					$comment
+					target: $this->linkTargetOf(object: $object),
+					poi: (new PoiDraft(name: $name))
+						->locatedAt(lat: $lat, lng: $lng)
+						->withNotes(category: $category, comment: $comment)
 				);
 
 				return new JSONResponse($link->jsonSerialize(), 201);

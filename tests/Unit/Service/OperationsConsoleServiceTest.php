@@ -29,11 +29,11 @@ namespace Unit\Service;
 
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\BulkJobRunner;
-use OCA\OpenRegister\BackgroundJob\NotificationQueueFlushJob;
+use OCA\OpenRegister\Notifications\BackgroundJob\NotificationQueueFlushJob;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
-use OCA\OpenRegister\Db\NotificationHistoryMapper;
-use OCA\OpenRegister\Db\QueuedNotificationMapper;
+use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
+use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\RuleRun;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\RuleRunSummary;

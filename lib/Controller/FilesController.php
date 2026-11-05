@@ -26,6 +26,9 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Controller\Support\FileTransfer;
+use OCA\OpenRegister\Controller\Support\FilesControllerServices;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\FileCopiedEvent;
 use OCA\OpenRegister\Event\FileLockedEvent;
@@ -115,6 +118,90 @@ class FilesController extends Controller {
 	private readonly ObjectOperationsInterface $objectService;
 
 	/**
+	 * The root folder.
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * The user manager.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * The event dispatcher.
+	 *
+	 * @var IEventDispatcher
+	 */
+	private readonly IEventDispatcher $eventDispatcher;
+
+	/**
+	 * The file mapper.
+	 *
+	 * @var ?\OCA\OpenRegister\Db\FileMapperInterface
+	 */
+	private readonly ?\OCA\OpenRegister\Db\FileMapperInterface $fileMapper;
+
+	/**
+	 * The file audit handler.
+	 *
+	 * @var ?\OCA\OpenRegister\Service\File\FileAuditHandler
+	 */
+	private readonly ?\OCA\OpenRegister\Service\File\FileAuditHandler $fileAuditHandler;
+
+	/**
+	 * The user session.
+	 *
+	 * @var ?IUserSession
+	 */
+	private readonly ?IUserSession $userSession;
+
+	/**
+	 * The l10n.
+	 *
+	 * @var ?IL10N
+	 */
+	private readonly ?IL10N $l10n;
+
+	/**
+	 * The object file access.
+	 *
+	 * @var ?ObjectFileAccess
+	 */
+	private readonly ?ObjectFileAccess $objectFileAccess;
+
+	/**
+	 * The office session service.
+	 *
+	 * @var ?OfficeSessionService
+	 */
+	private readonly ?OfficeSessionService $officeSessionService;
+
+	/**
+	 * The attach node handler.
+	 *
+	 * @var ?AttachNodeHandler
+	 */
+	private readonly ?AttachNodeHandler $attachNodeHandler;
+
+	/**
+	 * The file write guard.
+	 *
+	 * @var ?FileWriteGuard
+	 */
+	private readonly ?FileWriteGuard $fileWriteGuard;
+
+	/**
+	 * The file restrictions.
+	 *
+	 * @var ?FileRestrictionGuard
+	 */
+	private readonly ?FileRestrictionGuard $fileRestrictions;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes controller with required dependencies for file operations.
@@ -122,52 +209,33 @@ class FilesController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param FileService $fileService File service for file operations
-	 * @param ObjectOperationsInterface $objectService Object service for object validation
-	 * @param IRootFolder $rootFolder Root folder for file access
-	 * @param IUserManager $userManager User manager for user lookups
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher for file events
-	 * @param \OCA\OpenRegister\Db\FileMapperInterface|null $fileMapper OR-side metadata mapper. Null-safe.
-	 * @param \OCA\OpenRegister\Service\File\FileAuditHandler|null $fileAuditHandler Audit-trail writer. Null-safe.
-	 * @param IUserSession|null $userSession Session for auth gating.
-	 * @param IL10N|null $l10n Localization service for error
-	 *                         messages. Null-safe: when absent the
-	 *                         raw English source string is used.
-	 * @param ObjectFileAccess|null $objectFileAccess The object rule for file actions.
-	 *                                                Null only in legacy fixtures.
-	 * @param OfficeSessionService|null $officeSessionService Opens documents in Nextcloud Office.
-	 * @param AttachNodeHandler|null $attachNodeHandler Copies a Files node into an object through the upload pipeline.
-	 * @param FileWriteGuard|null $fileWriteGuard Refuses a file write on a frozen or archived object. Null only in legacy fixtures.
-	 * @param FileRestrictionGuard|null $fileRestrictions Refuses a restricted file to a caller it does not admit. Null only in legacy fixtures.
+	 * @param FilesControllerServices $services The files controller services.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList)
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		FileService $fileService,
-		ObjectOperationsInterface $objectService,
-		private readonly IRootFolder $rootFolder,
-		private readonly IUserManager $userManager,
-		private readonly IEventDispatcher $eventDispatcher,
-		private readonly ?\OCA\OpenRegister\Db\FileMapperInterface $fileMapper = null,
-		private readonly ?\OCA\OpenRegister\Service\File\FileAuditHandler $fileAuditHandler = null,
-		private readonly ?IUserSession $userSession = null,
-		private readonly ?IL10N $l10n = null,
-		private readonly ?ObjectFileAccess $objectFileAccess = null,
-		private readonly ?OfficeSessionService $officeSessionService = null,
-		private readonly ?AttachNodeHandler $attachNodeHandler = null,
-		private readonly ?FileWriteGuard $fileWriteGuard = null,
-		private readonly ?FileRestrictionGuard $fileRestrictions = null,
+		FilesControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
+		$this->rootFolder = $services->store->rootFolder;
+		$this->userManager = $services->platform->userManager;
+		$this->eventDispatcher = $services->platform->eventDispatcher;
+		$this->fileMapper = $services->store->fileMapper;
+		$this->fileAuditHandler = $services->guards->fileAuditHandler;
+		$this->userSession = $services->platform->userSession;
+		$this->l10n = $services->platform->l10n;
+		$this->objectFileAccess = $services->guards->objectFileAccess;
+		$this->officeSessionService = $services->editing->officeSessionService;
+		$this->attachNodeHandler = $services->editing->attachNodeHandler;
+		$this->fileWriteGuard = $services->guards->fileWriteGuard;
+		$this->fileRestrictions = $services->guards->fileRestrictions;
 
 		// Store dependencies for use in controller methods.
-		$this->fileService = $fileService;
-		$this->objectService = $objectService;
+		$this->fileService = $services->store->fileService;
+		$this->objectService = $services->store->objectService;
 	}//end __construct()
 
 	/**
@@ -1940,86 +2008,19 @@ class FilesController extends Controller {
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function copy(string $register, string $schema, string $id, int $fileId): JSONResponse {
+		$transfer = new FileTransfer(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), fileId: $fileId);
 		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
-			// ADR-005 / gate-7: enforce object-level RBAC on the source object.
+			// ADR-005 / gate-7: object-level RBAC on the source object.
 			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, change: false, fileId: $fileId);
-
-			$this->objectService->setObject($id);
-			$sourceObject = $this->objectService->getObject();
-			if ($sourceObject === null) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'Source object not found')], statusCode: 404);
-			}
-
-			$data = $this->request->getParams();
-			$targetObjectId = $data['targetObjectId'] ?? '';
-			$targetRegister = $data['targetRegister'] ?? $register;
-			$targetSchema = $data['targetSchema'] ?? $schema;
-
-			if (empty($targetObjectId) === true) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'Target object ID is required')], statusCode: 400);
-			}
-
-			// ADR-005 / gate-7: the caller must also have access to the target object.
-			$this->ensureObjectAccess(register: $targetRegister, schema: $targetSchema, id: $targetObjectId);
-
-			// Load target object.
-			$this->setObjectContext(register: $targetRegister, schema: $targetSchema);
-			$this->objectService->setObject($targetObjectId);
-			$targetObject = $this->objectService->getObject();
-			if ($targetObject === null) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'Target object not found')], statusCode: 404);
-			}
-
-			$newFile = $this->fileService->copyFile(
-				sourceObject: $sourceObject,
-				fileId: $fileId,
-				targetObject: $targetObject
-			);
-
-			// Dual audit trail: source object (file copied OUT) and target object (file copied IN).
-			$auditHandler = $this->fileService->getAuditHandler();
-			$auditHandler->logFileAction(
-				object: $sourceObject,
-				fileId: $fileId,
-				action: 'file.copied',
-				data: [
-					'targetObjectUuid' => $targetObject->getUuid(),
-					'targetRegister' => $targetRegister,
-					'targetSchema' => $targetSchema,
-				]
-			);
-			$auditHandler->logFileAction(
-				object: $targetObject,
-				fileId: (int)$newFile->getId(),
-				action: 'file.copied_in',
-				data: [
-					'sourceObjectUuid' => $sourceObject->getUuid(),
-					'sourceFileId' => $fileId,
-				]
-			);
-
-			$this->eventDispatcher->dispatchTyped(
-				new FileCopiedEvent(
-					objectUuid: $sourceObject->getUuid(),
-					fileId: $fileId,
-					data: ['targetObjectUuid' => $targetObject->getUuid()]
-				)
-			);
-
-			return new JSONResponse(data: $this->fileService->formatFile($newFile), statusCode: 201);
+			return $this->transferFile(transfer: $transfer);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
 		} catch (ObjectStateWriteException $e) {
 			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
-			$statusCode = 400;
-			if (str_contains($e->getMessage(), 'not found') === true) {
-				$statusCode = 404;
-			}
-
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $statusCode);
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $transfer->failureStatus(e: $e));
 		}//end try
 	}//end copy()
 
@@ -2042,88 +2043,160 @@ class FilesController extends Controller {
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function move(string $register, string $schema, string $id, int $fileId): JSONResponse {
+		$transfer = (new FileTransfer(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), fileId: $fileId))->asMove();
 		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
-			// ADR-005 / gate-7: enforce object-level RBAC on the source object.
+			// ADR-005 / gate-7: object-level RBAC on the source object; the file leaves it, so this needs deleteFiles.
 			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileVerb: ObjectFileAccess::DELETE_FILES, fileId: $fileId);
-
-			$this->objectService->setObject($id);
-			$sourceObject = $this->objectService->getObject();
-			if ($sourceObject === null) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'Source object not found')], statusCode: 404);
-			}
-
-			$data = $this->request->getParams();
-			$targetObjectId = $data['targetObjectId'] ?? '';
-			$targetRegister = $data['targetRegister'] ?? $register;
-			$targetSchema = $data['targetSchema'] ?? $schema;
-
-			if (empty($targetObjectId) === true) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'Target object ID is required')], statusCode: 400);
-			}
-
-			// ADR-005 / gate-7: the caller must also have access to the target object.
-			$this->ensureObjectAccess(register: $targetRegister, schema: $targetSchema, id: $targetObjectId);
-
-			$this->setObjectContext(register: $targetRegister, schema: $targetSchema);
-			$this->objectService->setObject($targetObjectId);
-			$targetObject = $this->objectService->getObject();
-			if ($targetObject === null) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'Target object not found')], statusCode: 404);
-			}
-
-			$movedFile = $this->fileService->moveFile(
-				sourceObject: $sourceObject,
-				fileId: $fileId,
-				targetObject: $targetObject
-			);
-
-			// Dual audit trail: source object (file moved OUT) and target object (file moved IN).
-			$auditHandler = $this->fileService->getAuditHandler();
-			$auditHandler->logFileAction(
-				object: $sourceObject,
-				fileId: $fileId,
-				action: 'file.moved',
-				data: [
-					'targetObjectUuid' => $targetObject->getUuid(),
-					'targetRegister' => $targetRegister,
-					'targetSchema' => $targetSchema,
-				]
-			);
-			$auditHandler->logFileAction(
-				object: $targetObject,
-				fileId: (int)$movedFile->getId(),
-				action: 'file.moved_in',
-				data: [
-					'sourceObjectUuid' => $sourceObject->getUuid(),
-					'sourceFileId' => $fileId,
-				]
-			);
-
-			$this->eventDispatcher->dispatchTyped(
-				new FileMovedEvent(
-					objectUuid: $sourceObject->getUuid(),
-					fileId: $fileId,
-					data: ['targetObjectUuid' => $targetObject->getUuid()]
-				)
-			);
-
-			return new JSONResponse(data: $this->fileService->formatFile($movedFile));
+			return $this->transferFile(transfer: $transfer);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
 		} catch (ObjectStateWriteException $e) {
 			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
-			$statusCode = match (true) {
-				str_contains($e->getMessage(), 'not found') => 404,
-				str_contains($e->getMessage(), 'locked') => 423,
-				default => 400,
-			};
-
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $statusCode);
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $transfer->failureStatus(e: $e));
 		}//end try
 	}//end move()
+
+	/**
+	 * Copy or move a file to another object, once the caller may access the source; checks the target itself.
+	 *
+	 * @param FileTransfer $transfer The copy or move.
+	 *
+	 * @return JSONResponse The transferred file, or the refusal.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function transferFile(FileTransfer $transfer): JSONResponse {
+		$refusal = $this->resolveTransferSource(transfer: $transfer) ?? $this->resolveTransferTarget(transfer: $transfer);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$file = $this->runTransfer(transfer: $transfer);
+		return new JSONResponse(data: $this->fileService->formatFile($file), statusCode: $transfer->successStatus());
+	}//end transferFile()
+
+	/**
+	 * Load the source object of a transfer.
+	 *
+	 * @param FileTransfer $transfer The copy or move.
+	 *
+	 * @return JSONResponse|null A 404 when the source object is missing, else null.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function resolveTransferSource(FileTransfer $transfer): ?JSONResponse {
+		$this->objectService->setObject($transfer->route->id);
+		$transfer->source = $this->objectService->getObject();
+		if ($transfer->source === null) {
+			return new JSONResponse(data: ['error' => $this->translate(text: 'Source object not found')], statusCode: 404);
+		}
+
+		return null;
+	}//end resolveTransferSource()
+
+	/**
+	 * Read the target from the request, check the caller may change it, and load it.
+	 *
+	 * @param FileTransfer $transfer The copy or move.
+	 *
+	 * @return JSONResponse|null A 400 without a target id, a 404 when the target is missing, else null.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function resolveTransferTarget(FileTransfer $transfer): ?JSONResponse {
+		$data = $this->request->getParams();
+		$targetObjectId = $data['targetObjectId'] ?? '';
+		$transfer->targetRegister = $data['targetRegister'] ?? $transfer->route->register;
+		$transfer->targetSchema = $data['targetSchema'] ?? $transfer->route->schema;
+		if (empty($targetObjectId) === true) {
+			return new JSONResponse(data: ['error' => $this->translate(text: 'Target object ID is required')], statusCode: 400);
+		}
+
+		// ADR-005 / gate-7: the caller must also have access to the target object.
+		$this->ensureObjectAccess(register: $transfer->targetRegister, schema: $transfer->targetSchema, id: $targetObjectId);
+		$this->setObjectContext(register: $transfer->targetRegister, schema: $transfer->targetSchema);
+		$this->objectService->setObject($targetObjectId);
+		$transfer->target = $this->objectService->getObject();
+		if ($transfer->target === null) {
+			return new JSONResponse(data: ['error' => $this->translate(text: 'Target object not found')], statusCode: 404);
+		}
+
+		return null;
+	}//end resolveTransferTarget()
+
+	/**
+	 * Copy or move the file, write the audit rows on both objects and announce it.
+	 *
+	 * @param FileTransfer $transfer The copy or move, with both objects resolved.
+	 *
+	 * @return File The file on the target object.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function runTransfer(FileTransfer $transfer): File {
+		$source = $transfer->source;
+		$target = $transfer->target;
+		$file = $this->transferredFile(transfer: $transfer);
+		$this->auditTransfer(transfer: $transfer, file: $file);
+		$data = ['targetObjectUuid' => $target->getUuid()];
+		$event = new FileCopiedEvent(objectUuid: $source->getUuid(), fileId: $transfer->fileId, data: $data);
+		if ($transfer->isMove() === true) {
+			$event = new FileMovedEvent(objectUuid: $source->getUuid(), fileId: $transfer->fileId, data: $data);
+		}
+
+		$this->eventDispatcher->dispatchTyped($event);
+		return $file;
+	}//end runTransfer()
+
+	/**
+	 * Have the file service copy or move the file.
+	 *
+	 * @param FileTransfer $transfer The copy or move, with both objects resolved.
+	 *
+	 * @return File The file on the target object.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function transferredFile(FileTransfer $transfer): File {
+		if ($transfer->isMove() === true) {
+			return $this->fileService->moveFile(sourceObject: $transfer->source, fileId: $transfer->fileId, targetObject: $transfer->target);
+		}
+
+		return $this->fileService->copyFile(sourceObject: $transfer->source, fileId: $transfer->fileId, targetObject: $transfer->target);
+	}//end transferredFile()
+
+	/**
+	 * Write the two audit rows of a transfer: the file going out of the source and coming into the target.
+	 *
+	 * @param FileTransfer $transfer The copy or move, with both objects resolved.
+	 * @param File         $file     The file on the target object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function auditTransfer(FileTransfer $transfer, File $file): void {
+		$auditHandler = $this->fileService->getAuditHandler();
+		$auditHandler->logFileAction(
+			object: $transfer->source,
+			fileId: $transfer->fileId,
+			action: $transfer->auditAction(),
+			data: [
+				'targetObjectUuid' => $transfer->target->getUuid(),
+				'targetRegister' => $transfer->targetRegister,
+				'targetSchema' => $transfer->targetSchema,
+			]
+		);
+		$auditHandler->logFileAction(
+			object: $transfer->target,
+			fileId: (int)$file->getId(),
+			action: $transfer->auditAction() . '_in',
+			data: ['sourceObjectUuid' => $transfer->source->getUuid(), 'sourceFileId' => $transfer->fileId]
+		);
+	}//end auditTransfer()
 
 	/**
 	 * List versions for a file

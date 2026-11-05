@@ -21,9 +21,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\ObjectWatchersController;
+use OCA\OpenRegister\Notifications\Controller\ObjectWatchersController;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Watcher;
+use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -36,8 +36,8 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
- * @covers \OCA\OpenRegister\Controller\ObjectWatchersController
- * @uses \OCA\OpenRegister\Db\Watcher
+ * @covers \OCA\OpenRegister\Notifications\Controller\ObjectWatchersController
+ * @uses \OCA\OpenRegister\Notifications\Db\Watcher
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
  */
 class ObjectWatchersControllerTest extends TestCase {

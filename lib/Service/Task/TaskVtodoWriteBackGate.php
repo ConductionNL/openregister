@@ -44,9 +44,9 @@ use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
-use OCA\OpenRegister\Service\Notification\TaskNotificationRules;
-use OCA\OpenRegister\Service\Notification\TaskObjectAdapter;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRulesInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -80,8 +80,8 @@ class TaskVtodoWriteBackGate {
 	 * @param TaskCalendarProjector $projector Renders the engine's truth back over a refused edit.
 	 * @param TaskProjectionService $projections Failure-isolated reconciliation.
 	 * @param TaskInboxService $inbox The row the refusal notice is built from.
-	 * @param AnnotationNotificationDispatcher $dispatcher The one dispatcher, for the refusal notice.
-	 * @param TaskNotificationRules $rules The task rule registry.
+	 * @param NotificationRuleDispatcherInterface $dispatcher The one dispatcher, for the refusal notice.
+	 * @param TaskNotificationRulesInterface $rules The task rule registry.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
@@ -91,8 +91,8 @@ class TaskVtodoWriteBackGate {
 		private readonly TaskCalendarProjector $projector,
 		private readonly TaskProjectionService $projections,
 		private readonly TaskInboxService $inbox,
-		private readonly AnnotationNotificationDispatcher $dispatcher,
-		private readonly TaskNotificationRules $rules,
+		private readonly NotificationRuleDispatcherInterface $dispatcher,
+		private readonly TaskNotificationRulesInterface $rules,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -340,7 +340,7 @@ class TaskVtodoWriteBackGate {
 			$this->dispatcher->dispatchWithSchema(
 				object: $adapter,
 				trigger: 'transition',
-				context: ['action' => TaskNotificationRules::ACTION_WRITE_BACK_REFUSED, 'actor' => $actor],
+				context: ['action' => TaskNotificationRulesInterface::ACTION_WRITE_BACK_REFUSED, 'actor' => $actor],
 				schema: $this->rules->buildSchema()
 			);
 		} catch (Throwable $failure) {

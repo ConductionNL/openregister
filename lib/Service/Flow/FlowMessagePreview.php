@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Service\Notification\NotificationTemplating;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplatingInterface;
 
 /**
  * Composes a send step's messages for a preview.
@@ -39,11 +39,11 @@ class FlowMessagePreview {
 	 * Constructor.
 	 *
 	 * @param FlowRecipientAddresses $addresses  Resolves the recipients.
-	 * @param NotificationTemplating $templating Fills the subject and body.
+	 * @param NotificationTemplatingInterface $templating Fills the subject and body.
 	 */
 	public function __construct(
 		private readonly FlowRecipientAddresses $addresses,
-		private readonly NotificationTemplating $templating,
+		private readonly NotificationTemplatingInterface $templating,
 	) {
 	}//end __construct()
 

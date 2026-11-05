@@ -8,7 +8,7 @@
  * UX surface area:
  *
  *   - linkCard(uuid, registerId, schemaId, cardId)         — link existing card
- *   - createAndLinkCard(uuid, ..., boardId, stackId, ...) — create + link new
+ *   - createAndLinkCard(target, card)                     — create + link new
  *   - unlinkCard(uuid, cardId)
  *   - getLinkedCards(uuid)                                — list, enriched
  *   - getAvailableBoards()
@@ -102,9 +102,7 @@ class DeckLinkService {
 	 * Deck. Idempotent: a duplicate link raises a 409 Exception (callers
 	 * should surface as HTTP 409 to the UI).
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id (Tier-2 column).
+	 * @param LinkTarget $target The object to link to.
 	 * @param int $cardId Deck card id.
 	 *
 	 * @return DeckLink The persisted link row.
@@ -121,13 +119,13 @@ class DeckLinkService {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function linkCard(string $objectUuid, int $registerId, int $schemaId, int $cardId): DeckLink {
+	public function linkCard(LinkTarget $target, int $cardId): DeckLink {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
 
-		$existing = $this->deckLinkMapper->findByObjectAndCard($objectUuid, $cardId);
+		$existing = $this->deckLinkMapper->findByObjectAndCard($target->objectUuid, $cardId);
 		if ($existing !== null) {
 			throw new Exception('Card already linked to this object', 409);
 		}
@@ -165,9 +163,6 @@ class DeckLinkService {
 		$widened = $this->extractCardFields(card: $card);
 
 		$link = new DeckLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setBoardId($boardId);
 		$link->setStackId($stackId);
 		$link->setCardId($cardId);
@@ -185,8 +180,7 @@ class DeckLinkService {
 
 		$link->setLabels($labels);
 		$link->setAssignees($assignees);
-		$link->setLinkedBy($user->getUID());
-		$link->setLinkedAt(new DateTime());
+		$target->stamp(link: $link, linkedBy: $user->getUID());
 
 		return $this->deckLinkMapper->insert($link);
 	}//end linkCard()
@@ -262,16 +256,10 @@ class DeckLinkService {
 	 * from commit 3cdbfe71a) then persists the link row carrying the
 	 * new card's id + cached title + due date.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
-	 * @param int $boardId Deck board id (resolved server-side
-	 *                     via CardMapper::findBoardId after
-	 *                     create — accepted for symmetry).
-	 * @param int $stackId Deck stack id (target column).
-	 * @param string $title Card title (required).
-	 * @param string|null $description Card description (optional).
-	 * @param string|null $duedate ISO 8601 due date (optional).
+	 * @param LinkTarget $target The object to link to.
+	 * @param CardDraft  $card   Title, list (stack), board (used when Deck cannot
+	 *                           resolve the card's board after create), and
+	 *                           optional description and ISO 8601 due date.
 	 *
 	 * @return DeckLink The persisted link row.
 	 *
@@ -279,16 +267,7 @@ class DeckLinkService {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function createAndLinkCard(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		int $boardId,
-		int $stackId,
-		string $title,
-		?string $description,
-		?string $duedate,
-	): DeckLink {
+	public function createAndLinkCard(LinkTarget $target, CardDraft $card): DeckLink {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
@@ -299,67 +278,47 @@ class DeckLinkService {
 			throw new Exception('Deck is not available', 503);
 		}
 
-		$fullDescription = (string)$description;
-		if ($fullDescription !== '') {
-			$fullDescription .= "\n\n";
-		}
-
-		$fullDescription .= '[Object: ' . $objectUuid . '](/apps/openregister/objects/' . $objectUuid . ')';
-
 		$userUid = $user->getUID();
 
 		try {
-			$card = $cardService->create($title, $stackId, 'plain', 0, $userUid);
+			$created = $cardService->create($card->title, $card->stackId, 'plain', 0, $userUid);
 			// Deck CardService::update signature:
 			// update($id, $title, $stackId, $type, $owner, $description='', $order=0, $duedate=null, ...)
-			// The owner argument must be a string user UID (Phase A fix).
+			// The owner argument must be a string user UID.
 			$cardService->update(
-				$card->getId(),
-				$title,
-				$stackId,
+				$created->getId(),
+				$card->title,
+				$card->stackId,
 				'plain',
 				$userUid,
-				$fullDescription,
+				$card->descriptionFor(objectUuid: $target->objectUuid),
 				0,
-				$duedate
+				$card->duedate()
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Failed to create Deck card: ' . $e->getMessage());
 			throw new Exception('Failed to create Deck card: ' . $e->getMessage(), 500);
 		}
 
-		$cardId = (int)$card->getId();
+		$cardId = (int)$created->getId();
 
 		// Resolve board id authoritatively from the persisted card so we
 		// don't trust the (caller-supplied) value in case the stack was
 		// moved between boards.
 		$resolvedBoard = $this->resolveBoardId(cardId: $cardId);
 		if ($resolvedBoard === 0) {
-			$resolvedBoard = $boardId;
-		}
-
-		$dueDateObj = null;
-		if ($duedate !== null && $duedate !== '') {
-			try {
-				$dueDateObj = new DateTime($duedate);
-			} catch (Throwable $e) {
-				$dueDateObj = null;
-			}
+			$resolvedBoard = $card->boardId();
 		}
 
 		$link = new DeckLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setBoardId($resolvedBoard);
-		$link->setStackId($stackId);
+		$link->setStackId($card->stackId);
 		$link->setCardId($cardId);
-		$link->setCardTitle($title);
-		$link->setDueDate($dueDateObj);
+		$link->setCardTitle($card->title);
+		$link->setDueDate($card->dueDateTime());
 		$link->setLabels(null);
 		$link->setAssignees(null);
-		$link->setLinkedBy($userUid);
-		$link->setLinkedAt(new DateTime());
+		$target->stamp(link: $link, linkedBy: $userUid);
 
 		return $this->deckLinkMapper->insert($link);
 	}//end createAndLinkCard()
@@ -650,32 +609,7 @@ class DeckLinkService {
 	 * @return array{id:?int,title:string,color:string}
 	 */
 	private function mapLabel(object $label): array {
-		$id = null;
-		$title = '';
-		$color = '';
-
-		try {
-			$rawId = $label->getId();
-			if ($rawId !== null) {
-				$id = (int)$rawId;
-			}
-		} catch (Throwable $e) {
-			// Leave default null.
-		}
-
-		try {
-			$title = (string)$label->getTitle();
-		} catch (Throwable $e) {
-			// Leave default empty.
-		}
-
-		try {
-			$color = (string)$label->getColor();
-		} catch (Throwable $e) {
-			// Leave default empty.
-		}
-
-		return ['id' => $id, 'title' => $title, 'color' => $color];
+		return (new DeckRowMapper(userManager: $this->userManager))->label(label: $label);
 	}//end mapLabel()
 
 	/**
@@ -686,37 +620,6 @@ class DeckLinkService {
 	 * @return array{uid:string,type:string,displayName:string}
 	 */
 	private function mapAssignee(object $assignment): array {
-		$uid = '';
-		$type = 'user';
-
-		try {
-			$uid = (string)$assignment->getParticipant();
-		} catch (Throwable $e) {
-			// Leave default empty.
-		}
-
-		try {
-			$type = (string)$assignment->getTypeString();
-		} catch (Throwable $e) {
-			// Leave default value.
-		}
-
-		$displayName = $uid;
-		if ($type === 'user' && $uid !== '') {
-			try {
-				$userObj = $this->userManager->get($uid);
-				if ($userObj !== null) {
-					$displayName = (string)$userObj->getDisplayName();
-				}
-			} catch (Throwable $e) {
-				// Leave displayName as uid.
-			}
-		}
-
-		return [
-			'uid' => $uid,
-			'type' => $type,
-			'displayName' => $displayName,
-		];
+		return (new DeckRowMapper(userManager: $this->userManager))->assignee(assignment: $assignment);
 	}//end mapAssignee()
 }//end class

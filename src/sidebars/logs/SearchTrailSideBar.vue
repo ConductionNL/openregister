@@ -479,11 +479,24 @@ import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 import Monitor from 'vue-material-design-icons/Monitor.vue'
 import TrendingUp from 'vue-material-design-icons/TrendingUp.vue'
 import eventBus from '../../eventBus.js'
-import { addDateRange, addStrings } from '../../services/routeQuery.js'
+import {
+	addDateRange,
+	addStrings,
+	csvValues,
+	queriesEqual,
+	routeDate,
+} from '../../services/routeQuery.js'
+import { applyRouteScope } from '../../services/routeScope.js'
+import {
+	registerSelect,
+	schemaSelect,
+	scopeOption,
+} from '../../services/scopeSelect.js'
 import {
 	addJoinedValues,
 	addPresent,
 	addScopeIds,
+	trailUserOptions,
 } from '../../services/trailFilters.js'
 
 /**
@@ -536,6 +549,29 @@ const ACTIVITY_PERIOD_FORMATS = {
 	monthly: (date) =>
 		date.toLocaleDateString(undefined, { year: 'numeric', month: 'long' }),
 }
+
+/**
+ * Add the picked success status and users to a route query.
+ *
+ * @param {object} query The query being built
+ * @param {object} picked The sidebar's selectedSuccessStatus and selectedUsers
+ */
+function addSelections(query, picked) {
+	if (picked.selectedSuccessStatus && picked.selectedSuccessStatus.value)
+		query.success = String(picked.selectedSuccessStatus.value)
+	if (Array.isArray(picked.selectedUsers) && picked.selectedUsers.length > 0)
+		query.user = picked.selectedUsers.map((u) => u.value || u).join(',')
+}
+
+const ROUTE_FIELDS = {
+	searchTerm: 'searchTermFilter',
+	executionTimeFrom: 'executionTimeFrom',
+	executionTimeTo: 'executionTimeTo',
+	resultCountFrom: 'resultCountFrom',
+	resultCountTo: 'resultCountTo',
+}
+
+const RANGE_FILTERS = Object.keys(ROUTE_FIELDS)
 
 export default {
 	name: 'SearchTrailSideBar',
@@ -637,25 +673,7 @@ export default {
 		 * @return {object} NcSelect options bag for registers
 		 */
 		registerOptions() {
-			return {
-				options: registerStore.registerList.map((register) => ({
-					value: register.id,
-					label: register.title,
-					title: register.title,
-					register,
-				})),
-
-				reduce: (option) => option.register,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.register && option.register.title)
-						|| option.label
-						|| ''
-					)
-				},
-			}
+			return registerSelect(registerStore.registerList)
 		},
 
 		/**
@@ -665,33 +683,7 @@ export default {
 		 * @return {object} NcSelect options bag for schemas
 		 */
 		schemaOptions() {
-			if (!registerStore.registerItem) return { options: [] }
-
-			return {
-				options: schemaStore.schemaList
-					.filter((schema) =>
-						registerStore.registerItem.schemas.some(
-							(registerSchema) => registerSchema.id === schema.id,
-						),
-					)
-					.map((schema) => ({
-						value: schema.id,
-						label: schema.title,
-						title: schema.title,
-						schema,
-					})),
-
-				reduce: (option) => option.schema,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.schema && option.schema.title)
-						|| option.label
-						|| ''
-					)
-				},
-			}
+			return schemaSelect(registerStore.registerItem, schemaStore.schemaList)
 		},
 
 		/**
@@ -701,14 +693,7 @@ export default {
 		 * @return {object|null} Selected register option, or null
 		 */
 		selectedRegisterValue() {
-			if (!registerStore.registerItem) return null
-			const register = registerStore.registerItem
-			return {
-				value: register.id,
-				label: register.title,
-				title: register.title,
-				register,
-			}
+			return scopeOption(registerStore.registerItem, 'register')
 		},
 
 		/**
@@ -718,14 +703,7 @@ export default {
 		 * @return {object|null} Selected schema option, or null
 		 */
 		selectedSchemaValue() {
-			if (!schemaStore.schemaItem) return null
-			const schema = schemaStore.schemaItem
-			return {
-				value: schema.id,
-				label: schema.title,
-				title: schema.title,
-				schema,
-			}
+			return scopeOption(schemaStore.schemaItem, 'schema')
 		},
 
 		/**
@@ -735,24 +713,7 @@ export default {
 		 * @return {Array} User filter options
 		 */
 		userOptions() {
-			if (
-				!searchTrailStore.searchTrailList
-				|| !searchTrailStore.searchTrailList.length
-			) {
-				return []
-			}
-			// Get unique users from search trail list
-			const users = [
-				...new Set(
-					searchTrailStore.searchTrailList
-						.map((trail) => trail.userName || trail.user)
-						.filter(Boolean),
-				),
-			]
-			return users.map((user) => ({
-				label: user,
-				value: user,
-			}))
+			return trailUserOptions(searchTrailStore.searchTrailList)
 		},
 	},
 
@@ -1157,15 +1118,11 @@ export default {
 		 */
 		buildQueryFromState() {
 			const query = {}
-			// Filters
 			if (registerStore.registerItem)
 				query.register = String(registerStore.registerItem.id)
 			if (schemaStore.schemaItem)
 				query.schema = String(schemaStore.schemaItem.id)
-			if (this.selectedSuccessStatus && this.selectedSuccessStatus.value)
-				query.success = String(this.selectedSuccessStatus.value)
-			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0)
-				query.user = this.selectedUsers.map((u) => u.value || u).join(',')
+			addSelections(query, this)
 			addDateRange(query, this)
 			if (this.searchTermFilter) query.searchTerm = this.searchTermFilter
 			addStrings(query, [
@@ -1186,15 +1143,7 @@ export default {
 		 * @return {boolean} Whether the queries are equal
 		 */
 		queriesEqual(a, b) {
-			const ka = Object.keys(a).sort()
-			const kb = Object.keys(b || {}).sort()
-			if (ka.length !== kb.length) return false
-			for (let i = 0; i < ka.length; i++) {
-				const k = ka[i]
-				if (k !== kb[i]) return false
-				if (String(a[k]) !== String(b[k])) return false
-			}
-			return true
+			return queriesEqual(a, b)
 		},
 
 		/**
@@ -1219,70 +1168,55 @@ export default {
 		applyQueryParamsFromRoute() {
 			if (this.$route.path !== '/search-trails') return
 			const q = this.$route.query || {}
-			// Success status
-			if (typeof q.success !== 'undefined') {
-				const val = String(q.success)
-				const opt = this.successOptions.find((o) => String(o.value) === val)
-				this.selectedSuccessStatus = opt || null
-			}
-			// Users
+			this.applySuccessFromRoute(q.success)
 			if (typeof q.user === 'string') {
-				const users = q.user
-					.split(',')
-					.map((s) => s.trim())
-					.filter(Boolean)
-				this.selectedUsers = users.map((u) => ({ label: u, value: u }))
+				this.selectedUsers = csvValues(q.user).map((u) => ({
+					label: u,
+					value: u,
+				}))
 			}
-			// Dates and fields
 			// JS dates are awful, so we first check if its a valid date and then create the date. (q.dateFrom is a ISO string)
-			this.dateFrom =
-				q.dateFrom && new Date(q.dateFrom).getDate()
-					? new Date(q.dateFrom)
-					: null
-			this.dateTo =
-				q.dateTo && new Date(q.dateTo).getDate() ? new Date(q.dateTo) : null
-			this.searchTermFilter = q.searchTerm || ''
-			this.executionTimeFrom = q.executionTimeFrom || ''
-			this.executionTimeTo = q.executionTimeTo || ''
-			this.resultCountFrom = q.resultCountFrom || ''
-			this.resultCountTo = q.resultCountTo || ''
-			// Registers & schemas depend on lists
-			const applyRegister = () => {
-				if (!q.register) return true
-				if (!registerStore.registerList.length) return false
-				const reg = registerStore.registerList.find(
-					(r) => String(r.id) === String(q.register),
-				)
-				if (reg) registerStore.setRegisterItem(reg)
-				return true
+			this.dateFrom = routeDate(q.dateFrom)
+			this.dateTo = routeDate(q.dateTo)
+			this.applyRangeFilters(q)
+			// Apply store filters once selection ready
+			applyRouteScope(q, () => {
+				this.applyFilters()
+				this.loadActivityData()
+			})
+		},
+
+		/**
+		 * Pick the success status a route names, when it names one.
+		 *
+		 * @param {string|undefined} success The status from the route
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 */
+		applySuccessFromRoute(success) {
+			if (typeof success === 'undefined') return
+			const val = String(success)
+			this.selectedSuccessStatus =
+				this.successOptions.find((o) => String(o.value) === val) || null
+		},
+
+		/**
+		 * Take the search term and the range filters from the route.
+		 *
+		 * @param {object} q The route query
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 */
+		applyRangeFilters(q) {
+			for (const key of RANGE_FILTERS) {
+				this[ROUTE_FIELDS[key]] = q[key] || ''
 			}
-			const applySchema = () => {
-				if (!q.schema) return true
-				if (!schemaStore.schemaList.length) return false
-				const sch = schemaStore.schemaList.find(
-					(s) => String(s.id) === String(q.schema),
-				)
-				if (sch) schemaStore.setSchemaItem(sch)
-				return true
-			}
-			const tryApply = (attempt = 0) => {
-				const rOk = applyRegister()
-				const sOk = applySchema()
-				// Apply store filters once selection ready
-				if (rOk && sOk) {
-					this.applyFilters()
-					this.loadActivityData()
-					return
-				}
-				if (attempt < 10) setTimeout(() => tryApply(attempt + 1), 200)
-			}
-			tryApply()
 		},
 	},
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/sidebars.scss' as *;
+
 .filterSection,
 .statsSection,
 .analyticsSection {
@@ -1306,18 +1240,7 @@ export default {
 	margin: 0 0 12px 0;
 }
 
-.filterGroup {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	padding: 0 16px;
-	margin-bottom: 16px;
-}
-
-.filterGroup label {
-	font-size: 0.9em;
-	color: var(--color-text-maxcontrast);
-}
+@include filter-group-rules;
 
 .rangeFilter {
 	display: flex;
@@ -1328,10 +1251,7 @@ export default {
 	flex: 1;
 }
 
-.actionGroup {
-	padding: 0 16px;
-	margin-bottom: 12px;
-}
+@include action-group;
 
 .statusOption.true {
 	color: var(--color-success);

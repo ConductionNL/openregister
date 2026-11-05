@@ -241,6 +241,19 @@ abstract class ExampleSetEngineRows {
 	}//end update()
 
 	/**
+	 * The context this part's rows are filled in: the given one, unless a part adds to it.
+	 *
+	 * @param array<string, mixed> $context The context placeholders draw on.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-flow-may-quote-its-own-uuid
+	 */
+	protected function fillContext(array $context): array {
+		return $context;
+	}//end fillContext()
+
+	/**
 	 * Check the rows of one fragment: each fills and passes refusal().
 	 *
 	 * @param array<string, mixed> $fragment The fragment.
@@ -256,7 +269,7 @@ abstract class ExampleSetEngineRows {
 		$refusals = [];
 		foreach (($fragment[$this->part()] ?? []) as $entry) {
 			$gaps = [];
-			$data = (array) $values->fill(value: $entry['data'], context: $context, gaps: $gaps);
+			$data = (array) $values->fill(value: $entry['data'], context: $this->fillContext(context: $context), gaps: $gaps);
 			$why  = $this->refusalIn(data: $data, users: $users, context: $context);
 			if ($gaps !== []) {
 				$why = 'cannot resolve '.implode(', ', array_unique($gaps));
@@ -302,7 +315,7 @@ abstract class ExampleSetEngineRows {
 			}
 
 			$gaps = [];
-			$data = (array) $values->fill(value: $entry['data'], context: $context, gaps: $gaps);
+			$data = (array) $values->fill(value: $entry['data'], context: $this->fillContext(context: $context), gaps: $gaps);
 			$made = ['error' => $this->refusalIn(data: $data, users: array_keys($record['users']), context: $context), 'entry' => null];
 			if ($gaps !== []) {
 				$made['error'] = 'cannot resolve '.implode(', ', array_unique($gaps));

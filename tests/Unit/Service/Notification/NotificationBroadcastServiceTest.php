@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Unit\Service\Notification;
 
 use DateTime;
-use OCA\OpenRegister\Db\NotificationBroadcast;
-use OCA\OpenRegister\Db\NotificationBroadcastMapper;
-use OCA\OpenRegister\Db\NotificationBroadcastReceipt;
-use OCA\OpenRegister\Db\NotificationBroadcastReceiptMapper;
-use OCA\OpenRegister\Service\Notification\NotificationBroadcastService;
+use OCA\OpenRegister\Notifications\Db\NotificationBroadcast;
+use OCA\OpenRegister\Notifications\Db\NotificationBroadcastMapper;
+use OCA\OpenRegister\Notifications\Db\NotificationBroadcastReceipt;
+use OCA\OpenRegister\Notifications\Db\NotificationBroadcastReceiptMapper;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationBroadcastService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

@@ -28,11 +28,11 @@ namespace Unit\Service\Timeline;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\TimelineEntry;
-use OCA\OpenRegister\Db\TimelineEntryMapper;
+use OCA\OpenRegister\Notifications\Db\TimelineEntry;
+use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Timeline\TimelineEntrySearchService;
-use OCA\OpenRegister\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntrySearchService;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

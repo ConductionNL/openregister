@@ -35,6 +35,11 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<FormLink>
  */
 class FormLinkMapper extends QBMapper {
+
+	use ObjectKeyLinkTrait;
+	use FindLinksByObjectUuidTrait;
+	use DeleteLinksByObjectUuidTrait;
+	use CountLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -44,23 +49,6 @@ class FormLinkMapper extends QBMapper {
 		parent::__construct(db: $db, tableName: 'openregister_form_links', entityClass: FormLink::class);
 
 	}//end __construct()
-
-	/**
-	 * Find every form link (form-level + submission-level) for an OR object.
-	 *
-	 * @param string $objectUuid The OR object UUID.
-	 *
-	 * @return FormLink[]
-	 */
-	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
 
 	/**
 	 * Find the form-level link (submissionId NULL) for the given
@@ -113,41 +101,6 @@ class FormLinkMapper extends QBMapper {
 	}//end findSubmissionLink()
 
 	/**
-	 * Count form-level + submission-level links for an OR object.
-	 *
-	 * @param string $objectUuid The OR object UUID.
-	 *
-	 * @return integer Count of links.
-	 */
-	public function countByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->createFunction('COUNT(*)'))
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		$result = $qb->executeQuery();
-		$count = (int)$result->fetchOne();
-		$result->closeCursor();
-
-		return $count;
-	}//end countByObjectUuid()
-
-	/**
-	 * Delete every link row (form-level + submission-level) for an object.
-	 *
-	 * @param string $objectUuid The OR object UUID.
-	 *
-	 * @return integer Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
-
-	/**
 	 * Delete every link row (form-level + submission-level) for a
 	 * (object, form) pair — used when unlinking a form so all its
 	 * submission-level rows are cleaned in one shot.
@@ -158,11 +111,6 @@ class FormLinkMapper extends QBMapper {
 	 * @return integer Number of deleted rows.
 	 */
 	public function deleteByObjectAndForm(string $objectUuid, int $formId): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('form_id', $qb->createNamedParameter($formId, IQueryBuilder::PARAM_INT)));
-
-		return $qb->executeStatement();
+		return $this->deleteObjectLinks(objectUuid: $objectUuid, key: new LinkColumn(name: 'form_id', value: $formId));
 	}//end deleteByObjectAndForm()
 }//end class

@@ -620,6 +620,7 @@ import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import TestTube from 'vue-material-design-icons/TestTube.vue'
+import { freshState } from '../../services/initialState.js'
 
 /**
  * The OpenAI form values of stored OpenAI settings.
@@ -730,6 +731,459 @@ function usesOllama(vm) {
 	return chosen && Boolean(vm.ollamaConfig.url)
 }
 
+/**
+ * The id of a model picked as an object, or the model itself when it is
+ * already an id.
+ *
+ * @param {object|string} model The model
+ * @return {string} The id
+ */
+function modelId(model) {
+	return model?.id || model
+}
+
+/**
+ * The message of a failed request: the server's error, else the error's own.
+ *
+ * @param {Error} error The error
+ * @return {string} The message
+ */
+function failureText(error) {
+	return error.response?.data?.error || error.message
+}
+
+/**
+ * The OpenAI settings to save.
+ *
+ * @param {object} config The OpenAI form state
+ * @return {object} The settings
+ */
+function openaiSettings(config) {
+	return {
+		apiKey: config.apiKey,
+		model: modelId(config.model),
+		chatModel: modelId(config.chatModel),
+		organizationId: config.organizationId,
+	}
+}
+
+/**
+ * The Ollama settings to save.
+ *
+ * @param {object} config The Ollama form state
+ * @return {object} The settings
+ */
+function ollamaSettings(config) {
+	return {
+		url: config.url,
+		model: modelId(config.model),
+		chatModel: modelId(config.chatModel),
+	}
+}
+
+/**
+ * The Fireworks settings to save.
+ *
+ * @param {object} config The Fireworks form state
+ * @return {object} The settings
+ */
+function fireworksSettings(config) {
+	return {
+		apiKey: config.apiKey,
+		embeddingModel: modelId(config.embeddingModel),
+		chatModel: modelId(config.chatModel),
+		baseUrl: config.baseUrl,
+	}
+}
+
+/**
+ * The two connection tests: where each posts, which form state it reads and
+ * writes, and the provider settings it sends.
+ */
+const CONNECTION_TESTS = {
+	embedding: {
+		busy: 'testingEmbedding',
+		result: 'embeddingTestResult',
+		selected: 'selectedEmbeddingProvider',
+		url: '/apps/openregister/api/vectors/test-embedding',
+		sample: { testText: 'This is a test embedding generation.' },
+		configs: {
+			openai: (vm) => ({
+				apiKey: vm.openaiConfig.apiKey,
+				model: modelId(vm.openaiConfig.model),
+			}),
+			fireworks: (vm) => ({
+				apiKey: vm.fireworksConfig.apiKey,
+				model: modelId(vm.fireworksConfig.embeddingModel),
+				baseUrl: vm.fireworksConfig.baseUrl,
+			}),
+			ollama: (vm) => ({
+				url: vm.ollamaConfig.url,
+				model: modelId(vm.ollamaConfig.model),
+			}),
+		},
+	},
+	chat: {
+		busy: 'testingChat',
+		result: 'chatTestResult',
+		selected: 'selectedChatProvider',
+		url: '/apps/openregister/api/llm/test-chat',
+		sample: { testMessage: 'Hello! Please respond with a brief greeting.' },
+		configs: {
+			openai: (vm) => ({
+				apiKey: vm.openaiConfig.apiKey,
+				model: modelId(vm.openaiConfig.chatModel),
+			}),
+			fireworks: (vm) => ({
+				apiKey: vm.fireworksConfig.apiKey,
+				model: modelId(vm.fireworksConfig.chatModel),
+				baseUrl: vm.fireworksConfig.baseUrl,
+			}),
+			ollama: (vm) => ({
+				url: vm.ollamaConfig.url,
+				model: modelId(vm.ollamaConfig.chatModel),
+			}),
+		},
+	},
+}
+
+/**
+ * The vector backend that is always there.
+ */
+const PHP_BACKEND = {
+	id: 'php',
+	name: 'PHP Cosine Similarity',
+	description: 'Always available, but slow for large datasets (>500 vectors)',
+	performance: 'slow',
+	available: true,
+	performanceNote: 'Calculates similarity in PHP. Suitable for small datasets.',
+}
+
+/**
+ * The only vector backend offered when the backends cannot be loaded.
+ */
+const FALLBACK_BACKEND = {
+	id: 'php',
+	name: 'PHP Cosine Similarity',
+	description: 'Always available fallback',
+	performance: 'slow',
+	available: true,
+}
+
+/**
+ * The vector backends to offer: PHP, plus the database when it reports itself.
+ *
+ * @param {object} data The database settings response
+ * @return {Array<object>} The backends
+ */
+function vectorBackends(data) {
+	const backends = [{ ...PHP_BACKEND }]
+	if (data.success && data.database) {
+		backends.push(databaseBackend(data.database))
+	}
+	return backends
+}
+
+/**
+ * The database vector backend, available when it supports vectors.
+ *
+ * @param {object} db The database description
+ * @return {object} The backend
+ */
+function databaseBackend(db) {
+	return {
+		id: 'database',
+		name: db.type + ' + pgvector',
+		description: db.vectorSupport
+			? 'Fast database-level vector search (Recommended)'
+			: 'PostgreSQL with pgvector extension required',
+		performance: db.vectorSupport ? 'fast' : null,
+		available: db.vectorSupport,
+		performanceNote: db.performanceNote,
+	}
+}
+
+/**
+ * The state every instance of this component starts from.
+ */
+const INITIAL_STATE = {
+	loading: true,
+	saving: false,
+	testingEmbedding: false,
+	testingChat: false,
+	clearingEmbeddings: false,
+	embeddingTestResult: null,
+	chatTestResult: null,
+
+	selectedEmbeddingProvider: null,
+	selectedChatProvider: null,
+
+	openaiConfig: {
+		apiKey: '',
+		model: null,
+		chatModel: null,
+		organizationId: '',
+	},
+
+	ollamaConfig: {
+		url: 'http://localhost:11434',
+		model: null,
+		chatModel: null,
+	},
+
+	fireworksConfig: {
+		apiKey: '',
+		embeddingModel: null,
+		chatModel: null,
+		baseUrl: 'https://api.fireworks.ai/inference/v1',
+	},
+
+	embeddingProviderOptions: [
+		{
+			id: 'openai',
+			name: 'OpenAI',
+			description: 'State-of-the-art embeddings (paid)',
+		},
+		{
+			id: 'fireworks',
+			name: 'Fireworks AI',
+			description: 'Fast, optimized inference (paid)',
+		},
+		{
+			id: 'ollama',
+			name: 'Ollama',
+			description: 'Local models (free, requires Ollama)',
+		},
+	],
+
+	ollamaModelOptions: [
+		{
+			id: 'llama3.2:latest',
+			name: 'llama3.2:latest',
+			description: "Meta's Llama 3.2 (latest)",
+		},
+		{
+			id: 'llama3.1:latest',
+			name: 'llama3.1:latest',
+			description: "Meta's Llama 3.1",
+		},
+		{
+			id: 'llama3:latest',
+			name: 'llama3:latest',
+			description: "Meta's Llama 3",
+		},
+		{
+			id: 'llama2:latest',
+			name: 'llama2:latest',
+			description: "Meta's Llama 2",
+		},
+		{
+			id: 'mistral:7b',
+			name: 'mistral:7b',
+			description: 'Mistral 7B model',
+		},
+		{
+			id: 'mixtral:8x7b',
+			name: 'mixtral:8x7b',
+			description: "Mistral's Mixtral 8x7B model",
+		},
+		{
+			id: 'phi3:mini',
+			name: 'phi3:mini',
+			description: "Microsoft's Phi-3 model",
+		},
+		{
+			id: 'codellama:latest',
+			name: 'codellama:latest',
+			description: 'Code-specialized Llama',
+		},
+		{
+			id: 'gemma2:latest',
+			name: 'gemma2:latest',
+			description: "Google's Gemma 2",
+		},
+		{
+			id: 'nomic-embed-text:latest',
+			name: 'nomic-embed-text:latest',
+			description: 'Nomic embeddings',
+		},
+	],
+
+	loadingOllamaModels: false,
+
+	chatProviderOptions: [
+		{
+			id: 'openai',
+			name: 'OpenAI ChatGPT',
+			description: 'GPT-4, GPT-3.5 models',
+		},
+		{
+			id: 'fireworks',
+			name: 'Fireworks AI',
+			description: 'Fast OSS models',
+		},
+		{ id: 'ollama', name: 'Ollama', description: 'Local LLMs' },
+	],
+
+	openaiModelOptions: [
+		{
+			id: 'text-embedding-ada-002',
+			name: 'text-embedding-ada-002',
+			dimensions: '1536',
+			cost: '$0.10/1M tokens',
+		},
+		{
+			id: 'text-embedding-3-small',
+			name: 'text-embedding-3-small',
+			dimensions: '1536',
+			cost: '$0.02/1M tokens',
+		},
+		{
+			id: 'text-embedding-3-large',
+			name: 'text-embedding-3-large',
+			dimensions: '3072',
+			cost: '$0.13/1M tokens',
+		},
+	],
+
+	openaiChatModelOptions: [
+		{
+			id: 'gpt-4-turbo',
+			name: 'GPT-4 Turbo',
+			contextWindow: '128K',
+			cost: '$10.00/$30.00',
+		},
+		{
+			id: 'gpt-4',
+			name: 'GPT-4',
+			contextWindow: '8K',
+			cost: '$30.00/$60.00',
+		},
+		{
+			id: 'gpt-3.5-turbo',
+			name: 'GPT-3.5 Turbo',
+			contextWindow: '16K',
+			cost: '$0.50/$1.50',
+		},
+	],
+
+	fireworksEmbeddingModelOptions: [
+		{
+			id: 'nomic-ai/nomic-embed-text-v1.5',
+			name: 'Nomic Embed Text v1.5',
+			dimensions: '768',
+			cost: '$0.008/1M tokens',
+		},
+		{
+			id: 'WhereIsAI/UAE-Large-V1',
+			name: 'UAE Large V1',
+			dimensions: '1024',
+			cost: '$0.016/1M tokens',
+		},
+		{
+			id: 'thenlper/gte-large',
+			name: 'GTE Large',
+			dimensions: '1024',
+			cost: '$0.016/1M tokens',
+		},
+		{
+			id: 'thenlper/gte-base',
+			name: 'GTE Base',
+			dimensions: '768',
+			cost: '$0.008/1M tokens',
+		},
+	],
+
+	fireworksChatModelOptions: [
+		{
+			id: 'accounts/fireworks/models/llama-v3p3-70b-instruct',
+			name: 'Llama 3.3 70B',
+			contextWindow: '131K',
+			cost: '$0.9/1M',
+		},
+		{
+			id: 'accounts/fireworks/models/llama-v3p1-405b-instruct',
+			name: 'Llama 3.1 405B',
+			contextWindow: '131K',
+			cost: '$3/1M',
+		},
+		{
+			id: 'accounts/fireworks/models/llama-v3p1-70b-instruct',
+			name: 'Llama 3.1 70B',
+			contextWindow: '131K',
+			cost: '$0.9/1M',
+		},
+		{
+			id: 'accounts/fireworks/models/llama-v3p1-8b-instruct',
+			name: 'Llama 3.1 8B',
+			contextWindow: '131K',
+			cost: '$0.2/1M',
+		},
+		{
+			id: 'accounts/fireworks/models/qwen2p5-72b-instruct',
+			name: 'Qwen 2.5 72B',
+			contextWindow: '32K',
+			cost: '$0.9/1M',
+		},
+		{
+			id: 'accounts/fireworks/models/deepseek-r1',
+			name: 'DeepSeek R1',
+			contextWindow: '163K',
+			cost: '$3/1M',
+		},
+		{
+			id: 'accounts/fireworks/models/mixtral-8x22b-instruct',
+			name: 'Mixtral 8x22B',
+			contextWindow: '64K',
+			cost: '$1.2/1M',
+		},
+	],
+
+	// Vector Search Backend
+	loadingBackends: false,
+	selectedVectorBackend: null,
+	vectorBackendOptions: [],
+
+	aiFeatures: [
+		{
+			id: 'text_generation',
+			label: 'Text Generation',
+			icon: '✍️',
+			enabled: true,
+		},
+		{
+			id: 'summarization',
+			label: 'Document Summarization',
+			icon: '📋',
+			enabled: true,
+		},
+		{
+			id: 'semantic_search',
+			label: 'Semantic Search',
+			icon: '🔍',
+			enabled: true,
+		},
+		{
+			id: 'embedding',
+			label: 'Text Embeddings',
+			icon: '🧮',
+			enabled: true,
+		},
+		{
+			id: 'translation',
+			label: 'Translation',
+			icon: '🌍',
+			enabled: false,
+		},
+		{
+			id: 'classification',
+			label: 'Content Classification',
+			icon: '🏷️',
+			enabled: false,
+		},
+	],
+}
+
 export default {
 	name: 'LLMConfigModal',
 
@@ -753,283 +1207,7 @@ export default {
 	},
 
 	data() {
-		return {
-			loading: true,
-			saving: false,
-			testingEmbedding: false,
-			testingChat: false,
-			clearingEmbeddings: false,
-			embeddingTestResult: null,
-			chatTestResult: null,
-
-			selectedEmbeddingProvider: null,
-			selectedChatProvider: null,
-
-			openaiConfig: {
-				apiKey: '',
-				model: null,
-				chatModel: null,
-				organizationId: '',
-			},
-
-			ollamaConfig: {
-				url: 'http://localhost:11434',
-				model: null,
-				chatModel: null,
-			},
-
-			fireworksConfig: {
-				apiKey: '',
-				embeddingModel: null,
-				chatModel: null,
-				baseUrl: 'https://api.fireworks.ai/inference/v1',
-			},
-
-			embeddingProviderOptions: [
-				{
-					id: 'openai',
-					name: 'OpenAI',
-					description: 'State-of-the-art embeddings (paid)',
-				},
-				{
-					id: 'fireworks',
-					name: 'Fireworks AI',
-					description: 'Fast, optimized inference (paid)',
-				},
-				{
-					id: 'ollama',
-					name: 'Ollama',
-					description: 'Local models (free, requires Ollama)',
-				},
-			],
-
-			ollamaModelOptions: [
-				{
-					id: 'llama3.2:latest',
-					name: 'llama3.2:latest',
-					description: "Meta's Llama 3.2 (latest)",
-				},
-				{
-					id: 'llama3.1:latest',
-					name: 'llama3.1:latest',
-					description: "Meta's Llama 3.1",
-				},
-				{
-					id: 'llama3:latest',
-					name: 'llama3:latest',
-					description: "Meta's Llama 3",
-				},
-				{
-					id: 'llama2:latest',
-					name: 'llama2:latest',
-					description: "Meta's Llama 2",
-				},
-				{
-					id: 'mistral:7b',
-					name: 'mistral:7b',
-					description: 'Mistral 7B model',
-				},
-				{
-					id: 'mixtral:8x7b',
-					name: 'mixtral:8x7b',
-					description: "Mistral's Mixtral 8x7B model",
-				},
-				{
-					id: 'phi3:mini',
-					name: 'phi3:mini',
-					description: "Microsoft's Phi-3 model",
-				},
-				{
-					id: 'codellama:latest',
-					name: 'codellama:latest',
-					description: 'Code-specialized Llama',
-				},
-				{
-					id: 'gemma2:latest',
-					name: 'gemma2:latest',
-					description: "Google's Gemma 2",
-				},
-				{
-					id: 'nomic-embed-text:latest',
-					name: 'nomic-embed-text:latest',
-					description: 'Nomic embeddings',
-				},
-			],
-
-			loadingOllamaModels: false,
-
-			chatProviderOptions: [
-				{
-					id: 'openai',
-					name: 'OpenAI ChatGPT',
-					description: 'GPT-4, GPT-3.5 models',
-				},
-				{
-					id: 'fireworks',
-					name: 'Fireworks AI',
-					description: 'Fast OSS models',
-				},
-				{ id: 'ollama', name: 'Ollama', description: 'Local LLMs' },
-			],
-
-			openaiModelOptions: [
-				{
-					id: 'text-embedding-ada-002',
-					name: 'text-embedding-ada-002',
-					dimensions: '1536',
-					cost: '$0.10/1M tokens',
-				},
-				{
-					id: 'text-embedding-3-small',
-					name: 'text-embedding-3-small',
-					dimensions: '1536',
-					cost: '$0.02/1M tokens',
-				},
-				{
-					id: 'text-embedding-3-large',
-					name: 'text-embedding-3-large',
-					dimensions: '3072',
-					cost: '$0.13/1M tokens',
-				},
-			],
-
-			openaiChatModelOptions: [
-				{
-					id: 'gpt-4-turbo',
-					name: 'GPT-4 Turbo',
-					contextWindow: '128K',
-					cost: '$10.00/$30.00',
-				},
-				{
-					id: 'gpt-4',
-					name: 'GPT-4',
-					contextWindow: '8K',
-					cost: '$30.00/$60.00',
-				},
-				{
-					id: 'gpt-3.5-turbo',
-					name: 'GPT-3.5 Turbo',
-					contextWindow: '16K',
-					cost: '$0.50/$1.50',
-				},
-			],
-
-			fireworksEmbeddingModelOptions: [
-				{
-					id: 'nomic-ai/nomic-embed-text-v1.5',
-					name: 'Nomic Embed Text v1.5',
-					dimensions: '768',
-					cost: '$0.008/1M tokens',
-				},
-				{
-					id: 'WhereIsAI/UAE-Large-V1',
-					name: 'UAE Large V1',
-					dimensions: '1024',
-					cost: '$0.016/1M tokens',
-				},
-				{
-					id: 'thenlper/gte-large',
-					name: 'GTE Large',
-					dimensions: '1024',
-					cost: '$0.016/1M tokens',
-				},
-				{
-					id: 'thenlper/gte-base',
-					name: 'GTE Base',
-					dimensions: '768',
-					cost: '$0.008/1M tokens',
-				},
-			],
-
-			fireworksChatModelOptions: [
-				{
-					id: 'accounts/fireworks/models/llama-v3p3-70b-instruct',
-					name: 'Llama 3.3 70B',
-					contextWindow: '131K',
-					cost: '$0.9/1M',
-				},
-				{
-					id: 'accounts/fireworks/models/llama-v3p1-405b-instruct',
-					name: 'Llama 3.1 405B',
-					contextWindow: '131K',
-					cost: '$3/1M',
-				},
-				{
-					id: 'accounts/fireworks/models/llama-v3p1-70b-instruct',
-					name: 'Llama 3.1 70B',
-					contextWindow: '131K',
-					cost: '$0.9/1M',
-				},
-				{
-					id: 'accounts/fireworks/models/llama-v3p1-8b-instruct',
-					name: 'Llama 3.1 8B',
-					contextWindow: '131K',
-					cost: '$0.2/1M',
-				},
-				{
-					id: 'accounts/fireworks/models/qwen2p5-72b-instruct',
-					name: 'Qwen 2.5 72B',
-					contextWindow: '32K',
-					cost: '$0.9/1M',
-				},
-				{
-					id: 'accounts/fireworks/models/deepseek-r1',
-					name: 'DeepSeek R1',
-					contextWindow: '163K',
-					cost: '$3/1M',
-				},
-				{
-					id: 'accounts/fireworks/models/mixtral-8x22b-instruct',
-					name: 'Mixtral 8x22B',
-					contextWindow: '64K',
-					cost: '$1.2/1M',
-				},
-			],
-
-			// Vector Search Backend
-			loadingBackends: false,
-			selectedVectorBackend: null,
-			vectorBackendOptions: [],
-
-			aiFeatures: [
-				{
-					id: 'text_generation',
-					label: 'Text Generation',
-					icon: '✍️',
-					enabled: true,
-				},
-				{
-					id: 'summarization',
-					label: 'Document Summarization',
-					icon: '📋',
-					enabled: true,
-				},
-				{
-					id: 'semantic_search',
-					label: 'Semantic Search',
-					icon: '🔍',
-					enabled: true,
-				},
-				{
-					id: 'embedding',
-					label: 'Text Embeddings',
-					icon: '🧮',
-					enabled: true,
-				},
-				{
-					id: 'translation',
-					label: 'Translation',
-					icon: '🌍',
-					enabled: false,
-				},
-				{
-					id: 'classification',
-					label: 'Content Classification',
-					icon: '🏷️',
-					enabled: false,
-				},
-			],
-		}
+		return freshState(INITIAL_STATE)
 	},
 
 	computed: {
@@ -1150,134 +1328,65 @@ export default {
 		 * @spec exclude Modal action plumbing — tests the embedding provider connection.
 		 */
 		async testEmbeddingConnection() {
-			this.testingEmbedding = true
-			this.embeddingTestResult = null
-
-			try {
-				let config = {}
-				const provider = this.selectedEmbeddingProvider?.id
-
-				if (provider === 'openai') {
-					config = {
-						apiKey: this.openaiConfig.apiKey,
-						model:
-							this.openaiConfig.model?.id || this.openaiConfig.model,
-					}
-				} else if (provider === 'fireworks') {
-					config = {
-						apiKey: this.fireworksConfig.apiKey,
-						model:
-							this.fireworksConfig.embeddingModel?.id
-							|| this.fireworksConfig.embeddingModel,
-
-						baseUrl: this.fireworksConfig.baseUrl,
-					}
-				} else if (provider === 'ollama') {
-					config = {
-						url: this.ollamaConfig.url,
-						model:
-							this.ollamaConfig.model?.id || this.ollamaConfig.model,
-					}
-				}
-
-				await axios.post(
-					generateUrl('/apps/openregister/api/vectors/test-embedding'),
-					{
-						provider,
-						config,
-						testText: 'This is a test embedding generation.',
-					},
-				)
-
-				this.embeddingTestResult = {
-					success: true,
-					message: 'Connected',
-				}
-				showSuccess(
-					this.t(
-						'openregister',
-						'Embedding provider connection successful!',
-					),
-				)
-			} catch (error) {
-				this.embeddingTestResult = {
-					success: false,
-					message: 'Failed',
-				}
+			const error = await this.testConnection(CONNECTION_TESTS.embedding)
+			if (error) {
 				showError(
 					this.t('openregister', 'Embedding test failed: {error}', {
-						error: error.response?.data?.error || error.message,
+						error: failureText(error),
 					}),
 				)
-			} finally {
-				this.testingEmbedding = false
+				return
 			}
+			showSuccess(
+				this.t('openregister', 'Embedding provider connection successful!'),
+			)
 		},
 
 		/**
 		 * @spec exclude Modal action plumbing — tests the chat provider connection.
 		 */
 		async testChatConnection() {
-			this.testingChat = true
-			this.chatTestResult = null
-
-			try {
-				let config = {}
-				const provider = this.selectedChatProvider?.id
-
-				if (provider === 'openai') {
-					config = {
-						apiKey: this.openaiConfig.apiKey,
-						model:
-							this.openaiConfig.chatModel?.id
-							|| this.openaiConfig.chatModel,
-					}
-				} else if (provider === 'fireworks') {
-					config = {
-						apiKey: this.fireworksConfig.apiKey,
-						model:
-							this.fireworksConfig.chatModel?.id
-							|| this.fireworksConfig.chatModel,
-
-						baseUrl: this.fireworksConfig.baseUrl,
-					}
-				} else if (provider === 'ollama') {
-					config = {
-						url: this.ollamaConfig.url,
-						model:
-							this.ollamaConfig.chatModel?.id
-							|| this.ollamaConfig.chatModel,
-					}
-				}
-
-				await axios.post(
-					generateUrl('/apps/openregister/api/llm/test-chat'),
-					{
-						provider,
-						config,
-						testMessage: 'Hello! Please respond with a brief greeting.',
-					},
-				)
-
-				this.chatTestResult = {
-					success: true,
-					message: 'Connected',
-				}
-				showSuccess(
-					this.t('openregister', 'Chat provider connection successful!'),
-				)
-			} catch (error) {
-				this.chatTestResult = {
-					success: false,
-					message: 'Failed',
-				}
+			const error = await this.testConnection(CONNECTION_TESTS.chat)
+			if (error) {
 				showError(
 					this.t('openregister', 'Chat test failed: {error}', {
-						error: error.response?.data?.error || error.message,
+						error: failureText(error),
 					}),
 				)
+				return
+			}
+			showSuccess(
+				this.t('openregister', 'Chat provider connection successful!'),
+			)
+		},
+
+		/**
+		 * Test one provider connection and record the outcome.
+		 *
+		 * @param {object} test One of CONNECTION_TESTS
+		 * @return {Promise<Error|null>} The failure, or null when it connected
+		 * @spec exclude Modal action plumbing — posts a provider connection test.
+		 */
+		async testConnection(test) {
+			this[test.busy] = true
+			this[test.result] = null
+			try {
+				const provider = this[test.selected]?.id
+				const config = Object.hasOwn(test.configs, provider)
+					? test.configs[provider](this)
+					: {}
+				await axios.post(generateUrl(test.url), {
+					provider,
+					config,
+					...test.sample,
+				})
+				this[test.result] = { success: true, message: 'Connected' }
+				return null
+			} catch (error) {
+				this[test.result] = { success: false, message: 'Failed' }
+				return error
 			} finally {
-				this.testingChat = false
+				this[test.busy] = false
 			}
 		},
 
@@ -1286,62 +1395,11 @@ export default {
 		 */
 		async saveConfiguration() {
 			this.saving = true
-
 			try {
-				// Extract model IDs from objects (models are selected as objects but backend expects string IDs)
-				const payload = {
-					embeddingProvider: this.selectedEmbeddingProvider?.id,
-					chatProvider: this.selectedChatProvider?.id,
-					openaiConfig: {
-						apiKey: this.openaiConfig.apiKey,
-						model:
-							this.openaiConfig.model?.id || this.openaiConfig.model,
-
-						chatModel:
-							this.openaiConfig.chatModel?.id
-							|| this.openaiConfig.chatModel,
-
-						organizationId: this.openaiConfig.organizationId,
-					},
-
-					ollamaConfig: {
-						url: this.ollamaConfig.url,
-						model:
-							this.ollamaConfig.model?.id || this.ollamaConfig.model,
-
-						chatModel:
-							this.ollamaConfig.chatModel?.id
-							|| this.ollamaConfig.chatModel,
-					},
-
-					fireworksConfig: {
-						apiKey: this.fireworksConfig.apiKey,
-						embeddingModel:
-							this.fireworksConfig.embeddingModel?.id
-							|| this.fireworksConfig.embeddingModel,
-
-						chatModel:
-							this.fireworksConfig.chatModel?.id
-							|| this.fireworksConfig.chatModel,
-
-						baseUrl: this.fireworksConfig.baseUrl,
-					},
-
-					vectorConfig: {
-						backend: this.selectedVectorBackend?.id || 'php',
-					},
-
-					enabledFeatures: this.aiFeatures
-						.filter((f) => f.enabled)
-						.map((f) => f.id),
-				}
-
-				// Use PATCH for partial updates
 				await axios.patch(
 					generateUrl('/apps/openregister/api/settings/llm'),
-					payload,
+					this.llmPayload(),
 				)
-
 				showSuccess(
 					this.t('openregister', 'LLM configuration saved successfully'),
 				)
@@ -1349,11 +1407,32 @@ export default {
 			} catch (error) {
 				showError(
 					this.t('openregister', 'Failed to save configuration: {error}', {
-						error: error.response?.data?.error || error.message,
+						error: failureText(error),
 					}),
 				)
 			} finally {
 				this.saving = false
+			}
+		},
+
+		/**
+		 * The LLM settings to save. Models are picked as objects; the backend
+		 * expects their ids.
+		 *
+		 * @return {object} The settings
+		 * @spec exclude Modal save plumbing — builds the LLM settings payload.
+		 */
+		llmPayload() {
+			return {
+				embeddingProvider: this.selectedEmbeddingProvider?.id,
+				chatProvider: this.selectedChatProvider?.id,
+				openaiConfig: openaiSettings(this.openaiConfig),
+				ollamaConfig: ollamaSettings(this.ollamaConfig),
+				fireworksConfig: fireworksSettings(this.fireworksConfig),
+				vectorConfig: { backend: this.selectedVectorBackend?.id || 'php' },
+				enabledFeatures: this.aiFeatures
+					.filter((f) => f.enabled)
+					.map((f) => f.id),
 			}
 		},
 
@@ -1458,46 +1537,12 @@ export default {
 		 */
 		async loadAvailableBackends() {
 			this.loadingBackends = true
-
 			try {
-				// Get database info
 				const dbResponse = await axios.get(
 					generateUrl('/apps/openregister/api/settings/database'),
 				)
-
-				// Build backend options
-				const backends = []
-
-				// PHP backend (always available)
-				backends.push({
-					id: 'php',
-					name: 'PHP Cosine Similarity',
-					description:
-						'Always available, but slow for large datasets (>500 vectors)',
-					performance: 'slow',
-					available: true,
-					performanceNote:
-						'Calculates similarity in PHP. Suitable for small datasets.',
-				})
-
-				// Database backend (PostgreSQL + pgvector)
-				if (dbResponse.data.success && dbResponse.data.database) {
-					const db = dbResponse.data.database
-					backends.push({
-						id: 'database',
-						name: db.type + ' + pgvector',
-						description: db.vectorSupport
-							? 'Fast database-level vector search (Recommended)'
-							: 'PostgreSQL with pgvector extension required',
-						performance: db.vectorSupport ? 'fast' : null,
-						available: db.vectorSupport,
-						performanceNote: db.performanceNote,
-					})
-				}
-
+				const backends = vectorBackends(dbResponse.data)
 				this.vectorBackendOptions = backends
-
-				// Load current backend setting from LLM settings
 				const llmResponse = await axios.get(
 					generateUrl('/apps/openregister/api/settings/llm'),
 				)
@@ -1506,16 +1551,7 @@ export default {
 					backends.find((b) => b.id === vectorBackend) || backends[0]
 			} catch (error) {
 				console.error('Failed to load vector backends:', error)
-				// Fallback to PHP only
-				this.vectorBackendOptions = [
-					{
-						id: 'php',
-						name: 'PHP Cosine Similarity',
-						description: 'Always available fallback',
-						performance: 'slow',
-						available: true,
-					},
-				]
+				this.vectorBackendOptions = [{ ...FALLBACK_BACKEND }]
 				this.selectedVectorBackend = this.vectorBackendOptions[0]
 			} finally {
 				this.loadingBackends = false
@@ -1526,6 +1562,8 @@ export default {
 </script>
 
 <style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 .llm-config-content {
 	padding: 20px;
 	max-height: 70vh;
@@ -1744,13 +1782,7 @@ export default {
 }
 
 /* Actions layout */
-:deep(.dialog__actions) {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: 16px;
-	flex-wrap: wrap;
-}
+@include deep-dialog-actions;
 
 .actions-left {
 	display: flex;
@@ -1759,11 +1791,7 @@ export default {
 	flex-wrap: wrap;
 }
 
-.actions-right {
-	display: flex;
-	gap: 8px;
-	margin-left: auto;
-}
+@include actions-right;
 
 .test-result-inline {
 	padding: 8px 12px;

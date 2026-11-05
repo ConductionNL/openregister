@@ -1831,11 +1831,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -2171,11 +2168,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -2511,11 +2505,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -2740,11 +2731,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -2833,11 +2821,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -2958,11 +2943,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -3070,11 +3052,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -3170,11 +3149,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -3441,11 +3417,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -3892,11 +3865,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -4166,11 +4136,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -4429,11 +4396,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -4796,11 +4760,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             },
             {
                 "method": "container.get",
@@ -5021,11 +4982,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -5223,11 +5181,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -5754,11 +5709,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -6106,11 +6058,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -6193,11 +6142,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -7197,11 +7143,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -7359,11 +7302,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    3,
-                    "update"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -11578,11 +11518,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    88,
-                    "create"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -11758,11 +11695,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    88,
-                    "create"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,
@@ -11938,11 +11872,8 @@
                 ]
             },
             {
-                "method": "facetCache.invalidateForSchemaChange",
-                "args": [
-                    88,
-                    "create"
-                ]
+                "method": "facetResults.cleared",
+                "args": []
             }
         ],
         "status": 200,

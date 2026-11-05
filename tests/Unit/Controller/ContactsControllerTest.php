@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ContactsControllerFactory;
 use OCA\OpenRegister\Controller\ContactsController;
 use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Service\ContactService;
@@ -61,7 +62,7 @@ class ContactsControllerTest extends TestCase {
 			}
 		);
 
-		$this->controller = new ContactsController(
+		$this->controller = ContactsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->contactService,
@@ -206,11 +207,32 @@ class ContactsControllerTest extends TestCase {
 
 		$this->contactService->expects($this->once())
 			->method('unlinkContact')
-			->with(42);
+			->with(42, 'abc-123');
 
 		$response = $this->controller->destroy('reg', 'sch', 'oid', '42');
 
 		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(['success' => true], $response->getData());
+	}
+
+	/**
+	 * A numeric link id of another object's link answers 404 and deletes nothing.
+	 */
+	public function testDestroyRefusesANumericIdOfAnotherObjectsLink(): void {
+		$object = new \OCA\OpenRegister\Db\ObjectEntity();
+		$object->setUuid('abc-123');
+
+		$this->objectService->method('getObject')->willReturn($object);
+
+		$this->contactService->expects($this->once())
+			->method('unlinkContact')
+			->with(77, 'abc-123')
+			->willThrowException(new \Exception('Contact link not found', 404));
+
+		$response = $this->controller->destroy('reg', 'sch', 'oid', '77');
+
+		$this->assertSame(404, $response->getStatus());
+		$this->assertSame(['error' => 'Contact link not found'], $response->getData());
 	}
 
 	/**

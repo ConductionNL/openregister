@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\FilesController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -185,7 +186,7 @@ class FilesControllerObjectAccessTest extends TestCase {
 			schemaMapper: $schemaMapper
 		);
 
-		return new FilesController(
+		return FilesControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->fileService,

@@ -9,14 +9,15 @@ namespace Unit\Controller;
 // phpcs:disable Squiz.PHP.DisallowInlineIf.Found -- PHPUnit fixture defaults.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\NotesControllerFactory;
 use Exception;
-use OCA\OpenRegister\Controller\NotesController;
+use OCA\OpenRegister\Notifications\Controller\NotesController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
-use OCA\OpenRegister\Service\Timeline\TimelineWriteService;
-use OCA\OpenRegister\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineWriteService;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -57,7 +58,7 @@ class NotesControllerTest extends TestCase {
 		$this->timeline = $this->createMock(TimelineWriteService::class);
 		$this->entries = $this->createMock(TimelineEntryService::class);
 
-		$this->controller = new NotesController(
+		$this->controller = NotesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->noteService,
@@ -367,7 +368,7 @@ class NotesControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['message' => 'Even genoteerd']);
 		$this->noteService->method('createNote')->willReturn(['id' => 41, 'message' => 'Even genoteerd']);
 
-		$entry = new \OCA\OpenRegister\Db\TimelineEntry();
+		$entry = new \OCA\OpenRegister\Notifications\Db\TimelineEntry();
 		$entry->setUuid('entry-a');
 		$this->timeline->expects($this->once())->method('projectNote')->willReturn($entry);
 
@@ -387,7 +388,7 @@ class NotesControllerTest extends TestCase {
 		$object = $this->createRealObjectEntity();
 		$this->objectService->method('getObject')->willReturn($object);
 
-		$entry = new \OCA\OpenRegister\Db\TimelineEntry();
+		$entry = new \OCA\OpenRegister\Notifications\Db\TimelineEntry();
 		$entry->setUuid('entry-a');
 		$this->entries->expects($this->once())->method('entryForNote')->with(41)->willReturn($entry);
 		$this->timeline->expects($this->once())->method('forgetNote')->with(41, 'entry-a');

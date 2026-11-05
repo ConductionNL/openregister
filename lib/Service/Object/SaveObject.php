@@ -625,7 +625,7 @@ class SaveObject implements SaveObjectInterface {
 			return null;
 		}
 
-		if ($service instanceof \OCA\OpenRegister\Service\RetentionService) {
+		if ($service instanceof \OCA\OpenRegister\Service\RetentionServiceInterface) {
 			return $service;
 		}
 
@@ -2660,7 +2660,10 @@ class SaveObject implements SaveObjectInterface {
 			throw new Exception("Invalid schema reference: {$definition['$ref']}");
 		}
 
-		$this->assertMayCascadeCreate(schema: $this->getCachedSchema(schemaId: $schemaId));
+		$this->assertMayCascadeCreate(
+			schema: $this->getCachedSchema(schemaId: $schemaId),
+			register: (is_int($register) === true || is_string($register) === true) ? (string)$register : null
+		);
 
 		// Use silent mode for cascaded sub-objects to improve performance.
 		// This skips audit trail creation for each sub-object, reducing database writes.
@@ -3808,7 +3811,8 @@ class SaveObject implements SaveObjectInterface {
 	 * just as for a direct create. Skipped only when an enclosing save runs
 	 * with RBAC off. With no enclosing save the check runs.
 	 *
-	 * @param Schema $schema The schema the nested object is created in.
+	 * @param Schema      $schema   The schema the nested object is created in.
+	 * @param string|null $register The register it is created in, when known.
 	 *
 	 * @return void
 	 *
@@ -3816,11 +3820,12 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function assertMayCascadeCreate(Schema $schema): void {
+	public function assertMayCascadeCreate(Schema $schema, ?string $register = null): void {
 		$this->permissionHandler->checkPermission(
 			schema: $schema,
 			action: 'create',
-			_rbac: in_array(needle: false, haystack: $this->cascadeScopes, strict: true) === false
+			_rbac: in_array(needle: false, haystack: $this->cascadeScopes, strict: true) === false,
+			register: $register
 		);
 	}//end assertMayCascadeCreate()
 

@@ -41,7 +41,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
  * Unit tests for ReferentialIntegrityService
  *
  * Tests referential integrity enforcement: canDelete analysis, applyDeletionActions,
- * logRestrictBlock, hasIncomingOnDeleteReferences, isValidOnDeleteAction,
+ * logRestrictBlock, hasIncomingOnDeleteReferences,
  * and all internal helpers via reflection.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -282,34 +282,6 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		} else {
 			$this->setPrivateProperty('schemaRegisterMap', []);
 		}
-	}
-
-	// =========================================================================
-	// isValidOnDeleteAction (static method)
-	// =========================================================================
-
-	public function testIsValidOnDeleteActionWithValidActions(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('CASCADE'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('RESTRICT'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('SET_NULL'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('SET_DEFAULT'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('NO_ACTION'));
-	}
-
-	public function testIsValidOnDeleteActionCaseInsensitive(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('cascade'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('restrict'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('set_null'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('Set_Default'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('no_action'));
-	}
-
-	public function testIsValidOnDeleteActionWithInvalidActions(): void {
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction(''));
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction('DELETE'));
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction('TRUNCATE'));
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction('SET NULL'));
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction('cascade_delete'));
 	}
 
 	// =========================================================================

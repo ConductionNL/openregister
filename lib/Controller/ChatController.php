@@ -29,12 +29,13 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\ChatControllerServices;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\Feedback;
 use OCA\OpenRegister\Db\FeedbackMapper;
-use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use OCA\OpenRegister\Service\ChatService;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
@@ -92,9 +93,9 @@ class ChatController extends Controller {
 	 *
 	 * Handles database operations for message entities.
 	 *
-	 * @var MessageMapper Message mapper instance
+	 * @var MessageMapperInterface Message mapper instance
 	 */
-	private readonly MessageMapper $messageMapper;
+	private readonly MessageMapperInterface $messageMapper;
 
 	/**
 	 * Feedback mapper
@@ -167,49 +168,31 @@ class ChatController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param ChatService $chatService Chat service for AI interactions
-	 * @param ConversationMapper $conversationMapper Conversation mapper for database operations
-	 * @param MessageMapper $messageMapper Message mapper for database operations
-	 * @param FeedbackMapper $feedbackMapper Feedback mapper for database operations
-	 * @param AgentMapper $agentMapper Agent mapper for database operations
-	 * @param OrganisationServiceInterface $organisationService Organisation service for permissions
-	 * @param IDBConnection $db Database connection for direct queries
-	 * @param LoggerInterface $logger Logger for error tracking
-	 * @param IL10N $l10n Localization service for translations
+	 * @param ChatControllerServices $services The chat controller services.
 	 * @param string $userId Current user ID for chat context
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		ChatService $chatService,
-		ConversationMapper $conversationMapper,
-		MessageMapper $messageMapper,
-		FeedbackMapper $feedbackMapper,
-		AgentMapper $agentMapper,
-		OrganisationServiceInterface $organisationService,
-		IDBConnection $db,
-		LoggerInterface $logger,
-		IL10N $l10n,
+		ChatControllerServices $services,
 		string $userId,
 	) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
 
 		// Store dependencies for use in controller methods.
-		$this->chatService = $chatService;
-		$this->conversationMapper = $conversationMapper;
-		$this->messageMapper = $messageMapper;
-		$this->feedbackMapper = $feedbackMapper;
-		$this->agentMapper = $agentMapper;
-		$this->organisationService = $organisationService;
+		$this->chatService = $services->domain->chatService;
+		$this->conversationMapper = $services->mappers->conversationMapper;
+		$this->messageMapper = $services->mappers->messageMapper;
+		$this->feedbackMapper = $services->mappers->feedbackMapper;
+		$this->agentMapper = $services->mappers->agentMapper;
+		$this->organisationService = $services->domain->organisationService;
 		// Store remaining dependencies.
-		$this->db = $db;
-		$this->logger = $logger;
-		$this->l10n = $l10n;
+		$this->db = $services->platform->db;
+		$this->logger = $services->platform->logger;
+		$this->l10n = $services->platform->l10n;
 		$this->userId = $userId;
 	}//end __construct()
 

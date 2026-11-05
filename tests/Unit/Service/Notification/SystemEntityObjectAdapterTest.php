@@ -20,8 +20,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Service\Notification\SystemEntityObjectAdapter;
-use OCA\OpenRegister\Service\Notification\SystemSchemaRules;
+use OCA\OpenRegister\Notifications\Service\Notification\SystemEntityObjectAdapter;
+use OCA\OpenRegister\Notifications\Service\Notification\SystemSchemaRules;
 use PHPUnit\Framework\TestCase;
 
 /**

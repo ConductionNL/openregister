@@ -246,44 +246,6 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		$this->setProperty('schemaCache', null);
 	}//end setupSchemas()
 
-	// ─── isValidOnDeleteAction tests ─────────────────────────────────
-
-	/**
-	 * Test valid onDelete action values.
-	 *
-	 * @return void
-	 */
-	public function testIsValidOnDeleteActionValid(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('CASCADE'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('RESTRICT'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('SET_NULL'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('SET_DEFAULT'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('NO_ACTION'));
-	}//end testIsValidOnDeleteActionValid()
-
-	/**
-	 * Test case-insensitive validation.
-	 *
-	 * @return void
-	 */
-	public function testIsValidOnDeleteActionCaseInsensitive(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('cascade'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('Restrict'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('set_null'));
-	}//end testIsValidOnDeleteActionCaseInsensitive()
-
-	/**
-	 * Test invalid onDelete action values.
-	 *
-	 * @return void
-	 */
-	public function testIsValidOnDeleteActionInvalid(): void {
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction('DESTROY'));
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction('DELETE'));
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction(''));
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction('NULLIFY'));
-	}//end testIsValidOnDeleteActionInvalid()
-
 	// ─── Relation index building tests ───────────────────────────────
 
 	/**

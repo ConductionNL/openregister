@@ -51,7 +51,7 @@ use OCP\Lock\ILockingProvider;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
  * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
  * @uses \OCA\OpenRegister\Service\WriteCause

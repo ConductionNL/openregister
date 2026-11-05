@@ -4,7 +4,7 @@
 		:name="t('openregister', 'Text Extraction')"
 		description="Configure extraction pipelines for files, objects, and detected entities"
 		:loading="settingsStore.loadingFileSettings"
-		:loadingMessage="t('openregister', 'Loading text extraction settings...')">
+		:loadingMessage="t('openregister', 'Loading text extraction settings…')">
 		<template #actions>
 			<!-- File Actions Menu -->
 			<NcActions
@@ -920,6 +920,7 @@ import MagnifyIcon from 'vue-material-design-icons/Magnify.vue'
 import RefreshIcon from 'vue-material-design-icons/Refresh.vue'
 import SettingsCard from '../../../components/shared/SettingsCard.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import { freshState } from '../../../services/initialState.js'
 import { useSettingsStore } from '../../../store/settings.js'
 
 /**
@@ -1040,6 +1041,408 @@ function applyEnabledFileTypes(fileTypes, settings) {
 	})
 }
 
+/**
+ * The extraction settings to save.
+ *
+ * @param {object} settings The form state
+ * @return {object} The settings
+ */
+function extractionFields(settings) {
+	return {
+		extractionScope: settings.extractionScope?.id || 'objects',
+		textExtractor: settings.textExtractor?.id || 'llphant',
+		extractionMode: settings.extractionMode?.id || 'background',
+		includeInSearch: settings.includeInSearch,
+		maxFileSize: settings.maxFileSize,
+		chunkSize: settings.chunkSize,
+		chunkOverlap: settings.chunkOverlap,
+		chunkingStrategy: settings.chunkingStrategy,
+		batchSize: settings.batchSize,
+	}
+}
+
+/**
+ * The text recognition settings to save.
+ *
+ * @param {object} settings The form state
+ * @return {object} The settings
+ */
+function recognitionFields(settings) {
+	return {
+		dolphinApiEndpoint: settings.dolphinApiEndpoint || '',
+		dolphinApiKey: settings.dolphinApiKey || '',
+		entityRecognitionEnabled: settings.entityRecognitionEnabled,
+		entityRecognitionMethod: settings.entityRecognitionMethod?.id || 'regex',
+		presidioApiEndpoint: settings.presidioApiEndpoint || '',
+	}
+}
+
+/**
+ * The OpenAnonymiser settings to save, without the password.
+ *
+ * @param {object} settings The form state
+ * @return {object} The settings
+ */
+function openAnonymiserFields(settings) {
+	return {
+		openAnonymiserApiEndpoint: settings.openAnonymiserApiEndpoint || '',
+		openAnonymiserSource: settings.openAnonymiserSource || 'internal',
+		openAnonymiserUsername: settings.openAnonymiserUsername || '',
+	}
+}
+
+const FILE_COUNTS = [
+	'totalFiles',
+	'untrackedFiles',
+	'pendingFiles',
+	'processedFiles',
+	'failedFiles',
+	'totalChunks',
+]
+
+/**
+ * The extraction statistics to show, zero where the server gave none.
+ *
+ * @param {object} stats The server's statistics
+ * @return {object} The statistics
+ */
+function extractionStatsOf(stats) {
+	return {
+		...Object.fromEntries(FILE_COUNTS.map((key) => [key, stats[key] || 0])),
+		totalObjects: stats.totalObjects || stats.total_objects || 0,
+		totalEntities: stats.totalEntities || stats.total_entities || 0,
+	}
+}
+
+/**
+ * The state every instance of this component starts from.
+ */
+const INITIAL_STATE = {
+	fileSettings: {
+		extractionScope: {
+			id: 'objects',
+			label: 'Files Attached to Objects',
+		},
+
+		textExtractor: { id: 'llphant', label: 'LLPhant' },
+		extractionMode: { id: 'background', label: 'Background Job' },
+		includeInSearch: true,
+		maxFileSize: 100,
+		chunkSize: 1000,
+		chunkOverlap: 200,
+		chunkingStrategy: 'RECURSIVE_CHARACTER',
+		batchSize: 10,
+		dolphinApiEndpoint: '',
+		dolphinApiKey: '',
+		entityRecognitionEnabled: false,
+		entityRecognitionMethod: { id: 'regex', label: 'Regex' },
+		presidioApiEndpoint: '',
+		openAnonymiserApiEndpoint: '',
+		// OpenAnonymiser source: 'internal' (AppAPI ExApp) or 'external' (URL).
+		openAnonymiserSource: 'internal',
+		// HTTP Basic user for the external endpoint; the password is write-only.
+		openAnonymiserUsername: '',
+		openAnonymiserPasswordSet: false,
+	},
+
+	// A newly typed OpenAnonymiser password, sent once and then cleared.
+	openAnonymiserPassword: '',
+	openAnonymiserPasswordChanged: false,
+
+	// Resolved backend state from GET /api/admin/anonymisation/backend-state.
+	backendState: null,
+	// Last probe error code for the openanonymiser backend (drives the install hint).
+	openAnonymiserError: null,
+	// Method name currently being probed via the test-connection endpoint.
+	testingBackendMethod: '',
+	// Persistent per-backend test outcomes: { [method]: 'success' | 'error' }.
+	backendTestResults: {},
+	objectSettings: {
+		extractionMode: { id: 'background', label: 'Background Job' },
+	},
+
+	fileTypes: [
+		// Text formats (LLPhant supported)
+		{
+			extension: 'txt',
+			label: 'Text Files',
+			icon: '📝',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'md',
+			label: 'Markdown',
+			icon: '📋',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'html',
+			label: 'HTML Files',
+			icon: '🌐',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'json',
+			label: 'JSON Files',
+			icon: '📦',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'xml',
+			label: 'XML Files',
+			icon: '📰',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'csv',
+			label: 'CSV Files',
+			icon: '📊',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+
+		// Document formats (LLPhant supported)
+		{
+			extension: 'pdf',
+			label: 'PDF Documents',
+			icon: '📄',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: true,
+		},
+		{
+			extension: 'docx',
+			label: 'Word Documents',
+			icon: '📘',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'doc',
+			label: 'Word (Legacy)',
+			icon: '📘',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'xlsx',
+			label: 'Excel Spreadsheets',
+			icon: '📊',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'xls',
+			label: 'Excel (Legacy)',
+			icon: '📊',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'pptx',
+			label: 'PowerPoint',
+			icon: '📽️',
+			enabled: false,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+
+		// Image formats (Dolphin required for OCR)
+		{
+			extension: 'jpg',
+			label: 'JPEG Images',
+			icon: '🖼️',
+			enabled: false,
+			llphantSupport: 'none',
+			dolphinOcr: true,
+		},
+		{
+			extension: 'jpeg',
+			label: 'JPEG Images',
+			icon: '🖼️',
+			enabled: false,
+			llphantSupport: 'none',
+			dolphinOcr: true,
+		},
+		{
+			extension: 'png',
+			label: 'PNG Images',
+			icon: '🖼️',
+			enabled: false,
+			llphantSupport: 'none',
+			dolphinOcr: true,
+		},
+		{
+			extension: 'gif',
+			label: 'GIF Images',
+			icon: '🖼️',
+			enabled: false,
+			llphantSupport: 'none',
+			dolphinOcr: true,
+		},
+		{
+			extension: 'webp',
+			label: 'WebP Images',
+			icon: '🖼️',
+			enabled: false,
+			llphantSupport: 'none',
+			dolphinOcr: true,
+		},
+
+		// Other formats
+		{
+			extension: 'odt',
+			label: 'OpenDocument Text',
+			icon: '📄',
+			enabled: false,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'rtf',
+			label: 'Rich Text Format',
+			icon: '📝',
+			enabled: false,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+	],
+
+	textExtractors: [
+		{
+			id: 'llphant',
+			label: 'LLPhant',
+			icon: '🐘',
+			description:
+				'Local PHP library - Best for: TXT, MD, HTML, JSON, XML, CSV, simple PDFs',
+		},
+		{
+			id: 'dolphin',
+			label: 'Dolphin',
+			icon: '🐬',
+			description:
+				'ByteDance AI - Best for: Complex PDFs, tables, formulas, DOCX, XLSX, PPT',
+		},
+	],
+
+	extractionScopes: [
+		{
+			id: 'none',
+			label: 'None (Disabled)',
+			description: 'Do not extract text automatically',
+		},
+		{
+			id: 'all',
+			label: 'All Files',
+			description: 'Extract text from all uploaded files in Nextcloud',
+		},
+		{
+			id: 'folders',
+			label: 'Files in Specific Folders',
+			description: 'Extract text from files in designated folders only',
+		},
+		{
+			id: 'objects',
+			label: 'Files Attached to Objects',
+			description:
+				'Extract text only from files attached to OpenRegister objects (recommended)',
+		},
+	],
+
+	extractionModes: [
+		{
+			id: 'immediate',
+			label: 'Immediate',
+			description:
+				'Process during upload - direct link between file upload and parsing logic',
+		},
+		{
+			id: 'background',
+			label: 'Background Job',
+			description:
+				'Delayed extraction action on the job stack - process files asynchronously after upload',
+		},
+		{
+			id: 'cron',
+			label: 'Cron Job',
+			description:
+				'Repeating action handling files - periodic batch processing via scheduled jobs',
+		},
+		{
+			id: 'manual',
+			label: 'Manual Only',
+			description: 'Only extract when manually triggered via Actions menu',
+		},
+	],
+
+	extractionStats: {
+		totalFiles: 0,
+		untrackedFiles: 0,
+		pendingFiles: 0,
+		processedFiles: 0,
+		failedFiles: 0,
+		totalChunks: 0,
+		totalObjects: 0,
+		totalEntities: 0,
+	},
+
+	discoveringFiles: false,
+	extractingFiles: false,
+	retryingFiles: false,
+	saveMessage: '',
+	saveMessageType: 'success',
+	dolphinConnectionTested: null, // null, 'success', 'error'
+	presidioConnectionTested: null,
+	openAnonymiserConnectionTested: null,
+	testingPresidio: false,
+	testingOpenAnonymiser: false,
+	entityRecognitionMethods: [
+		{
+			id: 'regex',
+			label: 'Regex',
+			icon: '🔤',
+			description:
+				'Local pattern matching - Fast, privacy-friendly, detects emails, phones, IBANs',
+		},
+		{
+			id: 'presidio',
+			label: 'Presidio',
+			icon: '🛡️',
+			description:
+				'Microsoft Presidio - Accurate NER for names, organizations, locations (English)',
+		},
+		{
+			id: 'openanonymiser',
+			label: 'OpenAnonymiser',
+			icon: '🇳🇱',
+			description:
+				'Dutch-focused PII detection - Best for Dutch names, BSN, addresses',
+		},
+		{
+			id: 'hybrid',
+			label: 'Hybrid',
+			icon: '⚡',
+			description:
+				'Combines regex with external services for maximum coverage',
+		},
+	],
+}
+
 export default {
 	name: 'FileConfiguration',
 
@@ -1064,333 +1467,7 @@ export default {
 	},
 
 	data() {
-		return {
-			fileSettings: {
-				extractionScope: {
-					id: 'objects',
-					label: 'Files Attached to Objects',
-				},
-
-				textExtractor: { id: 'llphant', label: 'LLPhant' },
-				extractionMode: { id: 'background', label: 'Background Job' },
-				includeInSearch: true,
-				maxFileSize: 100,
-				chunkSize: 1000,
-				chunkOverlap: 200,
-				chunkingStrategy: 'RECURSIVE_CHARACTER',
-				batchSize: 10,
-				dolphinApiEndpoint: '',
-				dolphinApiKey: '',
-				entityRecognitionEnabled: false,
-				entityRecognitionMethod: { id: 'regex', label: 'Regex' },
-				presidioApiEndpoint: '',
-				openAnonymiserApiEndpoint: '',
-				// OpenAnonymiser source: 'internal' (AppAPI ExApp) or 'external' (URL).
-				openAnonymiserSource: 'internal',
-				// HTTP Basic user for the external endpoint; the password is write-only.
-				openAnonymiserUsername: '',
-				openAnonymiserPasswordSet: false,
-			},
-
-			// A newly typed OpenAnonymiser password, sent once and then cleared.
-			openAnonymiserPassword: '',
-			openAnonymiserPasswordChanged: false,
-
-			// Resolved backend state from GET /api/admin/anonymisation/backend-state.
-			backendState: null,
-			// Last probe error code for the openanonymiser backend (drives the install hint).
-			openAnonymiserError: null,
-			// Method name currently being probed via the test-connection endpoint.
-			testingBackendMethod: '',
-			// Persistent per-backend test outcomes: { [method]: 'success' | 'error' }.
-			backendTestResults: {},
-			objectSettings: {
-				extractionMode: { id: 'background', label: 'Background Job' },
-			},
-
-			fileTypes: [
-				// Text formats (LLPhant supported)
-				{
-					extension: 'txt',
-					label: 'Text Files',
-					icon: '📝',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'md',
-					label: 'Markdown',
-					icon: '📋',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'html',
-					label: 'HTML Files',
-					icon: '🌐',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'json',
-					label: 'JSON Files',
-					icon: '📦',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'xml',
-					label: 'XML Files',
-					icon: '📰',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'csv',
-					label: 'CSV Files',
-					icon: '📊',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-
-				// Document formats (LLPhant supported)
-				{
-					extension: 'pdf',
-					label: 'PDF Documents',
-					icon: '📄',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: true,
-				},
-				{
-					extension: 'docx',
-					label: 'Word Documents',
-					icon: '📘',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'doc',
-					label: 'Word (Legacy)',
-					icon: '📘',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'xlsx',
-					label: 'Excel Spreadsheets',
-					icon: '📊',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'xls',
-					label: 'Excel (Legacy)',
-					icon: '📊',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'pptx',
-					label: 'PowerPoint',
-					icon: '📽️',
-					enabled: false,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-
-				// Image formats (Dolphin required for OCR)
-				{
-					extension: 'jpg',
-					label: 'JPEG Images',
-					icon: '🖼️',
-					enabled: false,
-					llphantSupport: 'none',
-					dolphinOcr: true,
-				},
-				{
-					extension: 'jpeg',
-					label: 'JPEG Images',
-					icon: '🖼️',
-					enabled: false,
-					llphantSupport: 'none',
-					dolphinOcr: true,
-				},
-				{
-					extension: 'png',
-					label: 'PNG Images',
-					icon: '🖼️',
-					enabled: false,
-					llphantSupport: 'none',
-					dolphinOcr: true,
-				},
-				{
-					extension: 'gif',
-					label: 'GIF Images',
-					icon: '🖼️',
-					enabled: false,
-					llphantSupport: 'none',
-					dolphinOcr: true,
-				},
-				{
-					extension: 'webp',
-					label: 'WebP Images',
-					icon: '🖼️',
-					enabled: false,
-					llphantSupport: 'none',
-					dolphinOcr: true,
-				},
-
-				// Other formats
-				{
-					extension: 'odt',
-					label: 'OpenDocument Text',
-					icon: '📄',
-					enabled: false,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'rtf',
-					label: 'Rich Text Format',
-					icon: '📝',
-					enabled: false,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-			],
-
-			textExtractors: [
-				{
-					id: 'llphant',
-					label: 'LLPhant',
-					icon: '🐘',
-					description:
-						'Local PHP library - Best for: TXT, MD, HTML, JSON, XML, CSV, simple PDFs',
-				},
-				{
-					id: 'dolphin',
-					label: 'Dolphin',
-					icon: '🐬',
-					description:
-						'ByteDance AI - Best for: Complex PDFs, tables, formulas, DOCX, XLSX, PPT',
-				},
-			],
-
-			extractionScopes: [
-				{
-					id: 'none',
-					label: 'None (Disabled)',
-					description: 'Do not extract text automatically',
-				},
-				{
-					id: 'all',
-					label: 'All Files',
-					description: 'Extract text from all uploaded files in Nextcloud',
-				},
-				{
-					id: 'folders',
-					label: 'Files in Specific Folders',
-					description:
-						'Extract text from files in designated folders only',
-				},
-				{
-					id: 'objects',
-					label: 'Files Attached to Objects',
-					description:
-						'Extract text only from files attached to OpenRegister objects (recommended)',
-				},
-			],
-
-			extractionModes: [
-				{
-					id: 'immediate',
-					label: 'Immediate',
-					description:
-						'Process during upload - direct link between file upload and parsing logic',
-				},
-				{
-					id: 'background',
-					label: 'Background Job',
-					description:
-						'Delayed extraction action on the job stack - process files asynchronously after upload',
-				},
-				{
-					id: 'cron',
-					label: 'Cron Job',
-					description:
-						'Repeating action handling files - periodic batch processing via scheduled jobs',
-				},
-				{
-					id: 'manual',
-					label: 'Manual Only',
-					description:
-						'Only extract when manually triggered via Actions menu',
-				},
-			],
-
-			extractionStats: {
-				totalFiles: 0,
-				untrackedFiles: 0,
-				pendingFiles: 0,
-				processedFiles: 0,
-				failedFiles: 0,
-				totalChunks: 0,
-				totalObjects: 0,
-				totalEntities: 0,
-			},
-
-			discoveringFiles: false,
-			extractingFiles: false,
-			retryingFiles: false,
-			saveMessage: '',
-			saveMessageType: 'success',
-			dolphinConnectionTested: null, // null, 'success', 'error'
-			presidioConnectionTested: null,
-			openAnonymiserConnectionTested: null,
-			testingPresidio: false,
-			testingOpenAnonymiser: false,
-			entityRecognitionMethods: [
-				{
-					id: 'regex',
-					label: 'Regex',
-					icon: '🔤',
-					description:
-						'Local pattern matching - Fast, privacy-friendly, detects emails, phones, IBANs',
-				},
-				{
-					id: 'presidio',
-					label: 'Presidio',
-					icon: '🛡️',
-					description:
-						'Microsoft Presidio - Accurate NER for names, organizations, locations (English)',
-				},
-				{
-					id: 'openanonymiser',
-					label: 'OpenAnonymiser',
-					icon: '🇳🇱',
-					description:
-						'Dutch-focused PII detection - Best for Dutch names, BSN, addresses',
-				},
-				{
-					id: 'hybrid',
-					label: 'Hybrid',
-					icon: '⚡',
-					description:
-						'Combines regex with external services for maximum coverage',
-				},
-			],
-		}
+		return freshState(INITIAL_STATE)
 	},
 
 	computed: {
@@ -1598,40 +1675,49 @@ export default {
 				const state = await this.settingsStore.getAnonymisationBackendState()
 				this.backendState = state
 				this.openAnonymiserError = null
-
-				// Resolve the invisible 'auto' (not-yet-configured) marker to the concrete
-				// recommended method so the dropdown shows a real choice; persisted on save.
-				const currentId = this.fileSettings.entityRecognitionMethod?.id
-				if (
-					state
-					&& (currentId === 'auto'
-						|| !this.entityRecognitionMethods.some(
-							(m) => m.id === currentId,
-						))
-				) {
-					const resolved = state.activeMethod || 'regex'
-					this.fileSettings.entityRecognitionMethod =
-						this.entityRecognitionMethods.find((m) => m.id === resolved)
-						|| this.entityRecognitionMethods[0]
-				}
-
-				// When the ExApp is not available, probe once to capture the precise reason
-				// (appapi_missing / exapp_not_installed / exapp_disabled) for the install hint.
-				if (
-					state
-					&& state.backends
-					&& state.backends.openanonymiser
-					&& state.backends.openanonymiser.available === false
-				) {
-					const probe =
-						await this.settingsStore.testAnonymisationBackend(
-							'openanonymiser',
-						)
-					this.openAnonymiserError = probe?.error || null
+				if (state) {
+					this.resolveRecognitionMethod(state)
+					await this.probeUnavailableOpenAnonymiser(state)
 				}
 			} catch (error) {
 				console.error('Failed to load anonymisation backend state:', error)
 			}
+		},
+
+		/**
+		 * Resolve the invisible 'auto' (not-yet-configured) marker, or a method
+		 * that is no longer offered, to the backend's active method so the
+		 * dropdown shows a real choice; persisted on save.
+		 *
+		 * @param {object} state The resolved backend state
+		 * @spec exclude UI plumbing — picks the recognition method shown in the dropdown.
+		 */
+		resolveRecognitionMethod(state) {
+			const currentId = this.fileSettings.entityRecognitionMethod?.id
+			const methods = this.entityRecognitionMethods
+			if (currentId !== 'auto' && methods.some((m) => m.id === currentId)) {
+				return
+			}
+			const resolved = state.activeMethod || 'regex'
+			this.fileSettings.entityRecognitionMethod =
+				methods.find((m) => m.id === resolved) || methods[0]
+		},
+
+		/**
+		 * When the ExApp is not available, probe once to capture the precise reason
+		 * (appapi_missing / exapp_not_installed / exapp_disabled) for the install hint.
+		 *
+		 * @param {object} state The resolved backend state
+		 * @spec exclude UI plumbing — store-delegated probe for the install hint.
+		 * @return {Promise<void>}
+		 */
+		async probeUnavailableOpenAnonymiser(state) {
+			if (state.backends?.openanonymiser?.available !== false) {
+				return
+			}
+			const probe =
+				await this.settingsStore.testAnonymisationBackend('openanonymiser')
+			this.openAnonymiserError = probe?.error || null
 		},
 
 		/**
@@ -1646,32 +1732,10 @@ export default {
 				this.testingBackendMethod = method
 				const probe =
 					await this.settingsStore.testAnonymisationBackend(method)
-
 				if (method === 'openanonymiser') {
 					this.openAnonymiserError = probe?.error || null
 				}
-
-				const reachable = Boolean(probe && probe.reachable)
-				// Persist a per-backend result so the row/button keep showing the outcome.
-				this.backendTestResults = {
-					...this.backendTestResults,
-					[method]: reachable ? 'success' : 'error',
-				}
-
-				if (reachable) {
-					this.showSaveMessage(
-						t('openregister', 'Connection successful'),
-						'success',
-					)
-				} else {
-					this.showSaveMessage(
-						t('openregister', 'Connection failed: {error}', {
-							error: probe?.error || 'unknown',
-						}),
-						'error',
-					)
-				}
-
+				this.reportProbe(method, probe)
 				// Refresh the resolved state so availability indicators reflect the probe.
 				const state = await this.settingsStore.getAnonymisationBackendState()
 				if (state) {
@@ -1679,16 +1743,52 @@ export default {
 				}
 			} catch (error) {
 				console.error('Failed to probe backend:', error)
-				this.backendTestResults = {
-					...this.backendTestResults,
-					[method]: 'error',
-				}
+				this.recordBackendTest(method, 'error')
 				this.showSaveMessage(
 					t('openregister', 'Connection test failed'),
 					'error',
 				)
 			} finally {
 				this.testingBackendMethod = ''
+			}
+		},
+
+		/**
+		 * Record and announce the outcome of a backend probe.
+		 *
+		 * @param {string} method The probed backend method
+		 * @param {object|null} probe The probe result
+		 * @spec exclude UI plumbing — formats a probe outcome message.
+		 */
+		reportProbe(method, probe) {
+			const reachable = Boolean(probe && probe.reachable)
+			this.recordBackendTest(method, reachable ? 'success' : 'error')
+			if (reachable) {
+				this.showSaveMessage(
+					t('openregister', 'Connection successful'),
+					'success',
+				)
+				return
+			}
+			this.showSaveMessage(
+				t('openregister', 'Connection failed: {error}', {
+					error: probe?.error || 'unknown',
+				}),
+				'error',
+			)
+		},
+
+		/**
+		 * Persist a per-backend result so the row/button keep showing the outcome.
+		 *
+		 * @param {string} method The backend method
+		 * @param {string} outcome 'success' or 'error'
+		 * @spec exclude UI plumbing — per-backend test outcome state.
+		 */
+		recordBackendTest(method, outcome) {
+			this.backendTestResults = {
+				...this.backendTestResults,
+				[method]: outcome,
 			}
 		},
 
@@ -1728,58 +1828,54 @@ export default {
 		 */
 		async saveSettings() {
 			try {
-				// The password is only sent when it was typed: a save without the
-				// key keeps the stored one, an empty string clears it.
-				const passwordField = this.openAnonymiserPasswordChanged
-					? { openAnonymiserPassword: this.openAnonymiserPassword }
-					: {}
-				const saved = await this.settingsStore.saveFileSettings({
-					...passwordField,
-					extractionScope:
-						this.fileSettings.extractionScope?.id || 'objects',
-					textExtractor: this.fileSettings.textExtractor?.id || 'llphant',
-					extractionMode:
-						this.fileSettings.extractionMode?.id || 'background',
-					includeInSearch: this.fileSettings.includeInSearch,
-					maxFileSize: this.fileSettings.maxFileSize,
-					chunkSize: this.fileSettings.chunkSize,
-					chunkOverlap: this.fileSettings.chunkOverlap,
-					chunkingStrategy: this.fileSettings.chunkingStrategy,
-					batchSize: this.fileSettings.batchSize,
-					dolphinApiEndpoint: this.fileSettings.dolphinApiEndpoint || '',
-					dolphinApiKey: this.fileSettings.dolphinApiKey || '',
-					entityRecognitionEnabled:
-						this.fileSettings.entityRecognitionEnabled,
-					entityRecognitionMethod:
-						this.fileSettings.entityRecognitionMethod?.id || 'regex',
-					presidioApiEndpoint: this.fileSettings.presidioApiEndpoint || '',
-					openAnonymiserApiEndpoint:
-						this.fileSettings.openAnonymiserApiEndpoint || '',
-					openAnonymiserSource:
-						this.fileSettings.openAnonymiserSource || 'internal',
-					openAnonymiserUsername:
-						this.fileSettings.openAnonymiserUsername || '',
-					enabledFileTypes: this.fileTypes
-						.filter((ft) => ft.enabled)
-						.map((ft) => ft.extension),
-				})
-
-				if (this.openAnonymiserPasswordChanged) {
-					this.openAnonymiserPassword = ''
-					this.openAnonymiserPasswordChanged = false
-				}
-				if (saved && typeof saved.openAnonymiserPasswordSet === 'boolean') {
-					this.fileSettings.openAnonymiserPasswordSet =
-						saved.openAnonymiserPasswordSet
-				}
-
+				const saved = await this.settingsStore.saveFileSettings(
+					this.fileSettingsPayload(),
+				)
+				this.applySavedSettings(saved)
 				// Refresh resolved backend state so the active/recommended indicators stay in sync.
 				await this.loadBackendState()
-
-				// Settings saved silently - no success message
 			} catch (error) {
 				console.error('Failed to save file settings:', error)
 				this.showSaveMessage('Failed to save settings', 'error')
+			}
+		},
+
+		/**
+		 * The file settings to save. The password is only sent when it was typed:
+		 * a save without the key keeps the stored one, an empty string clears it.
+		 *
+		 * @return {object} The settings
+		 * @spec exclude UI plumbing — builds the file settings payload.
+		 */
+		fileSettingsPayload() {
+			const passwordField = this.openAnonymiserPasswordChanged
+				? { openAnonymiserPassword: this.openAnonymiserPassword }
+				: {}
+			return {
+				...passwordField,
+				...extractionFields(this.fileSettings),
+				...recognitionFields(this.fileSettings),
+				...openAnonymiserFields(this.fileSettings),
+				enabledFileTypes: this.fileTypes
+					.filter((ft) => ft.enabled)
+					.map((ft) => ft.extension),
+			}
+		},
+
+		/**
+		 * Clear a sent password and take over whether the server now holds one.
+		 *
+		 * @param {object|null} saved The saved settings
+		 * @spec exclude UI plumbing — write-only credential field state after a save.
+		 */
+		applySavedSettings(saved) {
+			if (this.openAnonymiserPasswordChanged) {
+				this.openAnonymiserPassword = ''
+				this.openAnonymiserPasswordChanged = false
+			}
+			if (saved && typeof saved.openAnonymiserPasswordSet === 'boolean') {
+				this.fileSettings.openAnonymiserPasswordSet =
+					saved.openAnonymiserPasswordSet
 			}
 		},
 
@@ -1958,17 +2054,7 @@ export default {
 			try {
 				const stats = await this.settingsStore.getExtractionStats()
 				if (stats) {
-					this.extractionStats = {
-						totalFiles: stats.totalFiles || 0,
-						untrackedFiles: stats.untrackedFiles || 0,
-						pendingFiles: stats.pendingFiles || 0,
-						processedFiles: stats.processedFiles || 0,
-						failedFiles: stats.failedFiles || 0,
-						totalChunks: stats.totalChunks || 0,
-						totalObjects: stats.totalObjects || stats.total_objects || 0,
-						totalEntities:
-							stats.totalEntities || stats.total_entities || 0,
-					}
+					this.extractionStats = extractionStatsOf(stats)
 				}
 			} catch (error) {
 				console.error('Failed to load extraction stats:', error)
@@ -2095,7 +2181,10 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../styles/common.scss' as *;
+@use '../../../styles/views.scss' as *;
+
 /* SettingsSection handles all action button positioning and spacing */
 
 /* Fix for action menu icon wrapper to prevent layout shifts when showing loading icons */
@@ -2107,28 +2196,7 @@ export default {
 	height: 20px;
 }
 
-.section-description-full {
-	background: var(--color-background-hover);
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius-large);
-	padding: 20px;
-	margin-bottom: 20px;
-}
-
-.main-description {
-	color: var(--color-text-light);
-	font-size: 14px;
-	line-height: 1.6;
-	margin: 0 0 16px 0;
-}
-
-.main-description.info-note {
-	background: var(--color-background-dark);
-	border-left: 4px solid var(--color-primary-element);
-	padding: 12px 16px;
-	border-radius: var(--border-radius);
-	margin-top: 16px;
-}
+@include section-description-full-rules-2;
 
 .main-description.info-note strong {
 	color: var(--color-primary-element);
@@ -2312,11 +2380,7 @@ export default {
 	gap: 16px;
 }
 
-.field-group {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
+@include field-group;
 
 .field-hint {
 	font-size: 12px;
@@ -2324,28 +2388,9 @@ export default {
 	margin: 0;
 }
 
-.save-message {
-	padding: 12px 16px;
-	border-radius: var(--border-radius);
-	margin-top: 16px;
-	text-align: center;
-	font-weight: 500;
-}
+@include save-message-rules;
 
-.save-message.success {
-	background: var(--color-success);
-	color: white;
-}
-
-.save-message.error {
-	background: var(--color-error);
-	color: white;
-}
-
-.loading-icon {
-	margin: 40px auto;
-	display: block;
-}
+@include loading-icon;
 
 @media (max-width: 768px) {
 	.section-header-inline {

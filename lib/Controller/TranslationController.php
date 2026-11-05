@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\TranslationControllerServices;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -50,26 +51,52 @@ use OCP\IRequest;
  */
 class TranslationController extends Controller {
 	/**
+	 * The translation status service.
+	 *
+	 * @var TranslationStatusService
+	 */
+	private readonly TranslationStatusService $statusService;
+
+	/**
+	 * The translation mapper.
+	 *
+	 * @var TranslationMapper
+	 */
+	private readonly TranslationMapper $translationMapper;
+
+	/**
+	 * The schema mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * The bulk translation service.
+	 *
+	 * @var BulkTranslationService
+	 */
+	private readonly BulkTranslationService $bulkService;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The application name.
 	 * @param IRequest $request The current request.
-	 * @param TranslationStatusService $statusService The translation status service.
-	 * @param TranslationMapper $translationMapper The translation mapper.
-	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
-	 * @param BulkTranslationService $bulkService The bulk translation service.
+	 * @param TranslationControllerServices $services The translation controller services.
 	 * @param MagicMapperInterface $objectMapper The object mapper.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly TranslationStatusService $statusService,
-		private readonly TranslationMapper $translationMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly BulkTranslationService $bulkService,
+		TranslationControllerServices $services,
 		private readonly MagicMapperInterface $objectMapper,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->statusService = $services->statusService;
+		$this->translationMapper = $services->translationMapper;
+		$this->schemaMapper = $services->schemaMapper;
+		$this->bulkService = $services->bulkService;
 	}//end __construct()
 
 	/**

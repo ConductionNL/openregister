@@ -31,9 +31,11 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use OCA\OpenRegister\Service\EmailMessageRef;
 use OCA\OpenRegister\Service\EmailLinkService;
-use OCA\OpenRegister\Service\EmailService;
+use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use Throwable;
@@ -60,7 +62,7 @@ class EmailProvider extends AbstractIntegrationProvider {
 	 * and the Tier-2 {@see EmailLinkService} (idempotent upsert keyed
 	 * on the full composite tuple, plus cursor pagination).
 	 *
-	 * @param EmailService $emailService Legacy service (list + search).
+	 * @param EmailServiceInterface $emailService Legacy service (list + search).
 	 * @param EmailLinkService $emailLinkService Tier-2 link-table service.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IL10N $l10n Localisation.
@@ -68,7 +70,7 @@ class EmailProvider extends AbstractIntegrationProvider {
 	 * @return void
 	 */
 	public function __construct(
-		private EmailService $emailService,
+		private EmailServiceInterface $emailService,
 		private EmailLinkService $emailLinkService,
 		private IAppManager $appManager,
 		private IL10N $l10n,
@@ -221,12 +223,8 @@ class EmailProvider extends AbstractIntegrationProvider {
 		$messageUid = (string)($payload['messageUid'] ?? $payload['mailMessageUid'] ?? '');
 
 		$link = $this->emailLinkService->linkEmail(
-			objectUuid: $objectId,
-			registerId: $registerId,
-			schemaId: $schemaId,
-			mailAccountId: $mailAccountId,
-			messageId: $messageId,
-			messageUid: $messageUid
+			target: (new LinkTarget(objectUuid: $objectId, registerId: $registerId))->inSchema(schemaId: $schemaId),
+			message: (new EmailMessageRef(mailAccountId: $mailAccountId, messageId: $messageId))->withUid(uid: $messageUid)
 		);
 
 		return $link->jsonSerialize();
@@ -257,22 +255,6 @@ class EmailProvider extends AbstractIntegrationProvider {
 	 *              the health/OCS contract is owned by pluggable-integration-registry task-2.
 	 */
 	public function health(): array {
-		$available = $this->emailLinkService->isMailAvailable();
-
-		$status = 'unavailable';
-		if ($available === true) {
-			$status = 'ok';
-		}
-
-		$message = 'NC Mail app is not installed';
-		if ($available === true) {
-			$message = null;
-		}
-
-		return [
-			'status' => $status,
-			'authStatus' => 'configured',
-			'message' => $message,
-		];
+		return $this->installedHealth(available: $this->emailLinkService->isMailAvailable(), missing: 'NC Mail app is not installed');
 	}//end health()
 }//end class

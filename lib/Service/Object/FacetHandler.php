@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -69,6 +70,63 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class FacetHandler {
+	use MagicColumnNameTrait;
+
+	/**
+	 * The metadata fields a facet can be built on, with their index field and type.
+	 *
+	 * @var array<string, array{title: string, description: string, data_type: string, index_field: string, index_type: string, enabled: bool}>
+	 */
+	private const METADATA_DEFINITIONS = [
+		'register' => [
+			'title' => 'Register',
+			'description' => 'metadata field: Register',
+			'data_type' => 'integer',
+			'index_field' => 'self_register',
+			'index_type' => 'pint',
+			'enabled' => false,
+		],
+		'schema' => [
+			'title' => 'Type',
+			'description' => 'metadata field: Schema',
+			'data_type' => 'integer',
+			'index_field' => 'self_schema',
+			'index_type' => 'pint',
+			'enabled' => true,
+		],
+		'organisation' => [
+			'title' => 'Leverancier',
+			'description' => 'metadata field: Organisation',
+			'data_type' => 'string',
+			'index_field' => 'self_organisation',
+			'index_type' => 'string',
+			'enabled' => true,
+		],
+		'owner' => [
+			'title' => 'Owner',
+			'description' => 'metadata field: Owner',
+			'data_type' => 'string',
+			'index_field' => 'self_owner',
+			'index_type' => 'string',
+			'enabled' => true,
+		],
+		'created' => [
+			'title' => 'Created',
+			'description' => 'metadata field: Created',
+			'data_type' => 'datetime',
+			'index_field' => 'self_created',
+			'index_type' => 'pdate',
+			'enabled' => false,
+		],
+		'updated' => [
+			'title' => 'Updated',
+			'description' => 'metadata field: Updated',
+			'data_type' => 'datetime',
+			'index_field' => 'self_updated',
+			'index_type' => 'pdate',
+			'enabled' => false,
+		],
+	];
 	/**
 	 * Constructor for FacetHandler.
 	 *
@@ -240,59 +298,6 @@ class FacetHandler {
 
 		return $facetableFields;
 	}//end getFacetableFields()
-
-	/**
-	 * Get metadata facetable fields.
-	 *
-	 * @return string[]
-	 *
-	 * @psalm-return   list{'register', 'schema', 'owner', 'organisation', 'created', 'updated'}
-	 * @phpstan-return array<int, string>
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
-	 * @spec openspec/specs/faceting-configuration/spec.md
-	 */
-	public function getMetadataFacetableFields(): array {
-		return [
-			'register',
-			'schema',
-			'owner',
-			'organisation',
-			'created',
-			'updated',
-		];
-	}//end getMetadataFacetableFields()
-
-	/**
-	 * Calculate facet count for performance metrics.
-	 *
-	 * @param bool $hasFacets Whether facets were requested.
-	 * @param array $query The query array.
-	 *
-	 * @psalm-param bool $hasFacets
-	 * @psalm-param array<string, mixed> $query
-	 *
-	 * @phpstan-param bool $hasFacets
-	 * @phpstan-param array<string, mixed> $query
-	 *
-	 * @return int The facet count.
-	 * @psalm-return   int<0, max>
-	 * @phpstan-return int
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-performance-optimization-via-hyperfacethandler
-	 */
-	public function getFacetCount(bool $hasFacets, array $query): int {
-		if ($hasFacets === false) {
-			return 0;
-		}
-
-		$facets = $query['_facets'] ?? [];
-		if (is_array($facets) === true) {
-			return count($facets);
-		}
-
-		return 0;
-	}//end getFacetCount()
 
 	/**
 	 * Calculate Facets with Intelligent Fallback Strategy.
@@ -587,67 +592,6 @@ class FacetHandler {
 	}//end transformFacetsToStandardFormat()
 
 	/**
-	 * Get the metadata facet definitions for @self fields.
-	 *
-	 * @return array Keyed by field name, each value contains title,
-	 *               description, data_type, index_field, index_type, enabled.
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-type-auto-detection-from-property-definitions
-	 */
-	private function getMetadataDefinitions(): array {
-		return [
-			'register' => [
-				'title' => 'Register',
-				'description' => 'metadata field: Register',
-				'data_type' => 'integer',
-				'index_field' => 'self_register',
-				'index_type' => 'pint',
-				'enabled' => false,
-			],
-			'schema' => [
-				'title' => 'Type',
-				'description' => 'metadata field: Schema',
-				'data_type' => 'integer',
-				'index_field' => 'self_schema',
-				'index_type' => 'pint',
-				'enabled' => true,
-			],
-			'organisation' => [
-				'title' => 'Leverancier',
-				'description' => 'metadata field: Organisation',
-				'data_type' => 'string',
-				'index_field' => 'self_organisation',
-				'index_type' => 'string',
-				'enabled' => true,
-			],
-			'owner' => [
-				'title' => 'Owner',
-				'description' => 'metadata field: Owner',
-				'data_type' => 'string',
-				'index_field' => 'self_owner',
-				'index_type' => 'string',
-				'enabled' => true,
-			],
-			'created' => [
-				'title' => 'Created',
-				'description' => 'metadata field: Created',
-				'data_type' => 'datetime',
-				'index_field' => 'self_created',
-				'index_type' => 'pdate',
-				'enabled' => false,
-			],
-			'updated' => [
-				'title' => 'Updated',
-				'description' => 'metadata field: Updated',
-				'data_type' => 'datetime',
-				'index_field' => 'self_updated',
-				'index_type' => 'pdate',
-				'enabled' => false,
-			],
-		];
-	}//end getMetadataDefinitions()
-
-	/**
 	 * Transform @self metadata facets into the standard format.
 	 *
 	 * @param array $metadataFacets The @self facet data keyed by field name.
@@ -660,7 +604,7 @@ class FacetHandler {
 	 */
 	private function transformMetadataFacets(array $metadataFacets, array &$transformed, int $startOrder): int {
 		$order = $startOrder;
-		$metadataDefinitions = $this->getMetadataDefinitions();
+		$metadataDefinitions = self::METADATA_DEFINITIONS;
 
 		foreach ($metadataFacets as $field => $facetData) {
 			$order++;
@@ -738,7 +682,7 @@ class FacetHandler {
 			'title' => $title,
 			'description' => $description,
 			'data_type' => $this->inferDataType(facetData: $facetData),
-			'index_field' => $this->sanitizeFieldName(field: $afterFieldName),
+			'index_field' => $this->sanitizeColumnName(name: $afterFieldName),
 			'index_type' => 'string',
 			'enabled' => true,
 		];
@@ -810,7 +754,7 @@ class FacetHandler {
 			'title' => $title,
 			'description' => $description,
 			'data_type' => $this->inferDataType(facetData: $facetData),
-			'index_field' => $this->sanitizeFieldName(field: $field),
+			'index_field' => $this->sanitizeColumnName(name: $field),
 			'index_type' => 'string',
 			'enabled' => true,
 		];
@@ -906,23 +850,6 @@ class FacetHandler {
 		$spaced = preg_replace('/([a-z])([A-Z])/', '$1 $2', $field);
 		return ucfirst($spaced);
 	}//end formatFieldTitle()
-
-	/**
-	 * Sanitize a field name for use as an index field.
-	 *
-	 * @param string $field The field name.
-	 *
-	 * @return string The sanitized field name.
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md
-	 */
-	private function sanitizeFieldName(string $field): string {
-		// Convert camelCase to snake_case.
-		$name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $field);
-		$name = strtolower($name);
-		// Remove any non-alphanumeric characters except underscore.
-		return preg_replace('/[^a-z0-9_]/', '_', $name);
-	}//end sanitizeFieldName()
 
 	/**
 	 * Infer the data type from facet data.

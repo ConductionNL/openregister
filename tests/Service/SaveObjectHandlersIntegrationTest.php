@@ -3,7 +3,7 @@
 /**
  * Integration tests for SaveObject/SaveObjects handlers and related services
  *
- * Tests RelationCascadeHandler, TransformationHandler, DeleteObject,
+ * Tests RelationCascadeHandler, DeleteObject,
  * CascadingHandler, BulkOperationsHandler, PerformanceHandler,
  * and SaveObjects with real database operations.
  *
@@ -31,7 +31,6 @@ use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
 use OCA\OpenRegister\Service\Object\SaveObjects;
-use OCA\OpenRegister\Service\Object\SaveObjects\TransformationHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
@@ -39,7 +38,7 @@ use Symfony\Component\Uid\Uuid;
 /**
  * Integration tests for SaveObject/SaveObjects handler classes
  *
- * Tests real code paths in RelationCascadeHandler, TransformationHandler,
+ * Tests real code paths in RelationCascadeHandler,
  * DeleteObject, CascadingHandler, BulkOperationsHandler,
  * PerformanceHandler, and SaveObjects.
  *
@@ -47,7 +46,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class SaveObjectHandlersIntegrationTest extends TestCase {
 	private RelationCascadeHandler $relationCascadeHandler;
-	private TransformationHandler $transformationHandler;
 	private DeleteObject $deleteObject;
 	private CascadingHandler $cascadingHandler;
 	private PerformanceHandler $performanceHandler;
@@ -71,7 +69,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->relationCascadeHandler = \OC::$server->get(RelationCascadeHandler::class);
-		$this->transformationHandler = \OC::$server->get(TransformationHandler::class);
 		$this->deleteObject = \OC::$server->get(DeleteObject::class);
 		$this->cascadingHandler = \OC::$server->get(CascadingHandler::class);
 		$this->performanceHandler = \OC::$server->get(PerformanceHandler::class);
@@ -755,282 +752,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	}
 
 	// ========================================================================
-	// TransformationHandler tests
-	// ========================================================================
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace with valid objects.
-	 */
-	public function testTransformObjectsValidObjects(): void {
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'title' => 'Transform test 1',
-				'register' => $this->testRegister->getId(),
-				'schema' => $this->testSchema->getId(),
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertArrayHasKey('valid', $result);
-		$this->assertArrayHasKey('invalid', $result);
-		$this->assertCount(1, $result['valid']);
-		$this->assertEmpty($result['invalid']);
-
-		$transformed = $result['valid'][0];
-		$this->assertArrayHasKey('uuid', $transformed);
-		$this->assertNotEmpty($transformed['uuid']);
-		$this->assertArrayHasKey('object', $transformed);
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace generates UUID when no ID.
-	 */
-	public function testTransformObjectsGeneratesUuid(): void {
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'title' => 'No ID test',
-				'register' => $this->testRegister->getId(),
-				'schema' => $this->testSchema->getId(),
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertCount(1, $result['valid']);
-		$uuid = $result['valid'][0]['uuid'];
-		$this->assertTrue(Uuid::isValid($uuid));
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace preserves provided ID.
-	 */
-	public function testTransformObjectsPreservesProvidedId(): void {
-		$providedId = 'custom-id-' . uniqid();
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'id' => $providedId,
-				'title' => 'Custom ID test',
-				'register' => $this->testRegister->getId(),
-				'schema' => $this->testSchema->getId(),
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertCount(1, $result['valid']);
-		$this->assertEquals($providedId, $result['valid'][0]['uuid']);
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace with missing register.
-	 */
-	public function testTransformObjectsMissingRegister(): void {
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'title' => 'No register',
-				'schema' => $this->testSchema->getId(),
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertNotEmpty($result['invalid']);
-		$this->assertEquals('MissingRegisterException', $result['invalid'][0]['type']);
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace with missing schema.
-	 */
-	public function testTransformObjectsMissingSchema(): void {
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'title' => 'No schema',
-				'register' => $this->testRegister->getId(),
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertNotEmpty($result['invalid']);
-		$this->assertEquals('MissingSchemaException', $result['invalid'][0]['type']);
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace with invalid schema ID.
-	 */
-	public function testTransformObjectsInvalidSchemaId(): void {
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'title' => 'Bad schema',
-				'register' => $this->testRegister->getId(),
-				'schema' => 99999,
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertNotEmpty($result['invalid']);
-		$this->assertEquals('InvalidSchemaException', $result['invalid'][0]['type']);
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace with @self structure.
-	 */
-	public function testTransformObjectsWithSelfStructure(): void {
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'@self' => [
-					'register' => $this->testRegister->getId(),
-					'schema' => $this->testSchema->getId(),
-				],
-				'object' => ['title' => 'Self structure test'],
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertCount(1, $result['valid']);
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace with register/schema as objects
-	 * within the @self structure, so the object extraction handles them.
-	 */
-	public function testTransformObjectsWithObjectRegisterSchema(): void {
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'@self' => [
-					'register' => $this->testRegister->getId(),
-					'schema' => $this->testSchema->getId(),
-				],
-				'register' => $this->testRegister,
-				'schema' => $this->testSchema,
-				'object' => ['title' => 'Object refs test'],
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertCount(1, $result['valid']);
-		$this->assertEquals(
-			$this->testRegister->getId(),
-			$result['valid'][0]['register']
-		);
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace scans for relations.
-	 */
-	public function testTransformObjectsScansRelations(): void {
-		$uuid = Uuid::v4()->toRfc4122();
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'title' => 'Relations test',
-				'relatedItem' => $uuid,
-				'register' => $this->testRegister->getId(),
-				'schema' => $this->testSchema->getId(),
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertCount(1, $result['valid']);
-		$this->assertArrayHasKey('relations', $result['valid'][0]);
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace with multiple objects mixed valid/invalid.
-	 */
-	public function testTransformObjectsMixedValidInvalid(): void {
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'title' => 'Valid 1',
-				'register' => $this->testRegister->getId(),
-				'schema' => $this->testSchema->getId(),
-			],
-			[
-				'title' => 'Invalid - no register',
-				'schema' => $this->testSchema->getId(),
-			],
-			[
-				'title' => 'Valid 2',
-				'register' => $this->testRegister->getId(),
-				'schema' => $this->testSchema->getId(),
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertCount(2, $result['valid']);
-		$this->assertCount(1, $result['invalid']);
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace with pre-set relations.
-	 */
-	public function testTransformObjectsWithPresetRelations(): void {
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'title' => 'Preset relations',
-				'register' => $this->testRegister->getId(),
-				'schema' => $this->testSchema->getId(),
-				'relations' => ['relatedItem'],
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertCount(1, $result['valid']);
-		// Pre-set relations should be preserved.
-		$this->assertEquals(['relatedItem'], $result['valid'][0]['relations']);
-	}
-
-	// ========================================================================
 	// PerformanceHandler tests
 	// ========================================================================
 
@@ -1170,140 +891,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		$input = ['field1', 'field2'];
 		$result = $this->performanceHandler->optimizeExtendQueries($input);
 		$this->assertEquals($input, $result);
-	}
-
-	/**
-	 * Test extractRelatedData with empty results.
-	 */
-	public function testExtractRelatedDataEmpty(): void {
-		$result = $this->performanceHandler->extractRelatedData([], true, false);
-		$this->assertEmpty($result);
-	}
-
-	/**
-	 * Test extractRelatedData with objects containing UUID fields.
-	 */
-	public function testExtractRelatedDataWithUuids(): void {
-		$uuid1 = Uuid::v4()->toRfc4122();
-		$uuid2 = Uuid::v4()->toRfc4122();
-
-		$obj1 = $this->createTestObject([
-			'title' => 'Related data test',
-			'relatedItem' => $uuid1,
-		]);
-		$obj2 = $this->createTestObject([
-			'title' => 'Related data test 2',
-			'relatedItems' => [$uuid2],
-		]);
-
-		$result = $this->performanceHandler->extractRelatedData(
-			[$obj1, $obj2],
-			true,
-			false
-		);
-		$this->assertArrayHasKey('related', $result);
-		$related = $result['related'];
-		$this->assertContains($uuid1, $related);
-		$this->assertContains($uuid2, $related);
-	}
-
-	/**
-	 * Test extractRelatedData with includeRelated false.
-	 */
-	public function testExtractRelatedDataNoInclude(): void {
-		$obj = $this->createTestObject([
-			'title' => 'No include test',
-			'relatedItem' => Uuid::v4()->toRfc4122(),
-		]);
-
-		$result = $this->performanceHandler->extractRelatedData([$obj], false, false);
-		$this->assertArrayNotHasKey('related', $result);
-	}
-
-	/**
-	 * Test extractRelatedData skips non-ObjectEntity items.
-	 */
-	public function testExtractRelatedDataSkipsNonEntities(): void {
-		$result = $this->performanceHandler->extractRelatedData(
-			['not-an-entity', 42, null],
-			true,
-			false
-		);
-		// Should be empty since no ObjectEntity items.
-		$this->assertEmpty($result['related'] ?? []);
-	}
-
-	/**
-	 * Test getFacetCount with facets.
-	 */
-	public function testGetFacetCountWithFacets(): void {
-		$result = $this->performanceHandler->getFacetCount(true, [
-			'_facets' => ['cat', 'tag', 'status'],
-		]);
-		$this->assertEquals(3, $result);
-	}
-
-	/**
-	 * Test getFacetCount without facets.
-	 */
-	public function testGetFacetCountNoFacets(): void {
-		$result = $this->performanceHandler->getFacetCount(false, []);
-		$this->assertEquals(0, $result);
-	}
-
-	/**
-	 * Test getFacetCount with string facets.
-	 */
-	public function testGetFacetCountStringFacets(): void {
-		$result = $this->performanceHandler->getFacetCount(true, [
-			'_facets' => 'extend',
-		]);
-		$this->assertEquals(1, $result);
-	}
-
-	/**
-	 * Test calculateTotalPages.
-	 */
-	public function testCalculateTotalPages(): void {
-		$this->assertEquals(5, $this->performanceHandler->calculateTotalPages(100, 20));
-		$this->assertEquals(1, $this->performanceHandler->calculateTotalPages(0, 20));
-		$this->assertEquals(3, $this->performanceHandler->calculateTotalPages(50, 20));
-		$this->assertEquals(1, $this->performanceHandler->calculateTotalPages(1, 20));
-	}
-
-	/**
-	 * Test calculateExtendCount with array.
-	 */
-	public function testCalculateExtendCountArray(): void {
-		$this->assertEquals(3, $this->performanceHandler->calculateExtendCount(['a', 'b', 'c']));
-	}
-
-	/**
-	 * Test calculateExtendCount with string.
-	 */
-	public function testCalculateExtendCountString(): void {
-		$this->assertEquals(3, $this->performanceHandler->calculateExtendCount('a, b, c'));
-	}
-
-	/**
-	 * Test calculateExtendCount with empty string.
-	 */
-	public function testCalculateExtendCountEmptyString(): void {
-		$this->assertEquals(0, $this->performanceHandler->calculateExtendCount(''));
-	}
-
-	/**
-	 * Test calculateExtendCount with null.
-	 */
-	public function testCalculateExtendCountNull(): void {
-		$this->assertEquals(0, $this->performanceHandler->calculateExtendCount(null));
-	}
-
-	/**
-	 * Test calculateExtendCount with integer.
-	 */
-	public function testCalculateExtendCountInteger(): void {
-		$this->assertEquals(0, $this->performanceHandler->calculateExtendCount(42));
 	}
 
 	/**

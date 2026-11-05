@@ -8,7 +8,7 @@ use OCA\OpenRegister\BackgroundJob\AnnotationNotificationDispatchJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IUser;

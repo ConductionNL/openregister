@@ -26,7 +26,7 @@ namespace Unit\Service\Timeline;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Service\Timeline\LanguageDetector;
+use OCA\OpenRegister\Notifications\Service\Timeline\LanguageDetector;
 use PHPUnit\Framework\TestCase;
 
 /**

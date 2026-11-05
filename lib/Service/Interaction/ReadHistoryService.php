@@ -197,6 +197,48 @@ class ReadHistoryService {
 	}//end registerProcessingRead()
 
 	/**
+	 * Register a list or search read on the AVG processing log.
+	 *
+	 * One collapsed entry per register and schema in the result, through
+	 * ProcessingLogService::logReadList, which applies the same `logReads`
+	 * opt-in as a single read. Fail-soft, like registerProcessingRead().
+	 *
+	 * @param array<int|string, mixed> $objects The listed objects; entries that are not ObjectEntity are skipped.
+	 * @param string                   $action  `read` or `export`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/avg-verwerkingsregister/spec.md#requirement-reads-of-personal-data-are-registered-through-the-one-read-registration
+	 */
+	public function registerProcessingReadList(array $objects, string $action = self::READ_ACTION): void {
+		$groups = [];
+		foreach ($objects as $object) {
+			if ($object instanceof ObjectEntity) {
+				$groups[$object->getRegister() . '|' . $object->getSchema()][] = $object;
+			}
+		}
+
+		if ($groups === []) {
+			return;
+		}
+
+		try {
+			$service = $this->container->get(ProcessingLogService::class);
+			foreach ($groups as $group) {
+				$service->logReadList(objects: $group, action: $action);
+			}
+
+			$service->flush();
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				message: '[AVG] processing-log list read hook skipped',
+				context: ['exception' => $e->getMessage()]
+			);
+		}
+
+	}//end registerProcessingReadList()
+
+	/**
 	 * Resolve the `_recent` lens for one caller.
 	 *
 	 * Answers whether the lens can answer at all, why not when it cannot, and

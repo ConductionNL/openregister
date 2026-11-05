@@ -226,6 +226,38 @@ class ReferentialIntegrityService {
 		?string $triggerSchemaSlug = null,
 	): array {
 		// 1. Apply SET_NULL targets first (objects survive with cleared reference).
+		$origin = new CascadeDeleteOrigin(
+			userId: $userId,
+			cascadeSource: $cascadeSource,
+			triggerSchemaSlug: $triggerSchemaSlug,
+			organisationId: $organisationId
+		);
+		$this->applySetNullTargets(analysis: $analysis, origin: $origin);
+		$this->applySetDefaultTargets(analysis: $analysis, origin: $origin);
+
+		// A retained (archival) target stays live even when its parent goes: it is kept out of the
+		// soft-delete batch and named in the return value, and the parent delete still proceeds.
+		[$cascadeTargets, $retained] = $this->partitionRetainedTargets(
+			cascadeTargets: array_reverse($analysis->cascadeTargets)
+		);
+		if (empty($cascadeTargets) === false) {
+			$this->applyBatchCascadeDelete(cascadeTargets: $cascadeTargets, origin: $origin);
+		}
+
+		return ['retained' => $retained];
+	}//end applyDeletionActions()
+
+	/**
+	 * Clear the reference in every SET_NULL target and audit each one.
+	 *
+	 * @param DeletionAnalysis    $analysis The deletion analysis.
+	 * @param CascadeDeleteOrigin $origin   The deleting user and the root object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function applySetNullTargets(DeletionAnalysis $analysis, CascadeDeleteOrigin $origin): void {
 		foreach ($analysis->nullifyTargets as $target) {
 			$updated = $this->applySetNull(target: $target);
 			$this->logIntegrityAction(
@@ -237,15 +269,26 @@ class ReferentialIntegrityService {
 					'property' => $target['property'],
 					'previousValue' => $target['sourceUuid'] ?? null,
 					'newValue' => null,
-					'triggerObject' => $cascadeSource,
-					'triggerSchema' => $triggerSchemaSlug,
+					'triggerObject' => $origin->cascadeSource,
+					'triggerSchema' => $origin->triggerSchemaSlug,
 				],
-				userId: $userId,
+				userId: $origin->userId,
 				object: $updated
 			);
 		}
+	}//end applySetNullTargets()
 
-		// 2. Apply SET_DEFAULT targets (objects survive with default reference).
+	/**
+	 * Set every SET_DEFAULT target's reference to its default and audit each one.
+	 *
+	 * @param DeletionAnalysis    $analysis The deletion analysis.
+	 * @param CascadeDeleteOrigin $origin   The deleting user and the root object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function applySetDefaultTargets(DeletionAnalysis $analysis, CascadeDeleteOrigin $origin): void {
 		foreach ($analysis->defaultTargets as $target) {
 			$updated = $this->applySetDefault(target: $target);
 			$this->logIntegrityAction(
@@ -255,38 +298,15 @@ class ReferentialIntegrityService {
 				registerId: null,
 				changed: [
 					'property' => $target['property'],
-					'previousValue' => $cascadeSource,
+					'previousValue' => $origin->cascadeSource,
 					'defaultValue' => $target['defaultValue'] ?? null,
-					'triggerObject' => $cascadeSource,
-					'triggerSchema' => $triggerSchemaSlug,
+					'triggerObject' => $origin->cascadeSource,
+					'triggerSchema' => $origin->triggerSchemaSlug,
 				],
-				userId: $userId,
+				userId: $origin->userId,
 				object: $updated
 			);
 		}
-
-		// 3. Apply CASCADE targets in batch (deepest first = reverse order).
-		$cascadeTargets = array_reverse($analysis->cascadeTargets);
-
-		// A RETAINED RECORD STAYS LIVE EVEN WHEN ITS PARENT GOES. The batch below
-		// soft-deletes with `hardDelete: false`, so an archival child of a
-		// non-archival parent used to be tombstoned by a delete aimed at somebody
-		// else. It is kept out of the batch now and named in the return value,
-		// and the parent delete still proceeds: a retained child refuses the
-		// cascade, it does not block the delete that reached it.
-		[$cascadeTargets, $retained] = $this->partitionRetainedTargets(cascadeTargets: $cascadeTargets);
-
-		if (empty($cascadeTargets) === false) {
-			$this->applyBatchCascadeDelete(
-				cascadeTargets: $cascadeTargets,
-				userId: $userId,
-				cascadeSource: $cascadeSource,
-				triggerSchemaSlug: $triggerSchemaSlug,
-				organisationId: $organisationId
-			);
-		}
-
-		return ['retained' => $retained];
 	}//end applyDeletionActions()
 
 	/**
@@ -410,19 +430,6 @@ class ReferentialIntegrityService {
 		$this->ensureRelationIndex();
 		return isset($this->relationIndex[$schemaId]);
 	}//end hasIncomingOnDeleteReferences()
-
-	/**
-	 * Validate an onDelete value on a schema property.
-	 *
-	 * @param string $value The onDelete value to validate.
-	 *
-	 * @return bool True if the value is valid.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public static function isValidOnDeleteAction(string $value): bool {
-		return in_array(strtoupper($value), self::VALID_ON_DELETE_ACTIONS, true);
-	}//end isValidOnDeleteAction()
 
 	/**
 	 * Build the relation index from all schemas if not already cached.
@@ -1622,55 +1629,81 @@ class ReferentialIntegrityService {
 	 */
 	private function applySetNull(array $target): ?ObjectEntity {
 		try {
-			$context = $this->objectEntityMapper->findAcrossAllSources(
-				identifier: $target['objectUuid'],
-				includeDeleted: false,
-				_rbac: false,
-				_multitenancy: false
+			return $this->rewriteDependent(
+				target: $target,
+				rewrite: static fn (array $data): array => self::withoutReference(data: $data, target: $target)
 			);
-			$object = $context['object'];
-			$registerEntity = $context['register'];
-			$schemaEntity = $context['schema'];
-
-			$objectData = $object->getObject();
-			$isArray = $target['isArray'] ?? false;
-
-			// Default: set scalar reference to null.
-			$objectData[$target['property']] = null;
-
-			// Override: for array properties, filter out the specific UUID instead.
-			$currentValue = $object->getObject()[$target['property']] ?? null;
-			if ($isArray === true && is_array($currentValue) === true) {
-				$objectData[$target['property']] = array_values(
-					array_filter(
-						$currentValue,
-						function ($val) use ($target) {
-							return $val !== $target['sourceUuid'];
-						}
-					)
-				);
-			}
-
-			$object->setObject($objectData);
-			$this->objectEntityMapper->update(
-				entity: $object,
-				register: $registerEntity,
-				schema: $schemaEntity
-			);
-
-			return $object;
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[ReferentialIntegrity] Failed to apply SET_NULL',
-				context: [
-					'objectUuid' => $target['objectUuid'],
-					'property' => $target['property'],
-					'error' => $e->getMessage(),
-				]
+				context: self::rewriteFailureContext(target: $target, error: $e)
 			);
-		}//end try
+		}
 
 		return null;
+	}//end applySetNull()
+
+	/**
+	 * The dependent's data with the reference cleared: the source uuid taken out of an array
+	 * property, null for a single one.
+	 *
+	 * @param array $data   The dependent object's data.
+	 * @param array $target The nullify target.
+	 *
+	 * @return array The rewritten data.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private static function withoutReference(array $data, array $target): array {
+		$current = ($data[$target['property']] ?? null);
+		$data[$target['property']] = null;
+		if (($target['isArray'] ?? false) === true && is_array($current) === true) {
+			$data[$target['property']] = array_values(
+				array_filter($current, static fn ($val): bool => $val !== $target['sourceUuid'])
+			);
+		}
+
+		return $data;
+	}//end withoutReference()
+
+	/**
+	 * Load a dependent object system-wide, rewrite its data and store it.
+	 *
+	 * @param array    $target  The target naming the dependent by `objectUuid`.
+	 * @param \Closure $rewrite Maps the object's data to its new data.
+	 *
+	 * @return ObjectEntity The updated object.
+	 *
+	 * @throws \Exception When the object cannot be found or stored.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function rewriteDependent(array $target, \Closure $rewrite): ObjectEntity {
+		$context = $this->objectEntityMapper->findAcrossAllSources(
+			identifier: $target['objectUuid'],
+			includeDeleted: false,
+			_rbac: false,
+			_multitenancy: false
+		);
+		$object  = $context['object'];
+		$object->setObject($rewrite($object->getObject()));
+		$this->objectEntityMapper->update(entity: $object, register: $context['register'], schema: $context['schema']);
+
+		return $object;
+	}//end rewriteDependent()
+
+	/**
+	 * The log context of a dependent that could not be rewritten.
+	 *
+	 * @param array      $target The target.
+	 * @param \Exception $error  What went wrong.
+	 *
+	 * @return array The log context.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private static function rewriteFailureContext(array $target, \Exception $error): array {
+		return ['objectUuid' => $target['objectUuid'], 'property' => $target['property'], 'error' => $error->getMessage()];
 	}//end applySetNull()
 
 	/**
@@ -1684,37 +1717,16 @@ class ReferentialIntegrityService {
 	 */
 	private function applySetDefault(array $target): ?ObjectEntity {
 		try {
-			$context = $this->objectEntityMapper->findAcrossAllSources(
-				identifier: $target['objectUuid'],
-				includeDeleted: false,
-				_rbac: false,
-				_multitenancy: false
+			return $this->rewriteDependent(
+				target: $target,
+				rewrite: static fn (array $data): array => array_replace($data, [$target['property'] => $target['defaultValue']])
 			);
-			$object = $context['object'];
-			$registerEntity = $context['register'];
-			$schemaEntity = $context['schema'];
-
-			$objectData = $object->getObject();
-			$objectData[$target['property']] = $target['defaultValue'];
-			$object->setObject($objectData);
-
-			$this->objectEntityMapper->update(
-				entity: $object,
-				register: $registerEntity,
-				schema: $schemaEntity
-			);
-
-			return $object;
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[ReferentialIntegrity] Failed to apply SET_DEFAULT',
-				context: [
-					'objectUuid' => $target['objectUuid'],
-					'property' => $target['property'],
-					'error' => $e->getMessage(),
-				]
+				context: self::rewriteFailureContext(target: $target, error: $e)
 			);
-		}//end try
+		}
 
 		return null;
 	}//end applySetDefault()
@@ -1737,81 +1749,52 @@ class ReferentialIntegrityService {
 	 * when the batched resolve or write fails — fall back to the unchanged
 	 * per-object pipeline ({@see applyPerObjectCascadeDelete()}), fail-soft.
 	 *
-	 * @param array $cascadeTargets The cascade targets from DeletionAnalysis (already reversed).
-	 * @param string $userId The user performing the deletion.
-	 * @param string $cascadeSource The UUID of the root object triggering the cascade.
-	 * @param string|null $triggerSchemaSlug Schema slug of the trigger object for logging.
-	 * @param string|null $organisationId The active organisation ID for deletion attribution.
+	 * @param array               $cascadeTargets The cascade targets from DeletionAnalysis (already reversed).
+	 * @param CascadeDeleteOrigin $origin         The deleting user, the root object and the organisation.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function applyBatchCascadeDelete(
-		array $cascadeTargets,
-		string $userId,
-		string $cascadeSource,
-		?string $triggerSchemaSlug,
-		?string $organisationId = null,
-	): void {
-		$uuids = [];
-		foreach ($cascadeTargets as $target) {
-			$uuids[] = (string)$target['objectUuid'];
+	private function applyBatchCascadeDelete(array $cascadeTargets, CascadeDeleteOrigin $origin): void {
+		[$handled, $deleted] = $this->batchCascadeSoftDelete(
+			targets: $this->resolveCascadeTargets(cascadeTargets: $cascadeTargets),
+			origin: $origin
+		);
+		$this->writeBatchCascadeAuditTrails(cascadeTargets: $cascadeTargets, deleted: $deleted, origin: $origin);
+
+		$fallbackTargets = array_values(
+			array_filter($cascadeTargets, static fn (array $target): bool => isset($handled[$target['objectUuid']]) === false)
+		);
+		if (empty($fallbackTargets) === false) {
+			$this->applyPerObjectCascadeDelete(cascadeTargets: $fallbackTargets, origin: $origin);
 		}
+	}//end applyBatchCascadeDelete()
 
-		$uuids = array_values(array_unique($uuids));
-
-		// 1. Resolve every cascade target in ONE batched cross-table lookup.
-		// Only live rows are wanted: already soft-deleted targets stay on the
-		// per-object fallback, which no-ops their write (prior behaviour).
-		$resolved = [];
+	/**
+	 * The live cascade targets, found in one batched cross-table lookup; none when it fails.
+	 *
+	 * Already soft-deleted targets are not wanted: they stay on the per-object fallback, which
+	 * no-ops their write.
+	 *
+	 * @param array $cascadeTargets The cascade targets.
+	 *
+	 * @return ObjectEntity[] The resolved targets.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function resolveCascadeTargets(array $cascadeTargets): array {
+		$uuids = array_values(array_unique(array_map(static fn (array $target): string => (string) $target['objectUuid'], $cascadeTargets)));
 		try {
-			$resolved = $this->objectEntityMapper->findMultipleAcrossAllMagicTables(
-				uuids: $uuids,
-				includeDeleted: false
-			);
+			return $this->objectEntityMapper->findMultipleAcrossAllMagicTables(uuids: $uuids, includeDeleted: false);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[ReferentialIntegrity] Batched cascade lookup failed; falling back to per-object deletes',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
 		}
 
-		// 2. One soft-delete UPDATE per magic table (+ per-object event pairs).
-		[$handled, $deleted] = $this->batchCascadeSoftDelete(
-			targets: $resolved,
-			userId: $userId,
-			organisationId: $organisationId
-		);
-
-		// 3. One multi-row audit INSERT covering every batch-deleted target.
-		$this->writeBatchCascadeAuditTrails(
-			cascadeTargets: $cascadeTargets,
-			deleted: $deleted,
-			cascadeSource: $cascadeSource,
-			triggerSchemaSlug: $triggerSchemaSlug
-		);
-
-		// 4. Per-object fallback for targets the batch did not take care of.
-		$fallbackTargets = [];
-		foreach ($cascadeTargets as $target) {
-			if (isset($handled[$target['objectUuid']]) === false) {
-				$fallbackTargets[] = $target;
-			}
-		}
-
-		if (empty($fallbackTargets) === false) {
-			$this->applyPerObjectCascadeDelete(
-				cascadeTargets: $fallbackTargets,
-				userId: $userId,
-				cascadeSource: $cascadeSource,
-				triggerSchemaSlug: $triggerSchemaSlug
-			);
-		}
+		return [];
 	}//end applyBatchCascadeDelete()
 
 	/**
@@ -1824,9 +1807,8 @@ class ReferentialIntegrityService {
 	 * hook stopping propagation skips that target's write and the target is
 	 * NOT force-retried per-object).
 	 *
-	 * @param ObjectEntity[] $targets The batch-resolved cascade target entities.
-	 * @param string $userId The user performing the deletion.
-	 * @param string|null $organisationId The active organisation ID for attribution.
+	 * @param ObjectEntity[]      $targets The batch-resolved cascade target entities.
+	 * @param CascadeDeleteOrigin $origin  The deleting user and the organisation, for attribution.
 	 *
 	 * @return array{0: array<string, true>, 1: array<string, ObjectEntity>} Two maps keyed
 	 *                                                                       by uuid: [0] every target the batch took care of
@@ -1839,32 +1821,12 @@ class ReferentialIntegrityService {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function batchCascadeSoftDelete(array $targets, string $userId, ?string $organisationId): array {
+	private function batchCascadeSoftDelete(array $targets, CascadeDeleteOrigin $origin): array {
 		if (empty($targets) === true) {
 			return [[], []];
 		}
 
-		$deletedAt = (new DateTime())->format(DateTime::ATOM);
-
-		$handled = [];
-		$oldEntities = [];
-		foreach ($targets as $entity) {
-			$uuid = $entity->getUuid();
-			if ($uuid === null || $uuid === '') {
-				continue;
-			}
-
-			$handled[$uuid] = true;
-			$oldEntities[$uuid] = clone $entity;
-			$entity->setDeleted(
-				[
-					'deletedBy' => $userId,
-					'deletedAt' => $deletedAt,
-					'objectId' => $uuid,
-					'organisation' => $organisationId,
-				]
-			);
-		}
+		[$handled, $oldEntities] = (new SoftDeleteStamp(deletedBy: $origin->userId, organisation: $origin->organisationId))->apply(targets: $targets);
 
 		try {
 			$deletedEntities = $this->objectEntityMapper->softDeleteMultipleObjectEntities(
@@ -1909,55 +1871,62 @@ class ReferentialIntegrityService {
 	 *
 	 * @param array $cascadeTargets All cascade targets (already reversed).
 	 * @param array<string, ObjectEntity> $deleted Batch-deleted entities keyed by uuid.
-	 * @param string $cascadeSource The UUID of the root object triggering the cascade.
-	 * @param string|null $triggerSchemaSlug Schema slug of the trigger object.
+	 * @param CascadeDeleteOrigin $origin The root object and its schema slug.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	private function writeBatchCascadeAuditTrails(
-		array $cascadeTargets,
-		array $deleted,
-		string $cascadeSource,
-		?string $triggerSchemaSlug,
-	): void {
-		if (empty($deleted) === true) {
-			return;
-		}
-
+	private function writeBatchCascadeAuditTrails(array $cascadeTargets, array $deleted, CascadeDeleteOrigin $origin): void {
 		$rows = [];
 		foreach ($cascadeTargets as $target) {
 			$entity = ($deleted[$target['objectUuid']] ?? null);
-			if ($entity === null) {
-				continue;
+			if ($entity !== null) {
+				$rows[] = $this->cascadeAuditRow(entity: $entity, cascadeContext: $origin->auditContext(target: $target));
 			}
+		}
 
-			try {
-				$rows[] = $this->auditTrailMapper->buildAuditTrail(
-					old: $entity,
-					new: null,
-					action: 'referential_integrity.cascade_delete',
-					cascadeContext: [
-						'triggerObject' => $cascadeSource,
-						'triggerSchema' => $triggerSchemaSlug,
-						'action_type' => 'referential_integrity.cascade_delete',
-						'property' => ($target['property'] ?? null),
-					]
-				);
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[ReferentialIntegrity] Could not build cascade audit row',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $target['objectUuid'],
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-		}//end foreach
+		$this->insertCascadeAuditRows(rows: array_values(array_filter($rows)));
+	}//end writeBatchCascadeAuditTrails()
 
+	/**
+	 * The audit row of one batch-deleted cascade target, or null when it cannot be built.
+	 *
+	 * @param ObjectEntity $entity         The deleted entity.
+	 * @param array        $cascadeContext The cascade context folded into the row.
+	 *
+	 * @return mixed The built row, or null.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	private function cascadeAuditRow(ObjectEntity $entity, array $cascadeContext): mixed {
+		try {
+			return $this->auditTrailMapper->buildAuditTrail(
+				old: $entity,
+				new: null,
+				action: 'referential_integrity.cascade_delete',
+				cascadeContext: $cascadeContext
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[ReferentialIntegrity] Could not build cascade audit row',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $entity->getUuid(), 'error' => $e->getMessage()]
+			);
+		}
+
+		return null;
+	}//end cascadeAuditRow()
+
+	/**
+	 * Insert the cascade audit rows in one statement; a failure is logged, never thrown.
+	 *
+	 * @param array $rows The built audit rows.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	private function insertCascadeAuditRows(array $rows): void {
 		if (empty($rows) === true) {
 			return;
 		}
@@ -1967,104 +1936,106 @@ class ReferentialIntegrityService {
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[ReferentialIntegrity] Bulk cascade audit insert failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'count' => count($rows),
-					'error' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'count' => count($rows), 'error' => $e->getMessage()]
 			);
-		}//end try
+		}
 	}//end writeBatchCascadeAuditTrails()
 
 	/**
 	 * Apply CASCADE deletes per object, grouped by register+schema (legacy fallback).
 	 *
-	 * Preserved verbatim as the fallback pipeline for targets the batched path
-	 * cannot handle: groups cascade targets by their register+schema pair and
-	 * calls MagicMapper::deleteObjects() in bulk (which re-resolves each uuid
-	 * individually). Falls back to individual deletion for targets without
-	 * register info. Each target gets its own single-row audit insert with the
-	 * legacy changed-shape.
+	 * The fallback pipeline for targets the batched path cannot handle: each
+	 * group goes to MagicMapper::deleteObjects() in bulk (which re-resolves
+	 * each uuid individually), and each target gets its own single-row audit
+	 * insert with the legacy changed-shape.
 	 *
-	 * @param array $cascadeTargets The cascade targets needing per-object handling.
-	 * @param string $userId The user performing the deletion.
-	 * @param string $cascadeSource The UUID of the root object triggering the cascade.
-	 * @param string|null $triggerSchemaSlug Schema slug of the trigger object for logging.
+	 * @param array               $cascadeTargets The cascade targets needing per-object handling.
+	 * @param CascadeDeleteOrigin $origin         The deleting user and the root object.
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Groups targets and handles entity resolution per group
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function applyPerObjectCascadeDelete(array $cascadeTargets, CascadeDeleteOrigin $origin): void {
+		foreach ($this->groupCascadeTargets(cascadeTargets: $cascadeTargets) as $targets) {
+			$this->deleteCascadeGroup(targets: $targets, origin: $origin);
+			foreach ($targets as $target) {
+				$this->logCascadeDelete(target: $target, origin: $origin);
+			}
+		}
+	}//end applyPerObjectCascadeDelete()
+
+	/**
+	 * Group cascade targets by register+schema, in order of first appearance.
+	 *
+	 * A target without register or schema gets its own group keyed by its
+	 * uuid, so a repeated one is deleted and audited once.
+	 *
+	 * @param array $cascadeTargets The cascade targets.
+	 *
+	 * @return array<string, list<array>> The targets per group.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function applyPerObjectCascadeDelete(
-		array $cascadeTargets,
-		string $userId,
-		string $cascadeSource,
-		?string $triggerSchemaSlug,
-	): void {
-		// Group targets by register+schema for batch deletion.
+	private function groupCascadeTargets(array $cascadeTargets): array {
 		$groups = [];
 		foreach ($cascadeTargets as $target) {
-			$registerId = $target['register'] ?? null;
-			$schemaId = $target['schema'] ?? null;
-
-			if ($registerId === null || $schemaId === null) {
-				// Fallback: targets without register info get their own single-item group.
-				$groups['fallback_' . $target['objectUuid']] = [
-					'registerId' => $registerId,
-					'schemaId' => $schemaId,
-					'targets' => [$target],
-				];
+			if (($target['register'] ?? null) === null || ($target['schema'] ?? null) === null) {
+				$groups['fallback_' . $target['objectUuid']] = [$target];
 				continue;
 			}
 
-			$groupKey = $registerId . '::' . $schemaId;
-			$groups[$groupKey]['registerId'] = $registerId;
-			$groups[$groupKey]['schemaId'] = $schemaId;
-			$groups[$groupKey]['targets'][] = $target;
+			$groups[$target['register'] . '::' . $target['schema']][] = $target;
 		}
 
-		// Process each group with batch delete.
-		foreach ($groups as $group) {
-			$uuids = array_map(
-				static fn (array $t): string => $t['objectUuid'],
-				$group['targets']
+		return $groups;
+	}//end groupCascadeTargets()
+
+	/**
+	 * Soft-delete one group of cascade targets; a failure is logged, not thrown.
+	 *
+	 * @param list<array>         $targets The targets of one group.
+	 * @param CascadeDeleteOrigin $origin  The deleting user and the root object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function deleteCascadeGroup(array $targets, CascadeDeleteOrigin $origin): void {
+		$uuids = array_map(static fn (array $t): string => $t['objectUuid'], $targets);
+		try {
+			$this->objectEntityMapper->deleteObjects(uuids: $uuids, hardDelete: false);
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[ReferentialIntegrity] Batch CASCADE delete failed',
+				context: ['uuids' => $uuids, 'cascadeSource' => $origin->cascadeSource, 'error' => $e->getMessage()]
 			);
+		}
+	}//end deleteCascadeGroup()
 
-			try {
-				$this->objectEntityMapper->deleteObjects(
-					uuids: $uuids,
-					hardDelete: false
-				);
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					message: '[ReferentialIntegrity] Batch CASCADE delete failed',
-					context: [
-						'uuids' => $uuids,
-						'cascadeSource' => $cascadeSource,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-
-			// Log each target individually for audit trail.
-			foreach ($group['targets'] as $target) {
-				$this->logIntegrityAction(
-					action: 'referential_integrity.cascade_delete',
-					objectUuid: $target['objectUuid'],
-					schemaId: $target['schema'] ?? null,
-					registerId: $target['register'] ?? null,
-					changed: [
-						'deletedBecause' => 'cascade',
-						'triggerObject' => $cascadeSource,
-						'triggerSchema' => $triggerSchemaSlug,
-						'property' => $target['property'],
-					],
-					userId: $userId
-				);
-			}
-		}//end foreach
-	}//end applyPerObjectCascadeDelete()
+	/**
+	 * Write the legacy single-row audit entry of one cascade-deleted target.
+	 *
+	 * @param array               $target The cascade target.
+	 * @param CascadeDeleteOrigin $origin The deleting user and the root object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function logCascadeDelete(array $target, CascadeDeleteOrigin $origin): void {
+		$this->logIntegrityAction(
+			action: 'referential_integrity.cascade_delete',
+			objectUuid: $target['objectUuid'],
+			schemaId: $target['schema'] ?? null,
+			registerId: $target['register'] ?? null,
+			changed: [
+				'deletedBecause' => 'cascade',
+				'triggerObject' => $origin->cascadeSource,
+				'triggerSchema' => $origin->triggerSchemaSlug,
+				'property' => $target['property'],
+			],
+			userId: $origin->userId
+		);
+	}//end logCascadeDelete()
 }//end class

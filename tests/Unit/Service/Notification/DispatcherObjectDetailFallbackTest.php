@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;

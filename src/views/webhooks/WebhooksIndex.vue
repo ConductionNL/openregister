@@ -649,118 +649,30 @@ export default {
 }
 </script>
 
-<style scoped>
-.viewContainer {
-	padding: 20px;
-	max-width: 100%;
-}
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
+
+@include view-container-2;
 
 .viewHeader {
 	margin-bottom: 20px;
 }
 
-.viewHeaderTitle {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	margin-bottom: 8px;
-}
-
-.viewHeaderTitleIndented {
-	margin: 0;
-	font-size: 28px;
-	font-weight: 600;
-}
-
-.viewHeader p {
-	color: var(--color-text-maxcontrast);
-	margin: 0;
-}
-
-.viewActionsBar {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 20px;
-	padding: 12px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius-large);
-}
-
-.viewInfo {
-	display: flex;
-	gap: 12px;
-	align-items: center;
-}
+@include view-header-title-rules;
 
 .viewTotalCount {
 	font-weight: 600;
 }
 
-.viewActions {
-	display: flex;
-	gap: 8px;
-}
+@include view-actions;
 
-.tableContainer {
-	background: var(--color-main-background);
-	border-radius: var(--border-radius-large);
-	overflow-x: auto;
-	overflow-y: visible;
-	min-height: 200px;
-}
-
-.tableContainer.is-loading {
-	overflow: hidden;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.loadingWrapper {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 100%;
-	padding: 40px;
-}
-
-.webhooksTable {
-	width: 100%;
-	border-collapse: collapse;
-	min-width: 100%;
-}
-
-.webhooksTable thead {
-	background: var(--color-background-hover);
-	border-bottom: 2px solid var(--color-border);
-}
-
-.webhooksTable th {
-	padding: 12px 16px;
-	text-align: left;
-	font-weight: 600;
-	white-space: nowrap;
-}
-
-.webhooksTable td {
-	padding: 12px 16px;
-	border-bottom: 1px solid var(--color-border);
-}
+@include table-container-2-rules;
 
 .webhooksTable tbody tr:hover {
 	background: var(--color-background-hover);
 }
 
-.webhooksTable thead .column-actions {
-	position: sticky;
-	right: 0;
-	background: var(--color-background-hover);
-	z-index: 10;
-	min-width: 80px;
-	width: 80px;
-	text-align: right;
-}
+@include webhooks-table-thead-column-actions;
 
 .webhooksTable tbody .column-actions {
 	position: sticky;
@@ -800,14 +712,7 @@ export default {
 	font-size: 12px;
 }
 
-.badge {
-	display: inline-block;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 12px;
-	font-weight: 600;
-	text-transform: uppercase;
-}
+@include badge;
 
 .badge-method {
 	background: var(--color-background-dark);
@@ -859,17 +764,5 @@ export default {
 	text-align: right;
 }
 
-.pagination {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	gap: 16px;
-	padding: 20px;
-	border-top: 1px solid var(--color-border);
-}
-
-.pagination-info {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-}
+@include pagination-rules;
 </style>

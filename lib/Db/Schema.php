@@ -130,6 +130,7 @@ use stdClass;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class Schema extends Entity implements JsonSerializable, SchemaInterface {
+	use JsonFieldsTrait;
 
 	/**
 	 * Unique identifier for the schema
@@ -813,6 +814,72 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 */
 	public const WRITEONLY_PATHS_ANNOTATION = 'x-openregister-writeonly-paths';
 
+	// `objectSlugField` was missing here, so every save and import dropped it
+	// and object slugs could not be switched on outside the database (#4037).
+	private const CONFIG_STRING_FIELDS = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField', 'objectSlugField'];
+	// `exportable` opts the schema into nextcloud-vue's native Export menu
+	// on an index page (or#4103). Off the allowlist it was dropped without
+	// a log line, so `allowExport: true` on every app page was a no-op.
+	// `staging` and `additionalProperties` are read by FormDestinationValidator
+	// (decision 179): a staging schema is no form destination, and a form
+	// field into an undeclared property is a finding unless the schema opts
+	// into extras. Off this list both were dropped on save, so neither could
+	// ever be declared.
+	// `draftsListed` (decision 216) is read by DraftListLens: false keeps the
+	// caller's own drafts out of the schema's lists by default.
+	// `autoShare` is the schema-level default FilePropertyHandler reads for
+	// every file property. `objectSlugSuffix` (#4037) is read by
+	// ObjectSlugHandler: true appends a UTC date-time suffix to a colliding slug.
+	// `fireEventsOnBulkWrites` is read by BulkWriteEvents: whether a bulk write
+	// runs the save events per row. `orphanCleanup` is read by SaveObject: a removed
+	// reference soft-deletes the child the parent owns.
+	private const CONFIG_BOOL_FIELDS = [
+		'allowFiles',
+		'autoShare',
+		'defaultAutoShare',
+		'exportable',
+		'staging',
+		'additionalProperties',
+		'draftsVisible',
+		'draftsListed',
+		'fireEventsOnBulkWrites',
+		'objectSlugSuffix',
+		'orphanCleanup',
+	];
+	// `implements` + `x-schema-org` carry the cross-app semantic-type
+	// markers (ADR-048); they must round-trip through the configuration
+	// column so SemanticTypeResolver can discover the schema. Their IRI
+	// shape is validated on read by JsonLdContextService::getImplementedTypes.
+	// `handoffContract` is the ADR-051 provider-side binding block
+	// (contract field → own property, per kind URI); its shape is
+	// validated at save time by HandoffContractBindingValidator.
+	// `importSource` is the schema-import provenance block (dialect,
+	// reference, snapshot version, baseline) written by
+	// SchemaImportService and read back by the reimport / update-from-
+	// source endpoint; without it in the allowlist the provenance is
+	// silently dropped on save and the entire update-from-source feature
+	// is dead (the schema reports "not imported from a standard").
+	// `uniqueConstraints` is the declared uniqueness block that
+	// UniqueConstraintEvaluator and UniqueConstraintListener read (named
+	// refuse/report constraints, beside the legacy `unique`). Off this
+	// list every save dropped it in silence and no constraint ever fired.
+	// `autoPublish` is the retired name of `autoShare`. It is kept unvalidated
+	// and never acted on, so FilePropertyHandler can still log the
+	// deprecation warning that names `autoShare`.
+	private const CONFIG_PASS_THROUGH = [
+		'autoPublish',
+		'unique',
+		'uniqueConstraints',
+		'facetCacheTtl',
+		'calendarProvider',
+		'jsonld',
+		'implements',
+		'x-schema-org',
+		'handoffContract',
+		'importSource',
+	];
+
+
 	/**
 	 * The annotation by which a schema opts its objects into archiving.
 	 *
@@ -1098,26 +1165,6 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	public function getArchive(): array {
 		return ($this->archive ?? []);
 	}//end getArchive()
-
-	/**
-	 * Get JSON fields from the entity
-	 *
-	 * Returns all fields that are of type 'json'
-	 *
-	 * @return string[] List of JSON field names
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
 
 	/**
 	 * Validate the schema properties
@@ -2988,71 +3035,6 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 */
 	private function validateConfigurationArray(array $configuration): array {
 		$validatedConfig = [];
-		// `objectSlugField` was missing here, so every save and import dropped it
-		// and object slugs could not be switched on outside the database (#4037).
-		$stringFields = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField', 'objectSlugField'];
-		// `exportable` opts the schema into nextcloud-vue's native Export menu
-		// on an index page (or#4103). Off the allowlist it was dropped without
-		// a log line, so `allowExport: true` on every app page was a no-op.
-		// `staging` and `additionalProperties` are read by FormDestinationValidator
-		// (decision 179): a staging schema is no form destination, and a form
-		// field into an undeclared property is a finding unless the schema opts
-		// into extras. Off this list both were dropped on save, so neither could
-		// ever be declared.
-		// `draftsListed` (decision 216) is read by DraftListLens: false keeps the
-		// caller's own drafts out of the schema's lists by default.
-		// `autoShare` is the schema-level default FilePropertyHandler reads for
-		// every file property. `objectSlugSuffix` (#4037) is read by
-		// ObjectSlugHandler: true appends a UTC date-time suffix to a colliding slug.
-		// `fireEventsOnBulkWrites` is read by BulkWriteEvents: whether a bulk write
-		// runs the save events per row. `orphanCleanup` is read by SaveObject: a removed
-		// reference soft-deletes the child the parent owns.
-		$boolFields = [
-			'allowFiles',
-			'autoShare',
-			'defaultAutoShare',
-			'exportable',
-			'staging',
-			'additionalProperties',
-			'draftsVisible',
-			'draftsListed',
-			'fireEventsOnBulkWrites',
-			'objectSlugSuffix',
-			'orphanCleanup',
-		];
-		// `implements` + `x-schema-org` carry the cross-app semantic-type
-		// markers (ADR-048); they must round-trip through the configuration
-		// column so SemanticTypeResolver can discover the schema. Their IRI
-		// shape is validated on read by JsonLdContextService::getImplementedTypes.
-		// `handoffContract` is the ADR-051 provider-side binding block
-		// (contract field → own property, per kind URI); its shape is
-		// validated at save time by HandoffContractBindingValidator.
-		// `importSource` is the schema-import provenance block (dialect,
-		// reference, snapshot version, baseline) written by
-		// SchemaImportService and read back by the reimport / update-from-
-		// source endpoint; without it in the allowlist the provenance is
-		// silently dropped on save and the entire update-from-source feature
-		// is dead (the schema reports "not imported from a standard").
-		// `uniqueConstraints` is the declared uniqueness block that
-		// UniqueConstraintEvaluator and UniqueConstraintListener read (named
-		// refuse/report constraints, beside the legacy `unique`). Off this
-		// list every save dropped it in silence and no constraint ever fired.
-		// `autoPublish` is the retired name of `autoShare`. It is kept unvalidated
-		// and never acted on, so FilePropertyHandler can still log the
-		// deprecation warning that names `autoShare`.
-		$passThrough = [
-			'autoPublish',
-			'unique',
-			'uniqueConstraints',
-			'facetCacheTtl',
-			'calendarProvider',
-			'jsonld',
-			'implements',
-			'x-schema-org',
-			'handoffContract',
-			'importSource',
-		];
-
 		foreach ($configuration as $key => $value) {
 			// Per-key isolation (#419): a bad VALUE for one config key must never
 			// lose the whole configuration. Direct API saves surface the throw as
@@ -3063,14 +3045,9 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			// entire config incl. its MCP tools). Drop the offending key, record it
 			// so SchemaMapper can warn, and keep the rest of the configuration.
 			try {
-				$this->validateConfigurationEntry(
-					key: $key,
-					value: $value,
-					stringFields: $stringFields,
-					boolFields: $boolFields,
-					passThrough: $passThrough,
-					validatedConfig: $validatedConfig
-				);
+				foreach ($this->validateConfigurationEntry(key: $key, value: $value) as $accepted) {
+					$validatedConfig[$key] = $accepted;
+				}
 			} catch (\InvalidArgumentException $e) {
 				// The write-only path annotation is exempt from per-key
 				// isolation and MUST fail the whole save.
@@ -3103,6 +3080,12 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 				// wrong. So this one fails loudly, naming the property.
 				if ($e instanceof CalendarDateKindException) {
 					throw $e;
+				}
+
+				// An unreadable `draftLifetimeDays` is kept as `false` (drafts kept):
+				// dropping it would turn a typing error into "remove after 30 days".
+				if ($key === 'draftLifetimeDays') {
+					$validatedConfig[$key] = false;
 				}
 
 				$this->droppedKeys[] = (string)$key;
@@ -3185,141 +3168,152 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	}//end validateWriteOnlyPathsValue()
 
 	/**
-	 * Validate and apply a single configuration entry.
+	 * Validate a single configuration entry.
 	 *
-	 * Extracted from validateConfigurationArray() so each key is validated in
-	 * isolation (#419): the caller wraps this in a try/catch, and an invalid
-	 * value drops only the offending key instead of the whole configuration.
-	 * On success the accepted value is written into $validatedConfig by
-	 * reference; unknown keys are simply not written, and unknown
+	 * Each key is validated in isolation (#419): the caller wraps this in a
+	 * try/catch, and an invalid value drops only the offending key instead of
+	 * the whole configuration. Unknown keys are not stored, and unknown
 	 * `x-openregister-*` keys are recorded in $this->droppedKeys.
 	 *
-	 * @param int|string $key Configuration key.
-	 * @param mixed $value Raw value for the key.
-	 * @param array<int, string> $stringFields String-typed config fields.
-	 * @param array<int, string> $boolFields Bool-typed config fields.
-	 * @param array<int, string> $passThrough Keys stored without validation.
-	 * @param array<string, mixed> $validatedConfig Accumulator, passed by reference.
-	 * @param-out array<int|string, mixed> $validatedConfig A config key that is a canonical
-	 *         numeric string ("12") gets an INT key from PHP's array-key coercion, so the
-	 *         accumulator that comes back out is not key-narrowable to string.
+	 * @param int|string $key   Configuration key.
+	 * @param mixed      $value Raw value for the key.
 	 *
 	 * @throws \InvalidArgumentException If the value is invalid for the key.
 	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @return array<int, mixed> The value to store as a one-element list; empty when the key is not stored.
 	 */
-	private function validateConfigurationEntry(
-		int|string $key,
-		mixed $value,
-		array $stringFields,
-		array $boolFields,
-		array $passThrough,
-		array &$validatedConfig,
-	): void {
-		if (in_array($key, $stringFields, true) === true) {
-			$validatedConfig[$key] = $this->validateStringConfigValue(key: $key, value: $value);
-			return;
+	private function validateConfigurationEntry(int|string $key, mixed $value): array {
+		if (in_array($key, self::CONFIG_STRING_FIELDS, true) === true) {
+			return [$this->validateStringConfigValue(key: $key, value: $value)];
 		}
 
-		if (in_array($key, $boolFields, true) === true) {
-			// $key is int|string because PHP array keys can be ints. The cast is
-			// explicit rather than relying on this file having no strict_types.
-			$this->validateBoolConfigValue(key: (string)$key, value: $value);
-			$validatedConfig[$key] = $value;
-			return;
+		if ($this->validatesRawConfigurationValue(key: (string)$key, value: $value) === true
+			|| in_array($key, self::CONFIG_PASS_THROUGH, true) === true
+		) {
+			return [$value];
 		}
 
+		return $this->convertedConfigurationValue(key: (string)$key, value: $value);
+	}//end validateConfigurationEntry()
+
+	/**
+	 * Validate a key whose value is stored as given.
+	 *
+	 * @param string $key   Configuration key.
+	 * @param mixed  $value Raw value for the key.
+	 *
+	 * @throws \InvalidArgumentException If the value is invalid for the key.
+	 *
+	 * @return bool True when the key is one of these and its value passed.
+	 */
+	private function validatesRawConfigurationValue(string $key, mixed $value): bool {
+		if (in_array($key, self::CONFIG_BOOL_FIELDS, true) === true) {
+			$this->validateBoolConfigValue(key: $key, value: $value);
+			return true;
+		}
+
+		// A `calendarProvider` that is not an array is passed through unvalidated.
+		if ($key === 'calendarProvider' && is_array($value) === true) {
+			$this->validateCalendarProviderConfig(config: $value);
+			return true;
+		}
+
+		return $this->validatesShapedConfigurationValue(key: $key, value: $value);
+	}//end validatesRawConfigurationValue()
+
+	/**
+	 * Validate the tag, linked-type and mail-template keys, stored as given.
+	 *
+	 * @param string $key   Configuration key.
+	 * @param mixed  $value Raw value for the key.
+	 *
+	 * @throws \InvalidArgumentException If the value is invalid for the key.
+	 *
+	 * @return bool True when the key is one of these and its value passed.
+	 */
+	private function validatesShapedConfigurationValue(string $key, mixed $value): bool {
 		if ($key === 'allowedTags') {
 			$this->validateAllowedTagsValue(value: $value);
-			$validatedConfig[$key] = $value;
-			return;
+			return true;
 		}
 
 		if ($key === 'linkedTypes') {
 			$this->validateLinkedTypesValue(value: $value);
-			$validatedConfig[$key] = $value;
-			return;
+			return true;
 		}
 
 		if ($key === 'mailObjectTemplate') {
 			$this->validateMailObjectTemplateValue(value: $value);
-			$validatedConfig[$key] = $value;
-			return;
+			return true;
 		}
 
-		// `draftLifetimeDays` (decisions 216 and 228) is read by
-		// DraftStatusPolicy and acted on by DraftExpiryJob. Off this method it
-		// was an unknown key, and an unknown key is dropped on save without a
-		// word. Absent or null means the default of 30 days. A value that
-		// cannot be read is stored as `false` (drafts kept) before the throw
-		// reports it: dropping it would turn a typing error into "remove
-		// after 30 days".
+		return false;
+	}//end validatesShapedConfigurationValue()
+
+	/**
+	 * Validate a key whose value is normalised before it is stored.
+	 *
+	 * `draftLifetimeDays` (decisions 216 and 228) is read by DraftStatusPolicy
+	 * and acted on by DraftExpiryJob. Absent or null means the default of 30
+	 * days, so null is not stored.
+	 *
+	 * @param string $key   Configuration key.
+	 * @param mixed  $value Raw value for the key.
+	 *
+	 * @throws \InvalidArgumentException If the value is invalid for the key.
+	 *
+	 * @return array<int, mixed> The value to store as a one-element list; empty when the key is not stored.
+	 */
+	private function convertedConfigurationValue(string $key, mixed $value): array {
 		if ($key === 'draftLifetimeDays') {
 			if ($value === null) {
-				return;
+				return [];
 			}
 
-			$validatedConfig[$key] = false;
-			$validatedConfig[$key] = $this->validateDraftLifetimeValue(value: $value);
-
-			return;
+			return [$this->validateDraftLifetimeValue(value: $value)];
 		}
 
 		if ($key === 'linkRoles') {
-			$validatedConfig[$key] = $this->validateLinkRolesValue(value: $value);
-			return;
+			return [$this->validateLinkRolesValue(value: $value)];
 		}
 
 		if ($key === 'partyKinds') {
-			$validatedConfig[$key] = $this->validatePartyKindsValue(value: $value);
-			return;
+			return [$this->validatePartyKindsValue(value: $value)];
 		}
 
 		if ($key === self::WRITEONLY_PATHS_ANNOTATION) {
-			$validatedConfig[$key] = $this->validateWriteOnlyPathsValue(value: $value);
-			return;
+			return [$this->validateWriteOnlyPathsValue(value: $value)];
 		}
 
-		if ($key === 'calendarProvider' && is_array($value) === true) {
-			$this->validateCalendarProviderConfig(config: $value);
-			$validatedConfig[$key] = $value;
-			return;
+		return $this->annotationConfigurationValue(key: $key, value: $value);
+	}//end convertedConfigurationValue()
+
+	/**
+	 * Keep a declared `x-openregister-*` annotation; record an unknown one.
+	 *
+	 * Declarative annotation extensions round-trip through the configuration
+	 * column; their shape is validated by the dedicated validators (e.g.
+	 * LifecycleAnnotationValidator) at schema-save time. An unknown
+	 * `x-openregister-*` key (almost always a typo like `x-openregister-lifecycl`)
+	 * is dropped and recorded, so SchemaMapper can log it after save.
+	 *
+	 * @param string $key   Configuration key.
+	 * @param mixed  $value Raw value for the key.
+	 *
+	 * @return array<int, mixed> The value to store as a one-element list; empty when the key is not stored.
+	 */
+	private function annotationConfigurationValue(string $key, mixed $value): array {
+		if (str_starts_with($key, 'x-openregister-') === false) {
+			return [];
 		}
 
-		if (in_array($key, $passThrough, true) === true) {
-			$validatedConfig[$key] = $value;
-			return;
+		if (in_array($key, self::ANNOTATION_VOCABULARY, true) === true) {
+			return [$value];
 		}
 
-		// Allow declarative annotation extensions to round-trip
-		// through the schema's configuration column. Validation of
-		// their shape is done by the dedicated validators (e.g.
-		// LifecycleAnnotationValidator) at schema-save time.
-		//
-		// The key MUST be in the declared vocabulary — unknown
-		// `x-openregister-*` keys are silently dropped to surface
-		// typos at save time rather than persisting them and having
-		// them silently no-op (e.g. `x-openregister-lifecycl` would
-		// otherwise round-trip without ever firing the listener).
-		if (str_starts_with((string)$key, 'x-openregister-') === true) {
-			if (in_array((string)$key, self::ANNOTATION_VOCABULARY, true) === true) {
-				$validatedConfig[$key] = $value;
-				return;
-			}
-
-			// R07: track unknown `x-openregister-*` keys (almost
-			// always typos like `x-openregister-lifecycl`) so
-			// SchemaMapper can log them via its structured
-			// logger after save. The entity has no DI surface
-			// for a logger and the ADR added in F06 bans the
-			// `\OC::$server` static accessor — collecting on
-			// the entity and bridging through the mapper is
-			// the cleanest path that still surfaces a signal.
-			$this->droppedKeys[] = (string)$key;
-		}//end if
-	}//end validateConfigurationEntry()
+		$this->droppedKeys[] = $key;
+		return [];
+	}//end annotationConfigurationValue()
 
 	/**
 	 * Validate the `draftLifetimeDays` configuration value.

@@ -54,6 +54,8 @@ use Psr\Log\LoggerInterface;
  */
 class SchemaRevalidationService {
 
+	use SchemaRunPopulation;
+
 	/**
 	 * Default per-batch object count.
 	 *
@@ -240,89 +242,4 @@ class SchemaRevalidationService {
 
 		return $schema;
 	}//end transientSchema()
-
-	/**
-	 * Load the next batch of non-deleted objects after the run's cursor.
-	 *
-	 * @param SchemaRun $run The run.
-	 * @param int $batchSize The batch size.
-	 *
-	 * @return ObjectEntity[] The objects.
-	 */
-	private function loadBatch(SchemaRun $run, int $batchSize): array {
-		$config = [
-			'limit' => $batchSize,
-			'offset' => $run->getProcessed(),
-			'sort' => ['id' => 'ASC'],
-			'filters' => [
-				'register' => $run->getRegisterId(),
-				'schema' => $run->getSchemaId(),
-			],
-		];
-
-		$result = $this->objectService->findAll(config: $config, _rbac: false, _multitenancy: false);
-
-		return array_values(array_filter($result, static fn ($o) => $o instanceof ObjectEntity));
-	}//end loadBatch()
-
-	/**
-	 * Count the non-deleted population for a schema in a register.
-	 *
-	 * @param int $schemaId The schema id.
-	 * @param int $registerId The register id.
-	 *
-	 * @return int The count.
-	 */
-	private function countPopulation(int $schemaId, int $registerId): int {
-		try {
-			return $this->objectService->count(
-				config: [
-					'filters' => [
-						'register' => $registerId,
-						'schema' => $schemaId,
-					],
-				]
-			);
-		} catch (\Throwable $e) {
-			return 0;
-		}
-
-	}//end countPopulation()
-
-	/**
-	 * Finish a run, persisting its terminal state.
-	 *
-	 * @param SchemaRun $run The run.
-	 * @param string $state The terminal state.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/schema-migration/spec.md
-	 */
-	public function finish(SchemaRun $run, string $state): void {
-		$run->setState($state);
-		$this->runMapper->save($run);
-
-	}//end finish()
-
-	/**
-	 * Refuse a second concurrent run on the same schema.
-	 *
-	 * @param int $schemaId The schema id.
-	 *
-	 * @return void
-	 *
-	 * @throws SchemaRunConcurrencyException When an active run exists.
-	 *
-	 * @spec openspec/specs/schema-migration/spec.md
-	 */
-	public function assertNoActiveRun(int $schemaId): void {
-		$active = $this->runMapper->findActiveForSchema($schemaId);
-		if ($active !== null) {
-			throw new SchemaRunConcurrencyException(
-				message: sprintf('An active run (#%d) already exists for schema %d.', $active->getId(), $schemaId)
-			);
-		}
-
-	}//end assertNoActiveRun()
 }//end class

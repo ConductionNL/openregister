@@ -29,6 +29,11 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use DateTimeImmutable;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\ObjectGovernanceServices;
+use OCA\OpenRegister\Controller\Support\LinkedDataServices;
+use OCA\OpenRegister\Controller\Support\GeoServices;
+use OCA\OpenRegister\Controller\Support\ObjectsControllerServices;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -66,6 +71,7 @@ use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
 use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader;
@@ -73,7 +79,6 @@ use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\WebhookService;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Support\FilterParams;
-use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -85,7 +90,6 @@ use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception;
-use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -147,74 +151,120 @@ class ObjectsController extends Controller {
 	private const SUBMITTABLE_RESERVED_KEYS = ['@self', Schema::NOT_SUPPLIED_KEY];
 
 	/**
+	 * The container.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * The register mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * The schema mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * The audit trail mapper.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * The object service.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * The group manager.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * The logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * The controller's injected services.
+	 *
+	 * @var ObjectsControllerServices
+	 */
+	private readonly ObjectsControllerServices $services;
+
+	/**
+	 * The recovery window, uniqueness, purpose and history services.
+	 *
+	 * @var ObjectGovernanceServices
+	 */
+	private readonly ObjectGovernanceServices $governance;
+
+	/**
+	 * The linked data services.
+	 *
+	 * @var LinkedDataServices
+	 */
+	private readonly LinkedDataServices $linkedData;
+
+	/**
+	 * The geo services.
+	 *
+	 * @var GeoServices
+	 */
+	private readonly GeoServices $geo;
+
+	/**
 	 * Constructor for the ObjectsController
 	 *
 	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
-	 * @param IAppConfig $config The app configuration object
-	 * @param IAppManager $appManager The app manager
-	 * @param ContainerInterface $container The DI container
-	 * @param RegisterMapperInterface $registerMapper The register mapper
-	 * @param SchemaMapperInterface $schemaMapper The schema mapper
-	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail mapper
-	 * @param ObjectService $objectService The object service
-	 * @param IUserSession $userSession The user session
-	 * @param IGroupManager $groupManager The group manager
-	 * @param ObjectExporterInterface $exportService The export service
-	 * @param ObjectImporterInterface $importService The import service
-	 * @param WebhookService $webhookService The webhook service (optional)
-	 * @param LoggerInterface $logger The logger (optional)
-	 * @param ?\OCA\OpenRegister\Search\Service\Geo\GeoFilterParser $geoFilterParser Optional geo wire-format adapter (null-safe)
-	 * @param ?\OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier $geoFilterApplier Optional geo post-filter (null-safe)
-	 * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdSerializer $jsonLdSerializer Optional JSON-LD serializer (null-safe)
-	 * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService Optional JSON-LD context service (null-safe)
-	 * @param ?\OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder $geoFeatureBuilder Optional GeoJSON/WFS feature builder (null-safe)
-	 * @param ?\OCA\OpenRegister\Service\Geo\PdokGeocoder $pdokGeocoder Optional PDOK geocoder (null-safe)
-	 * @param ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry Relation resourceUrl resolver (null-safe)
-	 * @param ?\OCP\IURLGenerator $relationUrlGenerator Relation fallback URL generator (null-safe)
-	 * @param ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $windowService Optional recovery-window service (null-safe)
-	 * @param ?\OCA\OpenRegister\Service\Quality\UniqueHintWarnings $uniqueHintWarnings Optional per-request soft-uniqueness collector (null-safe)
-	 * @param ?\OCA\OpenRegister\Service\Audit\PurposeGuard $purposeGuard Optional doelbinding guard (null-safe)
-	 * @param ?\OCA\OpenRegister\Service\History\StateHistoryProjector $stateHistory Optional state-history projector (null-safe)
-	 * @param ?UpsertOnKeyHandler $upsertOnKeyHandler Optional upsert on a declared key (null-safe: `_upsertOn` then answers 501)
+	 * @param ControllerSession $session Session, group manager and logger.
+	 * @param ObjectsControllerServices $services The objects controller services.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly IAppConfig $config,
-		private readonly IAppManager $appManager,
-		private readonly ContainerInterface $container,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly ObjectService $objectService,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		ObjectExporterInterface $exportService,
-		ObjectImporterInterface $importService,
-		private readonly ?WebhookService $webhookService = null,
-		private readonly ?LoggerInterface $logger = null,
-		private readonly ?\OCA\OpenRegister\Search\Service\Geo\GeoFilterParser $geoFilterParser = null,
-		private readonly ?\OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier $geoFilterApplier = null,
-		private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdSerializer $jsonLdSerializer = null,
-		private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService = null,
-		private readonly ?\OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder $geoFeatureBuilder = null,
-		private readonly ?\OCA\OpenRegister\Service\Geo\PdokGeocoder $pdokGeocoder = null,
-		private readonly ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry = null,
-		private readonly ?\OCP\IURLGenerator $relationUrlGenerator = null,
-		private readonly ?\OCA\OpenRegister\Service\Deletion\DeletionWindowService $windowService = null,
-		private readonly ?\OCA\OpenRegister\Service\Quality\UniqueHintWarnings $uniqueHintWarnings = null,
-		private readonly ?\OCA\OpenRegister\Service\Audit\PurposeGuard $purposeGuard = null,
-		private readonly ?\OCA\OpenRegister\Service\History\StateHistoryProjector $stateHistory = null,
-		private readonly ?UpsertOnKeyHandler $upsertOnKeyHandler = null,
+		ControllerSession $session,
+		ObjectsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
-		$this->exportService = $exportService;
-		$this->importService = $importService;
+		$this->services = $services;
+		$this->governance = $services->governance;
+		$this->linkedData = $services->extensions->linkedData;
+		$this->geo = $services->extensions->geo;
+		$this->container = $services->extensions->container;
+		$this->registerMapper = $services->store->registerMapper;
+		$this->schemaMapper = $services->store->schemaMapper;
+		$this->auditTrailMapper = $services->store->auditTrailMapper;
+		$this->objectService = $services->store->objectService;
+		$this->userSession = $session->userSession;
+		$this->groupManager = $session->groupManager;
+		$this->logger = $session->logger;
+		$this->exportService = $services->transfer->exportService;
+		$this->importService = $services->transfer->importService;
 	}//end __construct()
 
 	/**
@@ -255,7 +305,7 @@ class ObjectsController extends Controller {
 		bool $multitenancy,
 		?int $registerIdScope = null,
 	): ?array {
-		if ($this->windowService === null) {
+		if ($this->governance->windowService === null) {
 			return null;
 		}
 
@@ -277,7 +327,7 @@ class ObjectsController extends Controller {
 			return null;
 		}
 
-		return $this->windowService->refusalBody(
+		return $this->governance->windowService->refusalBody(
 			object: $deleted,
 			schema: ($context['schema'] ?? null)
 		);
@@ -315,11 +365,11 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
 	private function wantsJsonLd(): bool {
-		if ($this->jsonLdSerializer === null) {
+		if ($this->linkedData->jsonLdSerializer === null) {
 			return false;
 		}
 
-		return $this->jsonLdSerializer->wantsJsonLd(request: $this->request);
+		return $this->linkedData->jsonLdSerializer->wantsJsonLd(request: $this->request);
 	}//end wantsJsonLd()
 
 	/**
@@ -338,7 +388,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
 	private function jsonLdObjectResponse(array $renderedObject, $register, $schema): JSONResponse {
-		$document = $this->jsonLdSerializer->serialize(
+		$document = $this->linkedData->jsonLdSerializer->serialize(
 			renderedObject: $renderedObject,
 			schema: $schema,
 			register: $register
@@ -359,7 +409,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
 	private function jsonLdCollectionResponse(array $result, $register, $schema): JSONResponse {
-		$document = $this->jsonLdSerializer->serializeCollection(
+		$document = $this->linkedData->jsonLdSerializer->serializeCollection(
 			paginatedResult: $result,
 			schema: $schema,
 			register: $register
@@ -481,138 +531,127 @@ class ObjectsController extends Controller {
 	 *                                                                                                   Array of uploaded files keyed by field name
 	 *
 	 * @SuppressWarnings(PHPMD.Superglobals)         $_FILES access necessary — IRequest does not expose all file keys
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) File extraction must handle multiple upload field formats
 	 */
 	private function extractAllUploadedFiles(): array {
 		$uploadedFiles = [];
 
-		// Primary method: iterate through $_FILES directly to get all uploaded file field names.
-		// This is the most reliable way to detect all file uploads regardless of field name.
+		// $_FILES names every uploaded field; IRequest does not expose all file keys.
 		// phpcs:ignore -- $_FILES access is necessary as IRequest doesn't expose all file keys.
 		foreach (array_keys($_FILES) as $fieldName) {
-			// Skip if already processed.
-			if (isset($uploadedFiles[$fieldName]) === true) {
-				continue;
-			}
+			$this->collectUpload(uploadedFiles: $uploadedFiles, fieldName: (string)$fieldName);
+		}
 
-			// Skip system parameters.
-			if (str_starts_with((string)$fieldName, '_') === true) {
-				continue;
-			}
-
-			// Use IRequest to get the file data for consistency.
-			$uploadedFile = $this->request->getUploadedFile((string)$fieldName);
-			if ($uploadedFile !== null && isset($uploadedFile['tmp_name']) === true) {
-				// Check if this is an array upload (multiple files).
-				$nameValue = $uploadedFile['name'] ?? null;
-				if (is_array($nameValue) === true) {
-					// Handle multiple files with indexed keys.
-					$this->extractMultipleFiles(
-						uploadedFiles: $uploadedFiles,
-						fieldName: $fieldName,
-						uploadedFile: $uploadedFile,
-						nameValue: $nameValue
-					);
-					continue;
-				}
-
-				// Single file upload - only add if tmp_name is not empty.
-				if (empty($uploadedFile['tmp_name']) === false) {
-					$uploadedFiles[(string)$fieldName] = $uploadedFile;
-				}
-			}
-		}//end foreach
-
-		// Secondary method: also check request params for file fields.
-		// Some frameworks may include file field names in params.
-		$params = $this->request->getParams();
-		foreach (array_keys($params) as $fieldName) {
-			// Skip if already processed.
-			if (isset($uploadedFiles[$fieldName]) === true) {
-				continue;
-			}
-
-			// Skip system parameters.
-			if (str_starts_with((string)$fieldName, '_') === true) {
-				continue;
-			}
-
-			$uploadedFile = $this->request->getUploadedFile((string)$fieldName);
-			if ($uploadedFile !== null && isset($uploadedFile['tmp_name']) === true) {
-				$nameValue = $uploadedFile['name'] ?? null;
-				if (is_array($nameValue) === true) {
-					$this->extractMultipleFiles(
-						uploadedFiles: $uploadedFiles,
-						fieldName: $fieldName,
-						uploadedFile: $uploadedFile,
-						nameValue: $nameValue
-					);
-					continue;
-				}
-
-				if (empty($uploadedFile['tmp_name']) === false) {
-					$uploadedFiles[(string)$fieldName] = $uploadedFile;
-				}
-			}
-		}//end foreach
+		// Some frameworks also name file fields among the request parameters.
+		foreach (array_keys($this->request->getParams()) as $fieldName) {
+			$this->collectUpload(uploadedFiles: $uploadedFiles, fieldName: (string)$fieldName);
+		}
 
 		return $uploadedFiles;
 	}//end extractAllUploadedFiles()
 
 	/**
-	 * Helper method to extract multiple files from an array upload field.
+	 * Add the upload of one field to the collected files, once; system fields (`_`) are skipped.
 	 *
-	 * @param array $uploadedFiles Reference to the uploaded files array to populate.
-	 * @param string $fieldName The field name for the file upload.
-	 * @param array $uploadedFile The uploaded file data from IRequest.
-	 * @param array $nameValue The array of file names.
+	 * @param array<string, array> $uploadedFiles The files collected so far.
+	 * @param string               $fieldName     The field.
 	 *
 	 * @return void
 	 */
-	private function extractMultipleFiles(
-		array &$uploadedFiles,
-		string $fieldName,
-		array $uploadedFile,
-		array $nameValue,
-	): void {
-		$fileCount = count($nameValue);
-		for ($i = 0; $i < $fileCount; $i++) {
-			if (is_array($uploadedFile['type'] ?? null) === true) {
-				$typeArray = $uploadedFile['type'];
-			} else {
-				$typeArray = [];
-			}
+	private function collectUpload(array &$uploadedFiles, string $fieldName): void {
+		$uploadedFile = $this->fieldUpload(uploadedFiles: $uploadedFiles, fieldName: $fieldName);
+		if ($uploadedFile === null) {
+			return;
+		}
 
-			if (is_array($uploadedFile['tmp_name'] ?? null) === true) {
-				$tmpNameArray = $uploadedFile['tmp_name'];
-			} else {
-				$tmpNameArray = [];
-			}
+		if (is_array($uploadedFile['name'] ?? null) === true) {
+			$files = $this->multipleFiles(fieldName: $fieldName, uploadedFile: $uploadedFile);
+			$uploadedFiles = array_replace($uploadedFiles, $files);
+			return;
+		}
 
-			if (is_array($uploadedFile['error'] ?? null) === true) {
-				$errorArray = $uploadedFile['error'];
-			} else {
-				$errorArray = [];
-			}
+		if (empty($uploadedFile['tmp_name']) === false) {
+			$uploadedFiles[$fieldName] = $uploadedFile;
+		}
+	}//end collectUpload()
 
-			if (is_array($uploadedFile['size'] ?? null) === true) {
-				$sizeArray = $uploadedFile['size'];
-			} else {
-				$sizeArray = [];
-			}
+	/**
+	 * The upload of a field not collected yet, when it is not a system field (`_`) and carries a tmp_name.
+	 *
+	 * @param array<string, array> $uploadedFiles The files collected so far.
+	 * @param string               $fieldName     The field.
+	 *
+	 * @return array|null The upload, or null.
+	 */
+	private function fieldUpload(array $uploadedFiles, string $fieldName): ?array {
+		if (isset($uploadedFiles[$fieldName]) === true || str_starts_with($fieldName, '_') === true) {
+			return null;
+		}
 
-			// Only add if tmp_name is not empty.
-			if (empty($tmpNameArray[$i]) === false) {
-				$uploadedFiles[$fieldName . '[' . $i . ']'] = [
-					'name' => $nameValue[$i] ?? '',
-					'type' => $typeArray[$i] ?? '',
-					'tmp_name' => $tmpNameArray[$i] ?? '',
-					'error' => $errorArray[$i] ?? UPLOAD_ERR_NO_FILE,
-					'size' => $sizeArray[$i] ?? 0,
-				];
+		$uploadedFile = $this->request->getUploadedFile($fieldName);
+		if ($uploadedFile === null || isset($uploadedFile['tmp_name']) === false) {
+			return null;
+		}
+
+		return $uploadedFile;
+	}//end fieldUpload()
+
+	/**
+	 * The files of a multiple-file field, keyed `field[i]`; entries without a temporary file are left out.
+	 *
+	 * @param string $fieldName    The field.
+	 * @param array  $uploadedFile The upload, whose name, type, tmp_name, error and size are lists.
+	 *
+	 * @return array<string, array{name: string, type: string, tmp_name: string, error: int, size: int}> The files.
+	 */
+	private function multipleFiles(string $fieldName, array $uploadedFile): array {
+		$parts = $this->uploadParts(uploadedFile: $uploadedFile);
+		$files = [];
+		$count = count($parts['name']);
+		for ($i = 0; $i < $count; $i++) {
+			if (empty($parts['tmp_name'][$i]) === false) {
+				$files[$fieldName . '[' . $i . ']'] = $this->multipleFileAt(parts: $parts, index: $i);
 			}
-		}//end for
-	}//end extractMultipleFiles()
+		}
+
+		return $files;
+	}//end multipleFiles()
+
+	/**
+	 * The name, type, tmp_name, error and size lists of a multiple-file upload; a part that is not a list is empty.
+	 *
+	 * @param array $uploadedFile The upload.
+	 *
+	 * @return array<string, array> The lists.
+	 */
+	private function uploadParts(array $uploadedFile): array {
+		$parts = ['name' => $uploadedFile['name']];
+		foreach (['type', 'tmp_name', 'error', 'size'] as $key) {
+			$parts[$key] = [];
+			if (is_array($uploadedFile[$key] ?? null) === true) {
+				$parts[$key] = $uploadedFile[$key];
+			}
+		}
+
+		return $parts;
+	}//end uploadParts()
+
+	/**
+	 * One file of a multiple-file upload.
+	 *
+	 * @param array<string, array> $parts The upload's name, type, tmp_name, error and size lists.
+	 * @param int                  $index The position of the file.
+	 *
+	 * @return array{name: string, type: string, tmp_name: string, error: int, size: int} The file.
+	 */
+	private function multipleFileAt(array $parts, int $index): array {
+		return [
+			'name' => $parts['name'][$index] ?? '',
+			'type' => $parts['type'][$index] ?? '',
+			'tmp_name' => $parts['tmp_name'][$index],
+			'error' => $parts['error'][$index] ?? UPLOAD_ERR_NO_FILE,
+			'size' => $parts['size'][$index] ?? 0,
+		];
+	}//end multipleFileAt()
 
 	/**
 	 * Private helper method to handle pagination of results.
@@ -888,7 +927,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @param string $register Register slug or ID
 	 * @param string $schema Schema slug or ID
-	 * @param ObjectService $objectService Object service instance
+	 * @param ObjectOperationsInterface $objectService Object service instance
 	 *
 	 * @return array Array with resolved register and schema IDs: ['register' => int, 'schema' => int]
 	 *
@@ -937,13 +976,13 @@ class ObjectsController extends Controller {
 	 *
 	 * @param array $registers Array of register IDs/slugs.
 	 * @param array $schemas Array of schema IDs/slugs.
-	 * @param ObjectService $objectService Object service for resolution.
+	 * @param ObjectOperationsInterface $objectService Object service for resolution.
 	 *
 	 * @return JSONResponse Search results from multiple tables.
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
-	private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse {
+	private function crossTableSearch(array $registers, array $schemas, ObjectOperationsInterface $objectService): JSONResponse {
 		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
 		$pairs       = $this->crossTablePairs(registers: $registers, schemas: $schemas);
 		if (empty($pairs) === true) {
@@ -1070,11 +1109,11 @@ class ObjectsController extends Controller {
 	 * Both cross-table builders honour these flags (MagicSearchHandler::buildWhereConditionsSql()
 	 * renders the multitenancy decision for the UNION arms).
 	 *
-	 * @param ObjectService $objectService Object service that builds the query.
+	 * @param ObjectOperationsInterface $objectService Object service that builds the query.
 	 *
 	 * @return array<string, mixed> The query.
 	 */
-	private function crossTableQuery(ObjectService $objectService): array {
+	private function crossTableQuery(ObjectOperationsInterface $objectService): array {
 		$query   = $objectService->buildSearchQuery(requestParams: $this->request->getParams());
 		$isAdmin = $this->isCurrentUserAdmin();
 		$query['_rbac']         = ($isAdmin === false);
@@ -1184,12 +1223,12 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function refuseUnboundPurpose(array $resolved): ?JSONResponse {
-		if ($this->purposeGuard === null) {
+		if ($this->governance->purposeGuard === null) {
 			return null;
 		}
 
 		try {
-			$this->purposeGuard->enforce(
+			$this->governance->purposeGuard->enforce(
 				register: ($resolved['registerEntity'] ?? null),
 				schema: ($resolved['schemaEntity'] ?? null)
 			);
@@ -1214,7 +1253,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @param string $register Register slug, uuid or numeric id.
 	 * @param string $schema Schema slug, uuid or numeric id.
-	 * @param ObjectService $objectService The request's object service.
+	 * @param ObjectOperationsInterface $objectService The request's object service.
 	 *
 	 * @return array The resolved ids and entities.
 	 *
@@ -1223,7 +1262,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
-	private function resolveRegisterSchemaIds(string $register, string $schema, ObjectService $objectService): array {
+	private function resolveRegisterSchemaIds(string $register, string $schema, ObjectOperationsInterface $objectService): array {
 		return $this->resolveRegisterAndSchema(
 			register: $register,
 			schema: $schema,
@@ -1337,7 +1376,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	private function refuseUnprojectedHistoryPredicate(array $params): ?JSONResponse {
-		if ($this->stateHistory === null) {
+		if ($this->governance->stateHistory === null) {
 			return null;
 		}
 
@@ -1346,7 +1385,7 @@ class ObjectsController extends Controller {
 			return null;
 		}
 
-		$refusal = $predicate->refusalFor(projectedProperties: $this->stateHistory->projectedProperties());
+		$refusal = $predicate->refusalFor(projectedProperties: $this->governance->stateHistory->projectedProperties());
 		if ($refusal === null) {
 			return null;
 		}
@@ -1383,7 +1422,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return JSONResponse A JSON response containing the list of objects with optional facets and facetable fields
 	 *
@@ -1403,7 +1442,7 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
-	public function index(string $register, string $schema, ObjectService $objectService): JSONResponse {
+	public function index(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		// Read paths were unmeasured: WritePhaseProbe::flush() is only reached
 		// from the write path, so search and single-read reported no
 		// per-request counts at all. Stamp + flush here so the same in-PHP
@@ -1585,7 +1624,7 @@ class ObjectsController extends Controller {
 	 * List the objects of a magic-mapped schema straight from its table.
 	 *
 	 * @param array $listing The listing scope.
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectOperationsInterface $objectService The object service.
 	 *
 	 * @psalm-param array<string, mixed> $listing
 	 *
@@ -1593,7 +1632,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function indexFromMagicTable(array $listing, ObjectService $objectService): JSONResponse {
+	private function indexFromMagicTable(array $listing, ObjectOperationsInterface $objectService): JSONResponse {
 		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
 		$registerEntity = $listing['resolved']['registerEntity'];
 		$schemaEntity = $listing['resolved']['schemaEntity'];
@@ -1665,7 +1704,7 @@ class ObjectsController extends Controller {
 	 * Build the search query of a listing and warn about filter keys the schema does not know.
 	 *
 	 * @param array $listing The listing scope.
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectOperationsInterface $objectService The object service.
 	 *
 	 * @psalm-param array<string, mixed> $listing
 	 *
@@ -1673,7 +1712,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function buildListingQuery(array $listing, ObjectService $objectService): array {
+	private function buildListingQuery(array $listing, ObjectOperationsInterface $objectService): array {
 		$query = $objectService->buildSearchQuery(
 			requestParams: $this->request->getParams(),
 			register: $listing['resolved']['register'],
@@ -1920,7 +1959,7 @@ class ObjectsController extends Controller {
 	 */
 	private function activeOrganisationUuid(): ?string {
 		try {
-			$organisationService = $this->container->get(\OCA\OpenRegister\Service\OrganisationServiceInterface::class);
+			$organisationService = $this->container->get(\OCA\OpenRegister\Service\OrganisationService::class);
 			$activeOrg = $organisationService?->getActiveOrganisation();
 			return $activeOrg?->getUuid();
 		} catch (\Throwable $e) {
@@ -2038,7 +2077,7 @@ class ObjectsController extends Controller {
 	 * List the objects through ObjectService, which picks the source.
 	 *
 	 * @param array $listing The listing scope.
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectOperationsInterface $objectService The object service.
 	 *
 	 * @psalm-param array<string, mixed> $listing
 	 *
@@ -2046,7 +2085,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function indexFromObjectService(array $listing, ObjectService $objectService): JSONResponse {
+	private function indexFromObjectService(array $listing, ObjectOperationsInterface $objectService): JSONResponse {
 		$query = $this->buildListingQuery(listing: $listing, objectService: $objectService);
 
 		try {
@@ -2111,7 +2150,7 @@ class ObjectsController extends Controller {
 	 * page: any authenticated user may call it; an unauthenticated request is
 	 * rejected by the security middleware exactly like a non-public read.
 	 *
-	 * @param ObjectService $objectService The object service (DI).
+	 * @param ObjectOperationsInterface $objectService The object service (DI).
 	 *
 	 * @return JSONResponse `{ results: [ { register, schema, count } ] }`
 	 *
@@ -2123,7 +2162,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	public function counts(ObjectService $objectService): JSONResponse {
+	public function counts(ObjectOperationsInterface $objectService): JSONResponse {
 		$params = $this->request->getParams();
 		$entries = ($params['counts'] ?? null);
 
@@ -2227,7 +2266,7 @@ class ObjectsController extends Controller {
 	 * @param array $filter Object-property filters for this entry.
 	 * @param bool $rbac Whether to apply RBAC (parity with the list read).
 	 * @param bool $multi Whether to apply multitenancy (parity with the list read).
-	 * @param ObjectService $objectService The object service (DI).
+	 * @param ObjectOperationsInterface $objectService The object service (DI).
 	 *
 	 * @return int|null The scoped count, or null when the pair is withheld.
 	 *
@@ -2239,7 +2278,7 @@ class ObjectsController extends Controller {
 		array $filter,
 		bool $rbac,
 		bool $multi,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): ?int {
 		try {
 			// Resolve slugs/ids to numeric ids + entities (same as index()).
@@ -2334,7 +2373,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @param string $register Register slug or id.
 	 * @param string $schema Schema slug or id.
-	 * @param ObjectService $objectService Object service via DI.
+	 * @param ObjectOperationsInterface $objectService Object service via DI.
 	 *
 	 * @return JSONResponse
 	 *
@@ -2346,8 +2385,8 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 60, period: 60)]
-	public function geoSearch(string $register, string $schema, ObjectService $objectService): JSONResponse {
-		if ($this->geoFilterParser === null || $this->geoFilterApplier === null) {
+	public function geoSearch(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
+		if ($this->geo->geoFilterParser === null || $this->geo->geoFilterApplier === null) {
 			return new JSONResponse(
 				data: ['error' => 'Geo filtering primitives not configured'],
 				statusCode: 501
@@ -2356,7 +2395,7 @@ class ObjectsController extends Controller {
 
 		$body = $this->request->getParams();
 		try {
-			$filters = $this->geoFilterParser->fromGeoSearchBody(body: $body);
+			$filters = $this->geo->geoFilterParser->fromGeoSearchBody(body: $body);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
@@ -2369,7 +2408,7 @@ class ObjectsController extends Controller {
 			return $listing;
 		}
 
-		$filtered = $this->geoFilterApplier->applyAll(rows: $rows, filters: $filters);
+		$filtered = $this->geo->geoFilterApplier->applyAll(rows: $rows, filters: $filters);
 		$payload['results'] = $filtered;
 		if (isset($payload['total']) === true) {
 			$payload['total'] = count($filtered);
@@ -2392,7 +2431,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @param string $register Register slug or id.
 	 * @param string $schema Schema slug or id.
-	 * @param ObjectService $objectService Object service via DI.
+	 * @param ObjectOperationsInterface $objectService Object service via DI.
 	 *
 	 * @return JSONResponse A GeoJSON FeatureCollection (application/geo+json).
 	 *
@@ -2405,8 +2444,8 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
-	public function geoJson(string $register, string $schema, ObjectService $objectService): JSONResponse {
-		if ($this->geoFeatureBuilder === null) {
+	public function geoJson(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
+		if ($this->geo->geoFeatureBuilder === null) {
 			return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
 		}
 
@@ -2421,7 +2460,7 @@ class ObjectsController extends Controller {
 			$geoPropertyValue = null;
 		}
 
-		$collection = $this->geoFeatureBuilder->buildFeatureCollection(
+		$collection = $this->geo->geoFeatureBuilder->buildFeatureCollection(
 			rows: $rows,
 			geoProperty: $geoPropertyValue,
 			fields: $fields,
@@ -2444,7 +2483,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @param string $register Register slug or id.
 	 * @param string $schema Schema slug or id.
-	 * @param ObjectService $objectService Object service via DI.
+	 * @param ObjectOperationsInterface $objectService Object service via DI.
 	 *
 	 * @return JSONResponse A WFS-compatible GeoJSON FeatureCollection.
 	 *
@@ -2457,8 +2496,8 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
-	public function wfs(string $register, string $schema, ObjectService $objectService): JSONResponse {
-		if ($this->geoFeatureBuilder === null) {
+	public function wfs(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
+		if ($this->geo->geoFeatureBuilder === null) {
 			return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
 		}
 
@@ -2479,7 +2518,7 @@ class ObjectsController extends Controller {
 			$geoPropertyValue = null;
 		}
 
-		$response = $this->geoFeatureBuilder->buildWfsResponse(
+		$response = $this->geo->geoFeatureBuilder->buildWfsResponse(
 			rows: $rows,
 			geoProperty: $geoPropertyValue,
 			maxFeatures: $maxFeatures
@@ -2508,17 +2547,17 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
 	 */
 	public function geocode(): JSONResponse {
-		if ($this->pdokGeocoder === null) {
+		if ($this->geo->pdokGeocoder === null) {
 			return new JSONResponse(data: ['available' => false, 'suggestions' => []]);
 		}
 
 		$params = $this->request->getParams();
-		$available = $this->pdokGeocoder->isAvailable();
+		$available = $this->geo->pdokGeocoder->isAvailable();
 
 		$query = ($params['q'] ?? null);
 		if ($query !== null && trim((string)$query) !== '') {
 			$bagOnly = filter_var(($params['bagOnly'] ?? false), FILTER_VALIDATE_BOOLEAN);
-			$suggestions = $this->pdokGeocoder->geocodeFree(
+			$suggestions = $this->geo->pdokGeocoder->geocodeFree(
 				query: (string)$query,
 				maxItems: 5,
 				bagOnly: $bagOnly
@@ -2529,7 +2568,7 @@ class ObjectsController extends Controller {
 		$lon = ($params['lon'] ?? null);
 		$lat = ($params['lat'] ?? null);
 		if (is_numeric($lon) === true && is_numeric($lat) === true) {
-			$address = $this->pdokGeocoder->reverseGeocode(longitude: (float)$lon, latitude: (float)$lat);
+			$address = $this->geo->pdokGeocoder->reverseGeocode(longitude: (float)$lon, latitude: (float)$lat);
 			return new JSONResponse(data: ['available' => $available, 'address' => $address]);
 		}
 
@@ -2549,13 +2588,13 @@ class ObjectsController extends Controller {
 	 *
 	 * @param string $register Register slug or id.
 	 * @param string $schema Schema slug or id.
-	 * @param ObjectService $objectService Object service via DI.
+	 * @param ObjectOperationsInterface $objectService Object service via DI.
 	 *
 	 * @return array The RBAC-scoped result rows.
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
-	private function scopedGeoRows(string $register, string $schema, ObjectService $objectService): array {
+	private function scopedGeoRows(string $register, string $schema, ObjectOperationsInterface $objectService): array {
 		$listing = $this->index(register: $register, schema: $schema, objectService: $objectService);
 		$payload = (array)$listing->getData();
 		$rows = ($payload['results'] ?? []);
@@ -2608,7 +2647,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function applyGeoQueryFilters(array $params, array $result): array {
-		if ($this->geoFilterParser === null || $this->geoFilterApplier === null) {
+		if ($this->geo->geoFilterParser === null || $this->geo->geoFilterApplier === null) {
 			return $result;
 		}
 
@@ -2630,7 +2669,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$filters = $this->geoFilterParser->fromQueryParams(params: $flatParams);
+			$filters = $this->geo->geoFilterParser->fromQueryParams(params: $flatParams);
 		} catch (\InvalidArgumentException $e) {
 			// Malformed input: surface a 422-shape envelope inside the
 			// existing result body so consumers see the validation error
@@ -2647,7 +2686,7 @@ class ObjectsController extends Controller {
 		}
 
 		$rows = $result['results'];
-		$filtered = $this->geoFilterApplier->applyAll(rows: $rows, filters: $filters);
+		$filtered = $this->geo->geoFilterApplier->applyAll(rows: $rows, filters: $filters);
 		$result['results'] = $filtered;
 		// Update `total` to reflect the post-filter count when present.
 		if (isset($result['total']) === true) {
@@ -2710,7 +2749,7 @@ class ObjectsController extends Controller {
 	 *   and empty array values are stripped from the response to reduce payload size.
 	 *   Set _empty=true to include all properties including empty values.
 	 *
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return JSONResponse A JSON response containing the list of objects with optional facets and facetable fields
 	 *
@@ -2730,7 +2769,7 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
-	public function objects(ObjectService $objectService): JSONResponse {
+	public function objects(ObjectOperationsInterface $objectService): JSONResponse {
 		// Check for register/schema in query parameters for magic mapper routing.
 		$params = $this->request->getParams();
 		$registerParam = $params['register'] ?? $params['_register'] ?? null;
@@ -2975,7 +3014,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The record being edited.
 	 * @param string $register The register.
 	 * @param string $schema The schema.
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectOperationsInterface $objectService The object service.
 	 *
 	 * @return JSONResponse The options, or what is still needed.
 	 *
@@ -2991,7 +3030,7 @@ class ObjectsController extends Controller {
 		string $id,
 		string $register,
 		string $schema,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): JSONResponse {
 		$property = (string)($this->request->getParam('property') ?? '');
 		if (trim($property) === '') {
@@ -3034,7 +3073,7 @@ class ObjectsController extends Controller {
 		} catch (MultipleObjectsReturnedException $e) {
 			return $this->ambiguousIdentifierResponse(id: $id);
 		} catch (\Throwable $e) {
-			$this->logger?->debug(
+			$this->logger->debug(
 				message: '[ObjectsController] No stored record for a reference-options read; using the draft alone',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id, 'error' => $e->getMessage()]
 			);
@@ -3095,7 +3134,7 @@ class ObjectsController extends Controller {
 			// picker is not a way to see objects you may not see.
 			$options = $objectService->searchObjectsPaginated(query: $query);
 		} catch (\Throwable $e) {
-			$this->logger?->warning(
+			$this->logger->warning(
 				message: '[ObjectsController] A reference-options read failed',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $property, 'error' => $e->getMessage()]
 			);
@@ -3492,7 +3531,7 @@ class ObjectsController extends Controller {
 			);
 		} catch (\Throwable $e) {
 			// See the docblock: reporting never refuses a read.
-			$this->logger?->warning(
+			$this->logger->warning(
 				message: '[ObjectsController] Could not resolve the actions for a record; returning it without them',
 				context: [
 					'file' => __FILE__,
@@ -3514,7 +3553,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return JSONResponse JSON response with created object
 	 *
@@ -3551,7 +3590,7 @@ class ObjectsController extends Controller {
 	public function create(
 		string $register,
 		string $schema,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.create.in');
 		try {
@@ -3565,27 +3604,25 @@ class ObjectsController extends Controller {
 		// Intercept request and send to webhooks before processing.
 		// This allows external systems to validate, transform, or enrich the request.
 		$object = $this->request->getParams();
-		if ($this->webhookService !== null) {
+		if ($this->services->transfer->webhookService !== null) {
 			try {
-				$object = $this->webhookService->interceptRequest(
+				$object = $this->services->transfer->webhookService->interceptRequest(
 					request: $this->request,
 					eventType: 'object.creating'
 				);
 			} catch (Exception $e) {
 				// Log error but continue with original request if webhook fails.
 				// This ensures webhook failures don't break the API.
-				if ($this->logger !== null) {
-					$this->logger->error(
-						message: '[ObjectsController] Webhook interception failed',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'error' => $e->getMessage(),
-							'register' => $register,
-							'schema' => $schema,
-						]
-					);
-				}
+				$this->logger->error(
+					message: '[ObjectsController] Webhook interception failed',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'error' => $e->getMessage(),
+						'register' => $register,
+						'schema' => $schema,
+					]
+				);
 			}//end try
 		}//end if
 
@@ -3677,8 +3714,8 @@ class ObjectsController extends Controller {
 			);
 
 			$created = true;
-			if ($upsertOn !== '' && $this->upsertOnKeyHandler !== null) {
-				$upserted = $this->upsertOnKeyHandler->upsert(
+			if ($upsertOn !== '' && $this->services->transfer->upsertOnKeyHandler !== null) {
+				$upserted = $this->services->transfer->upsertOnKeyHandler->upsert(
 					constraintName: $upsertOn,
 					object: $objectToSave,
 					register: $resolved['registerEntity'],
@@ -3820,7 +3857,7 @@ class ObjectsController extends Controller {
 			);
 		}
 
-		if ($this->upsertOnKeyHandler === null
+		if ($this->services->transfer->upsertOnKeyHandler === null
 			|| ($resolved['registerEntity'] instanceof Register) === false
 			|| ($resolved['schemaEntity'] instanceof Schema) === false
 		) {
@@ -3946,7 +3983,7 @@ class ObjectsController extends Controller {
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
 	 * @param string $id The object ID or UUID
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return JSONResponse A JSON response containing the updated object
 	 *
@@ -3971,7 +4008,7 @@ class ObjectsController extends Controller {
 		string $register,
 		string $schema,
 		string $id,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.update.in');
 
@@ -4183,7 +4220,7 @@ class ObjectsController extends Controller {
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
 	 * @param string $id The object ID or UUID
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return JSONResponse A JSON response containing the updated object
 	 *
@@ -4204,7 +4241,7 @@ class ObjectsController extends Controller {
 		string $register,
 		string $schema,
 		string $id,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): JSONResponse {
 		try {
 			// Resolve slugs to numeric IDs consistently.
@@ -4403,7 +4440,7 @@ class ObjectsController extends Controller {
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
 	 * @param string $id The object ID or UUID
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return JSONResponse A JSON response containing the updated object
 	 *
@@ -4421,7 +4458,7 @@ class ObjectsController extends Controller {
 		string $register,
 		string $schema,
 		string $id,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): JSONResponse {
 		try {
 			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
@@ -4672,7 +4709,7 @@ class ObjectsController extends Controller {
 			// to API clients. Log the full trace and return a clean JSON 500 so the
 			// contract is always machine-readable. \Throwable MUST be caught last so
 			// the specific catches above keep their dedicated status codes.
-			$this->logger?->error(
+			$this->logger->error(
 				message: '[ObjectsController] Unexpected fatal error while deleting object',
 				context: [
 					'file' => __FILE__,
@@ -4757,7 +4794,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID/UUID of the object to retrieve logs for
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return JSONResponse JSON response with object contracts
 	 *
@@ -4775,7 +4812,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	public function contracts(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
+	public function contracts(string $id, string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		// REGISTER FIRST. `setSchema()` scopes its slug lookup to whatever
 		// register is currently set, and ObjectService is reused across many
 		// operations in one process, so naming the schema first resolves it
@@ -4856,7 +4893,7 @@ class ObjectsController extends Controller {
 	 * @return array The same envelope with `url` stamped on each resolvable record.
 	 */
 	private function stampObjectUrls(array $result): array {
-		if ($this->deepLinkRegistry === null
+		if ($this->linkedData->deepLinkRegistry === null
 			|| isset($result['results']) === false
 			|| is_array($result['results']) === false
 		) {
@@ -4894,14 +4931,14 @@ class ObjectsController extends Controller {
 					]
 				);
 
-				$url = $this->deepLinkRegistry->resolveUrl(
+				$url = $this->linkedData->deepLinkRegistry->resolveUrl(
 					registerId: (int)$registerId,
 					schemaId: (int)$schemaId,
 					objectData: $flat
 				);
 
-				if ($url === null && $this->relationUrlGenerator !== null) {
-					$url = $this->relationUrlGenerator->linkToRoute(
+				if ($url === null && $this->linkedData->relationUrlGenerator !== null) {
+					$url = $this->linkedData->relationUrlGenerator->linkToRoute(
 						'openregister.objects.show',
 						[
 							'register' => $registerId,
@@ -4916,7 +4953,7 @@ class ObjectsController extends Controller {
 				}
 			} catch (\Throwable $e) {
 				// Defensive: never let URL resolution break the relation response.
-				$this->logger?->debug('Relation URL resolution failed: ' . $e->getMessage());
+				$this->logger->debug('Relation URL resolution failed: ' . $e->getMessage());
 			}//end try
 
 			$result['results'][$index] = $record;
@@ -4934,7 +4971,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID of the object to retrieve relations for
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @NoAdminRequired
 	 *
@@ -4949,7 +4986,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
+	public function uses(string $id, string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		// Set the register and schema context first.
 		$objectService->setRegister(register: $register);
 		$objectService->setSchema(schema: $schema);
@@ -4986,7 +5023,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID of the object to retrieve uses for
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @NoAdminRequired
 	 *
@@ -5006,7 +5043,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	public function used(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
+	public function used(string $id, string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		// REGISTER FIRST. `setSchema()` scopes its slug lookup to whatever
 		// register is currently set, and ObjectService is reused across many
 		// operations in one process, so naming the schema first resolves it
@@ -5045,7 +5082,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID of the object to retrieve logs for
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return JSONResponse JSON response with object audit logs
 	 *
@@ -5065,7 +5102,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
+	public function logs(string $id, string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		// Whoever may read the object reads its history, redacted like the
 		// audit-trails route: a non-admin is answered by ObjectHistoryForReaders
 		// (404 when the object GET would be, the doelbinding guard, and no
@@ -5266,6 +5303,8 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (MultipleObjectsReturnedException $e) {
 			return $this->ambiguousIdentifierResponse(id: $id);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 403);
 		} catch (\Throwable $e) {
 			// SEC-CTRL-7: do not leak internal exception detail on 500.
 			return $this->errorResponse(e: $e);
@@ -5771,7 +5810,7 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		}
 
-		$service = $this->container->get(\OCA\OpenRegister\Service\PresenceService::class);
+		$service = $this->container->get(\OCA\OpenRegister\Notifications\Service\PresenceServiceInterface::class);
 		$beat = $service->heartbeat(userId: $caller, objectUuid: $id);
 		$present = $service->present(objectUuid: $id, exceptUser: $caller);
 
@@ -5784,7 +5823,7 @@ class ObjectsController extends Controller {
 		}
 
 		return new JSONResponse(
-			data: ['present' => $present, 'beatSeconds' => \OCA\OpenRegister\Service\PresenceService::BEAT_SECONDS]
+			data: ['present' => $present, 'beatSeconds' => \OCA\OpenRegister\Notifications\Service\PresenceServiceInterface::BEAT_SECONDS]
 		);
 	}//end presenceBeat()
 
@@ -5810,7 +5849,7 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
 		}
 
-		$service = $this->container->get(\OCA\OpenRegister\Service\PresenceService::class);
+		$service = $this->container->get(\OCA\OpenRegister\Notifications\Service\PresenceServiceInterface::class);
 		$left = $service->depart(userId: $caller, objectUuid: $id);
 
 		// A departure by somebody who was not there pushes nothing: there is no
@@ -5901,7 +5940,7 @@ class ObjectsController extends Controller {
 
 		return new JSONResponse(
 			data: [
-				'present' => $this->container->get(\OCA\OpenRegister\Service\PresenceService::class)
+				'present' => $this->container->get(\OCA\OpenRegister\Notifications\Service\PresenceServiceInterface::class)
 					->present(objectUuid: $id, exceptUser: $caller),
 			]
 		);
@@ -5964,7 +6003,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @return DataDownloadResponse|JSONResponse The exported file as a download response, or a
 	 *                                           400 JSON error when a `format=pdf` request exceeds
@@ -5983,7 +6022,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
-	public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse|JSONResponse {
+	public function export(string $register, string $schema, ObjectOperationsInterface $objectService): DataDownloadResponse|JSONResponse {
 		// Set the register and schema context.
 		$objectService->setRegister(register: $register);
 		$objectService->setSchema(schema: $schema);
@@ -6163,7 +6202,7 @@ class ObjectsController extends Controller {
 		try {
 			$rightService = $this->container->get(ExportRightService::class);
 		} catch (\Throwable $e) {
-			$this->logger?->error(
+			$this->logger->error(
 				message: '[ObjectsController] Export right service unresolvable, refusing the export',
 				context: ['error' => $e->getMessage()]
 			);
@@ -6291,7 +6330,7 @@ class ObjectsController extends Controller {
 				downloadCount: 1
 			);
 		} catch (\Throwable $e) {
-			$this->logger?->warning(
+			$this->logger->warning(
 				message: '[ObjectsController] Could not record the export run; the export itself was served',
 				context: ['error' => $e->getMessage()]
 			);
@@ -6311,7 +6350,7 @@ class ObjectsController extends Controller {
 		try {
 			return $this->container->get(ExportAuditRecorder::class);
 		} catch (\Throwable $e) {
-			$this->logger?->warning(
+			$this->logger->warning(
 				message: '[ObjectsController] Export audit recorder unresolvable, the export is not on the trail',
 				context: ['error' => $e->getMessage()]
 			);
@@ -6387,7 +6426,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID of object A (source object to merge from)
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @NoAdminRequired
 	 *
@@ -6401,7 +6440,7 @@ class ObjectsController extends Controller {
 		string $id,
 		string $register,
 		string $schema,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): JSONResponse {
 		// Set the schema and register to the object service.
 		$objectService->setRegister($register);
@@ -6446,7 +6485,7 @@ class ObjectsController extends Controller {
 	 * This method migrates multiple objects from one register/schema combination
 	 * to another register/schema combination with property mapping.
 	 *
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @NoAdminRequired
 	 *
@@ -6456,7 +6495,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	public function migrate(ObjectService $objectService): JSONResponse {
+	public function migrate(ObjectOperationsInterface $objectService): JSONResponse {
 		try {
 			// Get migration parameters from request.
 			$requestParams = $this->request->getParams();
@@ -6521,7 +6560,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The identifier of the object to download files for
 	 * @param string $register The register (identifier or slug) to search within
 	 * @param string $schema The schema (identifier or slug) to search within
-	 * @param ObjectService $objectService The object service for handling object operations
+	 * @param ObjectOperationsInterface $objectService The object service for handling object operations
 	 *
 	 * @return DataDownloadResponse|JSONResponse Download response or error.
 	 *
@@ -6537,7 +6576,7 @@ class ObjectsController extends Controller {
 		string $id,
 		string $register,
 		string $schema,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	): JSONResponse|DataDownloadResponse {
 		try {
 			// Set the context for the object service.
@@ -7013,7 +7052,7 @@ class ObjectsController extends Controller {
 		// exception message) even though we do NOT echo it back to the
 		// caller. `$exception` is referenced only to make the audit
 		// intent clear; the structured body is intentionally minimal.
-		$this->logger?->info(
+		$this->logger->info(
 			'[ObjectsController] Folder access denied — returning 403',
 			[
 				'attemptedFolderId' => $exception->getAttemptedFolderId(),
@@ -7211,7 +7250,7 @@ class ObjectsController extends Controller {
 				$self['unreadCounts'] = $counts;
 			}
 		} catch (\Throwable $e) {
-			$this->logger?->debug(
+			$this->logger->debug(
 				sprintf('[ObjectsController] unread counts skipped: %s', $e->getMessage())
 			);
 		}//end try
@@ -7231,7 +7270,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The object being read as the hinge.
 	 * @param string $register The register slug or identifier.
 	 * @param string $schema The schema slug or identifier.
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectOperationsInterface $objectService The object service.
 	 * @param ReferencedByService $referencedByService The reverse view.
 	 *
 	 * @NoAdminRequired
@@ -7246,7 +7285,7 @@ class ObjectsController extends Controller {
 		string $id,
 		string $register,
 		string $schema,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		ReferencedByService $referencedByService,
 	): JSONResponse {
 		$isAdmin = $this->isCurrentUserAdmin();
@@ -7298,7 +7337,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The object whose features are read.
 	 * @param string $register The register slug or identifier.
 	 * @param string $schema The schema slug or identifier.
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectOperationsInterface $objectService The object service.
 	 * @param InheritedGeoCollector $collector The feature collector.
 	 *
 	 * @NoAdminRequired
@@ -7313,7 +7352,7 @@ class ObjectsController extends Controller {
 		string $id,
 		string $register,
 		string $schema,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		InheritedGeoCollector $collector,
 	): JSONResponse {
 		$isAdmin = $this->isCurrentUserAdmin();
@@ -7350,7 +7389,7 @@ class ObjectsController extends Controller {
 				_multitenancy: false
 			);
 		} catch (\Throwable $e) {
-			$this->logger?->debug(
+			$this->logger->debug(
 				sprintf('[ObjectsController] geo features without a schema: %s', $e->getMessage())
 			);
 		}
@@ -7380,11 +7419,11 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	private function withUniqueHintWarnings(array $body): array {
-		if ($this->uniqueHintWarnings === null) {
+		if ($this->governance->uniqueHintWarnings === null) {
 			return $body;
 		}
 
-		$warnings = $this->uniqueHintWarnings->drain();
+		$warnings = $this->governance->uniqueHintWarnings->drain();
 		if (count($warnings) === 0) {
 			return $body;
 		}

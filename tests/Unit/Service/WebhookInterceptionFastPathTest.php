@@ -35,7 +35,7 @@ use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\MappingService;
-use OCA\OpenRegister\Service\Webhook\WebhookInterceptionCache;
+use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\BackgroundJob\IJobList;
 use OCP\IRequest;

@@ -51,7 +51,7 @@ use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\Integration\PaginatedResult;
 use OCA\OpenRegister\Service\Integration\QueryTimeContract;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -72,7 +72,7 @@ class ObjectIntegrationsController extends Controller {
 	 * @param LoggerInterface $logger Logger.
 	 * @param ObjectOperationsInterface $objectService OpenRegister object service (RBAC boundary).
 	 * @param SchemaMapperInterface $schemaMapper Schema loader (external-source detection).
-	 * @param TimelineVisibilityService $visibility Internal/public filter for the timeline leaves.
+	 * @param TimelineVisibilityServiceInterface $visibility Internal/public filter for the timeline leaves.
 	 *
 	 * @return void
 	 */
@@ -83,7 +83,7 @@ class ObjectIntegrationsController extends Controller {
 		private LoggerInterface $logger,
 		private ObjectOperationsInterface $objectService,
 		private SchemaMapperInterface $schemaMapper,
-		private TimelineVisibilityService $visibility,
+		private TimelineVisibilityServiceInterface $visibility,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

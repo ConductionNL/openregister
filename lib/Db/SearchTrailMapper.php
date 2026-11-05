@@ -132,25 +132,9 @@ class SearchTrailMapper extends QBMapper {
 		// Apply filters.
 		$this->applyFilters(qb: $qb, filters: $filters);
 
-		// Apply search term.
-		if ($search !== null) {
-			$qb->andWhere(
-				$qb->expr()->orX(
-					$qb->expr()->like('search_term', $qb->createNamedParameter('%' . $search . '%')),
-					$qb->expr()->like('request_uri', $qb->createNamedParameter('%' . $search . '%')),
-					$qb->expr()->like('user_agent', $qb->createNamedParameter('%' . $search . '%'))
-				)
-			);
-		}
+		$this->filterBySearchTerm(qb: $qb, search: $search);
 
-		// Apply date filters.
-		if ($from !== null) {
-			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
-		}
-
-		if ($to !== null) {
-			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
-		}
+		$this->filterByCreated(qb: $qb, range: [$from, $to]);
 
 		// Apply sorting.
 		if (empty($sort) === true) {
@@ -202,25 +186,9 @@ class SearchTrailMapper extends QBMapper {
 		// Apply filters.
 		$this->applyFilters(qb: $qb, filters: $filters);
 
-		// Apply search term.
-		if ($search !== null) {
-			$qb->andWhere(
-				$qb->expr()->orX(
-					$qb->expr()->like('search_term', $qb->createNamedParameter('%' . $search . '%')),
-					$qb->expr()->like('request_uri', $qb->createNamedParameter('%' . $search . '%')),
-					$qb->expr()->like('user_agent', $qb->createNamedParameter('%' . $search . '%'))
-				)
-			);
-		}
+		$this->filterBySearchTerm(qb: $qb, search: $search);
 
-		// Apply date filters.
-		if ($from !== null) {
-			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
-		}
-
-		if ($to !== null) {
-			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
-		}
+		$this->filterByCreated(qb: $qb, range: [$from, $to]);
 
 		$result = $qb->executeQuery();
 		$count = $result->fetchOne();
@@ -302,14 +270,7 @@ class SearchTrailMapper extends QBMapper {
 			->addSelect($qb->createFunction('COUNT(CASE WHEN total_results > 0 THEN 1 END) AS non_empty_searches'))
 			->from($this->getTableName());
 
-		// Apply date filters.
-		if ($from !== null) {
-			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
-		}
-
-		if ($to !== null) {
-			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
-		}
+		$this->filterByCreated(qb: $qb, range: [$from, $to]);
 
 		$result = $qb->executeQuery();
 		$stats = $result->fetch();
@@ -354,14 +315,7 @@ class SearchTrailMapper extends QBMapper {
 			->orderBy('search_count', 'DESC')
 			->setMaxResults($limit);
 
-		// Apply date filters.
-		if ($from !== null) {
-			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
-		}
-
-		if ($to !== null) {
-			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
-		}
+		$this->filterByCreated(qb: $qb, range: [$from, $to]);
 
 		$result = $qb->executeQuery();
 		$terms = $result->fetchAll();
@@ -446,14 +400,7 @@ class SearchTrailMapper extends QBMapper {
 			$qb->addSelect($qb->createFunction("strftime('{$sqliteFormat}', created) AS date_period"));
 		}//end if
 
-		// Apply date filters.
-		if ($from !== null) {
-			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
-		}
-
-		if ($to !== null) {
-			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
-		}
+		$this->filterByCreated(qb: $qb, range: [$from, $to]);
 
 		$result = $qb->executeQuery();
 		$activity = $result->fetchAll();
@@ -502,14 +449,7 @@ class SearchTrailMapper extends QBMapper {
 			->groupBy('register', 'schema', 'register_uuid', 'schema_uuid')
 			->orderBy('search_count', 'DESC');
 
-		// Apply date filters.
-		if ($from !== null) {
-			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
-		}
-
-		if ($to !== null) {
-			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
-		}
+		$this->filterByCreated(qb: $qb, range: [$from, $to]);
 
 		$result = $qb->executeQuery();
 		$stats = $result->fetchAll();
@@ -560,14 +500,7 @@ class SearchTrailMapper extends QBMapper {
 			->orderBy('search_count', 'DESC')
 			->setMaxResults($limit);
 
-		// Apply date filters.
-		if ($from !== null) {
-			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
-		}
-
-		if ($to !== null) {
-			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
-		}
+		$this->filterByCreated(qb: $qb, range: [$from, $to]);
 
 		$result = $qb->executeQuery();
 		$stats = $result->fetchAll();
@@ -604,14 +537,7 @@ class SearchTrailMapper extends QBMapper {
 			->where($qb->expr()->isNotNull('search_term'))
 			->andWhere($qb->expr()->neq('search_term', $qb->createNamedParameter('')));
 
-		// Apply date filters.
-		if ($from !== null) {
-			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
-		}
-
-		if ($to !== null) {
-			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
-		}
+		$this->filterByCreated(qb: $qb, range: [$from, $to]);
 
 		$result = $qb->executeQuery();
 		$terms = $result->fetchAll();
@@ -638,14 +564,7 @@ class SearchTrailMapper extends QBMapper {
 			->where($qb->expr()->isNotNull('user'))
 			->andWhere($qb->expr()->neq('user', $qb->createNamedParameter('')));
 
-		// Apply date filters.
-		if ($from !== null) {
-			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
-		}
-
-		if ($to !== null) {
-			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
-		}
+		$this->filterByCreated(qb: $qb, range: [$from, $to]);
 
 		$result = $qb->executeQuery();
 		$users = $result->fetchAll();
@@ -673,14 +592,7 @@ class SearchTrailMapper extends QBMapper {
 			->where($qb->expr()->isNotNull('session'))
 			->andWhere($qb->expr()->neq('session', $qb->createNamedParameter('')));
 
-		// Apply date filters.
-		if ($from !== null) {
-			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
-		}
-
-		if ($to !== null) {
-			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
-		}
+		$this->filterByCreated(qb: $qb, range: [$from, $to]);
 
 		$result = $qb->executeQuery();
 		$data = $result->fetch();
@@ -718,14 +630,7 @@ class SearchTrailMapper extends QBMapper {
 			->andWhere($qb->expr()->isNotNull('session'))
 			->andWhere($qb->expr()->neq('session', $qb->createNamedParameter('')));
 
-		// Apply date filters.
-		if ($from !== null) {
-			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
-		}
-
-		if ($to !== null) {
-			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
-		}
+		$this->filterByCreated(qb: $qb, range: [$from, $to]);
 
 		$result = $qb->executeQuery();
 		$data = $result->fetch();
@@ -818,6 +723,42 @@ class SearchTrailMapper extends QBMapper {
 			throw $e;
 		}//end try
 	}//end clearAllLogs()
+
+	/**
+	 * Match a search term against the search term, request uri and user agent.
+	 *
+	 * @param IQueryBuilder $qb     The query to narrow.
+	 * @param string|null   $search The term, or null for no condition.
+	 *
+	 * @return void
+	 */
+	private function filterBySearchTerm(IQueryBuilder $qb, ?string $search): void {
+		if ($search === null) {
+			return;
+		}
+
+		$like = fn (string $column): string => $qb->expr()->like($column, $qb->createNamedParameter('%' . $search . '%'));
+		$qb->andWhere($qb->expr()->orX($like('search_term'), $like('request_uri'), $like('user_agent')));
+	}//end filterBySearchTerm()
+
+	/**
+	 * Narrow a query to rows created within a range; a null bound is open.
+	 *
+	 * @param IQueryBuilder                  $qb    The query to narrow.
+	 * @param array{0: ?DateTime, 1: ?DateTime} $range The from and to moments.
+	 *
+	 * @return void
+	 */
+	private function filterByCreated(IQueryBuilder $qb, array $range): void {
+		[$from, $to] = $range;
+		if ($from !== null) {
+			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
+		}
+
+		if ($to !== null) {
+			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
+		}
+	}//end filterByCreated()
 
 	/**
 	 * Apply filters to the query builder

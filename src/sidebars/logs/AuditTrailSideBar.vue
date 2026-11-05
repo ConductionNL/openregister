@@ -257,12 +257,56 @@ import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import eventBus from '../../eventBus.js'
-import { addDateRange, addScope } from '../../services/routeQuery.js'
+import {
+	addDateRange,
+	addScope,
+	csvValues,
+	queriesEqual,
+	routeDate,
+} from '../../services/routeQuery.js'
+import { applyRouteScope } from '../../services/routeScope.js'
+import {
+	registerSelect,
+	schemaSelect,
+	scopeOption,
+} from '../../services/scopeSelect.js'
 import {
 	addJoinedValues,
 	addPresent,
 	addScopeIds,
+	trailUserOptions,
 } from '../../services/trailFilters.js'
+
+/**
+ * The user options a comma-separated route parameter names.
+ *
+ * @param {string|undefined} user The users
+ * @return {Array<object>} The selected users
+ */
+function usersFromRoute(user) {
+	if (typeof user !== 'string' || user.length === 0) {
+		return []
+	}
+	return csvValues(user).map((u) => ({ value: u, label: u }))
+}
+
+const STATISTIC_FIELDS = [
+	['totalAuditTrails', 'total'],
+	['createCount', 'create'],
+	['updateCount', 'update'],
+	['deleteCount', 'delete'],
+]
+
+/**
+ * The known option for an action value, or a new one for an unknown action.
+ *
+ * @param {Map<string, object>} byValue The known options by value
+ * @param {string} value The action
+ * @return {object} The option
+ */
+function actionOption(byValue, value) {
+	return byValue.get(value) || { value, label: value }
+}
 
 export default {
 	name: 'AuditTrailSideBar',
@@ -329,110 +373,35 @@ export default {
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		registerOptions() {
-			return {
-				options: registerStore.registerList.map((register) => ({
-					value: register.id,
-					label: register.title,
-					title: register.title,
-					register,
-				})),
-
-				reduce: (option) => option.register,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.register && option.register.title)
-						|| option.label
-						|| ''
-					)
-				},
-			}
+			return registerSelect(registerStore.registerList)
 		},
 
 		/**
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		schemaOptions() {
-			if (!registerStore.registerItem) return { options: [] }
-
-			return {
-				options: schemaStore.schemaList
-					.filter((schema) =>
-						registerStore.registerItem.schemas.some(
-							(registerSchema) => registerSchema.id === schema.id,
-						),
-					)
-					.map((schema) => ({
-						value: schema.id,
-						label: schema.title,
-						title: schema.title,
-						schema,
-					})),
-
-				reduce: (option) => option.schema,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.schema && option.schema.title)
-						|| option.label
-						|| ''
-					)
-				},
-			}
+			return schemaSelect(registerStore.registerItem, schemaStore.schemaList)
 		},
 
 		/**
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		selectedRegisterValue() {
-			if (!registerStore.registerItem) return null
-			const register = registerStore.registerItem
-			return {
-				value: register.id,
-				label: register.title,
-				title: register.title,
-				register,
-			}
+			return scopeOption(registerStore.registerItem, 'register')
 		},
 
 		/**
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		selectedSchemaValue() {
-			if (!schemaStore.schemaItem) return null
-			const schema = schemaStore.schemaItem
-			return {
-				value: schema.id,
-				label: schema.title,
-				title: schema.title,
-				schema,
-			}
+			return scopeOption(schemaStore.schemaItem, 'schema')
 		},
 
 		/**
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		userOptions() {
-			if (
-				!auditTrailStore.auditTrailList
-				|| !auditTrailStore.auditTrailList.length
-			) {
-				return []
-			}
-			// Get unique users from audit trail list
-			const users = [
-				...new Set(
-					auditTrailStore.auditTrailList
-						.map((trail) => trail.userName || trail.user)
-						.filter(Boolean),
-				),
-			]
-			return users.map((user) => ({
-				label: user,
-				value: user,
-			}))
+			return trailUserOptions(auditTrailStore.auditTrailList)
 		},
 	},
 
@@ -607,10 +576,9 @@ export default {
 		async loadStatistics() {
 			try {
 				const stats = await auditTrailStore.getStatistics()
-				this.totalAuditTrails = stats.total || 0
-				this.createCount = stats.create || 0
-				this.updateCount = stats.update || 0
-				this.deleteCount = stats.delete || 0
+				for (const [field, key] of STATISTIC_FIELDS) {
+					this[field] = stats[key] || 0
+				}
 			} catch {
 				// Handle error silently
 			}
@@ -695,15 +663,8 @@ export default {
 				register: registerStore.registerItem,
 				schema: schemaStore.schemaItem,
 			})
-			if (
-				Array.isArray(this.selectedActions)
-				&& this.selectedActions.length > 0
-			) {
-				query.action = this.selectedActions.map((a) => a.value).join(',')
-			}
-			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) {
-				query.user = this.selectedUsers.map((u) => u.value).join(',')
-			}
+			addJoinedValues(query, ['action', this.selectedActions])
+			addJoinedValues(query, ['user', this.selectedUsers])
 			addDateRange(query, this)
 			if (this.objectFilter) query.object = this.objectFilter
 			if (this.showOnlyWithChanges) query.onlyWithChanges = '1'
@@ -720,14 +681,7 @@ export default {
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		queriesEqual(a, b) {
-			const ka = Object.keys(a || {}).sort()
-			const kb = Object.keys(b || {}).sort()
-			if (ka.length !== kb.length) return false
-			for (let i = 0; i < ka.length; i++) {
-				if (ka[i] !== kb[i]) return false
-				if (String(a[ka[i]]) !== String(b[kb[i]])) return false
-			}
-			return true
+			return queriesEqual(a, b)
 		},
 
 		/**
@@ -756,86 +710,32 @@ export default {
 		 */
 		applyQueryParamsFromRoute() {
 			if (this.$route.path !== '/audit-trails') return
-			const {
-				register,
-				schema,
-				action,
-				user,
-				dateFrom,
-				dateTo,
-				object,
-				onlyWithChanges,
-			} = this.$route.query || {}
-
-			// Set simple fields
+			const query = this.$route.query || {}
 			// JS dates are awful, so we first check if its a valid date and then create the date. (dateFrom is a ISO string)
-			this.dateFrom =
-				dateFrom && new Date(dateFrom).getDate() ? new Date(dateFrom) : null
-			this.dateTo =
-				dateTo && new Date(dateTo).getDate() ? new Date(dateTo) : null
-			this.objectFilter = object ? String(object) : ''
-			this.showOnlyWithChanges = !!onlyWithChanges
+			this.dateFrom = routeDate(query.dateFrom)
+			this.dateTo = routeDate(query.dateTo)
+			this.objectFilter = query.object ? String(query.object) : ''
+			this.showOnlyWithChanges = !!query.onlyWithChanges
+			this.selectedActions = this.actionsFromRoute(query.action)
+			this.selectedUsers = usersFromRoute(query.user)
+			// Once state is set from URL, apply to store and refresh
+			applyRouteScope(query, () => this.applyFiltersToStore())
+		},
 
-			// Actions
-			if (typeof action === 'string' && action.length > 0) {
-				const values = action
-					.split(',')
-					.map((s) => s.trim())
-					.filter(Boolean)
-				const mapByValue = Object.fromEntries(
-					this.actionOptions.map((o) => [o.value, o]),
-				)
-				this.selectedActions = values.map(
-					(v) => mapByValue[v] || { value: v, label: v },
-				)
-			} else {
-				this.selectedActions = []
+		/**
+		 * The action options a route parameter names; unknown actions get an
+		 * option of their own.
+		 *
+		 * @param {string|undefined} action The comma-separated actions
+		 * @return {Array<object>} The selected actions
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 */
+		actionsFromRoute(action) {
+			if (typeof action !== 'string' || action.length === 0) {
+				return []
 			}
-
-			// Users
-			if (typeof user === 'string' && user.length > 0) {
-				const values = user
-					.split(',')
-					.map((s) => s.trim())
-					.filter(Boolean)
-				this.selectedUsers = values.map((u) => ({ value: u, label: u }))
-			} else {
-				this.selectedUsers = []
-			}
-
-			// Registers and schemas depend on lists being loaded
-			const applyRegister = () => {
-				if (!register) return true
-				if (!registerStore.registerList.length) return false
-				const reg = registerStore.registerList.find(
-					(r) => String(r.id) === String(register),
-				)
-				if (reg) registerStore.setRegisterItem(reg)
-				return true
-			}
-			const applySchema = () => {
-				if (!schema) return true
-				if (!schemaStore.schemaList.length) return false
-				const sch = schemaStore.schemaList.find(
-					(s) => String(s.id) === String(schema),
-				)
-				if (sch) schemaStore.setSchemaItem(sch)
-				return true
-			}
-
-			const tryApply = (attempt = 0) => {
-				const regOk = applyRegister()
-				const schOk = applySchema()
-				if (regOk && schOk) {
-					// Once state is set from URL, apply to store and refresh
-					this.applyFiltersToStore()
-					return
-				}
-				if (attempt < 10) {
-					setTimeout(() => tryApply(attempt + 1), 200)
-				}
-			}
-			tryApply()
+			const byValue = new Map(this.actionOptions.map((o) => [o.value, o]))
+			return csvValues(action).map((v) => actionOption(byValue, v))
 		},
 
 		/**
@@ -896,7 +796,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/sidebars.scss' as *;
+
 .filterSection,
 .statsSection {
 	padding: 12px 0;
@@ -917,23 +819,9 @@ export default {
 	margin: 0 0 12px 0;
 }
 
-.filterGroup {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	padding: 0 16px;
-	margin-bottom: 16px;
-}
+@include filter-group-rules;
 
-.filterGroup label {
-	font-size: 0.9em;
-	color: var(--color-text-maxcontrast);
-}
-
-.actionGroup {
-	padding: 0 16px;
-	margin-bottom: 12px;
-}
+@include action-group;
 
 .actionOption {
 	display: flex;
@@ -965,13 +853,7 @@ export default {
 	padding: 16px;
 }
 
-.statCard {
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	padding: 16px;
-	margin-bottom: 12px;
-	text-align: center;
-}
+@include stat-card;
 
 .statCard.create {
 	border-left: 4px solid var(--color-success);
@@ -985,17 +867,7 @@ export default {
 	border-left: 4px solid var(--color-error);
 }
 
-.statNumber {
-	font-size: 2rem;
-	font-weight: bold;
-	color: var(--color-primary);
-	margin-bottom: 4px;
-}
-
-.statLabel {
-	font-size: 0.9rem;
-	color: var(--color-text-maxcontrast);
-}
+@include stat-number-rules;
 
 .actionDistribution,
 .topObjects {

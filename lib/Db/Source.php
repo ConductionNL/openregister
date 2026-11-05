@@ -82,6 +82,7 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Source extends Entity implements JsonSerializable {
+	use JsonFieldsTrait;
 
 	/**
 	 * Unique identifier for the source
@@ -131,13 +132,6 @@ class Source extends Entity implements JsonSerializable {
 	 * @var string|null Organisation UUID
 	 */
 	protected ?string $organisation = null;
-
-	/**
-	 * Configuration that manages this source (transient, not stored in DB)
-	 *
-	 * @var Configuration|null
-	 */
-	private ?Configuration $managedByConfig = null;
 
 	/**
 	 * Whether scheduled/harvest sync is enabled for this source
@@ -283,26 +277,6 @@ class Source extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
-	 * Get JSON fields from the entity
-	 *
-	 * Returns all fields that are of type 'json'
-	 *
-	 * @return string[] List of JSON field names
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
-
-	/**
 	 * Hydrate the entity with data from an array
 	 *
 	 * Sets entity properties based on input array values
@@ -405,7 +379,7 @@ class Source extends Entity implements JsonSerializable {
 			'batchSize' => $this->batchSize,
 			'updated' => $updated,
 			'created' => $created,
-			'managedByConfiguration' => $this->getManagedByConfigurationData(),
+			'managedByConfiguration' => null,
 		];
 	}//end jsonSerialize()
 
@@ -436,26 +410,6 @@ class Source extends Entity implements JsonSerializable {
 		// Final fallback.
 		return 'Source';
 	}//end __toString()
-
-	/**
-	 * Get the configuration that manages this source (transient property)
-	 *
-	 * @return Configuration|null The managing configuration or null
-	 */
-	public function getManagedByConfigurationEntity(): ?Configuration {
-		return $this->managedByConfig;
-	}//end getManagedByConfigurationEntity()
-
-	/**
-	 * Set the configuration that manages this source (transient property)
-	 *
-	 * @param Configuration|null $configuration The managing configuration
-	 *
-	 * @return void
-	 */
-	public function setManagedByConfigurationEntity(?Configuration $configuration): void {
-		$this->managedByConfig = $configuration;
-	}//end setManagedByConfigurationEntity()
 
 	/**
 	 * Check if this source is managed by a configuration
@@ -512,23 +466,4 @@ class Source extends Entity implements JsonSerializable {
 
 		return null;
 	}//end getManagedByConfiguration()
-
-	/**
-	 * Get managed by configuration data as array or null
-	 *
-	 * @return (int|null|string)[]|null Configuration data or null
-	 *
-	 * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
-	 */
-	private function getManagedByConfigurationData(): ?array {
-		if ($this->managedByConfig === null) {
-			return null;
-		}
-
-		return [
-			'id' => $this->managedByConfig->getId(),
-			'uuid' => $this->managedByConfig->getUuid(),
-			'title' => $this->managedByConfig->getTitle(),
-		];
-	}//end getManagedByConfigurationData()
 }//end class

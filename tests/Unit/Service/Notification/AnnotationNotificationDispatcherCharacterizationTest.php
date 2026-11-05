@@ -20,31 +20,31 @@ declare(strict_types=1);
 namespace Unit\Service\Notification;
 
 use DateTime;
-use OCA\OpenRegister\Db\NotificationDispatchLog;
-use OCA\OpenRegister\Db\NotificationDispatchLogMapper;
-use OCA\OpenRegister\Db\NotificationHistory;
-use OCA\OpenRegister\Db\NotificationHistoryMapper;
-use OCA\OpenRegister\Db\NotificationSubscriptionMapper;
+use OCA\OpenRegister\Notifications\Db\NotificationDispatchLog;
+use OCA\OpenRegister\Notifications\Db\NotificationDispatchLogMapper;
+use OCA\OpenRegister\Notifications\Db\NotificationHistory;
+use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
+use OCA\OpenRegister\Notifications\Db\NotificationSubscriptionMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\QueuedNotification;
-use OCA\OpenRegister\Db\QueuedNotificationMapper;
+use OCA\OpenRegister\Notifications\Db\QueuedNotification;
+use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\DuplicateDispatchException;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
-use OCA\OpenRegister\Service\Notification\DigestScheduleEvaluator;
-use OCA\OpenRegister\Service\Notification\EmailSender;
-use OCA\OpenRegister\Service\Notification\NcNotificationSender;
-use OCA\OpenRegister\Service\Notification\NotificationCoalescer;
-use OCA\OpenRegister\Service\Notification\NotificationDeliveryWindowService;
-use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
-use OCA\OpenRegister\Service\Notification\NotificationRecipientResolver;
-use OCA\OpenRegister\Service\Notification\OutboundTransportInterface;
-use OCA\OpenRegister\Service\Notification\RateLimiter;
+use OCA\OpenRegister\Notifications\Db\DuplicateDispatchException;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\DigestScheduleEvaluator;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationCoalescer;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\OutboundTransportInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
-use OCA\OpenRegister\Service\Notification\RuleReachRecorder;
-use OCA\OpenRegister\Service\Notification\TalkSender;
-use OCA\OpenRegister\Service\Party\PartyNotificationService;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleReachRecorder;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
+use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
 use OCP\Activity\IEvent;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -73,7 +73,7 @@ use RuntimeException;
  * `q-` is inside quiet hours, `qx-` is inside quiet hours with a failing
  * queue, `nl-` reads Dutch.
  *
- * @coversDefaultClass \OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher
+ * @coversDefaultClass \OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher
  */
 class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 
