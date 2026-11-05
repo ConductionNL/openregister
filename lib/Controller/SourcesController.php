@@ -20,6 +20,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Controller\Support\SourcesControllerServices;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
@@ -59,40 +60,108 @@ use Throwable;
  */
 class SourcesController extends Controller {
 	/**
+	 * The app configuration object
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $config;
+
+	/**
+	 * The source mapper
+	 *
+	 * @var SourceMapper
+	 */
+	private readonly SourceMapper $sourceMapper;
+
+	/**
+	 * The localization service
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * User session for admin checks
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for admin checks
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Crypto service for databaseUrl encryption
+	 *
+	 * @var ICrypto
+	 */
+	private readonly ICrypto $crypto;
+
+	/**
+	 * Resolves the transport for a source type
+	 *
+	 * @var SourceFetcherRegistry
+	 */
+	private readonly SourceFetcherRegistry $fetcherRegistry;
+
+	/**
+	 * Harvest pipeline orchestrator
+	 *
+	 * @var HarvestPipelineService
+	 */
+	private readonly HarvestPipelineService $pipeline;
+
+	/**
+	 * Opens read-only DBAL connections for database sources
+	 *
+	 * @var DbalConnectionFactory
+	 */
+	private readonly DbalConnectionFactory $connectionFactory;
+
+	/**
+	 * Introspects a database source into a virtual register
+	 *
+	 * @var DatabaseIntrospectionService
+	 */
+	private readonly DatabaseIntrospectionService $introspectionService;
+
+	/**
+	 * The app logger
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor for the SourcesController
 	 *
 	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
-	 * @param IAppConfig $config The app configuration object
-	 * @param SourceMapper $sourceMapper The source mapper
-	 * @param IL10N $l10n The localization service
-	 * @param IUserSession $userSession User session for admin checks
-	 * @param IGroupManager $groupManager Group manager for admin checks
-	 * @param ICrypto $crypto Crypto service for databaseUrl encryption
-	 * @param SourceFetcherRegistry $fetcherRegistry Resolves the transport for a source type
-	 * @param HarvestPipelineService $pipeline Harvest pipeline orchestrator
-	 * @param DbalConnectionFactory $connectionFactory Opens read-only DBAL connections for database sources
-	 * @param DatabaseIntrospectionService $introspectionService Introspects a database source into a virtual register
-	 * @param LoggerInterface $logger The app logger
+	 * @param SourcesControllerServices $services The sources controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly IAppConfig $config,
-		private readonly SourceMapper $sourceMapper,
-		private readonly IL10N $l10n,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly ICrypto $crypto,
-		private readonly SourceFetcherRegistry $fetcherRegistry,
-		private readonly HarvestPipelineService $pipeline,
-		private readonly DbalConnectionFactory $connectionFactory,
-		private readonly DatabaseIntrospectionService $introspectionService,
-		private readonly LoggerInterface $logger,
+		SourcesControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->config = $services->platform->config;
+		$this->sourceMapper = $services->mappers->sourceMapper;
+		$this->l10n = $services->platform->l10n;
+		$this->userSession = $services->session->userSession;
+		$this->groupManager = $services->session->groupManager;
+		$this->crypto = $services->platform->crypto;
+		$this->fetcherRegistry = $services->domain->fetcherRegistry;
+		$this->pipeline = $services->domain->pipeline;
+		$this->connectionFactory = $services->domain->connectionFactory;
+		$this->introspectionService = $services->domain->introspectionService;
+		$this->logger = $services->session->logger;
 	}//end __construct()
 
 	/**

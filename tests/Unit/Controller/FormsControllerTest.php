@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FormsControllerFactory;
 use OCA\OpenRegister\Controller\FormsController;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -43,6 +44,10 @@ use ReflectionMethod;
  * Status codes, bodies and the auth posture of each route.
  *
  * @covers \OCA\OpenRegister\Controller\FormsController
+ * @uses \OCA\OpenRegister\Controller\Support\FormsMappers
+ * @uses \OCA\OpenRegister\Controller\Support\FormsDomain
+ * @uses \OCA\OpenRegister\Controller\Support\FormsPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\FormsControllerServices
  * @uses \OCA\OpenRegister\Exception\FormSubmitRefusedException
  * @uses \OCA\OpenRegister\Db\Schema
  */
@@ -93,7 +98,7 @@ class FormsControllerTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
-		$this->controller = new FormsController(
+		$this->controller = FormsControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			resolver: $this->resolver,

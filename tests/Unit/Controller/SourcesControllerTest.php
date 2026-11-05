@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SourcesControllerFactory;
 use OCA\OpenRegister\Controller\SourcesController;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
@@ -70,7 +71,7 @@ class SourcesControllerTest extends TestCase {
 		$credentialStore = $this->createMock(CredentialStore::class);
 		$credentialStore->method('get')->willReturn(null);
 
-		return new SourcesController(
+		return SourcesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,
@@ -849,7 +850,7 @@ class SourcesControllerTest extends TestCase {
 		$credentialStore = $this->createMock(CredentialStore::class);
 		$credentialStore->method('get')->willReturn(null);
 
-		return new SourcesController(
+		return SourcesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,

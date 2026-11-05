@@ -20,6 +20,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\RulesControllerFactory;
 use OCA\OpenRegister\Controller\RulesController;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\RuleRunMapper;
@@ -82,7 +83,7 @@ class RulesControllerScopeTest extends TestCase {
 			vocabulary: new RuleVocabulary()
 		);
 
-		return new RulesController(
+		return RulesControllerFactory::create(
 			appName: 'openregister',
 			request: $request,
 			schemaMapper: $schemas,
