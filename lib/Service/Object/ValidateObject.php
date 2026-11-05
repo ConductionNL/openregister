@@ -96,6 +96,49 @@ class ValidateObject implements ValidateObjectInterface {
 	private const UUID_REFERENCE_PATTERN = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
 
 	/**
+	 * OpenRegister keywords that are not JSON Schema and are removed before validation.
+	 *
+	 * @var array<int, string>
+	 */
+	private const METADATA_KEYWORDS = [
+		'cascadeDelete',
+		'objectConfiguration',
+		'inversedBy',
+		'mappedBy',
+		'targetEntity',
+		'fetch',
+		'indexBy',
+		'orphanRemoval',
+		'joinColumns',
+		'inverseJoinColumns',
+		'joinTable',
+		'uniqueConstraints',
+		'indexes',
+		'options',
+		'computed',
+		'calculation',
+	];
+
+	/**
+	 * Custom OpenRegister types and the JSON Schema type they validate as. File references are
+	 * integer file ids, data URIs or null; the others are stored as strings.
+	 *
+	 * @var array<string, string|array<int, string>>
+	 */
+	private const CUSTOM_TYPE_MAP = [
+		'file' => ['integer', 'string', 'null'],
+		'datetime' => 'string',
+		'date' => 'string',
+		'time' => 'string',
+		'uuid' => 'string',
+		'url' => 'string',
+		'email' => 'string',
+		'phone' => 'string',
+		'color' => 'string',
+		'recurrence' => 'string',
+	];
+
+	/**
 	 * Messages that name the property, one argument and the value: the argument key, its
 	 * default, and the sprintf template.
 	 *
@@ -1328,53 +1371,9 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function cleanSchemaForValidation(object $schemaObject, bool $_isArrayItems = false): object {
-
-		// Clone the schema object to avoid modifying the original.
 		$cleanedSchema = json_decode(json_encode($schemaObject));
-
-		// Remove Nextcloud-specific metadata properties.
-		$metadataProperties = [
-			'cascadeDelete',
-			'objectConfiguration',
-			'inversedBy',
-			'mappedBy',
-			'targetEntity',
-			'fetch',
-			'indexBy',
-			'orphanRemoval',
-			'joinColumns',
-			'inverseJoinColumns',
-			'joinTable',
-			'uniqueConstraints',
-			'indexes',
-			'options',
-			'computed',
-			'calculation',
-		];
-
-		foreach ($metadataProperties as $property) {
-			if (($cleanedSchema->$property ?? null) !== null) {
-				unset($cleanedSchema->$property);
-			}
-		}
-
-		// Handle properties recursively.
-		if (($cleanedSchema->properties ?? null) !== null) {
-			foreach ($cleanedSchema->properties as $propertyName => $propertySchema) {
-				$cleanedSchema->properties->$propertyName = $this->cleanPropertyForValidation(
-					propertySchema: $propertySchema,
-					isArrayItems: false
-				);
-			}
-		}
-
-		// Handle array items - this is where the distinction matters.
-		if (($cleanedSchema->items ?? null) !== null) {
-			$cleanedSchema->items = $this->cleanPropertyForValidation(
-				propertySchema: $cleanedSchema->items,
-				isArrayItems: true
-			);
-		}
+		$this->stripMetadataKeywords(schema: $cleanedSchema);
+		$this->cleanNestedSchemas(schema: $cleanedSchema);
 
 		return $cleanedSchema;
 	}//end cleanSchemaForValidation()
@@ -1392,71 +1391,61 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function cleanPropertyForValidation($propertySchema, bool $isArrayItems = false) {
-		// Handle non-object properties.
 		if (is_object($propertySchema) === false) {
 			return $propertySchema;
 		}
 
-		// Clone to avoid modifying original.
 		$cleanedProperty = json_decode(json_encode($propertySchema));
-
-		// Remove Nextcloud-specific metadata properties.
-		$metadataProperties = [
-			'cascadeDelete',
-			'objectConfiguration',
-			'inversedBy',
-			'mappedBy',
-			'targetEntity',
-			'fetch',
-			'indexBy',
-			'orphanRemoval',
-			'joinColumns',
-			'inverseJoinColumns',
-			'joinTable',
-			'uniqueConstraints',
-			'indexes',
-			'options',
-			'computed',
-			'calculation',
-		];
-
-		foreach ($metadataProperties as $property) {
-			if (($cleanedProperty->$property ?? null) !== null) {
-				unset($cleanedProperty->$property);
-			}
-		}
-
-		// Transform custom OpenRegister types to valid JSON Schema types.
-		// JSON Schema only allows: string, number, integer, boolean, array, object, null.
+		$this->stripMetadataKeywords(schema: $cleanedProperty);
 		$cleanedProperty = $this->transformCustomTypeToJsonSchemaType(propertySchema: $cleanedProperty);
-
-		// Special handling for array items - more aggressive transformation.
 		if ($isArrayItems === true) {
 			return $this->transformArrayItemsForValidation(itemsSchema: $cleanedProperty);
 		}
 
-		// Handle nested properties recursively.
-		if (($cleanedProperty->properties ?? null) !== null) {
-			foreach ($cleanedProperty->properties as $nestedPropertyName => $nestedPropertySchema) {
-				$cleanedProperty->properties->$nestedPropertyName = $this->cleanPropertyForValidation(
-					propertySchema: $nestedPropertySchema,
+		$this->cleanNestedSchemas(schema: $cleanedProperty);
+
+		return $this->fixMisplacedArrayConstraints(propertySchema: $cleanedProperty);
+	}//end cleanPropertyForValidation()
+
+	/**
+	 * Remove the OpenRegister metadata keywords that carry a value from a schema.
+	 *
+	 * @param object $schema The schema, changed in place.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function stripMetadataKeywords(object $schema): void {
+		foreach (self::METADATA_KEYWORDS as $keyword) {
+			if (($schema->$keyword ?? null) !== null) {
+				unset($schema->$keyword);
+			}
+		}
+	}//end stripMetadataKeywords()
+
+	/**
+	 * Clean the nested properties of a schema as properties and its items as array items.
+	 *
+	 * @param object $schema The schema, changed in place.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cleanNestedSchemas(object $schema): void {
+		if (($schema->properties ?? null) !== null) {
+			foreach ($schema->properties as $propertyName => $propertySchema) {
+				$schema->properties->$propertyName = $this->cleanPropertyForValidation(
+					propertySchema: $propertySchema,
 					isArrayItems: false
 				);
 			}
 		}
 
-		// Handle nested array items.
-		if (($cleanedProperty->items ?? null) !== null) {
-			$cleanedProperty->items = $this->cleanPropertyForValidation(
-				propertySchema: $cleanedProperty->items,
-				isArrayItems: true
-			);
+		if (($schema->items ?? null) !== null) {
+			$schema->items = $this->cleanPropertyForValidation(propertySchema: $schema->items, isArrayItems: true);
 		}
-
-		// Fix misplaced enum and oneOf on array types by moving them to items level.
-		$cleanedProperty = $this->fixMisplacedArrayConstraints(propertySchema: $cleanedProperty);
-
-		return $cleanedProperty;
 	}//end cleanPropertyForValidation()
 
 	/**
@@ -1476,50 +1465,19 @@ class ValidateObject implements ValidateObjectInterface {
 			return $propertySchema;
 		}
 
-		// Fix misplaced enum: move from array level to items level.
-		if (($propertySchema->enum ?? null) !== null
-			&& is_array($propertySchema->enum) === true
-			&& empty($propertySchema->enum) === false
-		) {
-			// Ensure items object exists.
-			if (($propertySchema->items ?? null) === null) {
-				$propertySchema->items = new stdClass();
-				$propertySchema->items->type = 'string';
-			}
-
-			// Move enum to items (only if items doesn't already have an enum).
-			if (($propertySchema->items->enum ?? null) === null) {
-				$propertySchema->items->enum = $propertySchema->enum;
-			}
-
-			// Remove enum from array level.
+		$enum = ($propertySchema->enum ?? null);
+		if (is_array($enum) === true && empty($enum) === false) {
+			$propertySchema->items ??= (object) ['type' => 'string'];
+			$propertySchema->items->enum ??= $enum;
 			unset($propertySchema->enum);
 		}
 
-		// Fix misplaced oneOf: move from array level to items level.
-		if (($propertySchema->oneOf ?? null) !== null
-			&& (is_array($propertySchema->oneOf) === true || is_object($propertySchema->oneOf) === true)
-		) {
-			$oneOfArray = $propertySchema->oneOf;
-			if (is_object($propertySchema->oneOf) === true) {
-				$oneOfArray = get_object_vars($propertySchema->oneOf);
-			}
-
-			if (empty($oneOfArray) === false) {
-				// Ensure items object exists.
-				if (($propertySchema->items ?? null) === null) {
-					$propertySchema->items = new stdClass();
-				}
-
-				// Move oneOf to items (only if items doesn't already have oneOf).
-				if (($propertySchema->items->oneOf ?? null) === null) {
-					$propertySchema->items->oneOf = $propertySchema->oneOf;
-				}
-
-				// Remove oneOf from array level.
-				unset($propertySchema->oneOf);
-			}
-		}//end if
+		$oneOf = ($propertySchema->oneOf ?? null);
+		if ((is_array($oneOf) === true || is_object($oneOf) === true) && empty((array) $oneOf) === false) {
+			$propertySchema->items ??= new stdClass();
+			$propertySchema->items->oneOf ??= $oneOf;
+			unset($propertySchema->oneOf);
+		}
 
 		return $propertySchema;
 	}//end fixMisplacedArrayConstraints()
@@ -1537,50 +1495,13 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function transformCustomTypeToJsonSchemaType(object $propertySchema): object {
-		// Map of custom OpenRegister types to their JSON Schema equivalents.
-		$customTypeMap = [
-			'file' => ['integer', 'string', 'null'],
-			// File references are stored as integer file IDs, string data URIs, or null.
-			'datetime' => 'string',
-			// Datetime values are stored as ISO 8601 strings.
-			'date' => 'string',
-			// Date values are stored as strings.
-			'time' => 'string',
-			// Time values are stored as strings.
-			'uuid' => 'string',
-			// UUIDs are strings.
-			'url' => 'string',
-			// URLs are strings.
-			'email' => 'string',
-			// Emails are strings.
-			'phone' => 'string',
-			// Phone numbers are strings.
-			'color' => 'string',
-			// Colour values (hex/rgba/oklch) are stored as literal strings.
-			'recurrence' => 'string',
-			// RFC 5545 RRULE recurrence patterns are stored as literal strings.
-		];
-
-		// Check if type is set and needs transformation.
-		if (isset($propertySchema->type) === false) {
-			return $propertySchema;
+		$type = ($propertySchema->type ?? null);
+		if (is_string($type) === true && isset(self::CUSTOM_TYPE_MAP[$type]) === true) {
+			$propertySchema->type = self::CUSTOM_TYPE_MAP[$type];
 		}
 
-		$type = $propertySchema->type;
-
-		// Handle single type as string.
-		if (is_string($type) === true && isset($customTypeMap[$type]) === true) {
-			$propertySchema->type = $customTypeMap[$type];
-		}
-
-		// Handle type as array (e.g., ["file", "null"]).
 		if (is_array($type) === true) {
-			$propertySchema->type = array_map(
-				function ($t) use ($customTypeMap) {
-					return $customTypeMap[$t] ?? $t;
-				},
-				$type
-			);
+			$propertySchema->type = array_map(static fn ($t) => self::CUSTOM_TYPE_MAP[$t] ?? $t, $type);
 		}
 
 		return $propertySchema;
@@ -1628,24 +1549,28 @@ class ValidateObject implements ValidateObjectInterface {
 			return self::asRelationReferenceItems(itemsSchema: $itemsSchema);
 		}
 
-		// Transform to a simple object structure for nested objects.
-		// Remove $ref to prevent circular references.
+		return self::asNestedObjectItems(itemsSchema: $itemsSchema);
+	}//end transformArrayItemsForValidation()
+
+	/**
+	 * Turn array items into a simple nested object with an `id`, without its `$ref` so it cannot recurse.
+	 *
+	 * @param object $itemsSchema The array items schema.
+	 *
+	 * @return object The transformed items schema.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function asNestedObjectItems(object $itemsSchema): object {
 		unset($itemsSchema->{'$ref'});
-
-		// Create a simple object structure.
-		$itemsSchema->type = 'object';
+		$itemsSchema->type        = 'object';
 		$itemsSchema->description = 'Nested object';
-
-		// Add basic properties that most objects should have.
-		$itemsSchema->properties = (object)[
-			'id' => (object)[
-				'type' => 'string',
-				'description' => 'Object identifier',
-			],
+		$itemsSchema->properties  = (object) [
+			'id' => (object) ['type' => 'string', 'description' => 'Object identifier'],
 		];
 
 		return $itemsSchema;
-	}//end transformArrayItemsForValidation()
+	}//end asNestedObjectItems()
 
 	/**
 	 * Turn array items into a reference to a related object: a UUID string or an object with an `id`.
