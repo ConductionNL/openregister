@@ -700,6 +700,52 @@ import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import RemoveUserDialog from './RemoveUserDialog.vue'
 import { searchGroupsDebounced } from '../../services/groupSearch.js'
+import { freshState } from '../../services/initialState.js'
+
+/**
+ * The state every instance of this component starts from.
+ */
+const INITIAL_STATE = {
+	activeTab: 0,
+	organisationItem: {
+		name: '',
+		slug: '',
+		description: '',
+		active: true,
+		quota: {
+			storage: 0,
+			bandwidth: 0,
+			requests: 0,
+			users: 0,
+			groups: 0,
+		},
+
+		groups: [],
+	},
+
+	selectedGroups: [],
+	availableGroups: [],
+	loadingGroups: false,
+	groupSearchDebounce: null,
+	selectedSpecialRights: {
+		object_publish: [],
+		agent_use: [],
+		dashboard_view: [],
+		llm_use: [],
+	},
+
+	organisationUsers: [],
+	loadingUsers: false,
+	removingUser: null,
+	showRemoveUserDialog: false,
+	showAddUserDialog: false,
+	userToRemove: null,
+	createAnother: false,
+	success: false,
+	loading: false,
+	error: false,
+	closeModalTimeout: null,
+}
 
 export default {
 	name: 'EditOrganisation',
@@ -730,47 +776,7 @@ export default {
 	},
 
 	data() {
-		return {
-			activeTab: 0,
-			organisationItem: {
-				name: '',
-				slug: '',
-				description: '',
-				active: true,
-				quota: {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				},
-
-				groups: [],
-			},
-
-			selectedGroups: [],
-			availableGroups: [],
-			loadingGroups: false,
-			groupSearchDebounce: null,
-			selectedSpecialRights: {
-				object_publish: [],
-				agent_use: [],
-				dashboard_view: [],
-				llm_use: [],
-			},
-
-			organisationUsers: [],
-			loadingUsers: false,
-			removingUser: null,
-			showRemoveUserDialog: false,
-			showAddUserDialog: false,
-			userToRemove: null,
-			createAnother: false,
-			success: false,
-			loading: false,
-			error: false,
-			closeModalTimeout: null,
-		}
+		return freshState(INITIAL_STATE)
 	},
 
 	computed: {

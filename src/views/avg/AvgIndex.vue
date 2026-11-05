@@ -1107,6 +1107,15 @@ import {
 } from '../../store/modules/avg.js'
 import { avgStore } from '../../store/store.js'
 
+/**
+ * The icon of each escalation tier; any other tier is on track.
+ */
+const TIER_ICONS = {
+	breached: 'AlertCircleOutline',
+	escalation: 'AlertOutline',
+	reminder: 'ClockOutline',
+}
+
 export default {
 	name: 'AvgIndex',
 
@@ -1838,16 +1847,9 @@ export default {
 		 * @return {string}
 		 */
 		tierIcon(tier) {
-			switch (tier) {
-				case 'breached':
-					return 'AlertCircleOutline'
-				case 'escalation':
-					return 'AlertOutline'
-				case 'reminder':
-					return 'ClockOutline'
-				default:
-					return 'CheckboxMarkedCircleOutline'
-			}
+			return Object.hasOwn(TIER_ICONS, tier)
+				? TIER_ICONS[tier]
+				: 'CheckboxMarkedCircleOutline'
 		},
 
 		/**

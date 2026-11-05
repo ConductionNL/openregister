@@ -558,6 +558,7 @@ import StarOutline from 'vue-material-design-icons/StarOutline.vue'
 import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline.vue'
 import DeleteView from '../../modals/view/DeleteView.vue'
 import EditView from '../../modals/view/EditView.vue'
+import { freshState } from '../../services/initialState.js'
 import {
 	navigationStore,
 	objectStore,
@@ -565,6 +566,52 @@ import {
 	schemaStore,
 	viewsStore,
 } from '../../store/store.js'
+
+/**
+ * The state every instance of this component starts from.
+ */
+const INITIAL_STATE = {
+	navigationStore,
+	objectStore,
+	registerStore,
+	schemaStore,
+	viewsStore,
+	activeTab: 'search-tab', // Active tab tracker
+	registerLoading: false,
+	schemaLoading: false,
+	// Multi-select state
+	selectedRegisters: [], // Array of register IDs
+	selectedSchemas: [], // Array of schema IDs
+	searchQuery: '',
+	searchTerms: [],
+	searchLoading: false,
+	lastSearchStats: null,
+	// Unified Faceting System
+	facetableFields: null, // Stage 1: Available facetable fields
+	facetData: null, // Stage 2: Actual facet data with counts
+	facetFilters: {}, // Applied facet filters
+	enabledFacets: {}, // Which facets user has enabled
+	facetsLoading: false, // Stage 1 loading
+	facetDataLoading: false, // Stage 2 loading
+	// View management
+	viewSearchQuery: '', // Search query for filtering views
+	showSaveForm: false, // Show inline save form
+	viewName: '',
+	viewNameTouched: false, // Track if user has touched the name field
+	viewDescription: '',
+	viewIsPublic: false,
+	viewIsDefault: false,
+	activeViewName: '', // Editable name for the active view
+	// Edit view dialog
+	showEditDialog: false,
+	editingView: null,
+	// Delete view dialog
+	showDeleteDialog: false,
+	viewToDelete: null,
+	// Column visibility collapsible state
+	expandedSchemas: {}, // Track which schema groups are expanded
+	metadataExpanded: true, // Metadata section expanded by default
+}
 
 export default {
 	name: 'SearchSideBar',
@@ -590,48 +637,7 @@ export default {
 	},
 
 	data() {
-		return {
-			navigationStore,
-			objectStore,
-			registerStore,
-			schemaStore,
-			viewsStore,
-			activeTab: 'search-tab', // Active tab tracker
-			registerLoading: false,
-			schemaLoading: false,
-			// Multi-select state
-			selectedRegisters: [], // Array of register IDs
-			selectedSchemas: [], // Array of schema IDs
-			searchQuery: '',
-			searchTerms: [],
-			searchLoading: false,
-			lastSearchStats: null,
-			// Unified Faceting System
-			facetableFields: null, // Stage 1: Available facetable fields
-			facetData: null, // Stage 2: Actual facet data with counts
-			facetFilters: {}, // Applied facet filters
-			enabledFacets: {}, // Which facets user has enabled
-			facetsLoading: false, // Stage 1 loading
-			facetDataLoading: false, // Stage 2 loading
-			// View management
-			viewSearchQuery: '', // Search query for filtering views
-			showSaveForm: false, // Show inline save form
-			viewName: '',
-			viewNameTouched: false, // Track if user has touched the name field
-			viewDescription: '',
-			viewIsPublic: false,
-			viewIsDefault: false,
-			activeViewName: '', // Editable name for the active view
-			// Edit view dialog
-			showEditDialog: false,
-			editingView: null,
-			// Delete view dialog
-			showDeleteDialog: false,
-			viewToDelete: null,
-			// Column visibility collapsible state
-			expandedSchemas: {}, // Track which schema groups are expanded
-			metadataExpanded: true, // Metadata section expanded by default
-		}
+		return freshState(INITIAL_STATE)
 	},
 
 	computed: {
