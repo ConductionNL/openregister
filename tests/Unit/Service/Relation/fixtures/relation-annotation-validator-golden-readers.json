@@ -1,0 +1,74 @@
+[
+    [
+        null,
+        false
+    ],
+    [
+        null,
+        false
+    ],
+    [
+        null,
+        false
+    ],
+    [
+        null,
+        true
+    ],
+    [
+        null,
+        true
+    ],
+    [
+        {
+            "label": "L"
+        },
+        false
+    ],
+    [
+        {
+            "label": "O"
+        },
+        false
+    ],
+    [
+        "scalar",
+        false
+    ],
+    [
+        {
+            "label": "I"
+        },
+        true
+    ],
+    [
+        {
+            "type": "t"
+        },
+        true
+    ],
+    [
+        null,
+        false
+    ],
+    [
+        null,
+        false
+    ],
+    [
+        {
+            "label": "root"
+        },
+        false
+    ],
+    [
+        {
+            "label": "P"
+        },
+        true
+    ],
+    [
+        null,
+        true
+    ]
+]

@@ -9,9 +9,9 @@
  *
  *   - placeholder format `[<TYPE>: <id>]` (locked by spec REQ:placeholder)
  *   - post-replacement re-extraction diagnostic via smalot/pdfparser
- *     (always warns on residual entity text; in strict mode — the entity-
- *     anonymisation flow — it then fails closed with REASON_VALIDATION_FAILED,
- *     while the lenient default returns the partial result for docx parity)
+ *     (residual entity text is logged PII-free and returned to the caller,
+ *     which still writes the file; a strict run refuses only when the output
+ *     cannot be re-read at all)
  *   - adjacent-duplicate-placeholder collapse (REQ:layout)
  *   - encrypted-PDF rejection (REQ:filter-coverage / encrypted_pdf reason)
  *
@@ -50,8 +50,9 @@ use Throwable;
  *     `replace_text_in_document`, serialises with `to_pdf_file_b(rebuild=true)`.
  *  3. {@see validateOutput} re-extracts the result via `smalot/pdfparser`
  *     and emits a PII-free warning if any substitution-map key remains in
- *     the extracted text; strict callers (entity anonymisation) then fail
- *     closed, lenient callers (ad-hoc replace, docx parity) return the partial.
+ *     the extracted text, and returns the residual needles to the caller.
+ *     A strict run (entity anonymisation) whose output cannot be re-read
+ *     is refused; a lenient run returns the unchecked output.
  *  4. {@see collapseAdjacentDuplicatePlaceholders} runs as a content-stream
  *     pre-pass (NOT on the re-extracted text — we want to mutate the PDF,
  *     not just the validation view) to fold `[P:7] [P:7]` → `[P:7]`.
@@ -111,16 +112,16 @@ class PdfTextReplacer {
 	 * Replace entity text in a PDF byte stream and emit a sanitised output.
 	 *
 	 * Runs the full pipeline: load → replace → re-serialise → validate.
-	 * On validation failure the output is discarded and the exception
-	 * carries a diagnostic surface (which entities remained, how many
-	 * streams were modified, etc.) for ops review.
+	 * Residual entity text does not fail the run: the output is returned and
+	 * the residual needles land in $residualEntities. A strict run throws
+	 * when the output cannot be re-read for that check.
 	 *
 	 * @param string $pdfBytes Raw input PDF bytes.
 	 * @param array $substitutions Map: entity-text => placeholder
 	 *                             (e.g. ['Jan Jansen' =>
 	 *                             '[PERSON: 7]']).
 	 * @param bool $strict Forwarded to {@see validateOutput}: when
-	 *                     true, residual entity text fails closed.
+	 *                     true, an output that cannot be re-read is refused.
 	 * @param array $residualEntities Out-param receiving any entity text that
 	 *                                remained after replacement.
 	 * @param bool|null $preserveStructure Tri-state structure-preservation option
@@ -136,12 +137,13 @@ class PdfTextReplacer {
 	 *
 	 * @return string Anonymised PDF bytes.
 	 *
-	 * @throws PdfAnonymisationException On any pipeline failure.
+	 * @throws PdfAnonymisationException On any pipeline failure, and in a strict
+	 *                                   run when the output cannot be re-read.
 	 *
 	 * @phpstan-param array<string, string> $substitutions
 	 * @psalm-param   array<string, string> $substitutions
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   $strict forwards the fail-closed vs lenient validation policy.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   $strict forwards the strict vs lenient validation policy.
 	 *
 	 * @spec openspec/specs/pdf-anonymisation/spec.md
 	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
@@ -198,9 +200,8 @@ class PdfTextReplacer {
 		$structureResult = $measurement->attest(streamsModified: (int)($stats['streams_modified'] ?? 0));
 
 		// Validation: re-extract the output and collect any residual
-		// substitution-map keys. Best-effort (no longer fails closed) — the
-		// residual needles are returned to the caller so the anonymisation
-		// flow can write the file and surface a warning.
+		// substitution-map keys. The residual needles go back to the caller,
+		// which writes the file and surfaces a warning.
 		$residualEntities = $this->validateOutput(outputBytes: $outputBytes, substitutions: $substitutions, replaceStats: $stats, strict: $strict);
 
 		$this->logger->info(
@@ -332,66 +333,44 @@ class PdfTextReplacer {
 	}//end serialise()
 
 	/**
-	 * Re-extract the output PDF via smalot/pdfparser and surface a
-	 * PII-free diagnostic when substitution-map keys remain.
+	 * Re-extract the output PDF via smalot/pdfparser and return the
+	 * substitution-map keys that survive in it.
 	 *
-	 * Aligned with the docx path (`replaceWordsInWordDocument`), which
-	 * also returns a partially-anonymised document silently when
-	 * `str_ireplace` cannot reach text split across `<w:r>` runs.
-	 * Failing closed here would make PDF noticeably stricter than docx;
-	 * instead we log a structural warning and let the caller surface a
-	 * partial-success result. Re-extraction failures (parser threw) are
-	 * still treated as a hard internal error.
+	 * Best-effort in both modes (pdf-anonymisation spec): residual entity
+	 * text is logged as a PII-free warning and returned, and the caller still
+	 * writes the file. When the parser cannot re-read the output, nothing can
+	 * be checked: a lenient run logs that and returns an empty list, a strict
+	 * run throws `REASON_VALIDATION_FAILED` so no unchecked file is written.
 	 *
 	 * @param string $outputBytes Serialised output PDF bytes.
 	 * @param array $substitutions The original substitution map.
 	 * @param array $replaceStats Stats returned by SAPP's replace API
 	 *                            (kept in the diagnostic surface
 	 *                            for ops review).
-	 * @param bool $strict When true (the entity-anonymisation flow),
-	 *                     residual entity text fails CLOSED with
-	 *                     `REASON_VALIDATION_FAILED`; when false
-	 *                     (ad-hoc replace, docx-parity default) it is
-	 *                     logged as a partial-anonymisation warning.
+	 * @param bool $strict When true (the entity-anonymisation flow), an
+	 *                     output the parser cannot re-read is refused;
+	 *                     when false (ad-hoc replace) it is returned
+	 *                     unchecked with a logged warning.
 	 *
-	 * @return void
+	 * @return string[] The substitution-map keys found in the output.
 	 *
-	 * @throws PdfAnonymisationException When $strict and residual entity text remains.
+	 * @throws PdfAnonymisationException When $strict and the output cannot be re-read.
 	 *
 	 * @phpstan-param array<string, string> $substitutions
 	 * @phpstan-param array<string, mixed>  $replaceStats
 	 * @psalm-param   array<string, string> $substitutions
 	 * @psalm-param   array<string, mixed>  $replaceStats
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $strict selects fail-closed (entity anonymisation) vs lenient (ad-hoc) behaviour.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $strict selects strict (entity anonymisation) vs lenient (ad-hoc) behaviour.
 	 *
 	 * @spec openspec/specs/pdf-anonymisation/spec.md
 	 */
 	public function validateOutput(string $outputBytes, array $substitutions, array $replaceStats = [], bool $strict = false): array {
-		try {
-			$extracted = $this->pdfExtractor->extractText(pdfBytes: $outputBytes);
-		} catch (Throwable $e) {
-			// The post-extraction is diagnostic only (parity with docx, which
-			// has no validation gate at all). When smalot can't re-parse the
-			// SAPP output we can't audit residual PII, but blocking the user
-			// from receiving the bytes is strictly worse than docx — log the
-			// parser failure structurally (no PII, no needle text) and
-			// return. Output is still written by the caller.
-			$this->logger->warning(
-				message: '[PdfTextReplacer] Post-replace re-extraction skipped — smalot/pdfparser could not parse SAPP output',
-				context: [
-					'stage' => 'validate.extract',
-					'parser_exception' => get_class($e),
-					'parser_exception_msg' => $e->getMessage(),
-					'output_bytes' => strlen($outputBytes),
-					'streams_scanned' => ($replaceStats['streams_scanned'] ?? null),
-					'streams_modified' => ($replaceStats['streams_modified'] ?? null),
-				]
-			);
-
-			// Can't re-extract to audit — report no detectable residuals.
+		$extracted = $this->reExtract(outputBytes: $outputBytes, replaceStats: $replaceStats);
+		if ($extracted === null) {
+			$this->refuseUncheckedOutputWhenStrict(strict: $strict, outputBytes: $outputBytes);
 			return [];
-		}//end try
+		}
 
 		// Whitespace-normalise the haystack so entity text that the PDF
 		// splits across line breaks ("14 mei\n2026") is still detected —
@@ -406,9 +385,9 @@ class PdfTextReplacer {
 		// raw font-encoded bytes. A silent ""-fallback would make every
 		// probe below miss and strict mode pass unaudited output — the
 		// documents most at risk of residual PII are exactly the ones
-		// that would slip through. Fail CLOSED in strict mode; in
-		// lenient mode fall back to the un-normalised haystack, which
-		// keeps the pre-normalisation detection coverage.
+		// that would slip through. Both modes fall back to the
+		// un-normalised haystack instead, which keeps the
+		// pre-normalisation detection coverage.
 		$normalisedExtracted = preg_replace('/\s+/u', ' ', $extracted);
 		if ($normalisedExtracted === null) {
 			$this->logger->warning(
@@ -491,15 +470,76 @@ class PdfTextReplacer {
 			);
 		}//end if
 
-		// Best-effort policy (was: fail closed in strict mode). The
-		// anonymisation flow no longer discards a partially-redacted file —
-		// it writes the output and surfaces a warning listing the residual
-		// entities so the operator can iterate (manual entities, skip
-		// unselected occurrences). The residual NEEDLES are returned to the
-		// caller; logs stay PII-free per ADR-005, while the authenticated
-		// anonymise response carries the values for the review UI.
+		// Best-effort: the anonymisation flow writes the output and surfaces
+		// the residual entities so the operator can iterate (manual
+		// entities, skip unselected occurrences). Logs stay PII-free per
+		// ADR-005; the authenticated anonymise response carries the values
+		// for the review UI.
 		return $residual;
 	}//end validateOutput()
+
+	/**
+	 * Re-extract the text of the output PDF for the residual check.
+	 *
+	 * A parser failure is logged structurally (no document or needle text).
+	 *
+	 * @param string $outputBytes  Serialised output PDF bytes.
+	 * @param array  $replaceStats Stats returned by SAPP's replace API.
+	 *
+	 * @return string|null The extracted text, or null when the parser cannot read the output.
+	 *
+	 * @phpstan-param array<string, mixed> $replaceStats
+	 * @psalm-param   array<string, mixed> $replaceStats
+	 */
+	private function reExtract(string $outputBytes, array $replaceStats): ?string {
+		try {
+			return $this->pdfExtractor->extractText(pdfBytes: $outputBytes);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[PdfTextReplacer] Post-replace re-extraction skipped — smalot/pdfparser could not parse SAPP output',
+				context: [
+					'stage' => 'validate.extract',
+					'parser_exception' => get_class($e),
+					'parser_exception_msg' => $e->getMessage(),
+					'output_bytes' => strlen($outputBytes),
+					'streams_scanned' => ($replaceStats['streams_scanned'] ?? null),
+					'streams_modified' => ($replaceStats['streams_modified'] ?? null),
+				]
+			);
+
+			return null;
+		}
+	}//end reExtract()
+
+	/**
+	 * Refuse an output whose residual check could not run, in a strict run.
+	 *
+	 * A strict run (entity anonymisation) must not write an `_anonymized`
+	 * file nobody could check. The refusal carries counts only.
+	 *
+	 * @param bool   $strict      Whether this is a strict run.
+	 * @param string $outputBytes Serialised output PDF bytes.
+	 *
+	 * @return void
+	 *
+	 * @throws PdfAnonymisationException When $strict.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $strict selects strict (entity anonymisation) vs lenient (ad-hoc) behaviour.
+	 */
+	private function refuseUncheckedOutputWhenStrict(bool $strict, string $outputBytes): void {
+		if ($strict === false) {
+			return;
+		}
+
+		throw new PdfAnonymisationException(
+			reason: PdfAnonymisationException::REASON_VALIDATION_FAILED,
+			message: 'PDF anonymisation refused: the output could not be re-read to check for entity text, so no file was written',
+			diagnostic: [
+				'stage' => 'validate.extract',
+				'output_bytes' => strlen($outputBytes),
+			]
+		);
+	}//end refuseUncheckedOutputWhenStrict()
 
 	/**
 	 * Collapse adjacent duplicate placeholders in a freshly-substituted text.

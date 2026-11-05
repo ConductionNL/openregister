@@ -7,8 +7,10 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\IAppContainer;
 use PHPUnit\Framework\TestCase;
@@ -63,9 +65,21 @@ class SettingsServiceMassValidateGoldenTest extends TestCase {
 			return $objects;
 		});
 
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('saveObject')->willReturnCallback(function (...$args) {
+			$this->calls[] = ['save', $args[4], $args[0]];
+			if ($args[4] === 'uuid-1') {
+				throw new Exception('rejected');
+			}
+			return new ObjectEntity();
+		});
+
 		$container = $this->createMock(IAppContainer::class);
-		$container->method('get')->willReturnCallback(function (string $id) use ($mapper) {
+		$container->method('get')->willReturnCallback(function (string $id) use ($mapper, $objectService) {
 			$this->calls[] = ['container.get', $id];
+			if ($id === ObjectService::class) {
+				return $objectService;
+			}
 			return $mapper;
 		});
 
@@ -127,6 +141,9 @@ class SettingsServiceMassValidateGoldenTest extends TestCase {
 			'nothing to do' => [['total' => 0] + $base],
 			'twelve batches' => [['total' => 23, 'args' => ['batchSize' => 2, 'collectErrors' => true]] + $base],
 			'serial with objects' => [['perBatch' => 2] + $base],
+			'serial with objects, collect errors' => [['perBatch' => 3, 'args' => ['collectErrors' => true]] + $base],
+			'parallel with objects' => [['perBatch' => 2, 'args' => ['mode' => 'parallel', 'batchSize' => 2]] + $base],
+			'parallel with objects, collect errors' => [['perBatch' => 3, 'args' => ['mode' => 'parallel', 'collectErrors' => true]] + $base],
 			'parallel nothing' => [['total' => 0, 'args' => ['mode' => 'parallel']] + $base],
 			'parallel with five jobs' => [['total' => 5, 'args' => ['mode' => 'parallel', 'batchSize' => 1]] + $base],
 			'parallel with jobs' => [['args' => ['mode' => 'parallel', 'batchSize' => 1]] + $base],

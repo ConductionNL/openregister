@@ -26,9 +26,10 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -67,18 +68,27 @@ final class MassValidationRun {
 	private array $start;
 
 	/**
+	 * The service that re-saves objects, resolved on the first save.
+	 *
+	 * @var ObjectOperationsInterface|null
+	 */
+	private ?ObjectOperationsInterface $objectService = null;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper          $objectMapper Mapper that counts and reads the objects.
+	 * @param MagicMapperInterface          $objectMapper Mapper that counts and reads the objects.
 	 * @param AppSettingsInterface $settings     Settings service, for formatting byte counts.
 	 * @param LoggerInterface      $logger       Logger.
+	 * @param ContainerInterface   $container    Container that provides the ObjectService at save time.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly AppSettingsInterface $settings,
 		private readonly LoggerInterface $logger,
+		private readonly ContainerInterface $container,
 	) {
 	}//end __construct()
 
@@ -126,10 +136,7 @@ final class MassValidationRun {
 			]
 		);
 
-		// SettingsService cannot lazy-load ObjectService (circular dependency), so there is
-		// no service to re-save with and a run that reaches an object fails.
-		$objectService = null;
-		$this->processJobs(batchJobs: $batchJobs, objectService: $objectService);
+		$this->processJobs(batchJobs: $batchJobs);
 
 		$this->recordMetrics();
 		$this->recordOutcome();
@@ -213,31 +220,29 @@ final class MassValidationRun {
 	/**
 	 * Run the batch jobs in the configured mode.
 	 *
-	 * @param array              $batchJobs     The batch jobs.
-	 * @param ObjectOperationsInterface|null $objectService The service that re-saves objects.
+	 * @param array $batchJobs The batch jobs.
 	 *
 	 * @return void
 	 */
-	private function processJobs(array $batchJobs, ?ObjectOperationsInterface $objectService): void {
+	private function processJobs(array $batchJobs): void {
 		if ($this->config['mode'] === 'parallel') {
-			$this->processJobsParallel(batchJobs: $batchJobs, objectService: $objectService);
+			$this->processJobsParallel(batchJobs: $batchJobs);
 			return;
 		}
 
-		$this->processJobsSerial(batchJobs: $batchJobs, objectService: $objectService);
+		$this->processJobsSerial(batchJobs: $batchJobs);
 	}//end processJobs()
 
 	/**
 	 * Run the batch jobs one after the other, logging progress per batch.
 	 *
-	 * @param array              $batchJobs     The batch jobs.
-	 * @param ObjectOperationsInterface|null $objectService The service that re-saves objects.
+	 * @param array $batchJobs The batch jobs.
 	 *
 	 * @return void
 	 */
-	private function processJobsSerial(array $batchJobs, ?ObjectOperationsInterface $objectService): void {
+	private function processJobsSerial(array $batchJobs): void {
 		foreach ($batchJobs as $job) {
-			$batch = $this->saveBatch(job: $job, objectService: $objectService);
+			$batch = $this->saveBatch(job: $job);
 			$this->addBatch(batch: $batch);
 
 			$objectsPerSecond = 0;
@@ -279,12 +284,11 @@ final class MassValidationRun {
 	/**
 	 * Run the batch jobs in chunks of PARALLEL_BATCHES, logging progress per chunk.
 	 *
-	 * @param array              $batchJobs     The batch jobs.
-	 * @param ObjectOperationsInterface|null $objectService The service that re-saves objects.
+	 * @param array $batchJobs The batch jobs.
 	 *
 	 * @return void
 	 */
-	private function processJobsParallel(array $batchJobs, ?ObjectOperationsInterface $objectService): void {
+	private function processJobsParallel(array $batchJobs): void {
 		$batchChunks = array_chunk($batchJobs, self::PARALLEL_BATCHES);
 
 		foreach ($batchChunks as $chunkIndex => $chunk) {
@@ -302,7 +306,7 @@ final class MassValidationRun {
 			$chunkStartTime = microtime(true);
 			$chunkResults = [];
 			foreach ($chunk as $job) {
-				$chunkResults[] = $this->saveParallelBatch(objectService: $objectService, job: $job);
+				$chunkResults[] = $this->saveBatch(job: $job);
 			}
 
 			foreach ($chunkResults as $batch) {
@@ -326,28 +330,15 @@ final class MassValidationRun {
 	}//end processJobsParallel()
 
 	/**
-	 * Re-save one batch in parallel mode, which requires the object service up front.
-	 *
-	 * @param ObjectOperationsInterface $objectService The service that re-saves objects.
-	 * @param array         $job           The batch job.
-	 *
-	 * @return array The batch counts, errors and duration.
-	 */
-	private function saveParallelBatch(ObjectOperationsInterface $objectService, array $job): array {
-		return $this->saveBatch(job: $job, objectService: $objectService);
-	}//end saveParallelBatch()
-
-	/**
 	 * Re-save the objects of one batch job.
 	 *
 	 * Without collect_errors the batch stops at its first failure. Serial runs log each failure.
 	 *
-	 * @param array              $job           The batch job.
-	 * @param ObjectOperationsInterface|null $objectService The service that re-saves objects.
+	 * @param array $job The batch job.
 	 *
 	 * @return array{processed: int, successful: int, failed: int, errors: list<array>, duration: float}
 	 */
-	private function saveBatch(array $job, ?ObjectOperationsInterface $objectService): array {
+	private function saveBatch(array $job): array {
 		$batchStartTime = microtime(true);
 		$objects = $this->objectMapper->findAll(limit: $job['limit'], offset: $job['offset']);
 
@@ -356,7 +347,7 @@ final class MassValidationRun {
 			$batch['processed']++;
 			try {
 				// Re-saving triggers all business logic; saveObject() signals failure by throwing.
-				$objectService->saveObject(
+				$this->objectService()->saveObject(
 					object: $object->getObject(),
 					extend: [],
 					register: $object->getRegister(),
@@ -376,6 +367,20 @@ final class MassValidationRun {
 		$batch['duration'] = microtime(true) - $batchStartTime;
 		return $batch;
 	}//end saveBatch()
+
+	/**
+	 * The ObjectService, taken from the container on first use: SettingsService cannot
+	 * receive it at construction because ObjectService depends on it.
+	 *
+	 * @return ObjectOperationsInterface The service that re-saves objects.
+	 */
+	private function objectService(): ObjectOperationsInterface {
+		if ($this->objectService === null) {
+			$this->objectService = $this->container->get(ObjectService::class);
+		}
+
+		return $this->objectService;
+	}//end objectService()
 
 	/**
 	 * Describe a failed re-save, logging it in serial mode.

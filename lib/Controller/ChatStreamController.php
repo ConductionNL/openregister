@@ -37,6 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ChatStreamControllerServices;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
@@ -150,30 +151,20 @@ class ChatStreamController extends Controller {
 	 *
 	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
-	 * @param ChatService $chatService Chat service.
-	 * @param ConversationMapper $conversationMapper Conversation mapper.
-	 * @param AgentMapper $agentMapper Agent mapper.
-	 * @param LoggerInterface $logger Logger.
-	 * @param IUserSession $userSession User session.
-	 * @param IDBConnection $db Database connection.
+	 * @param ChatStreamControllerServices $services The chat stream controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		ChatService $chatService,
-		ConversationMapper $conversationMapper,
-		AgentMapper $agentMapper,
-		LoggerInterface $logger,
-		IUserSession $userSession,
-		IDBConnection $db,
+		ChatStreamControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
-		$this->chatService = $chatService;
-		$this->conversationMapper = $conversationMapper;
-		$this->agentMapper = $agentMapper;
-		$this->logger = $logger;
-		$this->userSession = $userSession;
-		$this->db = $db;
+		$this->chatService = $services->chat->chatService;
+		$this->conversationMapper = $services->chat->conversationMapper;
+		$this->agentMapper = $services->chat->agentMapper;
+		$this->logger = $services->chat->logger;
+		$this->userSession = $services->platform->userSession;
+		$this->db = $services->platform->db;
 	}//end __construct()
 
 	/**

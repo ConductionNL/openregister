@@ -48,13 +48,13 @@ class PerformanceHandler {
 	/**
 	 * PerformanceHandler constructor.
 	 *
-	 * @param CacheHandler $objectCacheService Object cache service for caching.
+	 * @param CacheHandlerInterface $objectCacheService Object cache service for caching.
 	 * @param LoggerInterface $logger Logger for performance monitoring.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly CacheHandler $objectCacheService,
+		private readonly CacheHandlerInterface $objectCacheService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Search\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\WebhookLogMapper;
@@ -61,9 +61,9 @@ class DashboardService {
 	 *
 	 * Handles database operations for object entities.
 	 *
-	 * @var MagicMapper Object entity mapper instance
+	 * @var MagicMapperInterface Object entity mapper instance
 	 */
-	private readonly MagicMapper $objectMapper;
+	private readonly MagicMapperInterface $objectMapper;
 
 	/**
 	 * Audit trail mapper
@@ -115,7 +115,7 @@ class DashboardService {
 	 *
 	 * Initializes service with required mappers and logger for dashboard operations.
 	 *
-	 * @param MagicMapper $objectMapper Object entity mapper for object statistics
+	 * @param MagicMapperInterface $objectMapper Object entity mapper for object statistics
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for log statistics
 	 * @param WebhookLogMapper $webhookLogMapper Webhook log mapper for webhook statistics
 	 * @param RegisterMapperInterface $registerMapper Register mapper for register operations
@@ -125,7 +125,7 @@ class DashboardService {
 	 * @return void
 	 */
 	public function __construct(
-		MagicMapper $objectMapper,
+		MagicMapperInterface $objectMapper,
 		AuditTrailMapperInterface $auditTrailMapper,
 		WebhookLogMapper $webhookLogMapper,
 		RegisterMapperInterface $registerMapper,

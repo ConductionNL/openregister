@@ -421,6 +421,8 @@ export const useSchemaStore = defineStore('schema', {
 				cleaned.configuration = {
 					objectNameField: '',
 					objectDescriptionField: '',
+					objectSlugField: '',
+					objectSlugSuffix: false,
 				}
 			}
 			moveRequiredToProperties(cleaned)

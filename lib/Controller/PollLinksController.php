@@ -34,6 +34,7 @@ use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PollLinkService;
+use OCA\OpenRegister\Service\PollDraft;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -189,14 +190,10 @@ class PollLinksController extends Controller {
 				}
 
 				$link = $this->pollLinkService->createAndLinkPoll(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
-					$title,
-					$description,
-					$type,
-					$options,
-					$deadlineObj
+					target: $this->linkTargetOf(object: $object),
+					draft: (new PollDraft(title: $title, description: $description))
+						->withType(type: $type)
+						->withOptions(options: $options, deadline: $deadlineObj)
 				);
 
 				return new JSONResponse($link->jsonSerialize(), 201);

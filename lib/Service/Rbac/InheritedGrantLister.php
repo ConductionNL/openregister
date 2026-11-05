@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\Share\IShare;
 use Psr\Log\LoggerInterface;
@@ -50,13 +50,13 @@ class InheritedGrantLister {
 	 * Constructor.
 	 *
 	 * @param HierarchyDescender $hierarchy Resolves an object's ancestors.
-	 * @param MagicMapper        $mapper    Reads an ancestor object.
+	 * @param MagicMapperInterface        $mapper    Reads an ancestor object.
 	 * @param ObjectShareReader  $shares    Reads the shares on an ancestor's folder.
 	 * @param LoggerInterface    $logger    Where an unreadable ancestor is noted.
 	 */
 	public function __construct(
 		private readonly HierarchyDescender $hierarchy,
-		private readonly MagicMapper $mapper,
+		private readonly MagicMapperInterface $mapper,
 		private readonly ObjectShareReader $shares,
 		private readonly LoggerInterface $logger,
 	) {

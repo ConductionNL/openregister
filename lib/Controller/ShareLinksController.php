@@ -38,6 +38,7 @@ use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\ShareLinkService;
+use OCA\OpenRegister\Service\ShareDraft;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -140,15 +141,10 @@ class ShareLinksController extends Controller {
 				}
 
 				$share = $this->shareLinkService->createShare(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
-					$fileId,
-					$shareType,
-					$shareWithStr,
-					$permissions,
-					$passwordStr,
-					$expirationStr
+					objectUuid: $object->getUuid(),
+					draft: (new ShareDraft(fileId: $fileId, shareType: $shareType))
+						->withRecipient(shareWith: $shareWithStr, permissions: $permissions)
+						->withProtection(password: $passwordStr, expiration: $expirationStr)
 				);
 
 				return new JSONResponse(

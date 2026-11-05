@@ -171,7 +171,7 @@ class CacheHandlerNameScopePolicyTest extends TestCase {
 		$container = $this->createMock(IAppContainer::class);
 		$container->method('get')
 			->willReturnCallback(function (string $class) {
-				if ($class === MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $this->objectMapper;
 				}
 
