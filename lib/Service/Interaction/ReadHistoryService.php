@@ -201,21 +201,37 @@ class ReadHistoryService {
 	 *
 	 * One collapsed entry per register and schema in the result, through
 	 * ProcessingLogService::logReadList, which applies the same `logReads`
-	 * opt-in as a single read. Fail-soft, like registerProcessingRead().
+	 * opt-in as a single read and carries the query parameters. A row that
+	 * is a rendered array is read by its `@self` block; a row that names no
+	 * uuid, register and schema cannot be attributed and is reported in the
+	 * log rather than dropped silently. Fail-soft, like registerProcessingRead().
 	 *
-	 * @param array<int|string, mixed> $objects The listed objects; entries that are not ObjectEntity are skipped.
+	 * @param array<int|string, mixed> $objects The listed objects: ObjectEntity or rendered arrays.
+	 * @param array<string, mixed>     $query   The query parameters of the list or search.
 	 * @param string                   $action  `read` or `export`.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md#requirement-reads-of-personal-data-are-registered-through-the-one-read-registration
 	 */
-	public function registerProcessingReadList(array $objects, string $action = self::READ_ACTION): void {
+	public function registerProcessingReadList(array $objects, array $query = [], string $action = self::READ_ACTION): void {
 		$groups = [];
-		foreach ($objects as $object) {
-			if ($object instanceof ObjectEntity) {
-				$groups[$object->getRegister() . '|' . $object->getSchema()][] = $object;
+		$unattributed = 0;
+		foreach ($objects as $row) {
+			$object = $this->listedObject(row: $row);
+			if ($object === null) {
+				$unattributed++;
+				continue;
 			}
+
+			$groups[$object->getRegister() . '|' . $object->getSchema()][] = $object;
+		}
+
+		if ($unattributed > 0) {
+			$this->logger->warning(
+				message: '[AVG] list read rows without uuid, register and schema were not processing-logged',
+				context: ['rows' => $unattributed, 'of' => count($objects)]
+			);
 		}
 
 		if ($groups === []) {
@@ -225,7 +241,7 @@ class ReadHistoryService {
 		try {
 			$service = $this->container->get(ProcessingLogService::class);
 			foreach ($groups as $group) {
-				$service->logReadList(objects: $group, action: $action);
+				$service->logReadList(objects: $group, action: $action, query: $query);
 			}
 
 			$service->flush();
@@ -237,6 +253,43 @@ class ReadHistoryService {
 		}
 
 	}//end registerProcessingReadList()
+
+	/**
+	 * A listed row as an ObjectEntity, or null when it cannot be attributed.
+	 *
+	 * @param mixed $row An ObjectEntity, or a rendered object array with an `@self` block.
+	 *
+	 * @return ObjectEntity|null The object.
+	 */
+	private function listedObject(mixed $row): ?ObjectEntity {
+		if ($row instanceof ObjectEntity) {
+			return $row;
+		}
+
+		$self = [];
+		if (is_array($row) === true && is_array($row['@self'] ?? null) === true) {
+			$self = $row['@self'];
+		}
+
+		$uuid = ($self['uuid'] ?? $self['id'] ?? null);
+		if (is_scalar($uuid) === false || is_scalar($self['register'] ?? null) === false || is_scalar($self['schema'] ?? null) === false) {
+			return null;
+		}
+
+		$data = $row;
+		unset($data['@self']);
+
+		$object = new ObjectEntity();
+		$object->setUuid((string)$uuid);
+		$object->setRegister((string)$self['register']);
+		$object->setSchema((string)$self['schema']);
+		if (is_scalar($self['organisation'] ?? null) === true) {
+			$object->setOrganisation((string)$self['organisation']);
+		}
+
+		$object->setObject($data);
+		return $object;
+	}//end listedObject()
 
 	/**
 	 * Resolve the `_recent` lens for one caller.

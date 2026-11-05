@@ -42,8 +42,8 @@ import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import BulkSelectionDialog from './BulkSelectionDialog.vue'
 import {
 	bulkDialogData,
+	bulkDialogLifecycle,
 	bulkDialogMethods,
-	opensWith,
 	reviewStateOf,
 	runBulkAction,
 } from './bulkSelection.js'
@@ -79,13 +79,7 @@ export default {
 		},
 	},
 
-	watch: {
-		'navigationStore.dialog': opensWith('permanentlyDeleteMultiple'),
-	},
-
-	mounted() {
-		this.initializeSelection()
-	},
+	...bulkDialogLifecycle('permanentlyDeleteMultiple'),
 
 	methods: {
 		...bulkDialogMethods,

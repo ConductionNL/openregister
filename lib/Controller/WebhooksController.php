@@ -1384,6 +1384,8 @@ class WebhooksController extends Controller {
 	 * @param int $logId Log entry ID
 	 *
 	 * @return JSONResponse The retry result, or 400 for a successful delivery
+	 *
+	 * @throws DoesNotExistException When no log entry has this id; retry() answers 404.
 	 */
 	private function retryLog(int $logId): JSONResponse {
 		$log = $this->webhookLogMapper->find($logId);

@@ -8,6 +8,7 @@ use OCA\OpenRegister\Notifications\Controller\EmailsController;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\EmailService;
+use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
@@ -26,6 +27,7 @@ class EmailsControllerTest extends TestCase {
 	private IUserSession&MockObject $userSession;
 	private LoggerInterface&MockObject $logger;
 	private EmailsController $controller;
+	private EmailLinkService&MockObject $emailLinkService;
 
 	protected function setUp(): void {
 		$this->request = $this->createMock(IRequest::class);
@@ -33,6 +35,7 @@ class EmailsControllerTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->emailLinkService = $this->createMock(EmailLinkService::class);
 
 		$this->controller = new EmailsController(
 			'openregister',
@@ -40,7 +43,8 @@ class EmailsControllerTest extends TestCase {
 			$this->emailService,
 			$this->objectService,
 			$this->userSession,
-			$this->logger
+			$this->logger,
+			$this->emailLinkService
 		);
 	}
 
@@ -123,9 +127,38 @@ class EmailsControllerTest extends TestCase {
 		$this->setupObjectService();
 		$this->emailService->method('isMailAvailable')->willReturn(true);
 
+		$this->emailLinkService->expects($this->once())->method('unlinkEmail')->with('abc-123', 7);
+
 		$response = $this->controller->destroy('reg', 'sch', 'abc-123', '7');
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertTrue($response->getData()['success']);
+		$this->assertSame(['success' => true], $response->getData());
+	}
+
+	public function testDestroyOfAnotherObjectsLinkIsNotFound(): void {
+		$this->setupObjectService();
+		$this->emailService->method('isMailAvailable')->willReturn(true);
+		$this->emailService->expects($this->never())->method('unlinkEmail');
+		$this->emailLinkService->expects($this->once())
+			->method('unlinkEmail')
+			->with('abc-123', 99)
+			->willThrowException(new \Exception('Email link not found', 404));
+
+		$response = $this->controller->destroy('reg', 'sch', 'abc-123', '99');
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$this->assertSame(['error' => 'Email link not found'], $response->getData());
+	}
+
+	public function testDestroyOnAnObjectWithoutAUuidRemovesNothing(): void {
+		$object = new ObjectEntity();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setObject')->willReturnSelf();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->emailService->method('isMailAvailable')->willReturn(true);
+		$this->emailService->expects($this->never())->method('unlinkEmail');
+		$this->emailLinkService->expects($this->never())->method('unlinkEmail');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller->destroy('reg', 'sch', 'abc-123', '7')->getStatus());
 	}
 
 	// ── search() ──

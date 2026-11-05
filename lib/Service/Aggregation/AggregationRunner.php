@@ -618,7 +618,13 @@ class AggregationRunner {
 	private function namedFigures(NamedAggregationRun $run, array $rows): array {
 		$metrics = $run->getMetrics();
 		if (count($run->groupFields) > 0) {
-			$groups = $this->computeGrouped(rows: $rows, metric: $run->getMetric(), field: $run->getField(), groupFields: $run->groupFields, metrics: $metrics);
+			$groups = $this->computeGrouped(
+				rows: $rows,
+				metric: $run->getMetric(),
+				field: $run->getField(),
+				groupFields: $run->groupFields,
+				metrics: $metrics
+			);
 			return ['groups' => $groups];
 		}
 
