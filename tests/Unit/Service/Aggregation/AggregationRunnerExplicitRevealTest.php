@@ -55,6 +55,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
  * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery
  * @uses \OCA\OpenRegister\Service\Aggregation\MetricExpressionEvaluator
+ * @uses \OCA\OpenRegister\Service\Aggregation\NamedAggregationRun
  * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
