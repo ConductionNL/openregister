@@ -37,6 +37,7 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler
  * @uses   \OCA\OpenRegister\Db\Organisation
+ * @uses   \OCA\OpenRegister\Service\Settings\SettingsSection
  */
 class ConfigurationSettingsHandlerGoldenTest extends TestCase {
 

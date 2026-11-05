@@ -259,11 +259,7 @@ class FileSettingsHandler {
 	 * @return array<string, mixed>
 	 */
 	private function submittedFileSettings(array $fileData): array {
-		$fileConfig = [];
-		foreach (self::FILE_DEFAULTS as $key => $default) {
-			$fileConfig[$key] = $fileData[$key] ?? $default;
-		}
-
+		$fileConfig = SettingsSection::overDefaults(defaults: self::FILE_DEFAULTS, values: $fileData);
 		unset($fileConfig['openAnonymiserPasswordSet']);
 		$fileConfig['batchSize'] = $this->boundedBatchSize(batchSize: $fileConfig['batchSize']);
 		$fileConfig['openAnonymiserUsername'] = trim((string) $fileConfig['openAnonymiserUsername']);

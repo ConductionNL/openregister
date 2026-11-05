@@ -58,10 +58,7 @@ class ConfigurationSettingsHandler {
 	/**
 	 * The JSON settings sections and the default of every key in them.
 	 *
-	 * Multitenancy is enabled by default, for proper data isolation. Retention
-	 * periods are in milliseconds: one year to archive, two years to delete,
-	 * a month of search trails and of create and delete logs, 24 hours of read
-	 * logs and a week of update logs.
+	 * Multitenancy is enabled by default, for proper data isolation.
 	 *
 	 * @var array<string, array<string, mixed>>
 	 */
@@ -80,17 +77,7 @@ class ConfigurationSettingsHandler {
 			'publishedObjectsBypassMultiTenancy' => false,
 			'adminOverride' => true,
 		],
-		'retention' => [
-			'objectArchiveRetention' => 31536000000,
-			'objectDeleteRetention' => 63072000000,
-			'searchTrailRetention' => 2592000000,
-			'createLogRetention' => 2592000000,
-			'readLogRetention' => 86400000,
-			'updateLogRetention' => 604800000,
-			'deleteLogRetention' => 2592000000,
-			'auditTrailsEnabled' => true,
-			'searchTrailsEnabled' => true,
-		],
+		'retention' => SettingsSection::RETENTION_DEFAULTS,
 		'organisation' => [
 			'default_organisation' => null,
 			'auto_create_default_organisation' => true,
@@ -343,7 +330,7 @@ class ConfigurationSettingsHandler {
 			return self::SECTION_DEFAULTS[$key];
 		}
 
-		return $this->overDefaults(defaults: self::SECTION_DEFAULTS[$key], values: json_decode($stored, true));
+		return SettingsSection::overDefaults(defaults: self::SECTION_DEFAULTS[$key], values: json_decode($stored, true));
 	}//end storedSection()
 
 	/**
@@ -355,32 +342,11 @@ class ConfigurationSettingsHandler {
 	 * @return array<string, mixed> The stored section.
 	 */
 	private function storeSection(string $key, $values): array {
-		$section = $this->overDefaults(defaults: self::SECTION_DEFAULTS[$key], values: $values);
+		$section = SettingsSection::overDefaults(defaults: self::SECTION_DEFAULTS[$key], values: $values);
 		$this->appConfig->setValueString($this->appName, $key, json_encode($section));
 
 		return $section;
 	}//end storeSection()
-
-	/**
-	 * Every default key with the value set for it in $values, or the default.
-	 *
-	 * @param array<string, mixed> $defaults The keys and their defaults.
-	 * @param mixed                $values   The values; anything but an array sets none.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function overDefaults(array $defaults, $values): array {
-		if (is_array($values) === false) {
-			$values = [];
-		}
-
-		$section = [];
-		foreach ($defaults as $key => $default) {
-			$section[$key] = $values[$key] ?? $default;
-		}
-
-		return $section;
-	}//end overDefaults()
 
 	/**
 	 * Get available Nextcloud groups.
