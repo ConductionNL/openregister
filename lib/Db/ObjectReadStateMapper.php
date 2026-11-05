@@ -59,6 +59,7 @@ use OCP\IDBConnection;
  * @psalm-suppress PossiblyUnusedMethod
  */
 class ObjectReadStateMapper extends QBMapper {
+	use DeleteByObjectTrait;
 
 	/**
 	 * The table this mapper owns, named once so the query lens can reference it.
@@ -289,27 +290,6 @@ class ObjectReadStateMapper extends QBMapper {
 		return $qb->executeStatement();
 
 	}//end invalidate()
-
-	/**
-	 * Remove every read state for one object.
-	 *
-	 * Called when the object is purged, so a re-created uuid never inherits
-	 * somebody else's idea of what they have already seen.
-	 *
-	 * @param string $objectUuid The deleted object's uuid.
-	 *
-	 * @return integer How many rows were removed.
-	 *
-	 * @spec openspec/specs/object-read-state/spec.md
-	 */
-	public function deleteByObject(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-
-	}//end deleteByObject()
 
 	/**
 	 * How many of a given uuid set one user has NOT seen.
