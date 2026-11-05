@@ -28,6 +28,7 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\Register;
@@ -66,7 +67,7 @@ use RuntimeException;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class CacheHandler implements ObjectNameCacheInterface {
+class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 
 	/**
 	 * In-memory cache of objects indexed by ID/UUID
@@ -232,9 +233,9 @@ class CacheHandler implements ObjectNameCacheInterface {
 	/**
 	 * Lazily loaded MagicMapper to break circular dependency
 	 *
-	 * @var MagicMapper|null
+	 * @var MagicMapperInterface|null
 	 */
-	private ?MagicMapper $objectMapper = null;
+	private ?MagicMapperInterface $objectMapper = null;
 
 	/**
 	 * Constructor for CacheHandler
@@ -303,19 +304,19 @@ class CacheHandler implements ObjectNameCacheInterface {
 	/**
 	 * Get the MagicMapper lazily to break circular dependency.
 	 *
-	 * @return MagicMapper The unified object mapper.
+	 * @return MagicMapperInterface The unified object mapper.
 	 *
 	 * @throws RuntimeException When container is not available.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function getObjectMapper(): MagicMapper {
+	private function getObjectMapper(): MagicMapperInterface {
 		if ($this->objectMapper === null) {
 			if ($this->container === null) {
 				throw new RuntimeException('[CacheHandler] Container required for lazy loading MagicMapper');
 			}
 
-			$this->objectMapper = $this->container->get(MagicMapper::class);
+			$this->objectMapper = $this->container->get(MagicMapperInterface::class);
 		}
 
 		return $this->objectMapper;

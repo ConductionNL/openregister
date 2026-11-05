@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use Psr\Log\LoggerInterface;
@@ -69,14 +69,14 @@ final class MassValidationRun {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper          $objectMapper Mapper that counts and reads the objects.
+	 * @param MagicMapperInterface          $objectMapper Mapper that counts and reads the objects.
 	 * @param AppSettingsInterface $settings     Settings service, for formatting byte counts.
 	 * @param LoggerInterface      $logger       Logger.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly AppSettingsInterface $settings,
 		private readonly LoggerInterface $logger,
 	) {

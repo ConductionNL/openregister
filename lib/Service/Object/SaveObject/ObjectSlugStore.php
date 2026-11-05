@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use Throwable;
@@ -47,12 +47,12 @@ class ObjectSlugStore {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper    $magicMapper    Slug queries on the magic tables.
+	 * @param MagicMapperInterface    $magicMapper    Slug queries on the magic tables.
 	 * @param RegisterMapperInterface $registerMapper Resolves the register of an entity.
 	 * @param ObjectSlugLog  $log            Receives a register that does not resolve.
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly ObjectSlugLog $log,
 	) {

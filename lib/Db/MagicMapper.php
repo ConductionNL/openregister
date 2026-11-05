@@ -180,7 +180,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class MagicMapper extends AbstractObjectMapper {
+class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	/**
 	 * Hard ceiling on a NUMERIC page size, per the objects-crud requirement
 	 * "List page size is bounded by a hard maximum".
@@ -196,15 +196,6 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @var int
 	 */
 	private const MAX_PAGE_SIZE = 1000;
-
-	/**
-	 * Table name prefix for register+schema-specific tables.
-	 *
-	 * NOTE: Does NOT include 'oc_' prefix as Nextcloud's QueryBuilder adds that automatically.
-	 *
-	 * @internal Used by MagicTableHandler
-	 */
-	public const TABLE_PREFIX = 'openregister_table_';
 
 	/**
 	 * Metadata column prefix to avoid conflicts with schema properties

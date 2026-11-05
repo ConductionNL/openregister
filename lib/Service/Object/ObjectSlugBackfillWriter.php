@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\SlugBackfillWriteException;
@@ -49,13 +49,13 @@ class ObjectSlugBackfillWriter {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper              $magicMapper Writes the slug column.
+	 * @param MagicMapperInterface              $magicMapper Writes the slug column.
 	 * @param IDBConnection            $db          Wraps each chunk in a transaction.
 	 * @param ObjectSlugBackfillLedger $ledger      Audits the run and evicts the cache.
 	 * @param LoggerInterface          $logger      Receives the skipped-row warnings.
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly IDBConnection $db,
 		private readonly ObjectSlugBackfillLedger $ledger,
 		private readonly LoggerInterface $logger,

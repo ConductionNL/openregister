@@ -26,7 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
@@ -57,13 +57,13 @@ class ObjectSlugBackfillService {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper              $magicMapper Reads the magic table.
+	 * @param MagicMapperInterface              $magicMapper Reads the magic table.
 	 * @param ObjectSlugHandler        $slugHandler Candidate, suffix and collision rules.
 	 * @param ObjectSlugBackfillWriter $writer      Writes a plan, evicts the cache and records the audit entry.
 	 * @param LoggerInterface          $logger      Receives the duplicate warnings.
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly ObjectSlugHandler $slugHandler,
 		private readonly ObjectSlugBackfillWriter $writer,
 		private readonly LoggerInterface $logger,

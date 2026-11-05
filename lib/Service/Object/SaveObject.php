@@ -33,7 +33,7 @@ use Adbar\Dot;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Register;
@@ -167,7 +167,7 @@ use Symfony\Component\Uid\Uuid;
  * @spec openspec/specs/object-lifecycle/spec.md#requirement-declared-initial-lifecycle-state-applied-on-create
  * @spec openspec/specs/objects-crud/spec.md#requirement-partial-object-updates-are-protected-against-lost-updates
  */
-class SaveObject {
+class SaveObject implements SaveObjectInterface {
 	private const URL_PATH_IDENTIFIER = 'openregister.objects.show';
 
 	/**
@@ -347,8 +347,8 @@ class SaveObject {
 	/**
 	 * Constructor for SaveObject handler.
 	 *
-	 * @param MagicMapper $objectEntityMapper Object entity mapper
-	 * @param MagicMapper $unifiedObjectMapper Unified object mapper
+	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper
+	 * @param MagicMapperInterface $unifiedObjectMapper Unified object mapper
 	 * @param MetadataHydrationHandler $metaHydrationHandler Handler for metadata extraction
 	 * @param FilePropertyHandler $filePropertyHandler Handler for file property operations
 	 * @param LinkedEntityPropertyHandler $linkedEntityHandler Linked entity property handler
@@ -358,7 +358,7 @@ class SaveObject {
 	 * @param RegisterMapperInterface $registerMapper Register mapper for register operations
 	 * @param IURLGenerator $urlGenerator URL generator service
 	 * @param OrganisationServiceInterface $organisationService Service for organisation operations
-	 * @param CacheHandler $cacheHandler Object entity and query cache
+	 * @param CacheHandlerInterface $cacheHandler Object entity and query cache
 	 * @param SettingsServiceInterface $settingsService Settings service for trail settings
 	 * @param PropertyRbacHandler $propertyRbacHandler Property-level RBAC handler
 	 * @param ComputedFieldHandler $computedFieldHandler Handler for computed field evaluation
@@ -384,8 +384,8 @@ class SaveObject {
 	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectEntityMapper,
-		private readonly MagicMapper $unifiedObjectMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
+		private readonly MagicMapperInterface $unifiedObjectMapper,
 		private readonly MetadataHydrationHandler $metaHydrationHandler,
 		private readonly FilePropertyHandler $filePropertyHandler,
 		private readonly LinkedEntityPropertyHandler $linkedEntityHandler,
@@ -395,7 +395,7 @@ class SaveObject {
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly OrganisationServiceInterface $organisationService,
-		private readonly CacheHandler $cacheHandler,
+		private readonly CacheHandlerInterface $cacheHandler,
 		private readonly SettingsServiceInterface $settingsService,
 		private readonly PropertyRbacHandler $propertyRbacHandler,
 		private readonly ComputedFieldHandler $computedFieldHandler,
