@@ -31,7 +31,7 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
@@ -317,9 +317,9 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 			});
 		}
 
-		$facetCache = $this->createMock(FacetCacheHandler::class);
-		$facetCache->method('invalidateForSchemaChange')->willReturnCallback(function () {
-			$this->record(method: 'facetCache.invalidateForSchemaChange', args: func_get_args());
+		$facetCache = $this->createMock(FacetResultCacheClearer::class);
+		$facetCache->method('clearAll')->willReturnCallback(function () {
+			$this->record(method: 'facetResults.cleared', args: []);
 		});
 
 		$uploadService = $this->createMock(UploadService::class);
