@@ -33,7 +33,6 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Settings\FileSettingsHandler
- * @uses   \OCA\OpenRegister\Service\Settings\SettingsSectionDefaults
  */
 class FileSettingsOpenAnonymiserPasswordTest extends TestCase {
 

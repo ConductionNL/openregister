@@ -72,7 +72,6 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Exception\CustomValidationException
  * @uses \OCA\OpenRegister\Service\Decision\DecisionVisibility
- * @uses   \OCA\OpenRegister\Service\Settings\SettingsSectionDefaults
  */
 class DecisionOwnershipTest extends TestCase {
 
