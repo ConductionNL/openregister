@@ -421,6 +421,15 @@ const { openFileUpload, files, reset, setTags } = useFileSelection({
 	dropzone,
 })
 
+/**
+ * The settings of a label multiselect before its options are loaded.
+ *
+ * @return {{inputLabel: string, multiple: boolean}} The settings
+ */
+function labelSelect() {
+	return { inputLabel: 'Labels', multiple: true }
+}
+
 export default {
 	name: 'UploadFiles',
 	components: {
@@ -450,16 +459,8 @@ export default {
 			share: false,
 			editingTags: null,
 			editedTags: [],
-			labelOptions: {
-				inputLabel: 'Labels',
-				multiple: true,
-			},
-
-			labelOptionsEdit: {
-				inputLabel: 'Labels',
-				multiple: true,
-			},
-
+			labelOptions: labelSelect(),
+			labelOptionsEdit: labelSelect(),
 			tagsLoading: false,
 		}
 	},
@@ -598,20 +599,12 @@ export default {
 		 * @spec exclude Mutual-exclusion guard for the tag multiselect ("No label" vs real tags); UI selection helper.
 		 */
 		isSelectable(option) {
-			if (
-				this.labelOptions.value?.includes(t('openregister', 'No label'))
-				&& option !== t('openregister', 'No label')
-			) {
-				return false
+			const noLabel = t('openregister', 'No label')
+			const chosen = this.labelOptions.value
+			if (chosen?.includes(noLabel)) {
+				return option === noLabel
 			}
-			if (
-				this.labelOptions.value?.length >= 1
-				&& !this.labelOptions.value?.includes(t('openregister', 'No label'))
-				&& option === t('openregister', 'No label')
-			) {
-				return false
-			}
-			return true
+			return !(chosen?.length >= 1 && option === noLabel)
 		},
 
 		/**
@@ -635,23 +628,24 @@ export default {
 			// this avoids the waiting time in later calls
 			objectStore
 				.fetchTags()
-				.then((tags) => {
-					const newLabelOptions = new Set()
-					const newLabelOptionsEdit = new Set()
-
-					// add labels to set
-					newLabelOptions.add(t('openregister', 'No label'))
-
-					tags.map((tag) => newLabelOptions.add(tag))
-					tags.map((tag) => newLabelOptionsEdit.add(tag))
-
-					// convert set to array
-					this.labelOptions.options = Array.from(newLabelOptions)
-					this.labelOptionsEdit.options = Array.from(newLabelOptionsEdit)
-				})
+				.then((tags) => this.applyTags(tags))
 				.finally(() => {
 					this.tagsLoading = false
 				})
+		},
+
+		/**
+		 * Offer the stored tags as labels: with "No label" first when adding,
+		 * without it when editing, each tag once.
+		 *
+		 * @param {Array<string>} tags The stored tags
+		 * @spec exclude Fills the label multiselects; UI form-loading plumbing.
+		 * @return {void}
+		 */
+		applyTags(tags) {
+			const noLabel = t('openregister', 'No label')
+			this.labelOptions.options = Array.from(new Set([noLabel, ...tags]))
+			this.labelOptionsEdit.options = Array.from(new Set(tags))
 		},
 
 		/**
@@ -726,16 +720,24 @@ export default {
 			this.loading = true
 			this.error = null
 			try {
-				const filesToUpload = specificFile
-					? [specificFile]
-					: this.uploadableFiles()
-				await this.uploadAll(filesToUpload)
+				await this.uploadAll(this.filesToSend(specificFile))
 			} catch (err) {
 				// This block generally catches unexpected errors.
 				this.error = err.response?.data?.error ?? err
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * The files an upload sends: the one given, or every uploadable queued file.
+		 *
+		 * @param {File|null} specificFile The one file to send, if any
+		 * @return {Array<File>} The files
+		 * @spec exclude UI state helper selecting the files to upload
+		 */
+		filesToSend(specificFile) {
+			return specificFile ? [specificFile] : this.uploadableFiles()
 		},
 
 		/**
@@ -773,15 +775,38 @@ export default {
 			if (files.length === 0) {
 				return
 			}
-			const type = `${this.registerId}-${this.schemaId}`
-			if (!objectStore.objectTypes?.includes(type)) {
-				objectStore.registerObjectType(type, this.schemaId, this.registerId)
-			}
+			const type = this.objectType()
 			const calls = await Promise.all(
 				files.map((file) => this.uploadOne(type, file)),
 			)
 			this.getAllTags()
 			await objectStore.fetchFiles(type, this.objectId)
+			this.recordUploads(calls)
+		},
+
+		/**
+		 * The object type of the register and schema, registered with the
+		 * object store when it does not know it yet.
+		 *
+		 * @return {string} The object type
+		 * @spec exclude Uploads attachments via objectStore; modal orchestration plumbing.
+		 */
+		objectType() {
+			const type = `${this.registerId}-${this.schemaId}`
+			if (!objectStore.objectTypes?.includes(type)) {
+				objectStore.registerObjectType(type, this.schemaId, this.registerId)
+			}
+			return type
+		},
+
+		/**
+		 * Record the outcome of the uploads: the first failure, or success.
+		 *
+		 * @param {Array} calls The upload results, each [succeeded, error]
+		 * @spec exclude Uploads attachments via objectStore; modal orchestration plumbing.
+		 * @return {void}
+		 */
+		recordUploads(calls) {
 			const failed = calls.filter((result) => result[0] === false)
 			if (failed.length > 0) {
 				this.error = failed[0][1].message
