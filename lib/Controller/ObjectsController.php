@@ -531,138 +531,127 @@ class ObjectsController extends Controller {
 	 *                                                                                                   Array of uploaded files keyed by field name
 	 *
 	 * @SuppressWarnings(PHPMD.Superglobals)         $_FILES access necessary — IRequest does not expose all file keys
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) File extraction must handle multiple upload field formats
 	 */
 	private function extractAllUploadedFiles(): array {
 		$uploadedFiles = [];
 
-		// Primary method: iterate through $_FILES directly to get all uploaded file field names.
-		// This is the most reliable way to detect all file uploads regardless of field name.
+		// $_FILES names every uploaded field; IRequest does not expose all file keys.
 		// phpcs:ignore -- $_FILES access is necessary as IRequest doesn't expose all file keys.
 		foreach (array_keys($_FILES) as $fieldName) {
-			// Skip if already processed.
-			if (isset($uploadedFiles[$fieldName]) === true) {
-				continue;
-			}
+			$this->collectUpload(uploadedFiles: $uploadedFiles, fieldName: (string)$fieldName);
+		}
 
-			// Skip system parameters.
-			if (str_starts_with((string)$fieldName, '_') === true) {
-				continue;
-			}
-
-			// Use IRequest to get the file data for consistency.
-			$uploadedFile = $this->request->getUploadedFile((string)$fieldName);
-			if ($uploadedFile !== null && isset($uploadedFile['tmp_name']) === true) {
-				// Check if this is an array upload (multiple files).
-				$nameValue = $uploadedFile['name'] ?? null;
-				if (is_array($nameValue) === true) {
-					// Handle multiple files with indexed keys.
-					$this->extractMultipleFiles(
-						uploadedFiles: $uploadedFiles,
-						fieldName: $fieldName,
-						uploadedFile: $uploadedFile,
-						nameValue: $nameValue
-					);
-					continue;
-				}
-
-				// Single file upload - only add if tmp_name is not empty.
-				if (empty($uploadedFile['tmp_name']) === false) {
-					$uploadedFiles[(string)$fieldName] = $uploadedFile;
-				}
-			}
-		}//end foreach
-
-		// Secondary method: also check request params for file fields.
-		// Some frameworks may include file field names in params.
-		$params = $this->request->getParams();
-		foreach (array_keys($params) as $fieldName) {
-			// Skip if already processed.
-			if (isset($uploadedFiles[$fieldName]) === true) {
-				continue;
-			}
-
-			// Skip system parameters.
-			if (str_starts_with((string)$fieldName, '_') === true) {
-				continue;
-			}
-
-			$uploadedFile = $this->request->getUploadedFile((string)$fieldName);
-			if ($uploadedFile !== null && isset($uploadedFile['tmp_name']) === true) {
-				$nameValue = $uploadedFile['name'] ?? null;
-				if (is_array($nameValue) === true) {
-					$this->extractMultipleFiles(
-						uploadedFiles: $uploadedFiles,
-						fieldName: $fieldName,
-						uploadedFile: $uploadedFile,
-						nameValue: $nameValue
-					);
-					continue;
-				}
-
-				if (empty($uploadedFile['tmp_name']) === false) {
-					$uploadedFiles[(string)$fieldName] = $uploadedFile;
-				}
-			}
-		}//end foreach
+		// Some frameworks also name file fields among the request parameters.
+		foreach (array_keys($this->request->getParams()) as $fieldName) {
+			$this->collectUpload(uploadedFiles: $uploadedFiles, fieldName: (string)$fieldName);
+		}
 
 		return $uploadedFiles;
 	}//end extractAllUploadedFiles()
 
 	/**
-	 * Helper method to extract multiple files from an array upload field.
+	 * Add the upload of one field to the collected files, once; system fields (`_`) are skipped.
 	 *
-	 * @param array $uploadedFiles Reference to the uploaded files array to populate.
-	 * @param string $fieldName The field name for the file upload.
-	 * @param array $uploadedFile The uploaded file data from IRequest.
-	 * @param array $nameValue The array of file names.
+	 * @param array<string, array> $uploadedFiles The files collected so far.
+	 * @param string               $fieldName     The field.
 	 *
 	 * @return void
 	 */
-	private function extractMultipleFiles(
-		array &$uploadedFiles,
-		string $fieldName,
-		array $uploadedFile,
-		array $nameValue,
-	): void {
-		$fileCount = count($nameValue);
-		for ($i = 0; $i < $fileCount; $i++) {
-			if (is_array($uploadedFile['type'] ?? null) === true) {
-				$typeArray = $uploadedFile['type'];
-			} else {
-				$typeArray = [];
-			}
+	private function collectUpload(array &$uploadedFiles, string $fieldName): void {
+		$uploadedFile = $this->fieldUpload(uploadedFiles: $uploadedFiles, fieldName: $fieldName);
+		if ($uploadedFile === null) {
+			return;
+		}
 
-			if (is_array($uploadedFile['tmp_name'] ?? null) === true) {
-				$tmpNameArray = $uploadedFile['tmp_name'];
-			} else {
-				$tmpNameArray = [];
-			}
+		if (is_array($uploadedFile['name'] ?? null) === true) {
+			$files = $this->multipleFiles(fieldName: $fieldName, uploadedFile: $uploadedFile);
+			$uploadedFiles = array_replace($uploadedFiles, $files);
+			return;
+		}
 
-			if (is_array($uploadedFile['error'] ?? null) === true) {
-				$errorArray = $uploadedFile['error'];
-			} else {
-				$errorArray = [];
-			}
+		if (empty($uploadedFile['tmp_name']) === false) {
+			$uploadedFiles[$fieldName] = $uploadedFile;
+		}
+	}//end collectUpload()
 
-			if (is_array($uploadedFile['size'] ?? null) === true) {
-				$sizeArray = $uploadedFile['size'];
-			} else {
-				$sizeArray = [];
-			}
+	/**
+	 * The upload of a field not collected yet, when it is not a system field (`_`) and carries a tmp_name.
+	 *
+	 * @param array<string, array> $uploadedFiles The files collected so far.
+	 * @param string               $fieldName     The field.
+	 *
+	 * @return array|null The upload, or null.
+	 */
+	private function fieldUpload(array $uploadedFiles, string $fieldName): ?array {
+		if (isset($uploadedFiles[$fieldName]) === true || str_starts_with($fieldName, '_') === true) {
+			return null;
+		}
 
-			// Only add if tmp_name is not empty.
-			if (empty($tmpNameArray[$i]) === false) {
-				$uploadedFiles[$fieldName . '[' . $i . ']'] = [
-					'name' => $nameValue[$i] ?? '',
-					'type' => $typeArray[$i] ?? '',
-					'tmp_name' => $tmpNameArray[$i] ?? '',
-					'error' => $errorArray[$i] ?? UPLOAD_ERR_NO_FILE,
-					'size' => $sizeArray[$i] ?? 0,
-				];
+		$uploadedFile = $this->request->getUploadedFile($fieldName);
+		if ($uploadedFile === null || isset($uploadedFile['tmp_name']) === false) {
+			return null;
+		}
+
+		return $uploadedFile;
+	}//end fieldUpload()
+
+	/**
+	 * The files of a multiple-file field, keyed `field[i]`; entries without a temporary file are left out.
+	 *
+	 * @param string $fieldName    The field.
+	 * @param array  $uploadedFile The upload, whose name, type, tmp_name, error and size are lists.
+	 *
+	 * @return array<string, array{name: string, type: string, tmp_name: string, error: int, size: int}> The files.
+	 */
+	private function multipleFiles(string $fieldName, array $uploadedFile): array {
+		$parts = $this->uploadParts(uploadedFile: $uploadedFile);
+		$files = [];
+		$count = count($parts['name']);
+		for ($i = 0; $i < $count; $i++) {
+			if (empty($parts['tmp_name'][$i]) === false) {
+				$files[$fieldName . '[' . $i . ']'] = $this->multipleFileAt(parts: $parts, index: $i);
 			}
-		}//end for
-	}//end extractMultipleFiles()
+		}
+
+		return $files;
+	}//end multipleFiles()
+
+	/**
+	 * The name, type, tmp_name, error and size lists of a multiple-file upload; a part that is not a list is empty.
+	 *
+	 * @param array $uploadedFile The upload.
+	 *
+	 * @return array<string, array> The lists.
+	 */
+	private function uploadParts(array $uploadedFile): array {
+		$parts = ['name' => $uploadedFile['name']];
+		foreach (['type', 'tmp_name', 'error', 'size'] as $key) {
+			$parts[$key] = [];
+			if (is_array($uploadedFile[$key] ?? null) === true) {
+				$parts[$key] = $uploadedFile[$key];
+			}
+		}
+
+		return $parts;
+	}//end uploadParts()
+
+	/**
+	 * One file of a multiple-file upload.
+	 *
+	 * @param array<string, array> $parts The upload's name, type, tmp_name, error and size lists.
+	 * @param int                  $index The position of the file.
+	 *
+	 * @return array{name: string, type: string, tmp_name: string, error: int, size: int} The file.
+	 */
+	private function multipleFileAt(array $parts, int $index): array {
+		return [
+			'name' => $parts['name'][$index] ?? '',
+			'type' => $parts['type'][$index] ?? '',
+			'tmp_name' => $parts['tmp_name'][$index],
+			'error' => $parts['error'][$index] ?? UPLOAD_ERR_NO_FILE,
+			'size' => $parts['size'][$index] ?? 0,
+		];
+	}//end multipleFileAt()
 
 	/**
 	 * Private helper method to handle pagination of results.
