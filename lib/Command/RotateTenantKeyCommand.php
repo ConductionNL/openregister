@@ -41,6 +41,22 @@ use Symfony\Component\Console\Output\OutputInterface;
 class RotateTenantKeyCommand extends Command {
 
 	/**
+	 * The option that accepts the loss of checkable signatures.
+	 *
+	 * @var string
+	 */
+	private const ACCEPT_OPTION = 'accept-unverifiable-signatures';
+
+	/**
+	 * Why a live key is not rotated by default: a retired key stays stored, but no API reads it.
+	 *
+	 * @var string
+	 */
+	private const SIGNATURE_WARNING = 'Nothing was rotated. Records signed with the current key, such as learniq attestations, '
+		.'can no longer be checked after rotation, because no API reads a retired key. '
+		.'Pass --accept-unverifiable-signatures to rotate anyway.';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param TenantKeyService $tenantKeys The tenant key store.
@@ -62,7 +78,8 @@ class RotateTenantKeyCommand extends Command {
 		$this->setName(name: 'openregister:tenant-key:rotate')
 			->setDescription(description: 'Retire a tenant\'s active HMAC signing key and store a new one')
 			->addArgument(name: 'tenant', mode: InputArgument::REQUIRED, description: 'The tenant identifier')
-			->addOption(name: 'create', mode: InputOption::VALUE_NONE, description: 'Create a first key for a tenant that has none');
+			->addOption(name: 'create', mode: InputOption::VALUE_NONE, description: 'Create a first key for a tenant that has none')
+			->addOption(name: self::ACCEPT_OPTION, mode: InputOption::VALUE_NONE, description: 'Rotate even though signatures made with the current key can no longer be checked');
 	}//end configure()
 
 	/**
@@ -84,6 +101,11 @@ class RotateTenantKeyCommand extends Command {
 
 		if ($input->getOption('create') !== true && $this->tenantKeys->hasActiveKey(tenantId: $tenant) === false) {
 			$output->writeln('<error>Tenant '.$tenant.' has no active key. Check the identifier, or pass --create to create a first key.</error>');
+			return 1;
+		}
+
+		if ($input->getOption(self::ACCEPT_OPTION) !== true && $this->tenantKeys->hasActiveKey(tenantId: $tenant) === true) {
+			$output->writeln('<error>'.self::SIGNATURE_WARNING.'</error>');
 			return 1;
 		}
 
