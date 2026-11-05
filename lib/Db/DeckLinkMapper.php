@@ -31,6 +31,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<DeckLink>
  */
 class DeckLinkMapper extends QBMapper {
+	use FindLinksByObjectUuidTrait;
+	use DeleteLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -62,23 +64,6 @@ class DeckLinkMapper extends QBMapper {
 
 		return $this->findEntity(query: $qb);
 	}//end find()
-
-	/**
-	 * Find deck links by object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return DeckLink[] Array of deck links.
-	 */
-	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
 
 	/**
 	 * Find deck links by board ID.
@@ -118,21 +103,6 @@ class DeckLinkMapper extends QBMapper {
 			return null;
 		}
 	}//end findByObjectAndCard()
-
-	/**
-	 * Delete all deck links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 
 	/**
 	 * Delete a deck link by object UUID + card ID (Tier-2 unlink path).

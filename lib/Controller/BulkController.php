@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Controller;
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Exception;
+use OCA\OpenRegister\Controller\Support\BulkControllerServices;
+use OCA\OpenRegister\Controller\Support\BulkStore;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -37,7 +39,7 @@ use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rbac\SchemaManageGate;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -68,32 +70,84 @@ class BulkController extends Controller {
 	public const ATOMIC_BATCH_LIMIT = 1000;
 
 	/**
+	 * The object service
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * The bulk store; its object service also offers the streaming save
+	 *
+	 * @var BulkStore
+	 */
+	private readonly BulkStore $store;
+
+	/**
+	 * Mapper for resolving registers (RBAC gates)
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Mapper for resolving schemas (RBAC gates)
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * User session for admin/manage checks
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for admin/manage checks
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * The connection an atomic batch runs its transaction on
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * Who may manage a schema. Built from the collaborators above when null.
+	 *
+	 * @var ?SchemaManageGate
+	 */
+	private readonly ?SchemaManageGate $schemaManageGate;
+
+	/**
 	 * Constructor for the BulkController
 	 *
 	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
-	 * @param ObjectService $objectService The object service
-	 * @param RegisterMapperInterface $registerMapper Mapper for resolving registers (RBAC gates)
-	 * @param SchemaMapperInterface $schemaMapper Mapper for resolving schemas (RBAC gates)
-	 * @param IUserSession $userSession User session for admin/manage checks
-	 * @param IGroupManager $groupManager Group manager for admin/manage checks
-	 * @param IDBConnection $db The connection an atomic batch runs its transaction on
-	 * @param SchemaManageGate|null $schemaManageGate Who may manage a schema. Built from the collaborators above when null.
+	 * @param BulkControllerServices $services The bulk controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objectService,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly IDBConnection $db,
-		private readonly ?SchemaManageGate $schemaManageGate = null,
+		BulkControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->store = $services->store;
+		$this->objectService = $services->store->objectService;
+		$this->registerMapper = $services->store->registerMapper;
+		$this->schemaMapper = $services->store->schemaMapper;
+		$this->userSession = $services->platform->userSession;
+		$this->groupManager = $services->platform->groupManager;
+		$this->db = $services->platform->db;
+		$this->schemaManageGate = $services->store->schemaManageGate;
 	}//end __construct()
 
 	/**
@@ -218,7 +272,7 @@ class BulkController extends Controller {
 	 *
 	 * @param string        $register      Register slug, uuid or numeric id.
 	 * @param string        $schema        Schema slug, uuid or numeric id.
-	 * @param ObjectService $objectService The request's object service.
+	 * @param ObjectOperationsInterface $objectService The request's object service.
 	 *
 	 * @return array The resolved ids.
 	 *
@@ -227,7 +281,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
-	private function resolveRegisterSchemaIds(string $register, string $schema, ObjectService $objectService): array {
+	private function resolveRegisterSchemaIds(string $register, string $schema, ObjectOperationsInterface $objectService): array {
 		$resolved = $this->resolveRegisterAndSchema(
 			register: $register,
 			schema: $schema,
@@ -476,7 +530,7 @@ class BulkController extends Controller {
 				);
 			}
 
-			$status = $this->objectService->saveObjectsStreaming(
+			$status = $this->store->objectService->saveObjectsStreaming(
 				objects: $objects,
 				register: $register,
 				schema: $schema

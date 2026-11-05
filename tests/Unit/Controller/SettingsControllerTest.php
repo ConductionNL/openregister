@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SettingsControllerFactory;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use OCA\OpenRegister\Controller\SettingsController;
 use OCA\OpenRegister\Service\SettingsService;
@@ -76,7 +77,7 @@ class SettingsControllerTest extends TestCase {
 			}
 		);
 
-		$this->controller = new SettingsController(
+		$this->controller = SettingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,

@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\EntityRelationsControllerFactory;
 use OCA\OpenRegister\Controller\EntityRelationsController;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
@@ -144,7 +145,7 @@ class EntityRelationsControllerTest extends TestCase {
 	}//end setUp()
 
 	private function makeController(): EntityRelationsController {
-		return new EntityRelationsController(
+		return EntityRelationsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->mapper,

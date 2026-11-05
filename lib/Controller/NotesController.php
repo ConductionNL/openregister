@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\NotesControllerServices;
 use OCA\OpenRegister\Exception\NoteWriteRefusedException;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -62,14 +63,25 @@ class NotesController extends Controller {
 	private readonly ObjectOperationsInterface $objectService;
 
 	/**
+	 * Visibility guard, filter and audit
+	 *
+	 * @var TimelineVisibilityService
+	 */
+	private readonly TimelineVisibilityService $visibility;
+
+	/**
+	 * The controller's injected services.
+	 *
+	 * @var NotesControllerServices
+	 */
+	private readonly NotesControllerServices $services;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param NoteService $noteService Note service for comment operations
-	 * @param ObjectOperationsInterface $objectService Object service for object validation
-	 * @param TimelineVisibilityService $visibility Visibility guard, filter and audit
-	 * @param TimelineWriteService $timeline Projects a note into the entry record, so it is searchable
+	 * @param NotesControllerServices $services The notes controller services.
 	 * @param TimelineEntryService $entries Reads and forgets the record behind a note
 	 *
 	 * @return void
@@ -77,16 +89,15 @@ class NotesController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		NoteService $noteService,
-		ObjectOperationsInterface $objectService,
-		private readonly TimelineVisibilityService $visibility,
-		private readonly TimelineWriteService $timeline,
+		NotesControllerServices $services,
 		private readonly TimelineEntryService $entries,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->services = $services;
+		$this->visibility = $services->visibility;
 
-		$this->noteService = $noteService;
-		$this->objectService = $objectService;
+		$this->noteService = $services->noteService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**
@@ -214,7 +225,7 @@ class NotesController extends Controller {
 			// and no fields — but it now also has a record, so the entry
 			// search can find it. Half a timeline that cannot be searched is
 			// worse than none. The projection never throws.
-			$entry = $this->timeline->projectNote(
+			$entry = $this->services->timeline->projectNote(
 				object: $object,
 				note: $note,
 				register: $register,
@@ -292,7 +303,7 @@ class NotesController extends Controller {
 			// Keep the record and its references in step with the text that
 			// was just rewritten: an index answering with yesterday's sentence
 			// is worse than no index, because it looks like a hit.
-			$this->timeline->rewrite(
+			$this->services->timeline->rewrite(
 				object: $object,
 				commentId: (int)$noteId,
 				message: $write['message'],
@@ -457,7 +468,7 @@ class NotesController extends Controller {
 
 			$this->noteService->deleteNote((int)$noteId);
 
-			$this->timeline->forgetNote(
+			$this->services->timeline->forgetNote(
 				commentId: (int)$noteId,
 				entryUuid: $entry?->getUuid()
 			);

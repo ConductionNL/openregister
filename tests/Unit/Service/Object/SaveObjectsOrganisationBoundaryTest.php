@@ -49,6 +49,8 @@ use ReflectionMethod;
  * organisation scope holds the stored row and whether the caller's own read finds it.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectDefaults
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectOwnership
  * @covers \OCA\OpenRegister\Service\Object\BulkSafeguardRun
  * @uses   \OCA\OpenRegister\Service\Object\PermissionHandler
  * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
