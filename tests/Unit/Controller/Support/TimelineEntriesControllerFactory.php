@@ -1,0 +1,73 @@
+<?php
+
+/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
+
+use OCA\OpenRegister\Controller\TimelineEntriesController;
+
+/**
+ * Builds TimelineEntriesController from its services as separate arguments, wrapped into its constructor bundles.
+ */
+final class TimelineEntriesControllerFactory {
+	/**
+	 * The constructor arguments of TimelineEntriesController.
+	 *
+	 * @param string $appName Constructor argument.
+	 * @param IRequest $request Constructor argument.
+	 * @param ObjectService $objects Constructor argument.
+	 * @param TimelineEntryService $entries Constructor argument.
+	 * @param TimelineWriteService $writer Constructor argument.
+	 * @param TimelineEntrySearchService $search Constructor argument.
+	 * @param ReferenceService $references Constructor argument.
+	 * @param TimelineVisibilityService $visibility Constructor argument.
+	 * @param LoggerInterface $logger Constructor argument.
+	 *
+	 * @return array<int, mixed>
+	 */
+	public static function args(
+		string $appName,
+		\OCP\IRequest $request,
+		\OCA\OpenRegister\Service\ObjectService $objects,
+		\OCA\OpenRegister\Service\Timeline\TimelineEntryService $entries,
+		\OCA\OpenRegister\Service\Timeline\TimelineWriteService $writer,
+		\OCA\OpenRegister\Service\Timeline\TimelineEntrySearchService $search,
+		\OCA\OpenRegister\Service\Timeline\ReferenceService $references,
+		\OCA\OpenRegister\Service\TimelineVisibilityService $visibility,
+		\Psr\Log\LoggerInterface $logger,
+	): array {
+		return [
+			$appName,
+			$request,
+			new \OCA\OpenRegister\Controller\Support\TimelineEntriesControllerServices(
+				domain: new \OCA\OpenRegister\Controller\Support\TimelineEntriesDomain(
+					objects: $objects,
+					entries: $entries,
+					writer: $writer,
+					search: $search,
+				),
+				visibility: new \OCA\OpenRegister\Controller\Support\TimelineEntriesVisibility(
+					references: $references,
+					visibility: $visibility,
+					logger: $logger,
+				),
+			),
+		];
+	}
+
+	/**
+	 * Build TimelineEntriesController; takes the same arguments as args().
+	 *
+	 * @param mixed ...$args Arguments for args(), positional or named.
+	 *
+	 * @return TimelineEntriesController
+	 */
+	public static function create(mixed ...$args): TimelineEntriesController {
+		return new TimelineEntriesController(...self::args(...$args));
+	}
+}

@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\BulkControllerFactory;
 use OCA\OpenRegister\Controller\BulkController;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -40,6 +41,9 @@ use PHPUnit\Framework\TestCase;
  * administrator lookup answers per user id, so a check made for anybody but the caller fails.
  *
  * @covers \OCA\OpenRegister\Controller\BulkController
+ * @uses \OCA\OpenRegister\Controller\Support\BulkStore
+ * @uses \OCA\OpenRegister\Controller\Support\BulkPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\BulkControllerServices
  * @uses   \OCA\OpenRegister\Service\Rbac\SchemaManageGate
  * @uses   \OCA\OpenRegister\Service\Object\BatchOperationStatus
  * @uses   \OCA\OpenRegister\Dto\BulkSaveOutcome
@@ -102,7 +106,7 @@ class BulkControllerStreamTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn($params + ['objects' => [['name' => 'row']]]);
 
-		$controller = new BulkController(
+		$controller = BulkControllerFactory::create(
 			'openregister',
 			$request,
 			$objects,

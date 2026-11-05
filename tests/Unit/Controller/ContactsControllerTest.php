@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ContactsControllerFactory;
 use OCA\OpenRegister\Controller\ContactsController;
 use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Service\ContactService;
@@ -61,7 +62,7 @@ class ContactsControllerTest extends TestCase {
 			}
 		);
 
-		$this->controller = new ContactsController(
+		$this->controller = ContactsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->contactService,

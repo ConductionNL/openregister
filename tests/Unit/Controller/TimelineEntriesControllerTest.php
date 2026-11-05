@@ -28,6 +28,7 @@ namespace Unit\Controller;
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- PHPUnit fixture properties are named by their type.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TimelineEntriesControllerFactory;
 use OCA\OpenRegister\Controller\TimelineEntriesController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TimelineEntry;
@@ -83,7 +84,7 @@ class TimelineEntriesControllerTest extends TestCase {
 			}
 		);
 
-		$this->controller = new TimelineEntriesController(
+		$this->controller = TimelineEntriesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objects,

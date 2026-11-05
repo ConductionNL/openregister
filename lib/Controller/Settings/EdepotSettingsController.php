@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Settings;
 
+use OCA\OpenRegister\Controller\Support\EdepotSettingsControllerServices;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Service\Edepot\EdepotTransferService;
 use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransport;
@@ -50,30 +51,74 @@ use Psr\Log\LoggerInterface;
  */
 class EdepotSettingsController extends Controller {
 	/**
+	 * The app configuration.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * The transfer service.
+	 *
+	 * @var EdepotTransferService
+	 */
+	private readonly EdepotTransferService $transferService;
+
+	/**
+	 * SFTP transport.
+	 *
+	 * @var SftpTransport
+	 */
+	private readonly SftpTransport $sftpTransport;
+
+	/**
+	 * REST API transport.
+	 *
+	 * @var RestApiTransport
+	 */
+	private readonly RestApiTransport $restTransport;
+
+	/**
+	 * OpenConnector transport.
+	 *
+	 * @var OpenConnectorTransport
+	 */
+	private readonly OpenConnectorTransport $ocTransport;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Reports connection test outcomes to integriq's connection registry.
+	 *
+	 * @var ConnectionReporter
+	 */
+	private readonly ConnectionReporter $connectionReporter;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param IAppConfig $appConfig The app configuration.
-	 * @param EdepotTransferService $transferService The transfer service.
-	 * @param SftpTransport $sftpTransport SFTP transport.
-	 * @param RestApiTransport $restTransport REST API transport.
-	 * @param OpenConnectorTransport $ocTransport OpenConnector transport.
-	 * @param LoggerInterface $logger Logger.
-	 * @param ConnectionReporter $connectionReporter Reports connection test outcomes to integriq's connection registry.
+	 * @param EdepotSettingsControllerServices $services The edepot settings controller services.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly IAppConfig $appConfig,
-		private readonly EdepotTransferService $transferService,
-		private readonly SftpTransport $sftpTransport,
-		private readonly RestApiTransport $restTransport,
-		private readonly OpenConnectorTransport $ocTransport,
-		private readonly LoggerInterface $logger,
-		private readonly ConnectionReporter $connectionReporter,
+		EdepotSettingsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->appConfig = $services->platform->appConfig;
+		$this->transferService = $services->domain->transferService;
+		$this->sftpTransport = $services->domain->sftpTransport;
+		$this->restTransport = $services->domain->restTransport;
+		$this->ocTransport = $services->domain->ocTransport;
+		$this->logger = $services->platform->logger;
+		$this->connectionReporter = $services->platform->connectionReporter;
 	}//end __construct()
 
 	/**

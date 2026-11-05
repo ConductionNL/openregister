@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.MissingReturn -- PHPUnit fixtures and tests; the signature IS the contract.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\AccessLinkControllerFactory;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\AccessLinkController;
@@ -88,7 +89,7 @@ class AccessLinkControllerTest extends TestCase {
 			fn (string $name, mixed $default = null): mixed => ($this->params[$name] ?? $default)
 		);
 
-		$this->controller = new AccessLinkController(
+		$this->controller = AccessLinkControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			links: $this->links,

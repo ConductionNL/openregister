@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use DateTimeZone;
+use OCA\OpenRegister\Controller\Support\FlowRunControllerServices;
 use OCA\OpenRegister\Db\AuditFlowAttribution;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
@@ -81,63 +82,98 @@ use Throwable;
  */
 class FlowRunController extends Controller {
 	/**
+	 * Reads runs.
+	 *
+	 * @var FlowRunMapperInterface
+	 */
+	private readonly FlowRunMapperInterface $mapper;
+
+	/**
+	 * Retries, requeues and runs.
+	 *
+	 * @var FlowRunServiceInterface
+	 */
+	private readonly FlowRunServiceInterface $runner;
+
+	/**
+	 * Resolves a flow id to its document.
+	 *
+	 * @var FlowLocator
+	 */
+	private readonly FlowLocator $resolvers;
+
+	/**
+	 * Attributes a retried run to the caller.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Scopes the active-runs list to the caller's tenant.
+	 *
+	 * @var OrganisationServiceInterface
+	 */
+	private readonly OrganisationServiceInterface $organisationService;
+
+	/**
+	 * Whether the caller may run the flow a run belongs to.
+	 *
+	 * @var FlowRunnableGuard
+	 */
+	private readonly FlowRunnableGuard $guard;
+
+	/**
+	 * Distinguishes an administrator, who gets
+	 *
+	 * @var ?IGroupManager
+	 */
+	private readonly ?IGroupManager $groupManager;
+
+	/**
+	 * Reads which flows the caller owns, from the
+	 *
+	 * @var ?FlowCaller
+	 */
+	private readonly ?FlowCaller $flowOwnership;
+
+	/**
+	 * Reads the attribution stamped on
+	 *
+	 * @var ?AuditFlowAttribution
+	 */
+	private readonly ?AuditFlowAttribution $auditTrails;
+
+	/**
+	 * The guarded signal seam the
+	 *
+	 * @var ?FlowRunSignalService
+	 */
+	private readonly ?FlowRunSignalService $signalService;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param FlowRunMapperInterface $mapper Reads runs.
-	 * @param FlowRunServiceInterface $runner Retries, requeues and runs.
-	 * @param FlowLocator $resolvers Resolves a flow id to its document.
-	 * @param IUserSession $userSession Attributes a retried run to the caller.
-	 * @param OrganisationServiceInterface $organisationService Scopes the active-runs list to the caller's tenant.
-	 * @param FlowRunnableGuard $guard Whether the caller may run the flow a run belongs to.
-	 *                                 REQUIRED, unlike the collaborators below: a run
-	 *                                 endpoint with no guard is the IDOR this controller
-	 *                                 was written to close, so there is no "absent" case
-	 *                                 for it to scope to.
-	 * @param IGroupManager|null $groupManager Distinguishes an administrator, who gets
-	 *                                         the unscoped run history. Nullable so
-	 *                                         adding it is not a fatal at existing
-	 *                                         construction sites; absent means "not an
-	 *                                         admin", which SCOPES rather than widens.
-	 * @param FlowCaller|null $flowOwnership Reads which flows the caller owns, from the
-	 *                                       native flow store. Nullable for the same
-	 *                                       reason as $groupManager: absent yields no
-	 *                                       owned ids, which scopes rather than widens.
-	 * @param AuditFlowAttribution|null $auditTrails Reads the attribution stamped on
-	 *                                           audit rows, for the objects a run
-	 *                                           touched. Nullable and LAST so
-	 *                                           adding it shifts no positional
-	 *                                           caller; absent, the endpoint
-	 *                                           reports the surface unavailable
-	 *                                           rather than an empty run.
-	 * @param FlowRunSignalService|null $signalService The guarded signal seam the
-	 *                                                 resume endpoints delegate to.
-	 *                                                 Nullable and appended so no
-	 *                                                 construction site shifts;
-	 *                                                 absent, one is built on
-	 *                                                 demand from this
-	 *                                                 controller's own
-	 *                                                 collaborators.
+	 * @param FlowRunControllerServices $services The flow run controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly FlowRunMapperInterface $mapper,
-		private readonly FlowRunServiceInterface $runner,
-		private readonly FlowLocator $resolvers,
-		private readonly IUserSession $userSession,
-		private readonly OrganisationServiceInterface $organisationService,
-		private readonly FlowRunnableGuard $guard,
-		private readonly ?IGroupManager $groupManager = null,
-		private readonly ?FlowCaller $flowOwnership = null,
-		// Appended LAST and nullable on purpose: a new constructor argument
-		// inserted anywhere else shifts every positional caller, and the
-		// resulting TypeError names the argument AFTER the one that moved.
-		private readonly ?AuditFlowAttribution $auditTrails = null,
-		private readonly ?FlowRunSignalService $signalService = null,
+		FlowRunControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->mapper = $services->runs->mapper;
+		$this->runner = $services->runs->runner;
+		$this->resolvers = $services->runs->resolvers;
+		$this->userSession = $services->platform->userSession;
+		$this->organisationService = $services->access->organisationService;
+		$this->guard = $services->access->guard;
+		$this->groupManager = $services->platform->groupManager;
+		$this->flowOwnership = $services->access->flowOwnership;
+		$this->auditTrails = $services->runs->auditTrails;
+		$this->signalService = $services->access->signalService;
 
 	}//end __construct()
 

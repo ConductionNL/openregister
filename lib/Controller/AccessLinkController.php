@@ -50,6 +50,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\AccessLinkControllerServices;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
@@ -87,30 +88,74 @@ class AccessLinkController extends Controller {
 	public const THROTTLE_ACTION = ThrottledSurfaces::ACCESS_LINK;
 
 	/**
+	 * The link lifecycle.
+	 *
+	 * @var AccessLinkService
+	 */
+	private readonly AccessLinkService $links;
+
+	/**
+	 * Serves what a link opens.
+	 *
+	 * @var AccessLinkReader
+	 */
+	private readonly AccessLinkReader $reader;
+
+	/**
+	 * Decides whether a caller may publish a subject.
+	 *
+	 * @var AccessLinkMintGuard
+	 */
+	private readonly AccessLinkMintGuard $mintGuard;
+
+	/**
+	 * Performs the comment and the upload, as the link.
+	 *
+	 * @var AccessLinkActs
+	 */
+	private readonly AccessLinkActs $acts;
+
+	/**
+	 * The current session, on the owner endpoints.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Brute-force throttler for rejected anchors.
+	 *
+	 * @var IThrottler
+	 */
+	private readonly IThrottler $throttler;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name (injected by Nextcloud).
 	 * @param IRequest $request Current request.
-	 * @param AccessLinkService $links The link lifecycle.
-	 * @param AccessLinkReader $reader Serves what a link opens.
-	 * @param AccessLinkMintGuard $mintGuard Decides whether a caller may publish a subject.
-	 * @param AccessLinkActs $acts Performs the comment and the upload, as the link.
-	 * @param IUserSession $userSession The current session, on the owner endpoints.
-	 * @param IThrottler $throttler Brute-force throttler for rejected anchors.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param AccessLinkControllerServices $services The access link controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly AccessLinkService $links,
-		private readonly AccessLinkReader $reader,
-		private readonly AccessLinkMintGuard $mintGuard,
-		private readonly AccessLinkActs $acts,
-		private readonly IUserSession $userSession,
-		private readonly IThrottler $throttler,
-		private readonly LoggerInterface $logger,
+		AccessLinkControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->links = $services->domain->links;
+		$this->reader = $services->domain->reader;
+		$this->mintGuard = $services->domain->mintGuard;
+		$this->acts = $services->domain->acts;
+		$this->userSession = $services->platform->userSession;
+		$this->throttler = $services->platform->throttler;
+		$this->logger = $services->platform->logger;
 	}//end __construct()
 
 	/**

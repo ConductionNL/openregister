@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SettingsControllerFactory;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Exception;
 use OCA\OpenRegister\Controller\SettingsController;
@@ -29,6 +30,9 @@ use Psr\Log\LoggerInterface;
  * count when the sidecar join fails.
  *
  * @covers \OCA\OpenRegister\Controller\SettingsController
+ * @uses \OCA\OpenRegister\Controller\Support\SettingsStore
+ * @uses \OCA\OpenRegister\Controller\Support\SettingsRuntime
+ * @uses \OCA\OpenRegister\Controller\Support\SettingsControllerServices
  */
 class SettingsControllerHybridSearchDiagnosticsTest extends TestCase {
 
@@ -94,7 +98,7 @@ class SettingsControllerHybridSearchDiagnosticsTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->with(ChunkMapper::class)->willReturn($chunkMapper);
 
-		$controller = new SettingsController(
+		$controller = SettingsControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(IAppConfig::class),

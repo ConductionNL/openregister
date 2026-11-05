@@ -31,6 +31,7 @@ namespace Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\DeletedControllerFactory;
 use DateTimeImmutable;
 use OCA\OpenRegister\Controller\DeletedController;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -167,7 +168,7 @@ final class DeletedControllerWindowTest extends TestCase {
 			$this->createMock(PermissionHandler::class),
 		);
 
-		$this->controller = new DeletedController(
+		$this->controller = DeletedControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objectMapper,

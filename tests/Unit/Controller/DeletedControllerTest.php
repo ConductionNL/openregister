@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\DeletedControllerFactory;
 use OCA\OpenRegister\Controller\DeletedController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
@@ -61,7 +62,7 @@ class DeletedControllerTest extends TestCase {
 			$this->permissionHandler,
 		);
 
-		$this->controller = new DeletedController(
+		$this->controller = DeletedControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objectMapper,

@@ -25,6 +25,7 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\ConversationControllerFactory
 use OCA\OpenRegister\Tests\Unit\Controller\Support\GdprEntitiesControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FileExtractionControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FileTextControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\BulkControllerFactory;
 use OC\Files\AppData\Factory;
 use OCA\OpenRegister\Controller\BulkController;
 use OCA\OpenRegister\Controller\ChatController;
@@ -1945,7 +1946,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return BulkController
 	 */
 	private function buildBulkController(): BulkController {
-		return new BulkController(
+		return BulkControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(ObjectService::class),

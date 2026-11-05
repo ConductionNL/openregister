@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectDraftControllerFactory;
 use OCA\OpenRegister\Controller\ObjectDraftController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -47,6 +48,9 @@ use RuntimeException;
  * Decision 216: the owner's action on the object API.
  *
  * @covers \OCA\OpenRegister\Controller\ObjectDraftController
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDraftDomain
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDraftPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDraftControllerServices
  * @uses \OCA\OpenRegister\Exception\DraftActivationRefusedException
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
@@ -164,7 +168,7 @@ class ObjectDraftControllerTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
-		$this->controller = new ObjectDraftController(
+		$this->controller = ObjectDraftControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			objects: $this->objects,
@@ -430,7 +434,7 @@ class ObjectDraftControllerTest extends TestCase {
 		);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
-		$controller = new ObjectDraftController(
+		$controller = ObjectDraftControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			objects: $this->objects,
@@ -466,7 +470,7 @@ class ObjectDraftControllerTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 		$this->activation->expects($this->never())->method('activateAsUser');
 
-		$controller = new ObjectDraftController(
+		$controller = ObjectDraftControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			objects: $objects,

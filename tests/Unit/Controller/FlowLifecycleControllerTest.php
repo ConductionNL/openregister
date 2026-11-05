@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowControllerFactory;
 use OCA\OpenRegister\Controller\FlowController;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowVersion;
@@ -79,7 +80,7 @@ class FlowLifecycleControllerTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturn(true);
 
-		$this->controller = new FlowController(
+		$this->controller = FlowControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(EventCatalogService::class),

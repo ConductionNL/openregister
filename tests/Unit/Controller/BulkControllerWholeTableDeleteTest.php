@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\BulkControllerFactory;
 use OCA\OpenRegister\Controller\BulkController;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -35,6 +36,9 @@ use PHPUnit\Framework\TestCase;
  * an administrator, and the lookup answers per user id, so a check for anybody but the caller fails.
  *
  * @covers \OCA\OpenRegister\Controller\BulkController
+ * @uses \OCA\OpenRegister\Controller\Support\BulkStore
+ * @uses \OCA\OpenRegister\Controller\Support\BulkPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\BulkControllerServices
  * @uses   \OCA\OpenRegister\Service\Rbac\SchemaManageGate
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
@@ -101,7 +105,7 @@ class BulkControllerWholeTableDeleteTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn([]);
 
-		return new BulkController('openregister', $request, $objects, $registers, $schemas, $session, $groups, $this->createMock(IDBConnection::class));
+		return BulkControllerFactory::create('openregister', $request, $objects, $registers, $schemas, $session, $groups, $this->createMock(IDBConnection::class));
 	}//end controller()
 
 	/**

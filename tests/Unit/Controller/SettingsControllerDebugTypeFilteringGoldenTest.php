@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SettingsControllerFactory;
 use Exception;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Controller\SettingsController;
@@ -35,6 +36,9 @@ use Psr\Log\LoggerInterface;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\SettingsController
+ * @uses \OCA\OpenRegister\Controller\Support\SettingsStore
+ * @uses \OCA\OpenRegister\Controller\Support\SettingsRuntime
+ * @uses \OCA\OpenRegister\Controller\Support\SettingsControllerServices
  */
 class SettingsControllerDebugTypeFilteringGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/settings-debug-type-filtering-golden.json';
@@ -106,7 +110,7 @@ class SettingsControllerDebugTypeFilteringGoldenTest extends TestCase {
 			}
 		);
 
-		$controller = new SettingsController(
+		$controller = SettingsControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(IAppConfig::class),
