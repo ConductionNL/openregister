@@ -29,6 +29,8 @@ use ReflectionProperty;
  *
  * @covers \OCA\OpenRegister\Service\OasService
  * @uses   \OCA\OpenRegister\Service\Oas\OasValidationReport
+ * @uses   \OCA\OpenRegister\Service\Oas\OasRbacAnnotator
+ * @uses   \OCA\OpenRegister\Service\Rbac\EffectiveAuthorization
  */
 class OasServiceIntegrityGoldenTest extends TestCase {
 
