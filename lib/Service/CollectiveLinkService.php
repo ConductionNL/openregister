@@ -451,82 +451,53 @@ class CollectiveLinkService {
 			return [];
 		}
 
-		$needle = null;
-		if ($search !== null && $search !== '') {
-			$needle = mb_strtolower($search);
-		}
-
+		$pageSearch = (new PageSearch(pageService: $pageService, uid: $uid))->matching(search: $search);
 		$out = [];
 		foreach ($collectives as $collective) {
-			$this->collectPages(
-				pageService: $pageService,
-				collective: $collective,
-				uid: $uid,
-				needle: $needle,
-				out: $out
-			);
+			array_push($out, ...$this->collectPages(search: $pageSearch, collective: $collective));
 		}
 
 		return $out;
 	}//end getAvailablePages()
 
 	/**
-	 * Append a collective's pages to the picker output.
+	 * The picker rows of a collective's pages.
 	 *
-	 * @param object $pageService The Collectives PageService.
-	 * @param object $collective A Collective entity.
-	 * @param string $uid The owning user id.
-	 * @param string|null $needle Lower-cased title filter, or null.
-	 * @param array<int,mixed> $out Output array (by reference).
+	 * @param PageSearch $search     The page service, user and title filter.
+	 * @param object     $collective A Collective entity.
 	 *
-	 * @return void
+	 * @return array<int,array<string,mixed>> The rows; empty when the pages cannot be read.
 	 */
-	private function collectPages(
-		object $pageService,
-		object $collective,
-		string $uid,
-		?string $needle,
-		array &$out,
-	): void {
+	private function collectPages(PageSearch $search, object $collective): array {
 		try {
-			$collectiveId = (int)$collective->getId();
-			$collectiveName = (string)$collective->getName();
-			$pages = $pageService->findAll($collectiveId, $uid);
+			$owner = ['collectiveId' => (int)$collective->getId(), 'collectiveName' => (string)$collective->getName()];
+			$pages = $search->pageService->findAll($owner['collectiveId'], $search->uid);
 		} catch (Throwable $e) {
-			return;
+			return [];
 		}
 
+		$rows = [];
 		foreach ($pages as $page) {
-			$row = $this->pickerRowFromPage(
-				page: $page,
-				collectiveId: $collectiveId,
-				collectiveName: $collectiveName,
-				needle: $needle
-			);
+			$row = $this->pickerRowFromPage(page: $page, search: $search);
 			if ($row !== null) {
-				$out[] = $row;
+				$rows[] = ['pageId' => $row['pageId']] + $owner + $row;
 			}
 		}
+
+		return $rows;
 	}//end collectPages()
 
 	/**
-	 * Map a single NC Collectives page into a picker row, applying the
-	 * optional title filter.
+	 * Map a single NC Collectives page into a picker row without its
+	 * collective, applying the title filter.
 	 *
-	 * @param object $page A Collectives PageInfo instance.
-	 * @param int $collectiveId The owning collective id.
-	 * @param string $collectiveName The owning collective name.
-	 * @param string|null $needle Lower-cased title filter, or null.
+	 * @param object     $page   A Collectives PageInfo instance.
+	 * @param PageSearch $search The title filter.
 	 *
-	 * @return array<string,mixed>|null The picker row, or null when the
-	 *                                  page is unreadable or filtered out.
+	 * @return array<string,mixed>|null The row, or null when the page is
+	 *                                  unreadable or filtered out.
 	 */
-	private function pickerRowFromPage(
-		object $page,
-		int $collectiveId,
-		string $collectiveName,
-		?string $needle,
-	): ?array {
+	private function pickerRowFromPage(object $page, PageSearch $search): ?array {
 		try {
 			$title = (string)$page->getTitle();
 			$pageId = (int)$page->getId();
@@ -534,37 +505,55 @@ class CollectiveLinkService {
 			return null;
 		}
 
-		if ($needle !== null && str_contains(mb_strtolower($title), $needle) === false) {
+		if ($search->matches(title: $title) === false) {
 			return null;
 		}
 
-		$lastModified = null;
-		try {
-			$timestamp = (int)$page->getTimestamp();
-			if ($timestamp > 0) {
-				$lastModified = (new DateTime())->setTimestamp($timestamp)->format(DateTime::ATOM);
-			}
-		} catch (Throwable $e) {
-			$lastModified = null;
-		}
-
-		$emoji = null;
-		try {
-			$emoji = $page->getEmoji();
-		} catch (Throwable $e) {
-			$emoji = null;
-		}
-
+		$lastModified = $this->pageLastModified(page: $page);
 		return [
 			'pageId' => $pageId,
-			'collectiveId' => $collectiveId,
-			'collectiveName' => $collectiveName,
 			'title' => $title,
-			'emoji' => $emoji,
+			'emoji' => $this->pageEmoji(page: $page),
 			'lastModified' => $lastModified,
 			'url' => $this->pageDeepLink(pageId: $pageId),
 		];
 	}//end pickerRowFromPage()
+
+	/**
+	 * The modification time of a page as ATOM; null when unknown or unreadable.
+	 *
+	 * @param object $page A Collectives PageInfo instance.
+	 *
+	 * @return string|null The time.
+	 */
+	private function pageLastModified(object $page): ?string {
+		try {
+			$timestamp = (int)$page->getTimestamp();
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		if ($timestamp <= 0) {
+			return null;
+		}
+
+		return (new DateTime())->setTimestamp($timestamp)->format(DateTime::ATOM);
+	}//end pageLastModified()
+
+	/**
+	 * The emoji of a page; null when unset or unreadable.
+	 *
+	 * @param object $page A Collectives PageInfo instance.
+	 *
+	 * @return mixed The emoji.
+	 */
+	private function pageEmoji(object $page): mixed {
+		try {
+			return $page->getEmoji();
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end pageEmoji()
 
 	/**
 	 * Whether a link row's cache is older than the stale window.
