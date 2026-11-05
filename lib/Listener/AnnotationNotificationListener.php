@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\BackgroundJob\AnnotationNotificationDispatchJob;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
@@ -97,16 +98,7 @@ class AnnotationNotificationListener implements IEventListener {
 		}
 
 		if ($event instanceof ObjectCreatedEvent) {
-			$object = $this->extractObject(event: $event);
-			if ($object !== null && $this->schemaDeclaresNotifications(object: $object) === true) {
-				if ($this->deferral->isDeferralEnabled() === false) {
-					$this->dispatcher->dispatch(object: $object, trigger: 'created');
-					return;
-				}
-
-				$this->deferEntry(object: $object, extra: ['trigger' => 'created']);
-			}
-
+			$this->handleCreated(event: $event);
 			return;
 		}
 
@@ -114,6 +106,20 @@ class AnnotationNotificationListener implements IEventListener {
 			$this->handleUpdated(event: $event);
 		}
 	}//end handle()
+
+	/**
+	 * Dispatch or defer the `created` trigger for a created object.
+	 *
+	 * @param ObjectCreatedEvent $event The created event.
+	 *
+	 * @return void
+	 */
+	private function handleCreated(ObjectCreatedEvent $event): void {
+		$object = $this->extractObject(event: $event);
+		if ($object !== null && $this->schemaDeclaresNotifications(object: $object) === true) {
+			$this->dispatchOrDefer(object: $object, trigger: new NotificationTrigger(name: 'created'));
+		}
+	}//end handleCreated()
 
 	/**
 	 * Transition events: defer with the event-only context (action/from/to).
@@ -128,29 +134,26 @@ class AnnotationNotificationListener implements IEventListener {
 			return;
 		}
 
+		$context = ['action' => $event->getAction(), 'from' => $event->getFrom(), 'to' => $event->getTo()];
+		$this->dispatchOrDefer(object: $object, trigger: new NotificationTrigger(name: 'transition', context: $context));
+	}//end handleTransitioned()
+
+	/**
+	 * Dispatch a trigger now, or defer it when deferral is on.
+	 *
+	 * @param ObjectEntity        $object  The object the trigger is about.
+	 * @param NotificationTrigger $trigger The trigger and its context.
+	 *
+	 * @return void
+	 */
+	private function dispatchOrDefer(ObjectEntity $object, NotificationTrigger $trigger): void {
 		if ($this->deferral->isDeferralEnabled() === false) {
-			$this->dispatcher->dispatch(
-				object: $object,
-				trigger: 'transition',
-				context: [
-					'action' => $event->getAction(),
-					'from' => $event->getFrom(),
-					'to' => $event->getTo(),
-				]
-			);
+			$this->dispatcher->dispatch(object: $object, trigger: $trigger->name, context: $trigger->context);
 			return;
 		}
 
-		$this->deferEntry(
-			object: $object,
-			extra: [
-				'trigger' => 'transition',
-				'action' => $event->getAction(),
-				'from' => $event->getFrom(),
-				'to' => $event->getTo(),
-			]
-		);
-	}//end handleTransitioned()
+		$this->deferEntry(object: $object, extra: $trigger->deferredFields());
+	}//end dispatchOrDefer()
 
 	/**
 	 * Update events: defer with the pre-update snapshot so field-change and
@@ -174,19 +177,23 @@ class AnnotationNotificationListener implements IEventListener {
 			return;
 		}
 
-		$oldData = null;
-		if ($oldObject !== null) {
-			$oldData = ($oldObject->getObject() ?? []);
+		$this->deferEntry(object: $newObject, extra: ['trigger' => 'updated', 'oldData' => $this->dataOf(object: $oldObject)]);
+	}//end handleUpdated()
+
+	/**
+	 * The data of an object, or null when there is no object.
+	 *
+	 * @param ObjectEntity|null $object The object, if any.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function dataOf(?ObjectEntity $object): ?array {
+		if ($object === null) {
+			return null;
 		}
 
-		$this->deferEntry(
-			object: $newObject,
-			extra: [
-				'trigger' => 'updated',
-				'oldData' => $oldData,
-			]
-		);
-	}//end handleUpdated()
+		return ($object->getObject() ?? []);
+	}//end dataOf()
 
 	/**
 	 * Pre-deferral inline behaviour for updates (kill-switch path).
@@ -203,25 +210,14 @@ class AnnotationNotificationListener implements IEventListener {
 	 * @return void
 	 */
 	private function dispatchUpdatedInline(ObjectEntity $newObject, ?ObjectEntity $oldObject): void {
-		$updatedContext = [];
+		$change = [];
 		if ($oldObject !== null) {
-			$updatedContext = [
-				'_newData' => ($newObject->getObject() ?? []),
-				'_oldData' => ($oldObject->getObject() ?? []),
-			];
+			$change = ['_newData' => ($newObject->getObject() ?? []), '_oldData' => ($oldObject->getObject() ?? [])];
 		}
 
-		$this->dispatcher->dispatch(object: $newObject, trigger: 'updated', context: $updatedContext);
-
+		$this->dispatcher->dispatch(object: $newObject, trigger: 'updated', context: $change);
 		if ($oldObject !== null) {
-			$this->dispatcher->dispatch(
-				object: $newObject,
-				trigger: 'calculatedChange',
-				context: [
-					'_newData' => ($newObject->getObject() ?? []),
-					'_oldData' => ($oldObject->getObject() ?? []),
-				]
-			);
+			$this->dispatcher->dispatch(object: $newObject, trigger: 'calculatedChange', context: $change);
 		}
 	}//end dispatchUpdatedInline()
 
@@ -261,20 +257,28 @@ class AnnotationNotificationListener implements IEventListener {
 	 * @return bool True when notification rules are declared.
 	 */
 	private function schemaDeclaresNotifications(ObjectEntity $object): bool {
-		$schemaRef = (string)$object->getSchema();
-		if ($schemaRef === '') {
-			return false;
-		}
-
-		try {
-			$schema = $this->schemaMapper->find($schemaRef);
-		} catch (\Throwable $e) {
-			return false;
-		}
-
-		$config = ($schema->getConfiguration() ?? []);
+		$config = ($this->schemaOf(object: $object)?->getConfiguration() ?? []);
 		$notifications = ($config['x-openregister-notifications'] ?? null);
 
 		return is_array($notifications) === true && count($notifications) > 0;
 	}//end schemaDeclaresNotifications()
+
+	/**
+	 * The object's schema, or null when it has none or it cannot be loaded.
+	 *
+	 * @param ObjectEntity $object Object whose schema to load.
+	 *
+	 * @return Schema|null
+	 */
+	private function schemaOf(ObjectEntity $object): ?Schema {
+		if ((string)$object->getSchema() === '') {
+			return null;
+		}
+
+		try {
+			return $this->schemaMapper->find((string)$object->getSchema());
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end schemaOf()
 }//end class
