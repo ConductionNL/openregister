@@ -8,9 +8,9 @@
  * `OCA\Collectives\Service\CollectiveService` + `PageService` to expose
  * the Tier-2 surface:
  *
- *   - linkPage(uuid, registerId, schemaId, pageId)
+ *   - linkPage(target, pageId)
  *       — link an existing page
- *   - createAndLinkPage(uuid, registerId, schemaId, collectiveId, title)
+ *   - createAndLinkPage(target, collectiveId, title)
  *       — create a new page in a collective and link it
  *   - unlinkPage(uuid, pageId)
  *       — remove a link (the page itself stays in NC Collectives)
@@ -180,10 +180,8 @@ class CollectiveLinkService {
 	 * Idempotent: a duplicate link raises a 409 Exception. Page metadata
 	 * (title/slug/emoji/last_modified/url) is cached at link time.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
-	 * @param int $pageId NC Collectives page id.
+	 * @param LinkTarget $target The object to link to.
+	 * @param int        $pageId NC Collectives page id.
 	 *
 	 * @return CollectiveLink The persisted link row.
 	 *
@@ -192,42 +190,47 @@ class CollectiveLinkService {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
-	public function linkPage(string $objectUuid, int $registerId, int $schemaId, int $pageId): CollectiveLink {
+	public function linkPage(LinkTarget $target, int $pageId): CollectiveLink {
 		$uid = $this->requireUid();
-
-		if ($this->isCollectivesAvailable() === false) {
-			throw new Exception('NC Collectives is not available', 503);
-		}
-
-		$existing = $this->collectiveLinkMapper->findByObjectAndPage($objectUuid, $pageId);
-		if ($existing !== null) {
-			throw new Exception('Page already linked to this object', 409);
-		}
+		$this->assertPageLinkable(target: $target, pageId: $pageId);
 
 		$info = $this->fetchPageInfo(pageId: $pageId, uid: $uid);
 		if ($info === null) {
 			throw new Exception('Collectives page not found', 404);
 		}
 
-		$link = $this->hydrateLink(
-			pageId: $pageId,
-			info: $info
-		);
-		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
-			->inSchema(schemaId: $schemaId)
-			->stamp(link: $link, linkedBy: $uid);
+		$link = $this->hydrateLink(pageId: $pageId, info: $info);
+		$target->stamp(link: $link, linkedBy: $uid);
 
 		return $this->collectiveLinkMapper->insert($link);
 	}//end linkPage()
 
 	/**
+	 * Refuse a link when Collectives is off or the page is already linked to the object.
+	 *
+	 * @param LinkTarget $target The object to link to.
+	 * @param int        $pageId NC Collectives page id.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception Collectives unavailable (503) or duplicate (409).
+	 */
+	private function assertPageLinkable(LinkTarget $target, int $pageId): void {
+		if ($this->isCollectivesAvailable() === false) {
+			throw new Exception('NC Collectives is not available', 503);
+		}
+
+		if ($this->collectiveLinkMapper->findByObjectAndPage($target->objectUuid, $pageId) !== null) {
+			throw new Exception('Page already linked to this object', 409);
+		}
+	}//end assertPageLinkable()
+
+	/**
 	 * Create a new NC Collectives page and link it to an OR object.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
-	 * @param int $collectiveId Target collective id.
-	 * @param string $title New page title.
+	 * @param LinkTarget $target       The object to link to.
+	 * @param int        $collectiveId Target collective id.
+	 * @param string     $title        New page title.
 	 *
 	 * @return CollectiveLink The persisted link row.
 	 *
@@ -236,13 +239,7 @@ class CollectiveLinkService {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
-	public function createAndLinkPage(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		int $collectiveId,
-		string $title,
-	): CollectiveLink {
+	public function createAndLinkPage(LinkTarget $target, int $collectiveId, string $title): CollectiveLink {
 		$uid = $this->requireUid();
 
 		$title = trim($title);
@@ -250,6 +247,26 @@ class CollectiveLinkService {
 			throw new Exception('Page title is required', 400);
 		}
 
+		$pageId = $this->createPage(collectiveId: $collectiveId, title: $title);
+		$info   = ($this->fetchPageInfo(pageId: $pageId, uid: $uid) ?? $this->draftPageInfo(collectiveId: $collectiveId, title: $title));
+
+		$link = $this->hydrateLink(pageId: $pageId, info: $info);
+		$target->stamp(link: $link, linkedBy: $uid);
+
+		return $this->collectiveLinkMapper->insert($link);
+	}//end createAndLinkPage()
+
+	/**
+	 * Create a page at the root of a collective, as the current user.
+	 *
+	 * @param int    $collectiveId Target collective id.
+	 * @param string $title        The trimmed page title.
+	 *
+	 * @return int The new page id.
+	 *
+	 * @throws Exception Missing collective (400), Collectives unavailable (503) or create failure (500).
+	 */
+	private function createPage(int $collectiveId, string $title): int {
 		if ($collectiveId === 0) {
 			throw new Exception('Collective id is required', 400);
 		}
@@ -260,37 +277,31 @@ class CollectiveLinkService {
 		}
 
 		try {
-			// PageService::create(collectiveId, parentId, title, templateId, userId).
-			// parentId 0 places the page at the collective root.
-			$pageInfo = $pageService->create($collectiveId, 0, $title, null, $uid);
-			$pageId = (int)$pageInfo->getId();
+			// PageService::create(collectiveId, parentId, title, templateId, userId); parent 0 is the root.
+			return (int)$pageService->create($collectiveId, 0, $title, null, $this->requireUid())->getId();
 		} catch (Throwable $e) {
 			$this->logger->warning('CollectiveLinkService::createAndLinkPage failed: ' . $e->getMessage());
 			throw new Exception('Failed to create Collectives page', 500);
 		}
+	}//end createPage()
 
-		$info = $this->fetchPageInfo(pageId: $pageId, uid: $uid);
-		if ($info === null) {
-			$info = [
-				'title' => $title,
-				'collectiveId' => $collectiveId,
-				'slug' => null,
-				'emoji' => null,
-				'lastModified' => new DateTime(),
-				'url' => $this->pageDeepLink(pageId: $pageId),
-			];
-		}
-
-		$link = $this->hydrateLink(
-			pageId: $pageId,
-			info: $info
-		);
-		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
-			->inSchema(schemaId: $schemaId)
-			->stamp(link: $link, linkedBy: $uid);
-
-		return $this->collectiveLinkMapper->insert($link);
-	}//end createAndLinkPage()
+	/**
+	 * The cached metadata for a new page whose read came back empty; the url defaults to the page's deep link.
+	 *
+	 * @param int    $collectiveId The collective id.
+	 * @param string $title        The page title.
+	 *
+	 * @return array<string,mixed> The page info.
+	 */
+	private function draftPageInfo(int $collectiveId, string $title): array {
+		return [
+			'title' => $title,
+			'collectiveId' => $collectiveId,
+			'slug' => null,
+			'emoji' => null,
+			'lastModified' => new DateTime(),
+		];
+	}//end draftPageInfo()
 
 	/**
 	 * Build a CollectiveLink from normalised page info.

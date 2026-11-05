@@ -126,9 +126,7 @@ class CollectiveLinksController extends Controller {
 				}
 
 				$link = $this->linkService->linkPage(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
+					$this->linkTargetOf(object: $object),
 					$pageId
 				);
 
@@ -172,9 +170,7 @@ class CollectiveLinksController extends Controller {
 				}
 
 				$link = $this->linkService->createAndLinkPage(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
+					$this->linkTargetOf(object: $object),
 					$collectiveId,
 					$title
 				);
