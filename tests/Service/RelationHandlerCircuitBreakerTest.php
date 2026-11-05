@@ -47,7 +47,6 @@ class RelationHandlerCircuitBreakerTest extends TestCase {
 		$this->handler = new RelationHandler(
 			objectEntityMapper: $this->createMock(MagicMapper::class),
 			schemaMapper: $this->createMock(SchemaMapper::class),
-			performanceHandler: $this->createMock(PerformanceHandler::class),
 			rbacHandler: $this->createMock(MagicRbacHandler::class),
 			logger: $this->createMock(LoggerInterface::class),
 			registerMapper: $this->createMock(\OCA\OpenRegister\Db\RegisterMapper::class),
