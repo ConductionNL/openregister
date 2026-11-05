@@ -134,13 +134,6 @@ class Source extends Entity implements JsonSerializable {
 	protected ?string $organisation = null;
 
 	/**
-	 * Configuration that manages this source (transient, not stored in DB)
-	 *
-	 * @var Configuration|null
-	 */
-	private ?Configuration $managedByConfig = null;
-
-	/**
 	 * Whether scheduled/harvest sync is enabled for this source
 	 *
 	 * @var boolean|null Sync enabled flag
@@ -386,7 +379,7 @@ class Source extends Entity implements JsonSerializable {
 			'batchSize' => $this->batchSize,
 			'updated' => $updated,
 			'created' => $created,
-			'managedByConfiguration' => $this->getManagedByConfigurationData(),
+			'managedByConfiguration' => null,
 		];
 	}//end jsonSerialize()
 
@@ -417,26 +410,6 @@ class Source extends Entity implements JsonSerializable {
 		// Final fallback.
 		return 'Source';
 	}//end __toString()
-
-	/**
-	 * Get the configuration that manages this source (transient property)
-	 *
-	 * @return Configuration|null The managing configuration or null
-	 */
-	public function getManagedByConfigurationEntity(): ?Configuration {
-		return $this->managedByConfig;
-	}//end getManagedByConfigurationEntity()
-
-	/**
-	 * Set the configuration that manages this source (transient property)
-	 *
-	 * @param Configuration|null $configuration The managing configuration
-	 *
-	 * @return void
-	 */
-	public function setManagedByConfigurationEntity(?Configuration $configuration): void {
-		$this->managedByConfig = $configuration;
-	}//end setManagedByConfigurationEntity()
 
 	/**
 	 * Check if this source is managed by a configuration
@@ -493,23 +466,4 @@ class Source extends Entity implements JsonSerializable {
 
 		return null;
 	}//end getManagedByConfiguration()
-
-	/**
-	 * Get managed by configuration data as array or null
-	 *
-	 * @return (int|null|string)[]|null Configuration data or null
-	 *
-	 * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
-	 */
-	private function getManagedByConfigurationData(): ?array {
-		if ($this->managedByConfig === null) {
-			return null;
-		}
-
-		return [
-			'id' => $this->managedByConfig->getId(),
-			'uuid' => $this->managedByConfig->getUuid(),
-			'title' => $this->managedByConfig->getTitle(),
-		];
-	}//end getManagedByConfigurationData()
 }//end class

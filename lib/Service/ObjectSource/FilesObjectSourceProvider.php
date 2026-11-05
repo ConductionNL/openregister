@@ -48,6 +48,8 @@ use Throwable;
  */
 class FilesObjectSourceProvider implements ObjectSourceProvider {
 
+	use CountsThroughFindAll;
+
 	/**
 	 * Hard cap on nodes traversed per read, so a huge home folder never runs away.
 	 *
@@ -168,22 +170,6 @@ class FilesObjectSourceProvider implements ObjectSourceProvider {
 
 		return $objects;
 	}//end findAll()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
-	 * @param array<string, mixed> $query Query (filters).
-	 * @param array<string, mixed> $config The object-source config block (unused).
-	 *
-	 * @return int The number of matching virtual objects.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
-		return count($this->findAll(register: $register, schema: $schema, query: $query, config: $config));
-	}//end count()
 
 	/**
 	 * Resolve the acting user's home folder, or null when there is no session user.

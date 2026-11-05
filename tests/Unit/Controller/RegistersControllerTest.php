@@ -460,17 +460,6 @@ class RegistersControllerTest extends TestCase {
 		$this->assertSame(500, $result->getStatus());
 	}
 
-	public function testObjectsReturnsSearchResults(): void {
-		$this->objectMapper->method('searchObjects')->willReturn([
-			'results' => [],
-			'total' => 0,
-		]);
-
-		$result = $this->controller->objects(1, 1);
-
-		$this->assertSame(200, $result->getStatus());
-	}
-
 	public function testUpdateReturnsErrorOnDBException(): void {
 		$this->request->method('getParams')->willReturn(['title' => 'Updated']);
 		$this->registerService->method('updateFromArray')
@@ -603,15 +592,6 @@ class RegistersControllerTest extends TestCase {
 		$this->assertInstanceOf(JSONResponse::class, $result);
 		$data = $result->getData();
 		$this->assertArrayHasKey('error', $data);
-	}
-
-	public function testObjectsThrowsOnException(): void {
-		$this->objectMapper->method('searchObjects')
-			->willThrowException(new Exception('Search error'));
-
-		$this->expectException(Exception::class);
-		$this->expectExceptionMessage('Search error');
-		$this->controller->objects(1, 1);
 	}
 
 	public function testPublishToGitHubReturns500OnException(): void {
@@ -776,17 +756,6 @@ class RegistersControllerTest extends TestCase {
 	}
 
 	// ── Objects with pagination params ────────────────────────────────
-
-	public function testObjectsWithPaginationParams(): void {
-		$this->objectMapper->method('searchObjects')->willReturn([
-			'results' => [['id' => 1], ['id' => 2]],
-			'total' => 2,
-		]);
-
-		$result = $this->controller->objects(1, 1);
-
-		$this->assertSame(200, $result->getStatus());
-	}
 
 	// ── Update with DoesNotExistException ─────────────────────────────
 

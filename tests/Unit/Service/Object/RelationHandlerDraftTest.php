@@ -103,7 +103,6 @@ class RelationHandlerDraftTest extends TestCase {
 		$handler = new RelationHandler(
 			objectEntityMapper: $magic,
 			schemaMapper: $schemaMapper,
-			performanceHandler: $this->createMock(PerformanceHandler::class),
 			rbacHandler: $rbac,
 			logger: $this->createMock(LoggerInterface::class),
 			registerMapper: $registerMapper

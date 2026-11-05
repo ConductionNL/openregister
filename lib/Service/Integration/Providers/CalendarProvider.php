@@ -262,18 +262,6 @@ class CalendarProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function health(): array {
-		$installed = $this->appManager->isInstalled(self::REQUIRED_APP);
-		$status = 'unavailable';
-		$message = 'NC Calendar app is not installed';
-		if ($installed === true) {
-			$status = 'ok';
-			$message = null;
-		}
-
-		return [
-			'status' => $status,
-			'authStatus' => 'configured',
-			'message' => $message,
-		];
+		return $this->installedHealth(available: $this->appManager->isInstalled(self::REQUIRED_APP) === true, missing: 'NC Calendar app is not installed');
 	}//end health()
 }//end class

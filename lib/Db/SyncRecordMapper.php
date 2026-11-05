@@ -120,26 +120,6 @@ class SyncRecordMapper extends QBMapper {
 	}//end transitionStatus()
 
 	/**
-	 * Find all records for a given execution.
-	 *
-	 * @param string $executionId The execution id
-	 *
-	 * @return SyncRecord[] The records
-	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\SyncRecord>
-	 *
-	 * @spec openspec/specs/data-sync-harvesting/spec.md
-	 */
-	public function findByExecution(string $executionId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('execution_id', $qb->createNamedParameter($executionId)));
-
-		return $this->findEntities(query: $qb);
-	}//end findByExecution()
-
-	/**
 	 * Find records for a source/execution still awaiting fetch (resume support).
 	 *
 	 * @param int $sourceId The source id

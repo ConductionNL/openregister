@@ -81,7 +81,6 @@ class RelationHandlerTest extends TestCase {
 		$this->handler = new RelationHandler(
 			$this->objectMapper,
 			$this->schemaMapper,
-			$this->performanceHandler,
 			$this->rbacHandler,
 			$this->logger,
 			$this->registerMapper
@@ -456,28 +455,6 @@ class RelationHandlerTest extends TestCase {
 	// =============================================
 	// extractRelatedData tests
 	// =============================================
-
-	/**
-	 * Test extractRelatedData delegates to PerformanceHandler
-	 *
-	 * @return void
-	 */
-	public function testExtractRelatedDataDelegatesToPerformanceHandler(): void {
-		$expected = ['related' => ['uuid-1'], 'relatedNames' => ['uuid-1' => 'Name']];
-
-		$this->performanceHandler
-			->expects($this->once())
-			->method('extractRelatedData')
-			->willReturn($expected);
-
-		$result = $this->handler->extractRelatedData(
-			['some' => 'data'],
-			true,
-			true
-		);
-
-		$this->assertEquals($expected, $result);
-	}
 
 	// =============================================
 	// applyInversedByFilter tests

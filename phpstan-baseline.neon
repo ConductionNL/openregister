@@ -1914,16 +1914,6 @@ parameters:
 
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\VectorSettingsController\\:\\:\\$logger is never read, only written\\.$#"
-			count: 1
-			path: lib/Controller/Settings/VectorSettingsController.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\VectorSettingsController\\:\\:\\$vectorizationService is never read, only written\\.$#"
-			count: 1
-			path: lib/Controller/Settings/VectorSettingsController.php
-
-		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SettingsController\\:\\:debugTypeFiltering\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, trace\\?\\: string, all_organizations\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed, object_data\\: array\\|null\\}\\>\\}, type_samenwerking\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_community\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_both\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, direct_database_query\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: mixed, name\\: mixed, type\\: mixed, object_json\\: mixed\\}\\>\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{all_organizations\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed, object_data\\: array\\|null\\}\\>\\}, type_samenwerking\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_community\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_both\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, direct_database_query\\: array\\{count\\: int, organizations\\: array\\<int, array\\{id\\: mixed, name\\: mixed, type\\: mixed, object_json\\: mixed\\}\\>\\}\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/SettingsController.php
@@ -2322,16 +2312,6 @@ parameters:
 			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\Conversation\\>\\:\\:update\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\Conversation, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
 			count: 1
 			path: lib/Db/ConversationMapper.php
-
-		-
-			message: "#^Missing parameter \\$entity \\(OCP\\\\AppFramework\\\\Db\\\\Entity\\) in call to method OCA\\\\OpenRegister\\\\Db\\\\DestructionListMapper\\:\\:update\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/DestructionListMapper.php
-
-		-
-			message: "#^Unknown parameter \\$objectId in call to method OCA\\\\OpenRegister\\\\Db\\\\DestructionListMapper\\:\\:update\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/DestructionListMapper.php
 
 		-
 			message: "#^Unknown PHPDoc tag\\: @phpstan\\-api$#"
@@ -2901,16 +2881,6 @@ parameters:
 			path: lib/Db/SearchTrailMapper.php
 
 		-
-			message: "#^Missing parameter \\$entity \\(OCP\\\\AppFramework\\\\Db\\\\Entity\\) in call to method OCA\\\\OpenRegister\\\\Db\\\\SelectionListMapper\\:\\:update\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/SelectionListMapper.php
-
-		-
-			message: "#^Unknown parameter \\$objectId in call to method OCA\\\\OpenRegister\\\\Db\\\\SelectionListMapper\\:\\:update\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/SelectionListMapper.php
-
-		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getOrganisation\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/SourceMapper.php
@@ -3039,26 +3009,6 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Event\\\\ViewUpdatedEvent\\:\\:\\$oldView is never read, only written\\.$#"
 			count: 1
 			path: lib/Event/ViewUpdatedEvent.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\EventListener\\\\AbstractNodeFolderEventListener\\:\\:\\$fileService is never read, only written\\.$#"
-			count: 1
-			path: lib/EventListener/AbstractNodeFolderEventListener.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\EventListener\\\\AbstractNodeFolderEventListener\\:\\:\\$objectService is never read, only written\\.$#"
-			count: 1
-			path: lib/EventListener/AbstractNodeFolderEventListener.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\EventListener\\\\AbstractNodesFolderEventListener\\:\\:\\$fileService is never read, only written\\.$#"
-			count: 1
-			path: lib/EventListener/AbstractNodesFolderEventListener.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\EventListener\\\\AbstractNodesFolderEventListener\\:\\:\\$objectService is never read, only written\\.$#"
-			count: 1
-			path: lib/EventListener/AbstractNodesFolderEventListener.php
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
@@ -4065,36 +4015,6 @@ parameters:
 			path: lib/Service/File/FileBatchHandler.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileCrudHandler\\:\\:\\$fileOwnershipHandler is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileCrudHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileCrudHandler\\:\\:\\$fileSharingHandler is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileCrudHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileCrudHandler\\:\\:\\$fileValidHandler is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileCrudHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileCrudHandler\\:\\:\\$folderMgmtHandler is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileCrudHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileCrudHandler\\:\\:\\$logger is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileCrudHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileCrudHandler\\:\\:\\$rootFolder is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileCrudHandler.php
-
-		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:getCategory\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/File/FileFormattingHandler.php
@@ -4964,11 +4884,6 @@ parameters:
 			path: lib/Service/Object/SaveObject/RelationCascadeHandler.php
 
 		-
-			message: "#^Strict comparison using \\=\\=\\= between 0\\|1\\|false and true will always evaluate to false\\.$#"
-			count: 2
-			path: lib/Service/Object/SaveObject/RelationCascadeHandler.php
-
-		-
 			message: "#^Offset '_search' on non\\-empty\\-array\\<string, mixed\\> in isset\\(\\) always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Service/Object/SearchQueryHandler.php
@@ -5487,31 +5402,6 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\TenantLifecycleService\\:\\:\\$eventDispatcher is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/TenantLifecycleService.php
-
-		-
-			message: "#^Offset 'confidence' on array\\{language\\: null, level\\: null, confidence\\: null, method\\: null\\} on left side of \\?\\? always exists and is always null\\.$#"
-			count: 1
-			path: lib/Service/TextExtraction/FileHandler.php
-
-		-
-			message: "#^Offset 'language' on array\\{language\\: null, level\\: null, confidence\\: null, method\\: null\\} on left side of \\?\\? always exists and is always null\\.$#"
-			count: 1
-			path: lib/Service/TextExtraction/FileHandler.php
-
-		-
-			message: "#^Offset 'level' on array\\{language\\: null, level\\: null, confidence\\: null, method\\: null\\} on left side of \\?\\? always exists and is always null\\.$#"
-			count: 1
-			path: lib/Service/TextExtraction/FileHandler.php
-
-		-
-			message: "#^Offset 'method' on array\\{language\\: null, level\\: null, confidence\\: null, method\\: null\\} on left side of \\?\\? always exists and is always null\\.$#"
-			count: 1
-			path: lib/Service/TextExtraction/FileHandler.php
-
-		-
-			message: "#^Offset 'mtime' on array\\{fileid\\: int, storage\\: int, path\\: string, path_hash\\: string, parent\\: int, name\\: string, mimetype\\: string, mimepart\\: string, \\.\\.\\.\\} on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 1
-			path: lib/Service/TextExtraction/FileHandler.php
 
 		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Register\\:\\:getName\\(\\)\\.$#"

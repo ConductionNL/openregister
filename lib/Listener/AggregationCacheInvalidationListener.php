@@ -47,6 +47,8 @@ use Psr\Container\ContainerInterface;
  * @template-implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent|ObjectTransitionedEvent>
  */
 class AggregationCacheInvalidationListener implements IEventListener {
+	use WrittenObjectOfEvent;
+
 	/**
 	 * Wire the aggregation cache used for evictions.
 	 *
@@ -79,10 +81,19 @@ class AggregationCacheInvalidationListener implements IEventListener {
 	 */
 	public function handle(Event $event): void {
 		$object = $this->extractObject(event: $event);
-		if ($object === null) {
-			return;
+		if ($object !== null) {
+			$this->evictFor(object: $object);
 		}
+	}//end handle()
 
+	/**
+	 * Evict the aggregations of the object's register and schema.
+	 *
+	 * @param ObjectEntity $object The written object.
+	 *
+	 * @return void
+	 */
+	private function evictFor(ObjectEntity $object): void {
 		// An object carries its register and schema as ids ("20", "34"), while
 		// AggregationCache keys its entries and version counters by slug
 		// ("pipelinq", "leadProduct"). Evicting by id bumped a counter nothing
@@ -91,7 +102,7 @@ class AggregationCacheInvalidationListener implements IEventListener {
 			registerSlug: $this->slugOf(reference: (string)$object->getRegister(), mapperClass: RegisterMapper::class),
 			schemaSlug: $this->slugOf(reference: (string)$object->getSchema(), mapperClass: SchemaMapper::class)
 		);
-	}//end handle()
+	}//end evictFor()
 
 	/**
 	 * The slug for a register or schema reference, as AggregationCache keys it.
@@ -111,18 +122,7 @@ class AggregationCacheInvalidationListener implements IEventListener {
 			return $reference;
 		}
 
-		try {
-			// Both mappers take named rbac and multitenancy flags on find().
-			$entity = $this->container->get($mapperClass)->find(
-				id: (int)$reference,
-				_rbac: false,
-				_multitenancy: false
-			);
-			$slug = $entity->getSlug();
-		} catch (\Throwable $e) {
-			return $reference;
-		}
-
+		$slug = $this->lookupSlug(reference: $reference, mapperClass: $mapperClass);
 		if (is_string($slug) === false || $slug === '') {
 			return $reference;
 		}
@@ -131,33 +131,19 @@ class AggregationCacheInvalidationListener implements IEventListener {
 	}//end slugOf()
 
 	/**
-	 * Resolve the underlying object for any of the supported event types.
+	 * The slug of the register or schema with this numeric id, or null when the lookup fails.
 	 *
-	 * @param Event $event Inbound dispatcher event.
+	 * @param string $reference The numeric id stored on the object.
+	 * @param string $mapperClass RegisterMapper::class or SchemaMapper::class.
 	 *
-	 * @return ObjectEntity|null Object instance, or null when not resolvable.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
+	 * @return mixed The slug as the entity holds it, or null.
 	 */
-	private function extractObject(Event $event): ?ObjectEntity {
-		if ($event instanceof ObjectTransitionedEvent) {
-			return $event->getObject();
+	private function lookupSlug(string $reference, string $mapperClass): mixed {
+		try {
+			// Both mappers take named rbac and multitenancy flags on find().
+			return $this->container->get($mapperClass)->find(id: (int)$reference, _rbac: false, _multitenancy: false)->getSlug();
+		} catch (\Throwable $e) {
+			return null;
 		}
-
-		if (method_exists($event, 'getObject') === true) {
-			$obj = $event->getObject();
-			if ($obj instanceof ObjectEntity) {
-				return $obj;
-			}
-		}
-
-		if (method_exists($event, 'getNewObject') === true) {
-			$obj = $event->getNewObject();
-			if ($obj instanceof ObjectEntity) {
-				return $obj;
-			}
-		}
-
-		return null;
-	}//end extractObject()
+	}//end lookupSlug()
 }//end class

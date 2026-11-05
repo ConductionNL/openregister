@@ -3113,20 +3113,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end createTableForRegisterSchema()
 
 	/**
-	 * Update existing table for register+schema changes
-	 *
-	 * @param Register $register The register context
-	 * @param Schema $schema The schema to update table for
-	 *
-	 * @throws Exception If table update fails
-	 *
-	 * @return array Statistics about what was changed
-	 */
-	public function updateTableForRegisterSchema(Register $register, Schema $schema): array {
-		return $this->syncTableForRegisterSchema(register: $register, schema: $schema);
-	}//end updateTableForRegisterSchema()
-
-	/**
 	 * Synchronize table structure with schema definition.
 	 *
 	 * This is a public method that can be called to update an existing magic table

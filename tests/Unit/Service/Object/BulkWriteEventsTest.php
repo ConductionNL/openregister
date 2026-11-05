@@ -57,6 +57,7 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
+ * @uses \OCA\OpenRegister\Event\AbstractPreWriteObjectEvent
  * @uses \OCA\OpenRegister\Event\ObjectCreatingEvent
  * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
  * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent

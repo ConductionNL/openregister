@@ -21,17 +21,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
  * Class AnalyticsLinkMapper
  *
  * @template-extends QBMapper<AnalyticsLink>
+ * @method list<AnalyticsLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
 class AnalyticsLinkMapper extends QBMapper {
+
+	use ObjectKeyLinkTrait;
 	use FindLinksByObjectUuidTrait;
 	use DeleteLinksByObjectUuidTrait;
 	/**
@@ -44,23 +45,6 @@ class AnalyticsLinkMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Find analytics links by report id.
-	 *
-	 * @param int $reportId The report id.
-	 *
-	 * @return AnalyticsLink[] Array of analytics links.
-	 */
-	public function findByReportId(int $reportId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('report_id', $qb->createNamedParameter($reportId, IQueryBuilder::PARAM_INT)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByReportId()
-
-	/**
 	 * Find a specific analytics link by object UUID and report id.
 	 *
 	 * @param string $objectUuid The object UUID.
@@ -69,17 +53,12 @@ class AnalyticsLinkMapper extends QBMapper {
 	 * @return AnalyticsLink|null The link or null if not found.
 	 */
 	public function findByObjectAndReport(string $objectUuid, int $reportId): ?AnalyticsLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('report_id', $qb->createNamedParameter($reportId, IQueryBuilder::PARAM_INT)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$link = $this->findObjectLink(objectUuid: $objectUuid, key: new LinkColumn(name: 'report_id', value: $reportId));
+		if ($link instanceof AnalyticsLink) {
+			return $link;
 		}
+
+		return null;
 	}//end findByObjectAndReport()
 
 	/**
@@ -95,11 +74,6 @@ class AnalyticsLinkMapper extends QBMapper {
 	 * @return int Number of deleted rows.
 	 */
 	public function deleteByObjectAndReport(string $objectUuid, int $reportId): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('report_id', $qb->createNamedParameter($reportId, IQueryBuilder::PARAM_INT)));
-
-		return $qb->executeStatement();
+		return $this->deleteObjectLinks(objectUuid: $objectUuid, key: new LinkColumn(name: 'report_id', value: $reportId));
 	}//end deleteByObjectAndReport()
 }//end class

@@ -95,13 +95,7 @@ class AnonymisationLogMapper extends QBMapper {
 			->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
 			->orderBy('created', 'DESC');
 
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findByFileId()
@@ -125,40 +119,10 @@ class AnonymisationLogMapper extends QBMapper {
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->orderBy('created', 'DESC');
 
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findByObjectUuid()
-
-	/**
-	 * Get the most recent successful anonymisation log row for a file.
-	 *
-	 * @param int $fileId The NC file id
-	 *
-	 * @return AnonymisationLog|null The latest success row or null when absent.
-	 */
-	public function findLatestSuccessForFile(int $fileId): ?AnonymisationLog {
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('status', $qb->createNamedParameter(AnonymisationLog::STATUS_SUCCESS)))
-			->orderBy('created', 'DESC')
-			->setMaxResults(1);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			return null;
-		}
-	}//end findLatestSuccessForFile()
 
 	/**
 	 * Insert a new anonymisation log row.

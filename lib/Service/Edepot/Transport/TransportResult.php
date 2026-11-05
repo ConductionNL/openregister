@@ -157,42 +157,6 @@ class TransportResult {
 	}//end getTransferReference()
 
 	/**
-	 * Get UUIDs of accepted objects.
-	 *
-	 * @return array<int, string> UUIDs of accepted objects.
-	 *
-	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
-	 */
-	public function getAcceptedUuids(): array {
-		$uuids = [];
-		foreach ($this->objectResults as $uuid => $result) {
-			if ($result['accepted'] === true) {
-				$uuids[] = $uuid;
-			}
-		}
-
-		return $uuids;
-	}//end getAcceptedUuids()
-
-	/**
-	 * Get UUIDs of rejected objects.
-	 *
-	 * @return array<int, string> UUIDs of rejected objects.
-	 *
-	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
-	 */
-	public function getRejectedUuids(): array {
-		$uuids = [];
-		foreach ($this->objectResults as $uuid => $result) {
-			if ($result['accepted'] === false) {
-				$uuids[] = $uuid;
-			}
-		}
-
-		return $uuids;
-	}//end getRejectedUuids()
-
-	/**
 	 * Serialize to array.
 	 *
 	 * @return array<string,mixed> Serialized result.

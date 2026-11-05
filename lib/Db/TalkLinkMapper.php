@@ -17,7 +17,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\IDBConnection;
 
@@ -25,8 +24,11 @@ use OCP\IDBConnection;
  * Class TalkLinkMapper
  *
  * @template-extends QBMapper<TalkLink>
+ * @method list<TalkLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
 class TalkLinkMapper extends QBMapper {
+
+	use ObjectKeyLinkTrait;
 	use FindLinksByObjectUuidTrait;
 	use DeleteLinksByObjectUuidTrait;
 	/**
@@ -39,24 +41,6 @@ class TalkLinkMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Find talk links by room token (reverse lookup — which objects is
-	 * this room linked to?).
-	 *
-	 * @param string $roomToken The Talk room token.
-	 *
-	 * @return TalkLink[] Array of talk links.
-	 */
-	public function findByRoomToken(string $roomToken): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('room_token', $qb->createNamedParameter($roomToken)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByRoomToken()
-
-	/**
 	 * Find a specific talk link by object UUID and room token.
 	 *
 	 * @param string $objectUuid The object UUID.
@@ -65,17 +49,12 @@ class TalkLinkMapper extends QBMapper {
 	 * @return TalkLink|null The link or null if not found.
 	 */
 	public function findByObjectAndRoom(string $objectUuid, string $roomToken): ?TalkLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('room_token', $qb->createNamedParameter($roomToken)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$link = $this->findObjectLink(objectUuid: $objectUuid, key: new LinkColumn(name: 'room_token', value: $roomToken));
+		if ($link instanceof TalkLink) {
+			return $link;
 		}
+
+		return null;
 	}//end findByObjectAndRoom()
 
 	/**
@@ -91,11 +70,6 @@ class TalkLinkMapper extends QBMapper {
 	 * @return int Number of deleted rows.
 	 */
 	public function deleteByObjectAndRoom(string $objectUuid, string $roomToken): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('room_token', $qb->createNamedParameter($roomToken)));
-
-		return $qb->executeStatement();
+		return $this->deleteObjectLinks(objectUuid: $objectUuid, key: new LinkColumn(name: 'room_token', value: $roomToken));
 	}//end deleteByObjectAndRoom()
 }//end class

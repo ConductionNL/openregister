@@ -116,7 +116,6 @@ class SettingsControllerDebugTypeFilteringGoldenTest extends TestCase {
 			$this->createMock(IAppConfig::class),
 			$this->createMock(IDBConnection::class),
 			$container,
-			$this->createMock(IAppManager::class),
 			$this->createMock(SettingsService::class),
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(IL10N::class)

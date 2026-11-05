@@ -21,17 +21,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
  * Class OpenProjectLinkMapper
  *
  * @template-extends QBMapper<OpenProjectLink>
+ * @method list<OpenProjectLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
 class OpenProjectLinkMapper extends QBMapper {
+
+	use ObjectKeyLinkTrait;
 	use FindLinksByObjectUuidTrait;
 	use DeleteLinksByObjectUuidTrait;
 	/**
@@ -44,23 +45,6 @@ class OpenProjectLinkMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Find OpenProject links by work-package id.
-	 *
-	 * @param int $workPackageId The work-package id.
-	 *
-	 * @return OpenProjectLink[] Array of OpenProject links.
-	 */
-	public function findByWorkPackageId(int $workPackageId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('work_package_id', $qb->createNamedParameter($workPackageId, IQueryBuilder::PARAM_INT)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByWorkPackageId()
-
-	/**
 	 * Find a specific OpenProject link by object UUID and work-package id.
 	 *
 	 * @param string $objectUuid The object UUID.
@@ -69,17 +53,12 @@ class OpenProjectLinkMapper extends QBMapper {
 	 * @return OpenProjectLink|null The link or null if not found.
 	 */
 	public function findByObjectAndWorkPackage(string $objectUuid, int $workPackageId): ?OpenProjectLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('work_package_id', $qb->createNamedParameter($workPackageId, IQueryBuilder::PARAM_INT)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$link = $this->findObjectLink(objectUuid: $objectUuid, key: new LinkColumn(name: 'work_package_id', value: $workPackageId));
+		if ($link instanceof OpenProjectLink) {
+			return $link;
 		}
+
+		return null;
 	}//end findByObjectAndWorkPackage()
 
 	/**
@@ -95,11 +74,6 @@ class OpenProjectLinkMapper extends QBMapper {
 	 * @return int Number of deleted rows.
 	 */
 	public function deleteByObjectAndWorkPackage(string $objectUuid, int $workPackageId): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('work_package_id', $qb->createNamedParameter($workPackageId, IQueryBuilder::PARAM_INT)));
-
-		return $qb->executeStatement();
+		return $this->deleteObjectLinks(objectUuid: $objectUuid, key: new LinkColumn(name: 'work_package_id', value: $workPackageId));
 	}//end deleteByObjectAndWorkPackage()
 }//end class

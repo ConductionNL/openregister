@@ -172,6 +172,13 @@ class RegistersController extends Controller {
 	private readonly LoggerInterface $logger;
 
 	/**
+	 * The session bundle, which answers the admin check.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
+
+	/**
 	 * The user session.
 	 *
 	 * @var IUserSession
@@ -228,6 +235,7 @@ class RegistersController extends Controller {
 		$this->registerService = $services->registers->registerService;
 		$this->objectEntityMapper = $services->mappers->objectEntityMapper;
 		$this->userSession = $session->userSession;
+		$this->session = $session;
 		$this->container = $services->integrations->container;
 		$this->groupManager = $session->groupManager;
 		$this->logger->debug(
@@ -984,35 +992,6 @@ class RegistersController extends Controller {
 			return new JSONResponse(data: ['error' => 'Internal server error: ' . $e->getMessage()], statusCode: 500);
 		}//end try
 	}//end schemas()
-
-	/**
-	 * Get objects
-	 *
-	 * Get all the objects for a register and schema
-	 *
-	 * @param int $register The ID of the register
-	 * @param int $schema The ID of the schema
-	 *
-	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
-	 *
-	 * @return JSONResponse JSON response with objects
-	 *
-	 * @spec openspec/specs/openapi-generation/spec.md#requirement-schema-authoring-sub-resources-and-meta-entity-operational-endpoints
-	 */
-	public function objects(int $register, int $schema): JSONResponse {
-		// Find objects by register and schema IDs.
-		$query = [
-			'@self' => [
-				'register' => $register,
-				'schema' => $schema,
-			],
-		];
-		return new JSONResponse(
-			data: $this->objectEntityMapper->searchObjects(query: $query)
-		);
-	}//end objects()
 
 	/**
 	 * Export a register and its related data
@@ -2266,12 +2245,7 @@ class RegistersController extends Controller {
 	 * @return bool True if a user is signed in and belongs to the admin group.
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->session->isAdmin();
 	}//end isCurrentUserAdmin()
 
 	/**

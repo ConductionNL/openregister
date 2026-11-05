@@ -87,6 +87,13 @@ class ProcessingLogService {
 	public const FALLBACK_CODE = 'niet-geclassificeerde-verwerking';
 
 	/**
+	 * The largest list result whose entry carries per-object identifiers.
+	 *
+	 * @var int
+	 */
+	public const LIST_IDENTIFIER_LIMIT = 100;
+
+	/**
 	 * In-request buffer of pending entries (flushed after the response).
 	 *
 	 * @var array<int, ProcessingLogEntry>
@@ -178,15 +185,16 @@ class ProcessingLogService {
 	/**
 	 * Record a single collapsed entry for a list/search result.
 	 *
-	 * A list response produces ONE entry carrying `objectCount` — never
-	 * one row per scanned object. Per-object subject identifiers are
-	 * only attached when the result set is small (<= 100); otherwise the
-	 * entry stays an aggregate count.
+	 * A list response produces ONE entry carrying `objectCount` and the
+	 * query parameters — never one row per scanned object. When the result
+	 * set holds LIST_IDENTIFIER_LIMIT objects or fewer, the entry also
+	 * carries every object's uuid and the subject identifiers found.
 	 *
 	 * @param array<int, ObjectEntity> $objects The list result.
 	 * @param string $action `read` | `export`.
 	 * @param string|null $channel Access channel.
 	 * @param string|null $actor Explicit actor or null.
+	 * @param array<string, mixed> $query The query parameters of the list or search.
 	 *
 	 * @return void
 	 *
@@ -197,6 +205,7 @@ class ProcessingLogService {
 		string $action = 'read',
 		?string $channel = null,
 		?string $actor = null,
+		array $query = [],
 	): void {
 		if ($objects === []) {
 			return;
@@ -230,13 +239,11 @@ class ProcessingLogService {
 			$entry->setObjectCount(count($objects));
 			$entry->setConfidential(false);
 			$entry->setOrganisationId((string)$first->getOrganisation());
+			$entry->setQueryParams($query);
+			if (count($objects) <= self::LIST_IDENTIFIER_LIMIT) {
+				$this->attachListIdentifiers(entry: $entry, objects: $objects, config: $config);
+			}
 
-			// Only attach a subject identifier when the set is small AND
-			// homogeneous enough that a single identifier is meaningful;
-			// for safety we leave the identifier null on collapsed lists
-			// and rely on objectCount (per-object identifiers for <=100
-			// sets are emitted as individual entries by callers that need
-			// betrokkene-level granularity).
 			$this->buffer[] = $entry;
 		} catch (\Throwable $e) {
 			$this->logger->debug(
@@ -246,6 +253,30 @@ class ProcessingLogService {
 		}//end try
 
 	}//end logReadList()
+
+	/**
+	 * Put every object's uuid, and each subject identifier found, on a list entry.
+	 *
+	 * @param ProcessingLogEntry       $entry   The collapsed entry.
+	 * @param array<int, ObjectEntity> $objects The list result.
+	 * @param array<string, mixed>     $config  The schema's processing configuration.
+	 *
+	 * @return void
+	 */
+	private function attachListIdentifiers(ProcessingLogEntry $entry, array $objects, array $config): void {
+		$uuids = [];
+		$subjects = [];
+		foreach ($objects as $object) {
+			$uuids[] = (string)$object->getUuid();
+			$subject = $this->extractSubject(object: $object, config: $config);
+			if ($subject['type'] !== null) {
+				$subjects[] = ['type' => $subject['type'], 'value' => (string)$subject['value']];
+			}
+		}
+
+		$entry->setObjectUuids($uuids);
+		$entry->setSubjectIds($subjects);
+	}//end attachListIdentifiers()
 
 	/**
 	 * Flush the in-request buffer as one batched append.

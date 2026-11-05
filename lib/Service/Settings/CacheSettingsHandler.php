@@ -27,7 +27,7 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCP\AppFramework\IAppContainer;
 use OCP\ICacheFactory;
@@ -57,6 +57,73 @@ use RuntimeException;
 class CacheSettingsHandler {
 
 	/**
+	 * The object cache service block: output field => [stats key, default].
+	 *
+	 * @var array<string, array{0: string, 1: int}>
+	 */
+	private const SERVICE_FIELDS = [
+		'entries' => ['entries', 0],
+		'hits' => ['hits', 0],
+		'requests' => ['requests', 0],
+		'memoryUsage' => ['memoryUsage', 0],
+	];
+
+	/**
+	 * The names cache block: output field => [stats key, default].
+	 *
+	 * @var array<string, array{0: string, 1: int|float}>
+	 */
+	private const NAME_FIELDS = [
+		'cache_size' => ['name_cache_size', 0],
+		'hit_rate' => ['name_hit_rate', 0.0],
+		'hits' => ['name_hits', 0],
+		'misses' => ['name_misses', 0],
+		'warmups' => ['name_warmups', 0],
+	];
+
+	/**
+	 * A cache whose statistics are not stored in the database: counting them would be a performance issue.
+	 *
+	 * @var array<string, int>
+	 */
+	private const UNTRACKED_SERVICE = ['entries' => 0, 'hits' => 0, 'requests' => 0, 'memoryUsage' => 0];
+
+	/**
+	 * The safe defaults reported when the statistics are unavailable.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const UNAVAILABLE_STATS = [
+		'overview' => [
+			'totalCacheSize' => 0,
+			'totalCacheEntries' => 0,
+			'overallHitRate' => 0.0,
+			'averageResponseTime' => 0.0,
+			'cacheEfficiency' => 0.0,
+		],
+		'services' => [
+			'object' => self::UNTRACKED_SERVICE,
+			'schema' => self::UNTRACKED_SERVICE,
+			'facet' => self::UNTRACKED_SERVICE,
+		],
+		'names' => [
+			'cache_size' => 0,
+			'hit_rate' => 0.0,
+			'hits' => 0,
+			'misses' => 0,
+			'warmups' => 0,
+			'enabled' => false,
+		],
+		'distributed' => ['type' => 'none', 'backend' => 'Unknown', 'available' => false],
+		'performance' => [
+			'averageHitTime' => 0,
+			'averageMissTime' => 0,
+			'performanceGain' => 0,
+			'optimalHitRate' => 85.0,
+		],
+	];
+
+	/**
 	 * Cache factory
 	 *
 	 * @var ICacheFactory
@@ -73,9 +140,9 @@ class CacheSettingsHandler {
 	/**
 	 * Schema facet cache service
 	 *
-	 * @var FacetCacheHandler
+	 * @var FacetResultCacheClearer
 	 */
-	private FacetCacheHandler $schemaFacetCacheService;
+	private FacetResultCacheClearer $facetResults;
 
 	/**
 	 * Object cache service (lazy-loaded when needed)
@@ -112,7 +179,7 @@ class CacheSettingsHandler {
 	 *
 	 * @param ICacheFactory $cacheFactory Cache factory.
 	 * @param SchemaCacheHandler $schemaCacheService Schema cache handler.
-	 * @param FacetCacheHandler $facetCacheSvc Schema facet cache service.
+	 * @param FacetResultCacheClearer $facetResults Clears the facet result caches.
 	 * @param CacheHandlerInterface|null $objectCacheService Object cache service (optional, lazy-loaded).
 	 * @param IAppContainer|null $container Container for lazy loading (optional).
 	 *
@@ -121,13 +188,13 @@ class CacheSettingsHandler {
 	public function __construct(
 		ICacheFactory $cacheFactory,
 		SchemaCacheHandler $schemaCacheService,
-		FacetCacheHandler $facetCacheSvc,
+		FacetResultCacheClearer $facetResults,
 		?CacheHandlerInterface $objectCacheService = null,
 		?IAppContainer $container = null,
 	) {
 		$this->cacheFactory = $cacheFactory;
 		$this->schemaCacheService = $schemaCacheService;
-		$this->schemaFacetCacheService = $facetCacheSvc;
+		$this->facetResults = $facetResults;
 		$this->objectCacheService = $objectCacheService;
 		$this->container = $container;
 	}//end __construct()
@@ -142,99 +209,70 @@ class CacheSettingsHandler {
 	 *
 	 * @return array Cache stats with overview, services, names, distributed, performance, and lastUpdated.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex statistics aggregation requires comprehensive data structure
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-3
 	 */
 	public function getCacheStats(): array {
 		try {
-			// Get basic distributed cache info.
 			$distributedStats = $this->getDistributedCacheStats();
 			$performanceStats = $this->getCachePerformanceMetrics();
 
-			// Get object cache stats (only if CacheHandler provides them)
-			// Use cached stats to avoid expensive operations on every request.
+			// Cached object stats avoid expensive operations on every request.
 			$objectStats = $this->getCachedObjectStats();
 
-			$stats = [
-				'overview' => [
-					'totalCacheSize' => $objectStats['memoryUsage'] ?? 0,
-					'totalCacheEntries' => $objectStats['entries'] ?? 0,
-					'overallHitRate' => $this->calculateHitRate(stats: $objectStats),
-					'averageResponseTime' => $performanceStats['averageHitTime'] ?? 0.0,
-					'cacheEfficiency' => $this->calculateHitRate(stats: $objectStats),
-				],
+			return [
+				'overview' => $this->cacheOverview(objectStats: $objectStats, averageHitTime: $performanceStats['averageHitTime'] ?? 0.0),
 				'services' => [
-					'object' => [
-						'entries' => $objectStats['entries'] ?? 0,
-						'hits' => $objectStats['hits'] ?? 0,
-						'requests' => $objectStats['requests'] ?? 0,
-						'memoryUsage' => $objectStats['memoryUsage'] ?? 0,
-					],
-					'schema' => [
-						'entries' => 0,
-						// Not stored in database - would be performance issue.
-						'hits' => 0,
-						'requests' => 0,
-						'memoryUsage' => 0,
-					],
-					'facet' => [
-						'entries' => 0,
-						// Not stored in database - would be performance issue.
-						'hits' => 0,
-						'requests' => 0,
-						'memoryUsage' => 0,
-					],
+					'object' => $this->countsOf(stats: $objectStats, fields: self::SERVICE_FIELDS),
+					'schema' => self::UNTRACKED_SERVICE,
+					'facet' => self::UNTRACKED_SERVICE,
 				],
-				'names' => [
-					'cache_size' => $objectStats['name_cache_size'] ?? 0,
-					'hit_rate' => $objectStats['name_hit_rate'] ?? 0.0,
-					'hits' => $objectStats['name_hits'] ?? 0,
-					'misses' => $objectStats['name_misses'] ?? 0,
-					'warmups' => $objectStats['name_warmups'] ?? 0,
-					'enabled' => true,
-				],
+				'names' => $this->countsOf(stats: $objectStats, fields: self::NAME_FIELDS) + ['enabled' => true],
 				'distributed' => $distributedStats,
 				'performance' => $performanceStats,
 				'lastUpdated' => (new DateTime())->format('c'),
 			];
-
-			return $stats;
 		} catch (Exception $e) {
-			// Return safe defaults if cache stats unavailable.
-			return [
-				'overview' => [
-					'totalCacheSize' => 0,
-					'totalCacheEntries' => 0,
-					'overallHitRate' => 0.0,
-					'averageResponseTime' => 0.0,
-					'cacheEfficiency' => 0.0,
-				],
-				'services' => [
-					'object' => ['entries' => 0, 'hits' => 0, 'requests' => 0, 'memoryUsage' => 0],
-					'schema' => ['entries' => 0, 'hits' => 0, 'requests' => 0, 'memoryUsage' => 0],
-					'facet' => ['entries' => 0, 'hits' => 0, 'requests' => 0, 'memoryUsage' => 0],
-				],
-				'names' => [
-					'cache_size' => 0,
-					'hit_rate' => 0.0,
-					'hits' => 0,
-					'misses' => 0,
-					'warmups' => 0,
-					'enabled' => false,
-				],
-				'distributed' => ['type' => 'none', 'backend' => 'Unknown', 'available' => false],
-				'performance' => [
-					'averageHitTime' => 0,
-					'averageMissTime' => 0,
-					'performanceGain' => 0,
-					'optimalHitRate' => 85.0,
-				],
+			return self::UNAVAILABLE_STATS + [
 				'lastUpdated' => (new DateTime())->format('c'),
 				'error' => 'Cache statistics unavailable: ' . $e->getMessage(),
 			];
 		}//end try
 	}//end getCacheStats()
+
+	/**
+	 * The overview block: size, entries and hit rate of the object cache.
+	 *
+	 * @param array<string, mixed> $objectStats    The object cache statistics.
+	 * @param mixed                $averageHitTime The average hit time from the performance metrics.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function cacheOverview(array $objectStats, $averageHitTime): array {
+		return [
+			'totalCacheSize' => $objectStats['memoryUsage'] ?? 0,
+			'totalCacheEntries' => $objectStats['entries'] ?? 0,
+			'overallHitRate' => $this->calculateHitRate(stats: $objectStats),
+			'averageResponseTime' => $averageHitTime,
+			'cacheEfficiency' => $this->calculateHitRate(stats: $objectStats),
+		];
+	}//end cacheOverview()
+
+	/**
+	 * Pick fields from a statistics payload: output field => [stats key, default].
+	 *
+	 * @param array<string, mixed>                          $stats  The statistics.
+	 * @param array<string, array{0: string, 1: int|float}> $fields The fields to pick.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function countsOf(array $stats, array $fields): array {
+		$counts = [];
+		foreach ($fields as $field => [$key, $default]) {
+			$counts[$field] = $stats[$key] ?? $default;
+		}
+
+		return $counts;
+	}//end countsOf()
 
 	/**
 	 * Get cached object statistics to avoid expensive operations on every request
@@ -704,27 +742,40 @@ class CacheSettingsHandler {
 	 * @SuppressWarnings (PHPMD.UnusedFormalParameter)
 	 */
 	private function clearFacetCache(?string $_userId = null): array {
-		try {
-			$beforeStats = $this->schemaFacetCacheService->getCacheStatistics();
-			$this->schemaFacetCacheService->clearAllCaches();
-			$afterStats = $this->schemaFacetCacheService->getCacheStatistics();
+		$before = $this->emptyFacetStatistics();
+		$this->facetResults->clearAll();
 
-			return [
-				'service' => 'facet',
-				'cleared' => ($beforeStats['total_entries'] ?? 0) - ($afterStats['total_entries'] ?? 0),
-				'before' => $beforeStats,
-				'after' => $afterStats,
-				'success' => true,
-			];
-		} catch (Exception $e) {
-			return [
-				'service' => 'facet',
-				'cleared' => 0,
-				'success' => false,
-				'error' => $e->getMessage(),
-			];
-		}
+		return [
+			'service' => 'facet',
+			'cleared' => 0,
+			'before' => $before,
+			'after' => $this->emptyFacetStatistics(),
+			'success' => true,
+		];
 	}//end clearFacetCache()
+
+	/**
+	 * The facet cache statistics in the shape the cache API has always returned.
+	 *
+	 * Facet results live only in the distributed facet caches, which keep no
+	 * count; the persistent facet table was never written, so its figures are
+	 * zero by construction.
+	 *
+	 * @return array{total_entries: int, by_type: array<string, int>, memory_cache_size: int,
+	 *     cache_table: string, query_time: string, timestamp: int}
+	 */
+	private function emptyFacetStatistics(): array {
+		$startTime = microtime(true);
+
+		return [
+			'total_entries' => 0,
+			'by_type' => [],
+			'memory_cache_size' => 0,
+			'cache_table' => 'openregister_schema_facet_cache',
+			'query_time' => round((microtime(true) - $startTime) * 1000, 2) . 'ms',
+			'timestamp' => time(),
+		];
+	}//end emptyFacetStatistics()
 
 	/**
 	 * Clear distributed cache

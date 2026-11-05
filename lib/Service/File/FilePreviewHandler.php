@@ -109,32 +109,4 @@ class FilePreviewHandler {
 			throw new Exception('Preview not available for this file type');
 		}//end try
 	}//end getPreview()
-
-	/**
-	 * Check if a preview is available for a given file.
-	 *
-	 * @param File $file The file to check.
-	 *
-	 * @return bool True if a preview can be generated.
-	 */
-	public function isPreviewAvailable(File $file): bool {
-		return $this->previewManager->isAvailable($file);
-	}//end isPreviewAvailable()
-
-	/**
-	 * Get the MIME type icon URL for a file type.
-	 *
-	 * Used as a fallback when preview is not available.
-	 *
-	 * @param string $mimeType The MIME type.
-	 *
-	 * @return string The icon URL path.
-	 */
-	public function getMimeTypeIconUrl(string $mimeType): string {
-		if ($this->previewManager->isMimeSupported($mimeType) === true) {
-			return '';
-		}
-
-		return '/core/img/filetypes/file.svg';
-	}//end getMimeTypeIconUrl()
 }//end class

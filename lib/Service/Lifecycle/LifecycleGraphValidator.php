@@ -41,6 +41,8 @@ namespace OCA\OpenRegister\Service\Lifecycle;
  */
 final class LifecycleGraphValidator {
 
+	use LifecycleFieldCheck;
+
 	/**
 	 * Constructor.
 	 *
@@ -77,48 +79,12 @@ final class LifecycleGraphValidator {
 	 */
 	public function validate(array $annotation, array $schema): array {
 		return array_merge(
-			$this->validateField(annotation: $annotation, schema: $schema),
+			$this->declaredFieldErrors(annotation: $annotation, schema: $schema),
 			$this->validateEndpoints(annotation: $annotation),
 			$this->validateBlock(graph: $annotation['graph']),
 			$this->unsupported(graph: $annotation['graph'])
 		);
 	}//end validate()
-
-	/**
-	 * Check the lifecycle `field` itself.
-	 *
-	 * It stays required and non-empty, but the `enum`/`type:string` constraint
-	 * is relaxed: a graph-mode lifecycle field is a `$ref`, which declares no
-	 * enum and is not a plain string in the schema's sense.
-	 *
-	 * @param array<string, mixed> $annotation The normalised annotation block.
-	 * @param array<string, mixed> $schema     Full schema definition.
-	 *
-	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
-	 */
-	private function validateField(array $annotation, array $schema): array {
-		$field = ($annotation['field'] ?? null);
-		if (is_string($field) === false || $field === '') {
-			return [
-				[
-					'code' => 'lifecycle-missing-key',
-					'message' => 'x-openregister-lifecycle is missing required key "field".',
-				],
-			];
-		}
-
-		$properties = ($schema['properties'] ?? []);
-		if (is_array($properties) === true && isset($properties[$field]) === false) {
-			return [
-				[
-					'code' => 'lifecycle-field-missing',
-					'message' => sprintf('x-openregister-lifecycle.field "%s" is not declared in `properties`.', $field),
-				],
-			];
-		}
-
-		return [];
-	}//end validateField()
 
 	/**
 	 * Check the `initial` and `final` declarations beside a graph block.

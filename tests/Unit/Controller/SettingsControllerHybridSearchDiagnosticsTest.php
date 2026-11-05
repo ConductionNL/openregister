@@ -104,7 +104,6 @@ class SettingsControllerHybridSearchDiagnosticsTest extends TestCase {
 			$this->createMock(IAppConfig::class),
 			$db,
 			$container,
-			$this->createMock(IAppManager::class),
 			$this->createMock(SettingsService::class),
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(IL10N::class)

@@ -165,33 +165,6 @@ class TenantUsageMapper extends QBMapper {
 	}//end upsertUsage()
 
 	/**
-	 * Delete every organisation's usage records older than a given date.
-	 *
-	 * INSTALLATION-WIDE. This is a retention sweep across ALL organisations
-	 * and has no organisation parameter. Never use it to remove one
-	 * organisation's records: TenantPurgeJob once did, with a far-future date,
-	 * and every purge deleted the usage history of every tenant. Use
-	 * deleteByOrganisation() for that.
-	 *
-	 * @param DateTime $before Delete records before this date
-	 *
-	 * @return int Number of deleted records
-	 */
-	public function deleteOlderThan(DateTime $before): int {
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->delete($this->getTableName())
-			->where(
-				$qb->expr()->lt(
-					'period',
-					$qb->createNamedParameter($before->format('Y-m-d H:i:s'), IQueryBuilder::PARAM_STR)
-				)
-			);
-
-		return $qb->executeStatement();
-	}//end deleteOlderThan()
-
-	/**
 	 * Delete all usage records of one organisation, and nothing else.
 	 *
 	 * The WHERE clause is the organisation's uuid and only that, so the rows of

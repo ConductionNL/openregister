@@ -255,10 +255,12 @@ class CascadingHandler {
 			return null;
 		}
 
-		$this->saveHandler->assertMayCascadeCreate(
-			schema: $schema,
-			register: ($target->register !== null) ? (string)$target->register : null
-		);
+		$register = null;
+		if ($target->register !== null) {
+			$register = (string)$target->register;
+		}
+
+		$this->saveHandler->assertMayCascadeCreate(schema: $schema, register: $register);
 
 		// A new uuid is generated; default RBAC and multitenancy apply to the cascade.
 		$createdObject = $this->saveHandler->saveObject(

@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Notifications\Controller;
 use Exception;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\EmailLinkService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -69,6 +70,13 @@ class EmailsController extends Controller {
 	private readonly \Psr\Log\LoggerInterface $logger;
 
 	/**
+	 * Object-scoped email link reads and writes.
+	 *
+	 * @var EmailLinkService
+	 */
+	private readonly EmailLinkService $emailLinkService;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application name
@@ -77,6 +85,7 @@ class EmailsController extends Controller {
 	 * @param ObjectOperationsInterface $objectService Object service
 	 * @param \OCP\IUserSession $userSession User session
 	 * @param \Psr\Log\LoggerInterface $logger Logger
+	 * @param EmailLinkService $emailLinkService Object-scoped email links
 	 *
 	 * @return void
 	 */
@@ -87,6 +96,7 @@ class EmailsController extends Controller {
 		ObjectOperationsInterface $objectService,
 		\OCP\IUserSession $userSession,
 		\Psr\Log\LoggerInterface $logger,
+		EmailLinkService $emailLinkService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -94,6 +104,7 @@ class EmailsController extends Controller {
 		$this->objectService = $objectService;
 		$this->userSession = $userSession;
 		$this->logger = $logger;
+		$this->emailLinkService = $emailLinkService;
 	}//end __construct()
 
 	/**
@@ -248,7 +259,12 @@ class EmailsController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
-			$this->emailService->unlinkEmail((int)$emailId);
+			$objectUuid = $object->getUuid();
+			if ($objectUuid === null || $objectUuid === '') {
+				return new JSONResponse(['error' => 'Email link not found'], 404);
+			}
+
+			$this->emailLinkService->unlinkEmail(objectUuid: $objectUuid, linkId: (int)$emailId);
 
 			return new JSONResponse(['success' => true]);
 		} catch (DoesNotExistException $e) {

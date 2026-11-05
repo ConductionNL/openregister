@@ -148,21 +148,6 @@ class NotificationReadStateMapper extends QBMapper {
 	}//end isRead()
 
 	/**
-	 * Number of read tuples currently tracked across all users.
-	 *
-	 * @return int
-	 */
-	public function readCount(): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->createFunction('COUNT(*)'))
-			->from($this->getTableName());
-		$result = $qb->executeQuery();
-		$value = (int)$result->fetchOne();
-		$result->closeCursor();
-		return $value;
-	}//end readCount()
-
-	/**
 	 * Find the row for a given (userId, notificationId) tuple.
 	 *
 	 * @param string $userId The user UID.

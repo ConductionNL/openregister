@@ -30,6 +30,7 @@ use OCP\IDBConnection;
  * Class TimeTrackerLinkMapper
  *
  * @template-extends QBMapper<TimeTrackerLink>
+ * @method list<TimeTrackerLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
 class TimeTrackerLinkMapper extends QBMapper {
 	use FindLinksByObjectUuidTrait;
@@ -84,40 +85,6 @@ class TimeTrackerLinkMapper extends QBMapper {
 			return null;
 		}
 	}//end findByObjectAndEntry()
-
-	/**
-	 * Find a time-tracker link for an object by its upstream entry id,
-	 * regardless of which id column carries it.
-	 *
-	 * The Tier-2 unlink path passes a single opaque `entryId`; this
-	 * matches it against any of the three id columns for the object.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param string $entryId The upstream entry id (client/task/time uuid).
-	 *
-	 * @return TimeTrackerLink|null The link or null if not found.
-	 */
-	public function findByObjectAndEntryId(string $objectUuid, string $entryId): ?TimeTrackerLink {
-		$qb = $this->db->getQueryBuilder();
-		$param = $qb->createNamedParameter($entryId);
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere(
-				$qb->expr()->orX(
-					$qb->expr()->eq('client_id', $param),
-					$qb->expr()->eq('task_id', $param),
-					$qb->expr()->eq('time_id', $param)
-				)
-			)
-			->setMaxResults(1);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
-		}
-	}//end findByObjectAndEntryId()
 
 	/**
 	 * Delete a time-tracker link by object UUID + upstream entry id
