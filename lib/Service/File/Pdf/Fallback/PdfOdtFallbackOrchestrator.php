@@ -16,8 +16,8 @@
  * Activation path (when telemetry warrants it, per the scaffold proposal):
  *
  *   1. Operator installs Nextcloud Office (Collabora Online or Code).
- *   2. Operator binds a concrete {@see NcOfficeConverterInterface} (replacing
- *      the default {@see NullNcOfficeConverter}).
+ *   2. The bound {@see \OCA\OpenRegister\Service\File\Office\ConversionManagerConverter}
+ *      then finds a provider that converts between PDF and ODT.
  *   3. Operator sets `pdf-anonymisation.path-b-enabled` to `true`.
  *   4. Path A's strict-mode `validation_failed` exceptions are caught by
  *      the FileTextController wrapper and routed through this orchestrator:
