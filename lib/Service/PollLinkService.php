@@ -8,8 +8,7 @@
  * to provide the picker + inline-create UX surface area:
  *
  *   - linkPoll(uuid, registerId, schemaId, pollId)          — link existing poll
- *   - createAndLinkPoll(uuid, ..., title, description,
- *                       type, options, deadline)            — create + link new
+ *   - createAndLinkPoll(target, draft)                       — create + link new
  *   - unlinkPoll(uuid, pollId)
  *   - getLinkedPolls(uuid)                                  — list, enriched
  *   - getAvailablePolls(search?)                            — picker source
@@ -48,7 +47,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
-use DateTimeInterface;
 use Exception;
 use OCA\OpenRegister\Db\PollLink;
 use OCA\OpenRegister\Db\PollLinkMapper;
@@ -298,39 +296,16 @@ class PollLinkService {
 	 * workaround, see class docblock). The new poll is owned by the
 	 * current user and uses the default access setting.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
-	 * @param string $title Poll title (required).
-	 * @param string $description Poll description (optional).
-	 * @param string $type Poll type: `textPoll` / `datePoll`.
-	 * @param array<int,string> $options Option labels.
-	 * @param DateTimeInterface|null $deadline Optional deadline.
+	 * @param LinkTarget $target The object to link to.
+	 * @param PollDraft  $draft  Title (required), description, type, options and deadline.
 	 *
 	 * @return PollLink The persisted link row.
 	 *
 	 * @throws Exception On missing user, Polls unavailable, or create failure.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)   PHPMD 2.x accumulates the complexity
-	 *   of insertPollRecord and buildPollLink (extracted helpers) into this orchestrator;
-	 *   the method itself only validates preconditions and delegates to those helpers.
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Poll creation requires seven distinct
-	 *   parameters (objectUuid, registerId, schemaId, title, description, type, options,
-	 *   deadline); grouping them into a DTO would add an extra abstraction layer with no
-	 *   functional benefit since callers already have all values as discrete variables.
-	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function createAndLinkPoll(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		string $title,
-		string $description,
-		string $type,
-		array $options,
-		?DateTimeInterface $deadline,
-	): PollLink {
+	public function createAndLinkPoll(LinkTarget $target, PollDraft $draft): PollLink {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
@@ -340,21 +315,18 @@ class PollLinkService {
 			throw new Exception('Polls is not available', 503);
 		}
 
-		if (trim($title) === '') {
+		if (trim($draft->title) === '') {
 			throw new Exception('Title is required', 400);
 		}
 
-		$draft = (new PollDraft(title: $title, description: $description))
-			->withType(type: $type)
-			->withOptions(options: $options, deadline: $deadline)
-			->ownedBy(owner: $user->getUID(), created: time());
+		$draft = $draft->ownedBy(owner: $user->getUID(), created: time());
 
 		$pollId = $this->insertPollRecord(draft: $draft);
 
 		$link = $this->buildPollLink(draft: $draft, pollId: $pollId);
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
+		$link->setObjectUuid($target->objectUuid);
+		$link->setRegisterId($target->registerId);
+		$link->setSchemaId($target->schemaId());
 
 		return $this->pollLinkMapper->insert($link);
 	}//end createAndLinkPoll()

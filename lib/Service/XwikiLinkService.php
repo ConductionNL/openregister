@@ -218,13 +218,12 @@ class XwikiLinkService {
 		}
 
 		$link = $this->hydrateLink(
-			objectUuid: $objectUuid,
-			registerId: $registerId,
-			schemaId: $schemaId,
 			pageReference: $canonicalReference,
-			info: $info,
-			uid: $uid
+			info: $info
 		);
+		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
+			->inSchema(schemaId: $schemaId)
+			->stamp(link: $link, linkedBy: $uid);
 
 		return $this->xwikiLinkMapper->insert($link);
 	}//end linkPage()
@@ -312,13 +311,12 @@ class XwikiLinkService {
 		}
 
 		$link = $this->hydrateLink(
-			objectUuid: $objectUuid,
-			registerId: $registerId,
-			schemaId: $schemaId,
 			pageReference: $canonicalReference,
-			info: $info,
-			uid: $uid
+			info: $info
 		);
+		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
+			->inSchema(schemaId: $schemaId)
+			->stamp(link: $link, linkedBy: $uid);
 
 		return $this->xwikiLinkMapper->insert($link);
 	}//end createAndLinkPage()
@@ -326,34 +324,21 @@ class XwikiLinkService {
 	/**
 	 * Build an XwikiLink from normalised page info.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
 	 * @param string $pageReference Canonical xWiki page reference.
 	 * @param array<string,mixed> $info Normalised page info.
-	 * @param string $uid The linking user id.
 	 *
 	 * @return XwikiLink
 	 */
 	private function hydrateLink(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
 		string $pageReference,
 		array $info,
-		string $uid,
 	): XwikiLink {
 		$link = new XwikiLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setPageReference($pageReference);
 		$link->setSpace($info['space'] ?? null);
 		$link->setTitle((string)($info['title'] ?? $pageReference));
 		$link->setUrl($info['url'] ?? null);
 		$link->setCachedAt(new DateTime());
-		$link->setLinkedBy($uid);
-		$link->setLinkedAt(new DateTime());
 
 		return $link;
 	}//end hydrateLink()
