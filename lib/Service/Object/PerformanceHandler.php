@@ -223,12 +223,27 @@ class PerformanceHandler {
 		$query['_extend'] = $this->optimizeExtendQueries(extend: $query['_extend']);
 		$newExtendCount = count($query['_extend']);
 		if ($newExtendCount < $originalExtendCount) {
-			$this->logger->info(
-				message: '[PerformanceHandler] ⚡ EXTEND OPTIMIZATION: Reduced extend complexity',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'original' => $originalExtendCount, 'optimized' => $newExtendCount, 'estimatedSaving' => ($originalExtendCount - $newExtendCount) * (100) . 'ms']
-			);
+			$this->logExtendReduction(original: $originalExtendCount, optimized: $newExtendCount);
 		}
 	}//end optimizeExtendInQuery()
+
+	/**
+	 * Log that the extend list of a query was shortened.
+	 *
+	 * @param int $original  Extend count before.
+	 * @param int $optimized Extend count after.
+	 *
+	 * @return void
+	 */
+	private function logExtendReduction(int $original, int $optimized): void {
+		$this->logger->info(
+			message: '[PerformanceHandler] ⚡ EXTEND OPTIMIZATION: Reduced extend complexity',
+			context: [
+				'file' => __FILE__, 'line' => __LINE__, 'original' => $original, 'optimized' => $optimized,
+				'estimatedSaving' => ($original - $optimized) * (100) . 'ms',
+			]
+		);
+	}//end logExtendReduction()
 
 	/**
 	 * Preload critical entities for cache warmup
