@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\McpServerControllerFactory;
 use OCA\OpenRegister\Controller\McpServerController;
 use OCA\OpenRegister\Service\Mcp\McpProtocolService;
 use OCA\OpenRegister\Service\Mcp\McpResourcesService;
@@ -102,7 +103,7 @@ class McpServerControllerTest extends TestCase {
 		$this->agentScope = $this->createMock(\OCA\OpenRegister\Service\Mcp\McpAgentScope::class);
 		$this->agentScope->method('filterListing')->willReturnArgument(2);
 
-		$this->controller = new McpServerController(
+		$this->controller = McpServerControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->protocolService,
@@ -173,7 +174,7 @@ class McpServerControllerTest extends TestCase {
 	 * caller: the user session holds no user.
 	 */
 	private function unauthenticatedController(): McpServerController {
-		return new McpServerController(
+		return McpServerControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->protocolService,
@@ -238,7 +239,7 @@ class McpServerControllerTest extends TestCase {
 		$session->method('getUser')->willReturnOnConsecutiveCalls(null, $bob);
 
 		// Built while nobody is logged in: must not throw.
-		$controller = new McpServerController(
+		$controller = McpServerControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->protocolService,

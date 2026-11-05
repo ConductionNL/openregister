@@ -827,7 +827,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			$registerId = $entity->getId();
 		}
 
-		$objectEntityMapper = $this->container->get(MagicMapper::class);
+		$objectEntityMapper = $this->container->get(MagicMapperInterface::class);
 		$stats = $objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
 		if (($stats['total'] ?? 0) > 0) {
 			throw new ValidationException(message: 'Cannot delete register: objects are still attached.');

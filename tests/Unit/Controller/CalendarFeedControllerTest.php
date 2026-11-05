@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CalendarFeedControllerFactory;
 use OCA\OpenRegister\Controller\CalendarFeedController;
 use OCA\OpenRegister\Db\CalendarFeedToken;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
@@ -73,7 +74,7 @@ class CalendarFeedControllerTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getRemoteAddress')->willReturn('203.0.113.10');
 
-		$this->controller = new CalendarFeedController(
+		$this->controller = CalendarFeedControllerFactory::create(
 			'openregister',
 			$request,
 			$this->tokens,

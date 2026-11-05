@@ -626,15 +626,14 @@ class ScheduledReportService implements ScheduledReportsInterface {
 		$this->userSession->setUser($owner);
 
 		try {
-			$export = $this->runExport(report: $report, owner: $owner);
-			$filename = $this->buildFilename(report: $report);
+			$run = new ScheduledReportRun(report: $report, owner: $owner);
+			$run->export = $this->runExport(report: $report, owner: $owner);
+			$run->filename = $this->buildFilename(report: $report);
 			$mode = ($report->getDeliveryMode() ?? 'files');
 
-			$delivered = false;
-			$writtenFile = null;
 			if (in_array($mode, ['files', 'both'], true) === true) {
-				$writtenFile = $this->deliverToFiles(report: $report, owner: $owner, filename: $filename, bytes: $export['bytes']);
-				$delivered = true;
+				$run->file = $this->deliverToFiles(run: $run);
+				$run->delivered = true;
 			}
 
 			// Record the run. Until this existed, a scheduled report wrote a
@@ -643,26 +642,13 @@ class ScheduledReportService implements ScheduledReportsInterface {
 			// it carried, and not when it should stop existing. The file is
 			// what the sweep deletes; the row is what an administrator is
 			// asked about, and it outlives the file.
-			$this->recordRun(report: $report, owner: $owner, filename: $filename, export: $export, file: $writtenFile);
+			$this->recordRun(run: $run);
 
-			$emailFailureReason = null;
 			if (in_array($mode, ['email', 'both'], true) === true) {
-				$emailFailureReason = $this->deliverToEmail(
-					report: $report,
-					owner: $owner,
-					filename: $filename,
-					bytes: $export['bytes'],
-					rowCount: $export['rowCount'],
-					alreadyDelivered: $delivered
-				);
+				$run->emailFailureReason = $this->deliverToEmail(run: $run);
 			}
 
-			$this->finalizeOutcome(
-				report: $report,
-				filename: $filename,
-				delivered: $delivered,
-				emailFailureReason: $emailFailureReason
-			);
+			$this->finalizeOutcome(run: $run);
 		} catch (ExportTooLargeException $e) {
 			$this->logger->warning(
 				message: '[ScheduledReportService] Export too large',
@@ -697,21 +683,21 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 *  - email failed, but Files already delivered → `email_failed` (isolated).
 	 *  - email failed and nothing else delivered    → `failed`.
 	 *
-	 * @param ScheduledReport $report The report.
-	 * @param string $filename The delivery filename.
-	 * @param bool $delivered Whether the Files leg delivered this pass.
-	 * @param string|null $emailFailureReason The email leg's failure reason, or null on success/not-requested.
+	 * @param ScheduledReportRun $run The run, after both legs.
 	 *
 	 * @return void
 	 */
-	private function finalizeOutcome(ScheduledReport $report, string $filename, bool $delivered, ?string $emailFailureReason): void {
+	private function finalizeOutcome(ScheduledReportRun $run): void {
+		$report = $run->report;
+		$filename = $run->filename;
+		$emailFailureReason = $run->emailFailureReason;
 		if ($emailFailureReason === null) {
 			$this->markOutcome(report: $report, status: 'success', error: null);
 			$this->notifyDelivered(report: $report, filename: $filename, emailFailureReason: null);
 			return;
 		}
 
-		if ($delivered === true) {
+		if ($run->delivered === true) {
 			// Files delivery (the requested Files/both leg) succeeded —
 			// don't report a hard failure, but do surface the distinct
 			// email problem.
@@ -936,24 +922,22 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 * (sanitized) delivery folder. Mirrors `ReportRenderJob::writeToFiles()`'s
 	 * ownership + path-traversal hardening.
 	 *
-	 * @param ScheduledReport $report The report.
-	 * @param \OCP\IUser $owner The owner.
-	 * @param string $filename The delivery filename.
-	 * @param string $bytes The rendered bytes.
+	 * @param ScheduledReportRun $run The run, with its export and filename.
 	 *
 	 * @return \OCP\Files\Node|null The file it wrote, so the export run can name it. Without a file id
 	 *                              the sweep has nothing to delete and the retention is a label on a row.
 	 *
 	 * @throws RuntimeException When the delivery folder is rejected or the user folder is unavailable.
 	 */
-	private function deliverToFiles(ScheduledReport $report, \OCP\IUser $owner, string $filename, string $bytes): ?\OCP\Files\Node {
+	private function deliverToFiles(ScheduledReportRun $run): ?\OCP\Files\Node {
+		$filename = $run->filename;
 		try {
-			$userFolder = $this->rootFolder->getUserFolder(userId: $owner->getUID());
+			$userFolder = $this->rootFolder->getUserFolder(userId: $run->owner->getUID());
 		} catch (NotFoundException $e) {
 			throw new RuntimeException('Owner Nextcloud Files folder unavailable: ' . $e->getMessage());
 		}
 
-		$folderPath = trim((string)($report->getDeliveryFolder() ?? 'Reports/'), '/');
+		$folderPath = trim((string)($run->report->getDeliveryFolder() ?? 'Reports/'), '/');
 		if ($folderPath === '') {
 			$folderPath = 'Reports';
 		}
@@ -969,7 +953,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 		$folder = $userFolder->get(path: $folderPath);
 		if ($folder->nodeExists(path: $filename) === true) {
 			$existing = $folder->get(path: $filename);
-			$existing->putContent(data: $bytes);
+			$existing->putContent(data: $run->bytes());
 
 			// The node is RETURNED rather than discarded so the run can name
 			// the file it produced. Without a file id the sweep has nothing to
@@ -977,7 +961,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 			return $existing;
 		}
 
-		return $folder->newFile(path: $filename, content: $bytes);
+		return $folder->newFile(path: $filename, content: $run->bytes());
 	}//end deliverToFiles()
 
 	/**
@@ -988,36 +972,33 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 * out there either way, and a swallowed record is a gap in the area rather
 	 * than a lost delivery. The gap is logged.
 	 *
-	 * @param ScheduledReport $report The report.
-	 * @param \OCP\IUser $owner The owner the run was made for.
-	 * @param string $filename The delivery filename.
-	 * @param array $export The rendered export, with its row count.
-	 * @param mixed $file The produced node, or null when nothing was written.
+	 * @param ScheduledReportRun $run The run, with its export and the file it wrote, if any.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md
 	 */
-	private function recordRun(ScheduledReport $report, \OCP\IUser $owner, string $filename, array $export, $file): void {
+	private function recordRun(ScheduledReportRun $run): void {
 		if ($this->exportRuns === null) {
 			return;
 		}
 
+		$report = $run->report;
 		$fileId = null;
 		$filePath = null;
-		if ($file instanceof \OCP\Files\Node) {
-			$fileId = $file->getId();
-			$filePath = $file->getPath();
+		if ($run->file !== null) {
+			$fileId = $run->file->getId();
+			$filePath = $run->file->getPath();
 		}
 
 		try {
 			$this->exportRuns->record(
 				source: 'scheduled-report',
-				actor: $owner->getUID(),
+				actor: $run->owner->getUID(),
 				format: (string)($report->getFormat() ?? 'csv'),
-				rowCount: (int)($export['rowCount'] ?? 0),
+				rowCount: (int)($run->export['rowCount'] ?? 0),
 				profile: (string)($report->getName() ?? ('report-' . (string)$report->getId())),
-				filename: $filename,
+				filename: $run->filename,
 				registerName: $this->nullableString(value: $report->getRegisterId()),
 				schemaName: $this->nullableString(value: $report->getSchemaId()),
 				fileId: $fileId,
@@ -1088,87 +1069,108 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 * whether the Files leg already succeeded, whether this is a hard
 	 * failure or an isolated `email_failed` detail.
 	 *
-	 * @param ScheduledReport $report The report.
-	 * @param \OCP\IUser $owner The owner (recipient default + display name).
-	 * @param string $filename The delivery filename.
-	 * @param string $bytes The rendered export bytes.
-	 * @param int $rowCount The best-effort exported row count, for the email body.
-	 * @param bool $alreadyDelivered Whether the Files leg already ran this pass (mode `both`).
+	 * @param ScheduledReportRun $run The run; its Files leg already ran when `delivered` is set (mode `both`).
 	 *
 	 * @return string|null The failure reason, or null on success.
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	private function deliverToEmail(
-		ScheduledReport $report,
-		\OCP\IUser $owner,
-		string $filename,
-		string $bytes,
-		int $rowCount,
-		bool $alreadyDelivered,
-	): ?string {
-		$recipients = $this->resolveRecipients(report: $report, owner: $owner);
+	private function deliverToEmail(ScheduledReportRun $run): ?string {
+		$recipients = $this->resolveRecipients(report: $run->report, owner: $run->owner);
 		if (count($recipients) === 0) {
 			return 'No valid recipient email address available (no recipients configured and the owner has no email on file).';
 		}
 
-		$oversize = (strlen($bytes) > self::MAX_EMAIL_ATTACHMENT_BYTES);
-
-		if ($oversize === true && $alreadyDelivered === false) {
+		if ($this->isOversize(run: $run) === true && $run->delivered === false) {
 			try {
-				$this->deliverToFiles(report: $report, owner: $owner, filename: $filename, bytes: $bytes);
+				$this->deliverToFiles(run: $run);
 			} catch (\Throwable $e) {
 				return 'Export exceeds the email attachment size limit and the Files fallback failed: ' . $e->getMessage();
 			}
 		}
 
 		try {
-			$subject = sprintf('Scheduled report "%s"', $report->getName());
-
-			$bodyLines = $this->buildEmailBodyLines(report: $report, rowCount: $rowCount);
-			if ($oversize === true) {
-				$bodyLines[] = sprintf(
-					'The export (%s) exceeds the %dMB email attachment limit and was not attached. '
-					. 'It has been saved to your Nextcloud Files at %s%s instead.',
-					$this->humanFileSize(bytes: strlen($bytes)),
-					(int)(self::MAX_EMAIL_ATTACHMENT_BYTES / 1024 / 1024),
-					trim((string)($report->getDeliveryFolder() ?? 'Reports/'), '/'),
-					'/' . $filename
-				);
-			}
-
-			$emailTemplate = $this->mailer->createEMailTemplate('openregister.scheduledReportDelivery', []);
-			$emailTemplate->setSubject($subject);
-			$emailTemplate->addHeader();
-			$emailTemplate->addHeading($report->getName());
-			foreach ($bodyLines as $line) {
-				$emailTemplate->addBodyText($line);
-			}
-
-			$emailTemplate->addFooter();
-
-			$message = $this->mailer->createMessage();
-			$message->setTo($recipients);
-			$message->setSubject($subject);
-			$message->useTemplate($emailTemplate);
-			$message->setFrom($this->resolveFromAddress());
-
-			if ($oversize === false) {
-				$attachment = $this->mailer->createAttachment(
-					$bytes,
-					$filename,
-					$this->mimeTypeFor(format: $report->getFormat())
-				);
-				$message->attach($attachment);
-			}
-
-			$this->mailer->send($message);
+			$this->mailer->send($this->composeEmail(run: $run, recipients: $recipients));
 		} catch (\Throwable $e) {
 			return 'Email delivery failed: ' . $e->getMessage();
-		}//end try
+		}
 
 		return null;
 	}//end deliverToEmail()
+
+	/**
+	 * Whether the export is too large to attach to an email.
+	 *
+	 * @param ScheduledReportRun $run The run.
+	 *
+	 * @return bool
+	 */
+	private function isOversize(ScheduledReportRun $run): bool {
+		return (strlen($run->bytes()) > self::MAX_EMAIL_ATTACHMENT_BYTES);
+	}//end isOversize()
+
+	/**
+	 * The delivery email for a run: subject, body and, when it fits, the export attached.
+	 *
+	 * @param ScheduledReportRun   $run        The run.
+	 * @param array<string,string> $recipients Email address => display name.
+	 *
+	 * @return \OCP\Mail\IMessage The message, ready to send.
+	 */
+	private function composeEmail(ScheduledReportRun $run, array $recipients): \OCP\Mail\IMessage {
+		$report = $run->report;
+		$subject = sprintf('Scheduled report "%s"', $report->getName());
+
+		$emailTemplate = $this->mailer->createEMailTemplate('openregister.scheduledReportDelivery', []);
+		$emailTemplate->setSubject($subject);
+		$emailTemplate->addHeader();
+		$emailTemplate->addHeading($report->getName());
+		foreach ($this->emailBodyLines(run: $run) as $line) {
+			$emailTemplate->addBodyText($line);
+		}
+
+		$emailTemplate->addFooter();
+
+		$message = $this->mailer->createMessage();
+		$message->setTo($recipients);
+		$message->setSubject($subject);
+		$message->useTemplate($emailTemplate);
+		$message->setFrom($this->resolveFromAddress());
+
+		if ($this->isOversize(run: $run) === false) {
+			$attachment = $this->mailer->createAttachment(
+				$run->bytes(),
+				$run->filename,
+				$this->mimeTypeFor(format: $report->getFormat())
+			);
+			$message->attach($attachment);
+		}
+
+		return $message;
+	}//end composeEmail()
+
+	/**
+	 * The email body lines, with a note on where an oversize export was saved instead.
+	 *
+	 * @param ScheduledReportRun $run The run.
+	 *
+	 * @return array<int,string>
+	 */
+	private function emailBodyLines(ScheduledReportRun $run): array {
+		$bodyLines = $this->buildEmailBodyLines(report: $run->report, rowCount: $run->export['rowCount']);
+		if ($this->isOversize(run: $run) === true) {
+			$bodyLines[] = sprintf(
+				'The export (%s) exceeds the %dMB email attachment limit and was not attached. '
+				. 'It has been saved to your Nextcloud Files at %s%s instead.',
+				$this->humanFileSize(bytes: strlen($run->bytes())),
+				(int)(self::MAX_EMAIL_ATTACHMENT_BYTES / 1024 / 1024),
+				trim((string)($run->report->getDeliveryFolder() ?? 'Reports/'), '/'),
+				'/' . $run->filename
+			);
+		}
+
+		return $bodyLines;
+	}//end emailBodyLines()
 
 	/**
 	 * Resolve the email recipients for a report: the explicitly configured

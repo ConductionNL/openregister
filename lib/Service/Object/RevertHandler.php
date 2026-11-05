@@ -23,7 +23,7 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -74,9 +74,9 @@ class RevertHandler {
 	/**
 	 * Object entity mapper
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface
 	 */
-	private MagicMapper $objectEntityMapper;
+	private MagicMapperInterface $objectEntityMapper;
 
 	/**
 	 * Permission handler for RBAC enforcement
@@ -88,9 +88,9 @@ class RevertHandler {
 	/**
 	 * Validator the save path uses, so a revert meets the same schema.
 	 *
-	 * @var ValidateObject
+	 * @var ValidateObjectInterface
 	 */
-	private ValidateObject $validateHandler;
+	private ValidateObjectInterface $validateHandler;
 
 	/**
 	 * RevertHandler constructor.
@@ -98,17 +98,17 @@ class RevertHandler {
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper.
 	 * @param ContainerInterface $container DI container.
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher.
-	 * @param MagicMapper $objectEntityMapper Object entity mapper.
+	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper.
 	 * @param PermissionHandler $permissionHandler Permission handler for RBAC.
-	 * @param ValidateObject $validateHandler Schema validator of the save path.
+	 * @param ValidateObjectInterface $validateHandler Schema validator of the save path.
 	 */
 	public function __construct(
 		AuditTrailMapperInterface $auditTrailMapper,
 		ContainerInterface $container,
 		IEventDispatcher $eventDispatcher,
-		MagicMapper $objectEntityMapper,
+		MagicMapperInterface $objectEntityMapper,
 		PermissionHandler $permissionHandler,
-		ValidateObject $validateHandler,
+		ValidateObjectInterface $validateHandler,
 	) {
 		$this->auditTrailMapper = $auditTrailMapper;
 		$this->container = $container;

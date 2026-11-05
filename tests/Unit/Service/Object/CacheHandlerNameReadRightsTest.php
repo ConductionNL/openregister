@@ -180,7 +180,7 @@ class CacheHandlerNameReadRightsTest extends TestCase {
 		$container = $this->createMock(IAppContainer::class);
 		$container->method('get')->willReturnCallback(
 			fn (string $class) => match ($class) {
-				MagicMapper::class => $this->objectMapper,
+				\OCA\OpenRegister\Db\MagicMapperInterface::class => $this->objectMapper,
 				default => $this->createMock($class),
 			}
 		);
