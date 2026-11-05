@@ -72,4 +72,8 @@ export default {
 		color: var(--color-text-maxcontrast);
 	}
 }
+
+.form-group {
+	margin-bottom: 20px;
+}
 </style>

@@ -58,6 +58,8 @@ export default {
 
 <style scoped lang="scss">
 .form-group {
+	margin-bottom: 20px;
+
 	label {
 		display: block;
 		margin-bottom: 8px;
