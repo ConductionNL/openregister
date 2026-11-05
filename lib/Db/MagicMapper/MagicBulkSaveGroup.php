@@ -53,7 +53,7 @@ final class MagicBulkSaveGroup {
 	 */
 	public function __construct(
 		public readonly array $insertObjects,
-		public readonly bool $needsPreUpdateState,
+		public readonly bool $needsPreUpdateState = true,
 	) {
 	}//end __construct()
 }//end class
