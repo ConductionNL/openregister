@@ -45,6 +45,7 @@ use Psr\Log\LoggerInterface;
 class AnalyticsProvider extends AbstractIntegrationProvider {
 
 	use NcAppLinkTableProvider;
+	use MarkerSourceFallback;
 	use MarkerLookupTrait;
 
 	private const REQUIRED_APP = 'analytics';

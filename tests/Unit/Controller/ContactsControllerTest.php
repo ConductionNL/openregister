@@ -244,6 +244,18 @@ class ContactsControllerTest extends TestCase {
 	}
 
 	/**
+	 * An object without a uuid has no links to remove: both destroy paths answer 404 and remove nothing.
+	 */
+	public function testDestroyOnAnObjectWithoutAUuidRemovesNothing(): void {
+		$this->objectService->method('getObject')->willReturn(new \OCA\OpenRegister\Db\ObjectEntity());
+		$this->contactService->expects($this->never())->method('unlinkContact');
+		$this->personLinks->expects($this->never())->method('unlink');
+
+		$this->assertSame(404, $this->controller->destroy('reg', 'sch', 'oid', '42')->getStatus());
+		$this->assertSame(404, $this->controller->destroy('reg', 'sch', 'oid', 'jan-uid')->getStatus());
+	}
+
+	/**
 	 * Tier-2: createNew rejects payloads carrying a contactUri (link
 	 * shape) with a 400.
 	 */

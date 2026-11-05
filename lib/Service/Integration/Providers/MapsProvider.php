@@ -44,6 +44,7 @@ use Psr\Log\LoggerInterface;
 class MapsProvider extends AbstractIntegrationProvider {
 
 	use NcAppLinkTableProvider;
+	use MarkerSourceFallback;
 	use MarkerLookupTrait;
 
 	private const REQUIRED_APP = 'maps';

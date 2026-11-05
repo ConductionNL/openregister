@@ -29,44 +29,13 @@ use Throwable;
  * provider's own fallback when the object has no links.
  *
  * The using provider declares `REQUIRED_APP`, provides `$this->appManager`
- * (IAppManager) and `$this->db` (IDBConnection), uses MarkerLookupTrait, declares
- * `MARKER_PREFIX` and `MARKER_SOURCE`, and implements `linkMapper()` and
- * `rowFromLink(link: ...)`.
+ * (IAppManager), and implements `linkMapper()`, `rowFromLink(link: ...)` and
+ * `unlinkedRows()` (MarkerSourceFallback implements the common marker scan).
+ * A provider that builds all link rows at once overrides `rowsFromLinks()`.
  */
 trait NcAppLinkTableProvider {
 
-	/**
-	 * Nextcloud app that must be installed for this integration to function.
-	 *
-	 * @return string|null
-	 *
-	 * @spec exclude Provider descriptor shared by the link-table providers; each provider spec owns the values.
-	 */
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	/**
-	 * Storage strategy (AD-22): links live in an OpenRegister link table.
-	 *
-	 * @return string
-	 *
-	 * @spec exclude Provider descriptor shared by the link-table providers; each provider spec owns the values.
-	 */
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
-
-	/**
-	 * Whether the backing app is installed.
-	 *
-	 * @return bool
-	 *
-	 * @spec exclude Provider descriptor shared by the link-table providers; each provider spec owns the values.
-	 */
-	public function isEnabled(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
-	}//end isEnabled()
+	use LinkTableAppDescriptor;
 
 	/**
 	 * The rows linked to an object: from the link table, else the provider's fallback.
@@ -83,17 +52,40 @@ trait NcAppLinkTableProvider {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The IntegrationProvider contract fixes the signature.
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		return $this->objectRows(objectId: $objectId);
+	}//end list()
+
+	/**
+	 * The rows linked to an object: none when the app is missing, else the link
+	 * table's rows, else the provider's fallback.
+	 *
+	 * @param string $objectId Object uuid.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	protected function objectRows(string $objectId): array {
 		if ($this->isEnabled() === false) {
 			return [];
 		}
 
 		$links = $this->linkedRows(objectId: $objectId);
 		if (count($links) > 0) {
-			return array_map(fn (object $link): array => $this->rowFromLink(link: $link), $links);
+			return $this->rowsFromLinks(links: $links);
 		}
 
 		return $this->unlinkedRows(objectId: $objectId);
-	}//end list()
+	}//end objectRows()
+
+	/**
+	 * The leaf rows of an object's link rows, one per link.
+	 *
+	 * @param array<int,object> $links The link entities.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	protected function rowsFromLinks(array $links): array {
+		return array_map(fn (object $link): array => $this->rowFromLink(link: $link), $links);
+	}//end rowsFromLinks()
 
 	/**
 	 * The object's link rows; none when the link table cannot be read.
@@ -102,7 +94,7 @@ trait NcAppLinkTableProvider {
 	 *
 	 * @return array<int,object> The link entities.
 	 */
-	private function linkedRows(string $objectId): array {
+	protected function linkedRows(string $objectId): array {
 		try {
 			return $this->linkMapper()->findByObjectUuid($objectId);
 		} catch (Throwable $e) {
@@ -111,38 +103,11 @@ trait NcAppLinkTableProvider {
 	}//end linkedRows()
 
 	/**
-	 * Backwards-compatible fallback for an object without links: the rows that
-	 * carry the legacy `[or:{uuid}]` marker in the app's own table.
+	 * The rows of an object without links.
 	 *
 	 * @param string $objectId Object uuid.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 */
-	private function unlinkedRows(string $objectId): array {
-		$source = self::MARKER_SOURCE;
-		$rows = $this->findByMarker(
-			db: $this->db,
-			table: $source['table'],
-			markerColumn: $source['column'],
-			marker: self::MARKER_PREFIX . $objectId . ']',
-			extraColumns: $source['extra'],
-			idColumn: $source['id'],
-		);
-
-		return array_map(fn (array $row): array => $this->rowFromMarker(row: $row), $rows);
-	}//end unlinkedRows()
-
-	/**
-	 * One marker-scan row in the registry leaf-row shape.
-	 *
-	 * @param array<string,mixed> $row The scanned row.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function rowFromMarker(array $row): array {
-		$source = self::MARKER_SOURCE;
-		$id = (string)($row[$source['id']] ?? '');
-
-		return ['id' => $id, 'title' => (string)($row[$source['column']] ?? ''), 'url' => $source['url'] . $id, 'data' => $row];
-	}//end rowFromMarker()
+	abstract protected function unlinkedRows(string $objectId): array;
 }//end trait
