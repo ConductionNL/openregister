@@ -473,7 +473,7 @@ class FileTextController extends Controller {
 			}
 
 			// The anonymizeDocument call marks the relation rows itself, so this controller MUST NOT
-			// call markAsAnonymized (a second UPDATE would overwrite anonymized_value).
+			// mark them again (a second UPDATE would overwrite anonymized_value).
 			$anonymizedFile = $this->fileService->anonymizeDocument(
 				node: $fileNode,
 				entities: $entities,

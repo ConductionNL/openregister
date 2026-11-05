@@ -213,7 +213,7 @@ class EntityRelation extends Entity implements JsonSerializable {
 	/**
 	 * Operator decision: skip this occurrence from the anonymise pass.
 	 *
-	 * When `true`, `EntityRelationMapper::markAsAnonymized` excludes this row
+	 * When `true`, `EntityRelationMapper::markAsAnonymizedWithPlaceholders` excludes this row
 	 * from the file-scoped flip, the redaction text-replacement skips it, and
 	 * the row retains `anonymized = false`. Set via the same audited
 	 * `updateDecisionMetadata` write path as `bases`.

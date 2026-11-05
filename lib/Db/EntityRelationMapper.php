@@ -377,30 +377,6 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	}//end findEntityIdsByValueForFiles()
 
 	/**
-	 * Mark entity relations as anonymized.
-	 *
-	 * Skip-aware: rows where `skip_anonymization = true` are excluded
-	 * (those reflect an operator decision NOT to redact the occurrence).
-	 * Per the `entity-relation-grondslagen` change, skipped rows retain
-	 * `anonymized = false` after the file's anonymise pass.
-	 *
-	 * @param int $fileId The file ID.
-	 * @param string $anonymizedValue The placeholder value used.
-	 *
-	 * @return int Number of relations updated.
-	 */
-	public function markAsAnonymized(int $fileId, string $anonymizedValue): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->update($this->getTableName())
-			->set('anonymized', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL))
-			->set('anonymized_value', $qb->createNamedParameter($anonymizedValue))
-			->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('skip_anonymization', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
-
-		return $qb->executeStatement();
-	}//end markAsAnonymized()
-
-	/**
 	 * Probe whether a relation already exists at a specific position
 	 * for a (file, entity) pair.
 	 *
