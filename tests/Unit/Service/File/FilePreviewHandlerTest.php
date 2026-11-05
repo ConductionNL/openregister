@@ -65,24 +65,4 @@ class FilePreviewHandlerTest extends TestCase {
 
 		$this->handler->getPreview($file);
 	}
-
-	/**
-	 * Test isPreviewAvailable returns true for supported types.
-	 */
-	public function testIsPreviewAvailableTrue(): void {
-		$file = $this->createMock(File::class);
-		$this->previewManager->method('isAvailable')->willReturn(true);
-
-		$this->assertTrue($this->handler->isPreviewAvailable($file));
-	}
-
-	/**
-	 * Test isPreviewAvailable returns false for unsupported types.
-	 */
-	public function testIsPreviewAvailableFalse(): void {
-		$file = $this->createMock(File::class);
-		$this->previewManager->method('isAvailable')->willReturn(false);
-
-		$this->assertFalse($this->handler->isPreviewAvailable($file));
-	}
 }

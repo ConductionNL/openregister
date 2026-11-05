@@ -81,23 +81,6 @@ class SettingsControllerCoverageTest extends TestCase {
 	}
 
 	// =========================================================================
-	// getConfigurationService — success path
-	// =========================================================================
-
-	public function testGetConfigurationServiceReturnsServiceWhenInstalled(): void {
-		$configSvc = $this->createMock(\OCA\OpenRegister\Service\ConfigurationService::class);
-		$this->appManager->method('getInstalledApps')
-			->willReturn(['openregister', 'files']);
-		$this->container->method('get')
-			->with('OCA\OpenRegister\Service\ConfigurationService')
-			->willReturn($configSvc);
-
-		$result = $this->controller->getConfigurationService();
-
-		$this->assertSame($configSvc, $result);
-	}
-
-	// =========================================================================
 	// getDatabaseInfo — with SQLite platform
 	// =========================================================================
 

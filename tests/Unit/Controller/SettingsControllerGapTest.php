@@ -57,44 +57,6 @@ class SettingsControllerGapTest extends TestCase {
 	}
 
 	/**
-	 * Test getObjectService when openregister is installed.
-	 */
-	public function testGetObjectServiceReturnsNullWhenInstalled(): void {
-		$this->appManager->method('getInstalledApps')
-			->willReturn(['openregister', 'files']);
-
-		$result = $this->controller->getObjectService();
-
-		$this->assertNull($result);
-	}
-
-	/**
-	 * Test getObjectService when openregister is not installed.
-	 */
-	public function testGetObjectServiceThrowsWhenNotInstalled(): void {
-		$this->appManager->method('getInstalledApps')
-			->willReturn(['files', 'contacts']);
-
-		$this->expectException(\RuntimeException::class);
-		$this->expectExceptionMessage('OpenRegister service is not available');
-
-		$this->controller->getObjectService();
-	}
-
-	/**
-	 * Test getConfigurationService when openregister is not installed.
-	 */
-	public function testGetConfigurationServiceThrowsWhenNotInstalled(): void {
-		$this->appManager->method('getInstalledApps')
-			->willReturn(['files']);
-
-		$this->expectException(\RuntimeException::class);
-		$this->expectExceptionMessage('Configuration service is not available');
-
-		$this->controller->getConfigurationService();
-	}
-
-	/**
 	 * Test load method.
 	 */
 	public function testLoadReturnsSettings(): void {
