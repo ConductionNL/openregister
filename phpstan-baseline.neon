@@ -2324,16 +2324,6 @@ parameters:
 			path: lib/Db/ConversationMapper.php
 
 		-
-			message: "#^Missing parameter \\$entity \\(OCP\\\\AppFramework\\\\Db\\\\Entity\\) in call to method OCA\\\\OpenRegister\\\\Db\\\\DestructionListMapper\\:\\:update\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/DestructionListMapper.php
-
-		-
-			message: "#^Unknown parameter \\$objectId in call to method OCA\\\\OpenRegister\\\\Db\\\\DestructionListMapper\\:\\:update\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/DestructionListMapper.php
-
-		-
 			message: "#^Unknown PHPDoc tag\\: @phpstan\\-api$#"
 			count: 1
 			path: lib/Db/EndpointLog.php
@@ -2899,16 +2889,6 @@ parameters:
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\SearchTrailMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\SearchTrail\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\SearchTrail\\>\\.$#"
 			count: 1
 			path: lib/Db/SearchTrailMapper.php
-
-		-
-			message: "#^Missing parameter \\$entity \\(OCP\\\\AppFramework\\\\Db\\\\Entity\\) in call to method OCA\\\\OpenRegister\\\\Db\\\\SelectionListMapper\\:\\:update\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/SelectionListMapper.php
-
-		-
-			message: "#^Unknown parameter \\$objectId in call to method OCA\\\\OpenRegister\\\\Db\\\\SelectionListMapper\\:\\:update\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/SelectionListMapper.php
 
 		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getOrganisation\\(\\)\\.$#"
