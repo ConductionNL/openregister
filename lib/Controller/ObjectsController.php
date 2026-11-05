@@ -70,6 +70,7 @@ use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
+use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
@@ -3171,7 +3172,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The object ID
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectOperationsInterface $objectService The object service
+	 * @param ObjectService $objectService The object service
 	 *
 	 * @NoAdminRequired
 	 *
@@ -3193,7 +3194,7 @@ class ObjectsController extends Controller {
 		string $id,
 		string $register,
 		string $schema,
-		ObjectOperationsInterface $objectService,
+		ObjectService $objectService,
 	): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.show.in');
 
@@ -3518,7 +3519,7 @@ class ObjectsController extends Controller {
 	 * @param array $renderedData The rendered record.
 	 * @param Schema|null $schema The schema, when it resolved.
 	 * @param ObjectEntity|null $object The row.
-	 * @param ObjectOperationsInterface $objectService The service holding the resolver.
+	 * @param ObjectService $objectService The service holding the resolver.
 	 *
 	 * @return array The record, with its actions when they could be resolved.
 	 *
@@ -3528,7 +3529,7 @@ class ObjectsController extends Controller {
 		array $renderedData,
 		?Schema $schema,
 		?ObjectEntity $object,
-		ObjectOperationsInterface $objectService,
+		ObjectService $objectService,
 	): array {
 		if ($schema === null || $object === null || isset($renderedData['@self']) === false) {
 			return $renderedData;
@@ -4603,7 +4604,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID/UUID of the object to delete
 	 * @param string $register The register ID
 	 * @param string $schema The schema ID
-	 * @param ObjectOperationsInterface $objectService The object service
+	 * @param ObjectService $objectService The object service
 	 *
 	 * @return JSONResponse JSON response with success or error.
 	 *
@@ -4617,7 +4618,7 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
-	public function destroy(string $id, string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
+	public function destroy(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.destroy.in');
 
 		try {
@@ -4746,7 +4747,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID/UUID of the object to check
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectOperationsInterface $objectService The object service
+	 * @param ObjectService $objectService The object service
 	 *
 	 * @return JSONResponse JSON response with DeletionAnalysis
 	 *
@@ -4759,7 +4760,7 @@ class ObjectsController extends Controller {
 		string $id,
 		string $register,
 		string $schema,
-		ObjectOperationsInterface $objectService,
+		ObjectService $objectService,
 	): JSONResponse {
 		try {
 			$objectService->setRegister(register: $register);
