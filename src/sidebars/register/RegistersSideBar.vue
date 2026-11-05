@@ -333,7 +333,6 @@ export default {
 				return total + (register.schemas?.length || 0)
 			}, 0)
 		},
-
 	},
 
 	methods: {
