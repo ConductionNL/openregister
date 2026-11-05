@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\PortalTaskControllerServices;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Exception\PortalSubjectException;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
@@ -79,30 +80,66 @@ use Throwable;
 class PortalTaskController extends Controller {
 
 	/**
+	 * Verifies the acting subject.
+	 *
+	 * @var PortalSubjectAssertion
+	 */
+	private readonly PortalSubjectAssertion $assertion;
+
+	/**
+	 * The subject-scoped read and completion.
+	 *
+	 * @var PortalTaskService
+	 */
+	private readonly PortalTaskService $portal;
+
+	/**
+	 * The delivery ledger.
+	 *
+	 * @var PortalTaskDeliveryService
+	 */
+	private readonly PortalTaskDeliveryService $delivery;
+
+	/**
+	 * Names the operator on the delivery routes.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Decides administrator status;
+	 *
+	 * @var ?IGroupManager
+	 */
+	private readonly ?IGroupManager $groupManager;
+
+	/**
+	 * Where an unexpected failure's detail
+	 *
+	 * @var ?LoggerInterface
+	 */
+	private readonly ?LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param PortalSubjectAssertion $assertion Verifies the acting subject.
-	 * @param PortalTaskService $portal The subject-scoped read and completion.
-	 * @param PortalTaskDeliveryService $delivery The delivery ledger.
-	 * @param IUserSession $userSession Names the operator on the delivery routes.
-	 * @param IGroupManager|null $groupManager Decides administrator status;
-	 *                                         absent, nobody is one.
-	 * @param LoggerInterface|null $logger Where an unexpected failure's detail
-	 *                                     goes, INSTEAD of the response.
+	 * @param PortalTaskControllerServices $services The portal task controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly PortalSubjectAssertion $assertion,
-		private readonly PortalTaskService $portal,
-		private readonly PortalTaskDeliveryService $delivery,
-		private readonly IUserSession $userSession,
-		private readonly ?IGroupManager $groupManager = null,
-		private readonly ?LoggerInterface $logger = null,
+		PortalTaskControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->assertion = $services->domain->assertion;
+		$this->portal = $services->domain->portal;
+		$this->delivery = $services->domain->delivery;
+		$this->userSession = $services->domain->userSession;
+		$this->groupManager = $services->platform->groupManager;
+		$this->logger = $services->platform->logger;
 
 	}//end __construct()
 

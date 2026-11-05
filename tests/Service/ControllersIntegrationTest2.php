@@ -20,6 +20,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Service;
 
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ApiTokenSettingsControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\LlmSettingsControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\BulkControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ChatControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
@@ -1824,7 +1826,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return WebhooksController
 	 */
 	private function buildWebhooksController(): WebhooksController {
-		return new WebhooksController(
+		return WebhooksControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(WebhookMapper::class),
@@ -1980,7 +1982,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return LlmSettingsController
 	 */
 	private function buildLlmSettingsController(): LlmSettingsController {
-		return new LlmSettingsController(
+		return LlmSettingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->db,
