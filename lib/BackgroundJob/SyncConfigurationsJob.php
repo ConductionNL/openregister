@@ -46,48 +46,12 @@ use Psr\Log\LoggerInterface;
  * @psalm-suppress UnusedClass
  */
 class SyncConfigurationsJob extends TimedJob {
-
 	/**
-	 * Configuration mapper instance.
+	 * How often, in seconds, the job checks which configurations are due.
 	 *
-	 * @var ConfigurationMapper The configuration mapper instance.
+	 * @var int
 	 */
-	private ConfigurationMapper $configurationMapper;
-
-	/**
-	 * Configuration service instance.
-	 *
-	 * @var ConfigurationServiceInterface The configuration service instance.
-	 */
-	private ConfigurationServiceInterface $configurationService;
-
-	/**
-	 * GitHub service instance.
-	 *
-	 * @var GitHubClientInterface The GitHub service instance.
-	 */
-	private GitHubClientInterface $githubService;
-
-	/**
-	 * GitLab service instance.
-	 *
-	 * @var GitLabHandler The GitLab service instance.
-	 */
-	private GitLabHandler $gitlabService;
-
-	/**
-	 * HTTP client instance.
-	 *
-	 * @var Client The HTTP client instance.
-	 */
-	private Client $httpClient;
-
-	/**
-	 * Logger instance.
-	 *
-	 * @var LoggerInterface The logger instance.
-	 */
-	private LoggerInterface $logger;
+	private const SYNC_CHECK_INTERVAL = 3600;
 
 	/**
 	 * Constructor
@@ -104,24 +68,15 @@ class SyncConfigurationsJob extends TimedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		ConfigurationMapper $configurationMapper,
-		ConfigurationServiceInterface $configurationService,
-		GitHubClientInterface $githubService,
-		GitLabHandler $gitlabService,
-		Client $httpClient,
-		LoggerInterface $logger,
+		private readonly ConfigurationMapper $configurationMapper,
+		private readonly ConfigurationServiceInterface $configurationService,
+		private readonly GitHubClientInterface $githubService,
+		private readonly GitLabHandler $gitlabService,
+		private readonly Client $httpClient,
+		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
-
-		$this->configurationMapper = $configurationMapper;
-		$this->configurationService = $configurationService;
-		$this->githubService = $githubService;
-		$this->gitlabService = $gitlabService;
-		$this->httpClient = $httpClient;
-		$this->logger = $logger;
-
-		// Run every hour (3600 seconds).
-		$this->setInterval(seconds: 3600);
+		$this->setInterval(seconds: self::SYNC_CHECK_INTERVAL);
 	}//end __construct()
 
 	/**
