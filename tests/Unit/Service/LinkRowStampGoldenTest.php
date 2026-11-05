@@ -25,6 +25,8 @@ use OCA\OpenRegister\Db\MapLinkMapper;
 use OCA\OpenRegister\Db\PhotoLinkMapper;
 use OCA\OpenRegister\Db\PollLinkMapper;
 use OCA\OpenRegister\Service\BookmarkLinkService;
+use OCA\OpenRegister\Service\BookmarkDraft;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Service\CospendLinkService;
 use OCA\OpenRegister\Service\DeckLinkService;
 use OCA\OpenRegister\Service\MapLinkService;
@@ -78,6 +80,7 @@ if (class_exists('OCA\\Bookmarks\\Db\\Bookmark') === false) {
  * @uses   \OCA\OpenRegister\Db\CospendLink
  * @uses   \OCA\OpenRegister\Db\PhotoLink
  * @uses   \OCA\OpenRegister\AppInfo\ClassAliasMap
+ * @uses \OCA\OpenRegister\Service\BookmarkDraft
  */
 class LinkRowStampGoldenTest extends TestCase {
 
@@ -135,7 +138,7 @@ class LinkRowStampGoldenTest extends TestCase {
 			$this->container(['OCA\\Deck\\Service\\CardService' => $cards, 'OCA\\Deck\\Db\\CardMapper' => $cardMapper])
 		);
 
-		$this->assertGolden(fn () => $this->entityFields($service->linkCard('obj-1', 3, $schemaId, 21)));
+		$this->assertGolden(fn () => $this->entityFields($service->linkCard((new LinkTarget('obj-1', 3))->inSchema($schemaId), 21)));
 	}//end testLinkCardGolden()
 
 	/**
@@ -162,7 +165,7 @@ class LinkRowStampGoldenTest extends TestCase {
 			$this->createMock(LoggerInterface::class)
 		);
 
-		$this->assertGolden(fn () => $this->entityFields($service->linkPoi('obj-1', 3, $schemaId, 9)));
+		$this->assertGolden(fn () => $this->entityFields($service->linkPoi((new LinkTarget('obj-1', 3))->inSchema($schemaId), 9)));
 	}//end testLinkPoiGolden()
 
 	/**
@@ -184,7 +187,7 @@ class LinkRowStampGoldenTest extends TestCase {
 			$this->createMock(LoggerInterface::class)
 		);
 
-		$this->assertGolden(fn () => $this->entityFields($service->linkPoll('obj-1', 3, $schemaId, 5)));
+		$this->assertGolden(fn () => $this->entityFields($service->linkPoll((new LinkTarget('obj-1', 3))->inSchema($schemaId), 5)));
 	}//end testLinkPollGolden()
 
 	/**
@@ -212,7 +215,7 @@ class LinkRowStampGoldenTest extends TestCase {
 		};
 		$service = $this->bookmarkService($bookmark);
 
-		$this->assertGolden(fn () => $this->entityFields($service->linkBookmark('obj-1', 3, $schemaId, 8)));
+		$this->assertGolden(fn () => $this->entityFields($service->linkBookmark((new LinkTarget('obj-1', 3))->inSchema($schemaId), 8)));
 	}//end testLinkBookmarkGolden()
 
 	/**
@@ -228,7 +231,7 @@ class LinkRowStampGoldenTest extends TestCase {
 		$service = $this->bookmarkService(null);
 
 		$this->assertGolden(
-			fn () => $this->entityFields($service->createAndLinkBookmark('obj-1', 3, $schemaId, ' Docs ', ' https://x.nl ', null, ['a', 'or:x']))
+			fn () => $this->entityFields($service->createAndLinkBookmark((new LinkTarget('obj-1', 3))->inSchema($schemaId), (new BookmarkDraft(' Docs ', ' https://x.nl '))->withDetails(null, ['a', 'or:x'])))
 		);
 	}//end testCreateAndLinkBookmarkGolden()
 
@@ -275,9 +278,9 @@ class LinkRowStampGoldenTest extends TestCase {
 		$this->assertGolden(
 			fn () => $this->entityFields(
 				match ($flow) {
-					'project' => $service->linkProject('obj-1', 3, $schemaId, 'p-1'),
-					'bill' => $service->linkBill('obj-1', 3, $schemaId, 'p-1', 6),
-					default => $service->createAndLinkProject('obj-1', 3, $schemaId, 'Trip', ''),
+					'project' => $service->linkProject((new LinkTarget('obj-1', 3))->inSchema($schemaId), 'p-1'),
+					'bill' => $service->linkBill((new LinkTarget('obj-1', 3))->inSchema($schemaId), 'p-1', 6),
+					default => $service->createAndLinkProject((new LinkTarget('obj-1', 3))->inSchema($schemaId), 'Trip', ''),
 				}
 			)
 		);
@@ -335,8 +338,8 @@ class LinkRowStampGoldenTest extends TestCase {
 
 		$this->assertGolden(
 			fn () => [
-				'linked' => $this->entityFields($service->linkAlbum('obj-1', 3, $schemaId, 31)),
-				'created' => $this->entityFields($service->createAndLinkAlbum('obj-2', 3, $schemaId, ' Summer 2026 ')),
+				'linked' => $this->entityFields($service->linkAlbum((new LinkTarget('obj-1', 3))->inSchema($schemaId), 31)),
+				'created' => $this->entityFields($service->createAndLinkAlbum((new LinkTarget('obj-2', 3))->inSchema($schemaId), ' Summer 2026 ')),
 			]
 		);
 	}//end testPhotoLinkGolden()

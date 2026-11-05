@@ -102,9 +102,7 @@ class DeckLinkService {
 	 * Deck. Idempotent: a duplicate link raises a 409 Exception (callers
 	 * should surface as HTTP 409 to the UI).
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id (Tier-2 column).
+	 * @param LinkTarget $target The object to link to.
 	 * @param int $cardId Deck card id.
 	 *
 	 * @return DeckLink The persisted link row.
@@ -121,13 +119,13 @@ class DeckLinkService {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function linkCard(string $objectUuid, int $registerId, int $schemaId, int $cardId): DeckLink {
+	public function linkCard(LinkTarget $target, int $cardId): DeckLink {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
 
-		$existing = $this->deckLinkMapper->findByObjectAndCard($objectUuid, $cardId);
+		$existing = $this->deckLinkMapper->findByObjectAndCard($target->objectUuid, $cardId);
 		if ($existing !== null) {
 			throw new Exception('Card already linked to this object', 409);
 		}
@@ -182,9 +180,7 @@ class DeckLinkService {
 
 		$link->setLabels($labels);
 		$link->setAssignees($assignees);
-		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
-			->inSchema(schemaId: $schemaId)
-			->stamp(link: $link, linkedBy: $user->getUID());
+		$target->stamp(link: $link, linkedBy: $user->getUID());
 
 		return $this->deckLinkMapper->insert($link);
 	}//end linkCard()

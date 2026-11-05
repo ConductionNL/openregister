@@ -121,9 +121,7 @@ class PollLinksController extends Controller {
 				}
 
 				$link = $this->pollLinkService->linkPoll(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
+					$this->linkTargetOf(object: $object),
 					$pollId
 				);
 

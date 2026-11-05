@@ -151,9 +151,7 @@ class MapLinkService {
 	 * Idempotent: a duplicate link raises a 409 Exception. POI metadata
 	 * (name/category/lat/lng/comment) is cached at link time.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
+	 * @param LinkTarget $target The object to link to.
 	 * @param int $favoriteId NC Maps favorite id.
 	 *
 	 * @return MapLink The persisted link row.
@@ -163,14 +161,14 @@ class MapLinkService {
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the link-POI contract is owned by the integration-maps capability.
 	 */
-	public function linkPoi(string $objectUuid, int $registerId, int $schemaId, int $favoriteId): MapLink {
+	public function linkPoi(LinkTarget $target, int $favoriteId): MapLink {
 		$uid = $this->requireUid();
 
 		if ($this->isMapsAvailable() === false) {
 			throw new Exception('NC Maps is not available', 503);
 		}
 
-		$existing = $this->mapLinkMapper->findByObjectAndFavorite($objectUuid, $favoriteId);
+		$existing = $this->mapLinkMapper->findByObjectAndFavorite($target->objectUuid, $favoriteId);
 		if ($existing !== null) {
 			throw new Exception('POI already linked to this object', 409);
 		}
@@ -187,9 +185,7 @@ class MapLinkService {
 		$link->setLat($info['lat']);
 		$link->setLng($info['lng']);
 		$link->setComment($info['comment']);
-		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
-			->inSchema(schemaId: $schemaId)
-			->stamp(link: $link, linkedBy: $uid);
+		$target->stamp(link: $link, linkedBy: $uid);
 
 		return $this->mapLinkMapper->insert($link);
 	}//end linkPoi()

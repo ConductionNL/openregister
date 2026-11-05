@@ -152,9 +152,7 @@ class PhotoLinkService {
 	 * Idempotent: a duplicate link raises a 409 Exception. Album
 	 * metadata (name/cover/count/last_edited) is cached at link time.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
+	 * @param LinkTarget $target The object to link to.
 	 * @param int $albumId NC Photos album id.
 	 *
 	 * @return PhotoLink The persisted link row.
@@ -164,14 +162,14 @@ class PhotoLinkService {
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the link-album contract is owned by the integration-photos capability.
 	 */
-	public function linkAlbum(string $objectUuid, int $registerId, int $schemaId, int $albumId): PhotoLink {
+	public function linkAlbum(LinkTarget $target, int $albumId): PhotoLink {
 		$uid = $this->requireUid();
 
 		if ($this->isPhotosAvailable() === false) {
 			throw new Exception('NC Photos is not available', 503);
 		}
 
-		$existing = $this->photoLinkMapper->findByObjectAndAlbum($objectUuid, $albumId);
+		$existing = $this->photoLinkMapper->findByObjectAndAlbum($target->objectUuid, $albumId);
 		if ($existing !== null) {
 			throw new Exception('Album already linked to this object', 409);
 		}
@@ -187,9 +185,7 @@ class PhotoLinkService {
 		$link->setCoverPhotoUrl($info['coverPhotoUrl']);
 		$link->setPhotoCount($info['photoCount']);
 		$link->setLastEdited($info['lastEdited']);
-		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
-			->inSchema(schemaId: $schemaId)
-			->stamp(link: $link, linkedBy: $uid);
+		$target->stamp(link: $link, linkedBy: $uid);
 
 		return $this->photoLinkMapper->insert($link);
 	}//end linkAlbum()
@@ -197,9 +193,7 @@ class PhotoLinkService {
 	/**
 	 * Create a new NC Photos album and link it to an OR object.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
+	 * @param LinkTarget $target The object to link to.
 	 * @param string $name New album name.
 	 *
 	 * @return PhotoLink The persisted link row.
@@ -209,7 +203,7 @@ class PhotoLinkService {
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link-album contract is owned by the integration-photos capability.
 	 */
-	public function createAndLinkAlbum(string $objectUuid, int $registerId, int $schemaId, string $name): PhotoLink {
+	public function createAndLinkAlbum(LinkTarget $target, string $name): PhotoLink {
 		$uid = $this->requireUid();
 
 		$name = trim($name);
@@ -236,9 +230,7 @@ class PhotoLinkService {
 		$link->setCoverPhotoUrl(null);
 		$link->setPhotoCount(0);
 		$link->setLastEdited(new DateTime());
-		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
-			->inSchema(schemaId: $schemaId)
-			->stamp(link: $link, linkedBy: $uid);
+		$target->stamp(link: $link, linkedBy: $uid);
 
 		return $this->photoLinkMapper->insert($link);
 	}//end createAndLinkAlbum()

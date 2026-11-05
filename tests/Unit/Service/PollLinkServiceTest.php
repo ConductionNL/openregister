@@ -42,6 +42,7 @@ use Psr\Log\LoggerInterface;
  * PollLinkServiceTest.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @uses \OCA\OpenRegister\Service\LinkTarget
  */
 class PollLinkServiceTest extends TestCase {
 	private PollLinkMapper&MockObject $mapper;
@@ -97,7 +98,7 @@ class PollLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('No user logged in');
 
-		$this->service->linkPoll('abc-123', 1, 2, 5);
+		$this->service->linkPoll((new LinkTarget('abc-123', 1))->inSchema(2), 5);
 	}
 
 	public function testLinkPollThrowsOnDuplicate(): void {
@@ -109,7 +110,7 @@ class PollLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(409);
 		$this->expectExceptionMessage('Poll already linked to this object');
 
-		$this->service->linkPoll('abc-123', 1, 2, 5);
+		$this->service->linkPoll((new LinkTarget('abc-123', 1))->inSchema(2), 5);
 	}
 
 	public function testLinkPollThrowsWhenPollsUnavailable(): void {
@@ -121,7 +122,7 @@ class PollLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(503);
 		$this->expectExceptionMessage('Polls is not available');
 
-		$this->service->linkPoll('abc-123', 1, 2, 5);
+		$this->service->linkPoll((new LinkTarget('abc-123', 1))->inSchema(2), 5);
 	}
 
 	public function testUnlinkPollSucceeds(): void {
