@@ -143,17 +143,13 @@ class DeckProvider extends AbstractIntegrationProvider {
 	public function create(string $register, string $schema, string $objectId, array $payload): array {
 		$registerId = (int)($payload['registerId'] ?? $register);
 		$schemaId = (int)($payload['schemaId'] ?? $schema);
+		$target = (new LinkTarget(objectUuid: $objectId, registerId: $registerId))->inSchema(schemaId: $schemaId);
 
 		$hasCardId = (empty($payload['cardId']) === false);
 		$hasBoardData = (empty($payload['boardId']) === false && empty($payload['stackId']) === false);
 
 		if ($hasCardId === true) {
-			$link = $this->deckLinkService->linkCard(
-				$objectId,
-				$registerId,
-				$schemaId,
-				(int)$payload['cardId']
-			);
+			$link = $this->deckLinkService->linkCard(target: $target, cardId: (int)$payload['cardId']);
 
 			return $link->jsonSerialize();
 		}
@@ -170,7 +166,7 @@ class DeckProvider extends AbstractIntegrationProvider {
 			}
 
 			$link = $this->deckLinkService->createAndLinkCard(
-				target: (new LinkTarget(objectUuid: $objectId, registerId: $registerId))->inSchema(schemaId: $schemaId),
+				target: $target,
 				card: (new CardDraft(title: (string)($payload['title'] ?? 'Untitled'), stackId: (int)$payload['stackId']))
 					->onBoard(boardId: (int)$payload['boardId'])
 					->withDetails(description: $description, duedate: $duedate)
