@@ -56,7 +56,7 @@ class AuditTrailMapperRevertTargetTest extends TestCase {
 			}
 		);
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(MagicMapper::class)->willReturn($objects);
+		$container->method('get')->with(\OCA\OpenRegister\Db\MagicMapperInterface::class)->willReturn($objects);
 		\Closure::bind(function () use ($container): void {
 			$this->container = $container;
 		}, $mapper, AuditTrailMapper::class)();

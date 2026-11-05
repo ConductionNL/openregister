@@ -1,0 +1,302 @@
+<?php
+
+/**
+ * Golden test for MagicMapper::runUnionBatch().
+ *
+ * Records the table checks, the prepared UNION SQL with its ordering and
+ * paging, the log lines and the rows per platform, register+schema pair set
+ * and query, so a decomposition keeps the exact statement. Re-record with
+ * UPDATE_GOLDEN=1.
+ *
+ * @category  Test
+ * @package   OCA\OpenRegister\Tests\Unit\Db\MagicMapper
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://www.OpenRegister.app
+ */
+
+declare(strict_types=1);
+
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
+namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
+
+use Doctrine\DBAL\Platforms\MySQLPlatform;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\DB\IPreparedStatement;
+use OCP\DB\IResult;
+use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAppConfig;
+use OCP\IConfig;
+use OCP\IDBConnection;
+use OCP\IGroupManager;
+use OCP\IUserManager;
+use OCP\IUserSession;
+use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
+
+/**
+ * @covers \OCA\OpenRegister\Db\MagicMapper
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnionArm
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn
+ * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Service\Query\PropertyReadGuard
+ * @uses   \OCA\OpenRegister\Service\Query\RelatedRowAccess
+ * @uses   \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
+ * @uses   \OCA\OpenRegister\Support\QueryLimit
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\DeletedLens
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\NestedPathFilter
+ * @uses   \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile
+ * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses   \OCA\OpenRegister\Service\Object\DraftListLens
+ * @uses   \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses   \OCA\OpenRegister\Service\OrganisationContext
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
+ * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses   \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses   \OCA\OpenRegister\Service\Search\SearchTermParser
+ * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ */
+class MagicMapperUnionBatchGoldenTest extends TestCase {
+
+	private const FIXTURE = __DIR__ . '/fixtures/union-batch-golden.json';
+
+	private array $events = [];
+
+	private static function queries(): array {
+		return [
+			'empty' => [],
+			'search' => ['_search' => 'zaak'],
+			'ordered page' => ['_search' => 'zaak', '_order' => ['title' => 'desc', '@self.created' => 'asc'], '_limit' => 5, '_offset' => 10],
+			'title order' => ['_order' => ['title' => 'desc'], '_limit' => 5, '_offset' => 10],
+			'created order' => ['_order' => ['@self.created' => 'asc', 'count' => 'ASC']],
+			'unlimited with offset' => ['_limit' => false, '_offset' => 3],
+			'unlimited' => ['_limit' => false],
+			'over max' => ['_limit' => 5000, '_offset' => -4],
+			'zero limit' => ['_limit' => 0],
+		];
+	}//end queries()
+
+	private static function pairSets(): array {
+		return [
+			'none' => [],
+			'two' => ['a', 'b'],
+			'mixed' => ['a', 'b', 'c', 'no schema', 'no register'],
+			'disabled only' => ['c'],
+			'over budget' => ['a', 'wide'],
+		];
+	}//end pairSets()
+
+	public function testRunUnionBatchMatchesGolden(): void {
+		$actual = [];
+		foreach (['postgres', 'mysql'] as $platform) {
+			foreach (self::pairSets() as $setName => $pairNames) {
+				foreach (self::queries() as $queryName => $query) {
+					$name = "{$platform} / {$setName} / {$queryName}";
+					$actual[$name] = $this->runBatch(platform: $platform, pairNames: $pairNames, query: $query);
+				}
+			}
+		}
+
+		if (getenv('UPDATE_GOLDEN') === '1') {
+			file_put_contents(self::FIXTURE, json_encode($actual, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+			$this->addToAssertionCount(1);
+			return;
+		}
+
+		$expected = json_decode((string) file_get_contents(self::FIXTURE), true);
+		foreach ($expected as $name => $outcome) {
+			$this->assertSame($outcome, $actual[$name] ?? null, $name);
+		}
+
+		$this->assertSame(array_keys($expected), array_keys($actual));
+	}//end testRunUnionBatchMatchesGolden()
+
+	private function runBatch(string $platform, array $pairNames, array $query): array {
+		$this->events = [];
+		foreach (['columnExistsCache', 'columnTypeCache'] as $cache) {
+			$property = new \ReflectionProperty(MagicMapper::class, $cache);
+			$property->setAccessible(true);
+			$property->setValue(null, []);
+		}
+
+		$mapper = $this->makeMapper(platform: $platform);
+		$pairs = array_map(fn (string $name): array => $this->pair(name: $name), $pairNames);
+
+		$outcome = [];
+		try {
+			$method = new \ReflectionMethod(MagicMapper::class, 'runUnionBatch');
+			$method->setAccessible(true);
+			$outcome['rows'] = $method->invoke($mapper, $query, $pairs);
+		} catch (\Throwable $e) {
+			$outcome['thrown'] = get_class($e) . ': ' . $e->getMessage();
+		}
+
+		$outcome['events'] = $this->events;
+		return $outcome;
+	}//end runBatch()
+
+	private function pair(string $name): array {
+		$register = new Register();
+		$register->setId(1);
+		$register->setConfiguration(['schemas' => ['3' => ['magicMapping' => true]]]);
+		if ($name === 'no schema') {
+			return ['register' => $register];
+		}
+
+		if ($name === 'no register') {
+			$schema = new Schema();
+			$schema->setId(6);
+			return ['schema' => $schema];
+		}
+
+		$properties = [
+			'a' => ['title' => ['type' => 'string'], 'count' => ['type' => 'integer'], '$schema' => ['type' => 'string']],
+			'b' => ['title' => ['type' => 'string'], 'status' => ['type' => 'string'], 'required' => ['title']],
+			'c' => ['title' => ['type' => 'string']],
+			'wide' => [],
+		][$name];
+		if ($name === 'wide') {
+			for ($i = 0; $i < 1501; $i++) {
+				$properties['p' . $i] = ['type' => 'string'];
+			}
+		}
+
+		$schema = new Schema();
+		$schema->setId(['a' => 2, 'b' => 3, 'c' => 4, 'wide' => 5][$name]);
+		$schema->setSlug('schema-' . $name);
+		$schema->setProperties($properties);
+		return ['register' => $register, 'schema' => $schema];
+	}//end pair()
+
+	private function makeMapper(string $platform): MagicMapper {
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getDatabasePlatform')->willReturn($platform === 'postgres' ? new PostgreSQLPlatform() : new MySQLPlatform());
+		$db->method('prepare')->willReturnCallback(fn (string $sql): IPreparedStatement => $this->statement(sql: $sql));
+		$db->method('quote')->willReturnCallback(fn ($value): string => "'" . str_replace("'", "''", (string) $value) . "'");
+		$db->method('getQueryBuilder')->willReturnCallback(
+			function () use ($db): IQueryBuilder {
+				$qb = $this->createMock(IQueryBuilder::class);
+				$qb->method('getConnection')->willReturn($db);
+				return $qb;
+			}
+		);
+
+		$logger = $this->createMock(LoggerInterface::class);
+		foreach (['warning', 'debug', 'info', 'error'] as $level) {
+			$logger->method($level)->willReturnCallback(
+				function (string $message, array $context = []) use ($level): void {
+					unset($context['file'], $context['line']);
+					$this->events[] = ['log' => $level, 'message' => $message, 'context' => $context];
+				}
+			);
+		}
+
+		$config = $this->createMock(IConfig::class);
+		$config->method('getSystemValue')->willReturnCallback(
+			fn (string $key, $default = null) => ($key === 'dbtableprefix' ? 'oc_' : $default)
+		);
+
+		$mapper = $this->getMockBuilder(MagicMapper::class)
+			->setConstructorArgs(
+				[
+					$db,
+					$this->createMock(SchemaMapper::class),
+					$this->createMock(RegisterMapper::class),
+					$config,
+					$this->createMock(IEventDispatcher::class),
+					$this->createMock(IUserSession::class),
+					$this->createMock(IGroupManager::class),
+					$this->createMock(IUserManager::class),
+					$this->createMock(IAppConfig::class),
+					$logger,
+					$this->createMock(\OCA\OpenRegister\Service\SettingsService::class),
+					$this->container(),
+				]
+			)
+			->onlyMethods(['existsTableForRegisterSchema', 'ensureTableForRegisterSchema', 'getTableNameForRegisterSchema'])
+			->getMock();
+
+		$mapper->method('existsTableForRegisterSchema')->willReturnCallback(
+			function (Register $register, Schema $schema): bool {
+				$this->events[] = ['tableExists' => $schema->getId()];
+				return in_array($schema->getId(), [2, 5], true);
+			}
+		);
+		$mapper->method('ensureTableForRegisterSchema')->willReturnCallback(
+			function (Register $register, Schema $schema): bool {
+				$this->events[] = ['ensureTable' => $schema->getId()];
+				return true;
+			}
+		);
+		$mapper->method('getTableNameForRegisterSchema')->willReturnCallback(
+			fn (Register $register, Schema $schema): string => 'openregister_table_1_' . $schema->getId()
+		);
+
+		return $mapper;
+	}//end makeMapper()
+
+	private function statement(string $sql): IPreparedStatement {
+		$isColumns = str_contains($sql, 'information_schema');
+		if ($isColumns === false) {
+			$this->events[] = ['prepare' => $sql];
+		}
+
+		$rows = [['_uuid' => 'u-1', '_schema' => 2], ['_uuid' => 'u-2', '_schema' => 3]];
+		if ($isColumns === true) {
+			$rows = [];
+			foreach (['_id', '_uuid', '_name', '_description', '_summary', '_register', '_schema', '_created', '_updated', '_deleted', '_owner', '_organisation', 'title', 'count', 'status', 'p7'] as $column) {
+				$rows[] = ['col' => $column, 'col_type' => 'text'];
+			}
+		}
+
+		$statement = $this->createMock(IPreparedStatement::class);
+		$statement->method('execute')->willReturnCallback(
+			function () use ($statement): IResult {
+				return $this->createMock(IResult::class);
+			}
+		);
+		$statement->method('fetch')->willReturnCallback(
+			function () use (&$rows) {
+				return array_shift($rows) ?? false;
+			}
+		);
+		$statement->method('fetchAll')->willReturnCallback(fn (): array => $rows);
+
+		return $statement;
+	}//end statement()
+
+	private function container(): ContainerInterface {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			fn (string $id): ?object => match ($id) {
+				\OCA\OpenRegister\Service\DateTimeNormalizer::class => $this->createMock(\OCA\OpenRegister\Service\DateTimeNormalizer::class),
+				\OCA\OpenRegister\Service\ConditionMatcher::class => $this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class),
+				\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class => $this->createMock(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class),
+				default => null,
+			}
+		);
+		return $container;
+	}//end container()
+}//end class

@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 /**
  * The question a slug decision answers, and what its log lines name.
  *
- * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
  */
 final class ObjectSlugWant {
 

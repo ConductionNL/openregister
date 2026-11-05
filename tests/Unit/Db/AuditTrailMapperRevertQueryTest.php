@@ -60,7 +60,7 @@ class AuditTrailMapperRevertQueryTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			fn (string $id) => $id === MagicMapper::class ? $this->magicMapper : null
+			fn (string $id) => $id === \OCA\OpenRegister\Db\MagicMapperInterface::class ? $this->magicMapper : null
 		);
 
 		$this->mapper = new AuditTrailMapper(

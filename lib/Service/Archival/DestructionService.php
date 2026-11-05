@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use DateInterval;
 use DateTime;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
 use OCP\IUserSession;
@@ -93,9 +93,9 @@ class DestructionService {
 	/**
 	 * Object entity mapper.
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface
 	 */
-	private MagicMapper $objectMapper;
+	private MagicMapperInterface $objectMapper;
 
 	/**
 	 * App configuration.
@@ -128,14 +128,14 @@ class DestructionService {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $objectMapper Object entity data mapper.
+	 * @param MagicMapperInterface $objectMapper Object entity data mapper.
 	 * @param IAppConfig $appConfig App configuration.
 	 * @param IJobList $jobList Background job list.
 	 * @param IUserSession $userSession User session service.
 	 * @param LoggerInterface $logger Logger instance.
 	 */
 	public function __construct(
-		MagicMapper $objectMapper,
+		MagicMapperInterface $objectMapper,
 		IAppConfig $appConfig,
 		IJobList $jobList,
 		IUserSession $userSession,

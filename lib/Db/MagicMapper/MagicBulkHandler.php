@@ -561,7 +561,7 @@ class MagicBulkHandler {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) See bulkUpsert(): a fact about
 	 * the caller, carried to the one statement that varies on it.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	private function executeUpsertChunk(
 		array $chunk,
@@ -747,7 +747,7 @@ class MagicBulkHandler {
 	 *
 	 * @throws \Exception When the statement fails; the failure is logged first.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	private function executeUpsertStatement(MagicUpsertChunkRun $run): void {
 		[$valuesClause, $parameters] = $run->valuesAndParameters();
@@ -805,7 +805,7 @@ class MagicBulkHandler {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) MagicBulkUpsertSql is a stateless helper of pure functions.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	private function buildUpsertUpdateClauses(MagicUpsertChunkRun $run): array {
 		$updateClauses = [];
