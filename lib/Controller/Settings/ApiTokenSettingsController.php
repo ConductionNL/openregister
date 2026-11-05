@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\ApiTokenSettingsControllerServices;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
@@ -42,26 +43,52 @@ use Psr\Log\LoggerInterface;
  */
 class ApiTokenSettingsController extends Controller {
 	/**
+	 * App configuration.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $config;
+
+	/**
+	 * Settings service.
+	 *
+	 * @var AppSettingsInterface
+	 */
+	private readonly AppSettingsInterface $settingsService;
+
+	/**
+	 * HTTP client factory for the token probes.
+	 *
+	 * @var IClientService
+	 */
+	private readonly IClientService $clientService;
+
+	/**
+	 * Tells integriq's connection registry about saves and token tests.
+	 *
+	 * @var ConnectionReporter
+	 */
+	private readonly ConnectionReporter $connectionReporter;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param IAppConfig $config App configuration.
-	 * @param AppSettingsInterface $settingsService Settings service.
-	 * @param IClientService $clientService HTTP client factory for the token probes.
+	 * @param ApiTokenSettingsControllerServices $services The api token settings controller services.
 	 * @param LoggerInterface $logger Logger.
-	 * @param ConnectionReporter $connectionReporter Tells integriq's connection registry about saves and token tests.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly IAppConfig $config,
-		private readonly AppSettingsInterface $settingsService,
-		private readonly IClientService $clientService,
+		ApiTokenSettingsControllerServices $services,
 		private readonly LoggerInterface $logger,
-		private readonly ConnectionReporter $connectionReporter,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->config = $services->config;
+		$this->settingsService = $services->settingsService;
+		$this->clientService = $services->clientService;
+		$this->connectionReporter = $services->connectionReporter;
 	}//end __construct()
 
 	/**

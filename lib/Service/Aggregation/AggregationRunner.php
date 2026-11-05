@@ -39,6 +39,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -95,6 +96,7 @@ use OCA\OpenRegister\Search\Service\Aggregation\ThresholdEvaluationService;
  * @spec openspec/specs/aggregation-api/spec.md
  */
 class AggregationRunner {
+	use MagicColumnNameTrait;
 
 	/**
 	 * An organisation scope the native SQL cannot render: the boundary has a
@@ -3624,26 +3626,6 @@ class AggregationRunner {
 
 		return (string)$value;
 	}//end bindValue()
-
-	/**
-	 * Convert a property name to its magic-table column name. Mirrors
-	 * MagicMapper::sanitizeColumnName so we don't expose a public API there.
-	 *
-	 * @param string $name Raw property name.
-	 *
-	 * @return string Sanitised column name.
-	 */
-	private function sanitizeColumnName(string $name): string {
-		$name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name);
-		$name = strtolower((string)$name);
-		$name = preg_replace('/[^a-z0-9_]/', '_', (string)$name);
-		if (preg_match('/^[a-z_]/', $name) === 0) {
-			$name = 'col_' . $name;
-		}
-
-		$name = preg_replace('/_+/', '_', $name);
-		return rtrim((string)$name, '_');
-	}//end sanitizeColumnName()
 
 	/**
 	 * Attach aggregates from a SECOND schema to each group of an already
