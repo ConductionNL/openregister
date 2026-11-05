@@ -355,36 +355,17 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 	 * @phpstan-return list<FilecacheRow>
 	 */
 	public function getFiles(?int $node = null, ?array $ids = null): array {
-		// Create a new query builder instance.
 		$qb = $this->db->getQueryBuilder();
-
 		$this->selectFilecacheWithShares(qb: $qb);
-
-		// Add condition for node/parent if provided.
 		if ($node !== null) {
 			$qb->andWhere($qb->expr()->eq('fc.parent', $qb->createNamedParameter($node, IQueryBuilder::PARAM_INT)));
 		}
 
-		// Add condition for file IDs if provided.
 		if ($ids !== null && count($ids) > 0) {
 			$qb->andWhere($qb->expr()->in('fc.fileid', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY)));
 		}
 
-		// Execute the query and fetch all results using proper Nextcloud method.
-		$result = $qb->executeQuery();
-		$files = [];
-
-		// Fetch all rows manually and process share information and owner data.
-		$row = $result->fetch();
-		while ($row !== false) {
-			$files[] = $this->withLinksAndOwner(row: $row);
-			$row = $result->fetch();
-		}
-
-		$result->closeCursor();
-
-		// Return the list of files with share information.
-		return $files;
+		return array_map(fn (array $row): array => $this->withLinksAndOwner(row: $row), $this->fetchRows(qb: $qb));
 	}//end getFiles()
 
 	/**
@@ -1133,19 +1114,28 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 			->setFirstResult($offset)
 			->orderBy('fc.fileid', 'ASC');
 
-		$result = $qb->executeQuery();
-		$files = [];
+		return $this->fetchRows(qb: $qb);
+	}//end findUntrackedFiles()
 
+	/**
+	 * Run a select and return all of its rows.
+	 *
+	 * @param IQueryBuilder $qb The select.
+	 *
+	 * @return array<int, array<string, mixed>> The rows, in order.
+	 */
+	private function fetchRows(IQueryBuilder $qb): array {
+		$result = $qb->executeQuery();
+		$rows = [];
 		$row = $result->fetch();
 		while ($row !== false) {
-			$files[] = $row;
+			$rows[] = $row;
 			$row = $result->fetch();
 		}
 
 		$result->closeCursor();
-
-		return $files;
-	}//end findUntrackedFiles()
+		return $rows;
+	}//end fetchRows()
 
 	/**
 	 * Count untracked files
