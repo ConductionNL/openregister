@@ -47,6 +47,13 @@ final class BulkSaveRun {
 	public Schema|string|int|null $schema = null;
 
 	/**
+	 * The signed-in user the chunk guards ask create permission for; null when nobody is signed in.
+	 *
+	 * @var string|null
+	 */
+	public ?string $userId = null;
+
+	/**
 	 * Whether RBAC filtering applies.
 	 *
 	 * @var boolean

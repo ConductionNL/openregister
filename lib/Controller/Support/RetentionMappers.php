@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
@@ -35,14 +35,14 @@ final class RetentionMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param MagicMapper      $objectMapper Object mapper
+	 * @param MagicMapperInterface $objectMapper Object mapper
 	 * @param SchemaMapperInterface     $schemaMapper Schema mapper
 	 * @param AuditTrailMapperInterface $auditMapper  Audit trail mapper
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	public function __construct(
-		public readonly MagicMapper $objectMapper,
+		public readonly MagicMapperInterface $objectMapper,
 		public readonly SchemaMapperInterface $schemaMapper,
 		public readonly AuditTrailMapperInterface $auditMapper,
 	) {

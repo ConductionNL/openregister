@@ -2,7 +2,7 @@
     "defaults, empty batches": [
         [
             "container.get",
-            "OCA\\OpenRegister\\Db\\MagicMapper"
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
         ],
         [
             "count",
@@ -138,7 +138,7 @@
     "batch size at limits": [
         [
             "container.get",
-            "OCA\\OpenRegister\\Db\\MagicMapper"
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
         ],
         [
             "count",
@@ -253,7 +253,7 @@
     "max objects caps": [
         [
             "container.get",
-            "OCA\\OpenRegister\\Db\\MagicMapper"
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
         ],
         [
             "count",
@@ -399,7 +399,7 @@
     "max objects one above total": [
         [
             "container.get",
-            "OCA\\OpenRegister\\Db\\MagicMapper"
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
         ],
         [
             "count",
@@ -545,7 +545,7 @@
     "max objects above total": [
         [
             "container.get",
-            "OCA\\OpenRegister\\Db\\MagicMapper"
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
         ],
         [
             "count",
@@ -691,7 +691,7 @@
     "nothing to do": [
         [
             "container.get",
-            "OCA\\OpenRegister\\Db\\MagicMapper"
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
         ],
         [
             "count",
@@ -775,7 +775,7 @@
     "twelve batches": [
         [
             "container.get",
-            "OCA\\OpenRegister\\Db\\MagicMapper"
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
         ],
         [
             "count",
@@ -1239,7 +1239,7 @@
     "serial with objects": [
         [
             "container.get",
-            "OCA\\OpenRegister\\Db\\MagicMapper"
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
         ],
         [
             "count",
@@ -1296,7 +1296,7 @@
     "parallel nothing": [
         [
             "container.get",
-            "OCA\\OpenRegister\\Db\\MagicMapper"
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
         ],
         [
             "count",
@@ -1380,7 +1380,7 @@
     "parallel with five jobs": [
         [
             "container.get",
-            "OCA\\OpenRegister\\Db\\MagicMapper"
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
         ],
         [
             "count",
@@ -1429,7 +1429,7 @@
     "parallel with jobs": [
         [
             "container.get",
-            "OCA\\OpenRegister\\Db\\MagicMapper"
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
         ],
         [
             "count",

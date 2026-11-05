@@ -32,10 +32,10 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Controller\Support\RetentionControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\DestructionService;
-use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObjectInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Controller;
@@ -80,9 +80,9 @@ class RetentionController extends Controller {
 	/**
 	 * Object mapper
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface
 	 */
-	private readonly MagicMapper $objectMapper;
+	private readonly MagicMapperInterface $objectMapper;
 
 	/**
 	 * Schema mapper

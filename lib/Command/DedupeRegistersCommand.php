@@ -33,7 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -53,14 +53,14 @@ class DedupeRegistersCommand extends Command {
 	 *
 	 * @param RegisterMapperInterface $registerMapper Register lookup/mutation mapper.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param MagicMapper $magicMapper Magic table resolver for object counts.
+	 * @param MagicMapperInterface $magicMapper Magic table resolver for object counts.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 	) {
 		parent::__construct();
 	}//end __construct()

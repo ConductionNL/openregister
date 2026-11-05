@@ -32,6 +32,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\AuditTrailControllerServices;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
@@ -64,38 +65,90 @@ use OCP\IRequest;
  */
 class AuditTrailController extends Controller {
 	/**
+	 * The log service
+	 *
+	 * @var LogService
+	 */
+	private readonly LogService $logService;
+
+	/**
+	 * The audit trail mapper
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * The audit hash chain service
+	 *
+	 * @var AuditHashService
+	 */
+	private readonly AuditHashService $auditHashService;
+
+	/**
+	 * Active user session for caller identity.
+	 *
+	 * @var \OCP\IUserSession
+	 */
+	private readonly \OCP\IUserSession $userSession;
+
+	/**
+	 * Group manager for admin / role checks.
+	 *
+	 * @var \OCP\IGroupManager
+	 */
+	private readonly \OCP\IGroupManager $groupManager;
+
+	/**
+	 * Lists the trail within one caller's read scope.
+	 *
+	 * @var ReadableAuditTrailLister
+	 */
+	private readonly ReadableAuditTrailLister $readableLister;
+
+	/**
+	 * The audit page's keyset list and export.
+	 *
+	 * @var AuditTrailPageService
+	 */
+	private readonly AuditTrailPageService $auditPage;
+
+	/**
+	 * One object's history for a non-admin reader of it.
+	 *
+	 * @var ObjectHistoryForReaders
+	 */
+	private readonly ObjectHistoryForReaders $historyForReaders;
+
+	/**
+	 * Masks explicit-reveal values in the admin lists.
+	 *
+	 * @var ?ExplicitRevealTrailMasker
+	 */
+	private readonly ?ExplicitRevealTrailMasker $revealMasker;
+
+	/**
 	 * Constructor for AuditTrailController
 	 *
 	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
-	 * @param LogService $logService The log service
-	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail mapper
-	 * @param AuditHashService $auditHashService The audit hash chain service
-	 * @param \OCP\IUserSession $userSession Active user session for caller identity.
-	 * @param \OCP\IGroupManager $groupManager Group manager for admin / role checks.
-	 * @param ReadableAuditTrailLister $readableLister Lists the trail within one caller's read scope.
-	 * @param AuditTrailPageService $auditPage The audit page's keyset list and export.
-	 * @param ObjectHistoryForReaders $historyForReaders One object's history for a non-admin reader of it.
-	 * @param ExplicitRevealTrailMasker|null $revealMasker Masks explicit-reveal values in the admin lists.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Ten: the two framework arguments plus one
-	 *     service per audit surface this controller routes (log, mapper, hash chain, session,
-	 *     groups, scoped list, audit page, object history). Each is already a delegate.
+	 * @param AuditTrailControllerServices $services The audit trail controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly LogService $logService,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly AuditHashService $auditHashService,
-		private readonly \OCP\IUserSession $userSession,
-		private readonly \OCP\IGroupManager $groupManager,
-		private readonly ReadableAuditTrailLister $readableLister,
-		private readonly AuditTrailPageService $auditPage,
-		private readonly ObjectHistoryForReaders $historyForReaders,
-		private readonly ?ExplicitRevealTrailMasker $revealMasker = null,
+		AuditTrailControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->logService = $services->log->logService;
+		$this->auditTrailMapper = $services->mappers->auditTrailMapper;
+		$this->auditHashService = $services->log->auditHashService;
+		$this->userSession = $services->platform->userSession;
+		$this->groupManager = $services->platform->groupManager;
+		$this->readableLister = $services->log->readableLister;
+		$this->auditPage = $services->log->auditPage;
+		$this->historyForReaders = $services->readers->historyForReaders;
+		$this->revealMasker = $services->readers->revealMasker;
 	}//end __construct()
 
 	/**
@@ -675,7 +728,7 @@ class AuditTrailController extends Controller {
 	 *
 	 * @return JSONResponse HTTP 409 `ambiguous-identifier`.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 */
 	private function ambiguousIdentifier(string $id): JSONResponse {
 		return new JSONResponse(

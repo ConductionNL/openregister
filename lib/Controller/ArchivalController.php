@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\ArchivalControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
@@ -103,9 +103,9 @@ class ArchivalController extends Controller {
 	/**
 	 * Object mapper.
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface
 	 */
-	private MagicMapper $objectMapper;
+	private MagicMapperInterface $objectMapper;
 
 	/**
 	 * User session.

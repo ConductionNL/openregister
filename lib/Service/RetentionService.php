@@ -41,7 +41,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Service\Archival\LegalHoldLedger;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -113,7 +113,7 @@ class RetentionService implements RetentionServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $objectMapper Object mapper for queries
+	 * @param MagicMapperInterface $objectMapper Object mapper for queries
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for lookups
 	 * @param RegisterMapperInterface $registerMapper Register mapper for lookups
 	 * @param AuditTrailMapperInterface $auditMapper Audit trail mapper
@@ -131,7 +131,7 @@ class RetentionService implements RetentionServiceInterface {
 	 *              behind a parameter object would hide the dependency graph without reducing it.
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly AuditTrailMapperInterface $auditMapper,

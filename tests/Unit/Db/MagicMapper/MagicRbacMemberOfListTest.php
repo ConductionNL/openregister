@@ -426,7 +426,7 @@ class MagicRbacMemberOfListTest extends TestCase {
 	private function containerGiving(MagicMapper $objects): ContainerInterface {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			static fn (string $id): mixed => ($id === MagicMapper::class) ? $objects : null
+			static fn (string $id): mixed => ($id === \OCA\OpenRegister\Db\MagicMapperInterface::class) ? $objects : null
 		);
 		return $container;
 	}//end containerGiving()

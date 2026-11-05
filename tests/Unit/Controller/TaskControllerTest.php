@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TaskControllerFactory;
 use OCA\OpenRegister\Controller\TaskController;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
@@ -57,6 +58,10 @@ use RuntimeException;
  * HTTP status and body translation for every task route.
  *
  * @covers \OCA\OpenRegister\Controller\TaskController
+ * @uses \OCA\OpenRegister\Controller\Support\TaskWork
+ * @uses \OCA\OpenRegister\Controller\Support\TaskCompletion
+ * @uses \OCA\OpenRegister\Controller\Support\TaskPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\TaskControllerServices
  * @covers \OCA\OpenRegister\Db\TaskInboxCriteria
  * @covers \OCA\OpenRegister\Db\Task
  * @covers \OCA\OpenRegister\Service\Task\TaskTemporalProjection
@@ -141,7 +146,7 @@ class TaskControllerTest extends TestCase {
 			static fn (Task $task): array => ['uuid' => $task->getUuid(), 'row' => true]
 		);
 
-		$this->controller = new TaskController(
+		$this->controller = TaskControllerFactory::create(
 			appName: 'openregister',
 			request: $request,
 			tasks: $this->tasks,
@@ -250,7 +255,7 @@ class TaskControllerTest extends TestCase {
 		$inbox->expects($this->once())->method('enrich')->willReturn(
 			['uuid' => 't-1', 'subject' => ['uuid' => 'case-1', 'title' => 'Bezwaar parkeerboete Havenstraat', 'identifier' => '2026-0074']]
 		);
-		$controller = new TaskController(
+		$controller = TaskControllerFactory::create(
 			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
 			tasks: $this->tasks,
@@ -283,7 +288,7 @@ class TaskControllerTest extends TestCase {
 				'requireChecklist' => true,
 			]
 		);
-		$controller = new TaskController(
+		$controller = TaskControllerFactory::create(
 			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
 			tasks: $this->tasks,
@@ -795,7 +800,7 @@ class TaskControllerTest extends TestCase {
 				return ['results' => [], 'total' => 0, 'limit' => 25, 'offset' => 0];
 			}
 		);
-		$controller = new TaskController(
+		$controller = TaskControllerFactory::create(
 			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
 			tasks: $this->tasks,
@@ -820,7 +825,7 @@ class TaskControllerTest extends TestCase {
 	public function testIndexWithoutASessionIs401(): void {
 		$session = $this->createMock(originalClassName: IUserSession::class);
 		$session->method('getUser')->willReturn(null);
-		$controller = new TaskController(
+		$controller = TaskControllerFactory::create(
 			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
 			tasks: $this->tasks,

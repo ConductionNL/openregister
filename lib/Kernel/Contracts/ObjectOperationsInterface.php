@@ -26,13 +26,11 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use OCP\IUser;
-use OCP\IUserSession;
 
 /**
  * The ObjectService methods called inside openregister. Other apps type against
@@ -242,15 +240,8 @@ interface ObjectOperationsInterface {
      *   read/RBAC/render behavior owned by object-interactions / rbac-scopes / files-render-extension.
      */
     public function find(
-        int | string $id,
-        ?array $_extend=[],
-        bool $files=false,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $_render=true,
-        bool $_audit=true
+    	int | string $id, ?array $_extend=[], bool $files=false, Register | string | int | null $register=null,
+    	Schema | string | int | null $schema=null, bool $_rbac=true, bool $_multitenancy=true, bool $_render=true, bool $_audit=true
     ): ?ObjectEntity;
 
     /**
@@ -276,13 +267,8 @@ interface ObjectOperationsInterface {
      * @spec exclude Facade variant of find() that skips audit logging; read behavior owned by object-interactions / audit-trail-immutable.
      */
     public function findSilent(
-        string $id,
-        ?array $_extend=[],
-        bool $files=false,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true
+    	string $id, ?array $_extend=[], bool $files=false, Register | string | int | null $register=null,
+    	Schema | string | int | null $schema=null, bool $_rbac=true, bool $_multitenancy=true
     ): ObjectEntity;
 
     /**
@@ -343,9 +329,7 @@ interface ObjectOperationsInterface {
      *
      * @spec exclude Facade injecting register/schema context then delegating to ObjectMapper::countAll(); count behavior owned by zoeken-filteren.
      */
-    public function count(
-        array $config=[]
-    ): int;
+    public function count(array $config=[]): int;
 
     /**
      * Get logs for an object.
@@ -433,21 +417,10 @@ interface ObjectOperationsInterface {
      * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function saveObject(
-        array | ObjectEntity $object,
-        ?array $extend=[],
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
-        ?string $uuid=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $silent=false,
-        bool $_validation=true,
-        ?array $uploadedFiles=null,
-        ?IUser $currentUser=null,
-        bool $failIfExists=false,
-        bool $_unowned=false,
-        bool $_dedupOverride=false,
-        ?string $_owner=null
+    	array | ObjectEntity $object, ?array $extend=[], Register | string | int | null $register=null,
+    	Schema | string | int | null $schema=null, ?string $uuid=null, bool $_rbac=true, bool $_multitenancy=true, bool $silent=false,
+    	bool $_validation=true, ?array $uploadedFiles=null, ?IUser $currentUser=null, bool $failIfExists=false, bool $_unowned=false,
+    	bool $_dedupOverride=false, ?string $_owner=null
     ): ObjectEntity;
 
     /**
@@ -511,14 +484,8 @@ interface ObjectOperationsInterface {
      * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
      */
     public function deleteObject(
-        string $uuid,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $_retentionSweep=false,
-        ?IUser $currentUser=null,
-        bool $permanent=false
+    	string $uuid, Register | string | int | null $register=null, Schema | string | int | null $schema=null, bool $_rbac=true,
+    	bool $_multitenancy=true, bool $_retentionSweep=false, ?IUser $currentUser=null, bool $permanent=false
     ): bool;
 
     /**
@@ -565,10 +532,7 @@ interface ObjectOperationsInterface {
      * @spec exclude One-line delegation to SearchQueryHandler::buildSearchQuery(); query-building owned by zoeken-filteren.
      */
     public function buildSearchQuery(
-        array $requestParams,
-        int | string | array | null $register=null,
-        int | string | array | null $schema=null,
-        ?array $ids=null
+    	array $requestParams, int | string | array | null $register=null, int | string | array | null $schema=null, ?array $ids=null
     ): array;
 
     /**
@@ -625,13 +589,8 @@ interface ObjectOperationsInterface {
      * @spec exclude One-line delegation to QueryHandler::searchObjects(); search behavior owned by zoeken-filteren.
      */
     public function searchObjects(
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        ?array $ids=null,
-        ?string $uses=null,
-        ?array $views=null,
-        bool $_viewScopeRequired=false
+    	array $query=[], bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null, ?string $uses=null, ?array $views=null,
+    	bool $_viewScopeRequired=false
     ): array|int;
 
     /**
@@ -682,11 +641,7 @@ interface ObjectOperationsInterface {
      * @spec exclude Slug-resolution bridge delegating to searchObjects(); search behavior owned by zoeken-filteren.
      */
     public function searchObjectsBySlug(
-        string $registerSlug,
-        string $schemaSlug,
-        array $filters=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true
+    	string $registerSlug, string $schemaSlug, array $filters=[], bool $_rbac=true, bool $_multitenancy=true
     ): array|int;
 
     /**
@@ -718,13 +673,7 @@ interface ObjectOperationsInterface {
      *
      * @spec exclude Resolves org context then delegates to ObjectMapper::countSearchObjects(); count behavior owned by zoeken-filteren.
      */
-    public function countSearchObjects(
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        ?array $ids=null,
-        ?string $uses=null
-    ): int;
+    public function countSearchObjects(array $query=[], bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null, ?string $uses=null): int;
 
     /**
      * Get facets for objects matching the given criteria
@@ -898,13 +847,8 @@ interface ObjectOperationsInterface {
      *   behavior owned by zoeken-filteren / faceting-configuration.
      */
     public function searchObjectsPaginated(
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $deleted=false,
-        ?array $ids=null,
-        ?string $uses=null,
-        ?array $views=null
+    	array $query=[], bool $_rbac=true, bool $_multitenancy=true, bool $deleted=false, ?array $ids=null, ?string $uses=null,
+    	?array $views=null
     ): array;
 
     /**
@@ -958,14 +902,8 @@ interface ObjectOperationsInterface {
      *   render contract owned by files-render-extension / schema-driven-read-coercion.
      */
     public function renderEntity(
-        ObjectEntity $entity,
-        ?array $_extend=[],
-        ?int $depth=0,
-        ?array $filter=[],
-        ?array $fields=[],
-        ?array $unset=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true
+    	ObjectEntity $entity, ?array $_extend=[], ?int $depth=0, ?array $filter=[], ?array $fields=[], ?array $unset=[], bool $_rbac=true,
+    	bool $_multitenancy=true
     ): array;
 
     /**
@@ -1001,9 +939,7 @@ interface ObjectOperationsInterface {
      *
      * @spec exclude Deprecated one-line delegation to ValidateObject::handleValidationException(); error-shaping plumbing.
      */
-    public function handleValidationException(
-        ValidationException|CustomValidationException $exception
-    ): \OCP\AppFramework\Http\JSONResponse;
+    public function handleValidationException(ValidationException|CustomValidationException $exception): \OCP\AppFramework\Http\JSONResponse;
 
     /**
      * Lock an object
@@ -1028,12 +964,7 @@ interface ObjectOperationsInterface {
      * @spec exclude One-line delegation to lock handler; lock behavior owned by object-lifecycle.
      */
     public function lockObject(
-        string $identifier,
-        ?string $process=null,
-        ?int $duration=null,
-        bool $advisory=false,
-        ?string $runUuid=null,
-        ?string $nodeId=null
+    	string $identifier, ?string $process=null, ?int $duration=null, bool $advisory=false, ?string $runUuid=null, ?string $nodeId=null
     ): array;
 
     /**
@@ -1123,16 +1054,9 @@ interface ObjectOperationsInterface {
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function saveObjects(
-        array $objects,
-        Register|string|int|null $register=null,
-        Schema|string|int|null $schema=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $validation=false,
-        bool $events=false,
-        bool $deduplicateIds=true,
-        bool $enrich=true,
-        bool $_audit=true
+    	array $objects, Register|string|int|null $register=null, Schema|string|int|null $schema=null, bool $_rbac=true,
+    	bool $_multitenancy=true, bool $validation=false, bool $events=false, bool $deduplicateIds=true, bool $enrich=true,
+    	bool $_audit=true
     ): array;
 
     /**
@@ -1161,12 +1085,8 @@ interface ObjectOperationsInterface {
      * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function migrateObjects(
-        string|int $sourceRegister,
-        string|int $sourceSchema,
-        string|int $targetRegister,
-        string|int $targetSchema,
-        array $objectIds,
-        array $mapping
+    	string|int $sourceRegister, string|int $sourceSchema, string|int $targetRegister, string|int $targetSchema, array $objectIds,
+    	array $mapping
     ): array;
 
     /**
@@ -1303,12 +1223,7 @@ interface ObjectOperationsInterface {
      *
      * @spec exclude One-line delegation to RelationHandler::getUses(); outgoing-relation behavior owned by nextcloud-entity-relations.
      */
-    public function getObjectUses(
-        string $objectId,
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true
-    ): array;
+    public function getObjectUses(string $objectId, array $query=[], bool $_rbac=true, bool $_multitenancy=true): array;
 
     /**
      * Get objects that use this object (incoming relations)
@@ -1324,12 +1239,7 @@ interface ObjectOperationsInterface {
      *
      * @spec exclude One-line delegation to RelationHandler::getUsedBy(); incoming-relation behavior owned by nextcloud-entity-relations.
      */
-    public function getObjectUsedBy(
-        string $objectId,
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true
-    ): array;
+    public function getObjectUsedBy(string $objectId, array $query=[], bool $_rbac=true, bool $_multitenancy=true): array;
 
     /**
      * Vectorize objects in batch
@@ -1378,13 +1288,8 @@ interface ObjectOperationsInterface {
      * @spec exclude Facade alias delegating to searchObjects(); listing behavior owned by zoeken-filteren.
      */
     public function listObjects(
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $_deleted=false,
-        ?array $_ids=null,
-        ?string $_uses=null,
-        ?array $_views=null
+    	array $query=[], bool $_rbac=true, bool $_multitenancy=true, bool $_deleted=false, ?array $_ids=null, ?string $_uses=null,
+    	?array $_views=null
     ): array|int;
 
     /**
@@ -1433,12 +1338,7 @@ interface ObjectOperationsInterface {
      *
      * @spec exclude Facade delegating to saveObject() with id; update behavior owned by object-interactions / object-lifecycle.
      */
-    public function updateObject(
-        string $objectId,
-        array $data,
-        bool $_rbac=true,
-        bool $_multitenancy=true
-    ): ObjectEntity;
+    public function updateObject(string $objectId, array $data, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity;
 
     /**
      * Patch an existing object (PATCH-semantic partial update).
@@ -1483,13 +1383,8 @@ interface ObjectOperationsInterface {
      * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
      */
     public function patchObject(
-        string $objectId,
-        array $data,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        ?IUser $currentUser=null
+    	string $objectId, array $data, Register | string | int | null $register=null, Schema | string | int | null $schema=null,
+    	bool $_rbac=true, bool $_multitenancy=true, ?IUser $currentUser=null
     ): ObjectEntity;
 
     /**

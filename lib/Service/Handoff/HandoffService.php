@@ -45,7 +45,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\HandoffQueueEntry;
 use OCA\OpenRegister\Db\HandoffQueueEntryMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -113,7 +113,7 @@ class HandoffService {
 	 * @param ObjectOperationsInterface $objectService RBAC-enforcing object read/write path.
 	 * @param SemanticTypeResolver $semanticTypeResolver Kind URI → installed schema resolution.
 	 * @param SchemaMapperInterface $schemaMapper Source-schema loading.
-	 * @param MagicMapper $objectMapper Raw entity access for provenance relation writes.
+	 * @param MagicMapperInterface $objectMapper Raw entity access for provenance relation writes.
 	 * @param AuditTrailMapperInterface $auditTrailMapper Immutable audit rows.
 	 * @param PermissionHandler $permissionHandler RBAC pre-checks (typed 403 before any write).
 	 * @param HandoffMappingEvaluator $mappingEvaluator The five-expression mapping evaluator.
@@ -129,7 +129,7 @@ class HandoffService {
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly SemanticTypeResolver $semanticTypeResolver,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly HandoffMappingEvaluator $mappingEvaluator,

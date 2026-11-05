@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Service\EmailLinkService;
+use OCA\OpenRegister\Service\EmailMessageRef;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Service\EmailService;
 use OCA\OpenRegister\Service\Integration\Providers\EmailProvider;
 use OCP\App\IAppManager;
@@ -209,12 +211,8 @@ class EmailProviderTest extends TestCase {
 		$this->emailLinkService->expects($this->once())
 			->method('linkEmail')
 			->with(
-				objectUuid: 'obj-uuid',
-				registerId: 1,
-				schemaId: 2,
-				mailAccountId: 5,
-				messageId: 'msg-1',
-				messageUid: 'uid-1',
+				(new LinkTarget('obj-uuid', 1))->inSchema(2),
+				(new EmailMessageRef(5, 'msg-1'))->withUid('uid-1'),
 			)
 			->willReturn($link);
 
@@ -238,12 +236,8 @@ class EmailProviderTest extends TestCase {
 		$this->emailLinkService->expects($this->once())
 			->method('linkEmail')
 			->with(
-				objectUuid: 'obj-uuid',
-				registerId: 1,
-				schemaId: 2,
-				mailAccountId: 3,
-				messageId: 'legacy-msg',
-				messageUid: '',
+				(new LinkTarget('obj-uuid', 1))->inSchema(2),
+				(new EmailMessageRef(3, 'legacy-msg'))->withUid(''),
 			)
 			->willReturn($link);
 
