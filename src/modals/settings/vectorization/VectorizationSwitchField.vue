@@ -9,6 +9,7 @@
 
 <script>
 import { NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { modelProxy } from './modelProxy.js'
 
 /**
  * A vectorization setting that is on or off, with a hint below the switch.
@@ -28,23 +29,7 @@ export default {
 	emits: ['update:modelValue'],
 
 	computed: {
-		checked: {
-			/**
-			 * @spec exclude Two-way binding of the switch.
-			 * @return {boolean} Whether the setting is on
-			 */
-			get() {
-				return this.modelValue
-			},
-
-			/**
-			 * @param {boolean} value Whether the setting is on
-			 * @spec exclude Two-way binding of the switch.
-			 */
-			set(value) {
-				this.$emit('update:modelValue', value)
-			},
-		},
+		checked: modelProxy(),
 	},
 }
 </script>

@@ -28,6 +28,7 @@ use OCP\IDBConnection;
  * Class XwikiLinkMapper
  *
  * @template-extends QBMapper<XwikiLink>
+ * @method list<XwikiLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
 class XwikiLinkMapper extends QBMapper {
 
