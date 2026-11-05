@@ -26,10 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Edepot\Transport;
 
-use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
@@ -40,7 +38,7 @@ use RuntimeException;
  *
  * @psalm-suppress UnusedClass
  */
-class RestApiTransport implements TransportInterface {
+class RestApiTransport extends HttpSipTransport {
 
 	use SipTransportSteps;
 
@@ -77,18 +75,6 @@ class RestApiTransport implements TransportInterface {
 		self::AUTH_OAUTH2,
 		self::AUTH_CERTIFICATE,
 	];
-
-	/**
-	 * Constructor.
-	 *
-	 * @param Client $httpClient The HTTP client.
-	 * @param LoggerInterface $logger Logger.
-	 */
-	public function __construct(
-		private readonly Client $httpClient,
-		private readonly LoggerInterface $logger,
-	) {
-	}//end __construct()
 
 	/**
 	 * Send a SIP package via REST API.
