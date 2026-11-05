@@ -358,7 +358,11 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 	 */
 	public function testAFlowQuotesItsOwnUuid(): void {
 		$nodes    = self::flow()['nodes'];
-		$nodes[1] = ['id' => 'status', 'type' => 'dossiq.openCase', 'config' => ['handoffSource' => 'planned-series:{{flow:self.uuid}}', 'series' => '{{flow:self}}']];
+		$nodes[1] = [
+			'id'     => 'status',
+			'type'   => 'dossiq.openCase',
+			'config' => ['handoffSource' => 'planned-series:{{flow:self.uuid}}', 'series' => '{{flow:self}}'],
+		];
 		$this->app(app: 'alpha', fragment: ['flows' => [['key' => 'reeks', 'data' => self::flow(extra: ['nodes' => $nodes])]]]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
@@ -371,7 +375,8 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: ['handoffSource' => 'planned-series:'.$uuid, 'series' => $uuid], actual: $flow->getNodes()[1]['config']);
 
 		$this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
-		$this->assertSame(expected: 'planned-series:'.$uuid, actual: $this->flows[$uuid]->getNodes()[1]['config']['handoffSource'], message: 'a refresh keeps it');
+		$refreshed = $this->flows[$uuid]->getNodes()[1]['config']['handoffSource'];
+		$this->assertSame(expected: 'planned-series:'.$uuid, actual: $refreshed, message: 'a refresh keeps it');
 		$this->assertSame(expected: [$uuid], actual: $this->publishedFlows, message: 'the refresh found nothing changed');
 	}//end testAFlowQuotesItsOwnUuid()
 
