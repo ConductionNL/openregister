@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\OpenProjectLink;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Db\OpenProjectLinkMapper;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
@@ -50,6 +51,7 @@ use Psr\Log\LoggerInterface;
  * OpenProjectLinkServiceTest.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @uses \OCA\OpenRegister\Service\LinkTarget
  */
 class OpenProjectLinkServiceTest extends TestCase {
 
@@ -139,7 +141,7 @@ class OpenProjectLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->service->linkWorkPackage('abc-123', 1, 2, 99);
+		$this->service->linkWorkPackage((new LinkTarget('abc-123', 1))->inSchema(2), 99);
 	}//end testLinkWorkPackageThrowsWhenNoUser()
 
 	public function testLinkWorkPackageThrowsOnZeroId(): void {
@@ -148,7 +150,7 @@ class OpenProjectLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->linkWorkPackage('abc-123', 1, 2, 0);
+		$this->service->linkWorkPackage((new LinkTarget('abc-123', 1))->inSchema(2), 0);
 	}//end testLinkWorkPackageThrowsOnZeroId()
 
 	public function testLinkWorkPackageThrowsOnDuplicate(): void {
@@ -159,7 +161,7 @@ class OpenProjectLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(409);
 		$this->expectExceptionMessage('Work package already linked to this object');
 
-		$this->service->linkWorkPackage('abc-123', 1, 2, 99);
+		$this->service->linkWorkPackage((new LinkTarget('abc-123', 1))->inSchema(2), 99);
 	}//end testLinkWorkPackageThrowsOnDuplicate()
 
 	public function testLinkWorkPackagePersistsEvenWhenSourceUnconfigured(): void {
@@ -171,11 +173,12 @@ class OpenProjectLinkServiceTest extends TestCase {
 			->method('insert')
 			->willReturnCallback(static fn (OpenProjectLink $link): OpenProjectLink => $link);
 
-		$link = $this->service->linkWorkPackage('abc-123', 1, 2, 99);
+		$link = $this->service->linkWorkPackage((new LinkTarget('abc-123', 1))->inSchema(2), 99);
 
 		$this->assertSame(99, $link->getWorkPackageId());
 		$this->assertSame('#99', $link->getSubject());
 		$this->assertSame('alice', $link->getLinkedBy());
+		$this->assertSame(['abc-123', 1, 2], [$link->getObjectUuid(), $link->getRegisterId(), $link->getSchemaId()]);
 	}//end testLinkWorkPackagePersistsEvenWhenSourceUnconfigured()
 
 	public function testCreateAndLinkWorkPackageThrowsWhenNoUser(): void {
@@ -184,7 +187,7 @@ class OpenProjectLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->service->createAndLinkWorkPackage('abc-123', 1, 2, '5', 'Ship it');
+		$this->service->createAndLinkWorkPackage((new LinkTarget('abc-123', 1))->inSchema(2), '5', 'Ship it');
 	}//end testCreateAndLinkWorkPackageThrowsWhenNoUser()
 
 	public function testCreateAndLinkWorkPackageThrowsOnEmptySubject(): void {
@@ -193,7 +196,7 @@ class OpenProjectLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->createAndLinkWorkPackage('abc-123', 1, 2, '5', '   ');
+		$this->service->createAndLinkWorkPackage((new LinkTarget('abc-123', 1))->inSchema(2), '5', '   ');
 	}//end testCreateAndLinkWorkPackageThrowsOnEmptySubject()
 
 	public function testCreateAndLinkWorkPackageThrowsOnMissingProject(): void {
@@ -202,7 +205,7 @@ class OpenProjectLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->createAndLinkWorkPackage('abc-123', 1, 2, '', 'Ship it');
+		$this->service->createAndLinkWorkPackage((new LinkTarget('abc-123', 1))->inSchema(2), '', 'Ship it');
 	}//end testCreateAndLinkWorkPackageThrowsOnMissingProject()
 
 	public function testCreateAndLinkWorkPackageSurfaces503WhenSourceUnavailable(): void {
@@ -217,7 +220,7 @@ class OpenProjectLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
 
-		$this->service->createAndLinkWorkPackage('abc-123', 1, 2, '5', 'Ship it');
+		$this->service->createAndLinkWorkPackage((new LinkTarget('abc-123', 1))->inSchema(2), '5', 'Ship it');
 	}//end testCreateAndLinkWorkPackageSurfaces503WhenSourceUnavailable()
 
 	public function testCreateAndLinkWorkPackagePersistsLink(): void {
@@ -237,13 +240,14 @@ class OpenProjectLinkServiceTest extends TestCase {
 			->method('insert')
 			->willReturnCallback(static fn (OpenProjectLink $link): OpenProjectLink => $link);
 
-		$link = $this->service->createAndLinkWorkPackage('abc-123', 1, 2, '5', 'Ship it', 'Task');
+		$link = $this->service->createAndLinkWorkPackage((new LinkTarget('abc-123', 1))->inSchema(2), '5', 'Ship it', 'Task');
 
 		$this->assertSame(42, $link->getWorkPackageId());
 		$this->assertSame('Ship it', $link->getSubject());
 		$this->assertSame('Task', $link->getType());
 		$this->assertSame('High', $link->getPriority());
 		$this->assertSame('Portal', $link->getProject());
+		$this->assertSame(['abc-123', 1, 2, 'alice'], [$link->getObjectUuid(), $link->getRegisterId(), $link->getSchemaId(), $link->getLinkedBy()]);
 	}//end testCreateAndLinkWorkPackagePersistsLink()
 
 	public function testUnlinkThrowsWhenNoUser(): void {

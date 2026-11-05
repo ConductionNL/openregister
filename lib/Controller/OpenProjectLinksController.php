@@ -127,9 +127,7 @@ class OpenProjectLinksController extends Controller {
 				}
 
 				$link = $this->linkService->linkWorkPackage(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
+					$this->linkTargetOf(object: $object),
 					$workPackageId
 				);
 
@@ -175,9 +173,7 @@ class OpenProjectLinksController extends Controller {
 				$type = (string)$this->request->getParam('type', '');
 
 				$link = $this->linkService->createAndLinkWorkPackage(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
+					$this->linkTargetOf(object: $object),
 					$projectId,
 					$subject,
 					$type

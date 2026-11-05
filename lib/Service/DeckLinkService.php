@@ -102,9 +102,7 @@ class DeckLinkService {
 	 * Deck. Idempotent: a duplicate link raises a 409 Exception (callers
 	 * should surface as HTTP 409 to the UI).
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id (Tier-2 column).
+	 * @param LinkTarget $target The object to link to.
 	 * @param int $cardId Deck card id.
 	 *
 	 * @return DeckLink The persisted link row.
@@ -121,13 +119,13 @@ class DeckLinkService {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function linkCard(string $objectUuid, int $registerId, int $schemaId, int $cardId): DeckLink {
+	public function linkCard(LinkTarget $target, int $cardId): DeckLink {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
 
-		$existing = $this->deckLinkMapper->findByObjectAndCard($objectUuid, $cardId);
+		$existing = $this->deckLinkMapper->findByObjectAndCard($target->objectUuid, $cardId);
 		if ($existing !== null) {
 			throw new Exception('Card already linked to this object', 409);
 		}
@@ -165,9 +163,6 @@ class DeckLinkService {
 		$widened = $this->extractCardFields(card: $card);
 
 		$link = new DeckLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setBoardId($boardId);
 		$link->setStackId($stackId);
 		$link->setCardId($cardId);
@@ -185,8 +180,7 @@ class DeckLinkService {
 
 		$link->setLabels($labels);
 		$link->setAssignees($assignees);
-		$link->setLinkedBy($user->getUID());
-		$link->setLinkedAt(new DateTime());
+		$target->stamp(link: $link, linkedBy: $user->getUID());
 
 		return $this->deckLinkMapper->insert($link);
 	}//end linkCard()
@@ -317,9 +311,6 @@ class DeckLinkService {
 		}
 
 		$link = new DeckLink();
-		$link->setObjectUuid($target->objectUuid);
-		$link->setRegisterId($target->registerId);
-		$link->setSchemaId($target->schemaId());
 		$link->setBoardId($resolvedBoard);
 		$link->setStackId($card->stackId);
 		$link->setCardId($cardId);
@@ -327,8 +318,7 @@ class DeckLinkService {
 		$link->setDueDate($card->dueDateTime());
 		$link->setLabels(null);
 		$link->setAssignees(null);
-		$link->setLinkedBy($userUid);
-		$link->setLinkedAt(new DateTime());
+		$target->stamp(link: $link, linkedBy: $userUid);
 
 		return $this->deckLinkMapper->insert($link);
 	}//end createAndLinkCard()
