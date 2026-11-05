@@ -217,7 +217,7 @@ final class MailTableQueries {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	private function intParam(IQueryBuilder $qb, int $value): IParameter {
+	private function intParam(IQueryBuilder $qb, int $value) {
 		return $qb->createNamedParameter($value, IQueryBuilder::PARAM_INT);
 	}//end intParam()
 	/**
