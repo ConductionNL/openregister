@@ -629,6 +629,196 @@
             ]
         }
     ],
+    "rows without id": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "get": [
+                "IDBConnection"
+            ]
+        },
+        {
+            "get": [
+                "IAppConfig"
+            ]
+        },
+        {
+            "get": [
+                "RegisterMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "SchemaMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] Starting blob-to-magic migration batch",
+                {
+                    "file": "X",
+                    "line": "X"
+                }
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "blob_migration_complete",
+                "false"
+            ]
+        },
+        {
+            "getDatabasePlatform": []
+        },
+        {
+            "prepare": [
+                "SELECT 1 FROM information_schema.tables WHERE table_name = 'oc_openregister_objects' AND table_schema = DATABASE() LIMIT 1"
+            ]
+        },
+        {
+            "select": [
+                "*"
+            ]
+        },
+        {
+            "from": [
+                "openregister_objects",
+                null
+            ]
+        },
+        {
+            "setMaxResults": [
+                100
+            ]
+        },
+        {
+            "executeQuery": []
+        },
+        {
+            "closeCursor": []
+        },
+        {
+            "registerFind": [
+                7,
+                false,
+                false
+            ]
+        },
+        {
+            "schemaFind": [
+                8,
+                [],
+                false,
+                false
+            ]
+        },
+        {
+            "ensureTable": [
+                7,
+                8
+            ]
+        },
+        {
+            "saveObjects": [
+                [
+                    {
+                        "_uuid": "g",
+                        "_register": 7,
+                        "_schema": 8,
+                        "_uri": "u",
+                        "_relations": "[]",
+                        "uuid": "g"
+                    }
+                ],
+                7,
+                8
+            ]
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] Migrated group to magic table",
+                {
+                    "file": "X",
+                    "line": "X",
+                    "registerId": "7",
+                    "schemaId": "8",
+                    "count": 1
+                }
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "blob_migration_processed",
+                "0"
+            ]
+        },
+        {
+            "createFunction": [
+                "COUNT(*) as count"
+            ]
+        },
+        {
+            "select": [
+                "function"
+            ]
+        },
+        {
+            "from": [
+                "openregister_objects",
+                null
+            ]
+        },
+        {
+            "executeQuery": []
+        },
+        {
+            "closeCursor": []
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "blob_migration_processed",
+                "1"
+            ]
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "blob_migration_remaining",
+                "0"
+            ]
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "blob_migration_last_run",
+                "T"
+            ]
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] Batch completed",
+                {
+                    "file": "X",
+                    "line": "X",
+                    "migrated": 1,
+                    "skipped": 0,
+                    "remaining": 0,
+                    "execution_time_seconds": "X"
+                }
+            ]
+        }
+    ],
     "save throws": [
         {
             "get": [

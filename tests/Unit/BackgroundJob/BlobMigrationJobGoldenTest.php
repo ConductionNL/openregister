@@ -82,6 +82,7 @@ class BlobMigrationJobGoldenTest extends TestCase
             'save throws'         => [['rows' => [$rows[0]], 'saveThrows' => true]],
             'table check throws'  => [['table' => 'throw']],
             'postgres, empty'     => [['rows' => [], 'platform' => 'postgres']],
+            'rows without id'     => [['rows' => [['uuid' => 'g', 'register' => 7, 'schema' => 8, 'relations' => '[]', 'uri' => 'u']]]],
         ];
     }//end cases()
 
