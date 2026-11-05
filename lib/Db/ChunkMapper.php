@@ -300,13 +300,7 @@ class ChunkMapper extends QBMapper {
 			);
 		}
 
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		$result = $qb->executeQuery();
 		$rows = [];
@@ -393,13 +387,7 @@ class ChunkMapper extends QBMapper {
 			)
 			->orderBy('created_at', 'ASC');
 
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findUnvectorized()
