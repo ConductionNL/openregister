@@ -19,7 +19,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 
 /**
  * Adapter that exposes a mapper-like API over ObjectService.
@@ -331,9 +331,9 @@ class ObjectServiceMapperAdapter {
 	/**
 	 * Return the object-validation handler from the underlying ObjectService.
 	 *
-	 * @return ValidateObject
+	 * @return ValidateObjectInterface
 	 */
-	public function getValidateHandler(): ValidateObject {
+	public function getValidateHandler(): ValidateObjectInterface {
 		return $this->objectService->getValidateHandler();
 	}//end getValidateHandler()
 }//end class

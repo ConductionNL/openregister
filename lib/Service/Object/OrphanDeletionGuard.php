@@ -18,7 +18,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -46,7 +46,7 @@ class OrphanDeletionGuard {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper             $objectMapper      Organisation boundary and delete guards.
+	 * @param MagicMapperInterface             $objectMapper      Organisation boundary and delete guards.
 	 * @param PermissionHandler       $permissionHandler The caller's delete right.
 	 * @param IUserSession            $userSession       The caller.
 	 * @param ContainerInterface|null $container         Resolves the shared-data and integrity services lazily.
@@ -54,7 +54,7 @@ class OrphanDeletionGuard {
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly ?ContainerInterface $container,

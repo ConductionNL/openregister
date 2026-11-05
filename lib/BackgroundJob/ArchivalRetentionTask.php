@@ -55,7 +55,7 @@ use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -110,9 +110,9 @@ class ArchivalRetentionTask extends TimedJob {
 	/**
 	 * Magic-table resolver used to map registers/schemas to physical tables.
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface
 	 */
-	private readonly MagicMapper $magicMapper;
+	private readonly MagicMapperInterface $magicMapper;
 
 	/**
 	 * Object service used to perform the sweep deletes.
@@ -160,7 +160,7 @@ class ArchivalRetentionTask extends TimedJob {
 	 * @param IDBConnection $db Database connection for native SQL row scan.
 	 * @param RegisterMapperInterface $registerMapper Register repository.
 	 * @param SchemaMapperInterface $schemaMapper Schema repository.
-	 * @param MagicMapper $magicMapper Magic-table resolver.
+	 * @param MagicMapperInterface $magicMapper Magic-table resolver.
 	 * @param ObjectOperationsInterface $objectService Service used to perform the sweep deletes.
 	 * @param RetentionServiceInterface $retentionService Answers whether a row is under an active legal hold.
 	 * @param ContainerInterface $container App container the notification collaborators come from.
@@ -171,7 +171,7 @@ class ArchivalRetentionTask extends TimedJob {
 		IDBConnection $db,
 		RegisterMapperInterface $registerMapper,
 		SchemaMapperInterface $schemaMapper,
-		MagicMapper $magicMapper,
+		MagicMapperInterface $magicMapper,
 		ObjectOperationsInterface $objectService,
 		RetentionServiceInterface $retentionService,
 		ContainerInterface $container,
@@ -334,7 +334,7 @@ class ArchivalRetentionTask extends TimedJob {
 			return;
 		}
 
-		$tableName = MagicMapper::TABLE_PREFIX . ((string)$register->getId()) . '_' . ((string)$schema->getId());
+		$tableName = MagicMapperInterface::TABLE_PREFIX . ((string)$register->getId()) . '_' . ((string)$schema->getId());
 
 		$scanned = 0;
 		$expired = 0;

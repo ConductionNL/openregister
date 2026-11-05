@@ -38,6 +38,7 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Service\ScheduledReportService
  * @uses   \OCA\OpenRegister\Db\ScheduledReport
+ * @uses   \OCA\OpenRegister\Service\ScheduledReportRun
  * @uses   \OCA\OpenRegister\Exception\ExportTooLargeException
  */
 class ScheduledReportServiceNotifyGoldenTest extends TestCase {

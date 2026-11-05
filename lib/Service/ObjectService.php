@@ -42,7 +42,7 @@ use ReflectionClass;
 use InvalidArgumentException;
 use JsonSerializable;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\FacetableAnalyzer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
@@ -56,7 +56,7 @@ use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
-use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
@@ -71,14 +71,14 @@ use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindScope;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
-use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObjectInterface;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
-use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCA\OpenRegister\Service\Geo\GeoJsonGeometryValidator;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -285,10 +285,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @param GetObject                      $getHandler           Handler for object retrieval.
      * @param PermissionHandler              $permissionHandler    Handler for permission checks.
      * @param RenderObject                   $renderHandler        Handler for object rendering.
-     * @param SaveObject                     $saveHandler          Handler for individual object saving.
+     * @param SaveObjectInterface                     $saveHandler          Handler for individual object saving.
      * @param SaveObjects                    $saveObjectsHandler   Handler for bulk object saving operations.
      * @param SearchQueryHandler             $searchQueryHandler   Handler for search query operations.
-     * @param ValidateObject                 $validateHandler      Handler for object validation.
+     * @param ValidateObjectInterface                 $validateHandler      Handler for object validation.
      * @param LockHandler                    $lockHandler          Handler for object locking.
      * @param AuditHandler                   $auditHandler         Handler for audit trail operations.
      * @param RelationHandler                $relationHandler      Handler for object relationships.
@@ -305,7 +305,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @param RegisterMapperInterface                 $registerMapper       Mapper for register operations.
      * @param SchemaMapperInterface                   $schemaMapper         Mapper for schema operations.
      * @param ViewMapperInterface                     $viewMapper           Mapper for view operations.
-     * @param MagicMapper                    $objectMapper         Unified mapper for object
+     * @param MagicMapperInterface                    $objectMapper         Unified mapper for object
      *                                                             operations (routes to
      *                                                             magic tables).
      * @param FileService                    $fileService          Service for file operations.
@@ -315,7 +315,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @param IUserManager                   $userManager          User manager for getting user objects.
      * @param OrganisationServiceInterface            $organisationService  Service for organisation operations.
      * @param LoggerInterface                $logger               Logger for performance monitoring.
-     * @param CacheHandler                   $cacheHandler         Service for entity and query caching.
+     * @param CacheHandlerInterface                   $cacheHandler         Service for entity and query caching.
      * @param SettingsServiceInterface                $settingsService      Service for settings operations.
      * @param DateTimeNormalizer             $dateTimeNormalizer   Normaliser for user-supplied datetime input.
      * @param IAppContainer                  $container            Application container.
@@ -332,10 +332,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         private readonly GetObject $getHandler,
         private readonly PermissionHandler $permissionHandler,
         private readonly RenderObject $renderHandler,
-        private readonly SaveObject $saveHandler,
+        private readonly SaveObjectInterface $saveHandler,
         private readonly SaveObjects $saveObjectsHandler,
         private readonly SearchQueryHandler $searchQueryHandler,
-        private readonly ValidateObject $validateHandler,
+        private readonly ValidateObjectInterface $validateHandler,
         // New handlers - TESTING FIRST 5:.
         private readonly LockHandler $lockHandler,
         private readonly AuditHandler $auditHandler,
@@ -362,7 +362,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         private readonly RegisterMapperInterface $registerMapper,
         private readonly SchemaMapperInterface $schemaMapper,
         private readonly ViewMapperInterface $viewMapper,
-        private readonly MagicMapper $objectMapper,
+        private readonly MagicMapperInterface $objectMapper,
         private readonly FileService $fileService,
         private readonly IUserSession $userSession,
         private readonly SearchTrailService $searchTrailService,
@@ -370,7 +370,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         private readonly IUserManager $userManager,
         private readonly OrganisationServiceInterface $organisationService,
         private readonly LoggerInterface $logger,
-        private readonly CacheHandler $cacheHandler,
+        private readonly CacheHandlerInterface $cacheHandler,
         private readonly SettingsServiceInterface $settingsService,
         private readonly DateTimeNormalizer $dateTimeNormalizer,
         private readonly IAppContainer $container,
@@ -5217,9 +5217,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * Used by controllers to resolve UUID-to-name mappings for _names extension.
      *
-     * @return CacheHandler The cache handler instance.
+     * @return CacheHandlerInterface The cache handler instance.
      */
-    public function getCacheHandler(): CacheHandler
+    public function getCacheHandler(): CacheHandlerInterface
     {
         return $this->cacheHandler;
     }//end getCacheHandler()
@@ -7372,9 +7372,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * Exposed so adapters and external services can run validation without
      * depending on ObjectService internals directly.
      *
-     * @return ValidateObject
+     * @return ValidateObjectInterface
      */
-    public function getValidateHandler(): ValidateObject
+    public function getValidateHandler(): ValidateObjectInterface
     {
         return $this->validateHandler;
     }//end getValidateHandler()

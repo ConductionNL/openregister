@@ -210,13 +210,12 @@ class CollectiveLinkService {
 		}
 
 		$link = $this->hydrateLink(
-			objectUuid: $objectUuid,
-			registerId: $registerId,
-			schemaId: $schemaId,
 			pageId: $pageId,
-			info: $info,
-			uid: $uid
+			info: $info
 		);
+		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
+			->inSchema(schemaId: $schemaId)
+			->stamp(link: $link, linkedBy: $uid);
 
 		return $this->collectiveLinkMapper->insert($link);
 	}//end linkPage()
@@ -283,13 +282,12 @@ class CollectiveLinkService {
 		}
 
 		$link = $this->hydrateLink(
-			objectUuid: $objectUuid,
-			registerId: $registerId,
-			schemaId: $schemaId,
 			pageId: $pageId,
-			info: $info,
-			uid: $uid
+			info: $info
 		);
+		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
+			->inSchema(schemaId: $schemaId)
+			->stamp(link: $link, linkedBy: $uid);
 
 		return $this->collectiveLinkMapper->insert($link);
 	}//end createAndLinkPage()
@@ -297,27 +295,16 @@ class CollectiveLinkService {
 	/**
 	 * Build a CollectiveLink from normalised page info.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
 	 * @param int $pageId NC Collectives page id.
 	 * @param array<string,mixed> $info Normalised page info.
-	 * @param string $uid The linking user id.
 	 *
 	 * @return CollectiveLink
 	 */
 	private function hydrateLink(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
 		int $pageId,
 		array $info,
-		string $uid,
 	): CollectiveLink {
 		$link = new CollectiveLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setPageId($pageId);
 		$link->setCollectiveId((int)($info['collectiveId'] ?? 0));
 		$link->setCollectiveName((string)($info['collectiveName'] ?? ''));
@@ -326,8 +313,6 @@ class CollectiveLinkService {
 		$link->setEmoji($info['emoji'] ?? null);
 		$link->setLastModified($info['lastModified'] ?? null);
 		$link->setUrl($info['url'] ?? $this->pageDeepLink(pageId: $pageId));
-		$link->setLinkedBy($uid);
-		$link->setLinkedAt(new DateTime());
 
 		return $link;
 	}//end hydrateLink()

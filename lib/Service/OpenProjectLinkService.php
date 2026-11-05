@@ -182,13 +182,12 @@ class OpenProjectLinkService {
 		);
 
 		$link = $this->hydrateLink(
-			objectUuid: $objectUuid,
-			registerId: $registerId,
-			schemaId: $schemaId,
 			workPackageId: $workPackageId,
-			info: ($info ?? ['subject' => '#' . $workPackageId]),
-			uid: $uid
+			info: ($info ?? ['subject' => '#' . $workPackageId])
 		);
+		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
+			->inSchema(schemaId: $schemaId)
+			->stamp(link: $link, linkedBy: $uid);
 
 		return $this->openProjectLinkMapper->insert($link);
 	}//end linkWorkPackage()
@@ -257,13 +256,12 @@ class OpenProjectLinkService {
 		$info = $this->normaliseRow(row: $created);
 
 		$link = $this->hydrateLink(
-			objectUuid: $objectUuid,
-			registerId: $registerId,
-			schemaId: $schemaId,
 			workPackageId: $workPackageId,
-			info: $info,
-			uid: $uid
+			info: $info
 		);
+		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
+			->inSchema(schemaId: $schemaId)
+			->stamp(link: $link, linkedBy: $uid);
 
 		return $this->openProjectLinkMapper->insert($link);
 	}//end createAndLinkWorkPackage()
@@ -271,27 +269,16 @@ class OpenProjectLinkService {
 	/**
 	 * Build an OpenProjectLink from normalised work-package info.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
 	 * @param int $workPackageId OpenProject work-package id.
 	 * @param array<string,mixed> $info Normalised work-package info.
-	 * @param string $uid The linking user id.
 	 *
 	 * @return OpenProjectLink
 	 */
 	private function hydrateLink(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
 		int $workPackageId,
 		array $info,
-		string $uid,
 	): OpenProjectLink {
 		$link = new OpenProjectLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setWorkPackageId($workPackageId);
 		$link->setSubject((string)($info['subject'] ?? ('#' . $workPackageId)));
 		$link->setType($this->stringOrNull(value: ($info['type'] ?? null)));
@@ -301,8 +288,6 @@ class OpenProjectLinkService {
 		$link->setProject($this->stringOrNull(value: ($info['project'] ?? null)));
 		$link->setUrl($this->stringOrNull(value: ($info['url'] ?? null)));
 		$link->setCachedAt(new DateTime());
-		$link->setLinkedBy($uid);
-		$link->setLinkedAt(new DateTime());
 
 		return $link;
 	}//end hydrateLink()

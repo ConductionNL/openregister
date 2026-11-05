@@ -21,6 +21,10 @@ namespace OCA\OpenRegister\Tests\Service;
 
 use OCA\OpenRegister\Tests\Unit\Controller\Support\LlmSettingsControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ConversationControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\GdprEntitiesControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FileExtractionControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FileTextControllerFactory;
 use OC\Files\AppData\Factory;
 use OCA\OpenRegister\Controller\BulkController;
 use OCA\OpenRegister\Controller\ChatController;
@@ -1778,7 +1782,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return ConversationController
 	 */
 	private function buildConversationController(): ConversationController {
-		return new ConversationController(
+		return ConversationControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(ConversationMapper::class),
@@ -1798,7 +1802,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return GdprEntitiesController
 	 */
 	private function buildGdprEntitiesController(): GdprEntitiesController {
-		return new GdprEntitiesController(
+		return GdprEntitiesControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(GdprEntityMapper::class),
@@ -1855,7 +1859,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return FileTextController
 	 */
 	private function buildFileTextController(): FileTextController {
-		return new FileTextController(
+		return FileTextControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(TextExtractionService::class),
@@ -1875,7 +1879,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return FileExtractionController
 	 */
 	private function buildFileExtractionController(): FileExtractionController {
-		return new FileExtractionController(
+		return FileExtractionControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(TextExtractionService::class),

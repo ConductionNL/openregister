@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -118,7 +118,7 @@ class SchemaDeletionService {
 	 * SchemaDeletionService constructor.
 	 *
 	 * @param IDBConnection $db Database connection, for phase-1 transaction control.
-	 * @param MagicMapper $magicMapper Magic-table mapper (row reads, bulk delete, table drop).
+	 * @param MagicMapperInterface $magicMapper Magic-table mapper (row reads, bulk delete, table drop).
 	 * @param RegisterMapperInterface $registerMapper Register mapper, to resolve register entities.
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper, to resolve and delete schema entities.
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper (ADR-003 hash-chained writes).
@@ -126,7 +126,7 @@ class SchemaDeletionService {
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
@@ -795,7 +795,7 @@ class SchemaDeletionService {
 			$tables[] = [
 				'registerId' => $registerId,
 				'register' => $register,
-				'tableName' => MagicMapper::TABLE_PREFIX . $registerId . '_' . $schemaId,
+				'tableName' => MagicMapperInterface::TABLE_PREFIX . $registerId . '_' . $schemaId,
 			];
 		}//end foreach
 

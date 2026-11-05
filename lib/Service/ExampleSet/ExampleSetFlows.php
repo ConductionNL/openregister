@@ -69,7 +69,14 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 		'limits',
 		'publish',
 		'runs',
+		'applicationSlug',
+		'enabled',
 	];
+
+	/**
+	 * What `{{flow:self}}` and `{{flow:self.uuid}}` fill to inside a flow, until the flow's uuid replaces it.
+	 */
+	private const OWN_UUID = '{{flow:self.uuid}}';
 
 	/**
 	 * The run fields a fragment may set.
@@ -111,6 +118,21 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	}//end noun()
 
 	/**
+	 * A flow's own declaration may quote its own uuid (`{{flow:self.uuid}}`), which only exists once it is written.
+	 *
+	 * @param array<string, mixed> $context The context placeholders draw on.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-flow-may-quote-its-own-uuid
+	 */
+	protected function fillContext(array $context): array {
+		$context['flows'] = (['self' => ['uuid' => self::OWN_UUID]] + (array) ($context['flows'] ?? []));
+
+		return $context;
+	}//end fillContext()
+
+	/**
 	 * Why a filled flow cannot be written, or ''.
 	 *
 	 * @param array<string, mixed> $data  The filled fields.
@@ -135,12 +157,40 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 			return $graph;
 		}
 
-		if (isset($data['publish']) === true && is_bool($data['publish']) === false) {
-			return 'publish is true or false';
+		$switches = $this->switchesRefusal(data: $data);
+		if ($switches !== '') {
+			return $switches;
 		}
 
 		return $this->runs()->refusal(runs: ($data['runs'] ?? []), nodes: $data['nodes']);
 	}//end refusal()
+
+	/**
+	 * A publish, enabled or applicationSlug of the wrong type, or a flow switched on that is not published.
+	 *
+	 * @param array<string, mixed> $data The filled fields.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-flow-may-name-its-application-and-be-switched-on
+	 */
+	private function switchesRefusal(array $data): string {
+		foreach (['publish', 'enabled'] as $field) {
+			if (isset($data[$field]) === true && is_bool($data[$field]) === false) {
+				return $field.' is true or false';
+			}
+		}
+
+		if (isset($data['applicationSlug']) === true && is_string($data['applicationSlug']) === false) {
+			return 'applicationSlug is text';
+		}
+
+		if (($data['enabled'] ?? false) === true && ($data['publish'] ?? true) === false) {
+			return 'a flow that is switched on is published: it runs its published version';
+		}
+
+		return '';
+	}//end switchesRefusal()
 
 	/**
 	 * The fragment's refusals, and a waiting run that no task of the fragment names: its slot would stay empty.
@@ -196,7 +246,9 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 
 	/**
 	 * Store the flow for the shipping app, switched off, then publish it
-	 * unless the fragment says not to.
+	 * unless the fragment says not to, and switch it on when it says so.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-flow-may-name-its-application-and-be-switched-on
 	 *
 	 * @param string               $app  The app that ships the fragment; the flow is that app's.
 	 * @param string               $key  The flow's key in the fragment (unused).
@@ -223,6 +275,12 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 			$version = null;
 			if (($data['publish'] ?? true) === true) {
 				$version = $this->container->get(FlowVersionService::class)->publish(flow: $stored, publishedBy: null)->getVersion();
+			}
+
+			if (($data['enabled'] ?? false) === true) {
+				// Switched on only once published, so it runs the frozen graph.
+				$stored->setEnabled(true);
+				$stored = $this->container->get(FlowMapper::class)->update($stored);
 			}
 
 			$entry = ['uuid' => (string) $stored->getUuid()] + $this->runs()->write(
@@ -299,6 +357,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 */
 	private function declare(Flow $flow, array $data): bool {
 		$before = $this->declared(flow: $flow);
+		$data   = $this->withOwnUuid(value: $data, uuid: (string) $flow->getUuid());
 		$flow->setName((string) $data['name']);
 		$flow->setDescription(($data['description'] ?? null));
 		$flow->setTrigger(($data['trigger'] ?? null));
@@ -310,9 +369,30 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 		$flow->setEdges((array) ($data['edges'] ?? []));
 		$flow->setAnnotations((array) ($data['annotations'] ?? []));
 		$flow->setLimits((array) ($data['limits'] ?? []));
+		$flow->setApplicationSlug(($data['applicationSlug'] ?? null));
 
 		return $this->declared(flow: $flow) !== $before;
 	}//end declare()
+
+	/**
+	 * A filled value with the flow's own uuid where it quoted itself.
+	 *
+	 * @param mixed  $value The filled value.
+	 * @param string $uuid  The flow's uuid.
+	 *
+	 * @return mixed
+	 */
+	private function withOwnUuid(mixed $value, string $uuid): mixed {
+		if (is_array($value) === true) {
+			return array_map(fn (mixed $item): mixed => $this->withOwnUuid(value: $item, uuid: $uuid), $value);
+		}
+
+		if (is_string($value) === true) {
+			return str_replace(self::OWN_UUID, $uuid, $value);
+		}
+
+		return $value;
+	}//end withOwnUuid()
 
 	/**
 	 * The declarable fields of a flow, as one comparable string.
@@ -335,6 +415,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 				$flow->getEdges(),
 				$flow->getAnnotations(),
 				$flow->getLimits(),
+				$flow->getApplicationSlug(),
 			]
 		);
 	}//end declared()
