@@ -29,7 +29,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use OCP\IUser;
 
@@ -1059,25 +1058,6 @@ interface ObjectOperationsInterface {
     	bool $_multitenancy=true, bool $validation=false, bool $events=false, bool $deduplicateIds=true, bool $enrich=true,
     	bool $_audit=true
     ): array;
-
-    /**
-     * Save rows one by one through the request-scoped reference cache.
-     *
-     * A row that throws is recorded on the returned status and the batch continues.
-     *
-     * @param array                    $objects  Rows in the shape saveObject() accepts.
-     * @param Register|string|int|null $register Optional register context.
-     * @param Schema|string|int|null   $schema   Optional schema context.
-     *
-     * @return BatchOperationStatus Per-row outcomes plus reference-cache counters.
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function saveObjectsStreaming(
-        array $objects,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null
-    ): BatchOperationStatus;
 
     /**
      * Migrate objects between registers and/or schemas

@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Controller;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Exception;
 use OCA\OpenRegister\Controller\Support\BulkControllerServices;
+use OCA\OpenRegister\Controller\Support\BulkStore;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -74,6 +75,13 @@ class BulkController extends Controller {
 	 * @var ObjectOperationsInterface
 	 */
 	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * The bulk store; its object service also offers the streaming save
+	 *
+	 * @var BulkStore
+	 */
+	private readonly BulkStore $store;
 
 	/**
 	 * Mapper for resolving registers (RBAC gates)
@@ -132,6 +140,7 @@ class BulkController extends Controller {
 		BulkControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->store = $services->store;
 		$this->objectService = $services->store->objectService;
 		$this->registerMapper = $services->store->registerMapper;
 		$this->schemaMapper = $services->store->schemaMapper;
@@ -521,7 +530,7 @@ class BulkController extends Controller {
 				);
 			}
 
-			$status = $this->objectService->saveObjectsStreaming(
+			$status = $this->store->objectService->saveObjectsStreaming(
 				objects: $objects,
 				register: $register,
 				schema: $schema
