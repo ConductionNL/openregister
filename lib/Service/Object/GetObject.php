@@ -315,54 +315,20 @@ class GetObject
         $sourced  = false;
         $provider = $this->resolveObjectSource(schema: $schema, sourced: $sourced);
         if ($sourced === true) {
-            if ($provider === null) {
-                return [];
-            }
-
-            $source = $schema->getObjectSource();
-            $query  = [
-                'limit'   => $limit,
-                'offset'  => $offset,
-                'filters' => $filters,
-                'sort'    => $sort,
-                'search'  => $search,
-                'ids'     => $ids,
-            ];
-
-            return $provider->findAll(
-                register: $register,
-                schema: $schema,
-                query: $query,
-                config: ($source['config'] ?? [])
-            );
-        }//end if
+            $query  = ['limit' => $limit, 'offset' => $offset, 'filters' => $filters, 'sort' => $sort, 'search' => $search, 'ids' => $ids];
+            return $provider?->findAll(register: $register, schema: $schema, query: $query, config: $schema->getObjectSource()['config'] ?? []) ?? [];
+        }
 
         // Thread the RBAC / multitenancy posture into the filters so the search
         // handler honours them. These are read from the query array downstream;
         // passing them only as method arguments left them silently dropped, so
         // a caller's `_rbac:false` (e.g. installer/system context) had no effect.
-        $filters['_rbac']         = $_rbac;
-        $filters['_multitenancy'] = $_multitenancy;
-
-        // Retrieve objects using the objectEntityMapper with optional register, schema, and ids.
         $objects = $this->objectMapper->findAll(
-            limit: $limit,
-            offset: $offset,
-            filters: $filters,
-            sort: $sort,
-            search: $search,
-            ids: $ids,
-            uses: $uses,
-            register: $register,
-            schema: $schema
+            limit: $limit, offset: $offset, filters: array_merge($filters, ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy]),
+            sort: $sort, search: $search, ids: $ids, uses: $uses, register: $register, schema: $schema
         );
-
-        // If files are to be included, hydrate each object with its file information.
         if ($files === true) {
-            foreach ($objects as &$object) {
-                $object = $this->hydrateFiles(object: $object, files: []);
-                // TODO.
-            }
+            return array_map(fn (ObjectEntity $object): ObjectEntity => $this->hydrateFiles(object: $object, files: []), $objects);
         }
 
         return $objects;
