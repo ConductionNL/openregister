@@ -23,12 +23,20 @@ export async function saveSettings(modal, save) {
 		showSuccess(save.done)
 		modal.$emit('closing')
 	} catch (error) {
-		showError(
-			t('openregister', 'Failed to save configuration: {error}', {
-				error: error.response?.data?.error || error.message,
-			}),
-		)
+		showError(saveFailure(error))
 	} finally {
 		modal.saving = false
 	}
+}
+
+/**
+ * Why the settings could not be saved, in words.
+ *
+ * @param {object} error The request error
+ * @return {string} The translated message
+ */
+function saveFailure(error) {
+	return t('openregister', 'Failed to save configuration: {error}', {
+		error: error.response?.data?.error || error.message,
+	})
 }
