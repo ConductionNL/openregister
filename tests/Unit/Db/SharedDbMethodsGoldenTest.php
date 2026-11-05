@@ -5,7 +5,7 @@
  *
  * Pins findAll() of the log and destruction-list mappers, deleteByObject() of
  * the case-item, read-state and watcher mappers, the ISO timestamps of
- * Organisation, Configuration and Application, the status vocabulary check,
+ * Organisation, Configuration, Application and View, the status vocabulary check,
  * setAuthorization() of Application and Organisation and hydrate() of Task
  * and CaseItem.
  *
@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Db\WebhookLogMapper;
+use OCA\OpenRegister\Search\Db\View;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -58,6 +59,7 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Db\Verwerkingsactiviteit
  * @covers \OCA\OpenRegister\Db\WatcherMapper
  * @covers \OCA\OpenRegister\Db\WebhookLogMapper
+ * @covers \OCA\OpenRegister\Search\Db\View
  * @uses   \OCA\OpenRegister\Db\DestructionList
  * @uses   \OCA\OpenRegister\Db\EndpointLog
  * @uses   \OCA\OpenRegister\Db\WebhookLog
@@ -150,7 +152,7 @@ class SharedDbMethodsGoldenTest extends TestCase {
 	}//end testDeleteByObjectRemovesTheRowsOfOneObject()
 
 	public function testTimestampsAreIsoOrNull(): void {
-		foreach ([new Organisation(), new Configuration(), new Application()] as $entity) {
+		foreach ([new Organisation(), new Configuration(), new Application(), new View()] as $entity) {
 			$created = new ReflectionMethod($entity, 'getCreatedFormatted');
 			$updated = new ReflectionMethod($entity, 'getUpdatedFormatted');
 			$this->assertNull($created->invoke($entity));

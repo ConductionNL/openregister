@@ -28,6 +28,7 @@ use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\Configuration;
+use OCA\OpenRegister\Db\IsoTimestampsTrait;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\ScheduledReport;
 use OCA\OpenRegister\Db\Task;
@@ -84,6 +85,7 @@ use OCA\OpenRegister\Db\TimelineEntry;
  * what they are to move a number by one.
  */
 class View extends Entity implements JsonSerializable {
+	use IsoTimestampsTrait;
 
 	/**
 	 * Unique identifier for the view
@@ -403,32 +405,6 @@ class View extends Entity implements JsonSerializable {
 			'managedByConfiguration' => $this->getManagedByConfigurationFormatted(),
 		];
 	}//end jsonSerialize()
-
-	/**
-	 * Get created timestamp formatted.
-	 *
-	 * @return string|null
-	 */
-	private function getCreatedFormatted(): ?string {
-		if ($this->created !== null) {
-			return $this->created->format('c');
-		}
-
-		return null;
-	}//end getCreatedFormatted()
-
-	/**
-	 * Get updated timestamp formatted.
-	 *
-	 * @return string|null
-	 */
-	private function getUpdatedFormatted(): ?string {
-		if ($this->updated !== null) {
-			return $this->updated->format('c');
-		}
-
-		return null;
-	}//end getUpdatedFormatted()
 
 	/**
 	 * Get the presentation configuration, defaulted to the `table` view.
