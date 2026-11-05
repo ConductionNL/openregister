@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -21,7 +20,6 @@ use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
@@ -95,9 +93,7 @@ class MacroActionResolverNextForRunTest extends TestCase {
 	private function resolver(FlowService $flows): MacroActionResolver {
 		return new MacroActionResolver(
 			$this->createMock(SchemaMapper::class),
-			$flows,
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(LoggerInterface::class)
+			$flows
 		);
 	}
 }
