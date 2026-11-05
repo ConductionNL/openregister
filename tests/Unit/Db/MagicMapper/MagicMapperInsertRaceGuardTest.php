@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicRowWrite;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -58,6 +59,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRowWrite
  * @uses \OCA\OpenRegister\Service\Query\PropertyReadGuard
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowAccess
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
@@ -238,7 +240,9 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 		$mapper->method('ensureTableForRegisterSchema')->willReturn(true);
 		$mapper->method('getTableNameForRegisterSchema')->willReturn('openregister_table_3_7');
 		$mapper->method('saveObjectToRegisterSchemaTable')->willReturnCallback(
-			function (array $objectData, Register $register, Schema $schema, string $tableName, bool $failIfExists = false, ?int &$insertedId = null): string {
+			function (MagicRowWrite $write): string {
+				$objectData = $write->objectData;
+				$failIfExists = $write->failIfExists;
 				$liveOnly = null;
 				if (property_exists(MagicMapper::class, 'liveRowOnlyWrites') === true) {
 					$liveOnly = ((new \ReflectionProperty(MagicMapper::class, 'liveRowOnlyWrites'))->getValue($this->liveMapper)[self::UUID] ?? null);
@@ -255,7 +259,7 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 				}
 
 				if ($this->taken === false) {
-					$insertedId = 41;
+					$write->insertedId = 41;
 				}
 
 				return self::UUID;

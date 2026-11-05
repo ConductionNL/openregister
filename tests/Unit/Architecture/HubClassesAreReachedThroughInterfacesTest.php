@@ -83,6 +83,10 @@ final class HubClassesAreReachedThroughInterfacesTest extends TestCase {
 		FileMapper::class => FileMapperInterface::class,
 		FlowRunMapper::class => FlowRunMapperInterface::class,
 		FlowRunService::class => FlowRunServiceInterface::class,
+		\OCA\OpenRegister\Db\MagicMapper::class => \OCA\OpenRegister\Db\MagicMapperInterface::class,
+		\OCA\OpenRegister\Service\Object\CacheHandler::class => \OCA\OpenRegister\Service\Object\CacheHandlerInterface::class,
+		\OCA\OpenRegister\Service\Object\SaveObject::class => \OCA\OpenRegister\Service\Object\SaveObjectInterface::class,
+		\OCA\OpenRegister\Service\Object\ValidateObject::class => \OCA\OpenRegister\Service\Object\ValidateObjectInterface::class,
 		ObjectService::class => ObjectOperationsInterface::class,
 		OrganisationMapper::class => OrganisationMapperInterface::class,
 		OrganisationService::class => OrganisationServiceInterface::class,
@@ -146,7 +150,8 @@ final class HubClassesAreReachedThroughInterfacesTest extends TestCase {
 
 			$code = (string)preg_replace('#/\*.*?\*/|//[^\n]*#s', '', (string)file_get_contents($path));
 			$sameNamespace = preg_match('/^namespace\s+' . preg_quote($namespace, '/') . ';/m', $code) === 1;
-			$named = preg_match('/' . preg_quote($class, '/') . '(?!\w)/', $code) === 1
+			$body = (string)preg_replace('/^namespace\s+[^;]+;/m', '', $code);
+			$named = preg_match('/' . preg_quote($class, '/') . '(?![\w\\\\])/', $body) === 1
 				|| ($sameNamespace === true && preg_match('/(?<![\w\\\\])' . $short . '(?!\w)/', $code) === 1);
 			if ($named === true) {
 				$found[] = substr($path, strlen(self::LIB) + 1);

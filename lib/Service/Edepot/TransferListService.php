@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Edepot;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IAppConfig;
 use OCP\Notification\IManager as INotificationManager;
@@ -67,7 +67,7 @@ class TransferListService {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $objectMapper The object mapper.
+	 * @param MagicMapperInterface $objectMapper The object mapper.
 	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail mapper.
 	 * @param TransferRecordService $transferRecordService Durable transfer-record persistence.
 	 * @param IAppConfig $appConfig The app configuration.
@@ -75,7 +75,7 @@ class TransferListService {
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly TransferRecordService $transferRecordService,
 		private readonly IAppConfig $appConfig,
