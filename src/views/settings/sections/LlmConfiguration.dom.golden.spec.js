@@ -59,11 +59,6 @@ jest.mock('../../../modals/settings/ObjectManagementModal.vue', () =>
 jest.mock('../../../modals/settings/ObjectVectorizationModal.vue', () =>
 	mockModule('ObjectVectorizationModal'),
 )
-jest.mock('pinia', () => ({
-	mapStores: () => ({ settingsStore: () => mockStore }),
-}))
-jest.mock('../../../store/settings.js', () => ({ useSettingsStore: () => ({}) }))
-
 const mockStore = {
 	extractionStats: { completed: 3 },
 	vectorStats: { stats: { file_vectors: 2 } },
@@ -72,6 +67,11 @@ const mockStore = {
 	getChatStats: () => Promise.reject(new Error('down')),
 	getVectorStats: () => Promise.reject(new Error('down')),
 }
+
+jest.mock('pinia', () => ({
+	mapStores: () => ({ settingsStore: () => mockStore }),
+}))
+jest.mock('../../../store/settings.js', () => ({ useSettingsStore: () => ({}) }))
 
 /**
  * A stand-in component module.
