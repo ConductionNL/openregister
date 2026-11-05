@@ -2,6 +2,7 @@
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\RelationsControllerFactory;
 use OCA\OpenRegister\Controller\RelationsController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
@@ -47,7 +48,7 @@ class RelationsControllerTest extends TestCase {
 		$this->deckCardService = $this->createMock(DeckCardService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new RelationsController(
+		$this->controller = RelationsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objectService,

@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CredentialControllerFactory;
 use OCA\OpenRegister\Controller\CredentialController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
@@ -358,7 +359,7 @@ class CredentialShareApiTest extends TestCase {
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('getAppPath')->with('openregister')->willReturn(dirname(__DIR__, 3));
 
-		return new CredentialController(
+		return CredentialControllerFactory::create(
 			'openregister',
 			$request,
 			$session,

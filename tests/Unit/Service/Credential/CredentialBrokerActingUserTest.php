@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Credential;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CredentialControllerFactory;
 use OCA\OpenRegister\Controller\CredentialController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
@@ -209,7 +210,7 @@ class CredentialBrokerActingUserTest extends TestCase {
 		$userSession = $this->createMock(IUserSession::class);
 		$userSession->method('getUser')->willReturn($user);
 
-		$controller = new CredentialController(
+		$controller = CredentialControllerFactory::create(
 			'openregister',
 			$request,
 			$userSession,

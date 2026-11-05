@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CredentialControllerFactory;
 use OCA\OpenRegister\Controller\CredentialController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
@@ -52,6 +53,11 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialController
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialVault
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialTokens
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Credential\CredentialBrokerService
  * @uses \OCA\OpenRegister\Service\Credential\CredentialUpdateRequest
@@ -171,7 +177,7 @@ class CredentialControllerTest extends TestCase {
 			}
 		);
 
-		return new CredentialController(
+		return CredentialControllerFactory::create(
 			'openregister',
 			$request,
 			$session,
@@ -612,7 +618,7 @@ class CredentialControllerTest extends TestCase {
 			}
 		);
 
-		return new CredentialController(
+		return CredentialControllerFactory::create(
 			'openregister',
 			$request,
 			$session,
@@ -751,7 +757,7 @@ class CredentialControllerTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturn(true);
 
-		return new CredentialController(
+		return CredentialControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$session,

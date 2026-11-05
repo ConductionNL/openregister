@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditTrailControllerFactory;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -128,7 +129,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 			self::stateFieldRuleResolver($this->userSession, $this->groupManager)
 		);
 
-		return new AuditTrailController(
+		return AuditTrailControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->logService,
@@ -393,7 +394,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn(null);
 		$this->readAccess->expects($this->never())->method('readableOrAmbiguous');
 
-		$controller = new AuditTrailController(
+		$controller = AuditTrailControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->logService,
