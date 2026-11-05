@@ -137,7 +137,6 @@ class RevertHandler {
 	 * @throws \Exception If reversion fails
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean needed to control version overwrite behavior
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectStateWriteException::frozen() is the one named constructor every write guard refuses with
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
@@ -180,6 +179,8 @@ class RevertHandler {
 	 * @throws NotAuthorizedException If the caller may not update the object
 	 * @throws LockedException If someone else holds the object's lock
 	 * @throws ObjectStateWriteException If the object is frozen
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectStateWriteException::frozen() is the one named constructor every write guard refuses with
 	 */
 	private function assertMayRevert(array $context): void {
 		$object = $context['object'];
