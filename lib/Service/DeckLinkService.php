@@ -609,32 +609,7 @@ class DeckLinkService {
 	 * @return array{id:?int,title:string,color:string}
 	 */
 	private function mapLabel(object $label): array {
-		$id = null;
-		$title = '';
-		$color = '';
-
-		try {
-			$rawId = $label->getId();
-			if ($rawId !== null) {
-				$id = (int)$rawId;
-			}
-		} catch (Throwable $e) {
-			// Leave default null.
-		}
-
-		try {
-			$title = (string)$label->getTitle();
-		} catch (Throwable $e) {
-			// Leave default empty.
-		}
-
-		try {
-			$color = (string)$label->getColor();
-		} catch (Throwable $e) {
-			// Leave default empty.
-		}
-
-		return ['id' => $id, 'title' => $title, 'color' => $color];
+		return (new DeckRowMapper(userManager: $this->userManager))->label(label: $label);
 	}//end mapLabel()
 
 	/**
@@ -645,37 +620,6 @@ class DeckLinkService {
 	 * @return array{uid:string,type:string,displayName:string}
 	 */
 	private function mapAssignee(object $assignment): array {
-		$uid = '';
-		$type = 'user';
-
-		try {
-			$uid = (string)$assignment->getParticipant();
-		} catch (Throwable $e) {
-			// Leave default empty.
-		}
-
-		try {
-			$type = (string)$assignment->getTypeString();
-		} catch (Throwable $e) {
-			// Leave default value.
-		}
-
-		$displayName = $uid;
-		if ($type === 'user' && $uid !== '') {
-			try {
-				$userObj = $this->userManager->get($uid);
-				if ($userObj !== null) {
-					$displayName = (string)$userObj->getDisplayName();
-				}
-			} catch (Throwable $e) {
-				// Leave displayName as uid.
-			}
-		}
-
-		return [
-			'uid' => $uid,
-			'type' => $type,
-			'displayName' => $displayName,
-		];
+		return (new DeckRowMapper(userManager: $this->userManager))->assignee(assignment: $assignment);
 	}//end mapAssignee()
 }//end class
