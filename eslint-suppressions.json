@@ -1,17 +1,4 @@
 {
-  "src/components/AgentSelector.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 2
-    },
-    "vue/custom-event-name-casing": {
-      "count": 1
-    }
-  },
-  "src/components/FacetComponent.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 3
-    }
-  },
   "src/components/PaginationComponent.vue": {
     "vue/custom-event-name-casing": {
       "count": 2
@@ -98,11 +85,6 @@
     }
   },
   "src/dialogs/avg/RedactionDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
-  "src/dialogs/i18n/BulkTranslateDialog.vue": {
     "@nextcloud/no-deprecated-library-props": {
       "count": 1
     }
@@ -268,11 +250,6 @@
       "count": 1
     }
   },
-  "src/mail-sidebar/components/LinkedObjectsList.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    }
-  },
   "src/mail-sidebar/components/ObjectsTab.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 1
@@ -282,11 +259,6 @@
     },
     "vue/custom-event-name-casing": {
       "count": 2
-    }
-  },
-  "src/mail-sidebar/components/SuggestedObjectsList.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
     }
   },
   "src/mail-sidebar/composables/useAttachmentDrag.js": {
@@ -357,17 +329,6 @@
     }
   },
   "src/modals/configuration/ImportConfiguration.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
-    "no-console": {
-      "count": 2
-    },
-    "vue/prefer-define-options": {
-      "count": 1
-    }
-  },
-  "src/modals/configuration/PreviewConfiguration.vue": {
     "@nextcloud/no-deprecated-library-props": {
       "count": 1
     },
@@ -519,17 +480,6 @@
   },
   "src/modals/object/LockObject.vue": {
     "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
-    "vue/prefer-define-options": {
-      "count": 1
-    }
-  },
-  "src/modals/object/MassCopyObjects.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
-    "no-console": {
       "count": 1
     },
     "vue/prefer-define-options": {
@@ -944,11 +894,6 @@
       "count": 2
     }
   },
-  "src/services/appInstallService.js": {
-    "no-use-before-define": {
-      "count": 2
-    }
-  },
   "src/sidebars/dashboard/DashboardSideBar.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 2
@@ -1261,14 +1206,6 @@
     }
   },
   "src/views/object/ObjectsList.vue": {
-    "no-console": {
-      "count": 1
-    },
-    "vue/prefer-define-options": {
-      "count": 1
-    }
-  },
-  "src/views/organisation/OrganisationDetails.vue": {
     "no-console": {
       "count": 1
     },
