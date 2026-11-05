@@ -27,6 +27,7 @@ use Psr\Log\LoggerInterface;
  * Pins the rendered text of templates with plain fields, filters, fallbacks and relations.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\TemplateSource
  */
 class MetadataTemplateGoldenTest extends TestCase {
 
