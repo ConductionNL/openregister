@@ -49,8 +49,6 @@ use OCA\OpenRegister\Db\FlowStreamMapper;
  * so the walk in FlowEngine reads as the walk.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Stream bookkeeping for the
  * split, join, park and resume cases; each is one branch of the token's life.
- * @SuppressWarnings(PHPMD.StaticAccess) FlowRunCommit::streamIdFor and FlowStream::childPath
- * are pure id/path helpers; the walk needs their answers before any row exists.
  */
 class FlowStreamWalk {
 
@@ -101,6 +99,13 @@ class FlowStreamWalk {
 	private int $fired = 0;
 
 	/**
+	 * Builds the picture's entries for this run.
+	 *
+	 * @var FlowStreamEntries
+	 */
+	private readonly FlowStreamEntries $entries;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FlowRun $run The run being walked (refreshed by every commit).
@@ -122,7 +127,7 @@ class FlowStreamWalk {
 		private readonly ?string $onlyStream = null,
 		private readonly ?int $budget = null,
 	) {
-
+		$this->entries = new FlowStreamEntries(runUuid: (string)$run->getUuid());
 	}//end __construct()
 
 	/**
@@ -142,64 +147,9 @@ class FlowStreamWalk {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
 	public function begin(array $marking): void {
-		$uuid = (string)$this->run->getUuid();
-		$this->streams = [];
-
-		$covered = [];
-		foreach ($this->streamMapper->findByRun(runUuid: $uuid) as $row) {
-			if ($row->isTerminal() === true) {
-				continue;
-			}
-
-			$id = (string)$row->getStreamId();
-			$place = $row->getPlace();
-			$this->streams[$id] = [
-				'id' => $id,
-				'path' => (string)$row->getOrdinalPath(),
-				'parent' => $row->getParentStreamId(),
-				'place' => $place,
-				'status' => (string)$row->getStatus(),
-			];
-			if ($place !== null) {
-				$covered[$place] = (($covered[$place] ?? 0) + 1);
-			}
-		}
-
-		$unassigned = [];
-		foreach ($marking as $place => $tokens) {
-			$spare = ((int)$tokens - ($covered[(string)$place] ?? 0));
-			for ($i = 0; $i < $spare; $i++) {
-				$unassigned[] = (string)$place;
-			}
-		}
-
-		sort($unassigned, SORT_STRING);
-		$rootId = FlowRunCommit::streamIdFor(runUuid: $uuid, path: FlowStream::ROOT_PATH);
-		$ordinal = 1;
-		foreach ($unassigned as $place) {
-			if (isset($this->streams[$rootId]) === false) {
-				$this->streams[$rootId] = [
-					'id' => $rootId,
-					'path' => FlowStream::ROOT_PATH,
-					'parent' => null,
-					'place' => $place,
-					'status' => FlowRun::STATUS_QUEUED,
-				];
-				continue;
-			}
-
-			$ordinal++;
-			$path = FlowStream::childPath(parentPath: FlowStream::ROOT_PATH, index: $ordinal);
-			$id = FlowRunCommit::streamIdFor(runUuid: $uuid, path: $path);
-			$this->streams[$id] = [
-				'id' => $id,
-				'path' => $path,
-				'parent' => $rootId,
-				'place' => $place,
-				'status' => FlowRun::STATUS_QUEUED,
-			];
-		}
-
+		$live = $this->entries->live(rows: $this->streamMapper->findByRun(runUuid: $this->entries->runUuid));
+		$places = $this->entries->unassigned(marking: $marking, covered: $this->entries->covered(entries: $live));
+		$this->streams = $this->entries->seed(entries: $live, places: $places);
 		$this->sortStreams();
 	}//end begin()
 
@@ -431,88 +381,33 @@ class FlowStreamWalk {
 	}//end release()
 
 	/**
-	 * Commit one firing and update the in-memory streams from what the commit
-	 * settled: the carrier moved on, or split into children, or absorbed the
-	 * streams a join consumed.
+	 * Commit one firing on its stream and re-read the stream picture from
+	 * what was committed.
 	 *
-	 * @param string $id The firing stream.
-	 * @param string $transition The transition name.
-	 * @param array<int, string> $froms The consumed places.
-	 * @param array<int, string> $taken The produced places actually taken, in declaration order.
-	 * @param array<string, array> $placeItems The engine's per-place items after the firing.
-	 * @param array<int, string> $claimed The places this firing claimed.
-	 * @param array $logEntry The engine's log entry.
-	 * @param bool $enabledAfter Whether any transition is enabled after the firing.
-	 * @param string $streamStatus The carrier's status after the firing.
-	 * @param string|null $streamError The carrier's error under a `continue` failure.
+	 * The walk places the firing in the stream tree and names the sibling
+	 * streams a join consumes; the engine supplies the rest.
+	 *
+	 * @param FlowFiring $firing The firing, as the engine describes it.
 	 *
 	 * @return FlowFiringResult The committed state.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The hop's whole effect, handed once to the commit.
-	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-marking-must-be-written-as-a-delta-never-as-a-whole-overwrite
 	 */
-	public function commitFiring(
-		string $id,
-		string $transition,
-		array $froms,
-		array $taken,
-		array $placeItems,
-		array $claimed,
-		array $logEntry,
-		bool $enabledAfter,
-		string $streamStatus = FlowRun::STATUS_RUNNING,
-		?string $streamError = null,
-	): FlowFiringResult {
-		$stream = ($this->streams[$id] ?? ['path' => FlowStream::ROOT_PATH, 'parent' => null]);
-		$consumed = $this->streamsOn(places: $froms, except: $id);
+	public function commitFiring(FlowFiring $firing): FlowFiringResult {
+		$id = $firing->streamId;
+		$stream = $this->entries->ref(entries: $this->streams, id: $id);
+		$placed = $firing->withConsumedStreamIds(consumedStreamIds: $this->streamsOn(places: $firing->froms, except: $id))
+			->withStreamPath(path: $stream->path, parent: $stream->parent);
 
-		$itemsByPlace = [];
-		foreach ($taken as $to) {
-			$itemsByPlace[$to] = ($placeItems[$to] ?? []);
-		}
-
-		$firing = new FlowFiring(
-			streamId: $id,
-			transition: $transition,
-			froms: array_values($froms),
-			taken: array_values($taken),
-			itemsByPlace: $itemsByPlace,
-			claimedPlaces: $claimed,
-			consumedStreamIds: $consumed,
-			logEntry: $logEntry,
-			enabledAfter: $enabledAfter,
-			streamStatus: $streamStatus,
-			streamError: $streamError,
-			streamPath: (string)$stream['path'],
-			streamParent: $stream['parent']
-		);
-
-		$result = $this->commit->commitFiring(run: $this->run, firing: $firing, owner: $this->owner);
+		$result = $this->commit->commitFiring(run: $this->run, firing: $placed, owner: $this->owner);
 		$this->fired++;
 
-		// Re-read the stream picture from what was committed: the commit is the
-		// authority on lineage, and a sibling pass may have moved things too.
-		$this->streams = [];
-		foreach ($result->streams as $row) {
-			if ($row->isTerminal() === true) {
-				continue;
-			}
-
-			$rowId = (string)$row->getStreamId();
-			$this->streams[$rowId] = [
-				'id' => $rowId,
-				'path' => (string)$row->getOrdinalPath(),
-				'parent' => $row->getParentStreamId(),
-				'place' => $row->getPlace(),
-				'status' => (string)$row->getStatus(),
-			];
-		}
-
+		// The commit is the authority on lineage, and a sibling pass may have
+		// moved things too. A commit changed the marking, so a stream that
+		// found nothing before may find a join enabled now; parked and
+		// refused streams stay so.
+		$this->streams = $this->entries->live(rows: $result->streams);
 		$this->sortStreams();
-
-		// A commit changed the marking, so a stream that found nothing before
-		// may find a join enabled now. Parked and refused streams stay so.
 		$this->exhausted = [];
 
 		return $result;
@@ -522,23 +417,17 @@ class FlowStreamWalk {
 	 * Park a stream on a suspension: it is done for this pass, its siblings
 	 * are not.
 	 *
-	 * @param string $id The stream id.
-	 * @param DateTime|null $resumeAt Its wake time; null while waiting on a signal.
-	 * @param string $reason Why it parked.
-	 * @param array<int, string> $claimed The claims to release.
-	 * @param bool $enabled Whether any transition is enabled afterwards.
+	 * @param FlowStreamHalt $halt     The stream, its claims and why it parked.
+	 * @param DateTime|null  $resumeAt Its wake time; null while waiting on a signal.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
-	public function park(string $id, ?DateTime $resumeAt, string $reason, array $claimed, bool $enabled): void {
-		$closure = new FlowStreamClosure(
-			stream: $this->streamRef(id: $id),
-			status: FlowRun::STATUS_SUSPENDED,
-			release: new FlowStreamRelease(claimedPlaces: $claimed, owner: $this->owner, enabled: $enabled)
-		);
-		$this->commit->closeStream(run: $this->run, closure: $closure->wakingAt(resumeAt: $resumeAt)->because(error: $reason));
+	public function park(FlowStreamHalt $halt, ?DateTime $resumeAt): void {
+		$closure = $this->closure(halt: $halt, status: FlowRun::STATUS_SUSPENDED);
+		$this->commit->closeStream(run: $this->run, closure: $closure->wakingAt(resumeAt: $resumeAt));
+		$id = $halt->streamId;
 		$this->parked[$id] = true;
 		if (isset($this->streams[$id]) === true) {
 			$this->streams[$id]['status'] = FlowRun::STATUS_SUSPENDED;
@@ -548,41 +437,35 @@ class FlowStreamWalk {
 	/**
 	 * End a stream terminally.
 	 *
-	 * @param string $id The stream id.
-	 * @param string $status One of FlowRun::TERMINAL.
-	 * @param string|null $error The reason.
-	 * @param array<int, string> $claimed The claims to release.
-	 * @param bool $enabled Whether any transition is enabled afterwards.
+	 * @param FlowStreamHalt $halt   The stream, its claims and the error.
+	 * @param string         $status One of FlowRun::TERMINAL.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-runs-status-must-stay-derivable-from-its-streams-with-no-new-value
 	 */
-	public function endStream(string $id, string $status, ?string $error, array $claimed, bool $enabled): void {
-		$closure = new FlowStreamClosure(
-			stream: $this->streamRef(id: $id),
-			status: $status,
-			release: new FlowStreamRelease(claimedPlaces: $claimed, owner: $this->owner, enabled: $enabled)
-		);
-		$this->commit->closeStream(run: $this->run, closure: $closure->because(error: $error));
-		unset($this->streams[$id]);
+	public function endStream(FlowStreamHalt $halt, string $status): void {
+		$this->commit->closeStream(run: $this->run, closure: $this->closure(halt: $halt, status: $status));
+		unset($this->streams[$halt->streamId]);
 	}//end endStream()
 
 	/**
-	 * The stream as its row would be minted: its known path, parent and
-	 * place, or the root path when the walk does not know it.
+	 * The closure the commit writes for a halted stream.
 	 *
-	 * @param string $id The stream id.
+	 * @param FlowStreamHalt $halt   The halt.
+	 * @param string         $status The stream's status.
 	 *
-	 * @return FlowStreamRef The stream.
+	 * @return FlowStreamClosure The closure.
 	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
-	private function streamRef(string $id): FlowStreamRef {
-		$stream = ($this->streams[$id] ?? ['path' => FlowStream::ROOT_PATH, 'parent' => null, 'place' => null]);
+	private function closure(FlowStreamHalt $halt, string $status): FlowStreamClosure {
+		$release = new FlowStreamRelease(claimedPlaces: $halt->claimed, owner: $this->owner, enabled: $halt->enabled);
+		$stream = $this->entries->ref(entries: $this->streams, id: $halt->streamId);
+		$closure = new FlowStreamClosure(stream: $stream, status: $status, release: $release);
 
-		return new FlowStreamRef(streamId: $id, path: (string)$stream['path'], parent: $stream['parent'], place: $stream['place']);
-	}//end streamRef()
+		return $closure->because(error: $halt->reason());
+	}//end closure()
 
 	/**
 	 * The pass's last word: release what this pass still holds and derive the

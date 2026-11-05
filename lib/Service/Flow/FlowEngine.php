@@ -795,21 +795,16 @@ class FlowEngine {
 			'streamId' => $hop->streamId,
 			'ordinalPath' => $pass->streams->pathOf(id: $hop->streamId),
 		];
-		$pass->streams->park(
-			id: $hop->streamId,
-			resumeAt: $suspension->getResumeAt(),
-			reason: $suspension->getMessage(),
-			claimed: $hop->claimed,
-			// `settling`: this stream is the one parking, and the walk
-			// does not know that yet — its token still enables the very
-			// transition it is waiting ON. Counted, the park derives
-			// `queued` with no wake time, which a parallel worker picks
-			// up immediately.
-			enabled: $pass->streams->workRemains(
-				transitions: $pass->workflow->getEnabledTransitions(subject: $pass->subject),
-				settling: $hop->streamId
-			)
+		// `settling`: this stream is the one parking, and the walk does not
+		// know that yet — its token still enables the very transition it is
+		// waiting ON. Counted, the park derives `queued` with no wake time,
+		// which a parallel worker picks up immediately.
+		$enabled = $pass->streams->workRemains(
+			transitions: $pass->workflow->getEnabledTransitions(subject: $pass->subject),
+			settling: $hop->streamId
 		);
+		$halt = new FlowStreamHalt(streamId: $hop->streamId, claimed: $hop->claimed, enabled: $enabled);
+		$pass->streams->park(halt: $halt->because(reason: $suspension->getMessage()), resumeAt: $suspension->getResumeAt());
 	}//end parkStream()
 
 	/**
@@ -866,7 +861,8 @@ class FlowEngine {
 		$entry['streamId'] = $hop->streamId;
 		$entry['ordinalPath'] = $pass->streams->pathOf(id: $hop->streamId);
 		$pass->log[] = $entry;
-		$pass->streams->endStream(id: $hop->streamId, status: $terminal, error: $entry['error'], claimed: $hop->claimed, enabled: false);
+		$halt = new FlowStreamHalt(streamId: $hop->streamId, claimed: $hop->claimed, enabled: false);
+		$pass->streams->endStream(halt: $halt->because(reason: $entry['error']), status: $terminal);
 		$pass->streams->finalize(enabled: false, forcedTerminal: $terminal);
 
 		return $pass->result(status: $terminal) + ['error' => $entry['error']];
@@ -927,27 +923,22 @@ class FlowEngine {
 		$this->pruneUntakenExits(workflow: $pass->workflow, subject: $pass->subject, transition: $transition, taken: $taken, context: $pass->context);
 
 		$takenTos = $hop->takenInOrder(taken: $taken);
-		$result = $pass->streams->commitFiring(
-			id: $hop->streamId,
-			transition: $name,
-			froms: array_map('strval', $transition->getFroms()),
-			taken: $takenTos,
-			placeItems: $placeItems,
-			claimed: $hop->claimed,
-			logEntry: $entry,
-			// The places this firing TAKES, handed over so the answer describes
-			// the marking AFTER the commit rather than the one the walk still
-			// holds: the stream picture is only re-read inside commitFiring().
-			// Without them every ordinary mid-flow firing reported "no work
-			// remains", the commit derived `completed` for a run that was still
-			// walking, and every terminal listener fired on it.
-			enabledAfter: $pass->streams->workRemains(
-				transitions: $pass->workflow->getEnabledTransitions(subject: $pass->subject),
-				produced: $takenTos
-			),
-			streamStatus: FlowRun::STATUS_RUNNING,
-			streamError: ($entry['error'] ?? null)
+		// The places this firing TAKES, handed over so the answer describes
+		// the marking AFTER the commit rather than the one the walk still
+		// holds: the stream picture is only re-read inside commitFiring().
+		// Without them every ordinary mid-flow firing reported "no work
+		// remains", the commit derived `completed` for a run that was still
+		// walking, and every terminal listener fired on it.
+		$enabledAfter = $pass->streams->workRemains(
+			transitions: $pass->workflow->getEnabledTransitions(subject: $pass->subject),
+			produced: $takenTos
 		);
+		$firing = (new FlowFiring(streamId: $hop->streamId, transition: $name, froms: array_map('strval', $transition->getFroms()), taken: $takenTos))
+			->withPlaceItems(placeItems: $placeItems)
+			->withClaimedPlaces(claimedPlaces: $hop->claimed)
+			->withLogEntry(logEntry: $entry, enabledAfter: $enabledAfter)
+			->withStreamState(status: FlowRun::STATUS_RUNNING, error: ($entry['error'] ?? null));
+		$result = $pass->streams->commitFiring(firing: $firing);
 
 		// Sync from what was COMMITTED: the marking read under the lock holds
 		// every sibling's committed effect, which the in-memory apply cannot.

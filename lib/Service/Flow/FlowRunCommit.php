@@ -145,8 +145,9 @@ class FlowRunCommit {
 				unset($placeItems[$from]);
 			}
 
+			$itemsByPlace = $firing->getItemsByPlace();
 			foreach ($firing->taken as $to) {
-				$placeItems[$to] = ($firing->itemsByPlace[$to] ?? []);
+				$placeItems[$to] = ($itemsByPlace[$to] ?? []);
 			}
 
 			// STREAMS. The firing stream continues, splits, or is folded.
@@ -156,8 +157,8 @@ class FlowRunCommit {
 				$stream = $this->mintStream(
 					runUuid: $uuid,
 					streamId: $firing->streamId,
-					path: $firing->streamPath,
-					parent: $firing->streamParent,
+					path: $firing->getStreamPath(),
+					parent: $firing->getStreamParent(),
 					place: ($firing->froms[0] ?? null),
 					now: $now
 				);
@@ -173,7 +174,7 @@ class FlowRunCommit {
 			// the conditional-UPDATE shape, inside this transaction.
 			$sequence = $this->streams->allocateNextSequence(runUuid: $uuid, streamId: (string)$carrier->getStreamId());
 			$carrier = $this->streams->findByRunAndStream(runUuid: $uuid, streamId: (string)$carrier->getStreamId()) ?? $carrier;
-			$this->insertStep(run: $locked, stream: $carrier, sequence: $sequence, entry: $firing->logEntry, now: $now);
+			$this->insertStep(run: $locked, stream: $carrier, sequence: $sequence, entry: $firing->getLogEntry(), now: $now);
 
 			$this->settleStreams(
 				uuid: $uuid,
@@ -189,9 +190,9 @@ class FlowRunCommit {
 			$locked->setUpdated($now);
 
 			// Release this firing's claims inside the lock, then derive.
-			$this->claims->release(runUuid: $uuid, places: $firing->claimedPlaces);
+			$this->claims->release(runUuid: $uuid, places: $firing->getClaimedPlaces());
 			$live = $this->streams->findByRun(runUuid: $uuid);
-			$this->applyDerivedStatus(run: $locked, streams: $live, enabled: $firing->enabledAfter, owner: $owner);
+			$this->applyDerivedStatus(run: $locked, streams: $live, enabled: $firing->isEnabledAfter(), owner: $owner);
 
 			$this->runs->update($locked);
 			$this->db->commit();
@@ -419,7 +420,7 @@ class FlowRunCommit {
 	 */
 	private function foldCarrier(array $streams, FlowFiring $firing, FlowStream $stream, DateTime $now): FlowStream {
 		$consumed = [];
-		foreach ($firing->consumedStreamIds as $id) {
+		foreach ($firing->getConsumedStreamIds() as $id) {
 			if (isset($streams[$id]) === true) {
 				$consumed[$id] = $streams[$id];
 			}
@@ -478,8 +479,8 @@ class FlowRunCommit {
 		$firing->childStreamIds = [];
 
 		if (count($taken) <= 1) {
-			$carrier->setStatus($firing->streamStatus);
-			$carrier->setError($firing->streamError);
+			$carrier->setStatus($firing->getStreamStatus());
+			$carrier->setError($firing->getStreamError());
 			$carrier->setResumeAt(null);
 			$carrier->setPlace(($taken[0] ?? null));
 			if ($taken === []) {
