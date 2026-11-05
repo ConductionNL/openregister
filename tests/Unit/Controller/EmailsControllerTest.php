@@ -7,8 +7,10 @@ namespace Unit\Controller;
 use OCA\OpenRegister\Notifications\Controller\EmailsController;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Service\EmailLinkService;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
@@ -28,6 +30,10 @@ class EmailsControllerTest extends TestCase {
 	private LoggerInterface&MockObject $logger;
 	private EmailsController $controller;
 	private EmailLinkService&MockObject $emailLinkService;
+	private bool $mayUpdate = true;
+
+	/** @var array<int, string> The actions the permission handler was asked about. */
+	private array $askedActions = [];
 
 	protected function setUp(): void {
 		$this->request = $this->createMock(IRequest::class);
@@ -36,6 +42,14 @@ class EmailsControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->emailLinkService = $this->createMock(EmailLinkService::class);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn(new Schema());
+		$permissions = $this->createMock(PermissionHandler::class);
+		$permissions->method('hasPermission')->willReturnCallback(
+			function (Schema $schema, string $action): bool {
+				$this->askedActions[] = $action;
+				return $action === 'update' ? $this->mayUpdate : true;
+			}
+		);
 
 		$this->controller = new EmailsController(
 			'openregister',
@@ -44,7 +58,8 @@ class EmailsControllerTest extends TestCase {
 			$this->objectService,
 			$this->userSession,
 			$this->logger,
-			$this->emailLinkService
+			$this->emailLinkService,
+			$permissions
 		);
 	}
 
@@ -132,6 +147,16 @@ class EmailsControllerTest extends TestCase {
 		$response = $this->controller->destroy('reg', 'sch', 'abc-123', '7');
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$this->assertSame(['success' => true], $response->getData());
+	}
+
+	public function testDestroyNeedsTheObjectUpdateRight(): void {
+		$this->setupObjectService();
+		$this->emailService->method('isMailAvailable')->willReturn(true);
+		$this->emailLinkService->expects($this->never())->method('unlinkEmail');
+		$this->mayUpdate = false;
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller->destroy('reg', 'sch', 'abc-123', '7')->getStatus());
+		$this->assertSame(['update'], $this->askedActions, 'the right asked is update, not read');
 	}
 
 	public function testDestroyOfAnotherObjectsLinkIsNotFound(): void {

@@ -25,9 +25,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Controller;
 
 use Exception;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\EmailLinkService;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -77,6 +79,13 @@ class EmailsController extends Controller {
 	private readonly EmailLinkService $emailLinkService;
 
 	/**
+	 * Answers the object update right.
+	 *
+	 * @var PermissionHandler
+	 */
+	private readonly PermissionHandler $permissions;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application name
@@ -86,6 +95,7 @@ class EmailsController extends Controller {
 	 * @param \OCP\IUserSession $userSession User session
 	 * @param \Psr\Log\LoggerInterface $logger Logger
 	 * @param EmailLinkService $emailLinkService Object-scoped email links
+	 * @param PermissionHandler $permissions Answers the object update right
 	 *
 	 * @return void
 	 */
@@ -97,6 +107,7 @@ class EmailsController extends Controller {
 		\OCP\IUserSession $userSession,
 		\Psr\Log\LoggerInterface $logger,
 		EmailLinkService $emailLinkService,
+		PermissionHandler $permissions,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -105,6 +116,7 @@ class EmailsController extends Controller {
 		$this->userSession = $userSession;
 		$this->logger = $logger;
 		$this->emailLinkService = $emailLinkService;
+		$this->permissions = $permissions;
 	}//end __construct()
 
 	/**
@@ -259,6 +271,10 @@ class EmailsController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
+			if ($this->mayUpdate(object: $object) === false) {
+				return new JSONResponse(['error' => 'You may not change this object, so you cannot change its emails.'], 403);
+			}
+
 			$objectUuid = $object->getUuid();
 			if ($objectUuid === null || $objectUuid === '') {
 				return new JSONResponse(['error' => 'Email link not found'], 404);
@@ -278,6 +294,27 @@ class EmailsController extends Controller {
 			return new JSONResponse(['error' => $e->getMessage()], 400);
 		}//end try
 	}//end destroy()
+
+	/**
+	 * Whether the caller holds the `update` right editing the object requires.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return bool True when they do; false too when the schema cannot be read.
+	 */
+	private function mayUpdate(ObjectEntity $object): bool {
+		$schema = $this->objectService->getCurrentSchemaEntity();
+		if ($schema === null) {
+			return false;
+		}
+
+		return $this->permissions->hasPermission(
+			schema: $schema,
+			action: 'update',
+			objectOwner: $object->getOwner(),
+			object: $object
+		);
+	}//end mayUpdate()
 
 	/**
 	 * Search email links by sender.
