@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -52,6 +53,14 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectsController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectsControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectStore
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectTransfer
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectGovernanceServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectsExtensions
+ * @uses \OCA\OpenRegister\Controller\Support\GeoServices
+ * @uses \OCA\OpenRegister\Controller\Support\LinkedDataServices
  * @uses \OCA\OpenRegister\Service\WriteCause
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Dto\DeletionAnalysis
@@ -142,7 +151,7 @@ class ObjectsControllerCanDeleteScopeTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 		$this->groupManager->method('getUserGroupIds')->willReturn($isAdmin === true ? ['admin'] : ['staff']);
 
-		return new ObjectsController(
+		return ObjectsControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(IAppConfig::class),

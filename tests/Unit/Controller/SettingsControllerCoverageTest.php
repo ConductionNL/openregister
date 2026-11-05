@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SettingsControllerFactory;
 use OCA\OpenRegister\Controller\SettingsController;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\App\IAppManager;
@@ -48,7 +49,7 @@ class SettingsControllerCoverageTest extends TestCase {
 			}
 		);
 
-		$this->controller = new SettingsController(
+		$this->controller = SettingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,

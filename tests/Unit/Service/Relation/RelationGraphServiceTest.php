@@ -150,6 +150,19 @@ class RelationGraphServiceTest extends TestCase {
 	}//end testAWalkThatStillHadSomewhereToGoIsMarkedTruncated()
 
 	/**
+	 * A request at exactly the maximum that reaches everything is not truncated.
+	 */
+	public function testARequestAtTheMaximumThatReachesEverythingIsNotTruncated(): void {
+		$service = $this->service(['a' => ['b'], 'b' => ['c'], 'c' => []], maxDepth: 2);
+
+		$graph = $service->graph(rootUuid: 'a', depth: 2);
+
+		$this->assertSame(['a', 'b', 'c'], array_column($graph['nodes'], 'uuid'));
+		$this->assertFalse($graph['truncated']);
+		$this->assertNull($graph['truncatedBy']);
+	}//end testARequestAtTheMaximumThatReachesEverythingIsNotTruncated()
+
+	/**
 	 * Scenario: a truncated graph says so.
 	 *
 	 * A request above the administered maximum is BOUNDED at the maximum and

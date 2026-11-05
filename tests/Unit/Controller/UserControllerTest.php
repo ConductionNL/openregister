@@ -7,6 +7,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- PHPUnit arrange/act/assert conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\UserControllerFactory;
 use OCA\OpenRegister\Controller\UserController;
 use OCA\OpenRegister\Service\SecurityService;
 use OCA\OpenRegister\Service\UserService;
@@ -92,7 +93,7 @@ class UserControllerTest extends TestCase {
 
 		$this->securityService->method('addSecurityHeaders')->willReturnArgument(0);
 
-		$this->controller = new UserController(
+		$this->controller = UserControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->userService,

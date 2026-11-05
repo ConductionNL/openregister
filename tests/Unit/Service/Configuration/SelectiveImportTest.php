@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ConfigurationControllerFactory;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
@@ -273,7 +274,7 @@ class SelectiveImportTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturn(true);
 
-		return new ConfigurationController(
+		return ConfigurationControllerFactory::create(
 			'openregister',
 			$request,
 			$this->configurationMapper,

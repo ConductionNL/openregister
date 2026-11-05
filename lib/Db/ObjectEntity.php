@@ -169,6 +169,7 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInterface {
+	use JsonFieldsTrait;
 
 	/**
 	 * Lifecycle status: saved to carry on later, not yet received (decision 180).
@@ -1296,24 +1297,6 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function getOwner(): ?string {
 		return $this->owner;
 	}//end getOwner()
-
-	/**
-	 * Get array of field names that are JSON type
-	 *
-	 * @return string[] List of field names that are JSON type
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
 
 	/**
 	 * Hydrate the entity from an array of data

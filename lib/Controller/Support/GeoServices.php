@@ -1,0 +1,53 @@
+<?php
+
+/**
+ * OpenRegister geo services
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller\Support
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Controller\Support;
+
+use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
+use OCA\OpenRegister\Service\Geo\PdokGeocoder;
+
+/**
+ * Geo filter parsing and applying, GeoJSON feature building and geocoding; each is null when absent.
+ *
+ * @spec openspec/specs/geo-metadata-kaart/spec.md
+ */
+final class GeoServices {
+	/**
+	 * Bundle the services.
+	 *
+	 * @param ?GeoFilterParser             $geoFilterParser   The geo filter parser.
+	 * @param ?GeoFilterApplier            $geoFilterApplier  The geo post-filter.
+	 * @param ?GeoFeatureCollectionBuilder $geoFeatureBuilder The GeoJSON feature builder.
+	 * @param ?PdokGeocoder                $pdokGeocoder      The geocoder.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md
+	 */
+	public function __construct(
+		public readonly ?GeoFilterParser $geoFilterParser = null,
+		public readonly ?GeoFilterApplier $geoFilterApplier = null,
+		public readonly ?GeoFeatureCollectionBuilder $geoFeatureBuilder = null,
+		public readonly ?PdokGeocoder $pdokGeocoder = null,
+	) {
+	}//end __construct()
+}//end class

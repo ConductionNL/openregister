@@ -43,6 +43,7 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class EndpointLog extends Entity implements JsonSerializable {
+	use JsonFieldsTrait;
 
 	/**
 	 * Unique identifier for this endpoint log entry.
@@ -169,24 +170,6 @@ class EndpointLog extends Entity implements JsonSerializable {
 	public function getResponse(): ?array {
 		return $this->response;
 	}//end getResponse()
-
-	/**
-	 * Get array of field names that are JSON type
-	 *
-	 * @return string[] List of field names that are JSON type
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
 
 	/**
 	 * Hydrate the entity from an array of data

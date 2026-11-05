@@ -106,6 +106,7 @@ use Symfony\Component\Uid\Uuid;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Configuration extends Entity implements JsonSerializable {
+	use JsonFieldsTrait;
 
 	/**
 	 * Unique identifier for the configuration
@@ -409,26 +410,6 @@ class Configuration extends Entity implements JsonSerializable {
 			return false;
 		}
 	}//end isValidUuid()
-
-	/**
-	 * Get JSON fields from the entity
-	 *
-	 * Returns all fields that are of type 'json'
-	 *
-	 * @return string[] List of JSON field names
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
 
 	/**
 	 * Hydrate the entity with data from an array
