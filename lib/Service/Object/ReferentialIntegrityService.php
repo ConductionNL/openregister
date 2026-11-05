@@ -1762,11 +1762,8 @@ class ReferentialIntegrityService {
 	 * when the batched resolve or write fails — fall back to the unchanged
 	 * per-object pipeline ({@see applyPerObjectCascadeDelete()}), fail-soft.
 	 *
-	 * @param array $cascadeTargets The cascade targets from DeletionAnalysis (already reversed).
-	 * @param string $userId The user performing the deletion.
-	 * @param string $cascadeSource The UUID of the root object triggering the cascade.
-	 * @param string|null $triggerSchemaSlug Schema slug of the trigger object for logging.
-	 * @param string|null $organisationId The active organisation ID for deletion attribution.
+	 * @param array               $cascadeTargets The cascade targets from DeletionAnalysis (already reversed).
+	 * @param CascadeDeleteOrigin $origin         The deleting user, the root object and the organisation.
 	 *
 	 * @return void
 	 *
@@ -1823,9 +1820,8 @@ class ReferentialIntegrityService {
 	 * hook stopping propagation skips that target's write and the target is
 	 * NOT force-retried per-object).
 	 *
-	 * @param ObjectEntity[] $targets The batch-resolved cascade target entities.
-	 * @param string $userId The user performing the deletion.
-	 * @param string|null $organisationId The active organisation ID for attribution.
+	 * @param ObjectEntity[]      $targets The batch-resolved cascade target entities.
+	 * @param CascadeDeleteOrigin $origin  The deleting user and the organisation, for attribution.
 	 *
 	 * @return array{0: array<string, true>, 1: array<string, ObjectEntity>} Two maps keyed
 	 *                                                                       by uuid: [0] every target the batch took care of
@@ -1908,8 +1904,7 @@ class ReferentialIntegrityService {
 	 *
 	 * @param array $cascadeTargets All cascade targets (already reversed).
 	 * @param array<string, ObjectEntity> $deleted Batch-deleted entities keyed by uuid.
-	 * @param string $cascadeSource The UUID of the root object triggering the cascade.
-	 * @param string|null $triggerSchemaSlug Schema slug of the trigger object.
+	 * @param CascadeDeleteOrigin $origin The root object and its schema slug.
 	 *
 	 * @return void
 	 *
