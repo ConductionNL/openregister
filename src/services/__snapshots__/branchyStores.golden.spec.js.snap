@@ -749,6 +749,8 @@ exports[`branchy stores golden cleans a schema for saving 1`] = `
       "configuration": {
         "objectDescriptionField": "",
         "objectNameField": "",
+        "objectSlugField": "",
+        "objectSlugSuffix": false,
       },
     },
     "input": {},
@@ -758,6 +760,8 @@ exports[`branchy stores golden cleans a schema for saving 1`] = `
       "configuration": {
         "objectDescriptionField": "",
         "objectNameField": "",
+        "objectSlugField": "",
+        "objectSlugSuffix": false,
       },
       "title": "New",
     },
@@ -791,6 +795,8 @@ exports[`branchy stores golden cleans a schema for saving 1`] = `
       "configuration": {
         "objectDescriptionField": "",
         "objectNameField": "",
+        "objectSlugField": "",
+        "objectSlugSuffix": false,
       },
       "id": 5,
       "properties": {
@@ -821,6 +827,8 @@ exports[`branchy stores golden cleans a schema for saving 1`] = `
       "configuration": {
         "objectDescriptionField": "",
         "objectNameField": "",
+        "objectSlugField": "",
+        "objectSlugSuffix": false,
       },
       "id": 5,
       "required": [
@@ -839,6 +847,8 @@ exports[`branchy stores golden cleans a schema for saving 1`] = `
       "configuration": {
         "objectDescriptionField": "",
         "objectNameField": "",
+        "objectSlugField": "",
+        "objectSlugSuffix": false,
       },
       "id": 5,
       "properties": {
@@ -859,6 +869,8 @@ exports[`branchy stores golden cleans a schema for saving 1`] = `
       "configuration": {
         "objectDescriptionField": "",
         "objectNameField": "",
+        "objectSlugField": "",
+        "objectSlugSuffix": false,
       },
       "id": 5,
       "properties": {},
@@ -874,6 +886,8 @@ exports[`branchy stores golden cleans a schema for saving 1`] = `
       "configuration": {
         "objectDescriptionField": "",
         "objectNameField": "",
+        "objectSlugField": "",
+        "objectSlugSuffix": false,
       },
     },
     "input": {
