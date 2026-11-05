@@ -1,0 +1,372 @@
+{
+    "defaults, no token": {
+        "result": {
+            "items": [
+                {
+                    "number": 1,
+                    "title": "One",
+                    "body": "b1",
+                    "html_url": "u1",
+                    "user": {
+                        "login": "a",
+                        "avatar_url": "av"
+                    },
+                    "reactions": {
+                        "total_count": 2,
+                        "+1": 1
+                    },
+                    "created_at": "c",
+                    "updated_at": "u",
+                    "labels": [
+                        {
+                            "name": "bug",
+                            "color": "red"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            [
+                "GET",
+                "https://api.github.com/repos/Con%20duction/open%2Fregister/issues",
+                {
+                    "query": {
+                        "state": "open",
+                        "sort": "reactions-+1",
+                        "direction": "desc",
+                        "per_page": 30
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28"
+                    }
+                }
+            ]
+        ]
+    },
+    "no labels, token": {
+        "result": {
+            "items": [
+                {
+                    "number": 1,
+                    "title": "One",
+                    "body": "b1",
+                    "html_url": "u1",
+                    "user": {
+                        "login": "a",
+                        "avatar_url": "av"
+                    },
+                    "reactions": {
+                        "total_count": 2,
+                        "+1": 1
+                    },
+                    "created_at": "c",
+                    "updated_at": "u",
+                    "labels": [
+                        {
+                            "name": "bug",
+                            "color": "red"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            [
+                "GET",
+                "https://api.github.com/repos/o/r/issues",
+                {
+                    "query": {
+                        "state": "all",
+                        "sort": "created",
+                        "direction": "desc",
+                        "per_page": 5
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer pat"
+                    }
+                }
+            ]
+        ]
+    },
+    "blank labels only": {
+        "result": {
+            "items": [
+                {
+                    "number": 1,
+                    "title": "One",
+                    "body": "b1",
+                    "html_url": "u1",
+                    "user": {
+                        "login": "a",
+                        "avatar_url": "av"
+                    },
+                    "reactions": {
+                        "total_count": 2,
+                        "+1": 1
+                    },
+                    "created_at": "c",
+                    "updated_at": "u",
+                    "labels": [
+                        {
+                            "name": "bug",
+                            "color": "red"
+                        }
+                    ]
+                }
+            ]
+        },
+        "requests": [
+            [
+                "GET",
+                "https://api.github.com/repos/o/r/issues",
+                {
+                    "query": {
+                        "state": "open",
+                        "sort": "reactions-+1",
+                        "direction": "desc",
+                        "per_page": 30
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer pat"
+                    }
+                }
+            ]
+        ]
+    },
+    "one label": {
+        "result": {
+            "items": [
+                {
+                    "number": 3,
+                    "title": "Three",
+                    "body": "",
+                    "html_url": "",
+                    "user": {
+                        "login": "",
+                        "avatar_url": ""
+                    },
+                    "reactions": {
+                        "total_count": 1,
+                        "+1": 0
+                    },
+                    "created_at": "",
+                    "updated_at": "",
+                    "labels": []
+                },
+                {
+                    "number": 4,
+                    "title": "Four",
+                    "body": "",
+                    "html_url": "",
+                    "user": {
+                        "login": "",
+                        "avatar_url": ""
+                    },
+                    "reactions": {
+                        "total_count": 7,
+                        "+1": 0
+                    },
+                    "created_at": "",
+                    "updated_at": "",
+                    "labels": []
+                }
+            ]
+        },
+        "requests": [
+            [
+                "GET",
+                "https://api.github.com/repos/o/r/issues",
+                {
+                    "query": {
+                        "state": "open",
+                        "sort": "reactions-+1",
+                        "direction": "desc",
+                        "per_page": 30,
+                        "labels": "bug"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28"
+                    }
+                }
+            ]
+        ]
+    },
+    "two labels merged": {
+        "result": {
+            "items": [
+                {
+                    "number": 4,
+                    "title": "Four",
+                    "body": "",
+                    "html_url": "",
+                    "user": {
+                        "login": "",
+                        "avatar_url": ""
+                    },
+                    "reactions": {
+                        "total_count": 7,
+                        "+1": 0
+                    },
+                    "created_at": "",
+                    "updated_at": "",
+                    "labels": []
+                },
+                {
+                    "number": 5,
+                    "title": "Five",
+                    "body": "",
+                    "html_url": "",
+                    "user": {
+                        "login": "",
+                        "avatar_url": ""
+                    },
+                    "reactions": {
+                        "total_count": 5,
+                        "+1": 0
+                    },
+                    "created_at": "",
+                    "updated_at": "",
+                    "labels": []
+                }
+            ]
+        },
+        "requests": [
+            [
+                "GET",
+                "https://api.github.com/repos/o/r/issues",
+                {
+                    "query": {
+                        "state": "closed",
+                        "sort": "reactions-+1",
+                        "direction": "desc",
+                        "per_page": 2,
+                        "labels": "bug"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer pat"
+                    }
+                }
+            ],
+            [
+                "GET",
+                "https://api.github.com/repos/o/r/issues",
+                {
+                    "query": {
+                        "state": "closed",
+                        "sort": "reactions-+1",
+                        "direction": "desc",
+                        "per_page": 2,
+                        "labels": "ux"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer pat"
+                    }
+                }
+            ]
+        ]
+    },
+    "two labels, room for all": {
+        "result": {
+            "items": [
+                {
+                    "number": 4,
+                    "title": "Four again",
+                    "body": "",
+                    "html_url": "",
+                    "user": {
+                        "login": "",
+                        "avatar_url": ""
+                    },
+                    "reactions": {
+                        "total_count": 7,
+                        "+1": 0
+                    },
+                    "created_at": "",
+                    "updated_at": "",
+                    "labels": []
+                },
+                {
+                    "number": 5,
+                    "title": "Five",
+                    "body": "",
+                    "html_url": "",
+                    "user": {
+                        "login": "",
+                        "avatar_url": ""
+                    },
+                    "reactions": {
+                        "total_count": 5,
+                        "+1": 0
+                    },
+                    "created_at": "",
+                    "updated_at": "",
+                    "labels": []
+                },
+                {
+                    "number": 3,
+                    "title": "Three",
+                    "body": "",
+                    "html_url": "",
+                    "user": {
+                        "login": "",
+                        "avatar_url": ""
+                    },
+                    "reactions": {
+                        "total_count": 1,
+                        "+1": 0
+                    },
+                    "created_at": "",
+                    "updated_at": "",
+                    "labels": []
+                }
+            ]
+        },
+        "requests": [
+            [
+                "GET",
+                "https://api.github.com/repos/o/r/issues",
+                {
+                    "query": {
+                        "state": "open",
+                        "sort": "reactions-+1",
+                        "direction": "desc",
+                        "per_page": 30,
+                        "labels": "ux"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28"
+                    }
+                }
+            ],
+            [
+                "GET",
+                "https://api.github.com/repos/o/r/issues",
+                {
+                    "query": {
+                        "state": "open",
+                        "sort": "reactions-+1",
+                        "direction": "desc",
+                        "per_page": 30,
+                        "labels": "bug"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28"
+                    }
+                }
+            ]
+        ]
+    }
+}
