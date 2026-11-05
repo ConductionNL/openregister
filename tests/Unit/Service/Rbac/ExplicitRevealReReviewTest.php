@@ -47,6 +47,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Query\RelatedRowAccess
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @covers \OCA\OpenRegister\Controller\RevertController
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker
