@@ -2127,7 +2127,7 @@ class ObjectsController extends Controller {
 	 * Batched object-count endpoint — POST /api/objects/counts.
 	 *
 	 * Accepts a JSON body of the shape
-	 * `{ "counts": [ { "register": <id|slug>, "schema": <id|slug>, "filter": <object?> } ] }`
+	 * `{ "counts": [ { "register": <id|slug>, "schema": <id|slug>, "filter": <object|null> } ] }`
 	 * and returns `{ "results": [ { "register": ..., "schema": ..., "count": <int|null> } ] }`
 	 * with exactly one result per input entry, in the same order as the
 	 * request array. Identical `(register, schema, filter)` triples are
