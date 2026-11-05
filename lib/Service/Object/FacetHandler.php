@@ -300,28 +300,6 @@ class FacetHandler {
 	}//end getFacetableFields()
 
 	/**
-	 * Get metadata facetable fields.
-	 *
-	 * @return string[]
-	 *
-	 * @psalm-return   list{'register', 'schema', 'owner', 'organisation', 'created', 'updated'}
-	 * @phpstan-return array<int, string>
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
-	 * @spec openspec/specs/faceting-configuration/spec.md
-	 */
-	public function getMetadataFacetableFields(): array {
-		return [
-			'register',
-			'schema',
-			'owner',
-			'organisation',
-			'created',
-			'updated',
-		];
-	}//end getMetadataFacetableFields()
-
-	/**
 	 * Calculate facet count for performance metrics.
 	 *
 	 * @param bool $hasFacets Whether facets were requested.

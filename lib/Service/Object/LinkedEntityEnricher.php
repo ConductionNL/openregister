@@ -247,41 +247,19 @@ class LinkedEntityEnricher {
 		$results = [];
 
 		foreach ($ids as $id) {
-			$parts = explode('/', $id, 2);
-			if (count(value: $parts) !== 2) {
+			$caldata = $this->calendarData(id: $id);
+			if ($caldata === null) {
 				$results[] = $this->notFoundResult(id: $id);
 				continue;
 			}
 
-			[$calendarId, $uid] = $parts;
-
-			try {
-				// Raw SQL: foreign DAV/Calendar table (see class docblock).
-				$sql = 'SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1';
-				$stmt = $this->db->prepare($sql);
-				$stmt->execute([(int)$calendarId, $uid]);
-				$row = $stmt->fetch();
-
-				if ($row === false) {
-					$results[] = $this->notFoundResult(id: $id);
-					continue;
-				}
-
-				$caldata = $row['calendardata'] ?? '';
-				$summary = $this->extractIcalField(caldata: $caldata, field: 'SUMMARY');
-				$status = $this->extractIcalField(caldata: $caldata, field: 'STATUS');
-				$due = $this->extractIcalField(caldata: $caldata, field: 'DUE');
-
-				$results[] = [
-					'id' => $id,
-					'title' => $summary ?? '',
-					'status' => $status ?? 'NEEDS-ACTION',
-					'due' => $due,
-				];
-			} catch (\Exception $e) {
-				$results[] = $this->notFoundResult(id: $id);
-			}//end try
-		}//end foreach
+			$results[] = [
+				'id' => $id,
+				'title' => $this->extractIcalField(caldata: $caldata, field: 'SUMMARY') ?? '',
+				'status' => $this->extractIcalField(caldata: $caldata, field: 'STATUS') ?? 'NEEDS-ACTION',
+				'due' => $this->extractIcalField(caldata: $caldata, field: 'DUE'),
+			];
+		}
 
 		return $results;
 	}//end enrichTodos()
@@ -301,46 +279,53 @@ class LinkedEntityEnricher {
 		$results = [];
 
 		foreach ($ids as $id) {
-			$parts = explode('/', $id, 2);
-			if (count(value: $parts) !== 2) {
+			$caldata = $this->calendarData(id: $id);
+			if ($caldata === null) {
 				$results[] = $this->notFoundResult(id: $id);
 				continue;
 			}
 
-			[$calendarId, $uid] = $parts;
-
-			try {
-				// Raw SQL: foreign DAV/Calendar table (see class docblock).
-				$sql = 'SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1';
-				$stmt = $this->db->prepare($sql);
-				$stmt->execute([(int)$calendarId, $uid]);
-				$row = $stmt->fetch();
-
-				if ($row === false) {
-					$results[] = $this->notFoundResult(id: $id);
-					continue;
-				}
-
-				$caldata = $row['calendardata'] ?? '';
-				$summary = $this->extractIcalField(caldata: $caldata, field: 'SUMMARY');
-				$dtstart = $this->extractIcalField(caldata: $caldata, field: 'DTSTART');
-				$dtend = $this->extractIcalField(caldata: $caldata, field: 'DTEND');
-				$location = $this->extractIcalField(caldata: $caldata, field: 'LOCATION');
-
-				$results[] = [
-					'id' => $id,
-					'title' => $summary ?? '',
-					'start' => $dtstart,
-					'end' => $dtend,
-					'location' => $location,
-				];
-			} catch (\Exception $e) {
-				$results[] = $this->notFoundResult(id: $id);
-			}//end try
-		}//end foreach
+			$results[] = [
+				'id' => $id,
+				'title' => $this->extractIcalField(caldata: $caldata, field: 'SUMMARY') ?? '',
+				'start' => $this->extractIcalField(caldata: $caldata, field: 'DTSTART'),
+				'end' => $this->extractIcalField(caldata: $caldata, field: 'DTEND'),
+				'location' => $this->extractIcalField(caldata: $caldata, field: 'LOCATION'),
+			];
+		}
 
 		return $results;
 	}//end enrichCalendar()
+
+	/**
+	 * The iCalendar text of a `{calendarId}/{uid}` id, or null when the id is
+	 * malformed, the object is absent or the lookup fails.
+	 *
+	 * @param string $id The calendar object id
+	 *
+	 * @return string|null
+	 */
+	private function calendarData(string $id): ?string {
+		$parts = explode('/', $id, 2);
+		if (count(value: $parts) !== 2) {
+			return null;
+		}
+
+		try {
+			// Raw SQL: foreign DAV/Calendar table (see class docblock).
+			$stmt = $this->db->prepare('SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1');
+			$stmt->execute([(int)$parts[0], $parts[1]]);
+			$row = $stmt->fetch();
+		} catch (\Exception $e) {
+			return null;
+		}
+
+		if ($row === false) {
+			return null;
+		}
+
+		return ($row['calendardata'] ?? '');
+	}//end calendarData()
 
 	/**
 	 * Enrich Talk conversation tokens to full conversation objects.

@@ -742,6 +742,7 @@ import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Database from 'vue-material-design-icons/Database.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
+import { freshState } from '../../services/initialState.js'
 
 /**
  * The entities a configuration links to: its key and API path, the selection
@@ -806,6 +807,51 @@ function newConfiguration() {
 	}
 }
 
+/**
+ * The state every instance of this component starts from.
+ */
+const INITIAL_STATE = {
+	loading: false,
+	error: null,
+	activeTab: 0,
+	selectedRegisters: [],
+	selectedSchemas: [],
+	selectedObjects: [],
+	selectedSources: [],
+	selectedAgents: [],
+	selectedViews: [],
+	selectedManagedApplications: [],
+	selectedApplication: null,
+	selectedType: null,
+	// Management tab selections
+	selectedSourceType: null,
+	selectedNotificationGroups: [],
+	// Loading states for searches
+	loadingRegisters: false,
+	loadingSchemas: false,
+	loadingObjects: false,
+	loadingSources: false,
+	loadingAgents: false,
+	loadingViews: false,
+	loadingApplications: false,
+	// Search results
+	registerOptions: [],
+	schemaOptions: [],
+	objectOptions: [],
+	sourceOptions: [],
+	agentOptions: [],
+	viewOptions: [],
+	applicationOptions: [],
+	// Debounce timers
+	registerSearchDebounce: null,
+	schemaSearchDebounce: null,
+	objectSearchDebounce: null,
+	sourceSearchDebounce: null,
+	agentSearchDebounce: null,
+	viewSearchDebounce: null,
+	applicationSearchDebounce: null,
+}
+
 export default {
 	name: 'EditConfiguration',
 	components: {
@@ -828,47 +874,7 @@ export default {
 	},
 
 	data() {
-		return {
-			loading: false,
-			error: null,
-			activeTab: 0,
-			selectedRegisters: [],
-			selectedSchemas: [],
-			selectedObjects: [],
-			selectedSources: [],
-			selectedAgents: [],
-			selectedViews: [],
-			selectedManagedApplications: [],
-			selectedApplication: null,
-			selectedType: null,
-			// Management tab selections
-			selectedSourceType: null,
-			selectedNotificationGroups: [],
-			// Loading states for searches
-			loadingRegisters: false,
-			loadingSchemas: false,
-			loadingObjects: false,
-			loadingSources: false,
-			loadingAgents: false,
-			loadingViews: false,
-			loadingApplications: false,
-			// Search results
-			registerOptions: [],
-			schemaOptions: [],
-			objectOptions: [],
-			sourceOptions: [],
-			agentOptions: [],
-			viewOptions: [],
-			applicationOptions: [],
-			// Debounce timers
-			registerSearchDebounce: null,
-			schemaSearchDebounce: null,
-			objectSearchDebounce: null,
-			sourceSearchDebounce: null,
-			agentSearchDebounce: null,
-			viewSearchDebounce: null,
-			applicationSearchDebounce: null,
-		}
+		return freshState(INITIAL_STATE)
 	},
 
 	computed: {

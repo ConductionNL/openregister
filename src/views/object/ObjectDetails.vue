@@ -855,67 +855,131 @@ export default {
 			if (typeof objectStore.subscribe !== 'function') {
 				return
 			}
-			const ctx = this.relationContext
-			const item = objectStore.objectItem
-			// The push event key is or-object-{uuid} — prefer the uuid over a
-			// numeric id when both are present.
-			const uuid = item?.['@self']?.uuid ?? item?.uuid ?? ctx?.id
-			if (!ctx || !uuid) {
+			const target = this.liveTarget()
+			if (!target) {
 				this.releaseLiveSubscription()
 				return
 			}
-			const type = `${ctx.register}-${ctx.schema}`
-			const key = `${type}::${uuid}`
-			if (this.liveHandle && this.liveKey === key) {
-				return
-			}
-			if (this.livePendingKey === key) {
-				// A subscribe for this exact object is already in flight —
-				// re-subscribing here would leak the first handle + watcher.
+			if (this.isLiveFor(target.key)) {
 				return
 			}
 			this.releaseLiveSubscription()
 			try {
-				// Subscription is independent of the list view's registration
-				// timing: register the type ourselves when it is not known yet.
-				if (!objectStore.objectTypes.includes(type)) {
-					objectStore.registerObjectType(type, ctx.schema, ctx.register)
-				}
-				const epoch = this.liveEpoch
-				this.livePendingKey = key
-				this.liveKey = key
-				const handle = await objectStore.subscribe(type, uuid)
-				if (this.livePendingKey === key) {
-					this.livePendingKey = ''
-				}
-				if (this.liveEpoch !== epoch) {
-					// Released while awaiting (another object opened, or the
-					// component was destroyed) — drop the stale subscription.
-					objectStore.unsubscribe(handle)
-					return
-				}
-				this.liveHandle = handle
-				// Bridge: event → plugin refetch → objects[type][uuid] cache →
-				// objectItem (which this template renders).
-				this.liveUnwatch = this.$watch(
-					() => objectStore.getObject(type, uuid),
-					(fresh) => {
-						if (fresh && this.liveKey === key) {
-							objectStore.setObjectItem(fresh)
-						}
-					},
-				)
+				await this.subscribeLive(target)
 			} catch (e) {
-				if (this.livePendingKey === key) {
-					this.livePendingKey = ''
-				}
-				this.liveHandle = null
-				this.liveKey = ''
-				console.warn(
-					'[ObjectDetails] live subscription failed:',
-					e?.message ?? e,
+				this.liveFailed(target.key, e)
+			}
+		},
+
+		/**
+		 * The object to follow live: its type, uuid and subscription key, or
+		 * null when no saved object is open. The push event key is
+		 * or-object-{uuid}, so the uuid is preferred over a numeric id.
+		 *
+		 * @return {{ctx: object, uuid: string, type: string, key: string}|null} The target
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		liveTarget() {
+			const ctx = this.relationContext
+			const item = objectStore.objectItem
+			const uuid = item?.['@self']?.uuid ?? item?.uuid ?? ctx?.id
+			if (!ctx || !uuid) {
+				return null
+			}
+			const type = `${ctx.register}-${ctx.schema}`
+			return { ctx, uuid, type, key: `${type}::${uuid}` }
+		},
+
+		/**
+		 * Whether this object is already followed, or a subscribe for it is in
+		 * flight (re-subscribing would leak the first handle and watcher).
+		 *
+		 * @param {string} key The subscription key
+		 * @return {boolean} Whether to leave the subscription as it is
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		isLiveFor(key) {
+			return (
+				Boolean(this.liveHandle && this.liveKey === key)
+				|| this.livePendingKey === key
+			)
+		},
+
+		/**
+		 * Subscribe to the object and bridge fresh copies into the view. The
+		 * type is registered here when the list view has not done so yet. A
+		 * subscription released while it was awaited is dropped.
+		 *
+		 * @param {object} target The target from liveTarget()
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		async subscribeLive(target) {
+			if (!objectStore.objectTypes.includes(target.type)) {
+				objectStore.registerObjectType(
+					target.type,
+					target.ctx.schema,
+					target.ctx.register,
 				)
 			}
+			const epoch = this.liveEpoch
+			this.livePendingKey = target.key
+			this.liveKey = target.key
+			const handle = await objectStore.subscribe(target.type, target.uuid)
+			this.clearLivePending(target.key)
+			if (this.liveEpoch !== epoch) {
+				objectStore.unsubscribe(handle)
+				return
+			}
+			this.liveHandle = handle
+			this.bridgeLiveObject(target)
+		},
+
+		/**
+		 * Bridge: event, plugin refetch, objects[type][uuid] cache, then
+		 * objectItem, which this template renders.
+		 *
+		 * @param {object} target The target from liveTarget()
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		bridgeLiveObject(target) {
+			this.liveUnwatch = this.$watch(
+				() => objectStore.getObject(target.type, target.uuid),
+				(fresh) => {
+					if (fresh && this.liveKey === target.key) {
+						objectStore.setObjectItem(fresh)
+					}
+				},
+			)
+		},
+
+		/**
+		 * Forget the pending subscribe for a key, unless a newer one replaced it.
+		 *
+		 * @param {string} key The subscription key
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		clearLivePending(key) {
+			if (this.livePendingKey === key) {
+				this.livePendingKey = ''
+			}
+		},
+
+		/**
+		 * Reset the live state after a failed subscribe.
+		 *
+		 * @param {string} key The subscription key
+		 * @param {*} e The failure
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		liveFailed(key, e) {
+			this.clearLivePending(key)
+			this.liveHandle = null
+			this.liveKey = ''
+			console.warn(
+				'[ObjectDetails] live subscription failed:',
+				e?.message ?? e,
+			)
 		},
 
 		/**

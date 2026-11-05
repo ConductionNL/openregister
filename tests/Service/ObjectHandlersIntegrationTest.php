@@ -718,20 +718,6 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Test getMetadataFacetableFields.
-	 */
-	public function testGetMetadataFacetableFields(): void {
-		$result = $this->facetHandler->getMetadataFacetableFields();
-		$this->assertIsArray($result);
-		$this->assertContains('register', $result);
-		$this->assertContains('schema', $result);
-		$this->assertContains('owner', $result);
-		$this->assertContains('organisation', $result);
-		$this->assertContains('created', $result);
-		$this->assertContains('updated', $result);
-	}
-
-	/**
 	 * Test getFacetCount with no facets.
 	 */
 	public function testGetFacetCountNoFacets(): void {

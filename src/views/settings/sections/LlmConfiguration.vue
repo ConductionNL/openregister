@@ -4,7 +4,7 @@
 		:name="t('openregister', 'LLM Configuration')"
 		description="Configure Large Language Model settings for AI features"
 		:loading="loadingStats"
-		:loadingMessage="t('openregister', 'Loading LLM configuration...')">
+		:loadingMessage="t('openregister', 'Loading LLM configuration…')">
 		<template #actions>
 			<!-- LLM Actions Menu -->
 			<NcActions
@@ -117,7 +117,7 @@
 					)
 				}}
 				<span v-if="saving" class="saving-indicator">
-					<NcLoadingIcon :size="14" /> {{ t('openregister', 'Saving...') }}
+					<NcLoadingIcon :size="14" /> {{ t('openregister', 'Saving…') }}
 				</span>
 			</p>
 		</div>
@@ -416,6 +416,7 @@ import FileVectorizationModal from '../../../modals/settings/FileVectorizationMo
 import LLMConfigModal from '../../../modals/settings/LLMConfigModal.vue'
 import ObjectManagementModal from '../../../modals/settings/ObjectManagementModal.vue'
 import ObjectVectorizationModal from '../../../modals/settings/ObjectVectorizationModal.vue'
+import { freshState } from '../../../services/initialState.js'
 import { useSettingsStore } from '../../../store/settings.js'
 
 /**
@@ -577,6 +578,79 @@ function databaseExtrasOf(db) {
  * LLM configuration settings component for managing AI/LLM integration.
  * Allows users to configure LLM providers, models, and AI features.
  */
+/**
+ * The state every instance of this component starts from.
+ */
+const INITIAL_STATE = {
+	llmSettings: {
+		enabled: false,
+		provider: null,
+		apiEndpoint: '',
+		apiKey: '',
+		model: null,
+		temperature: 0.7,
+		maxTokens: 2000,
+	},
+
+	saving: false,
+	loadingStats: false,
+	vectorizing: false,
+	llmError: false,
+	llmErrorMessage: '',
+	llmConnectionStatus: 'Unknown',
+	showLLMConfigDialog: false,
+	showFileManagementDialog: false,
+	showObjectManagementDialog: false,
+	showObjectVectorizationModal: false,
+	showFileVectorizationModal: false,
+	providerConfig: {
+		embeddingProvider: null,
+		embeddingModel: null,
+		chatProvider: null,
+		chatModel: null,
+	},
+
+	databaseInfo: {
+		type: 'Unknown',
+		version: 'Unknown',
+		vectorSupport: false,
+		recommendedPlugin: null,
+		performanceNote: null,
+		extensions: [],
+		hybridSearch: null,
+		lastUpdated: null,
+	},
+
+	refreshingDatabase: false,
+	chatStats: {
+		totalAgents: 0,
+		totalConversations: 0,
+		totalMessages: 0,
+	},
+
+	vectorStats: {
+		totalVectors: 0,
+		objectVectors: 0,
+		fileVectors: 0,
+		storageMB: '0.0',
+	},
+
+	fileStats: {
+		totalFiles: 0,
+		vectorizedFiles: 0,
+		filesExtracted: 0,
+		pendingFiles: 0,
+		totalChunks: 0,
+	},
+
+	objectStats: {
+		totalObjects: 0,
+		vectorizedObjects: 0,
+		pendingObjects: 0,
+		progressPercentage: 0,
+	},
+}
+
 export default {
 	name: 'LlmConfiguration',
 
@@ -603,75 +677,7 @@ export default {
 	},
 
 	data() {
-		return {
-			llmSettings: {
-				enabled: false,
-				provider: null,
-				apiEndpoint: '',
-				apiKey: '',
-				model: null,
-				temperature: 0.7,
-				maxTokens: 2000,
-			},
-
-			saving: false,
-			loadingStats: false,
-			vectorizing: false,
-			llmError: false,
-			llmErrorMessage: '',
-			llmConnectionStatus: 'Unknown',
-			showLLMConfigDialog: false,
-			showFileManagementDialog: false,
-			showObjectManagementDialog: false,
-			showObjectVectorizationModal: false,
-			showFileVectorizationModal: false,
-			providerConfig: {
-				embeddingProvider: null,
-				embeddingModel: null,
-				chatProvider: null,
-				chatModel: null,
-			},
-
-			databaseInfo: {
-				type: 'Unknown',
-				version: 'Unknown',
-				vectorSupport: false,
-				recommendedPlugin: null,
-				performanceNote: null,
-				extensions: [],
-				hybridSearch: null,
-				lastUpdated: null,
-			},
-
-			refreshingDatabase: false,
-			chatStats: {
-				totalAgents: 0,
-				totalConversations: 0,
-				totalMessages: 0,
-			},
-
-			vectorStats: {
-				totalVectors: 0,
-				objectVectors: 0,
-				fileVectors: 0,
-				storageMB: '0.0',
-			},
-
-			fileStats: {
-				totalFiles: 0,
-				vectorizedFiles: 0,
-				filesExtracted: 0,
-				pendingFiles: 0,
-				totalChunks: 0,
-			},
-
-			objectStats: {
-				totalObjects: 0,
-				vectorizedObjects: 0,
-				pendingObjects: 0,
-				progressPercentage: 0,
-			},
-		}
+		return freshState(INITIAL_STATE)
 	},
 
 	computed: {

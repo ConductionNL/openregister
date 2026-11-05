@@ -110,6 +110,45 @@ class RegisterResolverServiceTest extends TestCase {
 
 	}//end testResolveRegisterIdThrowsMissingConfigExceptionWithDiagnostics()
 
+	/**
+	 * Every case for each of the three id reads: config value, default, empty default, missing.
+	 *
+	 * @return array<string, array{string, string, ?string, ?string}>
+	 */
+	public static function idReadCases(): array {
+		$cases = [];
+		foreach (['resolveRegisterId', 'resolveSchemaId', 'resolvePropertyId'] as $method) {
+			$cases[$method . ' config wins'] = [$method, 'configured', 'fallback', 'configured'];
+			$cases[$method . ' default'] = [$method, '', 'fallback', 'fallback'];
+			$cases[$method . ' empty default'] = [$method, '', '', null];
+			$cases[$method . ' no default'] = [$method, '', null, null];
+		}
+
+		return $cases;
+	}//end idReadCases()
+
+	/**
+	 * @dataProvider idReadCases
+	 */
+	public function testIdReadsShareOneRule(string $method, string $stored, ?string $default, ?string $expected): void {
+		$this->appConfig->expects($this->once())->method('getValueString')
+			->with('someapp', 'some_key', '')
+			->willReturn($stored);
+
+		if ($expected === null) {
+			try {
+				$this->resolver->$method('someapp', 'some_key', $default, 'org-uuid');
+				$this->fail('Expected MissingConfigException');
+			} catch (MissingConfigException $e) {
+				$this->assertSame(['someapp', 'some_key'], [$e->getAppId(), $e->getConfigKey()]);
+			}
+
+			return;
+		}
+
+		$this->assertSame($expected, $this->resolver->$method('someapp', 'some_key', $default, 'org-uuid'));
+	}//end testIdReadsShareOneRule()
+
 	public function testResolveSchemaIdHappyPath(): void {
 		$this->appConfig->method('getValueString')
 			->with('opencatalogi', 'listing_schema', '')
