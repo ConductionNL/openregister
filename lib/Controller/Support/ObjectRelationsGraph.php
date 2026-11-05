@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Relation\AffectedSet;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
 
@@ -40,6 +41,7 @@ final class ObjectRelationsGraph {
 	 * @param RelationGraphService  $graphs        The bounded graph walk.
 	 * @param ObjectOperationsInterface         $objectService Reads and writes objects, with RBAC.
 	 * @param ExportGate            $exportGate    The export verb, checked before the graph leaves.
+	 * @param AffectedSet           $affected      Filters the graph to who else is affected.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
@@ -48,6 +50,7 @@ final class ObjectRelationsGraph {
 		public readonly RelationGraphService $graphs,
 		public readonly ObjectOperationsInterface $objectService,
 		public readonly ExportGate $exportGate,
+		public readonly AffectedSet $affected = new AffectedSet(),
 	) {
 	}//end __construct()
 }//end class
