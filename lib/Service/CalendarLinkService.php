@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\CalendarLinkMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use Sabre\VObject\Component;
 use Sabre\VObject\Reader;
 use Throwable;
 
@@ -582,13 +583,8 @@ class CalendarLinkService {
 	 * @return array<string,mixed>|null Picker row, or null to skip this object.
 	 */
 	private function parseCalendarObjectForPicker(CalendarPickerScan $scan, array $object): ?array {
-		$fullObject = $this->calDavBackend->getCalendarObject($scan->calendarId, $object['uri']);
-		if ($fullObject === null || empty($fullObject['calendardata']) === true) {
-			return null;
-		}
-
-		$calendarData = $fullObject['calendardata'];
-		if (strpos($calendarData, 'VEVENT') === false) {
+		$calendarData = $this->objectCalendarData(calendarId: $scan->calendarId, objectUri: $object['uri']);
+		if ($calendarData === null || strpos($calendarData, 'VEVENT') === false) {
 			return null;
 		}
 
@@ -614,112 +610,118 @@ class CalendarLinkService {
 	 * @return array{calendarId:int, eventUri:string, summary:?string, dtstart:?DateTime, dtend:?DateTime, location:?string}|null
 	 */
 	private function locateEventOnCalendar(string $userId, string $calendarUri, string $eventUid): ?array {
-		$principal = 'principals/users/' . $userId;
-		$calendars = $this->calDavBackend->getCalendarsForUser($principal);
-		$calendarId = null;
-
-		foreach ($calendars as $calendar) {
-			if (($calendar['uri'] ?? null) === $calendarUri) {
-				$calendarId = (int)$calendar['id'];
-				break;
-			}
-		}
-
+		$calendarId = $this->calendarIdByUri(userId: $userId, calendarUri: $calendarUri);
 		if ($calendarId === null) {
 			return null;
 		}
 
 		foreach ($this->calDavBackend->getCalendarObjects($calendarId) as $object) {
-			$fullObject = $this->calDavBackend->getCalendarObject($calendarId, $object['uri']);
-			if ($fullObject === null || empty($fullObject['calendardata']) === true) {
+			$calendarData = $this->objectCalendarData(calendarId: $calendarId, objectUri: $object['uri']);
+			if ($calendarData === null || strpos($calendarData, $eventUid) === false) {
 				continue;
 			}
 
-			if (strpos($fullObject['calendardata'], $eventUid) === false) {
-				continue;
+			$fields = $this->parseVeventObjectForLocate(calendarData: $calendarData, expectedUid: $eventUid);
+			if ($fields !== null) {
+				return ['calendarId' => $calendarId, 'eventUri' => (string)$object['uri']] + $fields;
 			}
-
-			$row = $this->parseVeventObjectForLocate(
-				calendarData: $fullObject['calendardata'],
-				calendarId: $calendarId,
-				eventUri: (string)$object['uri'],
-				expectedUid: $eventUid
-			);
-
-			if ($row !== null) {
-				return $row;
-			}
-		}//end foreach
+		}
 
 		return null;
 	}//end locateEventOnCalendar()
-
 	/**
-	 * Parse iCal data and return locate-row fields when the UID matches.
+	 * The id of the user's calendar with the given URI, of any component type.
+	 *
+	 * @param string $userId      User id.
+	 * @param string $calendarUri Calendar URI.
+	 *
+	 * @return int|null The calendar id; null when the user has no such calendar.
+	 */
+	private function calendarIdByUri(string $userId, string $calendarUri): ?int {
+		foreach ($this->calDavBackend->getCalendarsForUser('principals/users/' . $userId) as $calendar) {
+			if (($calendar['uri'] ?? null) === $calendarUri) {
+				return (int)$calendar['id'];
+			}
+		}
+
+		return null;
+	}//end calendarIdByUri()
+	/**
+	 * Parse iCal data and return the cacheable event fields when the UID matches.
 	 *
 	 * Returns null when the data cannot be parsed, contains no VEVENT,
 	 * or the UID does not match.
 	 *
 	 * @param string $calendarData Raw iCal data.
-	 * @param int $calendarId Numeric calendar id.
-	 * @param string $eventUri Object URI from the CalDAV store.
-	 * @param string $expectedUid UID to match against.
+	 * @param string $expectedUid  UID to match against.
 	 *
-	 * @return array{calendarId:int, eventUri:string, summary:?string, dtstart:?DateTime, dtend:?DateTime, location:?string}|null
+	 * @return array{summary:?string, dtstart:?DateTime, dtend:?DateTime, location:?string}|null
 	 */
-	private function parseVeventObjectForLocate(
-		string $calendarData,
-		int $calendarId,
-		string $eventUri,
-		string $expectedUid,
-	): ?array {
+	private function parseVeventObjectForLocate(string $calendarData, string $expectedUid): ?array {
 		try {
-			$vcalendar = Reader::read($calendarData);
-			$vevent = $vcalendar->VEVENT;
-			if ($vevent === null) {
+			$vevent = Reader::read($calendarData)->VEVENT;
+			if ($vevent === null || isset($vevent->UID) === false || (string)$vevent->UID !== $expectedUid) {
 				return null;
-			}
-
-			if (isset($vevent->UID) === false || (string)$vevent->UID !== $expectedUid) {
-				return null;
-			}
-
-			$dtstart = null;
-			if (isset($vevent->DTSTART) === true) {
-				$dtstart = DateTime::createFromInterface($vevent->DTSTART->getDateTime());
-			}
-
-			$dtend = null;
-			if (isset($vevent->DTEND) === true) {
-				$dtend = DateTime::createFromInterface($vevent->DTEND->getDateTime());
-			}
-
-			$rowSummary = null;
-			if (isset($vevent->SUMMARY) === true) {
-				$rowSummary = (string)$vevent->SUMMARY;
-			}
-
-			$rowLocation = null;
-			if (isset($vevent->LOCATION) === true) {
-				$rowLocation = (string)$vevent->LOCATION;
 			}
 
 			return [
-				'calendarId' => $calendarId,
-				'eventUri' => $eventUri,
-				'summary' => $rowSummary,
-				'dtstart' => $dtstart,
-				'dtend' => $dtend,
-				'location' => $rowLocation,
+				'summary' => $this->veventText(vevent: $vevent, name: 'SUMMARY'),
+				'dtstart' => $this->veventDateTime(vevent: $vevent, name: 'DTSTART'),
+				'dtend' => $this->veventDateTime(vevent: $vevent, name: 'DTEND'),
+				'location' => $this->veventText(vevent: $vevent, name: 'LOCATION'),
 			];
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				'Failed to parse VEVENT while locating event ' . $expectedUid . ': ' . $e->getMessage()
-			);
-		}//end try
+			$this->logger->warning('Failed to parse VEVENT while locating event ' . $expectedUid . ': ' . $e->getMessage());
+		}
 
 		return null;
 	}//end parseVeventObjectForLocate()
+	/**
+	 * The iCal data of a CalDAV object; null when the object is missing or empty.
+	 *
+	 * @param int   $calendarId Numeric calendar id.
+	 * @param mixed $objectUri  Object URI as the CalDAV store lists it.
+	 *
+	 * @return string|null The iCal data.
+	 */
+	private function objectCalendarData(int $calendarId, mixed $objectUri): ?string {
+		$fullObject = $this->calDavBackend->getCalendarObject($calendarId, $objectUri);
+		if ($fullObject === null || empty($fullObject['calendardata']) === true) {
+			return null;
+		}
+
+		return $fullObject['calendardata'];
+	}//end objectCalendarData()
+	/**
+	 * A date-time property of a VEVENT; null when the event does not have it.
+	 *
+	 * @param Component $vevent The VEVENT.
+	 * @param string    $name   Property name, such as DTSTART.
+	 *
+	 * @return DateTime|null The value.
+	 */
+	private function veventDateTime(Component $vevent, string $name): ?DateTime {
+		if (isset($vevent->{$name}) === false) {
+			return null;
+		}
+
+		return DateTime::createFromInterface($vevent->{$name}->getDateTime());
+	}//end veventDateTime()
+	/**
+	 * A text property of a VEVENT; null when the event does not have it.
+	 *
+	 * @param Component $vevent The VEVENT.
+	 * @param string    $name   Property name, such as LOCATION.
+	 *
+	 * @return string|null The value.
+	 */
+	private function veventText(Component $vevent, string $name): ?string {
+		if (isset($vevent->{$name}) === false) {
+			return null;
+		}
+
+		return (string)$vevent->{$name};
+	}//end veventText()
 
 	/**
 	 * Build a {calendarId → calendarUri} map for the current user.
