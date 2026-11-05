@@ -29,8 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use DateTime;
 use OCA\OpenRegister\Service\Rbac\MemberOfResolver;
+use OCA\OpenRegister\Service\Rbac\RecordMetadataConditions;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -57,6 +57,13 @@ class ConditionMatcher {
 	private array $cachedActiveOrg = [];
 
 	/**
+	 * Reads which metadata keys a record carries.
+	 *
+	 * @var RecordMetadataConditions
+	 */
+	private readonly RecordMetadataConditions $metadataConditions;
+
+	/**
 	 * Supported `$user.<property>` dot-path tokens.
 	 *
 	 * Any `$user.<X>` token NOT present in this list is treated as an
@@ -75,6 +82,18 @@ class ConditionMatcher {
 		'email',
 		'displayName',
 		'groups',
+	];
+
+	/**
+	 * Match tokens that resolve to the caller's active organisation.
+	 *
+	 * @var string[]
+	 */
+	public const ORGANISATION_TOKENS = [
+		'$organisation',
+		'$activeOrganisation',
+		'$organisation.uuid',
+		'$activeOrganisation.uuid',
 	];
 
 	/**
@@ -111,6 +130,7 @@ class ConditionMatcher {
 		private readonly ?IGroupManager $groupManager = null,
 		private readonly ?MemberOfResolver $memberOfResolver = null,
 	) {
+		$this->metadataConditions = new RecordMetadataConditions(logger: $logger);
 	}//end __construct()
 
 	/**
@@ -124,6 +144,12 @@ class ConditionMatcher {
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-conditional-scopes-with-dynamic-variables
 	 */
 	public function objectMatchesConditions(array $object, array $match): bool {
+		// A condition on metadata no record carries is never met, also where a
+		// missing value would satisfy it (`null`, `$exists: false`).
+		if ($this->namesUnknownMetadata(match: $match, object: $object) === true) {
+			return false;
+		}
+
 		foreach ($match as $property => $value) {
 			if ($this->singleConditionMatches(object: $object, property: $property, value: $value) === false) {
 				return false;
@@ -132,6 +158,25 @@ class ConditionMatcher {
 
 		return true;
 	}//end objectMatchesConditions()
+
+	/**
+	 * Whether a match clause names record metadata that no record carries
+	 *
+	 * Such a condition can never match a record, so every caller fails closed
+	 * on it: {@see objectMatchesConditions()} answers false, so an allow grants
+	 * nothing, and a deny caller treats it as selecting the row. Each schema and
+	 * key is logged once per matcher.
+	 *
+	 * @param array $match  Match conditions
+	 * @param array $object The object being evaluated, for the schema its `@self` names
+	 *
+	 * @return bool True when at least one condition names unknown metadata
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	public function namesUnknownMetadata(array $match, array $object = []): bool {
+		return $this->metadataConditions->refuses(match: $match, object: $object);
+	}//end namesUnknownMetadata()
 
 	/**
 	 * Filter out organisation matching for create operations
@@ -152,10 +197,11 @@ class ConditionMatcher {
 		$filtered = [];
 		foreach ($match as $property => $value) {
 			// Skip if this is an organisation match condition.
-			if (in_array($property, $organisationKeys, true) === true) {
-				if (is_string($value) === true && in_array($value, $organisationValues, true) === true) {
-					continue;
-				}
+			if (in_array($property, $organisationKeys, true) === true
+				&& is_string($value) === true
+				&& in_array($value, $organisationValues, true) === true
+			) {
+				continue;
 			}
 
 			$filtered[$property] = $value;
@@ -237,7 +283,10 @@ class ConditionMatcher {
 	}//end unwrapResolvedRelation()
 
 	/**
-	 * Get a value from the object, checking both direct property and @self
+	 * Get a value from the object: `@self` for an underscore-prefixed property, else the body
+	 *
+	 * See {@see RecordMetadataConditions::valueIn()}. A key that names no record
+	 * metadata never reaches this: {@see objectMatchesConditions()} refuses it first.
 	 *
 	 * @param array $object Object data
 	 * @param string $property Property name
@@ -245,20 +294,7 @@ class ConditionMatcher {
 	 * @return mixed Property value or null
 	 */
 	private function getObjectValue(array $object, string $property): mixed {
-		// Check direct property first.
-		if (isset($object[$property]) === true) {
-			return $object[$property];
-		}
-
-		// For underscore-prefixed properties, also check @self.
-		if (str_starts_with($property, '_') === true) {
-			$selfProperty = substr($property, 1);
-			if (isset($object['@self'][$selfProperty]) === true) {
-				return $object['@self'][$selfProperty];
-			}
-		}
-
-		return null;
+		return $this->metadataConditions->valueIn(object: $object, property: $property);
 	}//end getObjectValue()
 
 	/**
@@ -348,7 +384,7 @@ class ConditionMatcher {
 		// text/JSON-stored dates lexicographically. ISO 8601's "T" separator once
 		// made list and find disagree.
 		if ($value === '$now') {
-			return (new DateTime())->format('Y-m-d H:i:s');
+			return date('Y-m-d H:i:s');
 		}
 
 		return $value;
@@ -472,20 +508,26 @@ class ConditionMatcher {
 	 * @return string|null The active organisation UUID or null
 	 *
 	 * @spec openspec/specs/actions/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	private function getActiveOrganisationUuid(): ?string {
 		// Keyed by the subject, because the subject can change within a request:
 		// ObjectService::runAsAnonymous() and runAs() both swap it. A flat memo
 		// resolved under an admin session would otherwise answer `@organisation.uuid`
 		// with that admin's organisation inside an evaluation meant to be anonymous,
-		// admitting their tenant's rows to a public read.
+		// admitting their tenant's rows to a public read. An organisation
+		// context is a subject of its own for the same reason.
 		$subject = ($this->userSession->getUser()?->getUID() ?? '_anon');
+		$contextUuid = OrganisationContext::current();
+		if ($contextUuid !== null) {
+			$subject = 'organisation-context:' . $contextUuid;
+		}
 		if (array_key_exists($subject, $this->cachedActiveOrg) === true) {
 			return $this->cachedActiveOrg[$subject];
 		}
 
 		try {
-			$organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
+			$organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationServiceInterface');
 			$activeOrg = $organisationService->getActiveOrganisation();
 
 			if ($activeOrg !== null) {

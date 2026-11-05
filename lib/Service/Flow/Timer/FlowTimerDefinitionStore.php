@@ -33,7 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
 use OCA\OpenRegister\Repair\SeedFlowTimerRegister;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -70,12 +70,12 @@ class FlowTimerDefinitionStore {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects Reads the seeded objects.
+	 * @param ObjectOperationsInterface $objects Reads the seeded objects.
 	 * @param IAppManager $appManager Locates the shipped descriptor.
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
 	) {

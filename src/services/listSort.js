@@ -43,22 +43,57 @@ export function headerSortOf(sort) {
 	}
 }
 
+// The columns that are not compared as text.
+const SCHEMA_VALUES = new Map([
+	['created', timeValue],
+	['updated', timeValue],
+	['properties', countValue],
+])
+
 /**
  * The value a schema row is compared by for one header.
  *
  * @param {object} schema The schema row.
  * @param {string} key The column key.
  * @return {number|string} The comparable value.
+ * @spec openspec/specs/audit-trail-immutable/spec.md
  */
 function schemaValue(schema, key) {
 	const value = schema ? schema[key] : null
-	if (key === 'created' || key === 'updated') {
-		const time = value ? Date.parse(value) : NaN
-		return Number.isNaN(time) ? 0 : time
-	}
-	if (key === 'properties') {
-		return value && typeof value === 'object' ? Object.keys(value).length : 0
-	}
+	return (SCHEMA_VALUES.get(key) || textValue)(value)
+}
+
+/**
+ * A timestamp column as milliseconds; 0 when it holds no date.
+ *
+ * @param {unknown} value The column value.
+ * @return {number} The time.
+ * @spec openspec/specs/audit-trail-immutable/spec.md
+ */
+function timeValue(value) {
+	const time = value ? Date.parse(value) : NaN
+	return Number.isNaN(time) ? 0 : time
+}
+
+/**
+ * An object column as its number of keys; 0 when it holds no object.
+ *
+ * @param {unknown} value The column value.
+ * @return {number} The count.
+ * @spec openspec/specs/audit-trail-immutable/spec.md
+ */
+function countValue(value) {
+	return value && typeof value === 'object' ? Object.keys(value).length : 0
+}
+
+/**
+ * Any other column as text; empty when it holds nothing.
+ *
+ * @param {unknown} value The column value.
+ * @return {string} The text.
+ * @spec openspec/specs/audit-trail-immutable/spec.md
+ */
+function textValue(value) {
 	return value === null || value === undefined ? '' : String(value)
 }
 

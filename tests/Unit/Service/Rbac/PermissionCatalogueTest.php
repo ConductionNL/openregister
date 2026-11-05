@@ -63,7 +63,7 @@ class PermissionCatalogueTest extends TestCase {
 		$catalogue = $this->catalogueWith();
 
 		$this->assertSame(
-			['read', 'create', 'update', 'delete', 'destroy', 'list', 'export', 'manage', 'assign', 'readFiles', 'addFiles', 'deleteFiles'],
+			['read', 'create', 'update', 'delete', 'destroy', 'list', 'export', 'manage', 'assign', 'readFiles', 'addFiles', 'deleteFiles', 'readGrants'],
 			$catalogue->verbs()
 		);
 		foreach ($catalogue->all() as $entry) {
@@ -318,7 +318,7 @@ class PermissionCatalogueTest extends TestCase {
 		$catalogue = new PermissionCatalogue($dispatcher);
 
 		$this->assertSame(
-			expected: ['read', 'create', 'update', 'delete', 'destroy', 'list', 'export', 'manage', 'assign', 'readFiles', 'addFiles', 'deleteFiles'],
+			expected: ['read', 'create', 'update', 'delete', 'destroy', 'list', 'export', 'manage', 'assign', 'readFiles', 'addFiles', 'deleteFiles', 'readGrants'],
 			actual: $catalogue->verbs()
 		);
 		$this->assertArrayHasKey('*', $catalogue->rejectedDeclarations());

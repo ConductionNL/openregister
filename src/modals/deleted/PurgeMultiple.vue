@@ -245,25 +245,7 @@ export default {
 				this.success = true
 				this.error = false
 
-				// Build success message
-				if (result.deleted > 0) {
-					let message = t(
-						'openregister',
-						'Successfully permanently deleted {count} objects',
-						{ count: result.deleted },
-					)
-					if (result.failed > 0) {
-						message += t('openregister', ', {failed} failed', {
-							failed: result.failed,
-						})
-					}
-					this.successMessage = message
-				} else {
-					this.successMessage = t(
-						'openregister',
-						'No objects were permanently deleted',
-					)
-				}
+				this.successMessage = this.purgedMessage(result)
 
 				// Auto-close after 3 seconds
 				this.closeModalTimeout = setTimeout(this.closeDialog, 3000)
@@ -281,6 +263,31 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * The message for a finished purge: how many objects were deleted and
+		 * how many failed.
+		 *
+		 * @param {object} result The store's answer, with deleted and failed counts
+		 * @return {string} The message
+		 * @spec exclude Bulk-purge confirm handler delegating to deletedStore.permanentlyDeleteMultiple; entity mutation lives in the store, this is modal orchestration plumbing.
+		 */
+		purgedMessage(result) {
+			if (result.deleted > 0) {
+				const message = t(
+					'openregister',
+					'Successfully permanently deleted {count} objects',
+					{ count: result.deleted },
+				)
+				return result.failed > 0
+					? message
+							+ t('openregister', ', {failed} failed', {
+								failed: result.failed,
+							})
+					: message
+			}
+			return t('openregister', 'No objects were permanently deleted')
 		},
 
 		/**

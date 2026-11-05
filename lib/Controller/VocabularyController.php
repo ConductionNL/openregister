@@ -41,10 +41,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilder;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver;
-use OCA\OpenRegister\Service\VocabularyImportService;
+use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -68,21 +68,21 @@ class VocabularyController extends Controller {
 	 *
 	 * @var string
 	 */
-	private const REGISTER = VocabularyImportService::REGISTER;
+	private const REGISTER = VocabularyImporterInterface::REGISTER;
 
 	/**
 	 * ConceptScheme schema slug.
 	 *
 	 * @var string
 	 */
-	private const SCHEMA_SCHEME = VocabularyImportService::SCHEMA_SCHEME;
+	private const SCHEMA_SCHEME = VocabularyImporterInterface::SCHEMA_SCHEME;
 
 	/**
 	 * Concept schema slug.
 	 *
 	 * @var string
 	 */
-	private const SCHEMA_CONCEPT = VocabularyImportService::SCHEMA_CONCEPT;
+	private const SCHEMA_CONCEPT = VocabularyImporterInterface::SCHEMA_CONCEPT;
 
 	/**
 	 * Upper bound on concepts fetched for a scheme's in-memory label-search
@@ -100,7 +100,7 @@ class VocabularyController extends Controller {
 	 *
 	 * @param string $appName App name (injected by NC).
 	 * @param IRequest $request Current request.
-	 * @param ObjectService $objectService OR object read path (findAll, real API only).
+	 * @param ObjectOperationsInterface $objectService OR object read path (findAll, real API only).
 	 * @param CodedOptionsBuilder $options Builds a coded property's option list or option tree.
 	 * @param VocabularyDeclarationResolver $declarationResolver Resolves the coded declaration a read is about.
 	 *
@@ -109,7 +109,7 @@ class VocabularyController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly CodedOptionsBuilder $options,
 		private readonly VocabularyDeclarationResolver $declarationResolver,
 	) {

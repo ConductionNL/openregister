@@ -43,7 +43,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -62,7 +62,7 @@ class ObjectWatchersController extends Controller {
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
-	 * @param ObjectService $objectService Resolves an object through the RBAC boundary.
+	 * @param ObjectOperationsInterface $objectService Resolves an object through the RBAC boundary.
 	 * @param WatcherService $watchers The subscription primitive.
 	 * @param IUserManager $userManager Verifies a named uid before it is subscribed.
 	 * @param LoggerInterface $logger Logger.
@@ -70,7 +70,7 @@ class ObjectWatchersController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly WatcherService $watchers,
 		private readonly IUserManager $userManager,
 		private readonly LoggerInterface $logger,
@@ -301,11 +301,11 @@ class ObjectWatchersController extends Controller {
 	 * @return ObjectEntity|JSONResponse The object, or the response to return.
 	 */
 	private function resolveObject(string $register, string $schema, string $id): ObjectEntity|JSONResponse {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
-
 		try {
+			// The setObject() call already looks the object up, so an unknown id throws here.
+			$this->objectService->setRegister($register);
+			$this->objectService->setSchema($schema);
+			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
 		} catch (\Throwable $e) {
 			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);

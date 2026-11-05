@@ -29,6 +29,11 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Calculation\PropertyCalculations
+ * @uses \OCA\OpenRegister\Service\Object\SchemaTypeConverter
  */
 class ReferencedCalculationRefresherTest extends TestCase {
 

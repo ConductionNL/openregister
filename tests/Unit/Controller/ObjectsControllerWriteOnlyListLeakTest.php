@@ -75,12 +75,13 @@ use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
  * @uses \OCA\OpenRegister\Service\Object\TranslationHandler
  * @uses \OCA\OpenRegister\Service\PropertyRbacHandler
  * @uses \OCA\OpenRegister\Service\Rules\ConditionDialect
- * @uses \OCA\OpenRegister\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses \OCA\OpenRegister\Support\FilterParams
  * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
  * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRules
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 	use BuildsStateFieldRuleResolver;
@@ -292,7 +293,7 @@ class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 		$magicMapper->method('searchObjectsInRegisterSchemaTable')->willReturn([$this->sourceEntity()]);
 		$magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(1);
 		$magicMapper->method('getIgnoredFilters')->willReturn([]);
-		$this->registerService(MagicMapper::class, fn () => $magicMapper);
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, fn () => $magicMapper);
 
 		// The REAL RenderObject — the whole point of this test. Mocking it here is what
 		// let #460 hide behind a green suite.

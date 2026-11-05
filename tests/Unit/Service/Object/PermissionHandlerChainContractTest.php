@@ -20,6 +20,7 @@ use Error;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
@@ -96,7 +97,7 @@ class PermissionHandlerChainContractTest extends TestCase {
 	public static function conditionalRules(): array {
 		$match    = ['organisation' => 'org-1'];
 		$object   = ['owner' => 'bea', 'organisation' => 'org-1', 'data' => ['title' => 't', '@self' => ['x' => 1]]];
-		$envelope = ['id' => self::UUID, 'title' => 't', '@self' => ['x' => 1, 'organisation' => 'org-1']];
+		$envelope = ['id' => self::UUID, 'title' => 't', '@self' => self::recordSelf()];
 		$ana      = ['id' => 'ana', 'groups' => ['behandelaars']];
 		$matched  = [['cond' => [$envelope, $match]]];
 
@@ -106,14 +107,14 @@ class PermissionHandlerChainContractTest extends TestCase {
 				true,
 				[['userManager.get' => 'ana'], ...$matched],
 			],
-			'the object keeps its own @self.organisation' => [
+			'the record organisation wins over an @self.organisation in its data' => [
 				[
 					'auth'   => ['read' => [['group' => 'behandelaars', 'match' => $match]]],
 					'user'   => $ana,
 					'object' => ['owner' => 'bea', 'organisation' => 'org-1', 'data' => ['title' => 't', '@self' => ['organisation' => 'own']]],
 				],
 				true,
-				[['userManager.get' => 'ana'], ['cond' => [['id' => self::UUID, 'title' => 't', '@self' => ['organisation' => 'own']], $match]]],
+				[['userManager.get' => 'ana'], ['cond' => [['id' => self::UUID, 'title' => 't', '@self' => self::recordSelf()], $match]]],
 			],
 			'public for an anonymous reader'  => [
 				['auth' => ['read' => [['group' => 'public', 'match' => $match]]], 'user' => null, 'object' => $object],
@@ -149,7 +150,24 @@ class PermissionHandlerChainContractTest extends TestCase {
 	}//end conditionalRules()
 
 	/**
-	 * A conditional rule is matched against the object data with the organisation folded into @self.
+	 * The `@self` the matcher reads for the cases' record: the record's metadata, owner `bea` in `org-1`.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function recordSelf(): array {
+		$record = new ObjectEntity();
+		$record->setUuid(self::UUID);
+		$record->setOrganisation('org-1');
+		$record->setOwner('bea');
+		$self = $record->getMatchEnvelope()['@self'];
+		self::assertSame(expected: ['id' => self::UUID, 'owner' => 'bea', 'organisation' => 'org-1'], actual: array_intersect_key($self, ['id' => 0, 'owner' => 0, 'organisation' => 0]));
+		self::assertArrayNotHasKey(key: 'x', array: $self);
+
+		return $self;
+	}//end recordSelf()
+
+	/**
+	 * A conditional rule is matched against the object data with @self taken from the record's metadata.
 	 *
 	 * @param array<string, mixed>       $case    The case
 	 * @param bool                       $verdict The expected verdict
@@ -633,7 +651,7 @@ class PermissionHandlerChainContractTest extends TestCase {
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($registerMapper): mixed {
-				if ($id === RegisterMapper::class) {
+				if ($id === RegisterMapperInterface::class) {
 					return $registerMapper;
 				}
 

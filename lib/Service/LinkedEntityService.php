@@ -24,14 +24,14 @@
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use Psr\Log\LoggerInterface;
@@ -66,10 +66,10 @@ class LinkedEntityService {
 	 * a known linked-type is the type id itself — historically the
 	 * removed map was a verbatim identity for every entry.
 	 *
-	 * @param MagicMapper $magicMapper Magic mapper for object operations
-	 * @param SchemaMapper $schemaMapper Schema mapper
-	 * @param RegisterMapper $registerMapper Register mapper
-	 * @param OrganisationMapper $organisationMapper Organisation mapper
+	 * @param MagicMapperInterface $magicMapper Magic mapper for object operations
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper
+	 * @param RegisterMapperInterface $registerMapper Register mapper
+	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
 	 * @param IntegrationRegistry $integrationRegistry Integration registry (authoritative
 	 *                                                 type-id source, post `cleanup-linked-entity-type-map`)
 	 * @param LoggerInterface $logger Logger
@@ -77,10 +77,10 @@ class LinkedEntityService {
 	 * @param DeepLinkRegistryService $deepLinkRegistry Deep-link registry service for cross-app deep links
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly OrganisationMapper $organisationMapper,
+		private readonly MagicMapperInterface $magicMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly OrganisationMapperInterface $organisationMapper,
 		private readonly IntegrationRegistry $integrationRegistry,
 		private readonly LoggerInterface $logger,
 		private readonly PermissionHandler $permissionHandler,
@@ -285,30 +285,26 @@ class LinkedEntityService {
 	 */
 	public function reverseLookup(string $type, string $entityId): array {
 		$this->validateType(type: $type);
-		$columnName = $type;
-		$results = [];
+		$lookup = new LinkedEntityLookup(type: $type, entityId: $entityId);
 
-		// 1. Scan magic tables (objects).
-		$results = array_merge($results, $this->scanMagicTables(type: $type, columnName: $columnName, entityId: $entityId));
-
-		// 2. Scan entity tables.
-		$results = array_merge($results, $this->scanEntityTables(columnName: $columnName, entityId: $entityId));
-
-		return $results;
+		return array_merge(
+			$this->scanMagicTables(lookup: $lookup),
+			$this->scanEntityTable(entityType: 'register', lookup: $lookup),
+			$this->scanEntityTable(entityType: 'schema', lookup: $lookup),
+			$this->scanEntityTable(entityType: 'organisation', lookup: $lookup)
+		);
 	}//end reverseLookup()
 
 	/**
 	 * Scan magic tables for objects linked to the given entity.
 	 *
-	 * @param string $type The linked entity type
-	 * @param string $columnName The column name to search
-	 * @param string $entityId The entity ID to search for
+	 * @param LinkedEntityLookup $lookup The type and entity id looked for
 	 *
 	 * @return array Array of matching results
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-magic-tables
 	 */
-	private function scanMagicTables(string $type, string $columnName, string $entityId): array {
+	private function scanMagicTables(LinkedEntityLookup $lookup): array {
 		$results = [];
 
 		// Find schemas that declare this linkedType.
@@ -326,52 +322,21 @@ class LinkedEntityService {
 			if ($scanned >= self::MAX_TABLES_TO_SCAN) {
 				$this->logger->warning(
 					'[LinkedEntityService] Circuit breaker: max tables reached',
-					['maxTables' => self::MAX_TABLES_TO_SCAN, 'type' => $type]
+					['maxTables' => self::MAX_TABLES_TO_SCAN, 'type' => $lookup->type]
 				);
 				break;
 			}
 
-			$linkedTypes = $schema->getLinkedTypes();
-			if (in_array($type, $linkedTypes, true) === false) {
+			if (in_array($lookup->type, $schema->getLinkedTypes(), true) === false) {
 				continue;
 			}
 
 			// Query this schema's magic table for the entity ID in the column.
 			try {
-				$objects = $this->magicMapper->findByLinkedEntity(
-					$schema,
-					'_' . $columnName,
-					$entityId
-				);
-
+				$objects = $this->magicMapper->findByLinkedEntity($schema, $lookup->magicColumn(), $lookup->entityId);
 				foreach ($objects as $object) {
-					$registerId = (int)$object->getRegister();
-					$schemaId = (int)$schema->getId();
-
-					// Prefer the owning app's detail route (registered via the
-					// deep-link registry by leaf apps like pipelinq/procest);
-					// null falls the frontend back to OpenRegister's own page.
-					$deepLink = $this->deepLinkRegistry->resolveUrl(
-						registerId: $registerId,
-						schemaId: $schemaId,
-						objectData: [
-							'uuid' => $object->getUuid(),
-							'register' => $registerId,
-							'schema' => $schemaId,
-						]
-					);
-
-					$results[] = [
-						'entityType' => 'object',
-						'uuid' => $object->getUuid(),
-						'name' => $object->getName(),
-						'schema' => $schema->getTitle(),
-						'schemaId' => $schemaId,
-						'schemaIcon' => $schema->getIcon(),
-						'register' => $registerId,
-						'url' => $deepLink,
-					];
-				}//end foreach
+					$results[] = $this->objectResult(schema: $schema, object: $object);
+				}
 			} catch (Exception $e) {
 				$this->logger->warning(
 					'[LinkedEntityService] Error scanning magic table',
@@ -386,85 +351,95 @@ class LinkedEntityService {
 	}//end scanMagicTables()
 
 	/**
-	 * Scan entity tables for entities linked to the given entity.
+	 * A reverse-lookup result row for a linked object, with the owning app's detail
+	 * route when one is registered in the deep-link registry (null falls the frontend
+	 * back to OpenRegister's own page).
 	 *
-	 * @param string $columnName The column name to search
-	 * @param string $entityId The entity ID to search for
+	 * @param Schema       $schema The object's schema
+	 * @param ObjectEntity $object The linked object
+	 *
+	 * @return array The result row
+	 */
+	private function objectResult(Schema $schema, ObjectEntity $object): array {
+		$registerId = (int)$object->getRegister();
+		$schemaId = (int)$schema->getId();
+		$deepLink = $this->deepLinkRegistry->resolveUrl(
+			registerId: $registerId,
+			schemaId: $schemaId,
+			objectData: [
+				'uuid' => $object->getUuid(),
+				'register' => $registerId,
+				'schema' => $schemaId,
+			]
+		);
+
+		return [
+			'entityType' => 'object',
+			'uuid' => $object->getUuid(),
+			'name' => $object->getName(),
+			'schema' => $schema->getTitle(),
+			'schemaId' => $schemaId,
+			'schemaIcon' => $schema->getIcon(),
+			'register' => $registerId,
+			'url' => $deepLink,
+		];
+	}//end objectResult()
+
+	/**
+	 * Scan one entity table (registers, schemas or organisations) for entities linked
+	 * to the given entity. A table that cannot be read is logged and yields nothing.
+	 *
+	 * @param string             $entityType `register`, `schema` or `organisation`
+	 * @param LinkedEntityLookup $lookup     The type and entity id looked for
 	 *
 	 * @return array Array of matching results
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
-	private function scanEntityTables(string $columnName, string $entityId): array {
+	private function scanEntityTable(string $entityType, LinkedEntityLookup $lookup): array {
 		$results = [];
-
-		// Scan registers.
 		try {
-			$allRegisters = $this->registerMapper->findAll();
-			foreach ($allRegisters as $register) {
-				$getter = 'get' . ucfirst($columnName);
-				$ids = $register->$getter() ?? [];
-				if (in_array($entityId, $ids, true) === true) {
-					$results[] = [
-						'entityType' => 'register',
-						'uuid' => $register->getUuid(),
-						'name' => $register->getTitle(),
-					];
+			$entities = match ($entityType) {
+				'register' => $this->registerMapper->findAll(),
+				'schema' => $this->schemaMapper->findAll(),
+				default => $this->organisationMapper->findAll(),
+			};
+			foreach ($entities as $entity) {
+				if ($lookup->isLinkedFrom(entity: $entity) === false) {
+					continue;
 				}
+
+				$results[] = [
+					'entityType' => $entityType,
+					'uuid' => $entity->getUuid(),
+					'name' => $this->entityName(entityType: $entityType, entity: $entity),
+				];
 			}
 		} catch (Exception $e) {
 			$this->logger->warning(
-				'[LinkedEntityService] Error scanning registers',
-				['error' => $e->getMessage()]
-			);
-		}
-
-		// Scan schemas.
-		try {
-			$allSchemas = $this->schemaMapper->findAll();
-			foreach ($allSchemas as $schema) {
-				$getter = 'get' . ucfirst($columnName);
-				$ids = $schema->$getter() ?? [];
-				if (in_array($entityId, $ids, true) === true) {
-					$results[] = [
-						'entityType' => 'schema',
-						'uuid' => $schema->getUuid(),
-						'name' => $schema->getTitle(),
-					];
-				}
-			}
-		} catch (Exception $e) {
-			$this->logger->warning(
-				'[LinkedEntityService] Error scanning schemas',
-				['error' => $e->getMessage()]
-			);
-		}
-
-		// Scan organisations.
-		try {
-			$allOrganisations = $this->organisationMapper->findAll();
-			foreach ($allOrganisations as $organisation) {
-				$getter = 'get' . ucfirst($columnName);
-				$ids = $organisation->$getter() ?? [];
-				if (in_array($entityId, $ids, true) === true) {
-					$results[] = [
-						'entityType' => 'organisation',
-						'uuid' => $organisation->getUuid(),
-						'name' => $organisation->getName(),
-					];
-				}
-			}
-		} catch (Exception $e) {
-			$this->logger->warning(
-				'[LinkedEntityService] Error scanning organisations',
+				'[LinkedEntityService] Error scanning ' . $entityType . 's',
 				['error' => $e->getMessage()]
 			);
 		}
 
 		return $results;
-	}//end scanEntityTables()
+	}//end scanEntityTable()
+
+	/**
+	 * The display name of a register or schema (its title) or an organisation (its name).
+	 *
+	 * @param string $entityType `register`, `schema` or `organisation`.
+	 * @param object $entity     The entity.
+	 *
+	 * @return string|null
+	 */
+	private function entityName(string $entityType, object $entity): ?string {
+		if ($entityType === 'organisation') {
+			return $entity->getName();
+		}
+
+		return $entity->getTitle();
+	}//end entityName()
 
 	/**
 	 * Validate that the given type is a valid linked entity type.

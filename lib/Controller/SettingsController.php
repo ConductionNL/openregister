@@ -23,8 +23,8 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\Search\SearchIndexMaintenance;
+use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -143,7 +143,7 @@ class SettingsController extends Controller {
 	 * @param IDBConnection $db The database connection.
 	 * @param ContainerInterface $container The container.
 	 * @param IAppManager $appManager The app manager.
-	 * @param SettingsService $settingsService The settings service.
+	 * @param AppSettingsInterface $settingsService The settings service.
 	 * @param LoggerInterface $logger The logger.
 	 * @param IL10N|null $l10n The localization service.
 	 *
@@ -156,7 +156,7 @@ class SettingsController extends Controller {
 		private readonly IDBConnection $db,
 		private readonly ContainerInterface $container,
 		private readonly IAppManager $appManager,
-		private readonly SettingsService $settingsService,
+		private readonly AppSettingsInterface $settingsService,
 		private readonly LoggerInterface $logger,
 		private readonly ?IL10N $l10n = null,
 	) {
@@ -185,12 +185,12 @@ class SettingsController extends Controller {
 	/**
 	 * Attempts to retrieve the Configuration service from the container.
 	 *
-	 * @return \OCA\OpenRegister\Service\ConfigurationService|null The Configuration service if available, null otherwise.
+	 * @return \OCA\OpenRegister\Service\ConfigurationServiceInterface|null The Configuration service if available, null otherwise.
 	 * @throws \RuntimeException If the service is not available.
 	 *
 	 * @spec exclude DI service accessor (not a routed endpoint): returns the ConfigurationService from the container.
 	 */
-	public function getConfigurationService(): ?\OCA\OpenRegister\Service\ConfigurationService {
+	public function getConfigurationService(): ?\OCA\OpenRegister\Service\ConfigurationServiceInterface {
 		// Check if the 'openregister' app is installed.
 		if (in_array(needle: 'openregister', haystack: $this->appManager->getInstalledApps()) === true) {
 			// Retrieve the ConfigurationService from the container.
@@ -351,6 +351,10 @@ class SettingsController extends Controller {
 	 * actually ran. `occ openregister:tables:search-index status` prints the
 	 * same report.
 	 *
+	 * It also says how many rows the tables in scope hold (`rowsInTables`) and
+	 * how many per schema slug (`indexed`); a count that cannot be made is left
+	 * out rather than answered too low.
+	 *
 	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse The index inventory and the last rebuild report.
@@ -358,6 +362,7 @@ class SettingsController extends Controller {
 	 * @psalm-return JSONResponse<200|500, array, array<never, never>>
 	 *
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-the-search-index-status-names-how-many-rows-it-covers
 	 */
 	public function getSearchIndexStatus(): JSONResponse {
 		try {
@@ -376,7 +381,7 @@ class SettingsController extends Controller {
 					'tableCount' => count($tables),
 					'indexCount' => $indexCount,
 					'lastRun' => $maintenance->lastRun(),
-				]
+				] + $maintenance->rowCounts()
 			);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
@@ -674,8 +679,6 @@ class SettingsController extends Controller {
 	 *
 	 * @return array<string, mixed> Diagnostics payload
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Independent tolerant lookups
-	 *
 	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#6.1
 	 */
 	private function getHybridSearchDiagnostics(bool $isPostgres): array {
@@ -694,87 +697,148 @@ class SettingsController extends Controller {
 			],
 		];
 
-		$sidecar = \OCA\OpenRegister\Service\Vectorization\Handlers\PgVectorPlatform::SIDECAR_TABLE;
+		$sidecar = \OCA\OpenRegister\Search\Service\Vectorization\Handlers\PgVectorPlatform::SIDECAR_TABLE;
 
 		if ($isPostgres === true) {
-			try {
-				$result = $this->db->executeQuery(
-					'SELECT a.atttypmod FROM pg_attribute a '
-					. "WHERE a.attrelid = '" . $sidecar . "'::regclass "
-					. "AND a.attname = 'embedding' AND NOT a.attisdropped"
-				);
-				$typmod = $result->fetchOne();
-				$result->closeCursor();
-
-				if ($typmod !== false && (int)$typmod > 0) {
-					$diagnostics['annSidecarTable'] = true;
-					$diagnostics['embeddingVectorDimension'] = (int)$typmod;
-				}
-			} catch (\Throwable $e) {
-				// Sidecar unavailable — reported as false.
-			}
-
-			try {
-				$result = $this->db->executeQuery(
-					'SELECT indexname FROM pg_indexes WHERE indexname IN '
-					. "('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
-				);
-				while (is_array($row = $result->fetch()) === true) {
-					if ($row['indexname'] === 'idx_or_vec_ann_hnsw') {
-						$diagnostics['hnswIndex'] = true;
-					}
-
-					if ($row['indexname'] === 'idx_or_chunks_text_search_gin') {
-						$diagnostics['textSearchGinIndex'] = true;
-					}
-				}
-
-				$result->closeCursor();
-			} catch (\Throwable $e) {
-				// Reported as false.
-			}
-
-			try {
-				$result = $this->db->executeQuery(
-					'SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated '
-					. 'FROM *PREFIX*openregister_vectors v '
-					. "LEFT JOIN $sidecar a ON a.vector_id = v.id"
-				);
-				$row = $result->fetch();
-				$result->closeCursor();
-
-				// An is_array check, not `!== false`. fetch() can answer NULL
-				// as well as false, which passes a `!== false` guard and then
-				// warns on every offset read. Lines 476 and 644 of this file
-				// already use this idiom; this was the one site that did not.
-				if (is_array($row) === true) {
-					$diagnostics['vectors']['total'] = (int)$row['total'];
-					$diagnostics['vectors']['pgvectorPopulated'] = (int)$row['populated'];
-				}
-			} catch (\Throwable $e) {
-				// The ANN sidecar may not exist yet — plain row count only.
-				try {
-					$result = $this->db->executeQuery(
-						'SELECT COUNT(*) AS total FROM *PREFIX*openregister_vectors'
-					);
-					$total = $result->fetchOne();
-					$result->closeCursor();
-
-					if ($total !== false) {
-						$diagnostics['vectors']['total'] = (int)$total;
-					}
-				} catch (\Throwable $inner) {
-					// Reported as zero.
-				}
-			}//end try
-		}//end if
+			$diagnostics = array_replace(
+				$diagnostics,
+				$this->annSidecarDiagnostics(sidecar: $sidecar),
+				$this->searchIndexDiagnostics()
+			);
+			$diagnostics['vectors'] = $this->vectorCounts(sidecar: $sidecar);
+		}
 
 		// Chunk vectorization progress (platform-agnostic).
+		$diagnostics['chunks'] = $this->chunkVectorizationProgress();
+
+		return $diagnostics;
+	}//end getHybridSearchDiagnostics()
+
+	/**
+	 * Whether the pgvector ANN sidecar table exists, and its embedding dimension.
+	 *
+	 * @param string $sidecar The sidecar table name.
+	 *
+	 * @return array{annSidecarTable?: true, embeddingVectorDimension?: int} Empty when the sidecar is unavailable.
+	 */
+	private function annSidecarDiagnostics(string $sidecar): array {
+		try {
+			$result = $this->db->executeQuery(
+				'SELECT a.atttypmod FROM pg_attribute a '
+				. "WHERE a.attrelid = '" . $sidecar . "'::regclass "
+				. "AND a.attname = 'embedding' AND NOT a.attisdropped"
+			);
+			$typmod = $result->fetchOne();
+			$result->closeCursor();
+
+			if ($typmod !== false && (int)$typmod > 0) {
+				return ['annSidecarTable' => true, 'embeddingVectorDimension' => (int)$typmod];
+			}
+		} catch (\Throwable $e) {
+			// Sidecar unavailable — reported as false.
+		}
+
+		return [];
+	}//end annSidecarDiagnostics()
+
+	/**
+	 * Whether the HNSW and the text-search GIN indexes exist.
+	 *
+	 * @return array{hnswIndex: bool, textSearchGinIndex: bool}
+	 */
+	private function searchIndexDiagnostics(): array {
+		$found = ['hnswIndex' => false, 'textSearchGinIndex' => false];
+		try {
+			$result = $this->db->executeQuery(
+				'SELECT indexname FROM pg_indexes WHERE indexname IN '
+				. "('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
+			);
+			while (is_array($row = $result->fetch()) === true) {
+				if ($row['indexname'] === 'idx_or_vec_ann_hnsw') {
+					$found['hnswIndex'] = true;
+				}
+
+				if ($row['indexname'] === 'idx_or_chunks_text_search_gin') {
+					$found['textSearchGinIndex'] = true;
+				}
+			}
+
+			$result->closeCursor();
+		} catch (\Throwable $e) {
+			// Reported as false.
+		}
+
+		return $found;
+	}//end searchIndexDiagnostics()
+
+	/**
+	 * The vector row count and how many of them have a pgvector sidecar row.
+	 *
+	 * @param string $sidecar The sidecar table name.
+	 *
+	 * @return array{total: int, pgvectorPopulated: int}
+	 */
+	private function vectorCounts(string $sidecar): array {
+		$counts = ['total' => 0, 'pgvectorPopulated' => 0];
+		try {
+			$result = $this->db->executeQuery(
+				'SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated '
+				. 'FROM *PREFIX*openregister_vectors v '
+				. "LEFT JOIN $sidecar a ON a.vector_id = v.id"
+			);
+			$row = $result->fetch();
+			$result->closeCursor();
+
+			// An is_array check, not `!== false`: fetch() can answer NULL
+			// as well as false, which passes a `!== false` guard and then
+			// warns on every offset read.
+			if (is_array($row) === true) {
+				$counts['total'] = (int)$row['total'];
+				$counts['pgvectorPopulated'] = (int)$row['populated'];
+			}
+		} catch (\Throwable $e) {
+			// The ANN sidecar may not exist yet — plain row count only.
+			$counts['total'] = $this->plainVectorCount();
+		}
+
+		return $counts;
+	}//end vectorCounts()
+
+	/**
+	 * The vector row count without the sidecar join.
+	 *
+	 * @return int The count, or zero when it cannot be read.
+	 */
+	private function plainVectorCount(): int {
+		try {
+			$result = $this->db->executeQuery(
+				'SELECT COUNT(*) AS total FROM *PREFIX*openregister_vectors'
+			);
+			$total = $result->fetchOne();
+			$result->closeCursor();
+
+			if ($total !== false) {
+				return (int)$total;
+			}
+		} catch (\Throwable $inner) {
+			// Reported as zero.
+		}
+
+		return 0;
+	}//end plainVectorCount()
+
+	/**
+	 * How many chunks exist and how many are vectorized.
+	 *
+	 * @return array{total: int, vectorized: int} Zeros for what cannot be read.
+	 */
+	private function chunkVectorizationProgress(): array {
+		$progress = ['total' => 0, 'vectorized' => 0];
 		try {
 			$chunkMapper = $this->container->get(\OCA\OpenRegister\Db\ChunkMapper::class);
 			if ($chunkMapper instanceof \OCA\OpenRegister\Db\ChunkMapper) {
-				$diagnostics['chunks']['total'] = $chunkMapper->countAll();
-				$diagnostics['chunks']['vectorized'] = $chunkMapper->countVectorized();
+				$progress['total'] = $chunkMapper->countAll();
+				$progress['vectorized'] = $chunkMapper->countVectorized();
 			}
 		} catch (\Throwable $e) {
 			$this->logger->debug(
@@ -783,8 +847,8 @@ class SettingsController extends Controller {
 			);
 		}
 
-		return $diagnostics;
-	}//end getHybridSearchDiagnostics()
+		return $progress;
+	}//end chunkVectorizationProgress()
 
 	/**
 	 * Get version information only
@@ -839,7 +903,7 @@ class SettingsController extends Controller {
 	public function debugTypeFiltering(): JSONResponse {
 		try {
 			// Get services.
-			$objectService = $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
+			$objectService = $this->container->get(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class);
 
 			// Set register and schema context. The register slug is RESOLVED,
 			// not written: stackiq's repair step renames it from
@@ -888,12 +952,12 @@ class SettingsController extends Controller {
 	 *
 	 * The unfiltered search also returns each organisation's object data.
 	 *
-	 * @param \OCA\OpenRegister\Service\ObjectService $objectService The object service, set to the organisation schema.
+	 * @param \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService The object service, set to the organisation schema.
 	 * @param list<string>  $types         The types to filter on; empty for no filter.
 	 *
 	 * @return array{count: int<0, max>, organizations: list<array<string, mixed>>}
 	 */
-	private function organisationsOfType(\OCA\OpenRegister\Service\ObjectService $objectService, array $types): array {
+	private function organisationsOfType(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService, array $types): array {
 		$query = [
 			'_limit' => 10,
 			'_page' => 1,

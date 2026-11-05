@@ -42,6 +42,7 @@ use OCA\OpenRegister\Middleware\MiddlewareRegistrar;
 use OCA\OpenRegister\Notification\NotifierRegistrar;
 use OCA\OpenRegister\Search\SearchProviderRegistrar;
 use OCA\OpenRegister\Service\Configuration\ConfigurationServiceRegistrar;
+use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\FileService;
@@ -54,7 +55,6 @@ use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar;
 use OCA\OpenRegister\Service\Outbound\OutboundClientFactory;
 use OCA\OpenRegister\Service\Rbac\RbacRegistrar;
 use OCA\OpenRegister\Service\ServiceRegistrar;
-use OCA\OpenRegister\Service\TaskService;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -136,8 +136,12 @@ class Application extends App implements IBootstrap {
 		include_once __DIR__ . '/../../vendor/autoload.php';
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('or.register.in');
 
+		// Old names of classes that moved to a component directory.
+		ClassAliasMap::fromFile()->apply(context: $context);
+
 		FeatureToggleRegistrar::register(context: $context);
 		ServiceRegistrar::register(context: $context);
+		SearchRegistrar::register(context: $context);
 
 		// Every outbound call this app makes goes through the administered
 		// proxy (api-as-a-versioned-surface, design D-6). Most gemeenten have

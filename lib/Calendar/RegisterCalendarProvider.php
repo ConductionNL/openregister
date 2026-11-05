@@ -27,9 +27,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Calendar;
 
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\Calendar\ICalendarProvider;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -50,23 +50,23 @@ class RegisterCalendarProvider implements ICalendarProvider {
 	/**
 	 * The schema mapper for loading schemas
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private SchemaMapper $schemaMapper;
+	private SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * The register mapper for loading registers
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface
 	 */
-	private RegisterMapper $registerMapper;
+	private RegisterMapperInterface $registerMapper;
 
 	/**
 	 * The MagicMapper for querying objects
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface
 	 */
-	private MagicMapper $magicMapper;
+	private MagicMapperInterface $magicMapper;
 
 	/**
 	 * The user session for authentication context
@@ -99,17 +99,17 @@ class RegisterCalendarProvider implements ICalendarProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param SchemaMapper $schemaMapper The schema mapper
-	 * @param RegisterMapper $registerMapper The register mapper
-	 * @param MagicMapper $magicMapper The MagicMapper
+	 * @param SchemaMapperInterface $schemaMapper The schema mapper
+	 * @param RegisterMapperInterface $registerMapper The register mapper
+	 * @param MagicMapperInterface $magicMapper The MagicMapper
 	 * @param IUserSession $userSession The user session
 	 * @param LoggerInterface $logger Logger instance
 	 * @param CalendarEventTransformer $transformer The event transformer
 	 */
 	public function __construct(
-		SchemaMapper $schemaMapper,
-		RegisterMapper $registerMapper,
-		MagicMapper $magicMapper,
+		SchemaMapperInterface $schemaMapper,
+		RegisterMapperInterface $registerMapper,
+		MagicMapperInterface $magicMapper,
 		IUserSession $userSession,
 		LoggerInterface $logger,
 		CalendarEventTransformer $transformer,

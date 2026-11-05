@@ -110,6 +110,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$record    = $this->record->read(set: (string) $plan['set']);
 		$ready     = $this->prerequisites->ensure(plan: $plan, record: $record);
 		$base      = $this->withIds(plan: $plan, base: $this->prerequisites->context(plan: $plan, today: $today));
+		$base['setGroups'] = $this->people->groupsOfSet(plan: $plan, record: $record);
 		$refusals  = array_merge($ready['refusals'], $this->people->refusals(plan: $plan, record: $record, adopt: $adopt));
 		$checked   = [];
 		$changes   = [];
@@ -148,7 +149,11 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 				$files[$object['key']]   = $this->plannedFileIds(record: $record, app: $fragment['app'], object: $object);
 			}//end foreach
 
-			$context  = (['objects' => $objects, 'flows' => $this->values->flowsOf(fragment: $fragment, record: null)] + $base);
+			$context  = [
+				'objects'     => $objects,
+				'flows'       => $this->values->flowsOf(fragment: $fragment, record: null),
+				'accessLinks' => ($this->engineRows ?? new ExampleSetEngineKinds())->accessLinksOf(fragment: $fragment, record: null),
+			] + $base;
 			$refusals = array_merge(
 				$refusals,
 				$this->checkChanges(fragment: $fragment, context: $context, checked: $changes, plannedUsers: $users),
@@ -256,6 +261,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$report = $this->people->install(plan: $plan, adopt: $adopt, password: $password, report: $report, record: $record);
 
 		$base    = $this->withIds(plan: $plan, base: $this->prerequisites->context(plan: $plan, today: $today));
+		// A grant goes only to a group this set created (ExampleSetGrants).
+		$base['setGroups'] = $record['groups'];
 		$written = [];
 		foreach ($plan['fragments'] as $fragment) {
 			$report = $this->installFragment(plan: $plan, fragment: $fragment, base: $base, report: $report, record: $record, written: $written);
@@ -433,12 +440,15 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		// A refresh updates the flows too, so it is known before they are written.
 		$context['refresh'] = (($plan['refresh'] ?? false) === true);
 
-		// Before the changes, so a change can quote a flow (`{{flow:key.uuid}}`).
-		if ($this->engineRows?->installFlows(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values) === true) {
+		// Before the changes, so a change can quote a flow or an access link
+		// (`{{flow:key.uuid}}`, `{{accessLink:key.url}}`).
+		$early = $this->engineRows?->installBeforeChanges(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values);
+		if ($early === true) {
 			$this->record->write(set: (string) $plan['set'], record: $record);
 		}
 
-		$context['flows'] = $this->values->flowsOf(fragment: $fragment, record: $record);
+		$context['flows']       = $this->values->flowsOf(fragment: $fragment, record: $record);
+		$context['accessLinks'] = ($this->engineRows?->accessLinksOf(fragment: $fragment, record: $record) ?? []);
 		$report           = $this->installChanges(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
 
 		$report = $this->installAppConfig(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);

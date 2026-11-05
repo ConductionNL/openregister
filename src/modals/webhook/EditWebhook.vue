@@ -509,6 +509,11 @@ import Tune from 'vue-material-design-icons/Tune.vue'
 import Webhook from 'vue-material-design-icons/Webhook.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
+import {
+	defaultMethodOption,
+	storedSelections,
+	webhookPayload,
+} from '../../services/webhookForm.js'
 import { navigationStore, webhookStore } from '../../store/store.js'
 
 export default {
@@ -744,9 +749,7 @@ export default {
 					},
 				}
 				// Default to POST (find it in options since GET is now first).
-				this.selectedMethod =
-					this.httpMethodOptions.find((m) => m.value === 'POST')
-					|| this.httpMethodOptions[0]
+				this.selectedMethod = defaultMethodOption(this.httpMethodOptions)
 				this.selectedRetryPolicy = this.retryPolicyOptions[0] // 'exponential'
 				this.selectedEvent = null
 				this.selectedEventProperty = null
@@ -754,7 +757,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Form-field binding — sets the webhook name.
 		 */
 		updateName(value) {
@@ -765,7 +768,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Form-field binding — sets the webhook URL.
 		 */
 		updateUrl(value) {
@@ -776,7 +779,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {object|null} value
 		 * @spec exclude Form-field binding — sets the HTTP method.
 		 */
 		updateMethod(value) {
@@ -788,7 +791,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {boolean} value
 		 * @spec exclude Form-field binding — sets the enabled flag.
 		 */
 		updateEnabled(value) {
@@ -799,7 +802,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {object|string|null} value
 		 * @spec exclude Form-field binding — sets the subscribed event and resets event property.
 		 */
 		updateEvent(value) {
@@ -823,7 +826,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {object|null} value
 		 * @spec exclude Form-field binding — sets the selected event property.
 		 */
 		updateEventProperty(value) {
@@ -838,7 +841,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {boolean} value
 		 * @spec exclude Form-field binding — sets the sendCloudEvent configuration flag.
 		 */
 		updateSendCloudEvent(value) {
@@ -853,7 +856,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {boolean} value
 		 * @spec exclude Form-field binding — sets the waitForResponse configuration flag.
 		 */
 		updateWaitForResponse(value) {
@@ -868,7 +871,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {boolean} value
 		 * @spec exclude Form-field binding — sets the allowPrivateTargets configuration flag.
 		 */
 		updateAllowPrivateTargets(value) {
@@ -945,7 +948,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {object|null} value
 		 * @spec exclude Form-field binding — sets the retry policy.
 		 */
 		updateRetryPolicy(value) {
@@ -957,7 +960,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string|number} value
 		 * @spec exclude Form-field binding — sets the max-retries count.
 		 */
 		updateMaxRetries(value) {
@@ -968,7 +971,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string|number} value
 		 * @spec exclude Form-field binding — sets the request timeout.
 		 */
 		updateTimeout(value) {
@@ -979,7 +982,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Form-field binding — sets the webhook secret.
 		 */
 		updateSecret(value) {
@@ -990,7 +993,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Form-field binding — parses header text into a headers object.
 		 */
 		updateHeaders(value) {
@@ -1010,7 +1013,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Form-field binding — parses filter text into a filters object.
 		 */
 		updateFilters(value) {
@@ -1064,7 +1067,7 @@ export default {
 		},
 
 		/**
-		 * @param _query
+		 * @param {string} _query
 		 * @spec exclude UI event handler — no-op search hook (NcSelect filters internally).
 		 */
 		searchEvents(_query) {
@@ -1077,47 +1080,15 @@ export default {
 		 * @spec exclude Modal hydration plumbing — maps stored webhook values onto select inputs.
 		 */
 		loadExistingSelections() {
-			const item = this.webhookItem
-			if (item) {
-				// Load the payload mapping.
-				this.selectedMapping =
-					this.mappingOptions.find((m) => m.value === item.mapping) || null
-				// Load method.
-				if (item.method) {
-					this.selectedMethod =
-						this.httpMethodOptions.find((m) => m.value === item.method)
-						|| this.httpMethodOptions.find((m) => m.value === 'POST')
-						|| this.httpMethodOptions[0]
-				}
-
-				// Load retry policy.
-				if (item.retryPolicy) {
-					this.selectedRetryPolicy =
-						this.retryPolicyOptions.find(
-							(p) => p.value === item.retryPolicy,
-						) || this.retryPolicyOptions[0]
-				}
-
-				// Load event (take first event if multiple exist for backward compatibility).
-				if (
-					item.events
-					&& Array.isArray(item.events)
-					&& item.events.length > 0
-				) {
-					const eventClass = item.events[0]
-					this.selectedEvent = eventClass
-				}
-
-				// Load configuration.
-				if (item.configuration) {
-					this.configuration = { ...item.configuration }
-					if (item.configuration.eventProperty) {
-						this.selectedEventProperty = {
-							value: item.configuration.eventProperty,
-							label: item.configuration.eventProperty,
-						}
-					}
-				}
+			if (this.webhookItem) {
+				Object.assign(
+					this,
+					storedSelections(this.webhookItem, {
+						mappings: this.mappingOptions,
+						methods: this.httpMethodOptions,
+						retryPolicies: this.retryPolicyOptions,
+					}),
+				)
 			}
 		},
 
@@ -1157,26 +1128,8 @@ export default {
 			this.error = null
 
 			try {
-				const payload = {
-					name: this.webhookItem.name,
-					url: this.webhookItem.url,
-					method: this.webhookItem.method,
-					enabled: this.webhookItem.enabled !== false,
-					events: this.selectedEvent ? [this.selectedEvent] : [],
-					maxRetries: this.webhookItem.maxRetries || 3,
-					timeout: this.webhookItem.timeout || 30,
-					retryPolicy: this.webhookItem.retryPolicy || 'exponential',
-					secret: this.webhookItem.secret || null,
-					headers: this.webhookItem.headers || {},
-					filters: this.webhookItem.filters || {},
-					configuration: this.webhookItem.configuration || {},
-					mapping: this.webhookItem.mapping ?? null,
-				}
-
-				const isUpdate = Boolean(this.webhookItem.id)
-				if (isUpdate) {
-					payload.id = this.webhookItem.id
-				}
+				const payload = webhookPayload(this.webhookItem, this.selectedEvent)
+				const isUpdate = Boolean(payload.id)
 
 				// The store refreshes webhookStore.webhookList after persisting, so
 				// every mounted view picks the change up reactively — no page reload.

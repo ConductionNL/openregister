@@ -31,6 +31,7 @@ use ReflectionMethod;
  * Set `OR_GOLDEN_WRITE=1` to regenerate the fixture.
  *
  * @coversDefaultClass \OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher
+ * @uses \OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher
  */
 final class AnnotationNotificationDispatcherMatchesGoldenTest extends TestCase {
 

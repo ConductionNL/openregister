@@ -38,11 +38,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Object\SaveObjectInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -96,18 +96,18 @@ class SelectielijstImportService {
 	 * Constructor.
 	 *
 	 * @param ObjectRetentionHandler $settingsHandler Names the selectielijst register and schema.
-	 * @param RegisterMapper         $registerMapper  Resolves the register.
-	 * @param SchemaMapper           $schemaMapper    Resolves the schema.
-	 * @param MagicMapper            $objectMapper    Reads the rows already stored.
-	 * @param SaveObject             $saveObject      Writes an imported row.
+	 * @param RegisterMapperInterface         $registerMapper  Resolves the register.
+	 * @param SchemaMapperInterface           $schemaMapper    Resolves the schema.
+	 * @param MagicMapperInterface            $objectMapper    Reads the rows already stored.
+	 * @param SaveObjectInterface             $saveObject      Writes an imported row.
 	 * @param LoggerInterface        $logger          Reports a row that could not be stored.
 	 */
 	public function __construct(
 		private readonly ObjectRetentionHandler $settingsHandler,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly MagicMapper $objectMapper,
-		private readonly SaveObject $saveObject,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly MagicMapperInterface $objectMapper,
+		private readonly SaveObjectInterface $saveObject,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

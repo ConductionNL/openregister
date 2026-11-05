@@ -27,11 +27,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -50,21 +50,21 @@ class FileSidebarService {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registerMapper Register mapper for RBAC-aware register lookups.
-	 * @param SchemaMapper $schemaMapper Schema mapper for schema lookups.
+	 * @param RegisterMapperInterface $registerMapper Register mapper for RBAC-aware register lookups.
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema lookups.
 	 * @param IDBConnection $db Database connection for magic table queries.
 	 * @param ChunkMapper $chunkMapper Chunk mapper for extraction data.
-	 * @param EntityRelationMapper $entityRelationMapper Entity relation mapper for PII data.
+	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper for PII data.
 	 * @param GdprEntityMapper $gdprEntityMapper GDPR entity mapper for entity type lookups.
 	 * @param RiskLevelService $riskLevelService Risk level computation service.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IDBConnection $db,
 		private readonly ChunkMapper $chunkMapper,
-		private readonly EntityRelationMapper $entityRelationMapper,
+		private readonly EntityRelationMapperInterface $entityRelationMapper,
 		private readonly GdprEntityMapper $gdprEntityMapper,
 		private readonly RiskLevelService $riskLevelService,
 		private readonly LoggerInterface $logger,

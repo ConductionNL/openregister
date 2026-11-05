@@ -48,6 +48,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Support\FilterParams;
 use OCA\OpenRegister\Db\Schema;
+use OCP\DB\IPreparedStatement;
+use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -74,6 +76,41 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class MagicFacetHandler {
+
+	/**
+	 * Reserved query parameters that are never object field filters.
+	 *
+	 * @var array<int, string>
+	 */
+	private const RESERVED_FILTER_PARAMS = [
+		'_limit',
+		'_offset',
+		'_page',
+		'_order',
+		'_sort',
+		'_search',
+		'_extend',
+		'_fields',
+		'_filter',
+		'_unset',
+		'_facets',
+		'_facetable',
+		'_aggregations',
+		'_debug',
+		'_source',
+		'_rbac',
+		'_multitenancy',
+		'_validation',
+		'_events',
+		'_register',
+		'_schema',
+		'_schemas',
+		'_includeDeleted',
+		'_deleted',
+		'_empty',
+		'@self',
+	];
+
 	/**
 	 * Maximum number of buckets to return per facet.
 	 * Set to high value to effectively disable limit (was 50).
@@ -145,9 +182,9 @@ class MagicFacetHandler {
 	/**
 	 * Cache handler for UUID to name resolution
 	 *
-	 * @var \OCA\OpenRegister\Service\Object\CacheHandler|null
+	 * @var \OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface|null
 	 */
-	private ?\OCA\OpenRegister\Service\Object\CacheHandler $cacheHandler = null;
+	private ?\OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface $cacheHandler = null;
 
 	/**
 	 * Distributed cache factory for persistent label caching
@@ -189,7 +226,7 @@ class MagicFacetHandler {
 	 *
 	 * @param IDBConnection $db Database connection for queries
 	 * @param LoggerInterface $logger Logger for debugging and error reporting
-	 * @param \OCA\OpenRegister\Service\Object\CacheHandler|null $cacheHandler Cache handler for name resolution
+	 * @param \OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface|null $cacheHandler Cache handler for name resolution
 	 * @param ICacheFactory|null $cacheFactory Cache factory for distributed caching
 	 * @param MagicSearchHandler|null $searchHandler Search handler for shared query building
 	 * @param ContainerInterface|null $container Container for lazy resolution
@@ -198,7 +235,7 @@ class MagicFacetHandler {
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
-		?\OCA\OpenRegister\Service\Object\CacheHandler $cacheHandler = null,
+		?\OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface $cacheHandler = null,
 		?ICacheFactory $cacheFactory = null,
 		?MagicSearchHandler $searchHandler = null,
 		?ContainerInterface $container = null,
@@ -255,7 +292,7 @@ class MagicFacetHandler {
 		$this->lazyResolved = true;
 
 		try {
-			$this->cacheHandler = $this->container->get(\OCA\OpenRegister\Service\Object\CacheHandler::class);
+			$this->cacheHandler = $this->container->get(\OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface::class);
 		} catch (\Exception $e) {
 			$this->logger->debug(
 				message: '[MagicFacetHandler] CacheHandler not available: ' . $e->getMessage(),
@@ -299,112 +336,57 @@ class MagicFacetHandler {
 	): array {
 		$startTime = microtime(true);
 
-		// Extract facet configuration.
 		$facetConfig = $query['_facets'] ?? [];
 		if (empty($facetConfig) === true) {
 			return [];
 		}
 
-		// Handle _facets as string (e.g., _facets=extend) by converting to array.
-		if (is_string($facetConfig) === true) {
-			$facetConfig = $this->expandFacetConfig(facetConfig: $facetConfig, schema: $schema);
-		}
-
-		// Handle _facets as numerically-indexed array (e.g., _facets[]=standaardversies).
-		// PHP converts ?_facets[]=foo&_facets[]=bar into [0 => 'foo', 1 => 'bar'].
-		if (is_array($facetConfig) === true && array_is_list($facetConfig) === true) {
-			$facetConfig = $this->expandFacetConfig(
-				facetConfig: implode(separator: ',', array: $facetConfig),
-				schema: $schema
-			);
-		}
+		$facetConfig = $this->normaliseFacetConfig(facetConfig: $facetConfig, schema: $schema);
 
 		// Extract base query (without facet config).
 		$baseQuery = $query;
 		unset($baseQuery['_facets']);
+		$table = new TableTermsFacet(
+			tableName: $tableName,
+			field: '',
+			baseQuery: $baseQuery,
+			isMetadata: false,
+			register: $register,
+			schema: $schema
+		);
 
-		$facets = [];
+		$facets     = [];
 		$facetTimes = [];
-		// Track time per facet for optimization
-		// Process metadata facets (@self).
 		if (($facetConfig['@self'] ?? null) !== null && is_array($facetConfig['@self']) === true) {
 			$facets['@self'] = [];
 			foreach ($facetConfig['@self'] as $field => $config) {
 				$facetStart = microtime(true);
-				$type = $config['type'] ?? 'terms';
-
-				if ($type === 'terms') {
-					$facets['@self'][$field] = $this->getTermsFacet(
-						tableName: $tableName,
-						field: self::METADATA_PREFIX . $field,
-						baseQuery: $baseQuery,
-						isMetadata: true,
-						register: $register,
-						schema: $schema
-					);
-				} elseif ($type === 'date_histogram') {
-					$interval = $config['interval'] ?? 'month';
-					$facets['@self'][$field] = $this->getDateHistogramFacet(
-						tableName: $tableName,
-						field: self::METADATA_PREFIX . $field,
-						interval: $interval,
-						baseQuery: $baseQuery,
-						schema: $schema,
-						register: $register
-					);
+				$facet      = $this->computeTableFacet(facet: $table->forMetadataField(field: self::METADATA_PREFIX . $field), config: $config);
+				if ($facet !== null) {
+					$facets['@self'][$field] = $facet;
 				}
 
 				$facetTimes['@self.' . $field] = round((microtime(true) - $facetStart) * 1000, 2);
-			}//end foreach
-		}//end if
+			}
+		}
 
-		// Process object field facets (schema properties).
-		$objectFacetConfig = array_filter(
-			$facetConfig,
-			function ($key) {
-				return $key !== '@self';
-			},
-			ARRAY_FILTER_USE_KEY
-		);
-
-		foreach ($objectFacetConfig as $field => $config) {
+		foreach ($facetConfig as $field => $config) {
 			// 🔴 AN EXPLICITLY REQUESTED FACET OBEYS THE READ RULE TOO. The
 			// guard in expandFacetConfig() covers only the auto-discovered
 			// `facetable` loop; a caller who names the property in
-			// `_facets[<prop>][type]=terms` skipped it and got the column's
-			// distinct values back (found live on the Rotterdam stack: an
-			// anonymous call listed a property ruled `authenticated`).
-			if ($this->callerMayFacet(schema: $schema, property: (string)$field) === false) {
+			// `_facets[<prop>][type]=terms` would otherwise get the column's
+			// distinct values back.
+			if ($field === '@self' || $this->callerMayFacet(schema: $schema, property: (string)$field) === false) {
 				continue;
 			}
 
 			$facetStart = microtime(true);
-			$type = $config['type'] ?? 'terms';
 			// Sanitize field name to match database column (camelCase -> snake_case).
-			$columnName = $this->sanitizeColumnName(name: $field);
-
-			if ($type === 'terms') {
-				$facets[$field] = $this->getTermsFacet(
-					tableName: $tableName,
-					field: $columnName,
-					baseQuery: $baseQuery,
-					isMetadata: false,
-					register: $register,
-					schema: $schema
-				);
-			} elseif ($type === 'date_histogram') {
-				$interval = $config['interval'] ?? 'month';
-				$facets[$field] = $this->getDateHistogramFacet(
-					tableName: $tableName,
-					field: $columnName,
-					interval: $interval,
-					baseQuery: $baseQuery,
-					schema: $schema,
-					register: $register
-				);
+			$facet = $this->computeTableFacet(facet: $table->forPropertyField(field: $this->sanitizeColumnName(name: $field)), config: $config);
+			if ($facet !== null) {
+				$facets[$field] = $facet;
 			}
 
-			// Add schema property title if available.
 			if (isset($config['title']) === true) {
 				$facets[$field]['title'] = $config['title'];
 			}
@@ -412,17 +394,71 @@ class MagicFacetHandler {
 			$facetTimes[$field] = round((microtime(true) - $facetStart) * 1000, 2);
 		}//end foreach
 
-		$totalTime = round((microtime(true) - $startTime) * 1000, 2);
-
 		// Add timing metadata to facets for performance debugging.
 		$facets['_metrics'] = [
-			'total_ms' => $totalTime,
+			'total_ms' => round((microtime(true) - $startTime) * 1000, 2),
 			'per_facet_ms' => $facetTimes,
 			'label_cache' => $this->cacheStats,
 		];
 
 		return $facets;
 	}//end getSimpleFacets()
+
+	/**
+	 * Expand a facet configuration given as a string or a list of names.
+	 *
+	 * `_facets=extend` arrives as a string, `_facets[]=a&_facets[]=b` as a list;
+	 * both expand to per-field configuration from the schema.
+	 *
+	 * @param mixed  $facetConfig The facet configuration from the query.
+	 * @param Schema $schema      The schema context.
+	 *
+	 * @return array The facet configuration keyed by field.
+	 */
+	private function normaliseFacetConfig(mixed $facetConfig, Schema $schema): array {
+		if (is_string($facetConfig) === true) {
+			$facetConfig = $this->expandFacetConfig(facetConfig: $facetConfig, schema: $schema);
+		}
+
+		if (is_array($facetConfig) === true && array_is_list($facetConfig) === true) {
+			$facetConfig = $this->expandFacetConfig(
+				facetConfig: implode(separator: ',', array: $facetConfig),
+				schema: $schema
+			);
+		}
+
+		return $facetConfig;
+	}//end normaliseFacetConfig()
+
+	/**
+	 * Compute one single-table facet of the configured type.
+	 *
+	 * @param TableTermsFacet $facet  The table, column and filters of the facet.
+	 * @param mixed           $config The facet configuration (type, interval).
+	 *
+	 * @return array|null The facet, or null for a type that is not supported.
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs.
+	 */
+	private function computeTableFacet(TableTermsFacet $facet, mixed $config): ?array {
+		$type = $config['type'] ?? 'terms';
+		if ($type === 'terms') {
+			return $this->getTermsFacet(facet: $facet);
+		}
+
+		if ($type !== 'date_histogram') {
+			return null;
+		}
+
+		return $this->getDateHistogramFacet(
+			tableName: $facet->tableName,
+			field: $facet->field,
+			interval: $config['interval'] ?? 'month',
+			baseQuery: $facet->baseQuery,
+			schema: $facet->schema,
+			register: $facet->register
+		);
+	}//end computeTableFacet()
 
 	/**
 	 * Get facets using UNION ALL across multiple tables for better performance.
@@ -452,93 +488,39 @@ class MagicFacetHandler {
 		// would turn the refusal into empty buckets with only a log line.
 		$this->searchHandler?->refuseRelatedRowFilters(query: $query);
 
-		// Extract facet configuration.
 		$facetConfig = $query['_facets'] ?? [];
 		if (empty($facetConfig) === true) {
 			return [];
 		}
 
-		// Handle _facets as string (e.g., _facets=extend).
-		// IMPORTANT: Merge facet configs from ALL schemas, not just the first one.
-		// Each schema may have different facetable fields, and we want the union of all.
-		if (is_string($facetConfig) === true) {
-			$facetConfig = $this->expandFacetConfigFromAllSchemas(
-				facetConfigString: $facetConfig,
-				tableConfigs: $tableConfigs
-			);
-		}
-
-		// Handle _facets as numerically-indexed array (e.g., _facets[]=standaardversies).
-		// PHP converts ?_facets[]=foo&_facets[]=bar into [0 => 'foo', 1 => 'bar'].
-		if (is_array($facetConfig) === true && array_is_list($facetConfig) === true) {
-			$facetConfig = $this->expandFacetConfigFromAllSchemas(
-				facetConfigString: implode(separator: ',', array: $facetConfig),
-				tableConfigs: $tableConfigs
-			);
-		}
+		$facetConfig = $this->normaliseUnionFacetConfig(facetConfig: $facetConfig, tableConfigs: $tableConfigs);
 
 		// Extract base query (without facet config).
 		$baseQuery = $query;
 		unset($baseQuery['_facets']);
 
-		$facets = [];
+		$facets     = [];
 		$facetTimes = [];
-
-		// Process object field facets using UNION.
-		$objectFacetConfig = array_filter(
-			$facetConfig,
-			fn ($key) => $key !== '@self',
-			ARRAY_FILTER_USE_KEY
-		);
-
-		foreach ($objectFacetConfig as $field => $config) {
+		foreach ($facetConfig as $field => $config) {
 			// Same read rule as the single-table path: a facet across several
 			// schemas is omitted when ANY of them withholds the property from
 			// this caller, because the union would hand back that schema's
 			// values among the others.
-			if ($this->callerMayFacetOnEveryTable(tableConfigs: $tableConfigs, property: (string)$field) === false) {
+			if ($field === '@self'
+				|| $this->callerMayFacetOnEveryTable(tableConfigs: $tableConfigs, property: (string)$field) === false
+			) {
 				continue;
 			}
 
 			$facetStart = microtime(true);
-			$type = $config['type'] ?? 'terms';
-			$columnName = $this->sanitizeColumnName(name: $field);
+			$facet      = $this->computeUnionFacet(
+				facet: new TermsFacetUnion(tableConfigs: $tableConfigs, field: $this->sanitizeColumnName(name: $field), baseQuery: $baseQuery),
+				config: $config
+			);
+			if ($facet !== null) {
+				$facets[$field] = $facet;
+			}
 
-			if ($type === 'terms') {
-				// Find which tables have this column.
-				$tablesWithColumn = [];
-				foreach ($tableConfigs as $tc) {
-					if ($this->columnExists(tableName: $tc['tableName'], columnName: $columnName) === true) {
-						$tablesWithColumn[] = $tc;
-					}
-				}
-
-				$facets[$field] = ['type' => 'terms', 'buckets' => []];
-				if (empty($tablesWithColumn) === false) {
-					$facets[$field] = $this->getTermsFacetUnion(
-						facet: new TermsFacetUnion(tableConfigs: $tablesWithColumn, field: $columnName, baseQuery: $baseQuery)
-					);
-				}
-			} elseif ($type === 'date_histogram') {
-				$interval = $config['interval'] ?? 'month';
-
-				// Find which tables have this column.
-				$tablesWithColumn = [];
-				foreach ($tableConfigs as $tc) {
-					if ($this->columnExists(tableName: $tc['tableName'], columnName: $columnName) === true) {
-						$tablesWithColumn[] = $tc;
-					}
-				}
-
-				$facets[$field] = $this->getDateHistogramFacetUnion(
-					tableConfigs: $tablesWithColumn,
-					field: $columnName,
-					interval: $interval,
-					baseQuery: $baseQuery
-				);
-			}//end if
-
-			// Add schema property title if available.
 			if (isset($config['title']) === true) {
 				$facets[$field]['title'] = $config['title'];
 			}
@@ -546,39 +528,25 @@ class MagicFacetHandler {
 			$facetTimes[$field] = round((microtime(true) - $facetStart) * 1000, 2);
 		}//end foreach
 
-		// Process @self metadata facets using UNION.
 		if (($facetConfig['@self'] ?? null) !== null && is_array($facetConfig['@self']) === true) {
 			$facets['@self'] = [];
-
 			foreach ($facetConfig['@self'] as $field => $config) {
 				$facetStart = microtime(true);
-				$type = $config['type'] ?? 'terms';
-				$columnName = self::METADATA_PREFIX . $field;
-
-				if ($type === 'terms') {
-					$facets['@self'][$field] = $this->getTermsFacetUnion(
-						facet: new TermsFacetUnion(tableConfigs: $tableConfigs, field: $columnName, baseQuery: $baseQuery, isMetadata: true)
-					);
-				} elseif ($type === 'date_histogram') {
-					// Date histograms still use single-table approach (less common).
-					$interval = $config['interval'] ?? 'month';
-					$facets['@self'][$field] = $this->getDateHistogramFacetUnion(
-						tableConfigs: $tableConfigs,
-						field: $columnName,
-						interval: $interval,
-						baseQuery: $baseQuery
-					);
+				$facet      = $this->computeUnionFacet(
+					facet: new TermsFacetUnion(tableConfigs: $tableConfigs, field: self::METADATA_PREFIX . $field, baseQuery: $baseQuery, isMetadata: true),
+					config: $config
+				);
+				if ($facet !== null) {
+					$facets['@self'][$field] = $facet;
 				}
 
 				$facetTimes['@self.' . $field] = round((microtime(true) - $facetStart) * 1000, 2);
-			}//end foreach
-		}//end if
-
-		$totalTime = round((microtime(true) - $startTime) * 1000, 2);
+			}
+		}
 
 		// Add timing metadata to facets for performance debugging.
 		$facets['_metrics'] = [
-			'total_ms' => $totalTime,
+			'total_ms' => round((microtime(true) - $startTime) * 1000, 2),
 			'table_count' => count($tableConfigs),
 			'per_facet_ms' => $facetTimes,
 			'label_cache' => $this->cacheStats,
@@ -586,6 +554,86 @@ class MagicFacetHandler {
 
 		return $facets;
 	}//end getSimpleFacetsUnion()
+
+	/**
+	 * Expand a union facet configuration given as a string or a list of names.
+	 *
+	 * The expansion merges the facetable fields of ALL schemas, not just the first.
+	 *
+	 * @param mixed $facetConfig  The facet configuration from the query.
+	 * @param array $tableConfigs The tables of the union.
+	 *
+	 * @return array The facet configuration keyed by field.
+	 */
+	private function normaliseUnionFacetConfig(mixed $facetConfig, array $tableConfigs): array {
+		if (is_string($facetConfig) === true) {
+			$facetConfig = $this->expandFacetConfigFromAllSchemas(facetConfigString: $facetConfig, tableConfigs: $tableConfigs);
+		}
+
+		if (is_array($facetConfig) === true && array_is_list($facetConfig) === true) {
+			$facetConfig = $this->expandFacetConfigFromAllSchemas(
+				facetConfigString: implode(separator: ',', array: $facetConfig),
+				tableConfigs: $tableConfigs
+			);
+		}
+
+		return $facetConfig;
+	}//end normaliseUnionFacetConfig()
+
+	/**
+	 * Compute one union facet of the configured type.
+	 *
+	 * A property facet runs only over the tables that have its column; a metadata
+	 * facet runs over every table.
+	 *
+	 * @param TermsFacetUnion $facet  The tables, column and filters of the facet.
+	 * @param mixed           $config The facet configuration (type, interval).
+	 *
+	 * @return array|null The facet, or null for a type that is not supported.
+	 */
+	private function computeUnionFacet(TermsFacetUnion $facet, mixed $config): ?array {
+		$type = $config['type'] ?? 'terms';
+		if ($type !== 'terms' && $type !== 'date_histogram') {
+			return null;
+		}
+
+		if ($facet->isMetadata === false) {
+			$facet = new TermsFacetUnion(tableConfigs: $this->tablesWithColumn(facet: $facet), field: $facet->field, baseQuery: $facet->baseQuery);
+		}
+
+		if ($type === 'date_histogram') {
+			return $this->getDateHistogramFacetUnion(
+				tableConfigs: $facet->tableConfigs,
+				field: $facet->field,
+				interval: $config['interval'] ?? 'month',
+				baseQuery: $facet->baseQuery
+			);
+		}
+
+		if (empty($facet->tableConfigs) === true) {
+			return ['type' => 'terms', 'buckets' => []];
+		}
+
+		return $this->getTermsFacetUnion(facet: $facet);
+	}//end computeUnionFacet()
+
+	/**
+	 * The tables of a union facet that have its column.
+	 *
+	 * @param TermsFacetUnion $facet The union facet.
+	 *
+	 * @return array The table configurations with the column.
+	 */
+	private function tablesWithColumn(TermsFacetUnion $facet): array {
+		$tables = [];
+		foreach ($facet->tableConfigs as $tableConfig) {
+			if ($this->columnExists(tableName: $tableConfig['tableName'], columnName: $facet->field) === true) {
+				$tables[] = $tableConfig;
+			}
+		}
+
+		return $tables;
+	}//end tablesWithColumn()
 
 	/**
 	 * Get terms facet using UNION ALL across multiple tables.
@@ -761,9 +809,20 @@ class MagicFacetHandler {
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute();
 
+		return $this->splitTermsRows(rows: $stmt);
+	}//end fetchTermsRows()
+
+	/**
+	 * Read facet rows and split off the NULL group.
+	 *
+	 * @param IResult|IPreparedStatement $rows The executed facet query.
+	 *
+	 * @return array{0: array<int, array{key: mixed, count: int}>, 1: int} The value buckets and the missing count.
+	 */
+	private function splitTermsRows(IResult|IPreparedStatement $rows): array {
 		$rawBuckets = [];
 		$missingCount = 0;
-		while (($row = $stmt->fetch()) !== false) {
+		while (($row = $rows->fetch()) !== false) {
 			if ($row['facet_value'] === null) {
 				$missingCount = (int)$row['doc_count'];
 				continue;
@@ -776,7 +835,7 @@ class MagicFacetHandler {
 		}
 
 		return [$rawBuckets, $missingCount];
-	}//end fetchTermsRows()
+	}//end splitTermsRows()
 
 	/**
 	 * The labelled buckets of a terms union.
@@ -828,16 +887,7 @@ class MagicFacetHandler {
 	 * @return array<string, string> Labels keyed by UUID.
 	 */
 	private function termsUnionLabelMap(TermsFacetUnion $facet, array $normalizedBuckets): array {
-		$uuidsToResolve = [];
-		foreach ($normalizedBuckets as $bucket) {
-			$key = $bucket['key'];
-			if (is_string($key) === true
-				&& preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $key) === 1
-			) {
-				$uuidsToResolve[] = $key;
-			}
-		}
-
+		$uuidsToResolve = $this->uuidKeys(buckets: $normalizedBuckets);
 		if (empty($uuidsToResolve) === true || $facet->isMetadata === true
 			|| $this->anyHoldsObjectReferences(tableConfigs: $facet->tableConfigs, column: $facet->field) === false
 		) {
@@ -1350,164 +1400,150 @@ class MagicFacetHandler {
 	/**
 	 * Get terms facet for a field in a magic mapper table.
 	 *
-	 * Returns unique values and their counts for categorical fields.
-	 * Uses simple GROUP BY and PHP post-processing for array values.
+	 * Returns unique values and their counts for categorical fields, cached per
+	 * table, field, filters and metadata flag for the rest of the request.
 	 *
-	 * @param string $tableName The table name.
-	 * @param string $field The field/column name.
-	 * @param array $baseQuery Base query filters to apply.
-	 * @param bool $isMetadata Whether this is a metadata field.
-	 * @param Register $register The register context.
-	 * @param Schema $schema The schema context.
+	 * @param TableTermsFacet $facet The table, column and filters of the facet.
 	 *
 	 * @return array Facet result with type and buckets.
 	 *
 	 * @throws \OCP\DB\Exception If a database error occurs.
 	 */
-	private function getTermsFacet(
-		string $tableName,
-		string $field,
-		array $baseQuery,
-		bool $isMetadata,
-		Register $register,
-		Schema $schema,
-	): array {
-		// Create cache key.
-		$cacheKey = md5(json_encode(value: [$tableName, $field, $baseQuery, $isMetadata]));
+	private function getTermsFacet(TableTermsFacet $facet): array {
+		$cacheKey = md5(json_encode(value: [$facet->tableName, $facet->field, $facet->baseQuery, $facet->isMetadata]));
 		if (isset($this->facetCache[$cacheKey]) === true) {
 			return $this->facetCache[$cacheKey];
 		}
 
-		// Check if column exists in table before querying.
-		if ($this->columnExists(tableName: $tableName, columnName: $field) === false) {
+		if ($this->columnExists(tableName: $facet->tableName, columnName: $facet->field) === false) {
 			$this->logger->debug(
 				message: '[MagicFacetHandler] Column does not exist for facet',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'tableName' => $tableName, 'field' => $field]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'tableName' => $facet->tableName, 'field' => $facet->field]
 			);
-			$result = [
-				'type' => 'terms',
-				'buckets' => [],
-				'missing' => ['results' => 0],
-			];
-			$this->facetCache[$cacheKey] = $result;
-			return $result;
+			$this->facetCache[$cacheKey] = $this->emptyTermsFacet();
+			return $this->facetCache[$cacheKey];
 		}
 
-		// Use shared query builder from MagicSearchHandler (single source of truth for filters).
-		// Simple GROUP BY - array values will be post-processed in PHP.
-		// Fallback: Build query manually (legacy behavior).
-		//
-		// The NULL group is no longer excluded. Grouping over it is what makes
-		// the missing-value bucket cost nothing: it is counted by the same query
-		// and inside the same access scope as every value bucket, never by a
-		// second pass over the result set (ADR-009).
-		$columnRef = $field;
+		$this->facetCache[$cacheKey] = $this->countTableTerms(facet: $facet);
+		return $this->facetCache[$cacheKey];
+	}//end getTermsFacet()
+
+	/**
+	 * Run a single-table terms facet and label its buckets.
+	 *
+	 * Array values are split in PHP afterwards. The NULL group is kept: it is
+	 * the missing-value bucket, counted by the same query and inside the same
+	 * access scope as every value bucket (ADR-009).
+	 *
+	 * @param TableTermsFacet $facet The table, column and filters of the facet.
+	 *
+	 * @return array Facet result with type, buckets and missing count.
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs.
+	 */
+	private function countTableTerms(TableTermsFacet $facet): array {
+		[$rawBuckets, $missingCount] = $this->splitTermsRows(rows: $this->tableTermsQuery(facet: $facet)->executeQuery());
+
+		// Split JSON array values into individual values and merge their counts.
+		$normalizedBuckets = $this->normalizeArrayFacetBuckets(rawBuckets: $rawBuckets);
+
+		return [
+			'type' => 'terms',
+			'buckets' => $this->labelTableTermsBuckets(facet: $facet, normalizedBuckets: $normalizedBuckets),
+			'missing' => ['results' => $missingCount],
+		];
+	}//end countTableTerms()
+
+	/**
+	 * The grouped query of a single-table terms facet.
+	 *
+	 * With a search handler the facet groups the handler's filtered query, the
+	 * single source of truth for filters; otherwise the query built here, with
+	 * the base filters applied, is used.
+	 *
+	 * @param TableTermsFacet $facet The table, column and filters of the facet.
+	 *
+	 * @return IQueryBuilder The query, grouped per value.
+	 */
+	private function tableTermsQuery(TableTermsFacet $facet): IQueryBuilder {
+		$field = $facet->field;
 		$queryBuilder = $this->db->getQueryBuilder();
 		$queryBuilder->selectAlias($field, 'facet_value')
 			->addSelect($queryBuilder->createFunction('COUNT(*) as doc_count'))
-			->from($tableName)
+			->from($facet->tableName)
 			->groupBy($field);
-		$this->orderFacetGroups(queryBuilder: $queryBuilder, columnRef: $columnRef);
-
-		// Apply base filters.
+		$this->orderFacetGroups(queryBuilder: $queryBuilder, columnRef: $field);
 		$this->applyBaseFilters(
 			queryBuilder: $queryBuilder,
-			baseQuery: $baseQuery,
-			tableName: $tableName,
-			schema: $schema
+			baseQuery: $facet->baseQuery,
+			tableName: $facet->tableName,
+			schema: $facet->schema
 		);
 
-		if ($this->searchHandler !== null) {
-			// 🔴 THE REGISTER IS PASSED SO `_related` NARROWS THE COUNTS TOO.
-			// A facet count that ignores a filter the list honours is worse than
-			// no count: the user filters cases down to the ones carrying a
-			// property, and the facet beside the result still describes every
-			// case in the register. Nothing looks broken, the numbers are just
-			// answers to a different question.
-			$queryBuilder = $this->searchHandler->buildFilteredQuery(
-				query: $baseQuery,
-				schema: $schema,
-				tableName: $tableName,
-				registerId: $register->getId()
-			);
-			$columnRef = "t.{$field}";
-
-			// Add facet-specific SELECT and GROUP BY.
-			$queryBuilder->selectAlias($columnRef, 'facet_value')
-				->addSelect($queryBuilder->createFunction('COUNT(*) as doc_count'))
-				->groupBy($columnRef);
-			$this->orderFacetGroups(queryBuilder: $queryBuilder, columnRef: $columnRef);
-		}//end if
-
-		$result = $queryBuilder->executeQuery();
-
-		// Collect raw buckets from database, peeling off the NULL group.
-		$rawBuckets = [];
-		$missingCount = 0;
-		while (($row = $result->fetch()) !== false) {
-			if ($row['facet_value'] === null) {
-				$missingCount = (int)$row['doc_count'];
-				continue;
-			}
-
-			$rawBuckets[] = [
-				'key' => $row['facet_value'],
-				'count' => (int)$row['doc_count'],
-			];
+		if ($this->searchHandler === null) {
+			return $queryBuilder;
 		}
 
-		// PHP POST-PROCESSING: Normalize array values.
-		// This splits JSON array values into individual values and merges counts.
-		$normalizedBuckets = $this->normalizeArrayFacetBuckets(rawBuckets: $rawBuckets);
+		// 🔴 THE REGISTER IS PASSED SO `_related` NARROWS THE COUNTS TOO.
+		// A facet count that ignores a filter the list honours is worse than
+		// no count: the user filters cases down to the ones carrying a
+		// property, and the facet beside the result still describes every
+		// case in the register. Nothing looks broken, the numbers are just
+		// answers to a different question.
+		$queryBuilder = $this->searchHandler->buildFilteredQuery(
+			query: $facet->baseQuery,
+			schema: $facet->schema,
+			tableName: $facet->tableName,
+			registerId: $facet->register->getId()
+		);
+		$columnRef = "t.{$field}";
+		$queryBuilder->selectAlias($columnRef, 'facet_value')
+			->addSelect($queryBuilder->createFunction('COUNT(*) as doc_count'))
+			->groupBy($columnRef);
+		$this->orderFacetGroups(queryBuilder: $queryBuilder, columnRef: $columnRef);
 
-		// Collect UUIDs for label resolution.
-		$uuidsToResolve = [];
-		foreach ($normalizedBuckets as $bucket) {
-			$key = $bucket['key'];
-			if (is_string($key) === true
-				&& preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $key) === 1
-			) {
-				$uuidsToResolve[] = $key;
-			}
-		}
+		return $queryBuilder;
+	}//end tableTermsQuery()
 
-		$objectReferences = $isMetadata === true
-			|| $this->holdsObjectReferences(schema: $schema, column: $field) === true;
-		if ($objectReferences === false) {
-			$uuidsToResolve = [];
-		}
-
-		// Batch resolve all UUID labels at once (after normalization).
-		$labelMap = [];
-		if (empty($uuidsToResolve) === false && $isMetadata === false) {
-			$labelMap = $this->batchResolveUuidLabels(
-				uuids: $uuidsToResolve,
-				field: $field,
-				schema: $schema,
-				register: $register
-			);
-		}
-
-		// Build final buckets with labels.
+	/**
+	 * The labelled buckets of a single-table terms facet.
+	 *
+	 * @param TableTermsFacet $facet             The table, column and filters of the facet.
+	 * @param array           $normalizedBuckets Buckets of ['key' => value, 'count' => int].
+	 *
+	 * @return array<int, array{key: mixed, results: int, label: string}> The buckets.
+	 */
+	private function labelTableTermsBuckets(TableTermsFacet $facet, array $normalizedBuckets): array {
+		$objectReferences = $facet->isMetadata === true
+			|| $this->holdsObjectReferences(schema: $facet->schema, column: $facet->field) === true;
 		$batchKeys = [];
-		if ($isMetadata === false) {
-			$batchKeys = array_flip($uuidsToResolve);
+		if ($objectReferences === true && $facet->isMetadata === false) {
+			$batchKeys = array_flip($this->uuidKeys(buckets: $normalizedBuckets));
+		}
+
+		$labelMap = [];
+		if (empty($batchKeys) === false) {
+			$labelMap = $this->batchResolveUuidLabels(
+				uuids: array_keys($batchKeys),
+				field: $facet->field,
+				schema: $facet->schema,
+				register: $facet->register
+			);
 		}
 
 		$buckets = [];
 		foreach ($normalizedBuckets as $bucket) {
 			$key = $bucket['key'];
-
 			$label = (string)$key;
 			if ($objectReferences === true) {
 				$label = $this->resolveBucketLabel(
 					key: $key,
 					labelMap: $labelMap,
 					batchResolved: is_string($key) === true && isset($batchKeys[$key]) === true,
-					field: $field,
-					isMetadata: $isMetadata,
-					register: $register,
-					schema: $schema
+					field: $facet->field,
+					isMetadata: $facet->isMetadata,
+					register: $facet->register,
+					schema: $facet->schema
 				);
 			}
 
@@ -1518,17 +1554,29 @@ class MagicFacetHandler {
 			];
 		}//end foreach
 
-		$result = [
-			'type' => 'terms',
-			'buckets' => $buckets,
-			'missing' => ['results' => $missingCount],
-		];
+		return $buckets;
+	}//end labelTableTermsBuckets()
 
-		// Cache the result.
-		$this->facetCache[$cacheKey] = $result;
+	/**
+	 * The bucket keys that are UUIDs, in bucket order.
+	 *
+	 * @param array $buckets Buckets of ['key' => value, 'count' => int].
+	 *
+	 * @return array<int, string> The UUID keys.
+	 */
+	private function uuidKeys(array $buckets): array {
+		$uuids = [];
+		foreach ($buckets as $bucket) {
+			$key = $bucket['key'];
+			if (is_string($key) === true
+				&& preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $key) === 1
+			) {
+				$uuids[] = $key;
+			}
+		}
 
-		return $result;
-	}//end getTermsFacet()
+		return $uuids;
+	}//end uuidKeys()
 
 	/**
 	 * Whether the values of a faceted column can be OpenRegister object references.
@@ -1998,53 +2046,13 @@ class MagicFacetHandler {
 		string $tableName,
 		?Schema $schema = null,
 	): void {
-		// List of reserved query parameters that should not be used as filters.
-		$reservedParams = [
-			'_limit',
-			'_offset',
-			'_page',
-			'_order',
-			'_sort',
-			'_search',
-			'_extend',
-			'_fields',
-			'_filter',
-			'_unset',
-			'_facets',
-			'_facetable',
-			'_aggregations',
-			'_debug',
-			'_source',
-			'_rbac',
-			'_multitenancy',
-			'_validation',
-			'_events',
-			'_register',
-			'_schema',
-			'_schemas',
-			'_includeDeleted',
-			'_deleted',
-			'_empty',
-			'@self',
-		];
-
 		// Get schema properties for type checking.
 		$properties = [];
 		if ($schema !== null) {
 			$properties = ($schema->getProperties() ?? []);
 		}
 
-		foreach ($baseQuery as $key => $value) {
-			// Skip reserved parameters.
-			if (in_array($key, $reservedParams, true) === true) {
-				continue;
-			}
-
-			// Skip system parameters starting with underscore.
-			if (str_starts_with($key, '_') === true) {
-				continue;
-			}
-
+		foreach ($this->objectFieldFilterTerms(baseQuery: $baseQuery) as $key => $value) {
 			// This is an object field filter.
 			$columnName = $this->sanitizeColumnName(name: $key);
 
@@ -2090,6 +2098,26 @@ class MagicFacetHandler {
 			);
 		}//end foreach
 	}//end applyObjectFieldFilters()
+
+	/**
+	 * The query terms that filter on an object field: no reserved or underscore-prefixed parameter.
+	 *
+	 * @param array $baseQuery The base query.
+	 *
+	 * @return array The object field terms, key => value, in query order.
+	 */
+	private function objectFieldFilterTerms(array $baseQuery): array {
+		$terms = [];
+		foreach ($baseQuery as $key => $value) {
+			if (in_array($key, self::RESERVED_FILTER_PARAMS, true) === true || str_starts_with($key, '_') === true) {
+				continue;
+			}
+
+			$terms[$key] = $value;
+		}
+
+		return $terms;
+	}//end objectFieldFilterTerms()
 
 	/**
 	 * Apply JSON array containment filter.
@@ -2317,148 +2345,172 @@ class MagicFacetHandler {
 			return [];
 		}
 
-		$startTime = microtime(true);
+		$lookup = new FacetLabelLookup(uuids: $uuids, field: $field);
+		$lookup->cacheKey = 'facet_labels_' . $register->getId() . '_' . $schema->getId() . '_' . $field;
 
-		// Generate field-level cache key.
-		$fieldCacheKey = 'facet_labels_' . $register->getId() . '_' . $schema->getId() . '_' . $field;
+		if ($this->labelsFromFieldCache(lookup: $lookup) === true
+			|| $this->labelsFromDistributedCache(lookup: $lookup) === true
+		) {
+			return $lookup->result;
+		}
 
-		// STEP 1: Check in-memory field-level cache (fastest).
-		if (isset($this->fieldLabelCache[$fieldCacheKey]) === true) {
-			$cachedLabels = $this->fieldLabelCache[$fieldCacheKey];
-			$result = [];
-			$uncachedUuids = [];
+		$this->resolveLabelsViaObjectNames(lookup: $lookup);
 
-			foreach ($uuids as $uuid) {
-				if (isset($cachedLabels[$uuid]) === false) {
-					$uncachedUuids[] = $uuid;
-					continue;
-				}
+		return $lookup->result;
+	}//end batchResolveUuidLabels()
 
-				$result[$uuid] = $cachedLabels[$uuid];
+	/**
+	 * Answer a label lookup from the in-memory field cache, when it holds
+	 * every uuid; a partial hit leaves the rest for the next source.
+	 *
+	 * @param FacetLabelLookup $lookup The lookup.
+	 *
+	 * @return bool Whether every uuid was answered.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	private function labelsFromFieldCache(FacetLabelLookup $lookup): bool {
+		if (isset($this->fieldLabelCache[$lookup->cacheKey]) === false
+			|| $lookup->take(labels: $this->fieldLabelCache[$lookup->cacheKey]) === false
+		) {
+			return false;
+		}
+
+		$this->cacheStats['field_cache_hits']++;
+		$this->cacheStats['total_uuids_resolved'] += count($lookup->result);
+		$this->logger->debug(
+			message: '[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'field' => $lookup->field,
+				'count' => count($lookup->result),
+				'time_ms' => $lookup->elapsedMs(),
+			]
+		);
+		return true;
+	}//end labelsFromFieldCache()
+
+	/**
+	 * Warm the field cache from the distributed cache, once per field, and
+	 * answer the lookup from it when it holds every uuid.
+	 *
+	 * @param FacetLabelLookup $lookup The lookup.
+	 *
+	 * @return bool Whether every uuid was answered.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	private function labelsFromDistributedCache(FacetLabelLookup $lookup): bool {
+		if ($this->distLabelCache === null || isset($this->warmedFields[$lookup->cacheKey]) === true) {
+			return false;
+		}
+
+		try {
+			$distributedLabels = $this->distLabelCache->get($lookup->cacheKey);
+			if (is_array($distributedLabels) === false) {
+				return false;
 			}
 
-			// If all UUIDs found in cache, return immediately.
-			if (empty($uncachedUuids) === true) {
-				$this->cacheStats['field_cache_hits']++;
-				$this->cacheStats['total_uuids_resolved'] += count($result);
-				$this->logger->debug(
-					message: '[MagicFacetHandler] batchResolveUuidLabels: All labels from in-memory field cache',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'field' => $field,
-						'count' => count($result),
-						'time_ms' => round((microtime(true) - $startTime) * 1000, 2),
-					]
-				);
-				return $result;
-			}
-		}//end if
-
-		// STEP 2: Check distributed cache for field-level labels.
-		if ($this->distLabelCache !== null && isset($this->warmedFields[$fieldCacheKey]) === false) {
-			try {
-				$distributedLabels = $this->distLabelCache->get($fieldCacheKey);
-				if ($distributedLabels !== null && is_array($distributedLabels) === true) {
-					// Store in in-memory cache for this request.
-					$this->fieldLabelCache[$fieldCacheKey] = $distributedLabels;
-					$this->warmedFields[$fieldCacheKey] = true;
-
-					// Try again with the loaded cache.
-					$result = [];
-					$uncachedUuids = [];
-					foreach ($uuids as $uuid) {
-						if (isset($distributedLabels[$uuid]) === false) {
-							$uncachedUuids[] = $uuid;
-							continue;
-						}
-
-						$result[$uuid] = $distributedLabels[$uuid];
-					}
-
-					if (empty($uncachedUuids) === true) {
-						$this->cacheStats['distributed_cache_hits']++;
-						$this->cacheStats['total_uuids_resolved'] += count($result);
-						$this->logger->debug(
-							message: '[MagicFacetHandler] batchResolveUuidLabels: All labels from distributed cache',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'field' => $field,
-								'count' => count($result),
-								'time_ms' => round((microtime(true) - $startTime) * 1000, 2),
-							]
-						);
-						return $result;
-					}
-				}//end if
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					message: '[MagicFacetHandler] Failed to get facet labels from distributed cache: ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}//end try
-		}//end if
-
-		// STEP 3: Resolve remaining UUIDs via CacheHandler.
-		$result = $result ?? [];
-		$uncachedUuids = $uncachedUuids ?? $uuids;
-
-		$this->resolveLazyDependencies();
-		if ($this->cacheHandler !== null && empty($uncachedUuids) === false) {
-			$this->cacheStats['cache_handler_calls']++;
-			$batchedLabels = $this->cacheHandler->getMultipleObjectNames($uncachedUuids);
-			$this->cacheStats['total_uuids_resolved'] += count($batchedLabels);
-
-			// Merge results.
-			foreach ($batchedLabels as $uuid => $label) {
-				$this->uuidLabelCache[$uuid] = $label;
-				$result[$uuid] = $label;
+			$this->fieldLabelCache[$lookup->cacheKey] = $distributedLabels;
+			$this->warmedFields[$lookup->cacheKey] = true;
+			if ($lookup->take(labels: $distributedLabels) === false) {
+				return false;
 			}
 
-			// Update field-level cache with new labels.
-			if (isset($this->fieldLabelCache[$fieldCacheKey]) === false) {
-				$this->fieldLabelCache[$fieldCacheKey] = [];
-			}
-
-			$this->fieldLabelCache[$fieldCacheKey] = array_merge(
-				$this->fieldLabelCache[$fieldCacheKey],
-				$batchedLabels
-			);
-
-			// Persist to distributed cache for future requests.
-			if ($this->distLabelCache !== null) {
-				try {
-					$this->distLabelCache->set(
-						$fieldCacheKey,
-						$this->fieldLabelCache[$fieldCacheKey],
-						self::FACET_LABEL_CACHE_TTL
-					);
-					$this->warmedFields[$fieldCacheKey] = true;
-				} catch (\Exception $e) {
-					$eMsg = $e->getMessage();
-					$this->logger->warning(
-						message: "[MagicFacetHandler] Failed to persist facet labels to distributed cache: {$eMsg}",
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-				}
-			}
-
+			$this->cacheStats['distributed_cache_hits']++;
+			$this->cacheStats['total_uuids_resolved'] += count($lookup->result);
 			$this->logger->debug(
-				message: '[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached',
+				message: '[MagicFacetHandler] batchResolveUuidLabels: All labels from distributed cache',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'field' => $field,
-					'requested' => count($uuids),
-					'resolved' => count($batchedLabels),
-					'time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+					'field' => $lookup->field,
+					'count' => count($lookup->result),
+					'time_ms' => $lookup->elapsedMs(),
 				]
 			);
-		}//end if
+			return true;
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[MagicFacetHandler] Failed to get facet labels from distributed cache: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return false;
+		}//end try
+	}//end labelsFromDistributedCache()
 
-		return $result;
-	}//end batchResolveUuidLabels()
+	/**
+	 * Resolve the uuids no cache answered through the object name cache, and
+	 * keep the result in the field cache and the distributed cache (24h TTL:
+	 * labels rarely change).
+	 *
+	 * @param FacetLabelLookup $lookup The lookup.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	private function resolveLabelsViaObjectNames(FacetLabelLookup $lookup): void {
+		$this->resolveLazyDependencies();
+		if ($this->cacheHandler === null || empty($lookup->uncached) === true) {
+			return;
+		}
+
+		$this->cacheStats['cache_handler_calls']++;
+		$batchedLabels = $this->cacheHandler->getMultipleObjectNames($lookup->uncached);
+		$this->cacheStats['total_uuids_resolved'] += count($batchedLabels);
+
+		foreach ($batchedLabels as $uuid => $label) {
+			$this->uuidLabelCache[$uuid] = $label;
+			$lookup->result[$uuid] = $label;
+		}
+
+		$this->fieldLabelCache[$lookup->cacheKey] = array_merge(
+			($this->fieldLabelCache[$lookup->cacheKey] ?? []),
+			$batchedLabels
+		);
+
+		$this->persistFieldLabels(cacheKey: $lookup->cacheKey);
+
+		$this->logger->debug(
+			message: '[MagicFacetHandler] batchResolveUuidLabels: Resolved via CacheHandler and cached',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'field' => $lookup->field,
+				'requested' => count($lookup->uuids),
+				'resolved' => count($batchedLabels),
+				'time_ms' => $lookup->elapsedMs(),
+			]
+		);
+	}//end resolveLabelsViaObjectNames()
+
+	/**
+	 * Store a field's labels in the distributed cache; a failure is logged.
+	 *
+	 * @param string $cacheKey The field's cache key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	private function persistFieldLabels(string $cacheKey): void {
+		if ($this->distLabelCache === null) {
+			return;
+		}
+
+		try {
+			$this->distLabelCache->set($cacheKey, $this->fieldLabelCache[$cacheKey], self::FACET_LABEL_CACHE_TTL);
+			$this->warmedFields[$cacheKey] = true;
+		} catch (\Exception $e) {
+			$eMsg = $e->getMessage();
+			$this->logger->warning(
+				message: "[MagicFacetHandler] Failed to persist facet labels to distributed cache: {$eMsg}",
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+	}//end persistFieldLabels()
 
 	/**
 	 * Get human-readable label for a field value.

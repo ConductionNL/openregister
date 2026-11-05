@@ -467,6 +467,25 @@ class ObjectsControllerTest extends TestCase {
 		$this->assertTrue($data['success']);
 	}
 
+	public function testMigrateReturns403WhenTheCallerMayNotMigrate(): void {
+		$this->request->method('getParams')->willReturn([
+			'sourceRegister' => '1',
+			'sourceSchema' => '2',
+			'targetRegister' => '3',
+			'targetSchema' => '4',
+			'objects' => ['uuid-1'],
+			'mapping' => ['field1' => 'field2'],
+		]);
+
+		$this->objectService->method('migrateObjects')
+			->willThrowException(new \OCA\OpenRegister\Exception\NotAuthorizedException('No access'));
+
+		$result = $this->controller->migrate($this->objectService);
+
+		$this->assertSame(403, $result->getStatus());
+		$this->assertSame('No access', $result->getData()['error']);
+	}
+
 	public function testMigrateReturns404OnDoesNotExist(): void {
 		$this->request->method('getParams')->willReturn([
 			'sourceRegister' => '1',
@@ -3752,6 +3771,8 @@ class ObjectsControllerTest extends TestCase {
 		);
 		$deleteHandler = $this->createMock(\OCA\OpenRegister\Service\Object\DeleteObject::class);
 		$deleteHandler->method('canDelete')->willReturn($analysis);
+		// The caller reads every referring object.
+		$this->objectService->method('readableDeletionAnalysis')->willReturnArgument(0);
 		$this->objectService->method('getDeleteHandler')->willReturn($deleteHandler);
 
 		$result = $this->controller->canDelete('uuid-123', 'reg1', 'schema1', $this->objectService);

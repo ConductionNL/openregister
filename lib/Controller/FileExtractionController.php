@@ -25,11 +25,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\FileExtractionControllerServices;
+use OCA\OpenRegister\Controller\Support\FileExtractionListing;
 use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Service\RiskLevelService;
 use OCA\OpenRegister\Service\TextExtractionService;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\IRootFolder;
@@ -59,36 +61,92 @@ use OCP\IUserSession;
  */
 class FileExtractionController extends Controller {
 	/**
+	 * Text extraction service
+	 *
+	 * @var TextExtractionService
+	 */
+	private readonly TextExtractionService $textExtractor;
+
+	/**
+	 * Unified vectorization service
+	 *
+	 * @var VectorizationServiceInterface
+	 */
+	private readonly VectorizationServiceInterface $vectorizationService;
+
+	/**
+	 * Chunk mapper for text chunks
+	 *
+	 * @var ChunkMapper
+	 */
+	private readonly ChunkMapper $chunkMapper;
+
+	/**
+	 * Entity relation mapper
+	 *
+	 * @var EntityRelationMapperInterface
+	 */
+	private readonly EntityRelationMapperInterface $entityRelationMapper;
+
+	/**
+	 * Risk level computation service
+	 *
+	 * @var RiskLevelService
+	 */
+	private readonly RiskLevelService $riskLevelService;
+
+	/**
+	 * Root folder for per-user file access checks
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * Active user session for caller identity
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for admin checks
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * The object read rule for an object's file.
+	 *
+	 * @var ?\OCA\OpenRegister\Service\File\FileReadScope
+	 */
+	private readonly ?\OCA\OpenRegister\Service\File\FileReadScope $fileReadScope;
+
+	/**
 	 * Constructor
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
-	 * @param TextExtractionService $textExtractor Text extraction service
-	 * @param VectorizationService $vectorizationService Unified vectorization service
-	 * @param ChunkMapper $chunkMapper Chunk mapper for text chunks
-	 * @param EntityRelationMapper $entityRelationMapper Entity relation mapper
-	 * @param RiskLevelService $riskLevelService Risk level computation service
-	 * @param IRootFolder $rootFolder Root folder for per-user file access checks
-	 * @param IUserSession $userSession Active user session for caller identity
-	 * @param IGroupManager $groupManager Group manager for admin checks
-	 * @param \OCA\OpenRegister\Service\File\FileReadScope|null $fileReadScope The object read rule for an object's file.
+	 * @param FileExtractionControllerServices $services The file extraction controller services.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly TextExtractionService $textExtractor,
-		private readonly VectorizationService $vectorizationService,
-		private readonly ChunkMapper $chunkMapper,
-		private readonly EntityRelationMapper $entityRelationMapper,
-		private readonly RiskLevelService $riskLevelService,
-		private readonly IRootFolder $rootFolder,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly ?\OCA\OpenRegister\Service\File\FileReadScope $fileReadScope = null,
+		FileExtractionControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->textExtractor = $services->domain->textExtractor;
+		$this->vectorizationService = $services->domain->vectorizationService;
+		$this->chunkMapper = $services->mappers->chunkMapper;
+		$this->entityRelationMapper = $services->mappers->entityRelationMapper;
+		$this->riskLevelService = $services->domain->riskLevelService;
+		$this->rootFolder = $services->platform->rootFolder;
+		$this->userSession = $services->platform->userSession;
+		$this->groupManager = $services->platform->groupManager;
+		$this->fileReadScope = $services->domain->fileReadScope;
 	}//end __construct()
 
 	/**
@@ -153,108 +211,96 @@ class FileExtractionController extends Controller {
 	 */
 	public function index(): JSONResponse {
 		try {
-			$limit = (int)($this->request->getParam('limit', 50));
-			$offset = (int)($this->request->getParam('offset', 0));
-			$search = $this->request->getParam('search');
-			$status = $this->request->getParam('status');
-			$riskLevel = $this->request->getParam('riskLevel');
-			$sort = $this->request->getParam('sort', 'extractedAt');
-			$order = $this->request->getParam('order', 'DESC');
+			$listing = new FileExtractionListing(request: $this->request);
 
 			// All chunked files are "completed" — if filtering for another status, return empty.
-			if ($status !== null && $status !== '' && $status !== 'completed') {
-				return new JSONResponse(
-					data: [
-						'success' => true,
-						'data' => [],
-						'count' => 0,
-					]
-				);
+			if (in_array($listing->status, [null, '', 'completed'], true) === false) {
+				return new JSONResponse(data: ['success' => true, 'data' => [], 'count' => 0]);
 			}
 
-			$searchTerm = null;
-			if ($search !== null && $search !== '') {
-				$searchTerm = $search;
-			}
+			$listing->restrict(restricted: $this->isCurrentUserAdmin() === false);
+			$page       = $this->extractionSummaries(listing: $listing);
+			$data       = $this->extractionRows(summaries: $page['summaries']);
+			$totalCount = $page['total'];
 
-			// For riskLevel/entityCount sorting, fetch all then sort in PHP.
-			$phpSort = in_array($sort, ['riskLevel', 'entityCount'], true);
-			$dbLimit = $limit;
-			$dbOffset = $offset;
-			$dbSort = $sort;
-			if ($phpSort === true) {
-				$dbLimit = null;
-				$dbOffset = null;
-				$dbSort = 'extractedAt';
-			}
-
-			$summaries = $this->chunkMapper->getFileSourceSummaries($dbLimit, $dbOffset, $searchTerm, $dbSort, $order);
-			$totalCount = $this->chunkMapper->countFileSourceSummaries($searchTerm);
-
-			$data = [];
-			foreach ($summaries as $summary) {
-				$entityCount = count($this->entityRelationMapper->findByFileId($summary['sourceId']));
-				$fileRisk = $this->riskLevelService->getRiskLevel($summary['sourceId']);
-
-				$data[] = [
-					'id' => $summary['sourceId'],
-					'fileName' => $summary['fileName'],
-					'mimeType' => $summary['mimeType'],
-					'fileSize' => $summary['fileSize'],
-					'extractionStatus' => 'completed',
-					'chunkCount' => $summary['chunkCount'],
-					'extractedAt' => $summary['lastExtracted'],
-					'extractionError' => null,
-					'entityCount' => $entityCount,
-					'riskLevel' => $fileRisk,
-				];
-			}
-
-			// Filter by risk level if requested.
-			if ($riskLevel !== null && $riskLevel !== '') {
-				$data = array_values(array_filter($data, fn ($f) => $f['riskLevel'] === $riskLevel));
+			$riskLevel = $listing->riskLevel;
+			if (in_array($riskLevel, [null, ''], true) === false) {
+				$data       = array_values(array_filter($data, fn ($f) => $f['riskLevel'] === $riskLevel));
 				$totalCount = count($data);
 			}
 
-			// PHP-side sorting for fields not in the DB query.
-			if ($phpSort === true) {
-				$riskOrder = ['none' => 0, 'low' => 1, 'medium' => 2, 'high' => 3, 'very_high' => 4];
-				usort(
-					$data,
-					function ($a, $b) use ($sort, $order, $riskOrder) {
-						$cmp = ($a[$sort] ?? 0) <=> ($b[$sort] ?? 0);
-						if ($sort === 'riskLevel') {
-							$cmp = ($riskOrder[$a['riskLevel']] ?? 0) <=> ($riskOrder[$b['riskLevel']] ?? 0);
-						}
+			if ($listing->sortsInPhp() === true) {
+				$data = $listing->sortRows(rows: $data);
+			}
 
-						if ($order === 'ASC') {
-							return $cmp;
-						}
-
-						return -$cmp;
-					}
-				);
+			if ($listing->cutsInPhp() === true) {
 				$totalCount = count($data);
-				$data = array_slice($data, $offset, $limit);
-			}//end if
+				$data       = array_slice($data, $listing->offset, $listing->limit);
+			}
 
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'data' => $data,
-					'count' => $totalCount,
-				]
-			);
+			return new JSONResponse(data: ['success' => true, 'data' => $data, 'count' => $totalCount]);
 		} catch (\Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return new JSONResponse(data: ['success' => false, 'error' => $e->getMessage()], statusCode: 500);
 		}//end try
 	}//end index()
+
+	/**
+	 * The chunked-file summaries of one listing, and their total, cut to what the caller may open.
+	 *
+	 * When the page is cut in PHP every summary is fetched.
+	 *
+	 * @param FileExtractionListing $listing The list parameters.
+	 *
+	 * @return array{summaries: array, total: int} The summaries and the database total.
+	 */
+	private function extractionSummaries(FileExtractionListing $listing): array {
+		$dbLimit  = $listing->limit;
+		$dbOffset = $listing->offset;
+		if ($listing->cutsInPhp() === true) {
+			$dbLimit  = null;
+			$dbOffset = null;
+		}
+
+		$summaries  = $this->chunkMapper->getFileSourceSummaries($dbLimit, $dbOffset, $listing->searchTerm, $listing->databaseSort(), $listing->order);
+		$totalCount = $this->chunkMapper->countFileSourceSummaries($listing->searchTerm);
+		if ($listing->isRestricted() === true) {
+			$summaries = array_values(
+				array_filter($summaries, fn ($summary) => $this->hasFileAccess(fileId: (int)$summary['sourceId']))
+			);
+		}
+
+		return ['summaries' => $summaries, 'total' => $totalCount];
+	}//end extractionSummaries()
+
+	/**
+	 * The overview rows of chunked-file summaries, with entity count and risk level.
+	 *
+	 * @param array $summaries The summaries.
+	 *
+	 * @return array<int, array<string, mixed>> The rows.
+	 */
+	private function extractionRows(array $summaries): array {
+		$data = [];
+		foreach ($summaries as $summary) {
+			$entityCount = count($this->entityRelationMapper->findByFileId($summary['sourceId']));
+			$fileRisk    = $this->riskLevelService->getRiskLevel($summary['sourceId']);
+
+			$data[] = [
+				'id'               => $summary['sourceId'],
+				'fileName'         => $summary['fileName'],
+				'mimeType'         => $summary['mimeType'],
+				'fileSize'         => $summary['fileSize'],
+				'extractionStatus' => 'completed',
+				'chunkCount'       => $summary['chunkCount'],
+				'extractedAt'      => $summary['lastExtracted'],
+				'extractionError'  => null,
+				'entityCount'      => $entityCount,
+				'riskLevel'        => $fileRisk,
+			];
+		}
+
+		return $data;
+	}//end extractionRows()
 
 	/**
 	 * Get a single file's extraction information by ID.
@@ -282,6 +328,17 @@ class FileExtractionController extends Controller {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function show(int $id): JSONResponse {
+		if ($this->hasFileAccess(fileId: $id) === false) {
+			return new JSONResponse(
+				data: [
+					'success' => false,
+					'error' => 'File not found in extraction system',
+					'message' => 'File not found or access denied',
+				],
+				statusCode: 404
+			);
+		}
+
 		try {
 			// Get chunks for this file.
 			$chunks = $this->chunkMapper->findBySource(sourceType: 'file', sourceId: $id);
@@ -565,12 +622,9 @@ class FileExtractionController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @no-admin-idor-exempt No per-object resource: returns aggregate extraction
-	 *   counters (TextExtractionService::getStats); takes no caller-supplied file id.
-	 *
 	 * @psalm-return JSONResponse<
-	 *     200|500,
-	 *     array{
+	 *     200|403|500,
+	 *     array{success: false, error: string}|array{
 	 *         success: bool,
 	 *         error?: 'Failed to retrieve statistics',
 	 *         message?: string,
@@ -588,6 +642,10 @@ class FileExtractionController extends Controller {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function stats(): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(['success' => false, 'error' => 'Admin privileges required'], 403);
+		}
+
 		try {
 			$stats = $this->textExtractor->getStats();
 

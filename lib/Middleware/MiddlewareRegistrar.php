@@ -133,5 +133,9 @@ final class MiddlewareRegistrar {
 		// only refuses a caller an administrator actually bound, and the record
 		// swallows its own failures.
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ApiCallerMiddleware::class);
+
+		// An anonymous caller gets no user ids in a record's `@self`. Global, because
+		// other apps answer public requests with OpenRegister's records too.
+		$context->registerMiddleware(AnonymousEnvelopeMiddleware::class, global: true);
 	}//end register()
 }//end class

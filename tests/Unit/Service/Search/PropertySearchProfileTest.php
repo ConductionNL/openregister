@@ -33,7 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Search;
 
-use OCA\OpenRegister\Service\Search\PropertySearchProfile;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use PHPUnit\Framework\TestCase;
 
 /**

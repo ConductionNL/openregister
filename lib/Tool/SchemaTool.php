@@ -24,7 +24,7 @@
 namespace OCA\OpenRegister\Tool;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCP\IUserSession;
@@ -51,22 +51,22 @@ class SchemaTool extends AbstractTool {
 	/**
 	 * Schema mapper
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private SchemaMapper $schemaMapper;
+	private SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Constructor
 	 *
 	 * @param IUserSession $userSession User session service
 	 * @param LoggerInterface $logger Logger service
-	 * @param SchemaMapper $schemaMapper Schema mapper
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper
 	 * @param SchemaVersioningService|null $schemaVersioning Classifies, versions and logs a definition change (#4102)
 	 */
 	public function __construct(
 		IUserSession $userSession,
 		LoggerInterface $logger,
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 		private readonly ?SchemaVersioningService $schemaVersioning = null,
 	) {
 		parent::__construct(userSession: $userSession, logger: $logger);
@@ -100,129 +100,134 @@ class SchemaTool extends AbstractTool {
 	}//end getDescription()
 
 	/**
+	 * The function definitions, in OpenAI function calling format.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private const FUNCTIONS = [
+		[
+			'name' => 'list_schemas',
+			'subject' => 'schema',
+			'action' => 'list',
+			'description' => 'Get a list of all accessible schemas',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'limit' => [
+						'type' => 'integer',
+						'description' => 'Maximum number of schemas to return (default: 100)',
+					],
+					'offset' => [
+						'type' => 'integer',
+						'description' => 'Number of schemas to skip for pagination (default: 0)',
+					],
+					'register' => [
+						'type' => 'string',
+						'description' => 'Filter schemas by register ID (optional)',
+					],
+				],
+				'required' => [],
+			],
+		],
+		[
+			'name' => 'get_schema',
+			'subject' => 'schema',
+			'action' => 'get',
+			'description' => 'Get details about a specific schema by ID',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'id' => [
+						'type' => 'string',
+						'description' => 'The schema ID to retrieve',
+					],
+				],
+				'required' => ['id'],
+			],
+		],
+		[
+			'name' => 'create_schema',
+			'subject' => 'schema',
+			'action' => 'create',
+			'description' => 'Create a new schema with properties definition',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'title' => [
+						'type' => 'string',
+						'description' => 'The title of the schema',
+					],
+					'description' => [
+						'type' => 'string',
+						'description' => 'A description of what this schema represents',
+					],
+					'properties' => [
+						'type' => 'object',
+						'description' => 'JSON Schema properties definition',
+					],
+					'required' => [
+						'type' => 'array',
+						'description' => 'Array of required property names',
+					],
+				],
+				'required' => ['title', 'properties'],
+			],
+		],
+		[
+			'name' => 'update_schema',
+			'subject' => 'schema',
+			'action' => 'update',
+			'description' => 'Update an existing schema',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'id' => [
+						'type' => 'string',
+						'description' => 'The schema ID to update',
+					],
+					'title' => [
+						'type' => 'string',
+						'description' => 'New title for the schema',
+					],
+					'description' => [
+						'type' => 'string',
+						'description' => 'New description for the schema',
+					],
+					'properties' => [
+						'type' => 'object',
+						'description' => 'Updated JSON Schema properties definition',
+					],
+				],
+				'required' => ['id'],
+			],
+		],
+		[
+			'name' => 'delete_schema',
+			'subject' => 'schema',
+			'action' => 'delete',
+			'description' => 'Delete a schema (only if it has no objects)',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'id' => [
+						'type' => 'string',
+						'description' => 'The schema ID to delete',
+					],
+				],
+				'required' => ['id'],
+			],
+		],
+	];
+
+	/**
 	 * Get function definitions for LLphant
 	 *
 	 * @return array<int, array<string, mixed>> Array of function definitions
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive function definitions for LLM
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function getFunctions(): array {
-		return [
-			[
-				'name' => 'list_schemas',
-				'subject' => 'schema',
-				'action' => 'list',
-				'description' => 'Get a list of all accessible schemas',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'limit' => [
-							'type' => 'integer',
-							'description' => 'Maximum number of schemas to return (default: 100)',
-						],
-						'offset' => [
-							'type' => 'integer',
-							'description' => 'Number of schemas to skip for pagination (default: 0)',
-						],
-						'register' => [
-							'type' => 'string',
-							'description' => 'Filter schemas by register ID (optional)',
-						],
-					],
-					'required' => [],
-				],
-			],
-			[
-				'name' => 'get_schema',
-				'subject' => 'schema',
-				'action' => 'get',
-				'description' => 'Get details about a specific schema by ID',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'id' => [
-							'type' => 'string',
-							'description' => 'The schema ID to retrieve',
-						],
-					],
-					'required' => ['id'],
-				],
-			],
-			[
-				'name' => 'create_schema',
-				'subject' => 'schema',
-				'action' => 'create',
-				'description' => 'Create a new schema with properties definition',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'title' => [
-							'type' => 'string',
-							'description' => 'The title of the schema',
-						],
-						'description' => [
-							'type' => 'string',
-							'description' => 'A description of what this schema represents',
-						],
-						'properties' => [
-							'type' => 'object',
-							'description' => 'JSON Schema properties definition',
-						],
-						'required' => [
-							'type' => 'array',
-							'description' => 'Array of required property names',
-						],
-					],
-					'required' => ['title', 'properties'],
-				],
-			],
-			[
-				'name' => 'update_schema',
-				'subject' => 'schema',
-				'action' => 'update',
-				'description' => 'Update an existing schema',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'id' => [
-							'type' => 'string',
-							'description' => 'The schema ID to update',
-						],
-						'title' => [
-							'type' => 'string',
-							'description' => 'New title for the schema',
-						],
-						'description' => [
-							'type' => 'string',
-							'description' => 'New description for the schema',
-						],
-						'properties' => [
-							'type' => 'object',
-							'description' => 'Updated JSON Schema properties definition',
-						],
-					],
-					'required' => ['id'],
-				],
-			],
-			[
-				'name' => 'delete_schema',
-				'subject' => 'schema',
-				'action' => 'delete',
-				'description' => 'Delete a schema (only if it has no objects)',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'id' => [
-							'type' => 'string',
-							'description' => 'The schema ID to delete',
-						],
-					],
-					'required' => ['id'],
-				],
-			],
-		];
+		return self::FUNCTIONS;
 	}//end getFunctions()
 
 	/**

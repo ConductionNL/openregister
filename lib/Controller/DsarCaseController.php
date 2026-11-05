@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\DsarCaseControllerServices;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControl;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceHarvestService;
@@ -45,7 +46,7 @@ use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
 use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteService;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -62,38 +63,106 @@ use Throwable;
  */
 class DsarCaseController extends Controller {
 	/**
+	 * RBAC + tenant scoped object store (case creation).
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * RBAC-scoped case load helper.
+	 *
+	 * @var CaseObjectAccessor
+	 */
+	private readonly CaseObjectAccessor $accessor;
+
+	/**
+	 * Case-level access-control check (fail closed).
+	 *
+	 * @var CaseAccessControl
+	 */
+	private readonly CaseAccessControl $accessControl;
+
+	/**
+	 * Lifecycle transition driver (runs the guard on save).
+	 *
+	 * @var TransitionEngine
+	 */
+	private readonly TransitionEngine $transitionEngine;
+
+	/**
+	 * Evidence-collection service.
+	 *
+	 * @var EvidenceHarvestService
+	 */
+	private readonly EvidenceHarvestService $harvestService;
+
+	/**
+	 * Field-level redaction write path.
+	 *
+	 * @var RedactionWriteService
+	 */
+	private readonly RedactionWriteService $redactionService;
+
+	/**
+	 * Export-bundle + dossier service.
+	 *
+	 * @var ExportBundleService
+	 */
+	private readonly ExportBundleService $bundleService;
+
+	/**
+	 * Current caller (anonymous rejection).
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Resolves the case's active pack seam selectors.
+	 *
+	 * @var DsarPolicyPackResolver
+	 */
+	private readonly DsarPolicyPackResolver $packResolver;
+
+	/**
+	 * Identity-verify seam registry (pack-selector-driven, fail-closed).
+	 *
+	 * @var IdentityVerifyRegistry
+	 */
+	private readonly IdentityVerifyRegistry $identityRegistry;
+
+	/**
+	 * Regulator-escalate seam registry (pack-selector-driven, fail-closed).
+	 *
+	 * @var RegulatorEscalateRegistry
+	 */
+	private readonly RegulatorEscalateRegistry $regulatorRegistry;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param ObjectService $objectService RBAC + tenant scoped object store (case creation).
-	 * @param CaseObjectAccessor $accessor RBAC-scoped case load helper.
-	 * @param CaseAccessControl $accessControl Case-level access-control check (fail closed).
-	 * @param TransitionEngine $transitionEngine Lifecycle transition driver (runs the guard on save).
-	 * @param EvidenceHarvestService $harvestService Evidence-collection service.
-	 * @param RedactionWriteService $redactionService Field-level redaction write path.
-	 * @param ExportBundleService $bundleService Export-bundle + dossier service.
-	 * @param IUserSession $userSession Current caller (anonymous rejection).
-	 * @param DsarPolicyPackResolver $packResolver Resolves the case's active pack seam selectors.
-	 * @param IdentityVerifyRegistry $identityRegistry Identity-verify seam registry (pack-selector-driven, fail-closed).
-	 * @param RegulatorEscalateRegistry $regulatorRegistry Regulator-escalate seam registry (pack-selector-driven, fail-closed).
+	 * @param DsarCaseControllerServices $services The dsar case controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objectService,
-		private readonly CaseObjectAccessor $accessor,
-		private readonly CaseAccessControl $accessControl,
-		private readonly TransitionEngine $transitionEngine,
-		private readonly EvidenceHarvestService $harvestService,
-		private readonly RedactionWriteService $redactionService,
-		private readonly ExportBundleService $bundleService,
-		private readonly IUserSession $userSession,
-		private readonly DsarPolicyPackResolver $packResolver,
-		private readonly IdentityVerifyRegistry $identityRegistry,
-		private readonly RegulatorEscalateRegistry $regulatorRegistry,
+		DsarCaseControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->objectService = $services->cases->objectService;
+		$this->accessor = $services->cases->accessor;
+		$this->accessControl = $services->cases->accessControl;
+		$this->transitionEngine = $services->cases->transitionEngine;
+		$this->harvestService = $services->disclosure->harvestService;
+		$this->redactionService = $services->disclosure->redactionService;
+		$this->bundleService = $services->disclosure->bundleService;
+		$this->userSession = $services->platform->userSession;
+		$this->packResolver = $services->disclosure->packResolver;
+		$this->identityRegistry = $services->registries->identityRegistry;
+		$this->regulatorRegistry = $services->registries->regulatorRegistry;
 
 	}//end __construct()
 

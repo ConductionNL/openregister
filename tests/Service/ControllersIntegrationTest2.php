@@ -19,6 +19,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ConversationControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\GdprEntitiesControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FileExtractionControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FileTextControllerFactory;
 use OC\Files\AppData\Factory;
 use OCA\OpenRegister\Controller\BulkController;
 use OCA\OpenRegister\Controller\ChatController;
@@ -55,7 +59,7 @@ use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCA\OpenRegister\Service\TextExtractionService;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -1044,26 +1048,6 @@ class ControllersIntegrationTest2 extends TestCase {
 	}//end testFileTextControllerDeleteFileText()
 
 	/**
-	 * Test FileTextController::extractFileText when extraction is disabled
-	 *
-	 * @return void
-	 */
-	public function testFileTextControllerExtractFileTextDisabled(): void {
-		// Ensure extraction is disabled.
-		$this->appConfig->setValueString('openregister', 'fileManagement', json_encode(['extractionScope' => 'none']));
-
-		$controller = $this->buildFileTextController();
-		$response = $controller->extractFileText(1);
-		$data = $response->getData();
-
-		$this->assertSame(501, $response->getStatus());
-		$this->assertFalse($data['success']);
-
-		// Cleanup config.
-		$this->appConfig->deleteKey('openregister', 'fileManagement');
-	}//end testFileTextControllerExtractFileTextDisabled()
-
-	/**
 	 * Test FileTextController::getStats
 	 *
 	 * @return void
@@ -1796,7 +1780,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return ConversationController
 	 */
 	private function buildConversationController(): ConversationController {
-		return new ConversationController(
+		return ConversationControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(ConversationMapper::class),
@@ -1816,7 +1800,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return GdprEntitiesController
 	 */
 	private function buildGdprEntitiesController(): GdprEntitiesController {
-		return new GdprEntitiesController(
+		return GdprEntitiesControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(GdprEntityMapper::class),
@@ -1873,14 +1857,13 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return FileTextController
 	 */
 	private function buildFileTextController(): FileTextController {
-		return new FileTextController(
+		return FileTextControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(TextExtractionService::class),
 			\OC::$server->get(FileService::class),
 			\OC::$server->get(EntityRelationMapper::class),
 			$this->logger,
-			$this->appConfig,
 			\OC::$server->get(ManualEntityService::class),
 			$this->buildAccessibleUserSession(),
 			$this->buildAccessibleRootFolder(),
@@ -1894,7 +1877,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return FileExtractionController
 	 */
 	private function buildFileExtractionController(): FileExtractionController {
-		return new FileExtractionController(
+		return FileExtractionControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(TextExtractionService::class),

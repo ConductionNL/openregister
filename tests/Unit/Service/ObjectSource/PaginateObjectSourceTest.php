@@ -295,6 +295,25 @@ class PaginateObjectSourceTest extends TestCase {
 	}//end testInconsistentCountFallsBack()
 
 	/**
+	 * A count() exactly at the end of the returned window is a real total.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testCountAtTheWindowEndIsTheTrueTotal(): void {
+		$result = $this->paginate(
+			provider: $this->stubProvider(totalRows: 120, countReturns: 100),
+			schema: $this->sourcedSchema(),
+			query: ['limit' => 50, 'offset' => 50]
+		);
+
+		$this->assertNotNull($result);
+		$this->assertSame(100, $result['total']);
+		$this->assertSame(2, $result['@self']['pages']);
+	}//end testCountAtTheWindowEndIsTheTrueTotal()
+
+	/**
 	 * The native-provider shape is preserved for an unpaginated query: the
 	 * count() equals the full result set, so a single page with the real total.
 	 *

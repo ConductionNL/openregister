@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
+use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
 
 /**
  * A held change proves only the fields it still declares and a refresh puts back what an import undid; a held

@@ -59,6 +59,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setPermissions(?string $permissions)
  * @method string|null getSharedWith()
  * @method void setSharedWith(?string $sharedWith)
+ * @method string|null getOwner()
+ * @method void setOwner(?string $owner)
  * @method string|null getStatus()
  * @method void setStatus(?string $status)
  * @method DateTime|null getCreated()
@@ -167,6 +169,13 @@ class FederatedShare extends Entity implements JsonSerializable {
 	protected ?string $status = null;
 
 	/**
+	 * User id of the creator of an outgoing share (empty on shares created before it was recorded).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $owner = null;
+
+	/**
 	 * Creation timestamp.
 	 *
 	 * @var DateTime|null
@@ -198,6 +207,7 @@ class FederatedShare extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'organisation', type: 'string');
 		$this->addType(fieldName: 'sharedWith', type: 'string');
 		$this->addType(fieldName: 'status', type: 'string');
+		$this->addType(fieldName: 'owner', type: 'string');
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'updated', type: 'datetime');
 	}//end __construct()

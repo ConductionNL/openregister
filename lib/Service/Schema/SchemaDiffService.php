@@ -147,7 +147,9 @@ class SchemaDiffService {
 				continue;
 			}
 
-			$propChanges = $this->diffProperty(name: $name, oldDef: (array)$run->oldProps[$name], newDef: (array)$newDef);
+			$propChanges = $this->diffProperty(
+				pair: new PropertyDefinitionPair(name: $name, old: (array)$run->oldProps[$name], new: (array)$newDef)
+			);
 			foreach ($propChanges as $change) {
 				if ($this->kindIsBreaking(kind: $change['kind']) === true) {
 					$run->breaking(change: $change);
@@ -244,131 +246,124 @@ class SchemaDiffService {
 	/**
 	 * Diff a single property definition.
 	 *
-	 * @param string $name Property name.
-	 * @param array<string, mixed> $oldDef Old property definition.
-	 * @param array<string, mixed> $newDef New property definition.
+	 * Changes come in a fixed order: type, numeric bounds, enum, pattern, format.
+	 *
+	 * @param PropertyDefinitionPair $pair The property's old and new definition.
 	 *
 	 * @return array<int, array<string, mixed>> Typed changes for this property.
 	 */
-	private function diffProperty(string $name, array $oldDef, array $newDef): array {
-		$changes = [];
-
-		$oldType = $oldDef['type'] ?? null;
-		$newType = $newDef['type'] ?? null;
-		if ($this->normaliseType(type: $oldType) !== $this->normaliseType(type: $newType)) {
-			$changes[] = [
-				'property' => $name,
-				'kind' => 'type_changed',
-				'old' => $oldType,
-				'new' => $newType,
-			];
+	private function diffProperty(PropertyDefinitionPair $pair): array {
+		$changes = [$this->diffType(pair: $pair)];
+		foreach (array_keys(self::NUMERIC_BOUND_TIGHTENS_UP) as $keyword) {
+			$changes[] = $this->diffNumericBound(pair: $pair, keyword: $keyword);
 		}
 
-		// Constraint changes.
-		foreach (self::NUMERIC_BOUND_TIGHTENS_UP as $keyword => $tightensUp) {
-			$hadOld = array_key_exists($keyword, $oldDef);
-			$hasNew = array_key_exists($keyword, $newDef);
-
-			if ($hadOld === false && $hasNew === false) {
-				continue;
-			}
-
-			if ($hadOld === false && $hasNew === true) {
-				// Newly introduced bound = tightening.
-				$changes[] = [
-					'property' => $name,
-					'kind' => 'constraint_tightened',
-					'old' => null,
-					'new' => [$keyword => $newDef[$keyword]],
-				];
-				continue;
-			}
-
-			// Only the $hadOld && !$hasNew combination is left: the equal case and
-			// the !$hadOld && $hasNew case both continue above, so $hadOld is
-			// already known true here.
-			if ($hasNew === false) {
-				// Removed bound = relaxation.
-				$changes[] = [
-					'property' => $name,
-					'kind' => 'constraint_relaxed',
-					'old' => [$keyword => $oldDef[$keyword]],
-					'new' => null,
-				];
-				continue;
-			}
-
-			$oldVal = $oldDef[$keyword];
-			$newVal = $newDef[$keyword];
-			if ($oldVal === $newVal) {
-				continue;
-			}
-
-			$tighter = $this->boundTightened(oldVal: (float)$oldVal, newVal: (float)$newVal, tightensUp: $tightensUp);
-			if ($tighter === true) {
-				$kind = 'constraint_tightened';
-			} else {
-				$kind = 'constraint_relaxed';
-			}
-
-			$changes[] = [
-				'property' => $name,
-				'kind' => $kind,
-				'old' => [$keyword => $oldVal],
-				'new' => [$keyword => $newVal],
-			];
-		}//end foreach
-
-		// Enum narrowing/widening.
-		$enumChange = $this->diffEnum(name: $name, oldDef: $oldDef, newDef: $newDef);
-		if ($enumChange !== null) {
-			$changes[] = $enumChange;
-		}
-
-		// Pattern / format introduction = tightening.
+		$changes[] = $this->diffEnum(pair: $pair);
 		foreach (['pattern', 'format'] as $keyword) {
-			$oldHas = array_key_exists($keyword, $oldDef);
-			$newHas = array_key_exists($keyword, $newDef);
-			if ($oldHas === false && $newHas === true) {
-				$changes[] = [
-					'property' => $name,
-					'kind' => 'constraint_tightened',
-					'old' => null,
-					'new' => [$keyword => $newDef[$keyword]],
-				];
-			} elseif ($oldHas === true && $newHas === false) {
-				$changes[] = [
-					'property' => $name,
-					'kind' => 'constraint_relaxed',
-					'old' => [$keyword => $oldDef[$keyword]],
-					'new' => null,
-				];
-			} elseif ($oldHas === true && $newHas === true && $oldDef[$keyword] !== $newDef[$keyword]) {
-				// A changed pattern/format is conservatively breaking.
-				$changes[] = [
-					'property' => $name,
-					'kind' => 'constraint_tightened',
-					'old' => [$keyword => $oldDef[$keyword]],
-					'new' => [$keyword => $newDef[$keyword]],
-				];
-			}//end if
-		}//end foreach
+			$changes[] = $this->diffPatternOrFormat(pair: $pair, keyword: $keyword);
+		}
 
-		return $changes;
+		return array_values(array_filter($changes, static fn (?array $change): bool => $change !== null));
 	}//end diffProperty()
+
+	/**
+	 * Diff the type of a property; a list type compares regardless of order.
+	 *
+	 * @param PropertyDefinitionPair $pair The property's old and new definition.
+	 *
+	 * @return array<string, mixed>|null The type_changed change, or null when the type is the same.
+	 */
+	private function diffType(PropertyDefinitionPair $pair): ?array {
+		$oldType = $pair->old['type'] ?? null;
+		$newType = $pair->new['type'] ?? null;
+		if ($this->normaliseType(type: $oldType) === $this->normaliseType(type: $newType)) {
+			return null;
+		}
+
+		return [
+			'property' => $pair->name,
+			'kind' => 'type_changed',
+			'old' => $oldType,
+			'new' => $newType,
+		];
+	}//end diffType()
+
+	/**
+	 * Diff a numeric bound keyword such as minLength or maximum.
+	 *
+	 * @param PropertyDefinitionPair $pair    The property's old and new definition.
+	 * @param string                 $keyword A key of NUMERIC_BOUND_TIGHTENS_UP.
+	 *
+	 * @return array<string, mixed>|null The change, or null when the bound is unchanged.
+	 */
+	private function diffNumericBound(PropertyDefinitionPair $pair, string $keyword): ?array {
+		if ($pair->hasBoth(keyword: $keyword) === false) {
+			return $this->diffPresence(pair: $pair, keyword: $keyword);
+		}
+
+		$old = [$keyword => $pair->old[$keyword]];
+		$new = [$keyword => $pair->new[$keyword]];
+		if ($old === $new) {
+			return null;
+		}
+
+		if ($this->boundTightened(pair: $pair, keyword: $keyword) === true) {
+			return $pair->tightened(old: $old, new: $new);
+		}
+
+		return $pair->relaxed(old: $old, new: $new);
+	}//end diffNumericBound()
+
+	/**
+	 * Diff a pattern or format keyword; any changed value is conservatively breaking.
+	 *
+	 * @param PropertyDefinitionPair $pair    The property's old and new definition.
+	 * @param string                 $keyword Either 'pattern' or 'format'.
+	 *
+	 * @return array<string, mixed>|null The change, or null when the keyword is unchanged.
+	 */
+	private function diffPatternOrFormat(PropertyDefinitionPair $pair, string $keyword): ?array {
+		if ($pair->hasBoth(keyword: $keyword) === false) {
+			return $this->diffPresence(pair: $pair, keyword: $keyword);
+		}
+
+		if ($pair->old[$keyword] === $pair->new[$keyword]) {
+			return null;
+		}
+
+		return $pair->tightened(old: [$keyword => $pair->old[$keyword]], new: [$keyword => $pair->new[$keyword]]);
+	}//end diffPatternOrFormat()
+
+	/**
+	 * Diff a keyword that at most one side declares: introducing it tightens, dropping it relaxes.
+	 *
+	 * @param PropertyDefinitionPair $pair    The property's old and new definition.
+	 * @param string                 $keyword The constraint keyword, not declared on both sides.
+	 *
+	 * @return array<string, mixed>|null The change, or null when neither side declares it.
+	 */
+	private function diffPresence(PropertyDefinitionPair $pair, string $keyword): ?array {
+		if ($pair->hasNew(keyword: $keyword) === true) {
+			return $pair->tightened(old: null, new: [$keyword => $pair->new[$keyword]]);
+		}
+
+		if ($pair->hasOld(keyword: $keyword) === true) {
+			return $pair->relaxed(old: [$keyword => $pair->old[$keyword]], new: null);
+		}
+
+		return null;
+	}//end diffPresence()
 
 	/**
 	 * Diff an enum constraint.
 	 *
-	 * @param string $name Property name.
-	 * @param array<string, mixed> $oldDef Old definition.
-	 * @param array<string, mixed> $newDef New definition.
+	 * @param PropertyDefinitionPair $pair The property's old and new definition.
 	 *
 	 * @return array<string, mixed>|null The change, or null if no enum change.
 	 */
-	private function diffEnum(string $name, array $oldDef, array $newDef): ?array {
-		$oldEnum = $oldDef['enum'] ?? null;
-		$newEnum = $newDef['enum'] ?? null;
+	private function diffEnum(PropertyDefinitionPair $pair): ?array {
+		$oldEnum = $pair->old['enum'] ?? null;
+		$newEnum = $pair->new['enum'] ?? null;
 
 		if ($oldEnum === null && $newEnum === null) {
 			return null;
@@ -376,22 +371,12 @@ class SchemaDiffService {
 
 		if (is_array($oldEnum) === false && is_array($newEnum) === true) {
 			// Newly constrained to a fixed set = tightening.
-			return [
-				'property' => $name,
-				'kind' => 'constraint_tightened',
-				'old' => null,
-				'new' => ['enum' => $newEnum],
-			];
+			return $pair->tightened(old: null, new: ['enum' => $newEnum]);
 		}
 
 		if (is_array($oldEnum) === true && is_array($newEnum) === false) {
 			// Enum dropped = relaxation.
-			return [
-				'property' => $name,
-				'kind' => 'constraint_relaxed',
-				'old' => ['enum' => $oldEnum],
-				'new' => null,
-			];
+			return $pair->relaxed(old: ['enum' => $oldEnum], new: null);
 		}
 
 		// Both arrays — compare membership.
@@ -404,35 +389,26 @@ class SchemaDiffService {
 
 		if (count($removed) > 0) {
 			// Removing allowed values can invalidate existing data.
-			return [
-				'property' => $name,
-				'kind' => 'constraint_tightened',
-				'old' => ['enum' => $oldEnum],
-				'new' => ['enum' => $newEnum],
-			];
+			return $pair->tightened(old: ['enum' => $oldEnum], new: ['enum' => $newEnum]);
 		}
 
 		// Only widened.
-		return [
-			'property' => $name,
-			'kind' => 'constraint_relaxed',
-			'old' => ['enum' => $oldEnum],
-			'new' => ['enum' => $newEnum],
-		];
+		return $pair->relaxed(old: ['enum' => $oldEnum], new: ['enum' => $newEnum]);
 
 	}//end diffEnum()
 
 	/**
-	 * Whether a numeric bound moved in the tightening direction.
+	 * Whether a numeric bound declared on both sides moved in the tightening direction.
 	 *
-	 * @param float $oldVal Old value.
-	 * @param float $newVal New value.
-	 * @param bool $tightensUp True when increasing the value tightens.
+	 * @param PropertyDefinitionPair $pair    The property's old and new definition.
+	 * @param string                 $keyword A key of NUMERIC_BOUND_TIGHTENS_UP.
 	 *
 	 * @return bool True when the bound tightened.
 	 */
-	private function boundTightened(float $oldVal, float $newVal, bool $tightensUp): bool {
-		if ($tightensUp === true) {
+	private function boundTightened(PropertyDefinitionPair $pair, string $keyword): bool {
+		$oldVal = (float)$pair->old[$keyword];
+		$newVal = (float)$pair->new[$keyword];
+		if (self::NUMERIC_BOUND_TIGHTENS_UP[$keyword] === true) {
 			return $newVal > $oldVal;
 		}
 

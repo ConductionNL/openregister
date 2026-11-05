@@ -55,13 +55,13 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -132,10 +132,10 @@ class ObjectOwnershipService {
 	 * @param PermissionHandler $permissions The rules, for "may this caller edit this record".
 	 * @param ObjectOwnerWriter $ownerWriter The targeted write of the owner column.
 	 * @param ObjectAuthorizationWriter $authorizationWriter The targeted write of the authorization block.
-	 * @param AuditTrailMapper $auditTrailMapper The hash-sealed trail.
-	 * @param MagicMapper $magicMapper Resolves objects and their children.
-	 * @param RegisterMapper $registerMapper Resolves a child's register.
-	 * @param SchemaMapper $schemaMapper Resolves a child's schema.
+	 * @param AuditTrailMapperInterface $auditTrailMapper The hash-sealed trail.
+	 * @param MagicMapperInterface $magicMapper Resolves objects and their children.
+	 * @param RegisterMapperInterface $registerMapper Resolves a child's register.
+	 * @param SchemaMapperInterface $schemaMapper Resolves a child's schema.
 	 * @param INotificationManager $notificationManager Tells the previous owner.
 	 * @param LoggerInterface $logger Where a transfer is noted.
 	 * @param GrantChangeAuditor|null $grantAuditor Writes an audit-trail entry for a change of the owning group. Null only in legacy fixtures.
@@ -151,10 +151,10 @@ class ObjectOwnershipService {
 		private readonly PermissionHandler $permissions,
 		private readonly ObjectOwnerWriter $ownerWriter,
 		private readonly ObjectAuthorizationWriter $authorizationWriter,
-		private readonly AuditTrailMapper $auditTrailMapper,
-		private readonly MagicMapper $magicMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
+		private readonly MagicMapperInterface $magicMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly INotificationManager $notificationManager,
 		private readonly LoggerInterface $logger,
 		private readonly ?GrantChangeAuditor $grantAuditor = null,
@@ -206,11 +206,8 @@ class ObjectOwnershipService {
 		}
 
 		return $this->transfer(
-			register: $register,
-			schema: $schema,
-			object: $object,
-			newOwner: $actor,
-			cascade: $cascade
+			record: new OwnedRecord(register: $register, schema: $schema, object: $object),
+			handover: new OwnershipHandover(newOwner: $actor, cascade: $cascade)
 		);
 	}//end claim()
 
@@ -248,11 +245,8 @@ class ObjectOwnershipService {
 		$this->requireExistingUser(uid: $newOwner);
 
 		return $this->transfer(
-			register: $register,
-			schema: $schema,
-			object: $object,
-			newOwner: $newOwner,
-			cascade: $cascade
+			record: new OwnedRecord(register: $register, schema: $schema, object: $object),
+			handover: new OwnershipHandover(newOwner: $newOwner, cascade: $cascade)
 		);
 	}//end assign()
 
@@ -309,11 +303,8 @@ class ObjectOwnershipService {
 				}
 
 				$outcome = $this->transfer(
-					register: $register,
-					schema: $schema,
-					object: $context['object'],
-					newOwner: $newOwner,
-					cascade: $cascade
+					record: new OwnedRecord(register: $register, schema: $schema, object: $context['object']),
+					handover: new OwnershipHandover(newOwner: $newOwner, cascade: $cascade)
 				);
 
 				if ($outcome['changed'] === false) {
@@ -430,29 +421,17 @@ class ObjectOwnershipService {
 	 * The ONE place the owner changes. Every public method here funnels through
 	 * it, so a transfer that is not recorded or not announced is not reachable.
 	 *
-	 * @param Register $register The record's register.
-	 * @param Schema $schema The record's schema.
-	 * @param ObjectEntity $object The record.
-	 * @param string $newOwner The uid of the new owner.
-	 * @param bool $cascade Whether the change carries to the record's children.
-	 * @param int $depth How many generations down this call already is.
-	 * @param array<string, true> $visited Records already moved by this transfer, by uuid.
+	 * @param OwnedRecord $record The record, its register and schema, and its depth.
+	 * @param OwnershipHandover $handover The new owner, the cascade flag and the records moved so far.
 	 *
 	 * @throws InvalidArgumentException When the record carries no uuid to key the write on.
 	 *
 	 * @return array{uuid: string, previousOwner: string|null, newOwner: string, changed: bool, children: array}
 	 */
-	private function transfer(
-		Register $register,
-		Schema $schema,
-		ObjectEntity $object,
-		string $newOwner,
-		bool $cascade,
-		int $depth = 0,
-		array &$visited = [],
-	): array {
-		$uuid = $object->getUuid();
-		$previousOwner = $object->getOwner();
+	private function transfer(OwnedRecord $record, OwnershipHandover $handover): array {
+		$uuid = $record->object->getUuid();
+		$previousOwner = $record->previousOwner;
+		$newOwner = $handover->newOwner;
 
 		// A record with no uuid cannot be addressed. Refused rather than cast,
 		// because the write is keyed on the uuid: `(string)null` is the empty
@@ -462,7 +441,7 @@ class ObjectOwnershipService {
 			throw new InvalidArgumentException('A record with no uuid cannot change hands');
 		}
 
-		$visited[$uuid] = true;
+		$handover->visit(uuid: $uuid);
 
 		// Already theirs. Reported rather than written, so a repeated call is not
 		// a second audit entry and not a second notification.
@@ -476,41 +455,7 @@ class ObjectOwnershipService {
 			];
 		}
 
-		// The state the audit entry compares against. A clone, because the entity
-		// is mutated below and the trail would otherwise diff the row against
-		// itself and record a handover that changed nothing.
-		$before = clone $object;
-
-		$this->ownerWriter->writeOwner(
-			register: $register,
-			schema: $schema,
-			objectUuid: $uuid,
-			owner: $newOwner
-		);
-		$object->setOwner($newOwner);
-
-		$this->auditTrailMapper->createAuditTrail(
-			old: $before,
-			new: $object,
-			action: self::AUDIT_ACTION
-		);
-
-		$this->notifyPreviousOwner(
-			object: $object,
-			previousOwner: $previousOwner,
-			newOwner: $newOwner
-		);
-
-		$children = [];
-		if ($cascade === true && $depth < self::MAX_CASCADE_DEPTH) {
-			$children = $this->cascadeToChildren(
-				object: $object,
-				previousOwner: $previousOwner,
-				newOwner: $newOwner,
-				depth: $depth,
-				visited: $visited
-			);
-		}
+		$children = $this->handOver(record: $record, handover: $handover);
 
 		$this->logger->info(
 			message: '[ObjectOwnershipService] A record changed hands',
@@ -534,6 +479,45 @@ class ObjectOwnershipService {
 	}//end transfer()
 
 	/**
+	 * Write the new owner, record the change, tell the previous owner, and cascade.
+	 *
+	 * @param OwnedRecord $record The record changing hands; its uuid is known to be set.
+	 * @param OwnershipHandover $handover The transfer run.
+	 *
+	 * @return array The per-child outcomes.
+	 */
+	private function handOver(OwnedRecord $record, OwnershipHandover $handover): array {
+		$object = $record->object;
+
+		// The state the audit entry compares against. A clone, because the entity
+		// is mutated below and the trail would otherwise diff the row against
+		// itself and record a handover that changed nothing.
+		$before = clone $object;
+
+		$this->ownerWriter->writeOwner(
+			register: $record->register,
+			schema: $record->schema,
+			objectUuid: (string)$object->getUuid(),
+			owner: $handover->newOwner
+		);
+		$object->setOwner($handover->newOwner);
+
+		$this->auditTrailMapper->createAuditTrail(
+			old: $before,
+			new: $object,
+			action: self::AUDIT_ACTION
+		);
+
+		$this->notifyPreviousOwner(record: $record, newOwner: $handover->newOwner);
+
+		if ($handover->cascade === true && $record->depth < self::MAX_CASCADE_DEPTH) {
+			return $this->cascadeToChildren(parent: $record, handover: $handover);
+		}
+
+		return [];
+	}//end handOver()
+
+	/**
 	 * Carry one transfer down to the record's children.
 	 *
 	 * A CHILD HERE IS A RECORD THAT REFERENCES THIS ONE AND SHARES ITS OWNER.
@@ -547,25 +531,14 @@ class ObjectOwnershipService {
 	 * continues, because the alternative is a half-done cascade that reports a
 	 * failure for the whole handover that did in fact happen.
 	 *
-	 * @param ObjectEntity $object The record that just changed hands.
-	 * @param string|null $previousOwner Who held it, and whose children move with it.
-	 * @param string $newOwner Who holds it now.
-	 * @param int $depth How many generations down we are.
-	 * @param array<string, true> $visited Records already moved, by uuid.
+	 * @param OwnedRecord $parent The record that just changed hands, with its previous owner.
+	 * @param OwnershipHandover $handover The transfer run.
 	 *
 	 * @return array The per-child outcomes.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Every branch is a child this walk
-	 * must NOT move: no uuid, already visited, a different owner, or unresolvable.
 	 */
-	private function cascadeToChildren(
-		ObjectEntity $object,
-		?string $previousOwner,
-		string $newOwner,
-		int $depth,
-		array &$visited,
-	): array {
-		$uuid = $object->getUuid();
+	private function cascadeToChildren(OwnedRecord $parent, OwnershipHandover $handover): array {
+		$uuid = $parent->object->getUuid();
+		$previousOwner = $parent->previousOwner;
 		if ($uuid === null || $previousOwner === null || $previousOwner === '') {
 			return [];
 		}
@@ -582,27 +555,14 @@ class ObjectOwnershipService {
 
 		$outcomes = [];
 		foreach ($candidates as $child) {
-			$childUuid = $child->getUuid();
-			if ($childUuid === null || isset($visited[$childUuid]) === true) {
-				continue;
-			}
-
-			if ($child->getOwner() !== $previousOwner) {
+			if ($handover->carries(child: $child, previousOwner: $previousOwner) === false) {
 				continue;
 			}
 
 			try {
-				$childRegister = $this->registerMapper->find((int)$child->getRegister());
-				$childSchema = $this->schemaMapper->find((int)$child->getSchema());
-
 				$outcomes[] = $this->transfer(
-					register: $childRegister,
-					schema: $childSchema,
-					object: $child,
-					newOwner: $newOwner,
-					cascade: true,
-					depth: ($depth + 1),
-					visited: $visited
+					record: $this->childRecord(child: $child, depth: ($parent->depth + 1)),
+					handover: $handover
 				);
 			} catch (Throwable $e) {
 				$this->logger->warning(
@@ -610,7 +570,7 @@ class ObjectOwnershipService {
 					context: [
 						'file' => __FILE__,
 						'line' => __LINE__,
-						'uuid' => $childUuid,
+						'uuid' => $child->getUuid(),
 						'error' => $e->getMessage(),
 					]
 				);
@@ -619,6 +579,23 @@ class ObjectOwnershipService {
 
 		return $outcomes;
 	}//end cascadeToChildren()
+
+	/**
+	 * A child record with its own register and schema resolved.
+	 *
+	 * @param ObjectEntity $child The child record.
+	 * @param int $depth Its generation below the transferred record.
+	 *
+	 * @return OwnedRecord The child, ready to change hands.
+	 *
+	 * @throws Throwable When its register or schema cannot be found.
+	 */
+	private function childRecord(ObjectEntity $child, int $depth): OwnedRecord {
+		$childRegister = $this->registerMapper->find((int)$child->getRegister());
+		$childSchema = $this->schemaMapper->find((int)$child->getSchema());
+
+		return new OwnedRecord(register: $childRegister, schema: $childSchema, object: $child, depth: $depth);
+	}//end childRecord()
 
 	/**
 	 * Tell the previous owner that their record changed hands.
@@ -630,13 +607,14 @@ class ObjectOwnershipService {
 	 * Nobody is told when there was no previous owner, when the record was held
 	 * by the system, or when the previous owner is the one who took it.
 	 *
-	 * @param ObjectEntity $object The record.
-	 * @param string|null $previousOwner Who held it.
+	 * @param OwnedRecord $record The record, with who held it.
 	 * @param string $newOwner Who holds it now.
 	 *
 	 * @return void
 	 */
-	private function notifyPreviousOwner(ObjectEntity $object, ?string $previousOwner, string $newOwner): void {
+	private function notifyPreviousOwner(OwnedRecord $record, string $newOwner): void {
+		$object = $record->object;
+		$previousOwner = $record->previousOwner;
 		if ($previousOwner === null || $previousOwner === '' || $previousOwner === $newOwner) {
 			return;
 		}

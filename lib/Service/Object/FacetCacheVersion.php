@@ -14,7 +14,7 @@
  * rows were gone and hid the one just created.
  *
  * This counter is the freshness token folded into that key. It reuses the shape
- * already proven by {@see \OCA\OpenRegister\Service\Aggregation\AggregationCache}
+ * already proven by {@see \OCA\OpenRegister\Search\Service\Aggregation\AggregationCache}
  * (scope-cache-invalidation): a write bumps a per-scope integer, every key for
  * that scope then carries the new integer, and the superseded entries become
  * unreachable without wiping any other scope.

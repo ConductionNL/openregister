@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Hardening;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -53,7 +53,7 @@ class HardeningSettingsService {
 	 * @param HardeningPolicy $policy Reads what is in force now.
 	 * @param HardeningFloorGuard $guard Refuses a change that would weaken a control.
 	 * @param IAppConfig $appConfig Stores the administered values and the floors.
-	 * @param AuditTrailMapper $auditTrailMapper Records the change, and the refusal.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Records the change, and the refusal.
 	 * @param LoggerInterface $logger Records an audit write that could not be made.
 	 *
 	 * @return void
@@ -62,7 +62,7 @@ class HardeningSettingsService {
 		private readonly HardeningPolicy $policy,
 		private readonly HardeningFloorGuard $guard,
 		private readonly IAppConfig $appConfig,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 	) {
 

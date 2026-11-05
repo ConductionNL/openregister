@@ -41,6 +41,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Controller\CorrectionsController
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
+ * @uses \OCA\OpenRegister\Exception\CorrectionRefusedException
  */
 final class CorrectionsControllerTest extends TestCase {
 

@@ -41,7 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -257,12 +257,12 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep {
 	/**
 	 * Lazily resolve the preference service.
 	 *
-	 * @return NotificationPreferenceService|null
+	 * @return NotificationPreferencesInterface|null
 	 */
-	private function resolvePreferenceService(): ?NotificationPreferenceService {
+	private function resolvePreferenceService(): ?NotificationPreferencesInterface {
 		try {
-			$service = $this->container->get(NotificationPreferenceService::class);
-			if ($service instanceof NotificationPreferenceService) {
+			$service = $this->container->get(NotificationPreferencesInterface::class);
+			if ($service instanceof NotificationPreferencesInterface) {
 				return $service;
 			}
 

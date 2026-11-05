@@ -81,7 +81,10 @@ class ObjectActionValidator {
 			return $refusals;
 		}
 
-		$refusals = $this->elevationRefusals(configuration: $configuration);
+		$refusals = array_merge(
+			$this->elevationRefusals(configuration: $configuration),
+			$this->selfAssignFieldRefusals(schema: $schema)
+		);
 		if ($refusals !== []) {
 			return $refusals;
 		}
@@ -128,4 +131,35 @@ class ObjectActionValidator {
 			$elevating
 		);
 	}//end elevationRefusals()
+
+	/**
+	 * Refusals for a self-assign action whose field the schema does not declare.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return list<string> The refusals.
+	 *
+	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 */
+	private function selfAssignFieldRefusals(Schema $schema): array {
+		$properties = ($schema->getProperties() ?? []);
+		$refusals = [];
+		foreach (ObjectActionDefinition::parse(configuration: ($schema->getConfiguration() ?? [])) as $key => $definition) {
+			$field = $definition->selfAssignField();
+			if ($field === null) {
+				continue;
+			}
+
+			if (is_array($properties[$field] ?? null) === false) {
+				$refusals[] = sprintf('Action "%s": "selfAssign" names "%s", which is not a property of this schema.', $key, $field);
+				continue;
+			}
+
+			if (($properties[$field]['type'] ?? 'string') !== 'string') {
+				$refusals[] = sprintf('Action "%s": "selfAssign" names "%s", which does not hold a string.', $key, $field);
+			}
+		}
+
+		return $refusals;
+	}//end selfAssignFieldRefusals()
 }//end class

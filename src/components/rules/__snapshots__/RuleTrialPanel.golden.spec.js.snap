@@ -1,0 +1,2193 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`RuleTrialPanel.run tries array, draft false, answering failsNamed 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": [
+          1,
+        ],
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "No such rule",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries array, draft false, answering failsSilent 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": [
+          1,
+        ],
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries array, draft false, answering noOk 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": [
+          1,
+        ],
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries array, draft false, answering passes 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": [
+          1,
+        ],
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "ok": true,
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries array, draft false, answering throwsError 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": [
+          1,
+        ],
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "Network",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries array, draft false, answering throwsNothing 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": [
+          1,
+        ],
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries array, draft false, answering throwsResponse 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": [
+          1,
+        ],
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries array, draft true, answering failsNamed 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": [
+          1,
+        ],
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "No such rule",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries array, draft true, answering failsSilent 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": [
+          1,
+        ],
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries array, draft true, answering noOk 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": [
+          1,
+        ],
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries array, draft true, answering passes 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": [
+          1,
+        ],
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "ok": true,
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries array, draft true, answering throwsError 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": [
+          1,
+        ],
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "Network",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries array, draft true, answering throwsNothing 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": [
+          1,
+        ],
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries array, draft true, answering throwsResponse 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": [
+          1,
+        ],
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries blank, draft false, answering failsNamed 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "No such rule",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries blank, draft false, answering failsSilent 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries blank, draft false, answering noOk 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries blank, draft false, answering passes 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "ok": true,
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries blank, draft false, answering throwsError 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "Network",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries blank, draft false, answering throwsNothing 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries blank, draft false, answering throwsResponse 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries blank, draft true, answering failsNamed 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "No such rule",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries blank, draft true, answering failsSilent 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries blank, draft true, answering noOk 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries blank, draft true, answering passes 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "ok": true,
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries blank, draft true, answering throwsError 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "Network",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries blank, draft true, answering throwsNothing 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries blank, draft true, answering throwsResponse 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries broken, draft false, answering failsNamed 1`] = `
+{
+  "calls": [],
+  "running": [],
+  "state": {
+    "error": "",
+    "result": null,
+    "running": false,
+    "sampleError": "That is not valid JSON: {reason} {"reason":"<parse error>"}",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries broken, draft false, answering failsSilent 1`] = `
+{
+  "calls": [],
+  "running": [],
+  "state": {
+    "error": "",
+    "result": null,
+    "running": false,
+    "sampleError": "That is not valid JSON: {reason} {"reason":"<parse error>"}",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries broken, draft false, answering noOk 1`] = `
+{
+  "calls": [],
+  "running": [],
+  "state": {
+    "error": "",
+    "result": null,
+    "running": false,
+    "sampleError": "That is not valid JSON: {reason} {"reason":"<parse error>"}",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries broken, draft false, answering passes 1`] = `
+{
+  "calls": [],
+  "running": [],
+  "state": {
+    "error": "",
+    "result": null,
+    "running": false,
+    "sampleError": "That is not valid JSON: {reason} {"reason":"<parse error>"}",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries broken, draft false, answering throwsError 1`] = `
+{
+  "calls": [],
+  "running": [],
+  "state": {
+    "error": "",
+    "result": null,
+    "running": false,
+    "sampleError": "That is not valid JSON: {reason} {"reason":"<parse error>"}",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries broken, draft false, answering throwsNothing 1`] = `
+{
+  "calls": [],
+  "running": [],
+  "state": {
+    "error": "",
+    "result": null,
+    "running": false,
+    "sampleError": "That is not valid JSON: {reason} {"reason":"<parse error>"}",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries broken, draft false, answering throwsResponse 1`] = `
+{
+  "calls": [],
+  "running": [],
+  "state": {
+    "error": "",
+    "result": null,
+    "running": false,
+    "sampleError": "That is not valid JSON: {reason} {"reason":"<parse error>"}",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries broken, draft true, answering failsNamed 1`] = `
+{
+  "calls": [],
+  "running": [],
+  "state": {
+    "error": "",
+    "result": null,
+    "running": false,
+    "sampleError": "That is not valid JSON: {reason} {"reason":"<parse error>"}",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries broken, draft true, answering failsSilent 1`] = `
+{
+  "calls": [],
+  "running": [],
+  "state": {
+    "error": "",
+    "result": null,
+    "running": false,
+    "sampleError": "That is not valid JSON: {reason} {"reason":"<parse error>"}",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries broken, draft true, answering noOk 1`] = `
+{
+  "calls": [],
+  "running": [],
+  "state": {
+    "error": "",
+    "result": null,
+    "running": false,
+    "sampleError": "That is not valid JSON: {reason} {"reason":"<parse error>"}",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries broken, draft true, answering passes 1`] = `
+{
+  "calls": [],
+  "running": [],
+  "state": {
+    "error": "",
+    "result": null,
+    "running": false,
+    "sampleError": "That is not valid JSON: {reason} {"reason":"<parse error>"}",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries broken, draft true, answering throwsError 1`] = `
+{
+  "calls": [],
+  "running": [],
+  "state": {
+    "error": "",
+    "result": null,
+    "running": false,
+    "sampleError": "That is not valid JSON: {reason} {"reason":"<parse error>"}",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries broken, draft true, answering throwsNothing 1`] = `
+{
+  "calls": [],
+  "running": [],
+  "state": {
+    "error": "",
+    "result": null,
+    "running": false,
+    "sampleError": "That is not valid JSON: {reason} {"reason":"<parse error>"}",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries broken, draft true, answering throwsResponse 1`] = `
+{
+  "calls": [],
+  "running": [],
+  "state": {
+    "error": "",
+    "result": null,
+    "running": false,
+    "sampleError": "That is not valid JSON: {reason} {"reason":"<parse error>"}",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries empty, draft false, answering failsNamed 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "No such rule",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries empty, draft false, answering failsSilent 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries empty, draft false, answering noOk 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries empty, draft false, answering passes 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "ok": true,
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries empty, draft false, answering throwsError 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "Network",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries empty, draft false, answering throwsNothing 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries empty, draft false, answering throwsResponse 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries empty, draft true, answering failsNamed 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "No such rule",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries empty, draft true, answering failsSilent 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries empty, draft true, answering noOk 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries empty, draft true, answering passes 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "ok": true,
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries empty, draft true, answering throwsError 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "Network",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries empty, draft true, answering throwsNothing 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries empty, draft true, answering throwsResponse 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {},
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries json, draft false, answering failsNamed 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {
+          "a": 1,
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "No such rule",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries json, draft false, answering failsSilent 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {
+          "a": 1,
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries json, draft false, answering noOk 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {
+          "a": 1,
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries json, draft false, answering passes 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {
+          "a": 1,
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "ok": true,
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries json, draft false, answering throwsError 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {
+          "a": 1,
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "Network",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries json, draft false, answering throwsNothing 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {
+          "a": 1,
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries json, draft false, answering throwsResponse 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {
+          "a": 1,
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries json, draft true, answering failsNamed 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {
+          "a": 1,
+        },
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "No such rule",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries json, draft true, answering failsSilent 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {
+          "a": 1,
+        },
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries json, draft true, answering noOk 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {
+          "a": 1,
+        },
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries json, draft true, answering passes 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {
+          "a": 1,
+        },
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "ok": true,
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries json, draft true, answering throwsError 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {
+          "a": 1,
+        },
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "Network",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries json, draft true, answering throwsNothing 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {
+          "a": 1,
+        },
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries json, draft true, answering throwsResponse 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "object": {
+          "a": 1,
+        },
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries object, draft false, answering failsNamed 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "objectId": "o1",
+        "register": "reg",
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "No such rule",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries object, draft false, answering failsSilent 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "objectId": "o1",
+        "register": "reg",
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries object, draft false, answering noOk 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "objectId": "o1",
+        "register": "reg",
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries object, draft false, answering passes 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "objectId": "o1",
+        "register": "reg",
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "ok": true,
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries object, draft false, answering throwsError 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "objectId": "o1",
+        "register": "reg",
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "Network",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries object, draft false, answering throwsNothing 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "objectId": "o1",
+        "register": "reg",
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries object, draft false, answering throwsResponse 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "objectId": "o1",
+        "register": "reg",
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries object, draft true, answering failsNamed 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "objectId": "o1",
+        "register": "reg",
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "No such rule",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries object, draft true, answering failsSilent 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "objectId": "o1",
+        "register": "reg",
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries object, draft true, answering noOk 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "objectId": "o1",
+        "register": "reg",
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries object, draft true, answering passes 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "objectId": "o1",
+        "register": "reg",
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "",
+    "result": {
+      "ok": true,
+      "verdict": "pass",
+    },
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries object, draft true, answering throwsError 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "objectId": "o1",
+        "register": "reg",
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "Network",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries object, draft true, answering throwsNothing 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "objectId": "o1",
+        "register": "reg",
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;
+
+exports[`RuleTrialPanel.run tries object, draft true, answering throwsResponse 1`] = `
+{
+  "calls": [
+    [
+      "sch",
+      "r1",
+      {
+        "objectId": "o1",
+        "register": "reg",
+        "rule": {
+          "expression": {
+            "==": [
+              1,
+              1,
+            ],
+          },
+        },
+      },
+    ],
+  ],
+  "running": [
+    true,
+  ],
+  "state": {
+    "error": "The rule could not be tried.",
+    "result": null,
+    "running": false,
+    "sampleError": "",
+  },
+}
+`;

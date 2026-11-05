@@ -6,7 +6,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use OCA\OpenRegister\Controller\Settings\LlmSettingsController;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\IDBConnection;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -65,11 +65,11 @@ class LlmSettingsControllerCoverageTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ChatService')
 			->willReturn($chatServiceMock);
 
-		// This will throw \Error due to named param mismatch bug in controller
-		// The controller uses testMessage: but ChatService expects $_testMessage.
-		// Verify the Error propagates (not caught by catch(Exception)).
-		$this->expectException(\Error::class);
-		$this->controller->testChat();
+		$chatServiceMock->method('testChat')->willReturn(['success' => true]);
+
+		$result = $this->controller->testChat();
+
+		$this->assertSame(200, $result->getStatus());
 	}
 
 	// =========================================================================

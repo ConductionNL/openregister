@@ -26,7 +26,7 @@ namespace Unit\Service\Quality;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidator;
+use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
 use OCA\OpenRegister\Service\Quality\UniqueHintWarnings;
 use PHPUnit\Framework\MockObject\MockObject;

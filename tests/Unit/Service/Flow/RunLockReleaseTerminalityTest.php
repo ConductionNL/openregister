@@ -148,6 +148,9 @@ class LockLifecycleDispatcher implements FlowStepDispatcher {
  *
  * @covers \OCA\OpenRegister\Service\Flow\FlowRunCommit
  * @covers \OCA\OpenRegister\Service\Flow\FlowStreamWalk
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamClosure
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamRef
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamRelease
  * @covers \OCA\OpenRegister\Listener\FlowRunLockReleaseListener
  * @uses \OCA\OpenRegister\Db\FlowRun
  * @uses \OCA\OpenRegister\Db\FlowRunMapper
@@ -161,8 +164,16 @@ class LockLifecycleDispatcher implements FlowStepDispatcher {
  * @uses \OCA\OpenRegister\Service\Flow\FlowItemPlacement
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunMarkingStore
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamHop
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamPass
  * @uses \OCA\OpenRegister\Service\Flow\FlowSuspension
  * @uses \OCA\OpenRegister\Service\Flow\FlowTokenRouter
+ * @uses \OCA\OpenRegister\Event\FlowRunTerminalEvent
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStop
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHop
+ * @uses \OCA\OpenRegister\Service\Flow\FlowWalkHop
+ * @uses \OCA\OpenRegister\Service\Flow\FlowWalkPass
  */
 class RunLockReleaseTerminalityTest extends TestCase {
 	use FluentQueryBuilderTrait;

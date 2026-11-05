@@ -23,7 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ProcessingPurpose;
 use OCA\OpenRegister\Db\ProcessingPurposeMapper;
 use OCA\OpenRegister\Service\Audit\PurposeRegistry;
@@ -48,26 +49,41 @@ use Throwable;
  */
 class ProcessingPurposeController extends Controller {
 	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * The group manager.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                  $appName      App identifier.
 	 * @param IRequest                $request      Active request.
 	 * @param ProcessingPurposeMapper $purposes     The administered list.
 	 * @param PurposeRegistry         $registry     Resolves a purpose to its activity.
-	 * @param AuditTrailMapper        $auditTrail   Counts entries per purpose.
-	 * @param IUserSession            $userSession  Current user session.
-	 * @param IGroupManager           $groupManager Group manager, for the admin gate.
+	 * @param AuditTrailMapperInterface        $auditTrail   Counts entries per purpose.
+	 * @param ControllerSession $session Session, group manager and logger.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly ProcessingPurposeMapper $purposes,
 		private readonly PurposeRegistry $registry,
-		private readonly AuditTrailMapper $auditTrail,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		private readonly AuditTrailMapperInterface $auditTrail,
+		ControllerSession $session,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+
+		$this->userSession = $session->userSession;
+		$this->groupManager = $session->groupManager;
 	}//end __construct()
 
 	/**
@@ -272,16 +288,26 @@ class ProcessingPurposeController extends Controller {
 	 * that silently omits the reads nobody declared a purpose for is a report
 	 * that says doelbinding is complete when it is not.
 	 *
-	 * @return JSONResponse The counts.
+	 * Admin-only at the framework level (no @NoAdminRequired), with the body
+	 * check as defence-in-depth: the counts cover every entry of the trail,
+	 * whichever organisation it belongs to.
 	 *
-	 * @NoAdminRequired
+	 * @return JSONResponse The counts, or the refusal.
+	 *
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md#requirement-the-instance-wide-audit-reads-are-admin-only
 	 */
 	public function report(): JSONResponse {
 		if ($this->userSession->getUser() === null) {
 			return $this->unauthorized();
+		}
+
+		if ($this->isAdmin() === false) {
+			return new JSONResponse(
+				data: ['error' => 'The purpose report counts the whole trail and requires the admin group'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
 		}
 
 		$counts = $this->auditTrail->countByPurpose(

@@ -43,6 +43,8 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
  * @uses \OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\DateTimeNormalizer
  */
 class RelatedRowFilterMiddlewareTest extends TestCase {
 

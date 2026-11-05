@@ -39,7 +39,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -47,38 +49,17 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/skos-concept-registers/spec.md
  */
-class VocabularyImportService {
-	/**
-	 * Slug of the vocabulary register.
-	 *
-	 * @var string
-	 */
-	public const REGISTER = 'vocabulary';
-
-	/**
-	 * Slug of the conceptScheme schema.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA_SCHEME = 'conceptScheme';
-
-	/**
-	 * Slug of the concept schema.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA_CONCEPT = 'concept';
-
+class VocabularyImportService implements VocabularyImporterInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService OR object CRUD (real API only — findAll/find/saveObject).
+	 * @param ObjectOperationsInterface $objectService OR object CRUD (real API only — findAll/find/saveObject).
 	 * @param LoggerInterface $logger Logger for import diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 

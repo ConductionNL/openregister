@@ -238,7 +238,7 @@ export default {
 		},
 
 		/**
-		 * @param objectId
+		 * @param {string|number} objectId
 		 * @spec exclude form-state helper to deselect an object from the list
 		 */
 		removeObject(objectId) {

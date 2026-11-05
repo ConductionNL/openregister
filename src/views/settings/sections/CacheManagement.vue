@@ -769,7 +769,7 @@ export default {
 			try {
 				const date = new Date(dateString)
 				return date.toLocaleString()
-			} catch (e) {
+			} catch {
 				return 'Invalid date'
 			}
 		},

@@ -52,7 +52,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IUserManager;
 use RuntimeException;
 
@@ -66,12 +66,12 @@ class FlowRunAsScope {
 	 * Constructor.
 	 *
 	 * @param IUserManager $userManager Resolves the named identity to a real account.
-	 * @param ObjectService $objectService Owns the session-scoping seam every
+	 * @param ObjectOperationsInterface $objectService Owns the session-scoping seam every
 	 *                                     RBAC and organisation predicate reads.
 	 */
 	public function __construct(
 		private readonly IUserManager $userManager,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 	) {
 
 	}//end __construct()
@@ -80,7 +80,7 @@ class FlowRunAsScope {
 	 * Run the operation as the context's acting identity, when it names one.
 	 *
 	 * @param array $context The node context, possibly carrying the identity
-	 *                       under {@see FlowRunService::RUN_AS_CONTEXT_KEY}.
+	 *                       under {@see FlowRunServiceInterface::RUN_AS_CONTEXT_KEY}.
 	 * @param callable $operation The node's work.
 	 *
 	 * @return mixed Whatever the operation returns.
@@ -90,7 +90,7 @@ class FlowRunAsScope {
 	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
 	 */
 	public function call(array $context, callable $operation): mixed {
-		$uid = trim((string)($context[FlowRunService::RUN_AS_CONTEXT_KEY] ?? ''));
+		$uid = trim((string)($context[FlowRunServiceInterface::RUN_AS_CONTEXT_KEY] ?? ''));
 		if ($uid === '') {
 			// No acting identity declared: the interactive path, where the
 			// ambient session user already answers the permission checks.

@@ -40,6 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\ApiCallRecord;
 use OCA\OpenRegister\Db\ApiCallRecordMapper;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
@@ -93,6 +94,27 @@ class ApiCallersController extends Controller {
 	private const MAX_ROWS = 500;
 
 	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * The group manager.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * The logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app name.
@@ -100,9 +122,7 @@ class ApiCallersController extends Controller {
 	 * @param ApiCallRecordMapper $records Reads the caller record.
 	 * @param ApiVersionCatalogue $catalogue The declared contract versions.
 	 * @param IAppConfig $appConfig Reads and writes the declaration.
-	 * @param IUserSession $userSession Names the caller.
-	 * @param IGroupManager $groupManager Answers whether that caller is an administrator.
-	 * @param LoggerInterface $logger Records a read or a write that failed.
+	 * @param ControllerSession $session Session, group manager and logger.
 	 *
 	 * @return void
 	 */
@@ -112,12 +132,13 @@ class ApiCallersController extends Controller {
 		private readonly ApiCallRecordMapper $records,
 		private readonly ApiVersionCatalogue $catalogue,
 		private readonly IAppConfig $appConfig,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly LoggerInterface $logger,
+		ControllerSession $session,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
+		$this->userSession = $session->userSession;
+		$this->groupManager = $session->groupManager;
+		$this->logger = $session->logger;
 	}//end __construct()
 
 	/**

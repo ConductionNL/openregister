@@ -46,7 +46,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
  * Unit tests for SaveObject service
@@ -200,7 +200,7 @@ class SaveObjectTest extends TestCase {
 			logger: $this->logger,
 			tmloService: $this->createMock(TmloService::class),
 			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			arrayLoader: new ArrayLoader(),
+			permissionHandler: $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class),
 		);
 	}
 

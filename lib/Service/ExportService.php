@@ -28,7 +28,11 @@
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use DateTime;
@@ -36,13 +40,13 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
 use OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
-use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -84,9 +88,9 @@ class ExportService implements ObjectExporterInterface {
 	/**
 	 * Register mapper instance
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Group manager for checking admin group membership
@@ -98,16 +102,16 @@ class ExportService implements ObjectExporterInterface {
 	/**
 	 * Object service for optimized object operations
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Cache handler for UUID-to-name resolution
 	 *
-	 * @var CacheHandler
+	 * @var CacheHandlerInterface
 	 */
-	private readonly CacheHandler $cacheHandler;
+	private readonly CacheHandlerInterface $cacheHandler;
 
 	/**
 	 * Property RBAC handler for property-level authorization checks
@@ -140,11 +144,11 @@ class ExportService implements ObjectExporterInterface {
 	/**
 	 * Constructor for the ExportService.
 	 *
-	 * @param RegisterMapper $registerMapper The register mapper.
+	 * @param RegisterMapperInterface $registerMapper The register mapper.
 	 * @param IUserManager $_userManager The user manager (unused).
 	 * @param IGroupManager $groupManager The group manager.
-	 * @param ObjectService $objectService The object service.
-	 * @param CacheHandler $cacheHandler The cache handler for name resolution.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 * @param CacheHandlerInterface $cacheHandler The cache handler for name resolution.
 	 * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler.
 	 * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler The translation handler.
 	 * @param NcOfficeConverterInterface|null $officeConverter Office server conversion; PDF output needs it.
@@ -152,11 +156,11 @@ class ExportService implements ObjectExporterInterface {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
 	public function __construct(
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		IUserManager $_userManager,
 		IGroupManager $groupManager,
-		ObjectService $objectService,
-		CacheHandler $cacheHandler,
+		ObjectOperationsInterface $objectService,
+		CacheHandlerInterface $cacheHandler,
 		PropertyRbacHandler $propertyRbacHandler,
 		\OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler,
 		private readonly ?NcOfficeConverterInterface $officeConverter = null,
@@ -195,8 +199,8 @@ class ExportService implements ObjectExporterInterface {
 	/**
 	 * Export data to Excel format
 	 *
-	 * @param Register|null $register Optional register to export
-	 * @param Schema|null $schema Optional schema to export
+	 * @param RegisterInterface|null $register Optional register to export
+	 * @param SchemaInterface|null $schema Optional schema to export
 	 * @param array $filters Optional filters to apply
 	 * @param IUser|null $currentUser Current user for permission checks
 	 *
@@ -204,15 +208,20 @@ class ExportService implements ObjectExporterInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple input combinations
 	 *
+	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
+	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function exportToExcel(
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		array $filters = [],
 		?IUser $currentUser = null,
 	): Spreadsheet {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		// Create new spreadsheet.
 		$spreadsheet = new Spreadsheet();
 
@@ -250,8 +259,8 @@ class ExportService implements ObjectExporterInterface {
 	/**
 	 * Export data to CSV format
 	 *
-	 * @param Register|null $register Optional register to export
-	 * @param Schema|null $schema Optional schema to export
+	 * @param RegisterInterface|null $register Optional register to export
+	 * @param SchemaInterface|null $schema Optional schema to export
 	 * @param array $filters Optional filters to apply
 	 * @param IUser|null $currentUser Current user for permission checks
 	 *
@@ -262,11 +271,14 @@ class ExportService implements ObjectExporterInterface {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function exportToCsv(
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		array $filters = [],
 		?IUser $currentUser = null,
 	): string {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		if ($register !== null && $schema === null) {
 			throw new InvalidArgumentException('Cannot export multiple schemas to CSV format.');
 		}
@@ -293,8 +305,8 @@ class ExportService implements ObjectExporterInterface {
 	 * metadata block. The result is a JSON array re-importable via
 	 * `ImportService::importFromJson()`, which upserts by `@self.id`.
 	 *
-	 * @param Register|null $register Register context (required)
-	 * @param Schema|null $schema Schema whose objects are exported (required)
+	 * @param RegisterInterface|null $register Register context (required)
+	 * @param SchemaInterface|null $schema Schema whose objects are exported (required)
 	 * @param array $filters Optional `@self.*` metadata filters
 	 *
 	 * @return string Pretty-printed JSON array of objects
@@ -304,10 +316,13 @@ class ExportService implements ObjectExporterInterface {
 	 * @spec exclude Retrofit — JSON object export added alongside the existing Excel/CSV exporters; no dedicated openspec change.
 	 */
 	public function exportToJson(
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		array $filters = [],
 	): string {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		if ($schema === null) {
 			throw new InvalidArgumentException('JSON export requires a specific schema.');
 		}
@@ -334,8 +349,8 @@ class ExportService implements ObjectExporterInterface {
 	 * per schema is rendered (the PDF analogue of `exportToExcel()`'s
 	 * one-sheet-per-schema behaviour).
 	 *
-	 * @param Register|null $register Optional register to export
-	 * @param Schema|null $schema Optional schema to export
+	 * @param RegisterInterface|null $register Optional register to export
+	 * @param SchemaInterface|null $schema Optional schema to export
 	 * @param array $filters Optional filters to apply
 	 * @param IUser|null $currentUser Current user for permission checks
 	 *
@@ -344,17 +359,22 @@ class ExportService implements ObjectExporterInterface {
 	 * @throws ExportTooLargeException When the object count exceeds {@see self::MAX_PDF_EXPORT_ROWS}.
 	 * @throws OfficeServerRequiredException When no office server converts to PDF.
 	 *
+	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
+	 *
 	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
 	public function exportToPdf(
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		array $filters = [],
 		?IUser $currentUser = null,
 	): string {
 		if ($this->isPdfAvailable() === false) {
 			throw new OfficeServerRequiredException();
 		}
+
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
 
 		// Capture register context so getHeaders/getObjectValue can emit
 		// per-language columns for translatable properties, same as the
@@ -613,20 +633,25 @@ class ExportService implements ObjectExporterInterface {
 	 * schema's properties (the same headers `exportToExcel` would emit), with no
 	 * data rows. The returned spreadsheet can be written to either XLSX or CSV.
 	 *
-	 * @param Register|null $register Optional register context (used for translation column expansion)
-	 * @param Schema $schema Schema whose property keys become the header row
+	 * @param RegisterInterface|null $register Optional register context (used for translation column expansion)
+	 * @param SchemaInterface $schema Schema whose property keys become the header row
 	 * @param IUser|null $currentUser Current user (drives admin metadata column inclusion)
 	 *
 	 * @return Spreadsheet Spreadsheet with a single sheet containing only header cells
+	 *
+	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md#import-templates-must-be-downloadable-per-schema (builds a header-only
 	 *       template spreadsheet from a schema's properties, with register-context per-language column expansion)
 	 */
 	public function buildTemplateSpreadsheet(
-		?Register $register,
-		Schema $schema,
+		?RegisterInterface $register,
+		SchemaInterface $schema,
 		?IUser $currentUser = null,
 	): Spreadsheet {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		// Capture register context so getHeaders can emit per-language
 		// `field_lang` columns for translatable properties.
 		$this->contextRegister = $register;
@@ -651,20 +676,25 @@ class ExportService implements ObjectExporterInterface {
 	 * derived from the schema's properties. Mirrors the BOM convention used
 	 * by the export pipeline so Excel opens the file with the correct encoding.
 	 *
-	 * @param Register|null $register Optional register context
-	 * @param Schema $schema Schema whose property keys become the header row
+	 * @param RegisterInterface|null $register Optional register context
+	 * @param SchemaInterface $schema Schema whose property keys become the header row
 	 * @param IUser|null $currentUser Current user (drives admin metadata column inclusion)
 	 *
 	 * @return string CSV content with a UTF-8 BOM prefix and a single header row
+	 *
+	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md#import-templates-must-be-downloadable-per-schema (renders the per-schema
 	 *       import template as a UTF-8 BOM-prefixed CSV so Excel opens it correctly)
 	 */
 	public function buildTemplateCsv(
-		?Register $register,
-		Schema $schema,
+		?RegisterInterface $register,
+		SchemaInterface $schema,
 		?IUser $currentUser = null,
 	): string {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		$spreadsheet = $this->buildTemplateSpreadsheet(
 			register: $register,
 			schema: $schema,
@@ -752,15 +782,20 @@ class ExportService implements ObjectExporterInterface {
 	 * have to name a guess. Every other format counts off its own
 	 * bytes, which is one query cheaper and cannot drift from the file.
 	 *
-	 * @param Register|null $register Optional register to export.
-	 * @param Schema|null   $schema   Optional schema to export.
+	 * @param RegisterInterface|null $register Optional register to export.
+	 * @param SchemaInterface|null   $schema   Optional schema to export.
 	 * @param array         $filters  Optional filters to apply.
 	 *
 	 * @return int The object count this export would write.
 	 *
+	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
+	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function countExportRows(?Register $register = null, ?Schema $schema = null, array $filters = []): int {
+	public function countExportRows(?RegisterInterface $register = null, ?SchemaInterface $schema = null, array $filters = []): int {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		return count($this->fetchObjectsForExport(register: $register, schema: $schema, filters: $filters));
 	}//end countExportRows()
 

@@ -40,7 +40,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
  * Unit test for the read-only-projection write-guard on a tables-bound schema.
@@ -76,7 +76,7 @@ class SaveObjectTablesReadOnlyGuardTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(\OCA\OpenRegister\Service\TmloService::class),
 			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			new ArrayLoader()
+			$this->createMock(PermissionHandler::class)
 		);
 	}//end handler()
 

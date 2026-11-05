@@ -42,6 +42,7 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\MagicMapper\NestedPathFilter
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
  */
 final class MagicSearchHandlerDraftLensTest extends TestCase {
 

@@ -1,0 +1,509 @@
+{
+    "plain filters": {
+        "query": {
+            "@self": {
+                "register": 1,
+                "schema": 7
+            },
+            "name": "x",
+            "_limit": 10,
+            "_page": 2
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "no scope": {
+        "query": {
+            "@self": [],
+            "name": "x"
+        },
+        "calls": []
+    },
+    "mangled dots": {
+        "query": {
+            "@self": {
+                "register": "5"
+            },
+            "person": {
+                "address": {
+                    "street": "Main"
+                }
+            },
+            "_order": {
+                "name": "asc"
+            }
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "mangled over a scalar": {
+        "query": {
+            "@self": {
+                "schema": 7
+            },
+            "a": {
+                "b": "v",
+                "c": {
+                    "d": "w"
+                }
+            }
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "mangled twice into one branch": {
+        "query": {
+            "@self": {
+                "schema": 7
+            },
+            "p": {
+                "q": {
+                    "s": 3
+                },
+                "r": 2
+            }
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "object-source schema": {
+        "query": {
+            "@self": {
+                "owner": "bob"
+            },
+            "product_line": "a",
+            "app_slug_x": "y"
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 8
+            }
+        ]
+    },
+    "object-source schema list": {
+        "query": {
+            "@self": {
+                "schema": [
+                    8,
+                    7
+                ]
+            },
+            "product": {
+                "line": "a"
+            }
+        },
+        "calls": []
+    },
+    "unknown schema id": {
+        "query": {
+            "@self": {
+                "schema": 404
+            },
+            "product": {
+                "line": "a"
+            }
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 404
+            }
+        ]
+    },
+    "bracket filter": {
+        "query": {
+            "@self": {
+                "schema": 7
+            },
+            "status": "open",
+            "kind": "b"
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            },
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "bracket filter, schema has one": {
+        "query": {
+            "@self": {
+                "schema": 9
+            },
+            "filter": {
+                "status": "open"
+            }
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 9
+            },
+            {
+                "schemaMapper.find": 9
+            }
+        ]
+    },
+    "bracket filter in schema list": {
+        "query": {
+            "@self": {
+                "schema": [
+                    7,
+                    9
+                ]
+            },
+            "filter": {
+                "status": "open"
+            }
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            },
+            {
+                "schemaMapper.find": 9
+            }
+        ]
+    },
+    "bracket filter, no schema": {
+        "query": {
+            "@self": [],
+            "status": "open"
+        },
+        "calls": []
+    },
+    "scalar filter param": {
+        "query": {
+            "@self": {
+                "schema": 7
+            },
+            "filter": "open"
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "system params dropped": {
+        "query": {
+            "@self": {
+                "schema": 7
+            },
+            "kept": 1
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "metadata fields": {
+        "query": {
+            "@self": {
+                "schema": 7,
+                "owner": "bob",
+                "uuid": "u-1",
+                "organisation": "o",
+                "application": "a",
+                "created": "c",
+                "updated": "u"
+            },
+            "title": "t"
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "metadata register and schema": {
+        "query": {
+            "@self": {
+                "register": "99",
+                "schema": "98"
+            }
+        },
+        "calls": []
+    },
+    "arguments win over params": {
+        "query": {
+            "@self": {
+                "register": 1,
+                "schema": 7
+            }
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "register and schema lists": {
+        "exception": [
+            "OCA\\OpenRegister\\Exception\\RegisterNotFoundException",
+            "Register not found: 'x'"
+        ],
+        "calls": []
+    },
+    "valid reference lists": {
+        "query": {
+            "@self": {
+                "register": [
+                    1,
+                    2
+                ],
+                "schema": [
+                    7,
+                    9
+                ]
+            },
+            "name": "n"
+        },
+        "calls": []
+    },
+    "register slug refused": {
+        "exception": [
+            "OCA\\OpenRegister\\Exception\\RegisterNotFoundException",
+            "Register not found: 'my-register'"
+        ],
+        "calls": []
+    },
+    "schema slug refused": {
+        "exception": [
+            "OCA\\OpenRegister\\Exception\\SchemaNotFoundException",
+            "Schema not found: 'my-schema'"
+        ],
+        "calls": [
+            {
+                "schemaMapper.find": "my-schema"
+            }
+        ]
+    },
+    "blank references": {
+        "exception": [
+            "OCA\\OpenRegister\\Exception\\SchemaNotFoundException",
+            "Schema not found: '0'"
+        ],
+        "calls": [
+            {
+                "schemaMapper.find": "0"
+            }
+        ]
+    },
+    "ids argument": {
+        "query": {
+            "@self": {
+                "schema": 7
+            },
+            "_ids": [
+                "a",
+                "b"
+            ]
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "ids param, special spelling": {
+        "query": {
+            "@self": {
+                "schema": 7
+            },
+            "_ids": {
+                "0": "u1",
+                "1": "u2",
+                "3": "u3"
+            }
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "ids argument and param": {
+        "query": {
+            "@self": {
+                "schema": 7
+            },
+            "_ids": [
+                "p1"
+            ]
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "plain ids param": {
+        "query": {
+            "@self": {
+                "schema": 7
+            },
+            "ids": "x,y"
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "coded filters": {
+        "query": {
+            "@self": {
+                "schema": 7
+            },
+            "expanded": [
+                "categorie",
+                "_limit"
+            ],
+            "_limit": 5
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            },
+            {
+                "expand": {
+                    "categorie": {
+                        "branch": "uri:1"
+                    },
+                    "_limit": 5
+                },
+                "schemaRef": 7
+            }
+        ]
+    },
+    "watching lens": {
+        "query": {
+            "@self": {
+                "schema": 7
+            },
+            "_ids": [
+                "a",
+                "b"
+            ],
+            "_watchingFor": "alice"
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "watching lens, anonymous": {
+        "query": {
+            "@self": {
+                "schema": 7
+            },
+            "_ids": [
+                "__no-watched-objects__"
+            ]
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "favourite lens": {
+        "query": {
+            "@self": {
+                "schema": 7
+            },
+            "_watchingFor": "alice"
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "watching false": {
+        "query": {
+            "@self": {
+                "schema": 7
+            }
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "unread lens": {
+        "query": {
+            "@self": {
+                "schema": 7
+            },
+            "_unreadFor": "alice"
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "unread lens, anonymous": {
+        "query": {
+            "@self": {
+                "schema": 7
+            },
+            "_ids": [
+                "__no-unread-reader__"
+            ]
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "unread false": {
+        "query": {
+            "@self": {
+                "schema": 7
+            }
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    },
+    "recent lens without history": {
+        "query": {
+            "@self": {
+                "schema": 7
+            },
+            "_recentLens": {
+                "available": false,
+                "reason": "read-history-unavailable"
+            },
+            "_ids": [
+                "__no-personal-lens-user__"
+            ]
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            }
+        ]
+    }
+}

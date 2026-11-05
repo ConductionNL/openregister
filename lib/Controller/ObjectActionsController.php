@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\ObjectActionsControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
@@ -49,7 +50,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -77,34 +78,82 @@ class ObjectActionsController extends Controller {
 	public const SELECTION_LIMIT = 100;
 
 	/**
+	 * Loads the subject.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objects;
+
+	/**
+	 * Loads a schema; the `next` hint after a selection.
+	 *
+	 * @var MacroActionResolver
+	 */
+	private readonly MacroActionResolver $macros;
+
+	/**
+	 * The schema's actions, for the selection surface rule.
+	 *
+	 * @var ObjectActionDefinitions
+	 */
+	private readonly ObjectActionDefinitions $definitions;
+
+	/**
+	 * Lists the actions.
+	 *
+	 * @var ObjectActionList
+	 */
+	private readonly ObjectActionList $list;
+
+	/**
+	 * Runs one action on one object.
+	 *
+	 * @var ObjectActionRunner
+	 */
+	private readonly ObjectActionRunner $runner;
+
+	/**
+	 * Reads the runs recorded on an object.
+	 *
+	 * @var ObjectActionHistory
+	 */
+	private readonly ObjectActionHistory $history;
+
+	/**
+	 * Hands a large selection to a bulk job.
+	 *
+	 * @var ObjectActionBulk
+	 */
+	private readonly ObjectActionBulk $bulk;
+
+	/**
+	 * Records a declaration that cannot be read.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                  $appName     The app name.
 	 * @param IRequest                $request     The request.
-	 * @param ObjectService           $objects     Loads the subject.
-	 * @param MacroActionResolver     $macros      Loads a schema; the `next` hint after a selection.
-	 * @param ObjectActionDefinitions $definitions The schema's actions, for the selection surface rule.
-	 * @param ObjectActionList        $list        Lists the actions.
-	 * @param ObjectActionRunner      $runner      Runs one action on one object.
-	 * @param ObjectActionHistory     $history     Reads the runs recorded on an object.
-	 * @param ObjectActionBulk        $bulk        Hands a large selection to a bulk job.
-	 * @param LoggerInterface         $logger      Records a declaration that cannot be read.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI constructor: each argument is a collaborator an endpoint uses.
+	 * @param ObjectActionsControllerServices $services The object actions controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objects,
-		private readonly MacroActionResolver $macros,
-		private readonly ObjectActionDefinitions $definitions,
-		private readonly ObjectActionList $list,
-		private readonly ObjectActionRunner $runner,
-		private readonly ObjectActionHistory $history,
-		private readonly ObjectActionBulk $bulk,
-		private readonly LoggerInterface $logger,
+		ObjectActionsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->objects = $services->catalogue->objects;
+		$this->macros = $services->catalogue->macros;
+		$this->definitions = $services->catalogue->definitions;
+		$this->list = $services->catalogue->list;
+		$this->runner = $services->execution->runner;
+		$this->history = $services->execution->history;
+		$this->bulk = $services->execution->bulk;
+		$this->logger = $services->platform->logger;
 	}//end __construct()
 
 	/**

@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Service\Timeline;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TimelineEntry;
 use OCA\OpenRegister\Db\TimelineEntryMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\TimelineVisibilityService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -87,7 +87,7 @@ class TimelineEntrySearchService {
 	 * Constructor.
 	 *
 	 * @param TimelineEntryMapper       $entries    The entry records.
-	 * @param ObjectService             $objects    Resolves each hit's object under the caller's own access.
+	 * @param ObjectOperationsInterface             $objects    Resolves each hit's object under the caller's own access.
 	 * @param TimelineVisibilityService $visibility Normalises the flag.
 	 * @param LoggerInterface           $logger     Logger.
 	 *
@@ -95,7 +95,7 @@ class TimelineEntrySearchService {
 	 */
 	public function __construct(
 		private readonly TimelineEntryMapper $entries,
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly TimelineVisibilityService $visibility,
 		private readonly LoggerInterface $logger,
 	) {

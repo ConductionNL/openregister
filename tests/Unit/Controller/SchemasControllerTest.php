@@ -39,6 +39,8 @@ use Psr\Log\LoggerInterface;
 
 class SchemasControllerTest extends TestCase {
 
+	private const PLAIN_RULE = ['group' => 'aanbod-beheerder', 'match' => ['provider' => '$organisation']];
+
 	private SchemasController $controller;
 
 	private IRequest&MockObject $request;
@@ -80,6 +82,11 @@ class SchemasControllerTest extends TestCase {
 	 */
 	private ?\OCP\IUser $currentUser = null;
 
+	/**
+	 * Whether the signed-in user of the mocked session is an administrator.
+	 */
+	private bool $currentUserIsAdmin = true;
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -106,7 +113,7 @@ class SchemasControllerTest extends TestCase {
 		$userSession = $this->createMock(\OCP\IUserSession::class);
 		$userSession->method('getUser')->willReturnCallback(fn () => $this->currentUser);
 		$groupManager = $this->createMock(\OCP\IGroupManager::class);
-		$groupManager->method('isAdmin')->willReturnCallback(fn () => $this->currentUser !== null);
+		$groupManager->method('isAdmin')->willReturnCallback(fn () => $this->currentUser !== null && $this->currentUserIsAdmin === true);
 		$groupManager->method('getUserGroupIds')->willReturn(['admin']);
 
 		// destroy() also resolves SchemaDeletionService lazily (cascade + reclaim of an
@@ -232,6 +239,30 @@ class SchemasControllerTest extends TestCase {
 		$this->assertSame(200, $result->getStatus());
 	}//end testShowAnonymousPublishedSchemaReturns200()
 
+	public function testShowAnonymousSchemaWithAMarkedPublicRuleReturns200(): void {
+		// `{"group": "public"}` without match reads like `"public"`, also when marked.
+		$this->currentUser = null;
+		$schema = $this->createRealSchema(1, 'Public');
+		$schema->setAuthorization(['read' => [['group' => 'public', 'crossOrganisation' => true]]]);
+		$this->schemaMapper->method('findExtendedBy')->willReturn([]);
+
+		$this->request->method('getParam')->willReturn([]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->assertSame(200, $this->controller->show(1)->getStatus());
+	}//end testShowAnonymousSchemaWithAMarkedPublicRuleReturns200()
+
+	public function testShowAnonymousSchemaWithOnlyAConditionalPublicRuleReturns401(): void {
+		$this->currentUser = null;
+		$schema = $this->createRealSchema(1, 'Conditional');
+		$schema->setAuthorization(['read' => [['group' => 'public', 'match' => ['status' => 'open'], 'crossOrganisation' => true]]]);
+
+		$this->request->method('getParam')->willReturn([]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->assertSame(401, $this->controller->show(1)->getStatus());
+	}//end testShowAnonymousSchemaWithOnlyAConditionalPublicRuleReturns401()
+
 	public function testIndexAnonymousFiltersUnpublishedSchemas(): void {
 		// Anonymous list returns only schemas whose authorization grants public read.
 		// Use real Schema entities so getAuthorization() (a __call magic) works without mocking.
@@ -309,6 +340,243 @@ class SchemasControllerTest extends TestCase {
 		$schema->setTitle($title);
 		return $schema;
 	}//end createRealSchema()
+
+	/**
+	 * A schema manager who is not an administrator may not let a rule cross organisations.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function testAManagerWhoIsNotAnAdminCannotAddACrossOrganisationMarker(): void {
+		$this->currentUserIsAdmin = false;
+		$schema = $this->managedSchema(read: [self::PLAIN_RULE]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin'], 'read' => [self::PLAIN_RULE + ['crossOrganisation' => true]]]]);
+		$this->schemaMapper->expects($this->never())->method('updateFromArray');
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(403, $result->getStatus());
+		$this->assertStringContainsString('crossOrganisation', (string)json_encode($result->getData()));
+	}//end testAManagerWhoIsNotAnAdminCannotAddACrossOrganisationMarker()
+
+	/**
+	 * A schema manager may change the other rules and keep a marker an administrator set.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function testAManagerMayChangeOtherRulesAndKeepAMarker(): void {
+		$this->currentUserIsAdmin = false;
+		$marked = self::PLAIN_RULE + ['crossOrganisation' => true];
+		$schema = $this->managedSchema(read: [$marked]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin'], 'read' => ['hr', $marked]]]);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+
+		$this->assertSame(200, $this->controller->update(1)->getStatus());
+	}//end testAManagerMayChangeOtherRulesAndKeepAMarker()
+
+	/**
+	 * An administrator may add the marker.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function testAnAdministratorMayAddACrossOrganisationMarker(): void {
+		$schema = $this->managedSchema(read: [self::PLAIN_RULE]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin'], 'read' => [self::PLAIN_RULE + ['crossOrganisation' => true]]]]);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+
+		$this->assertSame(200, $this->controller->update(1)->getStatus());
+	}//end testAnAdministratorMayAddACrossOrganisationMarker()
+
+	/**
+	 * An upload over an existing schema is held to the same rule.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function testAnUploadByAManagerWhoIsNotAnAdminCannotAddTheMarker(): void {
+		$this->currentUserIsAdmin = false;
+		$schema = $this->managedSchema(read: [self::PLAIN_RULE]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn([]);
+		$this->uploadService->method('getUploadedJson')->willReturn(
+			['title' => 'Existing', 'authorization' => ['manage' => ['admin'], 'read' => [['group' => 'public', 'crossOrganisation' => true]]]]
+		);
+		$this->schemaMapper->expects($this->never())->method('update');
+
+		$this->assertSame(403, $this->controller->uploadUpdate(1)->getStatus());
+	}//end testAnUploadByAManagerWhoIsNotAnAdminCannotAddTheMarker()
+
+	/**
+	 * A marker sent as JSON text is judged as the block the entity would store.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function testAMarkerSentAsJsonTextIsRefused(): void {
+		$this->currentUserIsAdmin = false;
+		$schema = $this->managedSchema(read: [self::PLAIN_RULE]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(
+			['authorization' => (string)json_encode(['manage' => ['admin'], 'read' => [self::PLAIN_RULE + ['crossOrganisation' => true]]])]
+		);
+		$this->schemaMapper->expects($this->never())->method('updateFromArray');
+
+		$this->assertSame(403, $this->controller->update(1)->getStatus());
+	}//end testAMarkerSentAsJsonTextIsRefused()
+
+	/**
+	 * An external grant sent as JSON text meets the same refusal as the array form.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function testAnExternalGrantSentAsJsonTextIsRefused(): void {
+		$schema = $this->managedSchema(read: [self::PLAIN_RULE]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(
+			['authorization' => (string)json_encode(['manage' => ['admin'], 'read' => [['group' => 'ghost', 'external' => true]]])]
+		);
+		$this->schemaMapper->expects($this->never())->method('updateFromArray');
+
+		$this->assertSame(400, $this->controller->update(1)->getStatus());
+	}//end testAnExternalGrantSentAsJsonTextIsRefused()
+
+	/**
+	 * Publishing a draft that holds a marker as JSON text is refused, and the draft stays.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function testPublishingADraftWithAMarkerAsJsonTextIsRefused(): void {
+		$this->currentUserIsAdmin = false;
+		$schema = $this->managedSchema(read: [self::PLAIN_RULE]);
+		$schema->setDraft(['authorization' => (string)json_encode(['manage' => ['admin'], 'read' => [self::PLAIN_RULE + ['crossOrganisation' => true]]])]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->expects($this->never())->method('updateFromArray');
+
+		$this->assertSame(403, $this->controller->publishDraft(1)->getStatus());
+		$this->assertNotNull($schema->getDraft());
+	}//end testPublishingADraftWithAMarkerAsJsonTextIsRefused()
+
+	/**
+	 * Other spellings of a guarded key reach nothing through an upload.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function testAnUploadCannotStoreAGuardedFieldUnderAnotherSpelling(): void {
+		$this->currentUserIsAdmin = false;
+		$schema = $this->managedSchema(read: [self::PLAIN_RULE]);
+		$schema->setOrganisation('own-org');
+		$schema->setOwner('alice');
+		$authorization = $schema->getAuthorization();
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn([]);
+		$this->uploadService->method('getUploadedJson')->willReturn(
+			[
+				'title' => 'Existing',
+				'Authorization' => ['read' => [['group' => 'public', 'crossOrganisation' => true]]],
+				'Organisation' => 'other-org',
+				'Owner' => 'mallory',
+			]
+		);
+		$this->schemaMapper->method('update')->willReturnArgument(0);
+
+		$this->assertSame(200, $this->controller->uploadUpdate(1)->getStatus());
+		$this->assertSame($authorization, $schema->getAuthorization());
+		$this->assertSame('own-org', $schema->getOrganisation());
+		$this->assertSame('alice', $schema->getOwner());
+	}//end testAnUploadCannotStoreAGuardedFieldUnderAnotherSpelling()
+
+	/**
+	 * An upload over an existing schema cannot move it, whichever user sends it.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function testAnUploadCannotMoveASchemaToAnotherOrganisationOrOwner(): void {
+		$schema = $this->managedSchema(read: [self::PLAIN_RULE]);
+		$schema->setOrganisation('own-org');
+		$schema->setOwner('alice');
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn([]);
+		$this->uploadService->method('getUploadedJson')->willReturn(
+			['title' => 'Existing', 'id' => 99, 'organisation' => 'other-org', 'owner' => 'mallory', 'created' => '2000-01-01T00:00:00+00:00']
+		);
+		$this->schemaMapper->method('update')->willReturnArgument(0);
+
+		$this->assertSame(200, $this->controller->uploadUpdate(1)->getStatus());
+		$this->assertSame(1, $schema->getId());
+		$this->assertSame('own-org', $schema->getOrganisation());
+		$this->assertSame('alice', $schema->getOwner());
+		$this->assertNotSame('2000-01-01', $schema->getCreated()?->format('Y-m-d'));
+	}//end testAnUploadCannotMoveASchemaToAnotherOrganisationOrOwner()
+
+	/**
+	 * A new schema uploaded by an administrator keeps the organisation the document names.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function testANewUploadKeepsItsOrganisation(): void {
+		$this->request->method('getParams')->willReturn([]);
+		$this->uploadService->method('getUploadedJson')->willReturn(['title' => 'New', 'organisation' => 'named-org']);
+		$saved = null;
+		$this->schemaMapper->method('insert')->willReturnCallback(
+			function (Schema $schema) use (&$saved): Schema {
+				$schema->setId(7);
+				$saved = $schema;
+
+				return $schema;
+			}
+		);
+
+		$this->assertSame(200, $this->controller->upload()->getStatus());
+		$this->assertSame('named-org', $saved?->getOrganisation());
+	}//end testANewUploadKeepsItsOrganisation()
+
+	/**
+	 * An upload meets the external-grant refusal too.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function testAnUploadWithAnExternalGrantIsRefused(): void {
+		$schema = $this->managedSchema(read: [self::PLAIN_RULE]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn([]);
+		$this->uploadService->method('getUploadedJson')->willReturn(
+			['title' => 'Existing', 'authorization' => ['read' => [['group' => 'ghost', 'external' => true]]]]
+		);
+		$this->schemaMapper->expects($this->never())->method('update');
+
+		$this->assertSame(400, $this->controller->uploadUpdate(1)->getStatus());
+	}//end testAnUploadWithAnExternalGrantIsRefused()
+
+	/**
+	 * An upload meets the external-grant refusal in the JSON text form too.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function testAnUploadWithAnExternalGrantAsJsonTextIsRefused(): void {
+		$schema = $this->managedSchema(read: [self::PLAIN_RULE]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn([]);
+		$this->uploadService->method('getUploadedJson')->willReturn(
+			['title' => 'Existing', 'authorization' => (string)json_encode(['read' => [['group' => 'ghost', 'external' => true]]])]
+		);
+		$this->schemaMapper->expects($this->never())->method('update');
+
+		$this->assertSame(400, $this->controller->uploadUpdate(1)->getStatus());
+	}//end testAnUploadWithAnExternalGrantAsJsonTextIsRefused()
+
+	/**
+	 * A schema whose `manage` rule names the signed-in user's group.
+	 *
+	 * @param array<int, mixed> $read The read rules.
+	 *
+	 * @return Schema
+	 */
+	private function managedSchema(array $read): Schema {
+		$schema = $this->createRealSchema(1, 'Existing');
+		$schema->setAuthorization(['manage' => ['admin'], 'read' => $read]);
+
+		return $schema;
+	}//end managedSchema()
 
 	public function testUpdateReturnsUpdatedSchema(): void {
 		$schema = $this->createRealSchema(1, 'Updated');
@@ -389,6 +657,97 @@ class SchemasControllerTest extends TestCase {
 		$this->assertSame(200, $result->getStatus());
 		$this->assertArrayNotHasKey('affectedForms', $result->getData() instanceof Schema ? [] : (array)$result->getData());
 	}//end testAFailingDependentFormCheckIsLogged()
+
+	/**
+	 * Sign in a schema manager who is no administrator, for a schema with the given flag.
+	 *
+	 * @param array<string, mixed> $configuration The stored configuration.
+	 *
+	 * @return Schema
+	 */
+	private function asNonAdminManager(array $configuration = []): Schema {
+		$schema = $this->createRealSchema(1, 'Ticket');
+		$schema->setAuthorization(['manage' => ['admin']]);
+		$schema->setConfiguration($configuration);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+		$this->schemaMapper->method('update')->willReturn($schema);
+		$this->currentUserIsAdmin = false;
+
+		return $schema;
+	}//end asNonAdminManager()
+
+	/**
+	 * The ways a body can set the flag.
+	 *
+	 * @return array<string, array{0: mixed}>
+	 */
+	public static function orphanCleanupBodies(): array {
+		return [
+			'array' => [['orphanCleanup' => true]],
+			'json text' => ['{"orphanCleanup":true}'],
+		];
+	}//end orphanCleanupBodies()
+
+	/**
+	 * @dataProvider orphanCleanupBodies
+	 *
+	 * @param mixed $configuration The body's configuration.
+	 */
+	public function testANonAdminManagerMayNotSetOrphanCleanupOnUpdate(mixed $configuration): void {
+		$this->asNonAdminManager();
+		$this->request->method('getParams')->willReturn(['configuration' => $configuration]);
+		$this->schemaMapper->expects($this->never())->method('updateFromArray');
+
+		$this->assertSame(403, $this->controller->update(1)->getStatus());
+	}
+
+	public function testANonAdminManagerMayNotSetOrphanCleanupOnPatch(): void {
+		$this->asNonAdminManager();
+		$this->request->method('getParams')->willReturn(['configuration' => ['orphanCleanup' => true]]);
+		$this->schemaMapper->expects($this->never())->method('updateFromArray');
+
+		$this->assertSame(403, $this->controller->patch(1)->getStatus());
+	}
+
+	public function testANonAdminManagerMayNotSetOrphanCleanupOnUpload(): void {
+		$this->asNonAdminManager();
+		$this->uploadService->method('getUploadedJson')->willReturn(['title' => 'Ticket', 'configuration' => ['orphanCleanup' => true]]);
+		$this->request->method('getParams')->willReturn([]);
+		$this->schemaMapper->expects($this->never())->method('update');
+
+		$this->assertSame(403, $this->controller->uploadUpdate(1)->getStatus());
+	}
+
+	public function testANonAdminManagerMayNotClearOrphanCleanupExplicitly(): void {
+		$this->asNonAdminManager(configuration: ['orphanCleanup' => true]);
+		$this->request->method('getParams')->willReturn(['configuration' => ['orphanCleanup' => false]]);
+
+		$this->assertSame(403, $this->controller->update(1)->getStatus());
+	}
+
+	public function testANonAdminManagerMaySendTheStoredValueBack(): void {
+		$this->asNonAdminManager(configuration: ['orphanCleanup' => true]);
+		$this->request->method('getParams')->willReturn(['configuration' => ['orphanCleanup' => true, 'allowFiles' => true]]);
+
+		$this->assertSame(200, $this->controller->update(1)->getStatus());
+	}
+
+	public function testANonAdminManagerMayUpdateWithoutTheFlag(): void {
+		$this->asNonAdminManager();
+		$this->request->method('getParams')->willReturn(['configuration' => ['allowFiles' => true]]);
+
+		$this->assertSame(200, $this->controller->update(1)->getStatus());
+	}
+
+	public function testAnAdministratorMaySetOrphanCleanup(): void {
+		$schema = $this->createRealSchema(1, 'Ticket');
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['configuration' => ['orphanCleanup' => true]]);
+
+		$this->assertSame(200, $this->controller->update(1)->getStatus());
+	}
 
 	public function testPatchDelegatesToUpdate(): void {
 		$schema = $this->createRealSchema(1, 'Patched');
@@ -1588,4 +1947,107 @@ class SchemasControllerTest extends TestCase {
 		$this->assertSame(400, $result->getStatus());
 		$this->assertStringContainsString("'\$in' operand", $result->getData()['error']);
 	}//end testUpdateRefusesANonListInOperandWith400NamingIt()
+
+	/**
+	 * Index with `@self.stats` for the current user, with audit counts on the mapper.
+	 *
+	 * @return array The response body.
+	 */
+	private function indexWithLogStats(): array {
+		$schema = $this->createMock(Schema::class);
+		$schema->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Test']);
+
+		$this->request->method('getParams')->willReturn(['_extend' => '@self.stats']);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
+		$this->schemaMapper->method('findAllExtendedBy')->willReturn([]);
+		$this->schemaMapper->method('getRegisterCountPerSchema')->willReturn([1 => 2]);
+		$this->objectMapper->method('getStatisticsGroupedBySchema')->willReturn([1 => ['total' => 10]]);
+
+		return $this->controller->index()->getData();
+	}//end indexWithLogStats()
+
+	public function testANonAdminListingSchemasIsNotGivenTheTrailCount(): void {
+		$this->currentUserIsAdmin = false;
+		$this->auditTrailMapper->expects($this->never())->method('getStatisticsGroupedBySchema');
+
+		$data = $this->indexWithLogStats();
+
+		$this->assertSame(['total' => 0, 'size' => 0], $data['results'][0]['stats']['logs']);
+		$this->assertSame(10, $data['results'][0]['stats']['objects']['total']);
+	}//end testANonAdminListingSchemasIsNotGivenTheTrailCount()
+
+	public function testAnAnonymousCallerListingSchemasIsNotGivenTheTrailCount(): void {
+		$this->currentUser = null;
+		$this->auditTrailMapper->expects($this->never())->method('getStatisticsGroupedBySchema');
+		$this->schemaMapper->method('findAll')->willReturn([]);
+		$this->request->method('getParams')->willReturn(['_extend' => '@self.stats']);
+
+		$this->assertSame(200, $this->controller->index()->getStatus());
+	}//end testAnAnonymousCallerListingSchemasIsNotGivenTheTrailCount()
+
+	public function testAnAdminListingSchemasIsGivenTheTrailCount(): void {
+		$this->auditTrailMapper->expects($this->once())->method('getStatisticsGroupedBySchema')
+			->with([1])->willReturn([1 => ['total' => 20, 'size' => 100]]);
+
+		$data = $this->indexWithLogStats();
+
+		$this->assertSame(['total' => 20, 'size' => 100], $data['results'][0]['stats']['logs']);
+	}//end testAnAdminListingSchemasIsGivenTheTrailCount()
+
+	/**
+	 * Show with `@self.stats` for the current user.
+	 *
+	 * @return array The response body.
+	 */
+	private function showWithLogStats(): array {
+		$this->request->method('getParam')->willReturnMap([['_extend', [], ['@self.stats']]]);
+		$this->schemaMapper->method('find')->willReturn($this->createRealSchema(1, 'Stats Schema'));
+		$this->schemaMapper->method('findExtendedBy')->willReturn([]);
+		$this->schemaMapper->method('getRegisterCountPerSchema')->willReturn([1 => 5]);
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 25]);
+
+		return $this->controller->show(1)->getData();
+	}//end showWithLogStats()
+
+	public function testANonAdminReadingASchemaIsNotGivenTheTrailCount(): void {
+		$this->currentUserIsAdmin = false;
+		$this->auditTrailMapper->expects($this->never())->method('getStatistics');
+
+		$data = $this->showWithLogStats();
+
+		$this->assertSame(['total' => 0, 'size' => 0], $data['stats']['logs']);
+		$this->assertSame(['total' => 25], $data['stats']['objects']);
+	}//end testANonAdminReadingASchemaIsNotGivenTheTrailCount()
+
+	public function testAnAdminReadingASchemaIsGivenTheTrailCount(): void {
+		$this->auditTrailMapper->expects($this->once())->method('getStatistics')
+			->with(null, 1)->willReturn(['total' => 50, 'size' => 200]);
+
+		$data = $this->showWithLogStats();
+
+		$this->assertSame(['total' => 50, 'size' => 200], $data['stats']['logs']);
+	}//end testAnAdminReadingASchemaIsGivenTheTrailCount()
+
+	public function testANonAdminAskingForSchemaStatsIsNotGivenTheTrailCount(): void {
+		$this->currentUserIsAdmin = false;
+		$this->auditTrailMapper->expects($this->never())->method('getStatistics');
+		$this->schemaMapper->method('find')->willReturn($this->createRealSchema(1, 'Stats Schema'));
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 7]);
+
+		$data = $this->controller->stats(1)->getData();
+
+		$this->assertSame(['total' => 0, 'size' => 0], $data['logs']);
+		$this->assertSame(7, $data['objectCount']);
+	}//end testANonAdminAskingForSchemaStatsIsNotGivenTheTrailCount()
+
+	public function testAnAdminAskingForSchemaStatsIsGivenTheTrailCount(): void {
+		$this->auditTrailMapper->expects($this->once())->method('getStatistics')
+			->with(null, 1)->willReturn(['total' => 9, 'size' => 90]);
+		$this->schemaMapper->method('find')->willReturn($this->createRealSchema(1, 'Stats Schema'));
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 7]);
+
+		$data = $this->controller->stats(1)->getData();
+
+		$this->assertSame(['total' => 9, 'size' => 90], $data['logs']);
+	}//end testAnAdminAskingForSchemaStatsIsGivenTheTrailCount()
 }//end class

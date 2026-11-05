@@ -37,6 +37,7 @@ use Psr\Log\NullLogger;
 /**
  * @covers \OCA\OpenRegister\Service\Archival\LegalHoldService
  * @covers \OCA\OpenRegister\Service\Archival\LegalHoldLedger
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class LegalHoldPerMatterTest extends TestCase {
 

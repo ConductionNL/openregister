@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunStep;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
@@ -43,6 +43,7 @@ use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Exception\FlowRunExpired;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
 use OCP\IAppConfig;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -69,7 +70,7 @@ use Throwable;
  * into unrelated existing methods would hide one code path inside another
  * that has nothing to do with it.
  */
-class FlowRunService {
+class FlowRunService implements FlowRunServiceInterface {
 	/**
 	 * How long one run may take, in minutes, when nothing overrides it.
 	 *
@@ -82,54 +83,6 @@ class FlowRunService {
 	 * @var integer
 	 */
 	private const DEFAULT_MAX_RUNTIME_MINUTES = 60;
-
-	/**
-	 * The context key an arriving signal's payload lands at.
-	 *
-	 * Read by whichever node suspended waiting for it, and cleared once that
-	 * walk finishes — a signal answers one question, and leaving it behind would
-	 * let a later suspension read an answer meant for an earlier one.
-	 *
-	 * @var string
-	 */
-	public const SIGNAL_CONTEXT_KEY = 'signal';
-
-	/**
-	 * The context key the run's ACTING IDENTITY travels under.
-	 *
-	 * Stamped by {@see self::baseContextFor()} from the run — never from the
-	 * context, per ADR-099 — and read back by every node whose work needs the
-	 * run's rights. Exported so consumers reference one name instead of each
-	 * hard-coding the literal; the VALUE is frozen, because it is stored inside
-	 * every parked run's context and a rename would strand them.
-	 *
-	 * @var string
-	 */
-	public const RUN_AS_CONTEXT_KEY = 'runAs';
-
-	/**
-	 * The context key the run's FLOW id travels under.
-	 *
-	 * Stamped from the run, like the acting identity, so a node can name the
-	 * flow it belongs to (a sent-email event does) without a lookup.
-	 *
-	 * @var string
-	 */
-	public const FLOW_ID_CONTEXT_KEY = 'flowId';
-
-	/**
-	 * The trigger a direct node invocation carries (or-flow-run-node).
-	 *
-	 * Unlike {@see FlowRunVersionPin::TRIGGER_TEST}, this trigger is NOT
-	 * exempt from the published-version requirement: a direct-invoked node
-	 * still runs against a real, published graph (RN-3) — it is the AUTHORING
-	 * trust that is absent here (this is an app button, not the editor), not
-	 * the soundness/publication requirement every live dispatch already
-	 * carries.
-	 *
-	 * @var string
-	 */
-	public const TRIGGER_DIRECT_NODE = 'direct-node';
 
 	/**
 	 * The acting-identity scope handed to every dispatcher this service builds.
@@ -165,7 +118,7 @@ class FlowRunService {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapper $mapper Persists runs.
+	 * @param FlowRunMapperInterface $mapper Persists runs.
 	 * @param FlowStateMapper $stateMapper Persists state that outlives a run.
 	 * @param FlowEngine $engine Walks the graph.
 	 * @param FlowNodeRegistry $registry Resolves step types.
@@ -188,7 +141,7 @@ class FlowRunService {
 	 *                                   default applies.
 	 */
 	public function __construct(
-		private readonly FlowRunMapper $mapper,
+		private readonly FlowRunMapperInterface $mapper,
 		FlowStateMapper $stateMapper,
 		private readonly FlowEngine $engine,
 		private readonly FlowNodeRegistry $registry,
@@ -981,16 +934,7 @@ class FlowRunService {
 
 		$flow = $pinned;
 
-		$resuming = ($run->getStatus() === FlowRun::STATUS_SUSPENDED);
-		if ($resuming === true) {
-			// Stored items win on resume (below), but the subject's own fields
-			// on them are a trigger-time snapshot: see refreshSubjectItems().
-			$this->refreshSubjectItems(run: $run, subject: $subject);
-		}
-
-		$run->setStatus(FlowRun::STATUS_RUNNING);
-		$run->setUpdated(new DateTime());
-		$this->mapper->update($run);
+		$resuming = $this->markRunning(run: $run, subject: $subject);
 
 		$items = $seedItems;
 		$start = $startAt;
@@ -1035,11 +979,7 @@ class FlowRunService {
 				]
 			);
 
-			$run->setStatus(FlowRun::STATUS_FAILED);
-			$run->setError($e->getMessage());
-			$run->setUpdated(new DateTime());
-
-			return $this->mapper->update($run);
+			return $this->failRun(run: $run, error: $e);
 		} catch (Throwable $e) {
 			$this->releaseWalk(walk: $walk);
 			// The engine itself failing (rather than a step) is not something
@@ -1050,15 +990,51 @@ class FlowRunService {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $run->getUuid(), 'error' => $e->getMessage()]
 			);
 
-			$run->setStatus(FlowRun::STATUS_FAILED);
-			$run->setError($e->getMessage());
-			$run->setUpdated(new DateTime());
-
-			return $this->mapper->update($run);
+			return $this->failRun(run: $run, error: $e);
 		}//end try
 
 		return $this->persistResult(run: $run, result: $result);
 	}//end execute()
+
+	/**
+	 * Mark a run as running, refreshing the subject's fields on a resumed run's items.
+	 *
+	 * Stored items win on resume, but the subject's own fields on them are a
+	 * trigger-time snapshot: see refreshSubjectItems().
+	 *
+	 * @param FlowRun $run The run.
+	 * @param object $subject The flow's subject.
+	 *
+	 * @return bool True when the run resumes from a suspension.
+	 */
+	private function markRunning(FlowRun $run, object $subject): bool {
+		$resuming = ($run->getStatus() === FlowRun::STATUS_SUSPENDED);
+		if ($resuming === true) {
+			$this->refreshSubjectItems(run: $run, subject: $subject);
+		}
+
+		$run->setStatus(FlowRun::STATUS_RUNNING);
+		$run->setUpdated(new DateTime());
+		$this->mapper->update($run);
+
+		return $resuming;
+	}//end markRunning()
+
+	/**
+	 * Record a run as failed with the error's message.
+	 *
+	 * @param FlowRun $run The run.
+	 * @param Throwable $error What stopped it.
+	 *
+	 * @return FlowRun The updated run.
+	 */
+	private function failRun(FlowRun $run, Throwable $error): FlowRun {
+		$run->setStatus(FlowRun::STATUS_FAILED);
+		$run->setError($error->getMessage());
+		$run->setUpdated(new DateTime());
+
+		return $this->mapper->update($run);
+	}//end failRun()
 
 	/**
 	 * Run exactly ONE named node of a queued run's published graph, and stop.
@@ -1474,6 +1450,71 @@ class FlowRunService {
 
 
 	/**
+	 * Persist the flow's state with any copied writeOnly action input redacted.
+	 *
+	 * Flow state outlives the run and the request, and no key tells where an
+	 * author put a value, so each value this run wrote that is a whole copy of
+	 * a held secret (four or more characters) is replaced; values earlier runs
+	 * stored, and the rest of the write, stand.
+	 *
+	 * @param FlowRun              $run       The run.
+	 * @param array<string, mixed> $context   The run context, holding the state handle.
+	 * @param mixed                $secretRef The run's inputsRef.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionSecrets is the request-scoped holder of writeOnly inputs.
+	 */
+	private function persistFlowState(FlowRun $run, array $context, mixed $secretRef): void {
+		$handle = ($context[FlowStateHandle::CONTEXT_KEY] ?? null);
+		if ($handle instanceof FlowStateHandle && $handle->isDirty() === true) {
+			// Only the values THIS run wrote, by the same whole-value rule as
+			// the items: what earlier runs stored (cursors, timestamps) is
+			// written back as it was loaded.
+			foreach ($handle->writtenKeys() as $key) {
+				$value    = $handle->get(key: $key);
+				$redacted = ObjectActionSecrets::redactCopies(data: $value, ref: $secretRef);
+				if ($redacted !== $value) {
+					$handle->set(key: $key, value: $redacted);
+				}
+			}
+		}
+
+		$this->flowState->persist(run: $run, context: $context);
+	}//end persistFlowState()
+
+	/**
+	 * The result with every writeOnly action input redacted.
+	 *
+	 * 🔴 A WRITEONLY ACTION INPUT NEVER REACHES STORAGE. The steps carry it in
+	 * their items at `json.inputs.<name>` (the action-inputs node puts it there
+	 * so later steps can read `{{inputs.pin}}`), and the log samples every
+	 * step's items, so the log, the step rows, the final items and the error
+	 * are redacted before the one place a walk's result is stored. By key,
+	 * never by value: the context and the items carry the subject uuid and
+	 * counters a resumed run reads, which a value match corrupts.
+	 *
+	 * @param array $result    The engine's result envelope.
+	 * @param mixed $secretRef The run's inputsRef.
+	 *
+	 * @return array The envelope, with `log` and `items` always set.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionSecrets is the request-scoped holder of writeOnly inputs.
+	 */
+	private function withoutSecrets(array $result, mixed $secretRef): array {
+		$result['log'] = ObjectActionSecrets::redactLog(log: (array)($result['log'] ?? []), ref: $secretRef);
+		$result['items'] = ObjectActionSecrets::redactItems(items: (array)($result['items'] ?? []), ref: $secretRef);
+		// Copies a later step made (`json.code` from `{{inputs.pin}}`): whole strings only.
+		$result['log']   = (array)ObjectActionSecrets::redactCopies(data: $result['log'], ref: $secretRef);
+		$result['items'] = (array)ObjectActionSecrets::redactCopies(data: $result['items'], ref: $secretRef);
+		if (is_string($result['error'] ?? null) === true) {
+			$result['error'] = ObjectActionSecrets::redactText(text: $result['error'], ref: $secretRef);
+		}
+
+		return $result;
+	}//end withoutSecrets()
+
+	/**
 	 * Write back what a walk produced.
 	 *
 	 * @param FlowRun $run The run to update.
@@ -1481,20 +1522,26 @@ class FlowRunService {
 	 *
 	 * @return FlowRun The updated run.
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionSecrets is the request-scoped holder of writeOnly inputs.
+	 *
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
 	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
 	 */
 	private function persistResult(FlowRun $run, array $result): FlowRun {
 		$status = (string)($result['status'] ?? FlowRun::STATUS_FAILED);
 
+		// A writeOnly action input never reaches storage ({@see self::withoutSecrets()}).
+		$secretRef = (((array)($result['context'] ?? []))[ObjectActionSecrets::CONTEXT_KEY] ?? null);
+		$result = $this->withoutSecrets(result: $result, secretRef: $secretRef);
+
 		// The log is appended, not replaced: a resumed run's history is the
 		// whole run, not just the segment since it last woke up.
-		$log = array_merge(($run->getLog() ?? []), (array)($result['log'] ?? []));
+		$log = array_merge(($run->getLog() ?? []), $result['log']);
 
 		// Promote THIS segment's entries to step rows. Only the new entries —
 		// `$result['log']`, not the merged `$log` — or every resume would
 		// re-record the whole history it had already written.
-		$this->stepHistory()->record(run: $run, entries: (array)($result['log'] ?? []));
+		$this->stepHistory()->record(run: $run, entries: $result['log']);
 
 		// The token travels as an object so steps can write to it; the column
 		// holds JSON. Serialising here — on the suspended path as much as the
@@ -1518,7 +1565,7 @@ class FlowRunService {
 		// Only written when a node actually changed something: a flow that
 		// merely READS its state should not touch the row on every tick, and a
 		// five-minute schedule makes that difference thousands of writes a week.
-		$this->flowState->persist(run: $run, context: $context);
+		$this->persistFlowState(run: $run, context: $context, secretRef: $secretRef);
 		unset($context[FlowStateHandle::CONTEXT_KEY]);
 
 		// Same reason as the state handle one line up: it is a live collaborator,
@@ -1543,7 +1590,8 @@ class FlowRunService {
 		unset($context[self::SIGNAL_CONTEXT_KEY]);
 
 		$run->setStatus($status);
-		$run->setItems((array)($result['items'] ?? []));
+		$run->setItems($result['items']);
+		$context = (array)ObjectActionSecrets::redactCopies(data: $context, ref: $secretRef);
 		$run->setContext($context);
 		$run->setLog($log);
 		$run->setError(($result['error'] ?? null));
@@ -1562,7 +1610,8 @@ class FlowRunService {
 		// The correlation key mirrors `resumeAt`: meaningful only while
 		// suspended, cleared on every other outcome so a finished run can
 		// never be the addressee of a business-key signal (design D-7).
-		$run->setCorrelationKey($this->correlationKeyFrom(context: $context, suspended: ($status === FlowRun::STATUS_SUSPENDED)));
+		$correlationKey = $this->correlationKeyFrom(context: $context, suspended: ($status === FlowRun::STATUS_SUSPENDED));
+		$run->setCorrelationKey(ObjectActionSecrets::redactCopies(data: $correlationKey, ref: $secretRef));
 
 		$persisted = $this->mapper->update($run);
 

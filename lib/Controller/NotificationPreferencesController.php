@@ -43,7 +43,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -55,13 +55,13 @@ class NotificationPreferencesController extends Controller {
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
-	 * @param NotificationPreferenceService $preferenceService Override-only preference resolver.
+	 * @param NotificationPreferencesInterface $preferenceService Override-only preference resolver.
 	 * @param IUserSession $userSession Current-user session.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly NotificationPreferenceService $preferenceService,
+		private readonly NotificationPreferencesInterface $preferenceService,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);

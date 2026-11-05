@@ -1,4 +1,4 @@
 # Screens
 
 - OrObjectKoppelingen https://identity.conduction.nl/screens/board?id=openregister/OrObjectKoppelingen
-- No screen: x-lookup: a lookup API that leaf app forms call, with no screen of its own
+- integriq/IqBronnen: the sources list, with KvK and OpenCorporates as company lookup sources that leaf app forms call through x-lookup (row con-opencorporates) (integriq adopts this) https://identity.conduction.nl/screens/board?id=integriq/IqBronnen

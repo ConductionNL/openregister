@@ -95,14 +95,14 @@ class AppRegisterImportRunner {
 	 *
 	 * @param IAppManager          $appManager           Resolves the app's namespace and path.
 	 * @param AppContainerLocator  $containers           Reaches the app's own DI container.
-	 * @param ConfigurationService $configurationService Imports on the fallback path.
+	 * @param ConfigurationServiceInterface $configurationService Imports on the fallback path.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IAppManager $appManager,
 		private readonly AppContainerLocator $containers,
-		private readonly ConfigurationService $configurationService,
+		private readonly ConfigurationServiceInterface $configurationService,
 	) {
 	}//end __construct()
 
@@ -199,7 +199,7 @@ class AppRegisterImportRunner {
 	/**
 	 * Whether a service has a method of the given forced shape.
 	 *
-	 * @param object      $service The app's SettingsService.
+	 * @param object      $service The app's SettingsServiceInterface.
 	 * @param string      $method  The method name.
 	 * @param string|null $force   The force parameter's name, or null for a method taking none.
 	 *

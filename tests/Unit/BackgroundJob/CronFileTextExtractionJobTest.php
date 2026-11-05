@@ -26,6 +26,7 @@ use PHPUnit\Framework\TestCase;
 use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 
 /**
  * Test class for CronFileTextExtractionJob
@@ -48,7 +49,7 @@ class CronFileTextExtractionJobTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// Register all mocks in the Nextcloud DI container.
-		$this->registerService(SettingsService::class, function () {
+		$this->registerService(AppSettingsInterface::class, function () {
 			return $this->settingsService;
 		});
 		$this->registerService(TextExtractionService::class, function () {

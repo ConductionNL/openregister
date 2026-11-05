@@ -166,6 +166,10 @@ class FilePropertyHandler {
 	/**
 	 * Check if a value should be treated as a file property
 	 *
+	 * With a schema and a property name the schema decides: a `file` property,
+	 * or an array of `file` items. Otherwise the value decides: a file string,
+	 * a file object, or a list holding either.
+	 *
 	 * @param mixed $value The value to check
 	 * @param Schema|null $schema Optional schema for property-based checking
 	 * @param string|null $propertyName Optional property name for schema lookup
@@ -173,121 +177,101 @@ class FilePropertyHandler {
 	 * @return bool True if the value should be treated as a file property
 	 * @phpstan-return bool
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple file format detection patterns required
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Many conditional paths for different file input formats
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file type detection requires checking many formats
-	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
 	public function isFileProperty($value, ?Schema $schema = null, ?string $propertyName = null): bool {
-		// If we have schema and property name, use schema-based checking.
 		if ($schema !== null && $propertyName !== null) {
-			$schemaProperties = $schema->getProperties() ?? [];
+			return $this->isFileInSchema(schema: $schema, propertyName: $propertyName);
+		}
 
-			if (isset($schemaProperties[$propertyName]) === false) {
-				// Property not in schema, not a file.
-				return false;
-			}
-
-			$propertyConfig = $schemaProperties[$propertyName];
-			$propertyType = $propertyConfig['type'] ?? '';
-
-			// Check if it's a direct file property.
-			if ($propertyType === 'file') {
-				return true;
-			}
-
-			// Check if it's an array of files.
-			if (($propertyConfig['type'] ?? '') === 'array') {
-				$itemsConfig = $propertyConfig['items'] ?? [];
-				if (($itemsConfig['type'] ?? '') === 'file') {
-					return true;
-				}
-			}
-
-			return false;
-			// Property exists but is not configured as file type.
-		}//end if
-
-		// Fallback to format-based checking when schema info is not available.
-		// This is used within handleFileProperty for individual value validation.
-		// Check for single file (data URI, base64, URL with file extension, or file object).
 		if (is_string($value) === true) {
-			// Data URI format.
-			if (strpos($value, 'data:') === 0) {
+			return $this->looksLikeFile(value: $value);
+		}
+
+		if (is_array($value) === false) {
+			return false;
+		}
+
+		return $this->isFileObject(value: $value) === true || $this->listHoldsFile(items: $value) === true;
+	}//end isFileProperty()
+
+	/**
+	 * Whether any item of a list is a file string or a file object.
+	 *
+	 * @param array $items The list.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function listHoldsFile(array $items): bool {
+		foreach ($items as $item) {
+			if (is_string($item) === true && $this->looksLikeFile(value: $item) === true) {
 				return true;
 			}
 
-			// URL format (http/https) - but only if it looks like a downloadable file.
-			if (filter_var($value, FILTER_VALIDATE_URL) !== false
-				&& (strpos($value, 'http://') === 0 || strpos($value, 'https://') === 0)
-			) {
-				// Parse URL to get path.
-				$urlPath = parse_url($value, PHP_URL_PATH);
-				if ($urlPath !== null && $urlPath !== '') {
-					// Get file extension.
-					$extension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
-
-					// Common file extensions that indicate downloadable files.
-					$fileExtensions = $this->getCommonFileExtensions();
-
-					// Only treat as file if it has a recognized file extension.
-					if (in_array($extension, $fileExtensions) === true) {
-						return true;
-					}
-				}//end if
-
-				// Don't treat regular website URLs as files.
-				return false;
-			}//end if
-
-			// Base64 encoded string (simple heuristic).
-			if (base64_encode(base64_decode($value, true)) === $value && strlen($value) > 100) {
+			if (is_array($item) === true && $this->isFileObject(value: $item) === true) {
 				return true;
 			}
-		}//end if
+		}
 
-		// Check for file object (array with required file object properties).
-		if (is_array($value) === true && $this->isFileObject(value: $value) === true) {
+		return false;
+	}//end listHoldsFile()
+
+	/**
+	 * Whether the schema declares the property as a file, or as an array of files.
+	 *
+	 * @param Schema $schema       The schema.
+	 * @param string $propertyName The property.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function isFileInSchema(Schema $schema, string $propertyName): bool {
+		$propertyConfig = ($schema->getProperties() ?? [])[$propertyName] ?? null;
+		if ($propertyConfig === null) {
+			return false;
+		}
+
+		$propertyType = $propertyConfig['type'] ?? '';
+		if ($propertyType === 'file') {
 			return true;
 		}
 
-		// Check for array of files.
-		if (is_array($value) === true) {
-			foreach ($value as $item) {
-				if (is_string($item) === true) {
-					// Data URI.
-					if (strpos($item, 'data:') === 0) {
-						return true;
-					}
+		return $propertyType === 'array' && (($propertyConfig['items'] ?? [])['type'] ?? '') === 'file';
+	}//end isFileInSchema()
 
-					// URL with file extension.
-					if (filter_var($item, FILTER_VALIDATE_URL) !== false
-						&& (strpos($item, 'http://') === 0 || strpos($item, 'https://') === 0)
-					) {
-						$urlPath = parse_url($item, PHP_URL_PATH);
-						if ($urlPath !== null && $urlPath !== '') {
-							$extension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
-							$fileExtensions = $this->getCommonFileExtensions();
-							if (in_array($extension, $fileExtensions) === true) {
-								return true;
-							}
-						}//end if
-					}//end if
+	/**
+	 * Whether a string is a data URI, an http(s) URL to a known file extension, or long base64.
+	 *
+	 * Website URLs without a file extension are not files.
+	 *
+	 * @param string $value The string.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function looksLikeFile(string $value): bool {
+		if (strpos($value, 'data:') === 0) {
+			return true;
+		}
 
-					// Base64.
-					if (base64_encode(base64_decode($item, true)) === $item && strlen($item) > 100) {
-						return true;
-					}
-				} elseif (is_array($item) === true && $this->isFileObject(value: $item) === true) {
-					// File object in array.
-					return true;
-				}//end if
-			}//end foreach
-		}//end if
+		if (filter_var($value, FILTER_VALIDATE_URL) !== false
+			&& (strpos($value, 'http://') === 0 || strpos($value, 'https://') === 0)
+		) {
+			$urlPath = parse_url($value, PHP_URL_PATH);
+			if ($urlPath === null || $urlPath === '') {
+				return false;
+			}
 
-		return false;
-	}//end isFileProperty()
+			$extension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
+			return in_array($extension, $this->getCommonFileExtensions()) === true;
+		}
+
+		return base64_encode(base64_decode($value, true)) === $value && strlen($value) > 100;
+	}//end looksLikeFile()
 
 	/**
 	 * Checks if an array represents a file object.
@@ -451,10 +435,6 @@ class FilePropertyHandler {
 	 *
 	 * @throws Exception If file validation fails or file operations fail.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex file handling with deletion, array, and single file paths
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional branches for file property processing
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file property handling requires many steps
-	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
 	public function handleFileProperty(
@@ -464,28 +444,61 @@ class FilePropertyHandler {
 		Schema $schema,
 	): void {
 		$fileValue = $object[$propertyName];
-		$schemaProperties = $schema->getProperties() ?? [];
+		$target = new FilePropertyTarget(
+			objectEntity: $objectEntity,
+			name: $propertyName,
+			isArray: (($schema->getProperties() ?? [])[$propertyName]['type'] ?? '') === 'array',
+			fileConfig: $this->fileConfigOf(schema: $schema, propertyName: $propertyName)
+		);
 
-		// Get property configuration for this file property.
+		// Handle file deletion: null for single files, empty array for array properties.
+		if ($fileValue === null || (is_array($fileValue) === true && empty($fileValue) === true)) {
+			$object[$propertyName] = $this->clearFileProperty(target: $target);
+			return;
+		}
+
+		if ($target->isArray === true) {
+			$object[$propertyName] = $this->storeFiles(target: $target, fileValue: $fileValue);
+			return;
+		}
+
+		if ($this->isFileProperty(value: $fileValue) === true) {
+			// Replace the file content with file ID in the object data.
+			$object[$propertyName] = $this->processSingleFileProperty(
+				objectEntity: $objectEntity,
+				fileInput: $fileValue,
+				propertyName: $propertyName,
+				fileConfig: $target->fileConfig
+			);
+		}
+	}//end handleFileProperty()
+
+	/**
+	 * The file configuration of a property: its own, or its items' for an array, with the
+	 * schema-level autoShare as a default.
+	 *
+	 * @param Schema $schema       The schema containing property configuration.
+	 * @param string $propertyName The name of the file property.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @throws Exception If the property is not in the schema or is not configured for files.
+	 */
+	private function fileConfigOf(Schema $schema, string $propertyName): array {
+		$schemaProperties = $schema->getProperties() ?? [];
 		if (isset($schemaProperties[$propertyName]) === false) {
 			throw new Exception("Property '$propertyName' not found in schema configuration");
 		}
 
-		$propertyConfig = $schemaProperties[$propertyName];
-
-		// Determine if this is a direct file property or array[file].
-		$isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
-		$fileConfig = $propertyConfig;
-		if ($isArrayProperty === true) {
-			$fileConfig = ($propertyConfig['items'] ?? []);
+		$fileConfig = $schemaProperties[$propertyName];
+		if (($fileConfig['type'] ?? '') === 'array') {
+			$fileConfig = ($fileConfig['items'] ?? []);
 		}
 
-		// Validate that the property is configured for files.
 		if (($fileConfig['type'] ?? '') !== 'file') {
 			throw new Exception("Property '$propertyName' is not configured as a file property");
 		}
 
-		// Merge schema-level autoShare setting if not set at property level.
 		// Schema configuration.autoShare serves as a default for all file properties:
 		// when true, an NC share is automatically created for each uploaded file.
 		if (isset($fileConfig['autoShare']) === false) {
@@ -493,8 +506,7 @@ class FilePropertyHandler {
 			if (isset($schemaConfig['autoShare']) === true) {
 				$fileConfig['autoShare'] = $schemaConfig['autoShare'];
 			} elseif (isset($schemaConfig['autoPublish']) === true) {
-				// DEPRECATED: autoPublish was renamed to autoShare in 2026.
-				// Log a one-time deprecation warning and do NOT act on the legacy value.
+				// DEPRECATED: autoPublish was renamed to autoShare in 2026; the legacy value is not acted on.
 				$this->logger->warning(
 					message: "[FilePropertyHandler] Schema config key 'autoPublish' is deprecated and ignored; "
 						. "rename it to 'autoShare' to keep auto-sharing uploaded files.",
@@ -506,147 +518,133 @@ class FilePropertyHandler {
 					]
 				);
 			}
-		}//end if
+		}
 
-		// Handle file deletion: null for single files, empty array for array properties.
-		if ($fileValue === null || (is_array($fileValue) === true && empty($fileValue) === true)) {
-			$this->logger->info(
-				message: '[FilePropertyHandler] File property deletion requested',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'app' => 'openregister',
-					'propertyName' => $propertyName,
-					'uuid' => $objectEntity->getUuid(),
-				]
+		return $fileConfig;
+	}//end fileConfigOf()
+
+	/**
+	 * Delete the files a property holds in the STORED object data and return its cleared value.
+	 *
+	 * The stored data is read, not the current entity state, which prepareObjectData may have
+	 * changed. A file that cannot be deleted is logged and skipped.
+	 *
+	 * @param FilePropertyTarget $target The file property.
+	 *
+	 * @return array<never>|null An empty array for an array property, else null.
+	 */
+	private function clearFileProperty(FilePropertyTarget $target): ?array {
+		$this->logger->info(
+			message: '[FilePropertyHandler] File property deletion requested',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'app' => 'openregister',
+				'propertyName' => $target->name,
+				'uuid' => $target->objectEntity->getUuid(),
+			]
+		);
+
+		$existingFileIds = ($target->objectEntity->getObject() ?? [])[$target->name] ?? null;
+
+		$this->logger->info(
+			message: '[FilePropertyHandler] Existing file IDs for deletion',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'app' => 'openregister',
+				'propertyName' => $target->name,
+				'existingFileIds' => $existingFileIds,
+			]
+		);
+
+		$fileIds = [$existingFileIds];
+		if (is_array($existingFileIds) === true) {
+			$fileIds = $existingFileIds;
+		}
+
+		foreach ($fileIds as $fileId) {
+			if (is_numeric($fileId) === true) {
+				$this->deleteStoredFile(target: $target, fileId: $fileId);
+			}
+		}
+
+		$cleared = null;
+		if ($target->isArray === true) {
+			$cleared = [];
+		}
+
+		$this->logger->info(
+			message: '[FilePropertyHandler] File property set to null/empty',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'app' => 'openregister',
+				'propertyName' => $target->name,
+				'newValue' => $cleared,
+			]
+		);
+
+		return $cleared;
+	}//end clearFileProperty()
+
+	/**
+	 * Delete one stored file of a property; a failure is logged, not thrown.
+	 *
+	 * @param FilePropertyTarget $target The file property.
+	 * @param mixed              $fileId The file id, numeric.
+	 *
+	 * @return void
+	 */
+	private function deleteStoredFile(FilePropertyTarget $target, mixed $fileId): void {
+		try {
+			$this->fileService->deleteFile(
+				file: (int)$fileId,
+				object: $target->objectEntity
 			);
-
-			// Get existing file IDs from the ORIGINAL object data (before any modifications).
-			// We need to look at the stored data, not the current entity state which may
-			// have been modified by prepareObjectData.
-			$currentObjectData = $objectEntity->getObject();
-			$existingFileIds = $currentObjectData[$propertyName] ?? null;
-
-			// Also check for file IDs that might be stored as integers in the data.
-			if ($existingFileIds === null && isset($currentObjectData[$propertyName]) === true) {
-				$existingFileIds = $currentObjectData[$propertyName];
-			}
-
 			$this->logger->info(
-				message: '[FilePropertyHandler] Existing file IDs for deletion',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'app' => 'openregister',
-					'propertyName' => $propertyName,
-					'existingFileIds' => $existingFileIds,
-				]
+				message: "[FilePropertyHandler] Deleted file $fileId for property {$target->name}",
+				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-
-			if ($existingFileIds !== null && $existingFileIds !== '') {
-				// Delete existing files.
-				if (is_array($existingFileIds) === true) {
-					// Array of file IDs.
-					foreach ($existingFileIds as $fileId) {
-						if (is_numeric($fileId) === true) {
-							try {
-								$this->fileService->deleteFile(
-									file: (int)$fileId,
-									object: $objectEntity
-								);
-								$this->logger->info(
-									message: "[FilePropertyHandler] Deleted file $fileId for property $propertyName",
-									context: ['file' => __FILE__, 'line' => __LINE__]
-								);
-							} catch (Exception $e) {
-								// Log but don't fail - file might already be deleted.
-								$this->logger->warning(
-									message: "[FilePropertyHandler] Failed to delete file $fileId: " . $e->getMessage(),
-									context: ['file' => __FILE__, 'line' => __LINE__]
-								);
-							}
-						}
-					}
-				} elseif (is_numeric($existingFileIds) === true) {
-					// Single file ID.
-					try {
-						$this->fileService->deleteFile(
-							file: (int)$existingFileIds,
-							object: $objectEntity
-						);
-						$this->logger->info(
-							message: "[FilePropertyHandler] Deleted file $existingFileIds for property $propertyName",
-							context: ['file' => __FILE__, 'line' => __LINE__]
-						);
-					} catch (Exception $e) {
-						// Log but don't fail - file might already be deleted.
-						$this->logger->warning(
-							message: "[FilePropertyHandler] Failed to delete file $existingFileIds: " . $e->getMessage(),
-							context: ['file' => __FILE__, 'line' => __LINE__]
-						);
-					}
-				}//end if
-			}//end if
-
-			// Set property to null or empty array in the object data.
-			$object[$propertyName] = null;
-			if ($isArrayProperty === true) {
-				$object[$propertyName] = [];
-			}
-
-			$this->logger->info(
-				message: '[FilePropertyHandler] File property set to null/empty',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'app' => 'openregister',
-					'propertyName' => $propertyName,
-					'newValue' => $object[$propertyName],
-				]
+		} catch (Exception $e) {
+			// The file might already be deleted.
+			$this->logger->warning(
+				message: "[FilePropertyHandler] Failed to delete file $fileId: " . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
+		}
+	}//end deleteStoredFile()
 
-			return;
-		}//end if
+	/**
+	 * Store every file of an array property and return their ids; items that are not files are dropped.
+	 *
+	 * @param FilePropertyTarget $target    The file property.
+	 * @param mixed              $fileValue The incoming value.
+	 *
+	 * @return array<int, int>
+	 *
+	 * @throws Exception If the value is not an array, or a file cannot be stored.
+	 */
+	private function storeFiles(FilePropertyTarget $target, mixed $fileValue): array {
+		if (is_array($fileValue) === false) {
+			throw new Exception("Property '{$target->name}' is configured as array but received non-array value");
+		}
 
-		if ($isArrayProperty === true) {
-			// Handle array of files.
-			if (is_array($fileValue) === false) {
-				throw new Exception("Property '$propertyName' is configured as array but received non-array value");
-			}
-
-			$fileIds = [];
-			foreach ($fileValue as $index => $singleFileContent) {
-				if ($this->isFileProperty(value: $singleFileContent) === true) {
-					$fileId = $this->processSingleFileProperty(
-						objectEntity: $objectEntity,
-						fileInput: $singleFileContent,
-						propertyName: $propertyName,
-						fileConfig: $fileConfig,
-						index: $index
-					);
-					$fileIds[] = $fileId;
-				}
-			}
-
-			// Replace the file content with file IDs in the object data.
-			$object[$propertyName] = $fileIds;
-		}//end if
-
-		if ($isArrayProperty === false) {
-			// Handle single file.
-			if ($this->isFileProperty(value: $fileValue) === true) {
-				$fileId = $this->processSingleFileProperty(
-					objectEntity: $objectEntity,
-					fileInput: $fileValue,
-					propertyName: $propertyName,
-					fileConfig: $fileConfig
+		$fileIds = [];
+		foreach ($fileValue as $index => $singleFileContent) {
+			if ($this->isFileProperty(value: $singleFileContent) === true) {
+				$fileIds[] = $this->processSingleFileProperty(
+					objectEntity: $target->objectEntity,
+					fileInput: $singleFileContent,
+					propertyName: $target->name,
+					fileConfig: $target->fileConfig,
+					index: $index
 				);
-
-				// Replace the file content with file ID in the object data.
-				$object[$propertyName] = $fileId;
 			}
-		}//end if
-	}//end handleFileProperty()
+		}
+
+		return $fileIds;
+	}//end storeFiles()
 
 	/**
 	 * Processes a single file property with validation, tagging, and storage.

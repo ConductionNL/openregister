@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OC\Security\CSP\ContentSecurityPolicyNonceManager;
 use OC\Security\CSRF\CsrfTokenManager;
-use OCA\OpenRegister\Service\GraphQL\GraphQLService;
+use OCA\OpenRegister\Search\Service\GraphQL\GraphQLService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;

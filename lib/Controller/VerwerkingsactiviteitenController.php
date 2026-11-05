@@ -10,10 +10,11 @@
  *
  * Authorization rules:
  *
- *   - List + show + accountability: any authenticated user. AVG Art 30 §4
+ *   - List, show and accountability: any authenticated user, within their
+ *     active organisation; administrators see every activity. AVG Art 30 §4
  *     requires the verwerkingsregister to be available to supervisory
- *     authorities and indirectly to data subjects via access requests,
- *     so read paths intentionally don't gate on admin.
+ *     authorities and indirectly to data subjects via access requests, so
+ *     read paths intentionally don't gate on admin.
  *   - Create / update / delete: admin-only. Operators maintain the
  *     catalog; misconfigurations directly affect compliance.
  *
@@ -35,9 +36,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -56,27 +58,41 @@ use OCP\IUserSession;
  */
 class VerwerkingsactiviteitenController extends Controller {
 	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * The group manager.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App identifier.
 	 * @param IRequest $request Active request.
 	 * @param VerwerkingsactiviteitMapper $vrwMapper Mapper for the catalog.
-	 * @param IUserSession $userSession Current user session.
-	 * @param IGroupManager $groupManager Group manager (admin gate).
+	 * @param ControllerSession $session Session, group manager and logger.
 	 * @param IDBConnection $db DB for the verantwoording aggregation.
-	 * @param OrganisationService $organisationService Org-scoping helper.
+	 * @param OrganisationServiceInterface $organisationService Org-scoping helper.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly VerwerkingsactiviteitMapper $vrwMapper,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		ControllerSession $session,
 		private readonly IDBConnection $db,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
+		$this->userSession = $session->userSession;
+		$this->groupManager = $session->groupManager;
 	}//end __construct()
 
 	/**
@@ -92,9 +108,8 @@ class VerwerkingsactiviteitenController extends Controller {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function index(): JSONResponse {
-		// SECURITY (#1825): the processing register is tenant-scoped.
-		// Non-admins only see activities bound to their own
-		// organisation(s); admins see the full catalog.
+		// The processing register is tenant-scoped: a non-admin sees the
+		// activities of their active organisation, an admin the full catalog.
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return $this->unauthorized();
@@ -103,7 +118,7 @@ class VerwerkingsactiviteitenController extends Controller {
 		$isAdmin = $this->isAdmin();
 		$accessibleOrgs = [];
 		if ($isAdmin === false) {
-			$accessibleOrgs = $this->accessibleOrganisationUuids();
+			$accessibleOrgs = $this->activeOrganisationUuids();
 			if ($accessibleOrgs === []) {
 				return new JSONResponse(data: ['count' => 0, 'results' => []]);
 			}
@@ -159,7 +174,7 @@ class VerwerkingsactiviteitenController extends Controller {
 
 		$accessibleOrgs = [];
 		if ($isAdmin === false) {
-			$accessibleOrgs = $this->accessibleOrganisationUuids();
+			$accessibleOrgs = $this->activeOrganisationUuids();
 		}
 
 		// SECURITY (#1825): hide cross-tenant activities from non-admins.
@@ -323,12 +338,14 @@ class VerwerkingsactiviteitenController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md#requirement-the-system-must-provide-an-art-30-4-accountability-report-aggregating-audit-events-per-processing-activity
 	 */
 	public function accountability(): JSONResponse {
-		// SECURITY (#1825): the Art 30 §4 report exposes one tenant's full
-		// processing register + audit aggregates. Non-admins only get
-		// their own organisation(s); admins get the full report.
+		// The Art 30 §4 report exposes one organisation's processing register
+		// and the audit counts of its activities. Audit rows carry no
+		// reliable organisation, so the report is scoped through the
+		// activities: a non-admin gets those of their active organisation,
+		// and rows are counted for those activities only.
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return $this->unauthorized();
@@ -337,7 +354,7 @@ class VerwerkingsactiviteitenController extends Controller {
 		$isAdmin = $this->isAdmin();
 		$accessibleOrgs = [];
 		if ($isAdmin === false) {
-			$accessibleOrgs = $this->accessibleOrganisationUuids();
+			$accessibleOrgs = $this->activeOrganisationUuids();
 			if ($accessibleOrgs === []) {
 				return new JSONResponse(data: ['count' => 0, 'activities' => []]);
 			}
@@ -517,25 +534,21 @@ class VerwerkingsactiviteitenController extends Controller {
 	}//end isAdmin()
 
 	/**
-	 * Organisation UUIDs the active user is allowed to see.
+	 * The active organisation of the current user, as a list of at most one uuid.
 	 *
-	 * Returns the organisation UUIDs the current (non-admin) user
-	 * belongs to. Admins are not scoped (callers should branch on
-	 * `isAdmin()` first). An empty list means deny-all.
+	 * The active organisation is one the user belongs to. An empty list means
+	 * deny-all.
 	 *
-	 * @return array<int, string> Accessible organisation UUIDs.
+	 * @return array<int, string> The active organisation's uuid, or none.
 	 */
-	private function accessibleOrganisationUuids(): array {
-		$uuids = [];
-		foreach ($this->organisationService->getUserOrganisations() as $organisation) {
-			$uuid = (string)$organisation->getUuid();
-			if ($uuid !== '') {
-				$uuids[] = $uuid;
-			}
+	private function activeOrganisationUuids(): array {
+		$uuid = (string)$this->organisationService->getActiveOrganisation()?->getUuid();
+		if ($uuid === '') {
+			return [];
 		}
 
-		return array_values(array_unique($uuids));
-	}//end accessibleOrganisationUuids()
+		return [$uuid];
+	}//end activeOrganisationUuids()
 
 	/**
 	 * Whether the active user may see an activity given its org binding.

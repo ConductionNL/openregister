@@ -2,7 +2,7 @@
 
 namespace Unit\Service;
 
-use OCA\OpenRegister\Service\MetricsService;
+use OCA\OpenRegister\Search\Service\MetricsService;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IFunctionBuilder;

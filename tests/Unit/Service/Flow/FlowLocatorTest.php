@@ -179,6 +179,24 @@ class FlowLocatorTest extends TestCase {
 		$this->assertSame('alice', $candidates[0]['owner']);
 	}//end testScheduledFlowsCarryTheirCronAndOwner()
 
+	public function testAScheduledFlowCarriesWhenItWasLastSaved(): void {
+		$saved = $this->flow(['uuid' => 's1', 'trigger' => 'schedule', 'cron' => '0 6 2 12 *']);
+		$saved->setCreated(new \DateTime('2026-11-02T21:02:38+00:00'));
+		$saved->setUpdated(new \DateTime('2026-11-02T21:02:39+00:00'));
+		$created = $this->flow(['uuid' => 's2', 'trigger' => 'schedule', 'cron' => '0 6 2 12 *']);
+		$created->setCreated(new \DateTime('2026-11-02T21:02:38+00:00'));
+		$unknown = $this->flow(['uuid' => 's3', 'trigger' => 'schedule', 'cron' => '0 6 2 12 *']);
+
+		$mapper = $this->createMock(FlowMapper::class);
+		$mapper->method('findScheduled')->willReturn([$saved, $created, $unknown]);
+
+		$candidates = $this->locator($mapper)->scheduledFlows();
+
+		$this->assertSame('2026-11-02T21:02:39+00:00', $candidates[0]['since']);
+		$this->assertSame('2026-11-02T21:02:38+00:00', $candidates[1]['since']);
+		$this->assertSame('', $candidates[2]['since']);
+	}//end testAScheduledFlowCarriesWhenItWasLastSaved()
+
 	public function testAnOwnerlessScheduledFlowIsNotDispatched(): void {
 		$mapper = $this->createMock(FlowMapper::class);
 		$mapper->method('findScheduled')->willReturn(

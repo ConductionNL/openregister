@@ -35,6 +35,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Case\CaseAnchorReader
  * @covers \OCA\OpenRegister\Service\Case\CaseBusinessStateWriter
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\CaseItem
  */
 class CaseAnchorAndWriterTest extends TestCase {
 

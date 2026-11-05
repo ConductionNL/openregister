@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\AppHost\Scheduling;
 use DateTime;
 use DateTimeInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -105,7 +105,7 @@ class ScheduleReconciler {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService OR CRUD facade for reading applications and upserting jobs.
+	 * @param ObjectOperationsInterface $objectService OR CRUD facade for reading applications and upserting jobs.
 	 * @param ScheduleManifestLoader $manifestLoader On-disk manifest enumeration.
 	 * @param CronScheduleEvaluator $cron Cron → next-fire
 	 *                                    computation.
@@ -118,7 +118,7 @@ class ScheduleReconciler {
 	 *                                                    instance carries.
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly ScheduleManifestLoader $manifestLoader,
 		private readonly CronScheduleEvaluator $cron,
 		private readonly ScheduleActionAllowList $allowList,

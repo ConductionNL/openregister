@@ -1329,6 +1329,39 @@ import {
 	isValidPropertyValue,
 } from '../../services/propertyValues.js'
 
+/**
+ * A metadata value, or 'Not set' when it is empty.
+ *
+ * @param {string|number} value The value
+ * @return {string|number} The value or 'Not set'
+ */
+function orNotSet(value) {
+	return value || 'Not set'
+}
+
+/**
+ * A metadata timestamp in local time, or 'Not set' when it is empty.
+ *
+ * @param {string} value The timestamp
+ * @return {string} The local time or 'Not set'
+ */
+function localTimeOrNotSet(value) {
+	return value ? new Date(value).toLocaleString() : 'Not set'
+}
+
+/**
+ * The validation state of a record's metadata.
+ *
+ * @param {object} self The record's metadata
+ * @return {string} 'Valid', 'Invalid' or 'Not validated'
+ */
+function validationText(self) {
+	if (self?.validation === null) {
+		return 'Not validated'
+	}
+	return self.validation ? 'Valid' : 'Invalid'
+}
+
 const BLANK_VALUES = {
 	string: () => '',
 	number: () => 0,
@@ -1696,64 +1729,20 @@ export default {
 			// Use formData instead of objectStore.objectItem to reflect real-time changes
 			const obj = this.formData || objectStore?.objectItem
 			if (!obj) return []
+			const self = obj['@self']
 
-			const metadata = []
-
-			// ID with copy action
-			metadata.push(['ID', obj.id || 'Not set', true])
-
-			// Register
-			metadata.push(['Register', this.registerTitle || 'Not set', false])
-
-			// Schema
-			metadata.push(['Schema', this.schemaTitle || 'Not set', false])
-
-			// Version
-			metadata.push(['Version', obj['@self']?.version || 'Not set', false])
-
-			// Created
-			metadata.push([
-				'Created',
-				obj['@self']?.created
-					? new Date(obj['@self'].created).toLocaleString()
-					: 'Not set',
-				false,
-			])
-
-			// Updated
-			metadata.push([
-				'Updated',
-				obj['@self']?.updated
-					? new Date(obj['@self'].updated).toLocaleString()
-					: 'Not set',
-				false,
-			])
-
-			// Validation
-			let validationText = 'Not validated'
-			if (obj['@self']?.validation !== null) {
-				validationText = obj['@self'].validation ? 'Valid' : 'Invalid'
-			}
-			metadata.push(['Validation', validationText, false])
-
-			// Owner
-			metadata.push(['Owner', obj['@self']?.owner || 'Not set', false])
-
-			// Application
-			metadata.push([
-				'Application',
-				obj['@self']?.application || 'Not set',
-				false,
-			])
-
-			// Organisation
-			metadata.push([
-				'Organisation',
-				obj['@self']?.organisation || 'Not set',
-				false,
-			])
-
-			return metadata
+			return [
+				['ID', orNotSet(obj.id), true],
+				['Register', orNotSet(this.registerTitle), false],
+				['Schema', orNotSet(this.schemaTitle), false],
+				['Version', orNotSet(self?.version), false],
+				['Created', localTimeOrNotSet(self?.created), false],
+				['Updated', localTimeOrNotSet(self?.updated), false],
+				['Validation', validationText(self), false],
+				['Owner', orNotSet(self?.owner), false],
+				['Application', orNotSet(self?.application), false],
+				['Organisation', orNotSet(self?.organisation), false],
+			]
 		},
 
 		isNewObject() {
@@ -1789,7 +1778,7 @@ export default {
 	watch: {
 		objectStore: {
 			/**
-			 * @param newValue
+			 * @param {object} newValue
 			 * @spec exclude watcher re-initializing data on store change
 			 */
 			handler(newValue) {
@@ -1804,7 +1793,7 @@ export default {
 		// Watch for schema changes to re-initialize data
 		currentSchema: {
 			/**
-			 * @param newSchema
+			 * @param {object|null} newSchema
 			 * @spec exclude watcher re-resolving schema and re-initializing data
 			 */
 			async handler(newSchema) {
@@ -1848,7 +1837,7 @@ export default {
 		// Watch for register changes to re-initialize data
 		currentRegister: {
 			/**
-			 * @param newRegister
+			 * @param {object|null} newRegister
 			 * @spec exclude watcher re-initializing data on register change
 			 */
 			handler(newRegister) {
@@ -1863,7 +1852,7 @@ export default {
 
 		jsonData: {
 			/**
-			 * @param newValue
+			 * @param {string} newValue
 			 * @spec exclude watcher syncing form from JSON editor
 			 */
 			handler(newValue) {
@@ -1875,7 +1864,7 @@ export default {
 
 		formData: {
 			/**
-			 * @param _newValue
+			 * @param {object} _newValue
 			 * @spec exclude watcher syncing JSON editor from form
 			 */
 			handler(_newValue) {
@@ -2053,7 +2042,7 @@ export default {
 		},
 
 		/**
-		 * @param isOpen
+		 * @param {boolean} isOpen
 		 * @spec exclude modal open/close UI handler
 		 */
 		handleDialogClose(isOpen) {
@@ -2105,7 +2094,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {unknown} value
 		 * @spec exclude client-side date validation helper
 		 */
 		isValidDate(value) {
@@ -2113,7 +2102,7 @@ export default {
 		},
 
 		/**
-		 * @param val
+		 * @param {unknown} val
 		 * @spec exclude display helper formatting value as JSON
 		 */
 		formatValue(val) {
@@ -2122,7 +2111,7 @@ export default {
 
 		getTheme,
 		/**
-		 * @param text
+		 * @param {string} text
 		 * @spec exclude clipboard UI helper
 		 */
 		async copyToClipboard(text) {
@@ -2219,49 +2208,79 @@ export default {
 			this.error = null
 
 			try {
-				let dataToSave
-				if (this.activeTab === 1) {
-					if (!this.jsonData.trim()) {
-						throw new Error('JSON data cannot be empty')
-					}
-					try {
-						dataToSave = JSON.parse(this.jsonData)
-					} catch (e) {
-						throw new Error('Invalid JSON format: ' + e.message, {
-							cause: e,
-						})
-					}
-				} else {
-					dataToSave = this.formData
-				}
-
-				const type = `${this.currentRegister.id}-${this.currentSchema.id}`
-				objectStore.registerObjectType(
-					type,
-					this.currentSchema.id,
-					this.currentRegister.id,
-				)
-				const data = await objectStore.saveObject(type, dataToSave)
-				if (data) objectStore.setObjectItem(data)
-				await objectStore.refreshObjectList({
-					register: this.currentRegister.id,
-					schema: this.currentSchema.id,
-				})
-				objectStore.refetchSearchCollection()
-				this.success = !!data
-				if (this.success) {
-					// Re-initialize data to refresh jsonData with the newly created object
-					this.initializeData()
-					setTimeout(() => {
-						this.success = null
-					}, 2000)
-				}
+				this.markSaved(await this.storeObject(this.objectPayload()))
 			} catch (e) {
 				this.error = e.message || 'Failed to save object'
 				this.success = false
 			} finally {
 				this.isSaving = false
 			}
+		},
+
+		/**
+		 * Show whether the save returned an object. After a save the form is
+		 * re-initialised from the saved object and the notice clears after 2
+		 * seconds.
+		 *
+		 * @spec exclude modal submit handler delegating to objectStore.saveObject
+		 * @param {object|null} data The saved object
+		 * @return {void}
+		 */
+		markSaved(data) {
+			this.success = !!data
+			if (this.success) {
+				this.initializeData()
+				setTimeout(() => {
+					this.success = null
+				}, 2000)
+			}
+		},
+
+		/**
+		 * The object to save: the parsed JSON on the JSON tab, the form data
+		 * otherwise.
+		 *
+		 * @spec exclude modal submit handler delegating to objectStore.saveObject
+		 * @return {object} The object to save
+		 * @throws {Error} When the JSON is empty or does not parse
+		 */
+		objectPayload() {
+			if (this.activeTab !== 1) {
+				return this.formData
+			}
+			if (!this.jsonData.trim()) {
+				throw new Error('JSON data cannot be empty')
+			}
+			try {
+				return JSON.parse(this.jsonData)
+			} catch (e) {
+				throw new Error('Invalid JSON format: ' + e.message, { cause: e })
+			}
+		},
+
+		/**
+		 * Save the object under the current register and schema, select the
+		 * saved object and refresh the lists that show it.
+		 *
+		 * @spec exclude modal submit handler delegating to objectStore.saveObject
+		 * @param {object} dataToSave The object to save
+		 * @return {Promise<object|null>} The saved object
+		 */
+		async storeObject(dataToSave) {
+			const type = `${this.currentRegister.id}-${this.currentSchema.id}`
+			objectStore.registerObjectType(
+				type,
+				this.currentSchema.id,
+				this.currentRegister.id,
+			)
+			const data = await objectStore.saveObject(type, dataToSave)
+			if (data) objectStore.setObjectItem(data)
+			await objectStore.refreshObjectList({
+				register: this.currentRegister.id,
+				schema: this.currentSchema.id,
+			})
+			objectStore.refetchSearchCollection()
+			return data
 		},
 
 		/**
@@ -2274,7 +2293,7 @@ export default {
 				this.isInternalUpdate = true
 				const parsed = JSON.parse(this.jsonData)
 				this.formData = parsed
-			} catch (e) {
+			} catch {
 				this.error = 'Invalid JSON format'
 			} finally {
 				this.$nextTick(() => {
@@ -2302,7 +2321,7 @@ export default {
 		},
 
 		/**
-		 * @param str
+		 * @param {string} str
 		 * @spec exclude client-side JSON validation helper
 		 */
 		isValidJson(str) {
@@ -2312,7 +2331,7 @@ export default {
 			try {
 				JSON.parse(str)
 				return true
-			} catch (e) {
+			} catch {
 				return false
 			}
 		},
@@ -2326,7 +2345,7 @@ export default {
 					const parsed = JSON.parse(this.jsonData)
 					this.jsonData = JSON.stringify(parsed, null, 2)
 				}
-			} catch (e) {
+			} catch {
 				// Keep invalid JSON as-is
 			}
 		},
@@ -2336,9 +2355,9 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param index
-		 * @param value
+		 * @param {string} key
+		 * @param {number} index
+		 * @param {unknown} value
 		 * @spec exclude form-state helper updating an array item
 		 */
 		updateArrayItem(key, index, value) {
@@ -2349,7 +2368,7 @@ export default {
 		},
 
 		/**
-		 * @param v
+		 * @param {unknown} v
 		 * @spec exclude display/payload coercion helper for null values
 		 */
 		toDisplay(v) {
@@ -2357,7 +2376,7 @@ export default {
 		},
 
 		/**
-		 * @param v
+		 * @param {unknown} v
 		 * @spec exclude display/payload coercion helper for empty values
 		 */
 		toPayload(v) {
@@ -2365,7 +2384,7 @@ export default {
 		},
 
 		/**
-		 * @param key
+		 * @param {string} key
 		 * @spec exclude form-state helper adding an array item
 		 */
 		addArrayItem(key) {
@@ -2376,8 +2395,8 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param i
+		 * @param {string} key
+		 * @param {number} i
 		 * @spec exclude form-state helper removing an array item
 		 */
 		removeArrayItem(key, i) {
@@ -2387,8 +2406,8 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param val
+		 * @param {string} key
+		 * @param {string} val
 		 * @spec exclude form-state helper updating an object-typed field
 		 */
 		updateObjectField(key, val) {
@@ -2401,7 +2420,7 @@ export default {
 		},
 
 		/**
-		 * @param checked
+		 * @param {boolean} checked
 		 * @spec exclude file-selection UI toggle (select all)
 		 */
 		toggleSelectAllFiles(checked) {
@@ -2422,8 +2441,8 @@ export default {
 		},
 
 		/**
-		 * @param fileId
-		 * @param checked
+		 * @param {string|number} fileId
+		 * @param {boolean} checked
 		 * @spec exclude file-selection UI toggle (single file)
 		 */
 		toggleFileSelection(fileId, checked) {
@@ -2439,7 +2458,7 @@ export default {
 		},
 
 		/**
-		 * @param page
+		 * @param {number} page
 		 * @spec exclude files pagination UI handler
 		 */
 		onFilesPageChanged(page) {
@@ -2447,7 +2466,7 @@ export default {
 		},
 
 		/**
-		 * @param pageSize
+		 * @param {number} pageSize
 		 * @spec exclude files page-size UI handler
 		 */
 		onFilesPageSizeChanged(pageSize) {
@@ -2469,8 +2488,8 @@ export default {
 		// back to N sequential single-file calls when the runtime store
 		// doesn't expose batchFiles yet (older @conduction/nextcloud-vue).
 		/**
-		 * @param action
-		 * @param perFileFallback
+		 * @param {string} action
+		 * @param {Function} perFileFallback
 		 * @spec exclude file batch-action dispatch helper delegating to objectStore.batchFiles
 		 */
 		async _runBatchAction(action, perFileFallback) {
@@ -2510,7 +2529,7 @@ export default {
 		},
 
 		/**
-		 * @param file
+		 * @param {object} file
 		 * @spec exclude single file-delete handler delegating to objectStore.deleteFile
 		 */
 		async deleteFile(file) {
@@ -2529,7 +2548,7 @@ export default {
 		},
 
 		/**
-		 * @param file
+		 * @param {object} file
 		 * @spec exclude form-state handler entering file-label edit mode
 		 */
 		async editFileLabels(file) {
@@ -2556,7 +2575,7 @@ export default {
 		// API call shape is implemented in services/fileMetadata.js so it
 		// can be unit-tested without mounting this modal.
 		/**
-		 * @param file
+		 * @param {object} file
 		 * @spec exclude file-label save handler delegating to services/fileMetadata
 		 */
 		async saveFileLabels(file) {
@@ -2604,8 +2623,8 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param value
+		 * @param {string} key
+		 * @param {unknown} value
 		 * @spec exclude computed CSS-class helper for property validation state
 		 */
 		getPropertyValidationClass(key, value) {
@@ -2641,9 +2660,9 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param value
-		 * @param schemaProperty
+		 * @param {string} key
+		 * @param {unknown} value
+		 * @param {object} schemaProperty
 		 * @spec exclude client-side property-value validation helper
 		 */
 		isValidPropertyValue(key, value, schemaProperty) {
@@ -2654,8 +2673,8 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param value
+		 * @param {string} key
+		 * @param {unknown} value
 		 * @spec exclude display helper building property error message
 		 */
 		getPropertyErrorMessage(key, value) {
@@ -2726,7 +2745,7 @@ export default {
 				// For objects and arrays, return JSON string
 				try {
 					return JSON.stringify(value)
-				} catch (e) {
+				} catch {
 					return String(value)
 				}
 			}
@@ -2734,8 +2753,8 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param event
+		 * @param {string} key
+		 * @param {MouseEvent} event
 		 * @spec exclude table-row click UI handler for inline edit
 		 */
 		handleRowClick(key, event) {
@@ -2788,7 +2807,7 @@ export default {
 		},
 
 		/**
-		 * @param key
+		 * @param {string} key
 		 * @spec exclude form-state handler selecting/focusing a property for edit
 		 */
 		selectProperty(key) {
@@ -2811,8 +2830,8 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param newValue
+		 * @param {string} key
+		 * @param {unknown} newValue
 		 * @spec exclude form-state handler updating a property value with type coercion
 		 */
 		updatePropertyValue(key, newValue) {
@@ -2875,9 +2894,9 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param oldValue
-		 * @param newValue
+		 * @param {string} key
+		 * @param {unknown} oldValue
+		 * @param {unknown} newValue
 		 * @spec exclude toast notification UI helper for property changes
 		 */
 		showPropertyChangeNotification(key, oldValue, newValue) {
@@ -2913,7 +2932,7 @@ export default {
 		},
 
 		/**
-		 * @param key
+		 * @param {string} key
 		 * @spec exclude display helper checking string-typed property
 		 */
 		isStringProperty(key) {
@@ -2922,8 +2941,8 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param value
+		 * @param {string} key
+		 * @param {unknown} value
 		 * @spec exclude display helper checking property editability (const/immutable)
 		 */
 		isPropertyEditable(key, value) {
@@ -2951,8 +2970,8 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param value
+		 * @param {string} key
+		 * @param {unknown} value
 		 * @spec exclude display helper building editability warning text
 		 */
 		getEditabilityWarning(key, value) {
@@ -2975,8 +2994,8 @@ export default {
 		},
 
 		/**
-		 * @param value
-		 * @param format
+		 * @param {string} value
+		 * @param {string} format
 		 * @spec exclude display helper delegating to dateUtils.stringToDate
 		 */
 		stringToDate(value, format) {
@@ -2984,7 +3003,7 @@ export default {
 		},
 
 		/**
-		 * @param key
+		 * @param {string} key
 		 * @spec exclude display helper mapping schema type to input type
 		 */
 		getPropertyInputType(key) {
@@ -2992,7 +3011,7 @@ export default {
 		},
 
 		/**
-		 * @param key
+		 * @param {string} key
 		 * @spec exclude display helper mapping schema type to input component
 		 */
 		getPropertyInputComponent(key) {
@@ -3148,8 +3167,8 @@ export default {
 		},
 
 		/**
-		 * @param key
-		 * @param value
+		 * @param {string} key
+		 * @param {unknown} value
 		 * @spec exclude display helper resolving value to show for a property
 		 */
 		getDisplayValue(key, value) {

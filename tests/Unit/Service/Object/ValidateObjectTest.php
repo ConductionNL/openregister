@@ -683,10 +683,9 @@ class ValidateObjectTest extends TestCase {
 		$schemaObject = new stdClass();
 		$schemaObject->type = 'object';
 
-		[$result, $object] = $this->invokePrivate('transformSchemaForValidation', [$schemaObject, ['name' => 'Test'], 'test-schema']);
+		$result = $this->invokePrivate('transformSchemaForValidation', [$schemaObject, 'test-schema']);
 
 		$this->assertSame('object', $result->type);
-		$this->assertSame(['name' => 'Test'], $object);
 	}
 
 	public function testTransformSchemaForValidationWithSelfReferenceRelatedObject(): void {
@@ -698,7 +697,7 @@ class ValidateObjectTest extends TestCase {
 		$schemaObject->properties->parent->{'$ref'} = '#/components/schemas/test-schema';
 		$schemaObject->properties->parent->objectConfiguration = ['handling' => 'related-object'];
 
-		[$result, $object] = $this->invokePrivate('transformSchemaForValidation', [$schemaObject, ['parent' => 'uuid-123'], 'test-schema']);
+		$result = $this->invokePrivate('transformSchemaForValidation', [$schemaObject, 'test-schema']);
 
 		// Self-reference with related-object should become string UUID type.
 		$this->assertSame('string', $result->properties->parent->type);
@@ -715,7 +714,7 @@ class ValidateObjectTest extends TestCase {
 		$schemaObject->properties->parent->objectConfiguration = ['handling' => 'related-object'];
 		$schemaObject->properties->parent->inversedBy = 'children';
 
-		[$result, $object] = $this->invokePrivate('transformSchemaForValidation', [$schemaObject, ['parent' => null], 'test-schema']);
+		$result = $this->invokePrivate('transformSchemaForValidation', [$schemaObject, 'test-schema']);
 
 		// Self-reference with inversedBy should become oneOf [null, string, object].
 		$this->assertNotNull($result->properties->parent->oneOf);
@@ -732,7 +731,7 @@ class ValidateObjectTest extends TestCase {
 		$schemaObject->properties->children->items->type = 'object';
 		$schemaObject->properties->children->items->{'$ref'} = '#/components/schemas/test-schema';
 
-		[$result, $object] = $this->invokePrivate('transformSchemaForValidation', [$schemaObject, ['children' => []], 'test-schema']);
+		$result = $this->invokePrivate('transformSchemaForValidation', [$schemaObject, 'test-schema']);
 
 		// Array items self-ref without objectConfiguration handling: the isSelfReference check on items
 		// uses `=== true` for preg_match which won't match. So items remain object type
@@ -748,7 +747,7 @@ class ValidateObjectTest extends TestCase {
 		$schemaObject->properties->name = new stdClass();
 		$schemaObject->properties->name->type = 'string';
 
-		[$result, $object] = $this->invokePrivate('transformSchemaForValidation', [$schemaObject, ['name' => 'Test'], 'test-schema']);
+		$result = $this->invokePrivate('transformSchemaForValidation', [$schemaObject, 'test-schema']);
 
 		$this->assertFalse(isset($result->{'$id'}));
 	}
@@ -1569,6 +1568,30 @@ class ValidateObjectTest extends TestCase {
 		$this->assertSame('array', $result->type);
 	}
 
+	public function testResolveSchemaPropertyReadsAnObjectOrArrayRefId(): void {
+		$schema = $this->createSchema(['street' => ['type' => 'string']]);
+		$schema->setSlug('addr');
+		$this->schemaMapper->method('find')
+			->willReturn($schema);
+
+		$objectProp = new stdClass();
+		$objectProp->type = 'object';
+		$objectProp->description = 'd';
+		$objectProp->{'$ref'} = (object) ['id' => '#/components/schemas/addr'];
+		$union = $this->invokePrivate('resolveSchemaProperty', [$objectProp, []]);
+
+		$this->assertSame(['oneOf', 'description'], array_keys(get_object_vars($union)));
+		$this->assertSame('d', $union->description);
+
+		$listProp = new stdClass();
+		$listProp->type = 'array';
+		$listProp->{'$ref'} = ['id' => '#/components/schemas/addr?x=1'];
+		$resolved = $this->invokePrivate('resolveSchemaProperty', [$listProp, []]);
+
+		$this->assertSame('array', $resolved->type);
+		$this->assertObjectNotHasProperty('$ref', $resolved);
+	}
+
 	public function testResolveSchemaPropertyWithNestedProperties(): void {
 		$prop = new stdClass();
 		$prop->type = 'object';
@@ -1978,10 +2001,7 @@ class ValidateObjectTest extends TestCase {
 		$schemaObject->properties->parent->{'$ref'} = '#/components/schemas/test-schema';
 		$schemaObject->properties->parent->objectConfiguration = (object)['handling' => 'related-object'];
 
-		[$result, $object] = $this->invokePrivate(
-			'transformSchemaForValidation',
-			[$schemaObject, ['parent' => 'uuid-123'], 'test-schema']
-		);
+		$result = $this->invokePrivate('transformSchemaForValidation', [$schemaObject, 'test-schema']);
 
 		// Self-reference with object-format objectConfiguration.
 		$this->assertSame('string', $result->properties->parent->type);
@@ -1995,10 +2015,7 @@ class ValidateObjectTest extends TestCase {
 		$schemaObject->properties->parent->type = 'object';
 		$schemaObject->properties->parent->{'$ref'} = '#/components/schemas/test-schema';
 
-		[$result, $object] = $this->invokePrivate(
-			'transformSchemaForValidation',
-			[$schemaObject, ['parent' => 'uuid-123'], 'test-schema']
-		);
+		$result = $this->invokePrivate('transformSchemaForValidation', [$schemaObject, 'test-schema']);
 
 		// Self-reference without objectConfiguration - $ref should be unset.
 		$this->assertFalse(isset($result->properties->parent->{'$ref'}));

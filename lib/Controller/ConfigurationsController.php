@@ -24,8 +24,9 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\ConfigurationsControllerServices;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -56,28 +57,46 @@ class ConfigurationsController extends Controller {
 	private readonly ?string $userId;
 
 	/**
+	 * The configuration mapper instance
+	 *
+	 * @var ConfigurationMapper
+	 */
+	private readonly ConfigurationMapper $configurationMapper;
+
+	/**
+	 * The configuration service instance
+	 *
+	 * @var ConfigurationServiceInterface
+	 */
+	private readonly ConfigurationServiceInterface $configurationService;
+
+	/**
+	 * The controller's injected services.
+	 *
+	 * @var ConfigurationsControllerServices
+	 */
+	private readonly ConfigurationsControllerServices $services;
+
+	/**
 	 * Constructor for ConfigurationController.
 	 *
 	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
-	 * @param ConfigurationMapper $configurationMapper The configuration mapper instance
-	 * @param ConfigurationService $configurationService The configuration service instance
-	 * @param UploadService $uploadService The upload service instance
+	 * @param ConfigurationsControllerServices $services The configurations controller services.
 	 * @param string|null $userId The current user ID
-	 * @param IUserSession $userSession User session for admin checks
 	 * @param IGroupManager $groupManager Group manager for admin checks
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ConfigurationMapper $configurationMapper,
-		private readonly ConfigurationService $configurationService,
-		private readonly UploadService $uploadService,
+		ConfigurationsControllerServices $services,
 		?string $userId,
-		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->services = $services;
+		$this->configurationMapper = $services->configurationMapper;
+		$this->configurationService = $services->configurationService;
 		$this->userId = $userId;
 	}//end __construct()
 
@@ -87,7 +106,7 @@ class ConfigurationsController extends Controller {
 	 * @return bool True if a user is signed in and belongs to the admin group.
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
+		$user = $this->services->userSession->getUser();
 		if ($user === null) {
 			return false;
 		}

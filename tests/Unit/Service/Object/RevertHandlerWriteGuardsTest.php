@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -41,6 +42,14 @@ use Psr\Container\ContainerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\RevertHandler
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\ObjectRevertedEvent
+ * @uses \OCA\OpenRegister\Exception\ObjectStateWriteException
+ * @uses \OCA\OpenRegister\Service\Object\NotSuppliedHandler
+ * @uses \OCA\OpenRegister\Exception\ValidationException
  */
 final class RevertHandlerWriteGuardsTest extends TestCase {
 
@@ -119,7 +128,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			fn (string $id) => match ($id) {
 				'userId' => 'alice',
-				SettingsService::class => $this->settings,
+				SettingsServiceInterface::class => $this->settings,
 				default => throw new \RuntimeException('unexpected service ' . $id),
 			}
 		);
@@ -161,6 +170,19 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 
 		$this->assertSame($this->reverted, $saved);
 	}//end testRevertWritesARevertAuditRow()
+
+	/**
+	 * The audit trail is handed the object the revert checked, not the URL id to look up again.
+	 *
+	 * @return void
+	 */
+	public function testTheTrailIsHandedTheCheckedObject(): void {
+		$this->validator->method('validateObject')->willReturn($this->valid());
+		$this->magic->method('update')->willReturnArgument(0);
+		$this->audit->expects($this->once())->method('revertObject')->with($this->identicalTo($this->current), '1.0.1', false);
+
+		$this->handler()->revert(register: '5', schema: '7', id: '11', until: '1.0.1');
+	}//end testTheTrailIsHandedTheCheckedObject()
 
 	/**
 	 * With audit trails switched off, the revert writes no row, as a save does not.

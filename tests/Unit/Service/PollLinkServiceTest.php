@@ -28,6 +28,8 @@ use Exception;
 use OCA\OpenRegister\Db\PollLink;
 use OCA\OpenRegister\Db\PollLinkMapper;
 use OCA\OpenRegister\Service\PollLinkService;
+use OCA\OpenRegister\Service\PollDraft;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUser;
@@ -181,7 +183,7 @@ class PollLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('No user logged in');
 
-		$this->service->createAndLinkPoll('abc-123', 1, 2, 'Lunch', '', 'textPoll', ['A'], null);
+		$this->service->createAndLinkPoll((new LinkTarget('abc-123', 1))->inSchema(2), (new PollDraft('Lunch', ''))->withType('textPoll')->withOptions(['A'], null));
 	}
 
 	public function testCreateAndLinkPollThrowsWhenPollsUnavailable(): void {
@@ -192,7 +194,7 @@ class PollLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(503);
 		$this->expectExceptionMessage('Polls is not available');
 
-		$this->service->createAndLinkPoll('abc-123', 1, 2, 'Lunch', '', 'textPoll', ['A'], null);
+		$this->service->createAndLinkPoll((new LinkTarget('abc-123', 1))->inSchema(2), (new PollDraft('Lunch', ''))->withType('textPoll')->withOptions(['A'], null));
 	}
 
 	public function testCreateAndLinkPollThrowsWhenTitleEmpty(): void {
@@ -203,7 +205,7 @@ class PollLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(400);
 		$this->expectExceptionMessage('Title is required');
 
-		$this->service->createAndLinkPoll('abc-123', 1, 2, '   ', '', 'textPoll', ['A'], null);
+		$this->service->createAndLinkPoll((new LinkTarget('abc-123', 1))->inSchema(2), (new PollDraft('   ', ''))->withType('textPoll')->withOptions(['A'], null));
 	}
 
 	public function testGetAvailablePollsReturnsEmptyWhenPollsUnavailable(): void {
