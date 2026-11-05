@@ -9,9 +9,9 @@
  * `\OCP\Server::get()` behind a `class_exists` guard so OR boots cleanly
  * when Analytics is not installed) to expose the Tier-2 surface:
  *
- *   - linkReport(uuid, registerId, schemaId, reportId)
+ *   - linkReport(target, reportId)
  *       — link an existing report
- *   - createAndLinkReport(uuid, registerId, schemaId, name, type)
+ *   - createAndLinkReport(target, name, type)
  *       — create a new NC Analytics report and link it
  *   - unlinkReport(uuid, reportId)
  *       — remove a link (the report itself stays in NC Analytics)
@@ -185,10 +185,8 @@ class AnalyticsLinkService {
 	 * metadata (title/type/subheader/created/modified) is cached at link
 	 * time.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
-	 * @param int $reportId NC Analytics report id.
+	 * @param LinkTarget $target   The object to link to.
+	 * @param int        $reportId NC Analytics report id.
 	 *
 	 * @return AnalyticsLink The persisted link row.
 	 *
@@ -197,33 +195,40 @@ class AnalyticsLinkService {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function linkReport(string $objectUuid, int $registerId, int $schemaId, int $reportId): AnalyticsLink {
+	public function linkReport(LinkTarget $target, int $reportId): AnalyticsLink {
 		$uid = $this->requireUid();
-
-		if ($this->isAnalyticsAvailable() === false) {
-			throw new Exception('NC Analytics is not available', 503);
-		}
-
-		$existing = $this->analyticsLinkMapper->findByObjectAndReport($objectUuid, $reportId);
-		if ($existing !== null) {
-			throw new Exception('Report already linked to this object', 409);
-		}
+		$this->assertReportLinkable(target: $target, reportId: $reportId);
 
 		$info = $this->fetchReportInfo(reportId: $reportId);
 		if ($info === null) {
 			throw new Exception('Analytics report not found', 404);
 		}
 
-		$link = $this->buildLink(
-			reportId: $reportId,
-			info: $info
-		);
-		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
-			->inSchema(schemaId: $schemaId)
-			->stamp(link: $link, linkedBy: $uid);
+		$link = $this->buildLink(reportId: $reportId, info: $info);
+		$target->stamp(link: $link, linkedBy: $uid);
 
 		return $this->analyticsLinkMapper->insert($link);
 	}//end linkReport()
+
+	/**
+	 * Refuse a link when Analytics is off or the report is already linked to the object.
+	 *
+	 * @param LinkTarget $target   The object to link to.
+	 * @param int        $reportId NC Analytics report id.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception Analytics unavailable (503) or duplicate (409).
+	 */
+	private function assertReportLinkable(LinkTarget $target, int $reportId): void {
+		if ($this->isAnalyticsAvailable() === false) {
+			throw new Exception('NC Analytics is not available', 503);
+		}
+
+		if ($this->analyticsLinkMapper->findByObjectAndReport($target->objectUuid, $reportId) !== null) {
+			throw new Exception('Report already linked to this object', 409);
+		}
+	}//end assertReportLinkable()
 
 	/**
 	 * Create a new NC Analytics report and link it to an OR object.
@@ -232,28 +237,18 @@ class AnalyticsLinkService {
 	 * may pass a different NC Analytics datasource type integer via
 	 * `$type`.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
-	 * @param string $name New report name.
-	 * @param int|null $type NC Analytics datasource type (default group).
+	 * @param LinkTarget $target The object to link to.
+	 * @param string     $name   New report name.
+	 * @param int|null   $type   NC Analytics datasource type (default group).
 	 *
 	 * @return AnalyticsLink The persisted link row.
 	 *
 	 * @throws Exception On missing user (401), empty name (400),
 	 *                   Analytics unavailable (503), create failure (500).
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList)
-	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function createAndLinkReport(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		string $name,
-		?int $type = null,
-	): AnalyticsLink {
+	public function createAndLinkReport(LinkTarget $target, string $name, ?int $type = null): AnalyticsLink {
 		$uid = $this->requireUid();
 
 		$name = trim($name);
@@ -261,27 +256,34 @@ class AnalyticsLinkService {
 			throw new Exception('Report name is required', 400);
 		}
 
+		$reportType = ($type ?? self::REPORT_TYPE_GROUP);
+		$reportId   = $this->createReport(name: $name, reportType: $reportType);
+
+		$info = ($this->fetchReportInfo(reportId: $reportId) ?? $this->draftReportInfo(name: $name, reportType: $reportType));
+		$link = $this->buildLink(reportId: $reportId, info: $info);
+		$target->stamp(link: $link, linkedBy: $uid);
+
+		return $this->analyticsLinkMapper->insert($link);
+	}//end createAndLinkReport()
+
+	/**
+	 * Create a report in NC Analytics.
+	 *
+	 * @param string $name       The report name.
+	 * @param int    $reportType NC Analytics datasource type.
+	 *
+	 * @return int The new report id.
+	 *
+	 * @throws Exception Analytics unavailable (503) or create failure (500).
+	 */
+	private function createReport(string $name, int $reportType): int {
 		$service = $this->resolveReportService();
 		if ($service === null) {
 			throw new Exception('NC Analytics is not available', 503);
 		}
 
-		$reportType = ($type ?? self::REPORT_TYPE_GROUP);
-
 		try {
-			$reportId = (int)$service->create(
-				$name,
-				'',
-				0,
-				$reportType,
-				0,
-				'',
-				'',
-				'',
-				'',
-				'',
-				''
-			);
+			$reportId = (int)$service->create($name, '', 0, $reportType, 0, '', '', '', '', '', '');
 		} catch (Throwable $e) {
 			$this->logger->warning('AnalyticsLinkService::createAndLinkReport failed: ' . $e->getMessage());
 			throw new Exception('Failed to create Analytics report', 500);
@@ -291,24 +293,26 @@ class AnalyticsLinkService {
 			throw new Exception('Failed to create Analytics report', 500);
 		}
 
-		$info = $this->fetchReportInfo(reportId: $reportId);
+		return $reportId;
+	}//end createReport()
 
-		$link = $this->buildLink(
-			reportId: $reportId,
-			info: ($info ?? [
-				'title' => $name,
-				'type' => (string)$reportType,
-				'subheader' => null,
-				'createdAt' => new DateTime(),
-				'modifiedAt' => new DateTime(),
-			])
-		);
-		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
-			->inSchema(schemaId: $schemaId)
-			->stamp(link: $link, linkedBy: $uid);
-
-		return $this->analyticsLinkMapper->insert($link);
-	}//end createAndLinkReport()
+	/**
+	 * The cached metadata for a new report whose read came back empty.
+	 *
+	 * @param string $name       The report name.
+	 * @param int    $reportType NC Analytics datasource type.
+	 *
+	 * @return array<string,mixed> The report info.
+	 */
+	private function draftReportInfo(string $name, int $reportType): array {
+		return [
+			'title' => $name,
+			'type' => (string)$reportType,
+			'subheader' => null,
+			'createdAt' => new DateTime(),
+			'modifiedAt' => new DateTime(),
+		];
+	}//end draftReportInfo()
 
 	/**
 	 * Unlink a report from an object.
