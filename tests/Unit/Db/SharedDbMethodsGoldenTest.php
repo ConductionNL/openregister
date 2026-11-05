@@ -63,6 +63,7 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\DestructionList
  * @uses   \OCA\OpenRegister\Db\EndpointLog
  * @uses   \OCA\OpenRegister\Db\WebhookLog
+ * @uses   \OCA\OpenRegister\Db\QueryPage
  */
 class SharedDbMethodsGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
