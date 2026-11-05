@@ -324,6 +324,8 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @param string|null $actor The creating identity.
 	 * @param callable|null $mayReadBlocker Answers whether the creating caller may read a blocker; create() passes
 	 *                                      the caller's own rule for an ordinary user, a trusted caller passes none.
+	 * @param DateTime|null $createdAt The moment the task was created, for a task carried over from elsewhere; it stamps
+	 *                                 the task and its create audit entry. Null stamps both with now.
 	 *
 	 * @return Task The created task, with candidates indexed and creation audited.
 	 *
@@ -332,10 +334,12 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-task-may-carry-the-moment-it-was-created
 	 */
-	public function import(array $data, ?string $actor, ?callable $mayReadBlocker = null): Task {
+	public function import(array $data, ?string $actor, ?callable $mayReadBlocker = null, ?DateTime $createdAt = null): Task {
 		$data = $this->locate(data: $data);
 		$task = $this->builder->fromData(data: $data, actor: $actor);
+		$task->setCreated($createdAt);
 		$this->refuseUnrenderableForm(task: $task);
 		(new TaskBlockerGuard(tasks: $this->tasks))->assertDeclarable(task: $task, mayRead: $mayReadBlocker);
 		$this->authorizeOrRecord(verb: 'create', task: $task, actor: $actor);
@@ -1608,6 +1612,11 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 		$entry->setMandate($task->getMandate());
 		$entry->setReason($reason);
 		$entry->setAuthorized(true);
+		if ($action === 'create') {
+			// The create entry happened when the task did, which an imported task may date in the past.
+			$entry->setCreated($task->getCreated());
+		}
+
 		$this->audits->insert($entry);
 	}//end appendAudit()
 
