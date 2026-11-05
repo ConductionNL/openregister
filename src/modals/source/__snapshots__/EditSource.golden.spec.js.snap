@@ -470,7 +470,32 @@ exports[`EditSource golden introspect: thrownBare 1`] = `
 }
 `;
 
-exports[`EditSource golden opens on a internal source: dom 1`] = `""`;
+exports[`EditSource golden opens on a internal source: dom 1`] = `
+"<x-ncdialog name="Edit Source" size="normal" canclose="false">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-contentsaveoutline size="20"></x-contentsaveoutline>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="Main" disabled="false" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextarea modelvalue="d" disabled="false" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield disabled="false" label="Database URL" data-on="onUpdate:modelValue"></x-nctextfield>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
 
 exports[`EditSource golden opens on a internal source: form 1`] = `
 {
@@ -508,7 +533,54 @@ exports[`EditSource golden opens on a internal source: form 1`] = `
 }
 `;
 
-exports[`EditSource golden opens on a mysql source: dom 1`] = `""`;
+exports[`EditSource golden opens on a mysql source: dom 1`] = `
+"<x-ncdialog name="Edit Source" size="normal" canclose="false">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databasecheckoutline size="20"></x-databasecheckoutline>
+      </slot-icon>
+      <slot-default> Test connection</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databaseimportoutline size="20"></x-databaseimportoutline>
+      </slot-icon>
+      <slot-default> Create virtual register</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-contentsaveoutline size="20"></x-contentsaveoutline>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="Shop" disabled="false" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextarea disabled="false" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Driver" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield modelvalue="db" disabled="false" label="Host *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="5432" disabled="false" label="Port" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="shop" disabled="false" label="Database name *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="u" disabled="false" label="User" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="cred" disabled="false" label="Credential (UUID from the credential store)" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+        <slot-default>Allow writes (create, update and delete push through to the external database)</slot-default>
+      </x-nccheckboxradioswitch>
+      <p class="databaseHint">Warning: writes are executed directly on the external database. Use a database user with least-privilege grants. Re-run "Create virtual register" to unlock existing schemas.</p>
+      <p class="databaseHint">The database password is never stored on the source; reference a credential from the credential store instead.</p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
 
 exports[`EditSource golden opens on a mysql source: form 1`] = `
 {
@@ -555,7 +627,53 @@ exports[`EditSource golden opens on a mysql source: form 1`] = `
 }
 `;
 
-exports[`EditSource golden opens on a noDriver source: dom 1`] = `""`;
+exports[`EditSource golden opens on a noDriver source: dom 1`] = `
+"<x-ncdialog name="Edit Source" size="normal" canclose="false">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databasecheckoutline size="20"></x-databasecheckoutline>
+      </slot-icon>
+      <slot-default> Test connection</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databaseimportoutline size="20"></x-databaseimportoutline>
+      </slot-icon>
+      <slot-default> Create virtual register</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-contentsaveoutline size="20"></x-contentsaveoutline>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="Bare" disabled="false" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextarea disabled="false" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Driver" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield modelvalue="h" disabled="false" label="Host *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="" disabled="false" label="Port" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="" disabled="false" label="Database name *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="" disabled="false" label="User" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="" disabled="false" label="Credential (UUID from the credential store)" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+        <slot-default>Allow writes (create, update and delete push through to the external database)</slot-default>
+      </x-nccheckboxradioswitch>
+      <p class="databaseHint">The database password is never stored on the source; reference a credential from the credential store instead.</p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
 
 exports[`EditSource golden opens on a noDriver source: form 1`] = `
 {
@@ -596,7 +714,32 @@ exports[`EditSource golden opens on a noDriver source: form 1`] = `
 }
 `;
 
-exports[`EditSource golden opens on a none source: dom 1`] = `""`;
+exports[`EditSource golden opens on a none source: dom 1`] = `
+"<x-ncdialog name="Add Source" size="normal" canclose="false">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-plus size="20"></x-plus>
+      </slot-icon>
+      <slot-default> Create</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="" disabled="false" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextarea modelvalue="" disabled="false" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield modelvalue="" disabled="false" label="Database URL" data-on="onUpdate:modelValue"></x-nctextfield>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
 
 exports[`EditSource golden opens on a none source: form 1`] = `
 {
@@ -633,7 +776,49 @@ exports[`EditSource golden opens on a none source: form 1`] = `
 }
 `;
 
-exports[`EditSource golden opens on a sqlite source: dom 1`] = `""`;
+exports[`EditSource golden opens on a sqlite source: dom 1`] = `
+"<x-ncdialog name="Edit Source" size="normal" canclose="false">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databasecheckoutline size="20"></x-databasecheckoutline>
+      </slot-icon>
+      <slot-default> Test connection</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databaseimportoutline size="20"></x-databaseimportoutline>
+      </slot-icon>
+      <slot-default> Create virtual register</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-contentsaveoutline size="20"></x-contentsaveoutline>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="Local" disabled="false" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextarea disabled="false" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Driver" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield modelvalue="/x.db" disabled="false" label="Database file path *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+        <slot-default>Allow writes (create, update and delete push through to the external database)</slot-default>
+      </x-nccheckboxradioswitch>
+      <p class="databaseHint">The database password is never stored on the source; reference a credential from the credential store instead.</p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
 
 exports[`EditSource golden opens on a sqlite source: form 1`] = `
 {
@@ -675,7 +860,32 @@ exports[`EditSource golden opens on a sqlite source: form 1`] = `
 }
 `;
 
-exports[`EditSource golden opens on a unknownType source: dom 1`] = `""`;
+exports[`EditSource golden opens on a unknownType source: dom 1`] = `
+"<x-ncdialog name="Edit Source" size="normal" canclose="false">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-contentsaveoutline size="20"></x-contentsaveoutline>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="Odd" disabled="false" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextarea disabled="false" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield disabled="false" label="Database URL" data-on="onUpdate:modelValue"></x-nctextfield>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
 
 exports[`EditSource golden opens on a unknownType source: form 1`] = `
 {
@@ -712,13 +922,202 @@ exports[`EditSource golden opens on a unknownType source: form 1`] = `
 }
 `;
 
-exports[`EditSource golden renders the result notes 1`] = `""`;
+exports[`EditSource golden renders the result notes 1`] = `
+"<x-ncdialog name="Edit Source" size="normal" canclose="false">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databasecheckoutline size="20"></x-databasecheckoutline>
+      </slot-icon>
+      <slot-default> Test connection</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databaseimportoutline size="20"></x-databaseimportoutline>
+      </slot-icon>
+      <slot-default> Create virtual register</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-contentsaveoutline size="20"></x-contentsaveoutline>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>Broken</p>
+      </slot-default>
+    </x-ncnotecard>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="Shop" disabled="false" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextarea disabled="false" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Driver" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield modelvalue="db" disabled="false" label="Host *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="5432" disabled="false" label="Port" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="shop" disabled="false" label="Database name *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="u" disabled="false" label="User" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="cred" disabled="false" label="Credential (UUID from the credential store)" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+        <slot-default>Allow writes (create, update and delete push through to the external database)</slot-default>
+      </x-nccheckboxradioswitch>
+      <p class="databaseHint">Warning: writes are executed directly on the external database. Use a database user with least-privilege grants. Re-run "Create virtual register" to unlock existing schemas.</p>
+      <p class="databaseHint">The database password is never stored on the source; reference a credential from the credential store instead.</p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
 
-exports[`EditSource golden renders the result notes 2`] = `""`;
+exports[`EditSource golden renders the result notes 2`] = `
+"<x-ncdialog name="Edit Source" size="normal" canclose="false">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databasecheckoutline size="20"></x-databasecheckoutline>
+      </slot-icon>
+      <slot-default> Test connection</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databaseimportoutline size="20"></x-databaseimportoutline>
+      </slot-icon>
+      <slot-default> Create virtual register</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-contentsaveoutline size="20"></x-contentsaveoutline>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>Broken</p>
+      </slot-default>
+    </x-ncnotecard>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>Fine</p>
+      </slot-default>
+    </x-ncnotecard>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="Shop" disabled="false" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextarea disabled="false" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Driver" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield modelvalue="db" disabled="false" label="Host *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="5432" disabled="false" label="Port" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="shop" disabled="false" label="Database name *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="u" disabled="false" label="User" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="cred" disabled="false" label="Credential (UUID from the credential store)" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+        <slot-default>Allow writes (create, update and delete push through to the external database)</slot-default>
+      </x-nccheckboxradioswitch>
+      <p class="databaseHint">Warning: writes are executed directly on the external database. Use a database user with least-privilege grants. Re-run "Create virtual register" to unlock existing schemas.</p>
+      <p class="databaseHint">The database password is never stored on the source; reference a credential from the credential store instead.</p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
 
-exports[`EditSource golden renders the result notes 3`] = `""`;
+exports[`EditSource golden renders the result notes 3`] = `
+"<x-ncdialog name="Edit Source" size="normal" canclose="false">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" data-on="onClick">
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+      <slot-default> Test connection</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" data-on="onClick">
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+      <slot-default> Create virtual register</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>Broken</p>
+      </slot-default>
+    </x-ncnotecard>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>Fine</p>
+      </slot-default>
+    </x-ncnotecard>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="Shop" disabled="true" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextarea disabled="true" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="true" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Driver" disabled="true" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield modelvalue="db" disabled="true" label="Host *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="5432" disabled="true" label="Port" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="shop" disabled="true" label="Database name *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="u" disabled="true" label="User" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="cred" disabled="true" label="Credential (UUID from the credential store)" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+        <slot-default>Allow writes (create, update and delete push through to the external database)</slot-default>
+      </x-nccheckboxradioswitch>
+      <p class="databaseHint">Warning: writes are executed directly on the external database. Use a database user with least-privilege grants. Re-run "Create virtual register" to unlock existing schemas.</p>
+      <p class="databaseHint">The database password is never stored on the source; reference a credential from the credential store instead.</p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
 
-exports[`EditSource golden renders the result notes 4`] = `""`;
+exports[`EditSource golden renders the result notes 4`] = `
+"<x-ncdialog name="Edit Source" size="normal" canclose="false">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Close</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>Source successfully updated</p>
+      </slot-default>
+    </x-ncnotecard>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>Fine</p>
+      </slot-default>
+    </x-ncnotecard>
+  </slot-default>
+</x-ncdialog>"
+`;
 
 exports[`EditSource golden saves a internal source: refused 1`] = `
 {

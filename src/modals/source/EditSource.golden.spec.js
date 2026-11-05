@@ -8,6 +8,7 @@ import { flushPromises, mount } from '@vue/test-utils'
  * @license EUPL-1.2
  * @copyright 2026 Conduction B.V.
  */
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import EditSource from './EditSource.vue'
 
 jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => path }))
@@ -137,6 +138,45 @@ const SOURCES = {
 }
 
 /**
+ * The modal with its setup bindings supplied. Under jest the compiled bindings
+ * of an SFC with both a setup and a plain script resolve the library components
+ * to undefined, so the modal would render nothing.
+ *
+ * @return {object} The modal with stand-in bindings
+ */
+function editSourceModal() {
+	const library = jest.requireMock('@nextcloud/vue')
+	const icons = [
+		'Cancel',
+		'ContentSaveOutline',
+		'DatabaseCheckOutline',
+		'DatabaseImportOutline',
+		'Plus',
+	]
+	const bindings = {
+		...library,
+		...Object.fromEntries(icons.map((name) => [name, mockStub(name)])),
+		CloseCancelButton,
+		navigationStore,
+		sourceStore,
+		t: (app, text) => text,
+	}
+	return { ...EditSource, setup: () => bindings }
+}
+
+/**
+ * The rendered markup of a modal that must be open.
+ *
+ * @param {object} wrapper The wrapper
+ * @return {string} The normalised markup
+ */
+function domOf(wrapper) {
+	const html = normalised(wrapper.html())
+	expect(html).toContain('x-ncdialog')
+	return html
+}
+
+/**
  * Mount the modal for a source in the store.
  *
  * @param {object|null} source The store's source item
@@ -144,7 +184,7 @@ const SOURCES = {
  */
 async function mountFor(source) {
 	sourceStore.sourceItem = source
-	const wrapper = mount(EditSource)
+	const wrapper = mount(editSourceModal())
 	await flushPromises()
 	return wrapper
 }
@@ -184,7 +224,7 @@ describe('EditSource golden', () => {
 		it(`opens on a ${name} source`, async () => {
 			const wrapper = await mountFor(source)
 			expect(formOf(wrapper.vm)).toMatchSnapshot('form')
-			expect(normalised(wrapper.html())).toMatchSnapshot('dom')
+			expect(domOf(wrapper)).toMatchSnapshot('dom')
 			wrapper.unmount()
 		})
 	}
@@ -198,7 +238,7 @@ describe('EditSource golden', () => {
 			{ success: true, error: false },
 		]) {
 			await wrapper.setData(data)
-			expect(normalised(wrapper.html())).toMatchSnapshot()
+			expect(domOf(wrapper)).toMatchSnapshot()
 		}
 		wrapper.unmount()
 	})
@@ -241,6 +281,14 @@ describe('EditSource golden', () => {
 			})
 		}
 	}
+
+	it('closes from the cancel button', async () => {
+		const wrapper = await mountFor(SOURCES.internal)
+		const [cancel] = wrapper.findAllComponents({ name: 'NcButton' })
+		cancel.vm.$attrs.onClick()
+		expect(navigationStore.setModal.mock.calls).toEqual([[false]])
+		wrapper.unmount()
+	})
 
 	it('saves only a true writable flag as writable', async () => {
 		sourceStore.saveSource.mockResolvedValue({ response: { ok: false } })
