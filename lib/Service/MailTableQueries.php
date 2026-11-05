@@ -194,6 +194,7 @@ final class MailTableQueries {
 	 */
 	public function messageQuery(int $accountId, int $messageId): IQueryBuilder {
 		$qb = $this->messagesQuery();
+		$qb->addSelect('m.message_id');
 		$qb->innerJoin(
 			'm',
 			'mail_mailboxes',

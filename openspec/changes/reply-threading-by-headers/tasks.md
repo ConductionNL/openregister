@@ -2,16 +2,16 @@
 
 ## 1. Data
 
-- [ ] 1.1 Migration: `rfc_message_id` and `direction` on `openregister_email_links`, indexed on `rfc_message_id`.
-- [ ] 1.2 Read the header at link time in `EmailProvider`; `BackfillEmailLinkMessageIdJob` one-shot with a kill switch.
+- [ ] 1.1 Migration: `rfc_message_id` and `direction` on `openregister_email_links`, indexed on `rfc_message_id`. `rfc_message_id` is built; `direction` comes with 1.3.
+- [ ] 1.2 Read the header at link time (built, in `EmailService` and `EmailLinkService`); `BackfillEmailLinkMessageIdJob` one-shot with a kill switch.
 - [ ] 1.3 Outbound link written by the dispatch leaf's e-mail channel when `object` is bound.
 
 ## 2. Resolve
 
 - [ ] 2.1 `EmailsController::resolve()` with the RBAC scoping and the granted
       system scope (ADR-099). **The HEADER ORDER and the refusals are built**
-      in `lib/Service/Notification/ReplyThreadResolver.php`; the controller,
-      the scoping and the routes are not.
+      in `ReplyThreadResolver`, and `POST /api/emails/resolve` with the user
+      scope is built in `ReplyThreadService`; the granted system scope is not.
       `In-Reply-To` is read before `References`, and `References` is walked
       from its LAST entry because that is the nearest ancestor.
       **Nothing is ever guessed.** No fuzzy match, no prefix match, no subject

@@ -54,6 +54,8 @@ use OCP\AppFramework\Db\Entity;
  * @method string getLinkedBy()
  * @method void setLinkedBy(string $linkedBy)
  * @method DateTime getLinkedAt()
+ * @method string|null getRfcMessageId()
+ * @method void setRfcMessageId(?string $rfcMessageId)
  * @method void setLinkedAt(DateTime $linkedAt)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
@@ -160,6 +162,18 @@ class EmailLink extends Entity implements JsonSerializable {
 	protected ?DateTime $linkedAt = null;
 
 	/**
+	 * The longest `Message-ID` the column holds.
+	 */
+	public const RFC_MESSAGE_ID_LENGTH = 255;
+
+	/**
+	 * The RFC `Message-ID` of the linked mail, with its angle brackets.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $rfcMessageId = null;
+
+	/**
 	 * Constructor.
 	 */
 	public function __construct() {
@@ -176,7 +190,29 @@ class EmailLink extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'metadata', type: 'string');
 		$this->addType(fieldName: 'linkedBy', type: 'string');
 		$this->addType(fieldName: 'linkedAt', type: 'datetime');
+		$this->addType(fieldName: 'rfcMessageId', type: 'string');
 	}//end __construct()
+
+	/**
+	 * A `Message-ID` as the column holds it: null when it does not fit.
+	 *
+	 * A longer id is rare and legal. Truncated, it could equal another message's
+	 * id, and a reply would thread onto the wrong object; absent, the reply is
+	 * `unthreaded` and a person sees it.
+	 *
+	 * @param string|null $messageId The id.
+	 *
+	 * @return string|null The id to store.
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
+	 */
+	public static function storableMessageId(?string $messageId): ?string {
+		if ($messageId === null || $messageId === '' || strlen($messageId) > self::RFC_MESSAGE_ID_LENGTH) {
+			return null;
+		}
+
+		return $messageId;
+	}//end storableMessageId()
 
 	/**
 	 * The link details from the metadata, one entry per DETAIL_KEYS key, null when absent.
