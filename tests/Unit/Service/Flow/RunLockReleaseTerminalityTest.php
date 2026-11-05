@@ -148,6 +148,9 @@ class LockLifecycleDispatcher implements FlowStepDispatcher {
  *
  * @covers \OCA\OpenRegister\Service\Flow\FlowRunCommit
  * @covers \OCA\OpenRegister\Service\Flow\FlowStreamWalk
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamClosure
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamRef
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamRelease
  * @covers \OCA\OpenRegister\Listener\FlowRunLockReleaseListener
  * @uses \OCA\OpenRegister\Db\FlowRun
  * @uses \OCA\OpenRegister\Db\FlowRunMapper

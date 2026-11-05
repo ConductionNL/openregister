@@ -533,19 +533,12 @@ class FlowStreamWalk {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
 	public function park(string $id, ?DateTime $resumeAt, string $reason, array $claimed, bool $enabled): void {
-		$stream = ($this->streams[$id] ?? ['path' => FlowStream::ROOT_PATH, 'parent' => null, 'place' => null]);
-		$this->commit->park(
-			run: $this->run,
-			streamId: $id,
-			resumeAt: $resumeAt,
-			reason: $reason,
-			claimedPlaces: $claimed,
-			owner: $this->owner,
-			enabled: $enabled,
-			path: (string)$stream['path'],
-			parent: $stream['parent'],
-			place: $stream['place']
+		$closure = new FlowStreamClosure(
+			stream: $this->streamRef(id: $id),
+			status: FlowRun::STATUS_SUSPENDED,
+			release: new FlowStreamRelease(claimedPlaces: $claimed, owner: $this->owner, enabled: $enabled)
 		);
+		$this->commit->closeStream(run: $this->run, closure: $closure->wakingAt(resumeAt: $resumeAt)->because(error: $reason));
 		$this->parked[$id] = true;
 		if (isset($this->streams[$id]) === true) {
 			$this->streams[$id]['status'] = FlowRun::STATUS_SUSPENDED;
@@ -566,21 +559,30 @@ class FlowStreamWalk {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-runs-status-must-stay-derivable-from-its-streams-with-no-new-value
 	 */
 	public function endStream(string $id, string $status, ?string $error, array $claimed, bool $enabled): void {
-		$stream = ($this->streams[$id] ?? ['path' => FlowStream::ROOT_PATH, 'parent' => null, 'place' => null]);
-		$this->commit->endStream(
-			run: $this->run,
-			streamId: $id,
+		$closure = new FlowStreamClosure(
+			stream: $this->streamRef(id: $id),
 			status: $status,
-			error: $error,
-			claimedPlaces: $claimed,
-			owner: $this->owner,
-			enabled: $enabled,
-			path: (string)$stream['path'],
-			parent: $stream['parent'],
-			place: $stream['place']
+			release: new FlowStreamRelease(claimedPlaces: $claimed, owner: $this->owner, enabled: $enabled)
 		);
+		$this->commit->closeStream(run: $this->run, closure: $closure->because(error: $error));
 		unset($this->streams[$id]);
 	}//end endStream()
+
+	/**
+	 * The stream as its row would be minted: its known path, parent and
+	 * place, or the root path when the walk does not know it.
+	 *
+	 * @param string $id The stream id.
+	 *
+	 * @return FlowStreamRef The stream.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
+	 */
+	private function streamRef(string $id): FlowStreamRef {
+		$stream = ($this->streams[$id] ?? ['path' => FlowStream::ROOT_PATH, 'parent' => null, 'place' => null]);
+
+		return new FlowStreamRef(streamId: $id, path: (string)$stream['path'], parent: $stream['parent'], place: $stream['place']);
+	}//end streamRef()
 
 	/**
 	 * The pass's last word: release what this pass still holds and derive the
