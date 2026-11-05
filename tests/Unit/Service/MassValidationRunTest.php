@@ -11,6 +11,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Service\MassValidationRun;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 
@@ -31,7 +32,8 @@ class MassValidationRunTest extends TestCase {
 		$run = new MassValidationRun(
 			$this->createMock(MagicMapper::class),
 			$this->createMock(AppSettingsInterface::class),
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(ContainerInterface::class)
 		);
 		return (new ReflectionMethod(MassValidationRun::class, 'createBatchJobs'))->invoke($run, $totalObjects, $batchSize);
 	}

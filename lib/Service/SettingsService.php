@@ -894,7 +894,8 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 		$run = new MassValidationRun(
 			objectMapper: $this->container->get(MagicMapperInterface::class),
 			settings: $this,
-			logger: $this->logger
+			logger: $this->logger,
+			container: $this->container
 		);
 		return $run->run(
 			config: [
