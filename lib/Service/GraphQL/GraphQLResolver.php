@@ -482,7 +482,6 @@ class GraphQLResolver {
 	 *
 	 * @param Schema $schema The register schema
 	 * @param array $args Mutation arguments (input)
-	 * @param string|null $operationName GraphQL operation name
 	 *
 	 * @return array<string, mixed> The created object data
 	 *
@@ -490,7 +489,7 @@ class GraphQLResolver {
 	 *
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-log-operations-to-the-audit-trail
 	 */
-	public function resolveCreate(Schema $schema, array $args, ?string $operationName = null): array {
+	public function resolveCreate(Schema $schema, array $args): array {
 		$this->checkSchemaPermission(schema: $schema, action: 'create');
 
 		// Check property-level write RBAC.
@@ -536,7 +535,6 @@ class GraphQLResolver {
 	 *
 	 * @param Schema $schema The register schema
 	 * @param array $args Mutation arguments (id, input)
-	 * @param string|null $operationName GraphQL operation name
 	 *
 	 * @return array<string, mixed> The updated object data
 	 *
@@ -544,7 +542,7 @@ class GraphQLResolver {
 	 *
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-log-operations-to-the-audit-trail
 	 */
-	public function resolveUpdate(Schema $schema, array $args, ?string $operationName = null): array {
+	public function resolveUpdate(Schema $schema, array $args): array {
 		$this->checkSchemaPermission(schema: $schema, action: 'update');
 
 		$id = $args['id'];
