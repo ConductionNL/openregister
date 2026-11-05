@@ -66,14 +66,9 @@
 								"
 								@update:modelValue="updateMethod">
 								<template #option="{ label, description }">
-									<div class="option-content">
-										<span class="option-title">{{ label }}</span>
-										<span
-											v-if="description"
-											class="option-description"
-											>{{ description }}</span
-										>
-									</div>
+									<SelectOption
+										:title="label"
+										:description="description" />
 								</template>
 							</NcSelect>
 							<p class="field-hint">
@@ -131,13 +126,9 @@
 								@update:modelValue="updateEvent">
 								<template
 									#option="{ label, description, category, type }">
-									<div class="option-content">
-										<span class="option-title">{{ label }}</span>
-										<span
-											v-if="description"
-											class="option-description"
-											>{{ description }}</span
-										>
+									<SelectOption
+										:title="label"
+										:description="description">
 										<span class="option-meta">
 											{{ category }} •
 											{{
@@ -146,7 +137,7 @@
 													: t('openregister', 'After')
 											}}
 										</span>
-									</div>
+									</SelectOption>
 								</template>
 								<template #no-options>
 									<span v-if="loadingEvents">{{
@@ -186,14 +177,9 @@
 								"
 								@update:modelValue="updateEventProperty">
 								<template #option="{ label, description }">
-									<div class="option-content">
-										<span class="option-title">{{ label }}</span>
-										<span
-											v-if="description"
-											class="option-description"
-											>{{ description }}</span
-										>
-									</div>
+									<SelectOption
+										:title="label"
+										:description="description" />
 								</template>
 							</NcSelect>
 							<p class="field-hint">
@@ -287,14 +273,9 @@
 								"
 								@update:modelValue="updateRetryPolicy">
 								<template #option="{ label, description }">
-									<div class="option-content">
-										<span class="option-title">{{ label }}</span>
-										<span
-											v-if="description"
-											class="option-description"
-											>{{ description }}</span
-										>
-									</div>
+									<SelectOption
+										:title="label"
+										:description="description" />
 								</template>
 							</NcSelect>
 							<p class="field-hint">
@@ -507,6 +488,7 @@ import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Database from 'vue-material-design-icons/Database.vue'
 import Tune from 'vue-material-design-icons/Tune.vue'
 import Webhook from 'vue-material-design-icons/Webhook.vue'
+import SelectOption from '../../components/shared/SelectOption.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import {
@@ -528,6 +510,7 @@ export default {
 		NcTextField,
 		NcTextArea,
 		AppTabs,
+		SelectOption,
 		AppTab,
 		Cancel,
 		ContentSave,
@@ -1199,24 +1182,6 @@ export default {
 	background: var(--color-background-dark);
 	color: var(--color-main-text);
 	font-size: 0.8125rem;
-}
-
-.option-content {
-	display: flex;
-	flex-direction: column;
-	gap: 0.25rem;
-}
-
-.option-title {
-	font-weight: 500;
-}
-
-.option-description {
-	font-size: 0.875rem;
-	color: var(--color-text-maxcontrast);
-	max-width: 100%;
-	white-space: normal;
-	overflow-wrap: break-word;
 }
 
 .option-meta {
