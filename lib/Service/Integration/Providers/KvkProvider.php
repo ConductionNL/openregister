@@ -65,6 +65,8 @@ use Throwable;
  */
 class KvkProvider extends AbstractIntegrationProvider {
 
+	use ConnectorRoutedProviderTrait;
+
 	/**
 	 * OpenConnector source id this provider routes through.
 	 *
@@ -128,61 +130,6 @@ class KvkProvider extends AbstractIntegrationProvider {
 	public function getIcon(): string {
 		return 'OfficeBuilding';
 	}//end getIcon()
-
-	/**
-	 * Named group this integration belongs to (AD-16).
-	 *
-	 * @return string|null
-	 */
-	public function getGroup(): ?string {
-		return 'external';
-	}//end getGroup()
-
-	/**
-	 * Nextcloud app that must be installed for this integration to
-	 * function — OpenConnector carries the `kvk` source + credentials.
-	 *
-	 * Returns the id the instance ACTUALLY registered, not the canonical name.
-	 * The value is published verbatim in the `integrations` capability and
-	 * read back client-side as `isAppInstalled(requiredApp)`, so a spelling the
-	 * instance does not answer to renders "not installed" over a connector that
-	 * is installed and working.
-	 *
-	 * @return string|null
-	 */
-	public function getRequiredApp(): ?string {
-		return (FleetAppId::resolve($this->appManager, self::REQUIRED_APP) ?? self::REQUIRED_APP);
-	}//end getRequiredApp()
-
-	/**
-	 * Storage strategy (AD-22) — `external`: no local link table; this is
-	 * a stateless company-lookup leaf routed through OpenConnector.
-	 *
-	 * @return string
-	 */
-	public function getStorageStrategy(): string {
-		return 'external';
-	}//end getStorageStrategy()
-
-	/**
-	 * OpenConnector source id this provider routes all calls through (AD-4).
-	 *
-	 * @return string|null
-	 */
-	public function getOpenConnectorSource(): ?string {
-		return self::SOURCE_ID;
-	}//end getOpenConnectorSource()
-
-	/**
-	 * Whether the integration is available — true iff OpenConnector is
-	 * installed (it owns the `kvk` source + credentials). The router still
-	 * degrades gracefully if the source itself is missing or KvK is down.
-	 *
-	 * @return bool
-	 */
-	public function isEnabled(): bool {
-		return FleetAppId::isInstalled($this->appManager, self::REQUIRED_APP);
-	}//end isEnabled()
 
 	/**
 	 * Auth requirements descriptor. `type: 'external'` — the KvK API key is
@@ -355,20 +302,6 @@ class KvkProvider extends AbstractIntegrationProvider {
 			'page' => $page,
 		];
 	}//end searchCompanies()
-
-	/**
-	 * Health descriptor — defers to the router's probe so admin UI / OCS
-	 * capabilities report the same status runtime callers would see.
-	 *
-	 * @return array{status: string, authStatus: string, message: ?string}
-	 *
-	 * @spec exclude Thin delegation to ExternalIntegrationRouter::probe
-	 *              (annotated to pluggable-integration-registry task-4);
-	 *              carries no provider-specific health behaviour.
-	 */
-	public function health(): array {
-		return $this->router->probe(provider: $this);
-	}//end health()
 
 	/**
 	 * Build the degraded envelope mirroring the unconfigured-source

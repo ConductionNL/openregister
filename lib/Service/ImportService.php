@@ -1313,7 +1313,7 @@ class ImportService implements ObjectImporterInterface {
 		$summary['found'] = count($allObjects);
 
 		if (empty($allObjects) === false && $import['register'] !== null && $import['schema'] !== null) {
-			$summary = $this->saveSpreadsheetObjects(
+			$summary = $this->saveImportedObjects(
 				objects: $allObjects,
 				import: $import + ['summary' => $summary, 'sheetTitle' => $sheet->getTitle()]
 			);
@@ -1372,41 +1372,6 @@ class ImportService implements ObjectImporterInterface {
 
 		return $objects;
 	}//end spreadsheetRowObjects()
-
-	/**
-	 * Save the parsed sheet objects in one bulk save and fill the summary from its result.
-	 *
-	 * The publish flag is a deprecated no-op: publication control is handled via RBAC
-	 * authorization rules.
-	 *
-	 * @param list<array> $objects The parsed objects
-	 * @param array       $import  The import options with the summary so far and the sheetTitle
-	 *
-	 * @return array The summary with created, updated, unchanged and validation errors
-	 */
-	private function saveSpreadsheetObjects(array $objects, array $import): array {
-		if ($import['publish'] === true) {
-			$this->logger->warning(
-				message: '[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead.',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}
-
-		$saveResult = $this->bulkSaveWithNotifyPush(objects: $objects, import: $import);
-		$summary = $this->withSaveOutcome(summary: $import['summary'], saveResult: $saveResult);
-		if ($import['validation'] === true && empty($saveResult['invalid'] ?? []) === false) {
-			foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
-				$summary['errors'][] = [
-					'sheet' => $import['sheetTitle'],
-					'object' => $invalidItem['object'] ?? $invalidItem,
-					'error' => $invalidItem['error'] ?? 'Validation failed',
-					'type' => $invalidItem['type'] ?? 'ValidationException',
-				];
-			}
-		}
-
-		return $summary;
-	}//end saveSpreadsheetObjects()
 
 	/**
 	 * Process CSV sheet and import all objects in batches
@@ -1542,30 +1507,57 @@ class ImportService implements ObjectImporterInterface {
 			]
 		);
 
+		return $this->saveImportedObjects(objects: $objects, import: ['sheetTitle' => null] + $import);
+	}//end saveCsvObjects()
+
+	/**
+	 * Bulk-save parsed objects and fill the summary from the result. A validation
+	 * error carries the sheet title first when `$import['sheetTitle']` is set.
+	 *
+	 * @param list<array> $objects The parsed objects
+	 * @param array       $import  The import options with the summary so far and the sheetTitle (null for CSV)
+	 *
+	 * @return array The summary with created, updated, unchanged and validation errors
+	 */
+	private function saveImportedObjects(array $objects, array $import): array {
 		if ($import['publish'] === true) {
 			$this->logger->warning(
 				message: '[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead.',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 		}
 
 		$saveResult = $this->bulkSaveWithNotifyPush(objects: $objects, import: $import);
 		$summary = $this->withSaveOutcome(summary: $import['summary'], saveResult: $saveResult);
-		if ($import['validation'] === true && empty($saveResult['invalid'] ?? []) === false) {
+		if ($import['validation'] === true) {
 			foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
-				$summary['errors'][] = [
-					'object' => $invalidItem['object'] ?? $invalidItem,
-					'error' => $invalidItem['error'] ?? 'Validation failed',
-					'type' => $invalidItem['type'] ?? 'ValidationException',
-				];
+				$summary['errors'][] = $this->validationError(invalidItem: $invalidItem, sheetTitle: $import['sheetTitle']);
 			}
 		}
 
 		return $summary;
-	}//end saveCsvObjects()
+	}//end saveImportedObjects()
+
+	/**
+	 * One summary error for an object the bulk save rejected, with the sheet title first when there is one.
+	 *
+	 * @param mixed       $invalidItem The rejected item from the save result
+	 * @param string|null $sheetTitle  The sheet title, null for CSV
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function validationError(mixed $invalidItem, ?string $sheetTitle): array {
+		$error = [
+			'object' => $invalidItem['object'] ?? $invalidItem,
+			'error' => $invalidItem['error'] ?? 'Validation failed',
+			'type' => $invalidItem['type'] ?? 'ValidationException',
+		];
+		if ($sheetTitle === null) {
+			return $error;
+		}
+
+		return ['sheet' => $sheetTitle] + $error;
+	}//end validationError()
 
 	/**
 	 * Bulk-save objects with per-object notify_push events suppressed, then flush one collection event.

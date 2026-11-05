@@ -133,32 +133,6 @@ class HandoffQueueEntryMapper extends QBMapper {
 	}//end findParkedByKind()
 
 	/**
-	 * The distinct kind URIs that currently have parked entries.
-	 *
-	 * @return array<int, string> Distinct parked kind URIs.
-	 *
-	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
-	 *   (Scenario: No provider installed, queue mode)
-	 */
-	public function findParkedKinds(): array {
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->selectDistinct('target_kind')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('status', $qb->createNamedParameter(HandoffQueueEntry::STATUS_PARKED)));
-
-		$result = $qb->executeQuery();
-		$kinds = [];
-		while (($row = $result->fetch()) !== false) {
-			$kinds[] = (string)$row['target_kind'];
-		}
-
-		$result->closeCursor();
-
-		return $kinds;
-	}//end findParkedKinds()
-
-	/**
 	 * Parked entries for one source object (availability `queued` state).
 	 *
 	 * @param string $sourceObjectUuid The source object's UUID.

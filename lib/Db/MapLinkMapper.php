@@ -44,23 +44,6 @@ class MapLinkMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Find map links by favorite id.
-	 *
-	 * @param int $favoriteId The favorite id.
-	 *
-	 * @return MapLink[] Array of map links.
-	 */
-	public function findByFavoriteId(int $favoriteId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('favorite_id', $qb->createNamedParameter($favoriteId, IQueryBuilder::PARAM_INT)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByFavoriteId()
-
-	/**
 	 * Find a specific map link by object UUID and favorite id.
 	 *
 	 * @param string $objectUuid The object UUID.

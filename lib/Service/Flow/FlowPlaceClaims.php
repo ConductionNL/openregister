@@ -218,18 +218,4 @@ class FlowPlaceClaims {
 	public function release(string $runUuid, array $places): void {
 		$this->claims->release(runUuid: $runUuid, places: $places);
 	}//end release()
-
-	/**
-	 * Release everything a pass still holds on a run — the pass's own cleanup.
-	 *
-	 * @param string $runUuid The run.
-	 * @param string $owner The pass token.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
-	 */
-	public function releaseAll(string $runUuid, string $owner): void {
-		$this->claims->releaseByOwner(runUuid: $runUuid, owner: $owner);
-	}//end releaseAll()
 }//end class

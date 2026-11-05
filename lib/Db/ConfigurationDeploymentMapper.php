@@ -96,26 +96,6 @@ class ConfigurationDeploymentMapper extends QBMapper {
 	}//end findHistory()
 
 	/**
-	 * The rollbacks that already restore one deployment.
-	 *
-	 * @param string $uuid The deployment uuid they would restore.
-	 *
-	 * @return ConfigurationDeployment[] The rollbacks.
-	 *
-	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
-	 */
-	public function findRestoring(string $uuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('restores_uuid', $qb->createNamedParameter($uuid)))
-			->orderBy('id', 'DESC');
-
-		return $this->findEntities(query: $qb);
-
-	}//end findRestoring()
-
-	/**
 	 * Append a deployment to the history.
 	 *
 	 * @param array<string, mixed> $data The deployment values.

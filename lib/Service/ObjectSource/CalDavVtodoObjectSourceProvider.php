@@ -42,6 +42,8 @@ use Throwable;
  * Read-only object-source provider backed by CalDAV VTODOs.
  */
 class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider {
+
+	use CountsThroughFindAll;
 	/**
 	 * Constructor.
 	 *
@@ -184,22 +186,6 @@ class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider {
 		$wantSchema = (int)($config['schema'] ?? $schema->getId());
 		return ((int)($task['schemaId'] ?? 0) === $wantSchema);
 	}//end matchesScope()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The sourced schema.
-	 * @param array<string, mixed> $query Query (filters).
-	 * @param array<string, mixed> $config The object-source config block.
-	 *
-	 * @return int The number of matching virtual objects.
-	 *
-	 * @spec openspec/changes/object-source-providers/tasks.md#task-5.1
-	 */
-	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
-		return count($this->findAll(register: $register, schema: $schema, query: $query, config: $config));
-	}//end count()
 
 	/**
 	 * Read VTODO task arrays for the acting user, failing closed to an empty list.

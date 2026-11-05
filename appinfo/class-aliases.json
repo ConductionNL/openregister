@@ -156,11 +156,6 @@
 			"eager": false,
 			"service": true
 		},
-		"OCA\\OpenRegister\\Service\\GraphQL\\Scalar\\UploadType": {
-			"class": "OCA\\OpenRegister\\Search\\Service\\GraphQL\\Scalar\\UploadType",
-			"eager": false,
-			"service": true
-		},
 		"OCA\\OpenRegister\\Service\\GraphQL\\Scalar\\UriType": {
 			"class": "OCA\\OpenRegister\\Search\\Service\\GraphQL\\Scalar\\UriType",
 			"eager": false,
