@@ -57,6 +57,12 @@
         }
     ],
     "chain-no-cycle": [],
+    "cycle-after-finished-branch": [
+        {
+            "code": "calculation-cycle",
+            "message": "Calculation cycle detected: a -> b -> a."
+        }
+    ],
     "cycle-self": [
         {
             "code": "calculation-cycle",
@@ -253,6 +259,12 @@
         }
     ],
     "prop-empty-list": [
+        {
+            "code": "calculation-prop-unknown",
+            "message": "Calculation \"a\": prop \"\" is not a property or calculation."
+        }
+    ],
+    "prop-empty-with-empty-property": [
         {
             "code": "calculation-prop-unknown",
             "message": "Calculation \"a\": prop \"\" is not a property or calculation."

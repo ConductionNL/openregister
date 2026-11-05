@@ -76,6 +76,8 @@ class CalculationAnnotationValidatorGoldenTest extends TestCase {
 			'date-diff-missing-from' => $calc(['a' => $num(['dateDiff' => ['to' => ['prop' => 'end'], 'unit' => 'days']])]),
 			'date-diff-missing-to' => $calc(['a' => $num(['dateDiff' => ['from' => ['prop' => 'end'], 'unit' => 'days']])]),
 			'date-diff-not-array' => $calc(['a' => $num(['dateDiff' => 'x'])]),
+			'prop-empty-with-empty-property' => [['properties' => ['' => []], 'x-openregister-calculations' => ['a' => $num(['prop' => ''])]]],
+			'cycle-after-finished-branch' => $calc(['a' => $num(['max' => [['prop' => 'x'], ['prop' => 'b']]]), 'b' => $num(['prop' => 'a']), 'x' => $num(['lit' => 1])]),
 			'cycle-two' => $calc(['a' => $num(['prop' => 'b']), 'b' => $num(['prop' => 'a'])]),
 			'cycle-self' => $calc(['a' => $num(['prop' => 'a'])]),
 			'cycle-three' => $calc(['x' => $num(['prop' => 'amount']), 'a' => $num(['prop' => 'b']), 'b' => $num(['max' => [['prop' => 'c'], ['prop' => 'x']]]), 'c' => $num(['prop' => 'a'])]),
