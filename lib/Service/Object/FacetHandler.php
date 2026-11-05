@@ -69,6 +69,62 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class FacetHandler {
+
+	/**
+	 * The metadata fields a facet can be built on, with their index field and type.
+	 *
+	 * @var array<string, array{title: string, description: string, data_type: string, index_field: string, index_type: string, enabled: bool}>
+	 */
+	private const METADATA_DEFINITIONS = [
+		'register' => [
+			'title' => 'Register',
+			'description' => 'metadata field: Register',
+			'data_type' => 'integer',
+			'index_field' => 'self_register',
+			'index_type' => 'pint',
+			'enabled' => false,
+		],
+		'schema' => [
+			'title' => 'Type',
+			'description' => 'metadata field: Schema',
+			'data_type' => 'integer',
+			'index_field' => 'self_schema',
+			'index_type' => 'pint',
+			'enabled' => true,
+		],
+		'organisation' => [
+			'title' => 'Leverancier',
+			'description' => 'metadata field: Organisation',
+			'data_type' => 'string',
+			'index_field' => 'self_organisation',
+			'index_type' => 'string',
+			'enabled' => true,
+		],
+		'owner' => [
+			'title' => 'Owner',
+			'description' => 'metadata field: Owner',
+			'data_type' => 'string',
+			'index_field' => 'self_owner',
+			'index_type' => 'string',
+			'enabled' => true,
+		],
+		'created' => [
+			'title' => 'Created',
+			'description' => 'metadata field: Created',
+			'data_type' => 'datetime',
+			'index_field' => 'self_created',
+			'index_type' => 'pdate',
+			'enabled' => false,
+		],
+		'updated' => [
+			'title' => 'Updated',
+			'description' => 'metadata field: Updated',
+			'data_type' => 'datetime',
+			'index_field' => 'self_updated',
+			'index_type' => 'pdate',
+			'enabled' => false,
+		],
+	];
 	/**
 	 * Constructor for FacetHandler.
 	 *
@@ -587,67 +643,6 @@ class FacetHandler {
 	}//end transformFacetsToStandardFormat()
 
 	/**
-	 * Get the metadata facet definitions for @self fields.
-	 *
-	 * @return array Keyed by field name, each value contains title,
-	 *               description, data_type, index_field, index_type, enabled.
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-type-auto-detection-from-property-definitions
-	 */
-	private function getMetadataDefinitions(): array {
-		return [
-			'register' => [
-				'title' => 'Register',
-				'description' => 'metadata field: Register',
-				'data_type' => 'integer',
-				'index_field' => 'self_register',
-				'index_type' => 'pint',
-				'enabled' => false,
-			],
-			'schema' => [
-				'title' => 'Type',
-				'description' => 'metadata field: Schema',
-				'data_type' => 'integer',
-				'index_field' => 'self_schema',
-				'index_type' => 'pint',
-				'enabled' => true,
-			],
-			'organisation' => [
-				'title' => 'Leverancier',
-				'description' => 'metadata field: Organisation',
-				'data_type' => 'string',
-				'index_field' => 'self_organisation',
-				'index_type' => 'string',
-				'enabled' => true,
-			],
-			'owner' => [
-				'title' => 'Owner',
-				'description' => 'metadata field: Owner',
-				'data_type' => 'string',
-				'index_field' => 'self_owner',
-				'index_type' => 'string',
-				'enabled' => true,
-			],
-			'created' => [
-				'title' => 'Created',
-				'description' => 'metadata field: Created',
-				'data_type' => 'datetime',
-				'index_field' => 'self_created',
-				'index_type' => 'pdate',
-				'enabled' => false,
-			],
-			'updated' => [
-				'title' => 'Updated',
-				'description' => 'metadata field: Updated',
-				'data_type' => 'datetime',
-				'index_field' => 'self_updated',
-				'index_type' => 'pdate',
-				'enabled' => false,
-			],
-		];
-	}//end getMetadataDefinitions()
-
-	/**
 	 * Transform @self metadata facets into the standard format.
 	 *
 	 * @param array $metadataFacets The @self facet data keyed by field name.
@@ -660,7 +655,7 @@ class FacetHandler {
 	 */
 	private function transformMetadataFacets(array $metadataFacets, array &$transformed, int $startOrder): int {
 		$order = $startOrder;
-		$metadataDefinitions = $this->getMetadataDefinitions();
+		$metadataDefinitions = self::METADATA_DEFINITIONS;
 
 		foreach ($metadataFacets as $field => $facetData) {
 			$order++;

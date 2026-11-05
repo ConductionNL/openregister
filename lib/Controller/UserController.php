@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\UserControllerServices;
 use OCA\OpenRegister\Service\SecurityService;
 use OCA\OpenRegister\Service\UserService;
 use OCP\AppFramework\Controller;
@@ -67,32 +68,70 @@ use Psr\Log\LoggerInterface;
  */
 class UserController extends Controller {
 	/**
+	 * User service for user operations
+	 *
+	 * @var UserService
+	 */
+	private readonly UserService $userService;
+
+	/**
+	 * Security service for input sanitization
+	 *
+	 * @var SecurityService
+	 */
+	private readonly SecurityService $securityService;
+
+	/**
+	 * User manager for authentication
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * User session manager
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger for error tracking
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Localization service
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes controller with required dependencies.
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param UserService $userService User service for user operations
-	 * @param SecurityService $securityService Security service for input sanitization
-	 * @param IUserManager $userManager User manager for authentication
-	 * @param IUserSession $userSession User session manager
-	 * @param LoggerInterface $logger Logger for error tracking
-	 * @param IL10N $l10n Localization service
+	 * @param UserControllerServices $services The user controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly UserService $userService,
-		private readonly SecurityService $securityService,
-		private readonly IUserManager $userManager,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
-		private readonly IL10N $l10n,
+		UserControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->userService = $services->domain->userService;
+		$this->securityService = $services->domain->securityService;
+		$this->userManager = $services->domain->userManager;
+		$this->userSession = $services->domain->userSession;
+		$this->logger = $services->platform->logger;
+		$this->l10n = $services->platform->l10n;
 	}//end __construct()
 
 	/**

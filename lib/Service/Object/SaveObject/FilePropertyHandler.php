@@ -52,6 +52,143 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex file handling with multiple input formats
  */
 class FilePropertyHandler {
+
+	/**
+	 * Common file extensions that indicate downloadable files.
+	 *
+	 * @var list<string>
+	 */
+	private const COMMON_FILE_EXTENSIONS = [
+		// Documents.
+		'pdf',
+		'doc',
+		'docx',
+		'xls',
+		'xlsx',
+		'ppt',
+		'pptx',
+		'odt',
+		'ods',
+		'odp',
+		'rtf',
+		'txt',
+		'csv',
+		// Images.
+		'jpg',
+		'jpeg',
+		'png',
+		'gif',
+		'bmp',
+		'svg',
+		'webp',
+		'tiff',
+		'ico',
+		// Videos.
+		'mp4',
+		'avi',
+		'mov',
+		'wmv',
+		'flv',
+		'webm',
+		'mkv',
+		'3gp',
+		// Audio.
+		'mp3',
+		'wav',
+		'ogg',
+		'flac',
+		'aac',
+		'm4a',
+		'wma',
+		// Archives.
+		'zip',
+		'rar',
+		'7z',
+		'tar',
+		'gz',
+		'bz2',
+		'xz',
+		// Other common file types.
+		'xml',
+		'json',
+		'sql',
+		'exe',
+		'dmg',
+		'iso',
+		'deb',
+		'rpm',
+	];
+
+	/**
+	 * Dangerous executable extensions to block.
+	 *
+	 * @var list<string>
+	 */
+	private const DANGEROUS_EXECUTABLE_EXTENSIONS = [
+		// Windows executables.
+		'exe',
+		'bat',
+		'cmd',
+		'com',
+		'msi',
+		'scr',
+		'vbs',
+		'vbe',
+		'js',
+		'jse',
+		'wsf',
+		'wsh',
+		'ps1',
+		'dll',
+		// Unix/Linux executables.
+		'sh',
+		'bash',
+		'csh',
+		'ksh',
+		'zsh',
+		'run',
+		'bin',
+		'app',
+		'deb',
+		'rpm',
+		// Scripts and code.
+		'php',
+		'phtml',
+		'php3',
+		'php4',
+		'php5',
+		'phps',
+		'phar',
+		'py',
+		'pyc',
+		'pyo',
+		'pyw',
+		'pl',
+		'pm',
+		'cgi',
+		'rb',
+		'rbw',
+		'jar',
+		'war',
+		'ear',
+		'class',
+		// Containers and packages.
+		'appimage',
+		'snap',
+		'flatpak',
+		// MacOS.
+		'dmg',
+		'pkg',
+		'command',
+		// Android.
+		'apk',
+		// Other dangerous.
+		'elf',
+		'out',
+		'o',
+		'so',
+		'dylib',
+	];
 	/**
 	 * Constructor for FilePropertyHandler.
 	 *
@@ -267,7 +404,7 @@ class FilePropertyHandler {
 			}
 
 			$extension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
-			return in_array($extension, $this->getCommonFileExtensions()) === true;
+			return in_array($extension, self::COMMON_FILE_EXTENSIONS) === true;
 		}
 
 		return base64_encode(base64_decode($value, true)) === $value && strlen($value) > 100;
@@ -1191,7 +1328,7 @@ class FilePropertyHandler {
 	 */
 	public function blockExecutableFiles(array $fileData, string $errorPrefix): void {
 		// List of dangerous executable extensions.
-		$dangerousExtensions = $this->getDangerousExecutableExtensions();
+		$dangerousExtensions = self::DANGEROUS_EXECUTABLE_EXTENSIONS;
 
 		// Check file extension.
 		if (($fileData['filename'] ?? null) !== null) {
@@ -1397,167 +1534,7 @@ class FilePropertyHandler {
 		return $mimeToExtension[$mimeType] ?? 'bin';
 	}//end getExtensionFromMimeType()
 
-	/**
-	 * Gets a list of common file extensions that indicate downloadable files.
-	 *
-	 * @return string[]
-	 *
-	 * @psalm-return   list{'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
-	 *     'odt', 'ods', 'odp', 'rtf', 'txt', 'csv', 'jpg', 'jpeg', 'png',
-	 *     'gif', 'bmp', 'svg', 'webp', 'tiff', 'ico', 'mp4', 'avi', 'mov',
-	 *     'wmv', 'flv', 'webm', 'mkv', '3gp', 'mp3', 'wav', 'ogg', 'flac',
-	 *     'aac', 'm4a', 'wma', 'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz',
-	 *     'xml', 'json', 'sql', 'exe', 'dmg', 'iso', 'deb', 'rpm'}
-	 * @phpstan-return array<int, string>
-	 *
-	 * @spec openspec/specs/content-versioning/spec.md
-	 */
-	private function getCommonFileExtensions(): array {
-		return [
-			// Documents.
-			'pdf',
-			'doc',
-			'docx',
-			'xls',
-			'xlsx',
-			'ppt',
-			'pptx',
-			'odt',
-			'ods',
-			'odp',
-			'rtf',
-			'txt',
-			'csv',
-			// Images.
-			'jpg',
-			'jpeg',
-			'png',
-			'gif',
-			'bmp',
-			'svg',
-			'webp',
-			'tiff',
-			'ico',
-			// Videos.
-			'mp4',
-			'avi',
-			'mov',
-			'wmv',
-			'flv',
-			'webm',
-			'mkv',
-			'3gp',
-			// Audio.
-			'mp3',
-			'wav',
-			'ogg',
-			'flac',
-			'aac',
-			'm4a',
-			'wma',
-			// Archives.
-			'zip',
-			'rar',
-			'7z',
-			'tar',
-			'gz',
-			'bz2',
-			'xz',
-			// Other common file types.
-			'xml',
-			'json',
-			'sql',
-			'exe',
-			'dmg',
-			'iso',
-			'deb',
-			'rpm',
-		];
-	}//end getCommonFileExtensions()
 
-	/**
-	 * Gets a list of dangerous executable extensions to block.
-	 *
-	 * @return string[]
-	 *
-	 * @psalm-return   list{'exe', 'bat', 'cmd', 'com', 'msi', 'scr', 'vbs',
-	 *     'vbe', 'js', 'jse', 'wsf', 'wsh', 'ps1', 'dll', 'sh', 'bash', 'csh',
-	 *     'ksh', 'zsh', 'run', 'bin', 'app', 'deb', 'rpm', 'php', 'phtml',
-	 *     'php3', 'php4', 'php5', 'phps', 'phar', 'py', 'pyc', 'pyo', 'pyw',
-	 *     'pl', 'pm', 'cgi', 'rb', 'rbw', 'jar', 'war', 'ear', 'class',
-	 *     'appimage', 'snap', 'flatpak', 'dmg', 'pkg', 'command', 'apk', 'elf',
-	 *     'out', 'o', 'so', 'dylib'}
-	 * @phpstan-return array<int, string>
-	 *
-	 * @spec openspec/specs/content-versioning/spec.md
-	 */
-	private function getDangerousExecutableExtensions(): array {
-		return [
-			// Windows executables.
-			'exe',
-			'bat',
-			'cmd',
-			'com',
-			'msi',
-			'scr',
-			'vbs',
-			'vbe',
-			'js',
-			'jse',
-			'wsf',
-			'wsh',
-			'ps1',
-			'dll',
-			// Unix/Linux executables.
-			'sh',
-			'bash',
-			'csh',
-			'ksh',
-			'zsh',
-			'run',
-			'bin',
-			'app',
-			'deb',
-			'rpm',
-			// Scripts and code.
-			'php',
-			'phtml',
-			'php3',
-			'php4',
-			'php5',
-			'phps',
-			'phar',
-			'py',
-			'pyc',
-			'pyo',
-			'pyw',
-			'pl',
-			'pm',
-			'cgi',
-			'rb',
-			'rbw',
-			'jar',
-			'war',
-			'ear',
-			'class',
-			// Containers and packages.
-			'appimage',
-			'snap',
-			'flatpak',
-			// MacOS.
-			'dmg',
-			'pkg',
-			'command',
-			// Android.
-			'apk',
-			// Other dangerous.
-			'elf',
-			'out',
-			'o',
-			'so',
-			'dylib',
-		];
-	}//end getDangerousExecutableExtensions()
 
 	/**
 	 * Gets a list of executable MIME types to block.

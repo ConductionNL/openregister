@@ -57,6 +57,42 @@ use Twig\Sandbox\SecurityPolicy;
  */
 class ComputedFieldHandler {
 	/**
+	 * Twig keywords and built-in helpers that are not dependencies of a computed expression.
+	 *
+	 * @var list<string>
+	 */
+	private const TWIG_RESERVED_WORDS = [
+		'and',
+		'or',
+		'not',
+		'in',
+		'is',
+		'as',
+		'with',
+		'true',
+		'false',
+		'null',
+		'if',
+		'else',
+		'elseif',
+		'endif',
+		'for',
+		'endfor',
+		'set',
+		'do',
+		'block',
+		'endblock',
+		'date',
+		'now',
+		'min',
+		'max',
+		'range',
+		'random',
+		'length',
+		'count',
+	];
+
+	/**
 	 * Maximum depth for cross-reference resolution to prevent circular lookups.
 	 *
 	 * @var int
@@ -624,72 +660,18 @@ class ComputedFieldHandler {
 	 * @spec openspec/changes/retrofit-2026-05-24-computed-fields/tasks.md#task-1
 	 */
 	private function extractTwigVariables(string $expression): array {
-		$tokens = [];
-
-		// Pull out the body of every `{{ ... }}` or `{% ... %}` block
-		// so plain text in the template doesn't get scanned as code.
-		if (preg_match_all('/\{\{(.+?)\}\}|\{%(.+?)%\}/s', $expression, $blocks) > 0) {
-			foreach ($blocks[1] as $body) {
-				if ($body !== '') {
-					$tokens[] = $body;
-				}
-			}
-
-			foreach ($blocks[2] as $body) {
-				if ($body !== '') {
-					$tokens[] = $body;
-				}
-			}
-		}
-
-		if ($tokens === []) {
+		$body = $this->twigCodeBodies(expression: $expression);
+		if ($body === '') {
 			return [];
 		}
 
-		$body = implode(' ', $tokens);
-
-		// Identifiers MUST start with a letter or underscore. Filter
-		// out Twig keywords and built-in helpers we don't want to chase
-		// through the dependency graph.
-		$reserved = [
-			'and',
-			'or',
-			'not',
-			'in',
-			'is',
-			'as',
-			'with',
-			'true',
-			'false',
-			'null',
-			'if',
-			'else',
-			'elseif',
-			'endif',
-			'for',
-			'endfor',
-			'set',
-			'do',
-			'block',
-			'endblock',
-			'date',
-			'now',
-			'min',
-			'max',
-			'range',
-			'random',
-			'length',
-			'count',
-		];
-
+		// Identifiers MUST start with a letter or underscore.
 		$identifiers = [];
 		if (preg_match_all('/(?<![\\w.])([A-Za-z_][A-Za-z0-9_]*)/', $body, $matches) > 0) {
 			foreach ($matches[1] as $name) {
-				if (in_array($name, $reserved, true) === true) {
-					continue;
+				if (in_array($name, self::TWIG_RESERVED_WORDS, true) === false) {
+					$identifiers[$name] = true;
 				}
-
-				$identifiers[$name] = true;
 			}
 		}
 
@@ -699,6 +681,25 @@ class ComputedFieldHandler {
 
 		return array_keys($identifiers);
 	}//end extractTwigVariables()
+
+	/**
+	 * The bodies of every `{{ ... }}` block, then every `{% ... %}` block,
+	 * joined by spaces, so plain text in the template is not scanned as code.
+	 *
+	 * @param string $expression The Twig expression
+	 *
+	 * @return string The joined block bodies, or '' without any
+	 */
+	private function twigCodeBodies(string $expression): string {
+		$found = preg_match_all('/\{\{(.+?)\}\}|\{%(.+?)%\}/s', $expression, $blocks);
+		if ($found === false || $found === 0) {
+			return '';
+		}
+
+		$notEmpty = static fn (string $body): bool => $body !== '';
+
+		return implode(' ', array_merge(array_filter($blocks[1], $notEmpty), array_filter($blocks[2], $notEmpty)));
+	}//end twigCodeBodies()
 
 	/**
 	 * DFS helper that records cycles in the dependency graph.

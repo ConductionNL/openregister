@@ -47,6 +47,7 @@ use ReflectionClass;
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
  * @covers \OCA\OpenRegister\Service\Object\CascadingHandler
+ * @uses   \OCA\OpenRegister\Service\Object\CascadeTarget
  * @uses   \OCA\OpenRegister\Service\Object\PermissionHandler
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema

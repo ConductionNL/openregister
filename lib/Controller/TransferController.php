@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\BackgroundJob\TransferExecutionJob;
+use OCA\OpenRegister\Controller\Support\TransferControllerServices;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
 use OCA\OpenRegister\Service\Edepot\TransferRecordService;
 use OCP\AppFramework\Controller;
@@ -56,26 +57,52 @@ use Psr\Log\LoggerInterface;
  */
 class TransferController extends Controller {
 	/**
+	 * Durable transfer-record persistence.
+	 *
+	 * @var TransferRecordService
+	 */
+	private readonly TransferRecordService $transferRecordService;
+
+	/**
+	 * Background-job scheduler (dispatch execution).
+	 *
+	 * @var IJobList
+	 */
+	private readonly IJobList $jobList;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Approves and rejects transfer lists.
+	 *
+	 * @var TransferListService
+	 */
+	private readonly TransferListService $transferListService;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param TransferRecordService $transferRecordService Durable transfer-record persistence.
-	 * @param IJobList $jobList Background-job scheduler (dispatch execution).
-	 * @param LoggerInterface $logger Logger.
-	 * @param TransferListService $transferListService Approves and rejects transfer lists.
+	 * @param TransferControllerServices $services The transfer controller services.
 	 * @param IUserSession $userSession Names the archivist who decided.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly TransferRecordService $transferRecordService,
-		private readonly IJobList $jobList,
-		private readonly LoggerInterface $logger,
-		private readonly TransferListService $transferListService,
+		TransferControllerServices $services,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->transferRecordService = $services->transferRecords;
+		$this->jobList = $services->jobList;
+		$this->logger = $services->logger;
+		$this->transferListService = $services->transferListService;
 
 	}//end __construct()
 
