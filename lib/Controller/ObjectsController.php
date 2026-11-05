@@ -71,6 +71,7 @@ use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
@@ -724,37 +725,9 @@ class ObjectsController extends Controller {
 		];
 
 		// Add next/prev page URLs if applicable.
-		$currentUrl = $this->request->getRequestUri();
+		$links = new PaginationLinks(uri: $this->request->getRequestUri());
 
-		// Add next page link if there are more pages.
-		if ($page < $pages) {
-			$nextPage = $page + 1;
-			$nextUrl = preg_replace('/([?&])page=\d+/', '$1page=' . $nextPage, $currentUrl);
-			if (strpos($nextUrl, 'page=') === false) {
-				$nextUrl .= '&page=' . $nextPage;
-				if (strpos($nextUrl, '?') === false) {
-					$nextUrl .= '?page=' . $nextPage;
-				}
-			}
-
-			$paginatedResults['next'] = $nextUrl;
-		}
-
-		// Add previous page link if not on first page.
-		if ($page > 1) {
-			$prevPage = $page - 1;
-			$prevUrl = preg_replace('/([?&])page=\d+/', '$1page=' . $prevPage, $currentUrl);
-			if (strpos($prevUrl, 'page=') === false) {
-				$prevUrl .= '&page=' . $prevPage;
-				if (strpos($prevUrl, '?') === false) {
-					$prevUrl .= '?page=' . $prevPage;
-				}
-			}
-
-			$paginatedResults['prev'] = $prevUrl;
-		}
-
-		return $paginatedResults;
+		return array_merge($paginatedResults, $links->around(page: (int)$page, pages: (int)$pages));
 	}//end paginate()
 
 	/**
