@@ -89,12 +89,7 @@ export default {
 }
 
 .special-rights-table {
-	width: 100%;
-	border-collapse: collapse;
-	border: 1px solid var(--color-border-dark);
-	border-radius: 8px;
-	overflow: hidden;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	@include rbac-table-frame;
 }
 
 .special-rights-table thead tr {
@@ -102,11 +97,7 @@ export default {
 }
 
 .special-rights-table th {
-	color: var(--color-text-dark);
-	font-weight: 600;
-	padding: 12px 16px;
-	text-align: left;
-	border-bottom: 2px solid var(--color-border-dark);
+	@include rbac-table-head-cell;
 }
 
 .special-rights-table td {
