@@ -26,7 +26,7 @@ use DateTime;
 use OCA\OpenRegister\Event\AgentCreatedEvent;
 use OCA\OpenRegister\Event\AgentDeletedEvent;
 use OCA\OpenRegister\Event\AgentUpdatedEvent;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -64,15 +64,15 @@ class AgentMapper extends QBMapper {
 	/**
 	 * Organisation service for multi-tenancy
 	 *
-	 * @var OrganisationService
+	 * @var OrganisationServiceInterface
 	 */
 
 	/**
 	 * Organisation mapper for organisation-related operations.
 	 *
-	 * @var OrganisationMapper
+	 * @var OrganisationMapperInterface
 	 */
-	protected OrganisationMapper $organisationMapper;
+	protected OrganisationMapperInterface $organisationMapper;
 
 	/**
 	 * User session for current user
@@ -99,7 +99,7 @@ class AgentMapper extends QBMapper {
 	 * Constructor
 	 *
 	 * @param IDBConnection $db Database connection
-	 * @param OrganisationMapper $organisationMapper Organisation mapper
+	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
 	 * @param IUserSession $userSession User session
 	 * @param IGroupManager $groupManager Group manager
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher
@@ -107,7 +107,7 @@ class AgentMapper extends QBMapper {
 	public function __construct(
 		IDBConnection $db,
 		// REMOVED: Services should not be in mappers.
-		OrganisationMapper $organisationMapper,
+		OrganisationMapperInterface $organisationMapper,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 		IEventDispatcher $eventDispatcher,

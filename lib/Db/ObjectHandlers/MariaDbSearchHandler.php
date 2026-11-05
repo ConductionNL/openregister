@@ -923,141 +923,62 @@ class MariaDbSearchHandler {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
 	private function applyJsonFieldFilter(IQueryBuilder $queryBuilder, string $field, mixed $value): void {
-		// Build the JSON path - convert dot notation to JSON path.
-		$jsonPath = '$.' . str_replace('.', '.', $field);
+		$jsonPath = '$.' . $field;
 
 		// Handle special null checks.
-		if ($value === 'IS NOT NULL') {
-			$queryBuilder->andWhere(
-				$queryBuilder->expr()->isNotNull(
-					$queryBuilder->createFunction(
-						'JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . ')'
-					)
-				)
+		if ($value === 'IS NOT NULL' || $value === 'IS NULL') {
+			$extracted = $queryBuilder->createFunction(
+				'JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . ')'
 			);
+			if ($value === 'IS NOT NULL') {
+				$queryBuilder->andWhere($queryBuilder->expr()->isNotNull($extracted));
+				return;
+			}
+
+			$queryBuilder->andWhere($queryBuilder->expr()->isNull($extracted));
 			return;
 		}
 
-		if ($value === 'IS NULL') {
-			$queryBuilder->andWhere(
-				$queryBuilder->expr()->isNull(
-					$queryBuilder->createFunction(
-						'JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . ')'
-					)
-				)
-			);
-			return;
-		}
-
-		// Handle array values (one of search).
+		// A list matches any of its values; a single value is a list of one.
+		$conditions = $queryBuilder->expr()->orX();
+		$values     = [$value];
 		if (is_array($value) === true) {
-			$orConditions = $queryBuilder->expr()->orX();
+			$values = $value;
+		}
 
-			foreach ($value as $arrayValue) {
-				// Use case-insensitive comparison for string values.
-				if (is_string($arrayValue) === false) {
-					// Exact match for non-string values (numbers, booleans, etc.).
-					$orConditions->add(
-						$queryBuilder->expr()->eq(
-							$queryBuilder->createFunction(
-								'JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . '))'
-							),
-							$queryBuilder->createNamedParameter($arrayValue)
-						)
-					);
+		// Each value matches as the scalar itself or inside an array; strings
+		// compare case-insensitively, other values exactly.
+		$valueConditions = static function (mixed $oneValue) use ($queryBuilder, $jsonPath): array {
+			$wrap = static fn (string $sql): string => $sql;
+			if (is_string($oneValue) === true) {
+				$oneValue = strtolower($oneValue);
+				$wrap     = static fn (string $sql): string => 'LOWER(' . $sql . ')';
+			}
 
-					// Check if the value exists within an array using JSON_CONTAINS.
-					$jsonPathParam = $queryBuilder->createNamedParameter($jsonPath);
-					$valueParam = $queryBuilder->createNamedParameter(json_encode($arrayValue));
-					$jsonContainsFunc = 'JSON_CONTAINS(JSON_EXTRACT(`object`, ' . $jsonPathParam . '), ' . $valueParam . ')';
-					$orConditions->add(
-						$queryBuilder->expr()->eq(
-							$queryBuilder->createFunction($jsonContainsFunc),
-							$queryBuilder->createNamedParameter(1)
-						)
-					);
-					continue;
-				}//end if
-
-				// Check for exact match (single value).
-				$orConditions->add(
-					$queryBuilder->expr()->eq(
-						$queryBuilder->createFunction(
-							'LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . ')))'
-						),
-						$queryBuilder->createNamedParameter(strtolower($arrayValue))
-					)
-				);
-
-				// Check if the value exists within an array using JSON_CONTAINS (case-insensitive).
-				$pathParam = $queryBuilder->createNamedParameter($jsonPath);
-				$valParam = $queryBuilder->createNamedParameter(json_encode(strtolower($arrayValue)));
-				$funcString = 'JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, ' . $pathParam . ')), ' . $valParam . ')';
-				$jsonContainsCaseI = $funcString;
-				$orConditions->add(
-					$queryBuilder->expr()->eq(
-						$queryBuilder->createFunction($jsonContainsCaseI),
-						$queryBuilder->createNamedParameter(1)
-					)
-				);
-			}//end foreach
-
-			$queryBuilder->andWhere($orConditions);
-			return;
-		}//end if
-
-		// Handle single values - use case-insensitive comparison for strings.
-		$singleValConds = $queryBuilder->expr()->orX();
-
-		if (is_string($value) === false) {
-			// Exact match for non-string values (numbers, booleans, etc.).
-			// Check for exact match (single value).
-			$singleValConds->add(
-				$queryBuilder->expr()->eq(
-					$queryBuilder->createFunction(
-						'JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . '))'
-					),
-					$queryBuilder->createNamedParameter($value)
-				)
-			);
-
-			// Check if the value exists within an array using JSON_CONTAINS.
-			$pathP = $queryBuilder->createNamedParameter($jsonPath);
-			$valP = $queryBuilder->createNamedParameter(json_encode($value));
-			$jsonContainsExact = 'JSON_CONTAINS(JSON_EXTRACT(`object`, ' . $pathP . '), ' . $valP . ')';
-			$singleValConds->add(
-				$queryBuilder->expr()->eq(
-					$queryBuilder->createFunction($jsonContainsExact),
-					$queryBuilder->createNamedParameter(1)
-				)
-			);
-
-			$queryBuilder->andWhere($singleValConds);
-			return;
-		}//end if
-
-		// Check for exact match (single value).
-		$singleValConds->add(
-			$queryBuilder->expr()->eq(
+			$scalar = $queryBuilder->expr()->eq(
 				$queryBuilder->createFunction(
-					'LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . ')))'
+					$wrap('JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . '))')
 				),
-				$queryBuilder->createNamedParameter(strtolower($value))
-			)
-		);
+				$queryBuilder->createNamedParameter($oneValue)
+			);
 
-		// Check if the value exists within an array using JSON_CONTAINS (case-insensitive).
-		$jsonPathP = $queryBuilder->createNamedParameter($jsonPath);
-		$jsonValP = $queryBuilder->createNamedParameter(json_encode(strtolower($value)));
-		$jsonContainsCaseIns = 'JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, ' . $jsonPathP . ')), ' . $jsonValP . ')';
-		$singleValConds->add(
-			$queryBuilder->expr()->eq(
-				$queryBuilder->createFunction($jsonContainsCaseIns),
+			$pathParam  = $queryBuilder->createNamedParameter($jsonPath);
+			$valueParam = $queryBuilder->createNamedParameter(json_encode($oneValue));
+			$contains   = $queryBuilder->expr()->eq(
+				$queryBuilder->createFunction(
+					'JSON_CONTAINS(' . $wrap('JSON_EXTRACT(`object`, ' . $pathParam . ')') . ', ' . $valueParam . ')'
+				),
 				$queryBuilder->createNamedParameter(1)
-			)
-		);
+			);
 
-		$queryBuilder->andWhere($singleValConds);
+			return [$scalar, $contains];
+		};
+
+		foreach ($values as $oneValue) {
+			$conditions->addMultiple($valueConditions($oneValue));
+		}
+
+		$queryBuilder->andWhere($conditions);
 	}//end applyJsonFieldFilter()
 
 	/**

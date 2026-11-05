@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Settings;
 
-use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
+use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Support\FleetAppId;
@@ -54,7 +54,7 @@ class IntegrationsAdminSettings implements ISettings {
 	 * Constructor.
 	 *
 	 * @param IntegrationRegistry $registry Integration registry.
-	 * @param ExternalIntegrationRouter $router External router (for probe()).
+	 * @param ExternalIntegrationRouterInterface $router External router (for probe()).
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IURLGenerator $urlGenerator URL generator (Configure deep-link).
 	 * @param IL10N $l10n Localisation.
@@ -63,7 +63,7 @@ class IntegrationsAdminSettings implements ISettings {
 	 */
 	public function __construct(
 		private IntegrationRegistry $registry,
-		private ExternalIntegrationRouter $router,
+		private ExternalIntegrationRouterInterface $router,
 		private IAppManager $appManager,
 		private IURLGenerator $urlGenerator,
 		private IL10N $l10n,

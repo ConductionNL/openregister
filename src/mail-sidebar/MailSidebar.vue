@@ -181,7 +181,7 @@ export default {
 		},
 
 		/**
-		 * @param tabId
+		 * @param {string} tabId
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		switchTab(tabId) {
@@ -196,7 +196,7 @@ export default {
 		 * leave the user's tab choice alone — only the enabled/disabled state
 		 * keeps tracking the count.
 		 *
-		 * @param count
+		 * @param {number} count
 		 */
 		onObjectsCount(count) {
 			this.objectsCount = count

@@ -55,8 +55,10 @@ use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
  * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver
  * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRules
  * @uses \OCA\OpenRegister\Service\Rules\ConditionDialect
- * @uses \OCA\OpenRegister\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\Object\RenderContext
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 class RenderObjectNestedWriteOnlyPathsTest extends TestCase {
 	use BuildsStateFieldRuleResolver;

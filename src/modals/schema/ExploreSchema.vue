@@ -1422,7 +1422,7 @@ export default {
 		},
 
 		/**
-		 * @param propertyName
+		 * @param {string} propertyName
 		 * @spec exclude UI selection plumbing — toggles a suggested property in the selection.
 		 */
 		togglePropertySelection(propertyName) {
@@ -1544,7 +1544,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {unknown} value
 		 * @spec exclude UI display helper — truncates/normalizes an example value for display.
 		 */
 		formatExample(value) {
@@ -1564,7 +1564,7 @@ export default {
 		},
 
 		/**
-		 * @param page
+		 * @param {number} page
 		 * @spec exclude UI pagination handler — sets the current page and scrolls to top.
 		 */
 		onPageChanged(page) {
@@ -1578,7 +1578,7 @@ export default {
 		},
 
 		/**
-		 * @param pageSize
+		 * @param {number} pageSize
 		 * @spec exclude UI pagination handler — sets page size and resets to page one.
 		 */
 		onPageSizeChanged(pageSize) {
@@ -1595,7 +1595,7 @@ export default {
 		},
 
 		/**
-		 * @param issues
+		 * @param {Array<string>} issues
 		 * @spec exclude UI display helper — maps issue-type strings to display objects.
 		 */
 		getIssueDetails(issues) {
@@ -1609,7 +1609,7 @@ export default {
 		},
 
 		/**
-		 * @param issueType
+		 * @param {string} issueType
 		 * @spec exclude UI display helper — maps an issue type to a UI category.
 		 */
 		getIssueType(issueType) {
@@ -1631,7 +1631,7 @@ export default {
 		},
 
 		/**
-		 * @param issueType
+		 * @param {string} issueType
 		 * @spec exclude UI display helper — maps an issue category to a translated label.
 		 */
 		getIssueLabel(issueType) {
@@ -1649,7 +1649,7 @@ export default {
 		},
 
 		/**
-		 * @param issueType
+		 * @param {string} issueType
 		 * @spec exclude UI display helper — maps an issue type to a translated description.
 		 */
 		getIssueDescription(issueType) {

@@ -27,12 +27,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
 use OCP\IL10N;
 use OCP\IUser;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Search\SearchScopes;
 use OCP\Search\FilterDefinition;
 use OCP\Search\IFilteringProvider;
@@ -126,9 +126,9 @@ class ObjectsProvider implements IFilteringProvider {
 	/**
 	 * The object service for advanced search operations
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Logger for debugging search operations
@@ -140,9 +140,9 @@ class ObjectsProvider implements IFilteringProvider {
 	/**
 	 * Schema mapper for resolving the searchable-schema opt-out
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Shared result-formatting service (icon precedence, deep-link URL,
@@ -155,19 +155,19 @@ class ObjectsProvider implements IFilteringProvider {
 	/**
 	 * Registers, for resolving which one owns a schema a scope names.
 	 *
-	 * @var RegisterMapper|null
+	 * @var RegisterMapperInterface|null
 	 */
-	private readonly ?RegisterMapper $registerMapper;
+	private readonly ?RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Constructor for the ObjectsProvider class
 	 *
 	 * @param IL10N $l10n The localization service
-	 * @param ObjectService $objectService The object service for search operations
+	 * @param ObjectOperationsInterface $objectService The object service for search operations
 	 * @param LoggerInterface $logger Logger for debugging search operations
-	 * @param SchemaMapper $schemaMapper Schema mapper for the searchable-schema opt-out
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper for the searchable-schema opt-out
 	 * @param ObjectSearchResultFormatter $resultFormatter Shared result-formatting service
-	 * @param RegisterMapper|null $registerMapper Resolves a register named in a search scope. Nullable and last
+	 * @param RegisterMapperInterface|null $registerMapper Resolves a register named in a search scope. Nullable and last
 	 *                                            so no positional caller shifts; absent, a scope naming a
 	 *                                            register narrows nothing, which is the pre-scope behaviour
 	 *
@@ -177,16 +177,16 @@ class ObjectsProvider implements IFilteringProvider {
 	 */
 	public function __construct(
 		IL10N $l10n,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		LoggerInterface $logger,
-		SchemaMapper $schemaMapper,
+		SchemaMapperInterface $schemaMapper,
 		ObjectSearchResultFormatter $resultFormatter,
 		// Appended LAST and nullable, deliberately: a new constructor argument
 		// inserted anywhere else shifts every positional caller, and the
 		// resulting TypeError names the argument AFTER the one that moved.
 		// Null simply means a scope naming a register narrows nothing, which
 		// is the pre-scope behaviour.
-		?RegisterMapper $registerMapper = null,
+		?RegisterMapperInterface $registerMapper = null,
 	) {
 		$this->l10n = $l10n;
 		$this->objectService = $objectService;

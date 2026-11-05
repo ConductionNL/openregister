@@ -48,7 +48,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use stdClass;
 use Symfony\Component\Uid\Uuid;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
  * Testable Schema subclass for SaveObjectRefactoredMethods tests.
@@ -187,8 +187,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 		$this->settingsService = $this->createMock(SettingsService::class);
 		$this->propertyRbacHandler = $this->createMock(PropertyRbacHandler::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		// ArrayLoader is final, so we create a real instance instead of mocking.
-		$arrayLoader = new ArrayLoader([]);
+		$permissionHandler = $this->createMock(PermissionHandler::class);
 
 		// Create real entity instances (Entity __call methods cannot be mocked in PHPUnit 10+).
 		$this->mockRegister = new Register();
@@ -232,7 +231,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 			$this->logger,
 			$this->createMock(TmloService::class),
 			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			$arrayLoader
+			$permissionHandler
 		);
 
 		// Set up reflection for accessing private methods.
@@ -412,6 +411,43 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 	}
 
 	// ==================== findAndValidateExistingObject() Tests ====================
+
+	/**
+	 * A row the lookup finds by its id, slug or uri is another row: an explicit uuid names only its own row.
+	 *
+	 * @return void
+	 */
+	public function testARowFoundByAnotherIdentifierIsNotTheExistingObject(): void {
+		$other = new ObjectEntity();
+		$other->setUuid('own-4');
+		$other->setSlug('22222222-2222-2222-2222-222222222222');
+		$this->objectEntityMapper->expects($this->once())->method('find')->willReturn($other);
+
+		$result = $this->invokePrivateMethod(
+			'findAndValidateExistingObject',
+			['22222222-2222-2222-2222-222222222222', null, null, false, false]
+		);
+
+		$this->assertNull($result);
+	}
+
+	/**
+	 * The uuid matches whatever its case, as the lookup does.
+	 *
+	 * @return void
+	 */
+	public function testTheExistingObjectIsMatchedOnItsUuidWhateverTheCase(): void {
+		$stored = new ObjectEntity();
+		$stored->setUuid('9f7a4c1e-2b3d-4e5f-8a9b-0c1d2e3f4a5b');
+		$this->objectEntityMapper->method('find')->willReturn($stored);
+
+		$result = $this->invokePrivateMethod(
+			'findAndValidateExistingObject',
+			['9F7A4C1E-2B3D-4E5F-8A9B-0C1D2E3F4A5B', null, null, false, false]
+		);
+
+		$this->assertSame($stored, $result);
+	}
 
 	/**
 	 * Test findAndValidateExistingObject returns existing object.

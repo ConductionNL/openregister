@@ -1,0 +1,219 @@
+{
+    "every field": {
+        "data": {
+            "id": null,
+            "entityId": 7,
+            "chunkId": 4,
+            "role": "9",
+            "fileId": 3,
+            "objectId": 5,
+            "emailId": 6,
+            "registerId": null,
+            "schemaId": null,
+            "objectUuid": null,
+            "positionStart": 10,
+            "positionEnd": 20,
+            "confidence": 0.75,
+            "detectionMethod": "regex",
+            "context": "ctx",
+            "anonymized": true,
+            "anonymizedValue": null,
+            "bases": {
+                "b": 1
+            },
+            "skipAnonymization": false,
+            "decision": null,
+            "createdAt": "2026-01-02T03:04:05+00:00"
+        },
+        "updated": [
+            "entityId",
+            "fileId",
+            "chunkId",
+            "objectId",
+            "emailId",
+            "positionStart",
+            "positionEnd",
+            "confidence",
+            "detectionMethod",
+            "context",
+            "role",
+            "anonymized",
+            "bases",
+            "createdAt"
+        ]
+    },
+    "minimal": {
+        "data": {
+            "id": null,
+            "entityId": 7,
+            "chunkId": null,
+            "role": null,
+            "fileId": null,
+            "objectId": null,
+            "emailId": null,
+            "registerId": null,
+            "schemaId": null,
+            "objectUuid": null,
+            "positionStart": 0,
+            "positionEnd": 0,
+            "confidence": 0,
+            "detectionMethod": null,
+            "context": null,
+            "anonymized": false,
+            "anonymizedValue": null,
+            "bases": null,
+            "skipAnonymization": false,
+            "decision": null,
+            "createdAt": "now"
+        },
+        "updated": [
+            "entityId",
+            "createdAt"
+        ]
+    },
+    "null createdAt keeps now": {
+        "data": {
+            "id": null,
+            "entityId": 1,
+            "chunkId": null,
+            "role": null,
+            "fileId": null,
+            "objectId": null,
+            "emailId": null,
+            "registerId": null,
+            "schemaId": null,
+            "objectUuid": null,
+            "positionStart": 0,
+            "positionEnd": 0,
+            "confidence": 0,
+            "detectionMethod": null,
+            "context": null,
+            "anonymized": false,
+            "anonymizedValue": null,
+            "bases": null,
+            "skipAnonymization": false,
+            "decision": null,
+            "createdAt": "now"
+        },
+        "updated": [
+            "entityId",
+            "createdAt"
+        ]
+    },
+    "nulls cast for positions and flags": {
+        "data": {
+            "id": null,
+            "entityId": 1,
+            "chunkId": null,
+            "role": null,
+            "fileId": null,
+            "objectId": null,
+            "emailId": null,
+            "registerId": null,
+            "schemaId": null,
+            "objectUuid": null,
+            "positionStart": 0,
+            "positionEnd": 0,
+            "confidence": 0,
+            "detectionMethod": null,
+            "context": null,
+            "anonymized": false,
+            "anonymizedValue": null,
+            "bases": null,
+            "skipAnonymization": false,
+            "decision": null,
+            "createdAt": "now"
+        },
+        "updated": [
+            "entityId",
+            "createdAt"
+        ]
+    },
+    "nulls set the nullable texts": {
+        "data": {
+            "id": null,
+            "entityId": 1,
+            "chunkId": null,
+            "role": null,
+            "fileId": null,
+            "objectId": null,
+            "emailId": null,
+            "registerId": null,
+            "schemaId": null,
+            "objectUuid": null,
+            "positionStart": 0,
+            "positionEnd": 0,
+            "confidence": 0,
+            "detectionMethod": null,
+            "context": null,
+            "anonymized": false,
+            "anonymizedValue": null,
+            "bases": null,
+            "skipAnonymization": false,
+            "decision": null,
+            "createdAt": "now"
+        },
+        "updated": [
+            "entityId",
+            "createdAt"
+        ]
+    },
+    "nulls skip the optional ids": {
+        "data": {
+            "id": null,
+            "entityId": 1,
+            "chunkId": null,
+            "role": null,
+            "fileId": null,
+            "objectId": null,
+            "emailId": null,
+            "registerId": null,
+            "schemaId": null,
+            "objectUuid": null,
+            "positionStart": 0,
+            "positionEnd": 0,
+            "confidence": 0,
+            "detectionMethod": null,
+            "context": null,
+            "anonymized": false,
+            "anonymizedValue": null,
+            "bases": null,
+            "skipAnonymization": false,
+            "decision": null,
+            "createdAt": "now"
+        },
+        "updated": [
+            "entityId",
+            "createdAt"
+        ]
+    },
+    "unknown keys ignored": {
+        "data": {
+            "id": null,
+            "entityId": 1,
+            "chunkId": null,
+            "role": null,
+            "fileId": null,
+            "objectId": null,
+            "emailId": null,
+            "registerId": null,
+            "schemaId": null,
+            "objectUuid": null,
+            "positionStart": 0,
+            "positionEnd": 0,
+            "confidence": 0,
+            "detectionMethod": null,
+            "context": null,
+            "anonymized": false,
+            "anonymizedValue": null,
+            "bases": null,
+            "skipAnonymization": false,
+            "decision": null,
+            "createdAt": "now"
+        },
+        "updated": [
+            "entityId",
+            "createdAt"
+        ]
+    }
+}

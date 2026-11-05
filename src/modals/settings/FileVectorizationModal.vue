@@ -382,7 +382,7 @@ export default {
 
 	watch: {
 		/**
-		 * @param newValue
+		 * @param {boolean} newValue
 		 * @spec exclude watcher reloading file types when modal opens
 		 */
 		show(newValue) {
@@ -437,76 +437,90 @@ export default {
 			this.failed = 0
 
 			try {
-				const params = {
-					mode: this.executionMode,
-					max_files: this.maxFiles,
-					batch_size: this.batchSize,
-					file_types: this.vectorizeAllTypes ? [] : this.selectedTypes,
-				}
-
 				const response = await axios.post(
 					generateUrl('/apps/openregister/api/files/vectorize/batch'),
-					params,
+					this.vectorizeParams(),
 				)
 
-				if (response.data.success) {
-					const result = response.data.data
-					this.vectorized = result.vectorized || 0
-					this.failed = result.failed || 0
-					this.processed = this.vectorized + this.failed
-
-					showSuccess(
-						this.t(
-							'openregister',
-							'File vectorization completed! {vectorized} chunks vectorized from {files} files. {failed} failed.',
-							{
-								vectorized: this.vectorized,
-								files: result.total_files || 0,
-								failed: this.failed,
-							},
-						),
-					)
-
-					// Emit completion event to reload stats in parent
-					this.$emit('completed')
-
-					// Close modal
-					this.$emit('closing')
-				} else {
+				if (!response.data.success) {
 					throw new Error(response.data.error || 'Unknown error')
 				}
+				this.finishVectorization(response.data.data)
 			} catch (error) {
 				console.error('Vectorization failed:', error)
-				const errorData = error.response?.data
-
-				// Check if it's a "not implemented" response
-				if (
-					error.response?.status === 501
-					|| errorData?.error === 'File vectorization not yet implemented'
-				) {
-					showError(
-						this.t(
-							'openregister',
-							'File chunk vectorization is not yet implemented. The chunks are ready and stored, but the vectorization service is under development.',
-						),
-					)
-				} else {
-					showError(
-						this.t(
-							'openregister',
-							'Failed to vectorize files: {error}',
-							{
-								error:
-									errorData?.error
-									|| errorData?.message
-									|| error.message,
-							},
-						),
-					)
-				}
+				showError(this.vectorizeFailureText(error))
 			} finally {
 				this.processing = false
 			}
+		},
+
+		/**
+		 * The batch request body from the chosen options.
+		 *
+		 * @spec exclude UI plumbing — builds the vectorize request from the form
+		 * @return {object} The request parameters
+		 */
+		vectorizeParams() {
+			return {
+				mode: this.executionMode,
+				max_files: this.maxFiles,
+				batch_size: this.batchSize,
+				file_types: this.vectorizeAllTypes ? [] : this.selectedTypes,
+			}
+		},
+
+		/**
+		 * Show the outcome of a finished batch and close the modal.
+		 *
+		 * @param {object} result The batch result
+		 * @spec exclude UI plumbing — reports the batch result and closes the modal
+		 * @return {void}
+		 */
+		finishVectorization(result) {
+			this.vectorized = result.vectorized || 0
+			this.failed = result.failed || 0
+			this.processed = this.vectorized + this.failed
+
+			showSuccess(
+				this.t(
+					'openregister',
+					'File vectorization completed! {vectorized} chunks vectorized from {files} files. {failed} failed.',
+					{
+						vectorized: this.vectorized,
+						files: result.total_files || 0,
+						failed: this.failed,
+					},
+				),
+			)
+
+			// Emit completion event to reload stats in parent
+			this.$emit('completed')
+
+			// Close modal
+			this.$emit('closing')
+		},
+
+		/**
+		 * Why a batch failed, in words.
+		 *
+		 * @param {object} error The request error
+		 * @spec exclude UI plumbing — words a failed vectorize request
+		 * @return {string} The translated message
+		 */
+		vectorizeFailureText(error) {
+			const errorData = error.response?.data
+			if (
+				error.response?.status === 501
+				|| errorData?.error === 'File vectorization not yet implemented'
+			) {
+				return this.t(
+					'openregister',
+					'File chunk vectorization is not yet implemented. The chunks are ready and stored, but the vectorization service is under development.',
+				)
+			}
+			return this.t('openregister', 'Failed to vectorize files: {error}', {
+				error: errorData?.error || errorData?.message || error.message,
+			})
 		},
 	},
 }

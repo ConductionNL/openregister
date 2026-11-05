@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ConversationControllerFactory;
 use OCA\OpenRegister\Controller\ConversationController;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\Conversation;
@@ -42,7 +43,7 @@ class ConversationControllerTest extends TestCase {
 		$this->chatService = $this->createMock(ChatService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new ConversationController(
+		$this->controller = ConversationControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->conversationMapper,
@@ -264,6 +265,42 @@ class ConversationControllerTest extends TestCase {
 		$result = $this->controller->destroyPermanent('uuid-123');
 
 		$this->assertEquals(200, $result->getStatus());
+	}
+
+	public function testDestroyPermanentDeletesFeedbackMessagesAndConversation(): void {
+		$conv = new Conversation();
+		$conv->setId(42);
+		$this->conversationMapper->method('findByUuid')->willReturn($conv);
+		$this->conversationMapper->method('canUserModifyConversation')->willReturn(true);
+
+		$this->feedbackMapper->expects($this->once())
+			->method('deleteByConversation')
+			->with(42);
+		$this->messageMapper->expects($this->once())
+			->method('deleteByConversation')
+			->with(42);
+		$this->conversationMapper->expects($this->once())
+			->method('delete')
+			->with($conv);
+
+		$result = $this->controller->destroyPermanent('uuid-123');
+
+		$this->assertEquals(200, $result->getStatus());
+	}
+
+	public function testDestroyPermanentAccessDeniedDeletesNothing(): void {
+		$conv = new Conversation();
+		$conv->setId(42);
+		$this->conversationMapper->method('findByUuid')->willReturn($conv);
+		$this->conversationMapper->method('canUserModifyConversation')->willReturn(false);
+
+		$this->feedbackMapper->expects($this->never())->method('deleteByConversation');
+		$this->messageMapper->expects($this->never())->method('deleteByConversation');
+		$this->conversationMapper->expects($this->never())->method('delete');
+
+		$result = $this->controller->destroyPermanent('uuid-123');
+
+		$this->assertEquals(403, $result->getStatus());
 	}
 
 	public function testDestroyPermanentAccessDenied(): void {

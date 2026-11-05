@@ -36,17 +36,18 @@ use DateTime;
 use DateTimeImmutable;
 use Exception;
 use JsonSerializable;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -94,18 +95,28 @@ class DeleteObject {
 	private array $lastRetainedTargets = [];
 
 	/**
+	 * Uuids whose delete guards a root delete asked before its cascade ran.
+	 *
+	 * The delete that follows takes its answer from here instead of asking the
+	 * guards (and every other ObjectDeletingEvent listener) a second time.
+	 *
+	 * @var array<string, true>
+	 */
+	private array $guardsAsked = [];
+
+	/**
 	 * Audit trail mapper
 	 *
-	 * @var AuditTrailMapper
+	 * @var AuditTrailMapperInterface
 	 */
-	private AuditTrailMapper $auditTrailMapper;
+	private AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * Settings service
 	 *
-	 * @var SettingsService
+	 * @var SettingsServiceInterface
 	 */
-	private SettingsService $settingsService;
+	private SettingsServiceInterface $settingsService;
 
 	/**
 	 * Logger interface
@@ -131,18 +142,18 @@ class DeleteObject {
 	/**
 	 * Constructor for DeleteObject handler.
 	 *
-	 * @param MagicMapper $objectEntityMapper Object entity data mapper.
-	 * @param CacheHandler $cacheHandler Object entity and query cache
+	 * @param MagicMapperInterface $objectEntityMapper Object entity data mapper.
+	 * @param CacheHandlerInterface $cacheHandler Object entity and query cache
 	 * @param IUserSession $userSession User session service
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for logs
-	 * @param SettingsService $settingsService Settings service for trail settings
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for logs
+	 * @param SettingsServiceInterface $settingsService Settings service for trail settings
 	 * @param LoggerInterface $logger Logger for error handling
 	 * @param ReferentialIntegrityService $integrityService Referential integrity service
 	 * @param IDBConnection $db Database connection for transactions
-	 * @param OrganisationMapper $organisationMapper Resolves the deleting user's active organisation for the audit trail
+	 * @param OrganisationMapperInterface $organisationMapper Resolves the deleting user's active organisation for the audit trail
 	 * @param FileService|null $fileService File service for object folder cleanup
 	 * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry Writable object-source provider registry
-	 * @param \OCA\OpenRegister\Db\RegisterMapper|null $registerMapper Register mapper for register lookups
+	 * @param \OCA\OpenRegister\Db\RegisterMapperInterface|null $registerMapper Register mapper for register lookups
 	 * @param DeletionWindowService|null $windowService Resolves and states the recovery window
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
@@ -150,18 +161,18 @@ class DeleteObject {
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI constructor wires all delete-path collaborators
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectEntityMapper,
-		private readonly CacheHandler $cacheHandler,
+		private readonly MagicMapperInterface $objectEntityMapper,
+		private readonly CacheHandlerInterface $cacheHandler,
 		private readonly IUserSession $userSession,
-		AuditTrailMapper $auditTrailMapper,
-		SettingsService $settingsService,
+		AuditTrailMapperInterface $auditTrailMapper,
+		SettingsServiceInterface $settingsService,
 		LoggerInterface $logger,
 		ReferentialIntegrityService $integrityService,
 		IDBConnection $db,
-		private readonly OrganisationMapper $organisationMapper,
+		private readonly OrganisationMapperInterface $organisationMapper,
 		private readonly ?FileService $fileService = null,
 		private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry = null,
-		private readonly ?\OCA\OpenRegister\Db\RegisterMapper $registerMapper = null,
+		private readonly ?\OCA\OpenRegister\Db\RegisterMapperInterface $registerMapper = null,
 		private readonly ?DeletionWindowService $windowService = null,
 	) {
 		$this->auditTrailMapper = $auditTrailMapper;
@@ -213,6 +224,14 @@ class DeleteObject {
 		}
 
 		$target = ($given ?? $this->lookUpDeletionTarget(object: $object, identifier: $identifier));
+
+		// Asked before the folder goes and before the row is marked deleted.
+		$uuid = (string)$target->object->getUuid();
+		if (isset($this->guardsAsked[$uuid]) === false) {
+			$this->objectEntityMapper->assertDeletable(entity: $target->object);
+		}
+
+		unset($this->guardsAsked[$uuid]);
 
 		if ($permanent === true) {
 			$this->deletePermanently(target: $target);
@@ -316,7 +335,9 @@ class DeleteObject {
 			entity: $objectEntity,
 			register: $target->register,
 			schema: $target->schema,
-			hardDelete: true
+			hardDelete: true,
+			// The guards were asked in delete(), before the folder was removed.
+			dispatchEvents: false
 		);
 
 		if ($objectEntity->isDraft() === true) {
@@ -580,6 +601,7 @@ class DeleteObject {
 	 * @throws ReferentialIntegrityException If deletion is blocked by RESTRICT constraints.
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException If `$scoped` is true and the UUID is not present
 	 *                                                    in the given (register, schema) magic table.
+	 * @throws HookStoppedException When a delete guard refuses.
 	 * @throws Exception If there is an error during deletion.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
@@ -625,8 +647,7 @@ class DeleteObject {
 
 		// Reset cascade count for root deletions.
 		if ($originalObjectId === null) {
-			$this->lastCascadeCount = 0;
-			$this->lastRetainedTargets = [];
+			[$this->lastCascadeCount, $this->lastRetainedTargets, $this->guardsAsked] = [0, [], []];
 		}
 
 		// Resolve the lookup: when the caller has guaranteed a (register, schema)
@@ -644,14 +665,12 @@ class DeleteObject {
 			preResolved: $preResolved
 		);
 
-		$object = $context['object'];
-
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.ctx');
 
 		// Root deletions: check referential integrity and handle cascade.
 		if ($originalObjectId === null) {
 			$integrityResult = $this->handleIntegrityDeletion(
-				object: $object,
+				object: $context['object'],
 				context: $context,
 				uuid: $uuid
 			);
@@ -665,11 +684,14 @@ class DeleteObject {
 		try {
 			// Pass the already-resolved scope so delete() skips its own re-find.
 			return $this->delete(
-				object: $object,
+				object: $context['object'],
 				permanent: $permanent,
 				register: $this->contextRegisterEntity(context: $context),
 				schema: $this->contextSchemaEntity(context: $context)
 			);
+		} catch (HookStoppedException $e) {
+			// A guard's refusal carries its own message and status for the caller.
+			throw $e;
 		} catch (Exception $e) {
 			$this->logger->warning(
 				message: '[DeleteObject] Delete failed',
@@ -833,6 +855,10 @@ class DeleteObject {
 		array $context,
 		string $uuid,
 	): ?bool {
+		// The root's guards answer before any child is cascaded away.
+		$this->objectEntityMapper->assertDeletable(entity: $object);
+		$this->guardsAsked[(string)$object->getUuid()] = true;
+
 		$schemaId = $object->getSchema();
 		$hasIntegrityAction = $schemaId !== null
 			&& $this->integrityService->hasIncomingOnDeleteReferences($schemaId) === true;

@@ -371,6 +371,30 @@ class SaveObjectsBulkSideEffectsTest extends TestCase {
 	}//end testUnchangedRowsAndEventSuppression()
 
 	/**
+	 * A bulk save that asks for no audit trail writes no audit rows, and still dispatches its events.
+	 *
+	 * @return void
+	 */
+	public function testAuditOffWritesNoAuditRows(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->organisationService->method('getOrganisationForNewEntity')->willReturn(null);
+		$this->objectMapper->method('ultraFastBulkSave')->willReturn([$this->rawRow('uuid-created-1', 'created')]);
+		$this->mockRowConversion();
+		$this->auditTrailMapper->expects($this->never())->method('insertAuditTrails');
+
+		$result = $this->handler->saveObjects(
+			objects: [['name' => 'A']],
+			register: $this->createRegister(1),
+			schema: $this->createSchema(1),
+			_events: true,
+			_audit: false
+		);
+
+		$this->assertSame(1, $result['statistics']['saved']);
+		$this->assertCount(1, $this->dispatchedEvents);
+	}//end testAuditOffWritesNoAuditRows()
+
+	/**
 	 * MEMORY CONTRACT: audit entries are streamed to insertAuditTrails() in
 	 * slices of at most 100, so a 20k-object save chunk never materialises
 	 * all its AuditTrail entities (each embedding an old+new payload diff)

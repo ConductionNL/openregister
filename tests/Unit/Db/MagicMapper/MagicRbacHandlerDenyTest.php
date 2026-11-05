@@ -53,6 +53,7 @@ use Psr\Log\NullLogger;
  * Pins the deny term the raw-SQL emitter produces.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacPermissionCheck
  * @uses \OCA\OpenRegister\Db\MagicMapper\RbacResolvers
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
@@ -62,6 +63,9 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
+ * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
  */
 class MagicRbacHandlerDenyTest extends TestCase {
 

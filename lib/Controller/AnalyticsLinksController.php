@@ -35,11 +35,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\AnalyticsLinkService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
@@ -50,19 +51,21 @@ use OCP\IRequest;
  * @package  OCA\OpenRegister\Controller
  */
 class AnalyticsLinksController extends Controller {
+	use ObjectLinkActionsTrait;
+
 	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
 	 * @param AnalyticsLinkService $analyticsLinkService Backing service.
-	 * @param ObjectService $objectService OR object resolver.
+	 * @param ObjectOperationsInterface $objectService OR object resolver.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly AnalyticsLinkService $analyticsLinkService,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -83,31 +86,13 @@ class AnalyticsLinksController extends Controller {
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
 		if ($this->analyticsLinkService->isAnalyticsAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC Analytics app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'NC Analytics');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$results = $this->analyticsLinkService->getLinkedReports($object->getUuid());
-
-			return new JSONResponse(
-				[
-					'results' => $results,
-					'total' => count($results),
-				]
-			);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
-		}//end try
+		return $this->listLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->analyticsLinkService->getLinkedReports($object->getUuid()))
+		);
 	}//end index()
 
 	/**
@@ -128,36 +113,27 @@ class AnalyticsLinksController extends Controller {
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
 		if ($this->analyticsLinkService->isAnalyticsAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC Analytics app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'NC Analytics');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: function (ObjectEntity $object): JSONResponse {
+				$reportId = (int)$this->request->getParam('reportId', 0);
+				if ($reportId === 0) {
+					return new JSONResponse(['error' => 'reportId is required'], 400);
+				}
+
+				$link = $this->analyticsLinkService->linkReport(
+					$object->getUuid(),
+					(int)$object->getRegister(),
+					(int)$object->getSchema(),
+					$reportId
+				);
+
+				return new JSONResponse($link->jsonSerialize(), 201);
 			}
-
-			$reportId = (int)$this->request->getParam('reportId', 0);
-			if ($reportId === 0) {
-				return new JSONResponse(['error' => 'reportId is required'], 400);
-			}
-
-			$link = $this->analyticsLinkService->linkReport(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$reportId
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		);
 	}//end link()
 
 	/**
@@ -178,43 +154,34 @@ class AnalyticsLinksController extends Controller {
 	 */
 	public function createAndLink(string $register, string $schema, string $id): JSONResponse {
 		if ($this->analyticsLinkService->isAnalyticsAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC Analytics app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'NC Analytics');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: function (ObjectEntity $object): JSONResponse {
+				$name = (string)$this->request->getParam('name', '');
+				if (trim($name) === '') {
+					return new JSONResponse(['error' => 'name is required'], 400);
+				}
+
+				$type = $this->request->getParam('type');
+				$typeInt = null;
+				if ($type !== null && $type !== '') {
+					$typeInt = (int)$type;
+				}
+
+				$link = $this->analyticsLinkService->createAndLinkReport(
+					$object->getUuid(),
+					(int)$object->getRegister(),
+					(int)$object->getSchema(),
+					$name,
+					$typeInt
+				);
+
+				return new JSONResponse($link->jsonSerialize(), 201);
 			}
-
-			$name = (string)$this->request->getParam('name', '');
-			if (trim($name) === '') {
-				return new JSONResponse(['error' => 'name is required'], 400);
-			}
-
-			$type = $this->request->getParam('type');
-			$typeInt = null;
-			if ($type !== null && $type !== '') {
-				$typeInt = (int)$type;
-			}
-
-			$link = $this->analyticsLinkService->createAndLinkReport(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$name,
-				$typeInt
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		);
 	}//end createAndLink()
 
 	/**
@@ -234,26 +201,17 @@ class AnalyticsLinksController extends Controller {
 	 */
 	public function destroy(string $register, string $schema, string $id, string $reportId): JSONResponse {
 		if ($this->analyticsLinkService->isAnalyticsAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC Analytics app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'NC Analytics');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: function (ObjectEntity $object) use ($reportId): JSONResponse {
+				$this->analyticsLinkService->unlinkReport($object->getUuid(), (int)$reportId);
+
+				return new JSONResponse(['success' => true]);
 			}
-
-			$this->analyticsLinkService->unlinkReport($object->getUuid(), (int)$reportId);
-
-			return new JSONResponse(['success' => true]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		);
 	}//end destroy()
 
 	/**
@@ -272,10 +230,7 @@ class AnalyticsLinksController extends Controller {
 	 */
 	public function available(): JSONResponse {
 		if ($this->analyticsLinkService->isAnalyticsAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC Analytics app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'NC Analytics');
 		}
 
 		$search = $this->request->getParam('search');
@@ -286,31 +241,6 @@ class AnalyticsLinksController extends Controller {
 		$reports = $this->analyticsLinkService->getAvailableReports($search);
 		return new JSONResponse(['results' => $reports, 'total' => count($reports)]);
 	}//end available()
-
-	/**
-	 * Resolve an OR object from register/schema/id.
-	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object id.
-	 *
-	 * @return ObjectEntity|null
-	 *
-	 * @spec exclude Private helper: resolves an object from register/schema/id;
-	 *              the link REST contract is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
-	 *
-	 * @throws DoesNotExistException When no such object exists. Deliberately propagated rather
-	 *                               than caught: every call site already wraps this helper and translates it to a 404.
-	 *                               Swallowing it here would collapse "no such object" into the same null this method
-	 *                               returns for other reasons, which the caller could no longer tell apart.
-	 */
-	private function validateObject(string $register, string $schema, string $id): ?ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
-
-		return $this->objectService->getObject();
-	}//end validateObject()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.
@@ -330,7 +260,7 @@ class AnalyticsLinksController extends Controller {
 	 * @spec exclude Private helper: maps a service exception code to an HTTP status;
 	 *              the link REST contract is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
 	 */
-	private function mapException(Exception $exception): JSONResponse {
+	protected function mapException(Exception $exception): JSONResponse {
 		$code = $exception->getCode();
 		if (in_array($code, [400, 401, 404, 409, 503], true) === true) {
 			return new JSONResponse(['error' => $exception->getMessage()], $code);

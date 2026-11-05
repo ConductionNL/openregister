@@ -38,8 +38,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Config\Types;
 
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Service\Config\BundleCrossingGuard;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
-use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use Throwable;
 use UnexpectedValueException;
 
@@ -51,11 +52,13 @@ class ConfigSetShareableConfigType implements IShareableConfigType {
 	 * Constructor.
 	 *
 	 * @param ConfigurationMapper $configurationMapper Loads the configuration set to share.
-	 * @param ConfigurationService $configService Exports and imports the set.
+	 * @param ConfigurationServiceInterface $configService Exports and imports the set.
+	 * @param BundleCrossingGuard $crossingGuard Judges the bundle's schemas for the caller.
 	 */
 	public function __construct(
 		private readonly ConfigurationMapper $configurationMapper,
-		private readonly ConfigurationService $configService,
+		private readonly ConfigurationServiceInterface $configService,
+		private readonly BundleCrossingGuard $crossingGuard,
 	) {
 
 	}//end __construct()
@@ -124,6 +127,8 @@ class ConfigSetShareableConfigType implements IShareableConfigType {
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
 	public function deserialise(array $bundle): array {
+		$this->crossingGuard->assertAllowed(bundle: $bundle);
+
 		return $this->configService->importFromJson(
 			data: $bundle,
 			version: (string)($bundle['info']['version'] ?? '1.0.0'),

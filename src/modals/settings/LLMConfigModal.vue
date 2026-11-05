@@ -621,6 +621,115 @@ import Delete from 'vue-material-design-icons/Delete.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import TestTube from 'vue-material-design-icons/TestTube.vue'
 
+/**
+ * The OpenAI form values of stored OpenAI settings.
+ *
+ * @param {object} config The stored OpenAI settings.
+ * @return {object} The form values.
+ */
+function openaiFormConfig(config) {
+	return {
+		apiKey: config.apiKey || '',
+		model: config.model || null,
+		chatModel: config.chatModel || null,
+		organizationId: config.organizationId || '',
+	}
+}
+
+/**
+ * The Ollama form values of stored Ollama settings.
+ *
+ * @param {object} config The stored Ollama settings.
+ * @return {object} The form values.
+ */
+function ollamaFormConfig(config) {
+	return {
+		url: config.url || 'http://localhost:11434',
+		model: config.model || null,
+		chatModel: config.chatModel || null,
+	}
+}
+
+/**
+ * The Fireworks form values of stored Fireworks settings, with the models
+ * swapped for their dropdown options when the dropdowns have them.
+ *
+ * @param {object} vm The LLM configuration modal.
+ * @param {object} config The stored Fireworks settings.
+ * @return {object} The form values.
+ */
+function fireworksFormConfig(vm, config) {
+	return {
+		apiKey: config.apiKey || '',
+		embeddingModel:
+			modelOption(vm.fireworksEmbeddingModelOptions, config.embeddingModel)
+			|| config.embeddingModel
+			|| null,
+		chatModel:
+			modelOption(vm.fireworksChatModelOptions, config.chatModel)
+			|| config.chatModel
+			|| null,
+		baseUrl: config.baseUrl || 'https://api.fireworks.ai/inference/v1',
+	}
+}
+
+/**
+ * The dropdown option of a stored model id, when there is one.
+ *
+ * @param {Array<object>} options The dropdown options.
+ * @param {string|undefined} id The stored model id.
+ * @return {object|undefined} The option.
+ */
+function modelOption(options, id) {
+	return id ? options.find((m) => m.id === id) : undefined
+}
+
+/**
+ * Fill the form from stored LLM settings: the providers, each provider's
+ * settings, and the enabled features.
+ *
+ * @param {object} vm The LLM configuration modal.
+ * @param {object} llmSettings The stored LLM settings.
+ * @return {void}
+ */
+function applyLlmSettings(vm, llmSettings) {
+	vm.llmEnabled = llmSettings.enabled || false
+	if (llmSettings.embeddingProvider) {
+		vm.selectedEmbeddingProvider = vm.embeddingProviderOptions.find(
+			(p) => p.id === llmSettings.embeddingProvider,
+		)
+	}
+	if (llmSettings.chatProvider) {
+		vm.selectedChatProvider = vm.chatProviderOptions.find(
+			(p) => p.id === llmSettings.chatProvider,
+		)
+	}
+	if (llmSettings.openaiConfig)
+		vm.openaiConfig = openaiFormConfig(llmSettings.openaiConfig)
+	if (llmSettings.ollamaConfig)
+		vm.ollamaConfig = ollamaFormConfig(llmSettings.ollamaConfig)
+	if (llmSettings.fireworksConfig)
+		vm.fireworksConfig = fireworksFormConfig(vm, llmSettings.fireworksConfig)
+	if (Array.isArray(llmSettings.enabledFeatures)) {
+		vm.aiFeatures.forEach((feature) => {
+			feature.enabled = llmSettings.enabledFeatures.includes(feature.id)
+		})
+	}
+}
+
+/**
+ * Whether Ollama is chosen for embeddings or chat and has a URL, so its models can be listed.
+ *
+ * @param {object} vm The LLM configuration modal.
+ * @return {boolean} True when the Ollama models should be fetched.
+ */
+function usesOllama(vm) {
+	const chosen =
+		vm.selectedEmbeddingProvider?.id === 'ollama'
+		|| vm.selectedChatProvider?.id === 'ollama'
+	return chosen && Boolean(vm.ollamaConfig.url)
+}
+
 export default {
 	name: 'LLMConfigModal',
 
@@ -967,7 +1076,7 @@ export default {
 	watch: {
 		// Fetch Ollama models when Ollama is selected
 		/**
-		 * @param newVal
+		 * @param {object|null} newVal
 		 * @spec exclude UI watcher — fetches Ollama models when the embedding provider is Ollama.
 		 */
 		selectedEmbeddingProvider(newVal) {
@@ -977,7 +1086,7 @@ export default {
 		},
 
 		/**
-		 * @param newVal
+		 * @param {object|null} newVal
 		 * @spec exclude UI watcher — fetches Ollama models when the chat provider is Ollama.
 		 */
 		selectedChatProvider(newVal) {
@@ -1017,99 +1126,9 @@ export default {
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/settings/llm'),
 				)
-				const llmSettings = response.data
-
-				// Set enabled state
-				this.llmEnabled = llmSettings.enabled || false
-
-				// Set embedding provider
-				if (llmSettings.embeddingProvider) {
-					this.selectedEmbeddingProvider =
-						this.embeddingProviderOptions.find(
-							(p) => p.id === llmSettings.embeddingProvider,
-						)
-				}
-
-				// Set chat provider
-				if (llmSettings.chatProvider) {
-					this.selectedChatProvider = this.chatProviderOptions.find(
-						(p) => p.id === llmSettings.chatProvider,
-					)
-				}
-
-				// Load OpenAI config
-				if (llmSettings.openaiConfig) {
-					this.openaiConfig = {
-						apiKey: llmSettings.openaiConfig.apiKey || '',
-						model: llmSettings.openaiConfig.model || null,
-						chatModel: llmSettings.openaiConfig.chatModel || null,
-						organizationId:
-							llmSettings.openaiConfig.organizationId || '',
-					}
-				}
-
-				// Load Ollama config
-				if (llmSettings.ollamaConfig) {
-					this.ollamaConfig = {
-						url:
-							llmSettings.ollamaConfig.url || 'http://localhost:11434',
-
-						model: llmSettings.ollamaConfig.model || null,
-						chatModel: llmSettings.ollamaConfig.chatModel || null,
-					}
-				}
-
-				// Load Fireworks config
-				if (llmSettings.fireworksConfig) {
-					this.fireworksConfig = {
-						apiKey: llmSettings.fireworksConfig.apiKey || '',
-						embeddingModel:
-							llmSettings.fireworksConfig.embeddingModel || null,
-
-						chatModel: llmSettings.fireworksConfig.chatModel || null,
-						baseUrl:
-							llmSettings.fireworksConfig.baseUrl
-							|| 'https://api.fireworks.ai/inference/v1',
-					}
-
-					// Map model strings to model objects from the dropdown options
-					if (llmSettings.fireworksConfig.embeddingModel) {
-						const modelObj = this.fireworksEmbeddingModelOptions.find(
-							(m) =>
-								m.id === llmSettings.fireworksConfig.embeddingModel,
-						)
-						if (modelObj) {
-							this.fireworksConfig.embeddingModel = modelObj
-						}
-					}
-					if (llmSettings.fireworksConfig.chatModel) {
-						const modelObj = this.fireworksChatModelOptions.find(
-							(m) => m.id === llmSettings.fireworksConfig.chatModel,
-						)
-						if (modelObj) {
-							this.fireworksConfig.chatModel = modelObj
-						}
-					}
-				}
-
-				// Load enabled features (if available)
-				if (
-					llmSettings.enabledFeatures
-					&& Array.isArray(llmSettings.enabledFeatures)
-				) {
-					this.aiFeatures.forEach((feature) => {
-						feature.enabled = llmSettings.enabledFeatures.includes(
-							feature.id,
-						)
-					})
-				}
-
+				applyLlmSettings(this, response.data)
 				// Fetch Ollama models if Ollama is selected
-				if (
-					(this.selectedEmbeddingProvider?.id === 'ollama'
-						|| this.selectedChatProvider?.id === 'ollama')
-					&& this.ollamaConfig.url
-				) {
+				if (usesOllama(this)) {
 					this.fetchOllamaModels()
 				}
 			} catch (error) {
@@ -1366,7 +1385,7 @@ export default {
 					// Keep fallback list if API returns empty or fails
 					// Using fallback model list
 				}
-			} catch (error) {
+			} catch {
 				// Silently fail and keep using the hardcoded fallback list
 				// Error fetching Ollama models, using fallback
 			} finally {

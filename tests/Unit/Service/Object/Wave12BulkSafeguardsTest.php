@@ -44,6 +44,10 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Object\DraftCallerRule
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Service\Object\BulkSafeguardRun
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class Wave12BulkSafeguardsTest extends TestCase {
 
@@ -123,7 +127,7 @@ class Wave12BulkSafeguardsTest extends TestCase {
 		$reflection->setAccessible(true);
 		return $reflection->invokeArgs(
 			$this->handler,
-			[$objects, $register, $schema, $_rbac, $_validation, &$result]
+			[$objects, $register, $schema, ['rbac' => $_rbac, 'validation' => $_validation], &$result]
 		);
 	}//end callApplyBulkSafeguards()
 

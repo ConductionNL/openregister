@@ -108,51 +108,65 @@ export default {
 				return
 			}
 
-			// Use the upgraded stats endpoint to get object count efficiently
 			try {
-				const stats = await schemaStore.getSchemaStats(
-					schemaStore.schemaItem.id,
-				)
-				const totalObjects = stats.objects?.total || 0
-
-				if (totalObjects > 0) {
-					// Find the first register that contains this schema for display purposes
-					const register = registerStore.registerList.find((reg) =>
-						reg.schemas.includes(schemaStore.schemaItem.id),
-					)
-					if (register) {
-						this.registerName = register.title
-						// Create a mock object array for display purposes
-						this.objects = Array(totalObjects).fill({
-							id: '...',
-							name: 'Object',
-						})
-					}
-				}
+				await this.countFromStats()
 			} catch (err) {
 				console.warn(
 					'Could not load schema stats, falling back to individual register checks:',
 					err,
 				)
-				// Fallback to the original method if stats endpoint fails
 				for (const reg of registerStore.registerList) {
-					if (!reg.schemas.includes(schemaStore.schemaItem.id)) {
-						continue
-					}
-
-					await objectStore.refreshObjectList({
-						register: reg.id,
-						schema: schemaStore.schemaItem.id,
-						search: '',
-					})
-
-					if (objectStore.getCollection(objectStore.currentType).length) {
-						this.objects.push(
-							...objectStore.getCollection(objectStore.currentType),
-						)
-						this.registerName = reg.title
+					if (reg.schemas.includes(schemaStore.schemaItem.id)) {
+						await this.collectFromRegister(reg)
 					}
 				}
+			}
+		},
+
+		/**
+		 * Count the schema's objects through the stats endpoint and name the
+		 * first register that holds the schema. The objects are placeholders,
+		 * only their number is shown.
+		 *
+		 * @spec exclude Modal data-load plumbing — counts objects referencing the schema before delete.
+		 * @return {Promise<void>}
+		 */
+		async countFromStats() {
+			const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
+			const totalObjects = stats.objects?.total || 0
+			const register =
+				totalObjects > 0
+				&& registerStore.registerList.find((reg) =>
+					reg.schemas.includes(schemaStore.schemaItem.id),
+				)
+			if (register) {
+				this.registerName = register.title
+				this.objects = Array(totalObjects).fill({
+					id: '...',
+					name: 'Object',
+				})
+			}
+		},
+
+		/**
+		 * Load the schema's objects in one register and keep them when there
+		 * are any.
+		 *
+		 * @spec exclude Modal data-load plumbing — counts objects referencing the schema before delete.
+		 * @param {object} reg The register
+		 * @return {Promise<void>}
+		 */
+		async collectFromRegister(reg) {
+			await objectStore.refreshObjectList({
+				register: reg.id,
+				schema: schemaStore.schemaItem.id,
+				search: '',
+			})
+			if (objectStore.getCollection(objectStore.currentType).length) {
+				this.objects.push(
+					...objectStore.getCollection(objectStore.currentType),
+				)
+				this.registerName = reg.title
 			}
 		},
 
@@ -183,11 +197,9 @@ export default {
 				.then(({ response }) => {
 					this.success = response.ok
 					this.error = false
-					response.ok
-						&& (this.closeModalTimeout = setTimeout(
-							this.closeDialog,
-							2000,
-						))
+					if (response.ok) {
+						this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
+					}
 				})
 				.catch((error) => {
 					this.success = false

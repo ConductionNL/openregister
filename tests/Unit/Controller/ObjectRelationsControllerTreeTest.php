@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectRelationsControllerFactory;
 use OCA\OpenRegister\Controller\ObjectRelationsController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -42,10 +43,15 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectRelationsController
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsMappers
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsGraph
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsGuards
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsControllerServices
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Audit\PurposeRefusedException
+ * @uses \OCA\OpenRegister\Service\Relation\RelationGraphService
  */
 class ObjectRelationsControllerTreeTest extends TestCase {
 
@@ -112,7 +118,7 @@ class ObjectRelationsControllerTreeTest extends TestCase {
 		$registerMapper = $this->createMock(RegisterMapper::class);
 		$registerMapper->method('find')->willReturn(new Register());
 
-		return new ObjectRelationsController(
+		return ObjectRelationsControllerFactory::create(
 			appName: 'openregister',
 			request: $request,
 			relations: $this->createMock(ObjectRelationService::class),

@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Exception\FlowRunRefused;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Db\FlowVersionMapper;
@@ -86,9 +86,9 @@ class FlowService {
 	 *
 	 * @param FlowMapper $mapper Reads and writes flow definitions.
 	 * @param FlowTriggerIndex $triggerIndex Keeps the trigger index derived from the nodes.
-	 * @param FlowRunService $runner Queues and executes runs.
+	 * @param FlowRunServiceInterface $runner Queues and executes runs.
 	 * @param FlowRunAdvancer $advancer Advances a run inline for a synchronous caller.
-	 * @param FlowRunMapper $runs Sweeps a deleted flow's runs.
+	 * @param FlowRunMapperInterface $runs Sweeps a deleted flow's runs.
 	 * @param FlowRunStepMapper $steps Sweeps those runs' step rows.
 	 * @param FlowStateMapper $state Sweeps a deleted flow's carried state.
 	 * @param IUserSession $userSession Identifies the acting user.
@@ -101,9 +101,9 @@ class FlowService {
 	public function __construct(
 		private readonly FlowMapper $mapper,
 		private readonly FlowTriggerIndex $triggerIndex,
-		private readonly FlowRunService $runner,
+		private readonly FlowRunServiceInterface $runner,
 		private readonly FlowRunAdvancer $advancer,
-		private readonly FlowRunMapper $runs,
+		private readonly FlowRunMapperInterface $runs,
 		private readonly FlowRunStepMapper $steps,
 		private readonly FlowStateMapper $state,
 		private readonly IUserSession $userSession,

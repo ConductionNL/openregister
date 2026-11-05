@@ -29,6 +29,13 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\RenderObject;
+use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
+use OCA\OpenRegister\Service\Oas\OasRequestValidator;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionInputs;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
+use OCP\IL10N;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -53,12 +60,13 @@ class RenderObjectUpdateRightTest extends TestCase {
 	 *
 	 * @return array The serialised object.
 	 */
-	private function renderAs(array $groups, array|string $extend): array {
+	private function renderAs(array $groups, array|string $extend, array $actions = []): array {
 		$schema = new Schema();
 		$schema->setId(7);
 		$schema->setSlug('case');
-		$schema->setProperties(['reference' => ['type' => 'string']]);
-		$schema->setAuthorization(['read' => ['readers', 'editors'], 'update' => ['editors']]);
+		$schema->setProperties(['reference' => ['type' => 'string'], 'assignee' => ['type' => 'string']]);
+		$schema->setAuthorization(['read' => ['readers', 'editors'], 'update' => ['editors'], 'take' => ['readers']]);
+		$schema->setConfiguration(['x-openregister-action' => $actions]);
 
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn($schema);
@@ -86,11 +94,25 @@ class RenderObjectUpdateRightTest extends TestCase {
 			$this->createMock(ContainerInterface::class)
 		);
 
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
+		$actionList = new ObjectActionList(
+			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
+			new ObjectActionGate($permissions, $userSession, $l10n),
+			new ObjectActionInputs(new OasRequestValidator()),
+			$this->createMock(TransitionEngine::class),
+			$l10n
+		);
+
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			static function (string $id) use ($permissions) {
+			static function (string $id) use ($permissions, $actionList) {
 				if ($id === PermissionHandler::class) {
 					return $permissions;
+				}
+
+				if ($id === ObjectActionList::class) {
+					return $actionList;
 				}
 
 				throw new RuntimeException('not wired in this test: '.$id);
@@ -168,6 +190,24 @@ class RenderObjectUpdateRightTest extends TestCase {
 
 		$this->assertSame(['update' => true], $rendered['@self']['can'] ?? null);
 	}//end testTheStringSpellingIsHonoured()
+
+	/**
+	 * Each caller reads the declared actions they may run, next to `update`.
+	 *
+	 * @return void
+	 */
+	public function testTheDeclaredActionsAreListedPerCaller(): void {
+		$actions = [
+			'take' => ['name' => 'Take', 'description' => 'Assign it to yourself.', 'selfAssign' => ['field' => 'assignee']],
+			'sendMail' => ['name' => 'Send mail', 'description' => 'A grant only, never run.'],
+		];
+
+		$reader = $this->renderAs(['readers'], ['@self.can'], $actions);
+		$editor = $this->renderAs(['editors'], ['@self.can'], $actions);
+
+		$this->assertSame(['take' => true, 'update' => false], $reader['@self']['can'] ?? null);
+		$this->assertSame(['take' => false, 'update' => true], $editor['@self']['can'] ?? null);
+	}//end testTheDeclaredActionsAreListedPerCaller()
 
 	/**
 	 * Without the opt-in no right is computed or claimed.

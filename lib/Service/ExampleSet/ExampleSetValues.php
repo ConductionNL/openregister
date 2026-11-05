@@ -5,13 +5,15 @@
  *
  * Replaces `{{...}}` in declared values. The forms:
  * - `{{cast:key.path}}` a field of a cast person, organisation or group;
- * - `{{date:n}}` and `{{datetime:n HH:MM}}` a day n days from the install day;
+ * - `{{date:n}}` and `{{datetime:n HH:MM}}` a day n days from the install day (a moment as its UTC instant);
  * - `{{object:key.path}}` a field of an object declared earlier in the same fragment;
  * - `{{file:key.n}}` the Nextcloud file id of the n-th file (from 0) an object declared earlier in the same
  *   fragment carries, so a record can name a file the set adds;
  * - `{{view:key.uuid}}` the uuid of a saved view the same fragment declares (user preferences only);
  * - `{{task:key.uuid}}` the uuid of a task the same fragment declares (the parts written after its tasks: notes, read states);
  * - `{{flow:key.uuid}}` the uuid of a flow the same fragment declares (changes and the engine parts, all written after its flows);
+ * - `{{accessLink:key.id|uuid|url}}` an access link the same fragment declares (changes and the engine parts, all
+ *   written after its links);
  * - `{{lookup:name}}` the id a lookup by business key found;
  * - `{{account:key.field}}` a field of a service account a fragment declares;
  * - `{{organisation:slug-or-name}}` the uuid of an OpenRegister organisation;
@@ -51,6 +53,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateInterval;
 use DateTimeImmutable;
+use DateTimeZone;
 
 /**
  * Fills placeholders in declared values.
@@ -216,8 +219,9 @@ class ExampleSetValues {
 	}//end tasksOf()
 
 	/**
-	 * The flows a fragment declares, by key, for `{{flow:key.uuid}}`: as the record holds them after the install
-	 * wrote them, or with a stand-in uuid for the check (`$record` null), since none is written yet.
+	 * The flows a fragment declares, by key, for `{{flow:key.uuid}}` and `{{flow:key.runs.run}}`: as the record
+	 * holds them after the install wrote them, or with stand-in uuids for the check (`$record` null), since none
+	 * is written yet. A stand-in names its keyed runs, and the step each waiting one waits on (`waitsOn`).
 	 *
 	 * @param array<string, mixed>      $fragment The fragment.
 	 * @param array<string, mixed>|null $record   The set's record, or null for the check.
@@ -225,9 +229,30 @@ class ExampleSetValues {
 	 * @return array<string, array<string, mixed>>
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
+	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-task-may-name-the-run-it-waits-in-and-carry-its-claim
 	 */
 	public function flowsOf(array $fragment, ?array $record): array {
-		return $this->writtenRowsOf(fragment: $fragment, part: 'flows', noun: 'flow', record: $record);
+		$flows = $this->writtenRowsOf(fragment: $fragment, part: 'flows', noun: 'flow', record: $record);
+		if ($record !== null) {
+			return $flows;
+		}
+
+		foreach (($fragment['flows'] ?? []) as $flow) {
+			foreach ((array) ($flow['data']['runs'] ?? []) as $run) {
+				$run = (array) $run;
+				if (is_string($run['key'] ?? null) === false) {
+					continue;
+				}
+
+				$standIn = 'example-set-stand-in:run:'.$flow['key'].'.'.$run['key'];
+				$flows[(string) $flow['key']]['runs'][$run['key']] = $standIn;
+				if (($run['status'] ?? null) === 'suspended') {
+					$flows[(string) $flow['key']]['waitsOn'][$standIn] = (string) ($run['node'] ?? '');
+				}
+			}
+		}
+
+		return $flows;
 	}//end flowsOf()
 
 	/**
@@ -304,7 +329,8 @@ class ExampleSetValues {
 			'file'   => $this->fileId(files: (array) ($context['files'] ?? []), reference: $rest),
 			'view'   => $this->pathIn(entries: (array) ($context['views'] ?? []), reference: $rest),
 			'task'   => $this->pathIn(entries: (array) ($context['tasks'] ?? []), reference: $rest),
-			'flow'   => $this->pathIn(entries: (array) ($context['flows'] ?? []), reference: $rest),
+			'flow'   => $this->pathIn(entries: (array) ($context['flows'] ?? []), reference: $this->flowReference(rest: $rest)),
+			'accessLink' => $this->pathIn(entries: (array) ($context['accessLinks'] ?? []), reference: $rest),
 			'lookup' => $this->present(value: ($context['lookups'][$rest] ?? null)),
 			'account' => $this->pathIn(entries: (array) ($context['accounts'] ?? []), reference: $rest),
 			'organisation' => $this->present(value: ($context['organisations'][$rest] ?? null)),
@@ -315,6 +341,23 @@ class ExampleSetValues {
 			default  => null,
 		};
 	}//end valueOf()
+
+	/**
+	 * A flow reference, with `self` read as `self.uuid`.
+	 *
+	 * @param string $rest The reference after `flow:`.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-flow-may-quote-its-own-uuid
+	 */
+	private function flowReference(string $rest): string {
+		if ($rest === 'self') {
+			return 'self.uuid';
+		}
+
+		return $rest;
+	}//end flowReference()
 
 	/**
 	 * The id of one file an object declared earlier in the fragment carries.
@@ -425,7 +468,9 @@ class ExampleSetValues {
 	 * @param string $rest  The number of days, and for a moment the time as HH:MM.
 	 * @param mixed  $today The install day.
 	 *
-	 * @return string|null `2026-10-05` or `2026-10-05T09:12:00+02:00`; null when malformed.
+	 * @return string|null `2026-10-05`, or for a moment its UTC instant, `2026-10-05T07:12:00+00:00` for 09:12 in
+	 *                     Amsterdam; null when malformed. A database datetime column keeps the wall time and drops
+	 *                     the offset, and Nextcloud reads it back as UTC, so a moment in any other offset would move.
 	 */
 	private function moment(string $kind, string $rest, mixed $today): ?string {
 		$pattern = '/^([+-]?\d{1,4})(?:@(mon|tue|wed|thu|fri|sat|sun))?$/';
@@ -446,6 +491,6 @@ class ExampleSetValues {
 			return $day->format('Y-m-d');
 		}
 
-		return $day->setTime((int) $parts[3], (int) $parts[4])->format('c');
+		return $day->setTime((int) $parts[3], (int) $parts[4])->setTimezone(new DateTimeZone('UTC'))->format('c');
 	}//end moment()
 }//end class

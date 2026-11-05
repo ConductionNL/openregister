@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Service\File;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\File as OrFile;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\InvalidPathException;
 use OCP\Files\Lock\ILock;
@@ -54,6 +55,22 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Handler coordinates formatting, sharing, tagging, locking, URL generation, and session lookup.
  */
 class FileFormattingHandler {
+	/**
+	 * The file filters read from a request, and how each is taken: bool and
+	 * int are cast, trim is a trimmed string, and list is a comma-separated
+	 * string or an array.
+	 */
+	private const FILE_FILTER_PARAMETERS = [
+		'_hasLabels' => 'bool',
+		'_noLabels' => 'bool',
+		'labels' => 'list',
+		'extension' => 'trim',
+		'extensions' => 'list',
+		'minSize' => 'int',
+		'maxSize' => 'int',
+		'title' => 'trim',
+	];
+
 
 	/**
 	 * Reference to FileService for cross-handler coordination (circular dependency break).
@@ -71,7 +88,7 @@ class FileFormattingHandler {
 	 * @param ILockManager $lockManager Lock manager for reading file lock state.
 	 * @param IUserSession $userSession Session used to gate lock fields for authenticated callers only.
 	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param \OCA\OpenRegister\Db\FileMapper|null $fileMapper Optional OR-side metadata mapper for
+	 * @param \OCA\OpenRegister\Db\FileMapperInterface|null $fileMapper Optional OR-side metadata mapper for
 	 *                                                         description / category / labels / downloadCount
 	 *                                                         enrichment. When null (test fixtures, legacy
 	 *                                                         callers), enrichment is skipped silently.
@@ -83,7 +100,7 @@ class FileFormattingHandler {
 		private readonly ILockManager $lockManager,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly ?\OCA\OpenRegister\Db\FileMapper $fileMapper = null,
+		private readonly ?\OCA\OpenRegister\Db\FileMapperInterface $fileMapper = null,
 	) {
 	}//end __construct()
 
@@ -114,17 +131,44 @@ class FileFormattingHandler {
 	 *
 	 * @throws Exception If formatting fails.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function formatFile(Node $file): array {
+		$metadata = $this->baseMetadata(file: $file);
+
+		// Anonymous callers MUST NOT see who holds a lock (design.md Decision 6).
+		if ($this->userSession->getUser() !== null) {
+			$lockEnvelope = $this->formatLock(fileId: (int)$file->getId());
+			$metadata['locked'] = $lockEnvelope !== null;
+			if ($lockEnvelope !== null) {
+				$metadata['lock'] = $lockEnvelope;
+			}
+		}
+
+		if ($this->fileMapper !== null) {
+			$metadata = $this->withOrMetadata(file: $file, metadata: $metadata);
+		}
+
+		return $this->withLabelFields(metadata: $metadata);
+	}//end formatFile()
+
+	/**
+	 * The metadata every formatted file carries: node properties, share links
+	 * and tags.
+	 *
+	 * `published` is the publication window, filled from the OR-side row and
+	 * null when the file was never published; the creation time is `created`.
+	 *
+	 * @param Node $file The file node.
+	 *
+	 * @return array<string, mixed> The base metadata.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function baseMetadata(Node $file): array {
 		// IShare documentation see https://nextcloud-server.netlify.app/classes/ocp-share-ishare.
 		$shares = $this->fileService->findShares($file);
 
-		// Get base metadata array.
 		$accessUrl = null;
 		$downloadUrl = null;
 		if (count($shares) > 0) {
@@ -132,7 +176,7 @@ class FileFormattingHandler {
 			$downloadUrl = $accessUrl . '/download';
 		}
 
-		$metadata = [
+		return [
 			'id' => $file->getId(),
 			'path' => $file->getPath(),
 			'title' => $file->getName(),
@@ -142,11 +186,6 @@ class FileFormattingHandler {
 			'extension' => $file->getExtension(),
 			'size' => $file->getSize(),
 			'hash' => $file->getEtag(),
-			// `published` reported the CREATION time, so every file that had ever
-			// existed looked published and nothing could be read as unpublished.
-			// It is the publication window now, filled from the OR-side row
-			// below, and null when the file was never published. The creation
-			// time it used to carry is kept under its own name.
 			'published' => null,
 			'depublished' => null,
 			'isPublished' => false,
@@ -154,124 +193,120 @@ class FileFormattingHandler {
 			'modified' => (new DateTime())->setTimestamp($file->getUploadTime())->format('c'),
 			'labels' => $this->fileService->getFileTags((string)$file->getId()),
 		];
+	}//end baseMetadata()
 
-		// Append NC lock state for authenticated callers only (anonymous callers
-		// MUST NOT see who holds a lock — prevents leaking activity/identity on
-		// public objects). See design.md Decision 6.
-		if ($this->userSession->getUser() !== null) {
-			$lockEnvelope = $this->formatLock(fileId: (int)$file->getId());
-			$metadata['locked'] = $lockEnvelope !== null;
-			if ($lockEnvelope !== null) {
-				$metadata['lock'] = $lockEnvelope;
+	/**
+	 * Add the OR-side row's metadata, when a row exists for the file. A failed
+	 * lookup is logged and leaves the metadata as it was.
+	 *
+	 * @param Node                 $file     The file node.
+	 * @param array<string, mixed> $metadata The metadata so far.
+	 *
+	 * @return array<string, mixed> The metadata, enriched from the row.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function withOrMetadata(Node $file, array $metadata): array {
+		try {
+			$orFile = $this->fileMapper?->findByFileId(fileId: (int)$file->getId());
+			if ($orFile !== null) {
+				$metadata = $this->applyOrFile(orFile: $orFile, metadata: $metadata);
 			}
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[FileFormattingHandler] OR-side metadata lookup failed; continuing without enrichment',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'fileId' => (int)$file->getId(),
+					'error' => $e->getMessage(),
+				]
+			);
+		}//end try
+
+		return $metadata;
+	}//end withOrMetadata()
+
+	/**
+	 * Copy an OR-side row onto the metadata.
+	 *
+	 * Description, category, OR-managed labels and the publication window are
+	 * public-safe. The download count and the OR-side lock, which operators can
+	 * persist beside the NC lock state, are for authenticated callers only.
+	 *
+	 * @param OrFile               $orFile   The OR-side row.
+	 * @param array<string, mixed> $metadata The metadata so far.
+	 *
+	 * @return array<string, mixed> The metadata with the row's fields.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function applyOrFile(OrFile $orFile, array $metadata): array {
+		$metadata['description'] = $orFile->getDescription();
+		$metadata['category'] = $orFile->getCategory();
+		$metadata['published'] = $orFile->getPublished()?->format('c');
+		$metadata['depublished'] = $orFile->getDepublished()?->format('c');
+		$metadata['isPublished'] = $orFile->isPublishedAt();
+
+		// OR-managed labels join the tag-backed labels, de-duplicated.
+		$orLabels = ($orFile->getLabels() ?? []);
+		if (empty($orLabels) === false) {
+			$metadata['labels'] = array_values(
+				array_unique(array_merge($metadata['labels'], $orLabels))
+			);
 		}
 
-		// Append OR-side metadata enrichment (description / category /
-		// OR-managed labels / downloadCount) when the FileMapper is wired
-		// and a row exists for this fileId. Anonymous callers see the
-		// public-safe subset — description and category and labels are
-		// safe to expose, downloadCount is gated on authentication.
-		if ($this->fileMapper !== null) {
-			try {
-				$orFile = $this->fileMapper->findByFileId(fileId: (int)$file->getId());
-				if ($orFile !== null) {
-					$metadata['description'] = $orFile->getDescription();
-					$metadata['category'] = $orFile->getCategory();
+		if ($this->userSession->getUser() === null) {
+			return $metadata;
+		}
 
-					// The publication window is public-safe: it is exactly what
-					// an anonymous caller is entitled to know about whether this
-					// file is published and until when.
-					$metadata['published'] = $orFile->getPublished()?->format('c');
-					$metadata['depublished'] = $orFile->getDepublished()?->format('c');
-					$metadata['isPublished'] = $orFile->isPublishedAt();
-					$orLabels = ($orFile->getLabels() ?? []);
-					if (empty($orLabels) === false) {
-						// Merge OR-managed labels into the existing tag-
-						// backed labels array so consumers see one
-						// labels collection. De-dupe by string identity.
-						$metadata['labels'] = array_values(
-							array_unique(array_merge($metadata['labels'], $orLabels))
-						);
-					}
+		$metadata['downloadCount'] = $orFile->getDownloadCount();
+		if ($orFile->getLockedBy() !== null) {
+			$metadata['orLock'] = [
+				'lockedBy' => $orFile->getLockedBy(),
+				'lockedAt' => $orFile->getLockedAt()?->format('c'),
+				'lockExpires' => $orFile->getLockExpires()?->format('c'),
+			];
+		}
 
-					if ($this->userSession->getUser() !== null) {
-						$metadata['downloadCount'] = $orFile->getDownloadCount();
+		return $metadata;
+	}//end applyOrFile()
 
-						// Surface the OR-side lock fields ALONGSIDE
-						// the NC ILockManager state. They're separate
-						// concerns: the cache-backed FileLockHandler
-						// that powers ILockManager isn't the only path
-						// — operators can also persist locks via
-						// FileMapper::setLockForFile for cross-restart
-						// durability. When both are set the consumer
-						// sees both shapes; when neither is set the
-						// keys are absent. Same auth-gating as
-						// downloadCount + the NC lock envelope.
-						$orLockedBy = $orFile->getLockedBy();
-						if ($orLockedBy !== null) {
-							$orLockedAt = $orFile->getLockedAt();
-							$orLockExpires = $orFile->getLockExpires();
-							$metadata['orLock'] = [
-								'lockedBy' => $orLockedBy,
-								'lockedAt' => $orLockedAt?->format('c'),
-								'lockExpires' => $orLockExpires?->format('c'),
-							];
-						}
-					}//end if
-				}//end if
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[FileFormattingHandler] OR-side metadata lookup failed; continuing without enrichment',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'fileId' => (int)$file->getId(),
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-		}//end if
-
-		// Process labels that contain ':' to add as separate metadata fields.
+	/**
+	 * Turn `key:value` labels into metadata fields.
+	 *
+	 * A label whose key is not yet set (or set to null) becomes that field and
+	 * leaves the labels; a label without `:`, or whose key is already set,
+	 * stays a label.
+	 *
+	 * @param array<string, mixed> $metadata The metadata, with its `labels`.
+	 *
+	 * @return array<string, mixed> The metadata with the label fields.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function withLabelFields(array $metadata): array {
 		$remainingLabels = [];
 		foreach ($metadata['labels'] as $label) {
-			if (strpos($label, ':') !== false) {
-				[$key, $value] = explode(':', $label, 2);
-				$key = trim($key);
-				$value = trim($value);
-
-				// Skip if key exists in base metadata.
-				if (isset($metadata[$key]) === true) {
-					$remainingLabels[] = $label;
-					continue;
-				}
-
-				// If key already exists as array, append value.
-				if (isset($metadata[$key]) === true && is_array($metadata[$key]) === true) {
-					$metadata[$key][] = $value;
-					continue;
-				}
-
-				if (isset($metadata[$key]) === true) {
-					// If key exists but not as array, convert to array with both values.
-					$metadata[$key] = [$metadata[$key], $value];
-					continue;
-				}
-
-				// If key doesn't exist, create new entry.
-				$metadata[$key] = $value;
-
+			if (strpos($label, ':') === false) {
+				$remainingLabels[] = $label;
 				continue;
-			}//end if
+			}
 
-			$remainingLabels[] = $label;
-		}//end foreach
+			[$key, $value] = explode(':', $label, 2);
+			$key = trim($key);
+			if (isset($metadata[$key]) === true) {
+				$remainingLabels[] = $label;
+				continue;
+			}
 
-		// Update labels array to only contain non-processed labels.
+			$metadata[$key] = trim($value);
+		}
+
 		$metadata['labels'] = $remainingLabels;
 
 		return $metadata;
-	}//end formatFile()
+	}//end withLabelFields()
 
 	/**
 	 * Format multiple files with filtering, sorting, and pagination.
@@ -376,60 +411,34 @@ class FileFormattingHandler {
 	 * @psalm-param   array<string, mixed> $requestParams
 	 * @phpstan-param array<string, mixed> $requestParams
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Filter extraction requires many conditional parameter checks
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Many filter types require conditional handling
 	 */
 	private function extractFilterParameters(array $requestParams): array {
 		$filters = [];
-
-		// Labels filtering (business logic filters prefixed with underscore).
-		if (($requestParams['_hasLabels'] ?? null) !== null) {
-			$filters['_hasLabels'] = (bool)$requestParams['_hasLabels'];
-		}
-
-		if (($requestParams['_noLabels'] ?? null) !== null) {
-			$filters['_noLabels'] = (bool)$requestParams['_noLabels'];
-		}
-
-		if (($requestParams['labels'] ?? null) !== null) {
-			$labels = $requestParams['labels'];
-			if (is_string($labels) === true) {
-				$filters['labels'] = array_map('trim', explode(',', $labels));
-			} elseif (is_array($labels) === true) {
-				$filters['labels'] = $labels;
+		foreach (self::FILE_FILTER_PARAMETERS as $key => $kind) {
+			$value = ($requestParams[$key] ?? null);
+			if ($value === null) {
+				continue;
 			}
-		}
 
-		// Extension filtering.
-		if (($requestParams['extension'] ?? null) !== null) {
-			$filters['extension'] = trim($requestParams['extension']);
-		}
-
-		if (($requestParams['extensions'] ?? null) !== null) {
-			$extensions = $requestParams['extensions'];
-			if (is_string($extensions) === true) {
-				$filters['extensions'] = array_map('trim', explode(',', $extensions));
-			} elseif (is_array($extensions) === true) {
-				$filters['extensions'] = $extensions;
+			if ($kind === 'list' && is_string($value) === true) {
+				$value = array_map('trim', explode(',', $value));
 			}
+
+			if ($kind === 'list' && is_array($value) === false) {
+				continue;
+			}
+
+			$filters[$key] = match ($kind) {
+				'bool' => (bool)$value,
+				'int' => (int)$value,
+				'trim' => trim($value),
+				default => $value,
+			};
 		}
 
-		// Size filtering.
-		if (($requestParams['minSize'] ?? null) !== null) {
-			$filters['minSize'] = (int)$requestParams['minSize'];
-		}
-
-		if (($requestParams['maxSize'] ?? null) !== null) {
-			$filters['maxSize'] = (int)$requestParams['maxSize'];
-		}
-
-		// Title/search filtering.
-		if (($requestParams['title'] ?? null) !== null) {
-			$filters['title'] = trim($requestParams['title']);
-		}
-
-		if (($requestParams['search'] ?? null) !== null || (($requestParams['_search'] ?? null) !== null) === true) {
-			$filters['search'] = trim($requestParams['search'] ?? $requestParams['_search']);
+		$search = ($requestParams['search'] ?? $requestParams['_search'] ?? null);
+		if ($search !== null) {
+			$filters['search'] = trim($search);
 		}
 
 		return $filters;
@@ -466,9 +475,6 @@ class FileFormattingHandler {
 	 * @psalm-return   array<int, array<string, mixed>>
 	 * @phpstan-return array<int, array<string, mixed>>
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Many filter types require conditional branches
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple filter combinations create many execution paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive filter support requires extensive code
 	 */
 	private function applyFileFilters(array $formattedFiles, array $filters): array {
 		if (empty($filters) === true) {
@@ -477,101 +483,118 @@ class FileFormattingHandler {
 
 		return array_filter(
 			$formattedFiles,
-			function (array $file) use ($filters): bool {
-				// Filter by label presence (business logic filter).
-				if (($filters['_hasLabels'] ?? null) !== null) {
-					$hasLabels = empty($file['labels']) === false;
-					if ($filters['_hasLabels'] !== $hasLabels) {
-						return false;
-					}
-				}
-
-				// Filter for files without labels (business logic filter).
-				if (($filters['_noLabels'] ?? null) !== null && $filters['_noLabels'] === true) {
-					$hasLabels = empty($file['labels']) === false;
-					if ($hasLabels === true) {
-						return false;
-					}
-				}
-
-				// Filter by specific labels.
-				if (($filters['labels'] ?? null) !== null && empty($filters['labels']) === false) {
-					$fileLabels = $file['labels'] ?? [];
-					$hasMatchingLabel = false;
-
-					foreach ($filters['labels'] as $requiredLabel) {
-						if (in_array($requiredLabel, $fileLabels, true) === true) {
-							$hasMatchingLabel = true;
-							break;
-						}
-					}
-
-					if ($hasMatchingLabel === false) {
-						return false;
-					}
-				}
-
-				// Filter by single extension.
-				if (($filters['extension'] ?? null) !== null) {
-					$fileExtension = $file['extension'] ?? '';
-					if (strcasecmp($fileExtension, $filters['extension']) !== 0) {
-						return false;
-					}
-				}
-
-				// Filter by multiple extensions.
-				if (($filters['extensions'] ?? null) !== null && empty($filters['extensions']) === false) {
-					$fileExtension = $file['extension'] ?? '';
-					$hasMatchingExtension = false;
-
-					foreach ($filters['extensions'] as $allowedExtension) {
-						if (strcasecmp($fileExtension, $allowedExtension) === 0) {
-							$hasMatchingExtension = true;
-							break;
-						}
-					}
-
-					if ($hasMatchingExtension === false) {
-						return false;
-					}
-				}
-
-				// Filter by file size range.
-				if (($filters['minSize'] ?? null) !== null) {
-					$fileSize = $file['size'] ?? 0;
-					if ($fileSize < $filters['minSize']) {
-						return false;
-					}
-				}
-
-				if (($filters['maxSize'] ?? null) !== null) {
-					$fileSize = $file['size'] ?? 0;
-					if ($fileSize > $filters['maxSize']) {
-						return false;
-					}
-				}
-
-				// Filter by title/filename content.
-				if (($filters['title'] ?? null) !== null && empty($filters['title']) === false) {
-					$fileTitle = $file['title'] ?? '';
-					if (stripos($fileTitle, $filters['title']) === false) {
-						return false;
-					}
-				}
-
-				// Filter by search term (searches in title).
-				if (($filters['search'] ?? null) !== null && empty($filters['search']) === false) {
-					$fileTitle = $file['title'] ?? '';
-					if (stripos($fileTitle, $filters['search']) === false) {
-						return false;
-					}
-				}
-
-				// File passed all filters.
-				return true;
-			}
+			fn (array $file): bool => $this->fileMatchesLabelFilters(file: $file, filters: $filters) === true
+				&& $this->fileMatchesExtensionFilters(file: $file, filters: $filters) === true
+				&& $this->fileMatchesSizeFilters(file: $file, filters: $filters) === true
+				&& $this->fileMatchesTextFilters(file: $file, filters: $filters) === true
 		);
 	}//end applyFileFilters()
+
+	/**
+	 * Whether a file passes `_hasLabels`, `_noLabels` and `labels` (any one of them).
+	 *
+	 * @param array<string, mixed> $file    The formatted file.
+	 * @param array<string, mixed> $filters The filters.
+	 *
+	 * @return bool
+	 */
+	private function fileMatchesLabelFilters(array $file, array $filters): bool {
+		$hasLabels = empty($file['labels']) === false;
+		if (($filters['_hasLabels'] ?? null) !== null && $filters['_hasLabels'] !== $hasLabels) {
+			return false;
+		}
+
+		if (($filters['_noLabels'] ?? null) === true && $hasLabels === true) {
+			return false;
+		}
+
+		if (empty($filters['labels']) === true) {
+			return true;
+		}
+
+		return $this->anyLabelPresent(required: $filters['labels'], fileLabels: ($file['labels'] ?? []));
+	}//end fileMatchesLabelFilters()
+
+	/**
+	 * Whether any required label is among the file's labels, compared strictly.
+	 *
+	 * @param array $required   The labels of which one must be present.
+	 * @param array $fileLabels The file's labels.
+	 *
+	 * @return bool
+	 */
+	private function anyLabelPresent(array $required, array $fileLabels): bool {
+		foreach ($required as $requiredLabel) {
+			if (in_array($requiredLabel, $fileLabels, true) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end anyLabelPresent()
+
+	/**
+	 * Whether a file passes `extension` and `extensions` (any one of them), ignoring case.
+	 *
+	 * @param array<string, mixed> $file    The formatted file.
+	 * @param array<string, mixed> $filters The filters.
+	 *
+	 * @return bool
+	 */
+	private function fileMatchesExtensionFilters(array $file, array $filters): bool {
+		$fileExtension = $file['extension'] ?? '';
+		if (($filters['extension'] ?? null) !== null && strcasecmp($fileExtension, $filters['extension']) !== 0) {
+			return false;
+		}
+
+		if (empty($filters['extensions']) === true) {
+			return true;
+		}
+
+		foreach ($filters['extensions'] as $allowedExtension) {
+			if (strcasecmp($fileExtension, $allowedExtension) === 0) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end fileMatchesExtensionFilters()
+
+	/**
+	 * Whether a file's size lies within `minSize` and `maxSize`, a missing size counting as 0.
+	 *
+	 * @param array<string, mixed> $file    The formatted file.
+	 * @param array<string, mixed> $filters The filters.
+	 *
+	 * @return bool
+	 */
+	private function fileMatchesSizeFilters(array $file, array $filters): bool {
+		$fileSize = $file['size'] ?? 0;
+		if (($filters['minSize'] ?? null) !== null && $fileSize < $filters['minSize']) {
+			return false;
+		}
+
+		return ($filters['maxSize'] ?? null) === null || $fileSize <= $filters['maxSize'];
+	}//end fileMatchesSizeFilters()
+
+	/**
+	 * Whether a file's title contains `title` and `search`, ignoring case.
+	 *
+	 * @param array<string, mixed> $file    The formatted file.
+	 * @param array<string, mixed> $filters The filters.
+	 *
+	 * @return bool
+	 */
+	private function fileMatchesTextFilters(array $file, array $filters): bool {
+		$fileTitle = $file['title'] ?? '';
+		foreach (['title', 'search'] as $key) {
+			if (empty($filters[$key]) === false && stripos($fileTitle, $filters[$key]) === false) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end fileMatchesTextFilters()
 
 	/**
 	 * Build the `lock` response envelope for a given file id.

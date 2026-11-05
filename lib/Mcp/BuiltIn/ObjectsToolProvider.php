@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 
 /**
@@ -53,10 +53,10 @@ class ObjectsToolProvider implements IMcpToolProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param ObjectService $objectService Object service facade
+	 * @param ObjectOperationsInterface $objectService Object service facade
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 	) {
 	}//end __construct()
 
@@ -226,13 +226,20 @@ class ObjectsToolProvider implements IMcpToolProvider {
 	 * @param array<string, mixed> $arguments Must contain id and data
 	 *
 	 * @return array<string, mixed> Serialized updated object
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function updateObject(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
 		$this->requireParam(arguments: $arguments, param: 'data');
+		// Read in the caller's scope first: the save then checks and writes that
+		// object, in its own register and schema, by its uuid.
+		$existing = WriteCause::asLookup(fn () => $this->objectService->find($arguments['id']));
 		$object = $this->objectService->saveObject(
 			object: $arguments['data'],
-			uuid: $arguments['id']
+			register: $existing->getRegister(),
+			schema: $existing->getSchema(),
+			uuid: ($existing->getUuid() ?? (string)$arguments['id'])
 		);
 		return $object->jsonSerialize();
 	}//end updateObject()

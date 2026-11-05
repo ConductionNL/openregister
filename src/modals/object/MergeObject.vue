@@ -659,6 +659,55 @@ import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Merge from 'vue-material-design-icons/Merge.vue'
 
+/**
+ * The outgoing relations of an object, from its `@self` relations or its
+ * legacy _relations, as rows for the merge preview.
+ *
+ * @param {object} object The source object
+ * @return {Array<object>} The relation rows
+ */
+function outgoingRelations(object) {
+	const relations = object?.['@self']?.relations || object?._relations || []
+	return (Array.isArray(relations) ? relations : []).map((rel) => ({
+		id: rel,
+		title: rel,
+		relationType: 'Outgoing',
+	}))
+}
+
+/**
+ * The display title of a referring object.
+ *
+ * @param {object} obj The referring object
+ * @return {string|undefined} Its name, title or id
+ */
+function referenceTitle(obj) {
+	return (
+		obj?.['@self']?.name
+		|| obj?.['@self']?.title
+		|| obj?.['@self']?.id
+		|| obj?.id
+	)
+}
+
+/**
+ * A referring object as a row for the merge preview.
+ *
+ * @param {object} obj The referring object
+ * @return {object} The row
+ */
+function incomingReference(obj) {
+	return {
+		id: obj?.['@self']?.id || obj?.id,
+		title: referenceTitle(obj),
+		relationType: obj?.['@self']?.schema
+			? `Schema ${obj['@self'].schema}`
+			: 'Related',
+		register: obj?.['@self']?.register || 'N/A',
+		schema: obj?.['@self']?.schema || 'N/A',
+	}
+}
+
 export default {
 	name: 'MergeObject',
 	components: {
@@ -781,7 +830,7 @@ export default {
 		},
 
 		/**
-		 * @param obj
+		 * @param {object} obj
 		 * @spec exclude Records the chosen merge target in local state; UI selection plumbing.
 		 */
 		selectTargetObject(obj) {
@@ -858,7 +907,7 @@ export default {
 		},
 
 		/**
-		 * @param property
+		 * @param {string} property
 		 * @spec exclude Builds the source/target/custom option list for a property dropdown; UI presentation helper.
 		 */
 		getMergeOptions(property) {
@@ -896,8 +945,8 @@ export default {
 		},
 
 		/**
-		 * @param property
-		 * @param selectedOption
+		 * @param {string} property
+		 * @param {object|null} selectedOption
 		 * @spec exclude Updates merged-data state when a per-property dropdown changes; UI reactivity plumbing.
 		 */
 		onPropertySelectionChange(property, selectedOption) {
@@ -914,8 +963,8 @@ export default {
 		},
 
 		/**
-		 * @param value
-		 * @param maxLength
+		 * @param {unknown} value
+		 * @param {number} maxLength
 		 * @spec exclude Stringifying/truncating value formatter for property display; UI presentation helper.
 		 */
 		displayValue(value, maxLength = 100) {
@@ -923,7 +972,7 @@ export default {
 				return 'N/A'
 			}
 
-			let displayText = ''
+			let displayText
 			if (typeof value === 'object') {
 				displayText = JSON.stringify(value, null, 2)
 			} else {
@@ -939,8 +988,8 @@ export default {
 		},
 
 		/**
-		 * @param text
-		 * @param maxLength
+		 * @param {string} text
+		 * @param {number} maxLength
 		 * @spec exclude Simple string-truncation helper for display; UI presentation helper.
 		 */
 		truncateText(text, maxLength) {
@@ -1044,7 +1093,7 @@ export default {
 		},
 
 		/**
-		 * @param bytes
+		 * @param {number} bytes
 		 * @spec exclude Human-readable byte-size formatter for file display; UI presentation helper.
 		 */
 		formatFileSize(bytes) {
@@ -1057,7 +1106,7 @@ export default {
 		},
 
 		/**
-		 * @param filename
+		 * @param {string} filename
 		 * @spec exclude Maps a filename extension to a friendly type label; UI presentation helper.
 		 */
 		getFileType(filename) {
@@ -1086,69 +1135,61 @@ export default {
 		 * @spec exclude Loads the source object's files/relations/references for the merge preview; UI form-loading plumbing.
 		 */
 		async loadSourceData() {
-			// Load files, outgoing relations, and incoming references for the source object
 			if (!this.sourceObject) return
 
 			try {
-				// Load files - check if sourceObject has attachments property
-				if (
-					this.sourceObject.attachments
-					&& Array.isArray(this.sourceObject.attachments)
-				) {
-					this.sourceFiles = this.sourceObject.attachments
-				} else {
-					this.sourceFiles = []
-				}
-
-				// Load outgoing relations from the source object's _relations
-				const relations =
-					this.sourceObject?.['@self']?.relations
-					|| this.sourceObject?._relations
-					|| []
-				this.sourceRelations = (
-					Array.isArray(relations) ? relations : []
-				).map((rel) => ({
-					id: rel,
-					title: rel,
-					relationType: 'Outgoing',
-				}))
-
-				// Load incoming references via the /used endpoint
-				const register = registerStore.registerItem?.id
-				const schema = schemaStore.schemaItem?.id
-				const objectId = this.sourceObject?.['@self']?.id
-				if (register && schema && objectId) {
-					try {
-						const response = await fetch(
-							`/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/used`,
-						)
-						const data = await response.json()
-						this.sourceIncomingReferences = (data.results || []).map(
-							(obj) => ({
-								id: obj?.['@self']?.id || obj?.id,
-								title:
-									obj?.['@self']?.name
-									|| obj?.['@self']?.title
-									|| obj?.['@self']?.id
-									|| obj?.id,
-								relationType: obj?.['@self']?.schema
-									? `Schema ${obj['@self'].schema}`
-									: 'Related',
-								register: obj?.['@self']?.register || 'N/A',
-								schema: obj?.['@self']?.schema || 'N/A',
-							}),
-						)
-					} catch (error) {
-						console.error('Error loading incoming references:', error)
-						this.sourceIncomingReferences = []
-					}
-				}
+				this.sourceFiles = Array.isArray(this.sourceObject.attachments)
+					? this.sourceObject.attachments
+					: []
+				this.sourceRelations = outgoingRelations(this.sourceObject)
+				await this.loadIncomingReferences()
 			} catch (error) {
 				console.error('Error loading source data:', error)
 				this.sourceFiles = []
 				this.sourceRelations = []
 				this.sourceIncomingReferences = []
 			}
+		},
+
+		/**
+		 * Load the objects that refer to the source object, through its /used
+		 * endpoint. Skipped when the register, schema or source id is unknown.
+		 *
+		 * @spec exclude Loads the source object's files/relations/references for the merge preview; UI form-loading plumbing.
+		 * @return {Promise<void>}
+		 */
+		async loadIncomingReferences() {
+			const url = this.usedUrl()
+			if (!url) {
+				return
+			}
+			try {
+				const response = await fetch(url)
+				const data = await response.json()
+				this.sourceIncomingReferences = (data.results || []).map(
+					incomingReference,
+				)
+			} catch (error) {
+				console.error('Error loading incoming references:', error)
+				this.sourceIncomingReferences = []
+			}
+		},
+
+		/**
+		 * The /used endpoint of the source object in the current register and
+		 * schema.
+		 *
+		 * @spec exclude Loads the source object's files/relations/references for the merge preview; UI form-loading plumbing.
+		 * @return {string} The URL, or an empty string when a part is unknown
+		 */
+		usedUrl() {
+			const register = registerStore.registerItem?.id
+			const schema = schemaStore.schemaItem?.id
+			const objectId = this.sourceObject?.['@self']?.id
+			if (register && schema && objectId) {
+				return `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/used`
+			}
+			return ''
 		},
 
 		/**

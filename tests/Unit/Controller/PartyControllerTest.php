@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\PartyControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\PartyController;
 use OCA\OpenRegister\Db\ContactLink;
@@ -110,7 +111,7 @@ class PartyControllerTest extends TestCase {
 		$this->permissions = $this->createMock(PermissionHandler::class);
 		$this->objects->method('getCurrentSchemaEntity')->willReturn(new Schema());
 
-		$this->controller = new PartyController(
+		$this->controller = PartyControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objects,

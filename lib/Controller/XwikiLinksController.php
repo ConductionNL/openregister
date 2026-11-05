@@ -39,11 +39,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\XwikiLinkService;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
@@ -54,19 +55,21 @@ use OCP\IRequest;
  * @package  OCA\OpenRegister\Controller
  */
 class XwikiLinksController extends Controller {
+	use ObjectLinkActionsTrait;
+
 	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
 	 * @param XwikiLinkService $xwikiLinkService Backing service.
-	 * @param ObjectService $objectService OR object resolver.
+	 * @param ObjectOperationsInterface $objectService OR object resolver.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly XwikiLinkService $xwikiLinkService,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -86,25 +89,10 @@ class XwikiLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$results = $this->xwikiLinkService->getLinkedPages($object->getUuid());
-
-			return new JSONResponse(
-				[
-					'results' => $results,
-					'total' => count($results),
-				]
-			);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->xwikiLinkService->getLinkedPages($object->getUuid()))
+		);
 	}//end index()
 
 	/**
@@ -124,30 +112,24 @@ class XwikiLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: function (ObjectEntity $object): JSONResponse {
+				$pageReference = (string)$this->request->getParam('pageReference', '');
+				if (trim($pageReference) === '') {
+					return new JSONResponse(['error' => 'pageReference is required'], 400);
+				}
+
+				$link = $this->xwikiLinkService->linkPage(
+					$object->getUuid(),
+					(int)$object->getRegister(),
+					(int)$object->getSchema(),
+					$pageReference
+				);
+
+				return new JSONResponse($link->jsonSerialize(), 201);
 			}
-
-			$pageReference = (string)$this->request->getParam('pageReference', '');
-			if (trim($pageReference) === '') {
-				return new JSONResponse(['error' => 'pageReference is required'], 400);
-			}
-
-			$link = $this->xwikiLinkService->linkPage(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$pageReference
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		);
 	}//end link()
 
 	/**
@@ -167,36 +149,30 @@ class XwikiLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function createAndLink(string $register, string $schema, string $id): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: function (ObjectEntity $object): JSONResponse {
+				$space = (string)$this->request->getParam('space', '');
+				if (trim($space) === '') {
+					return new JSONResponse(['error' => 'space is required'], 400);
+				}
+
+				$title = (string)$this->request->getParam('title', '');
+				if (trim($title) === '') {
+					return new JSONResponse(['error' => 'title is required'], 400);
+				}
+
+				$link = $this->xwikiLinkService->createAndLinkPage(
+					$object->getUuid(),
+					(int)$object->getRegister(),
+					(int)$object->getSchema(),
+					$space,
+					$title
+				);
+
+				return new JSONResponse($link->jsonSerialize(), 201);
 			}
-
-			$space = (string)$this->request->getParam('space', '');
-			if (trim($space) === '') {
-				return new JSONResponse(['error' => 'space is required'], 400);
-			}
-
-			$title = (string)$this->request->getParam('title', '');
-			if (trim($title) === '') {
-				return new JSONResponse(['error' => 'title is required'], 400);
-			}
-
-			$link = $this->xwikiLinkService->createAndLinkPage(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$space,
-				$title
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		);
 	}//end createAndLink()
 
 	/**
@@ -219,21 +195,15 @@ class XwikiLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function destroy(string $register, string $schema, string $id, string $pageRef): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: function (ObjectEntity $object) use ($pageRef): JSONResponse {
+				$pageReference = rawurldecode($pageRef);
+				$this->xwikiLinkService->unlinkPage($object->getUuid(), $pageReference);
+
+				return new JSONResponse(['success' => true]);
 			}
-
-			$pageReference = rawurldecode($pageRef);
-			$this->xwikiLinkService->unlinkPage($object->getUuid(), $pageReference);
-
-			return new JSONResponse(['success' => true]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		);
 	}//end destroy()
 
 	/**
@@ -338,31 +308,6 @@ class XwikiLinksController extends Controller {
 	}//end search()
 
 	/**
-	 * Resolve an OR object from register/schema/id.
-	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object id.
-	 *
-	 * @return ObjectEntity|null
-	 *
-	 * @spec exclude Private helper: resolves an object from register/schema/id;
-	 *   the link REST contract is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
-	 *
-	 * @throws DoesNotExistException When no such object exists. Deliberately propagated rather
-	 *                               than caught: every call site already wraps this helper and translates it to a 404.
-	 *                               Swallowing it here would collapse "no such object" into the same null this method
-	 *                               returns for other reasons, which the caller could no longer tell apart.
-	 */
-	private function validateObject(string $register, string $schema, string $id): ?ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
-
-		return $this->objectService->getObject();
-	}//end validateObject()
-
-	/**
 	 * Map a service-layer Exception to a JSONResponse.
 	 *
 	 * The service encodes an unconfigured-source / upstream failure as a
@@ -377,7 +322,7 @@ class XwikiLinksController extends Controller {
 	 * @spec exclude Private helper: maps a service exception code to an HTTP status;
 	 *   the link REST contract is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
 	 */
-	private function mapException(Exception $exception): JSONResponse {
+	protected function mapException(Exception $exception): JSONResponse {
 		$code = $exception->getCode();
 		$message = $exception->getMessage();
 

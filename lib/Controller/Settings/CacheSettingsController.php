@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
 use OC\Files\AppData\Factory;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\GenericFileException;
@@ -49,7 +49,7 @@ class CacheSettingsController extends Controller {
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param SettingsService $settingsService Settings service.
+	 * @param AppSettingsInterface $settingsService Settings service.
 	 * @param LoggerInterface $logger Logger.
 	 * @param Factory $appDataFactory App data factory.
 	 * @param IAppConfig $appConfig App configuration.
@@ -57,7 +57,7 @@ class CacheSettingsController extends Controller {
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly SettingsService $settingsService,
+		private readonly AppSettingsInterface $settingsService,
 		private readonly LoggerInterface $logger,
 		private readonly Factory $appDataFactory,
 		private readonly IAppConfig $appConfig,

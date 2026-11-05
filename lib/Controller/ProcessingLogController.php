@@ -39,8 +39,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\ProcessingLogMapper;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -87,27 +88,41 @@ class ProcessingLogController extends Controller {
 	private const MAX_RANGE_KEY = 'processing_export_max_range_days';
 
 	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * The group manager.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App identifier.
 	 * @param IRequest $request Active request.
 	 * @param ProcessingLogMapper $logMapper Append-only log mapper.
-	 * @param IUserSession $userSession Current user session.
-	 * @param IGroupManager $groupManager Group manager (admin + FG gate).
+	 * @param ControllerSession $session Session, group manager and logger.
 	 * @param IAppConfig $appConfig App-config reader.
-	 * @param OrganisationService $organisationService Org-scoping helper.
+	 * @param OrganisationServiceInterface $organisationService Org-scoping helper.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly ProcessingLogMapper $logMapper,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		ControllerSession $session,
 		private readonly IAppConfig $appConfig,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
+		$this->userSession = $session->userSession;
+		$this->groupManager = $session->groupManager;
 	}//end __construct()
 
 	/**

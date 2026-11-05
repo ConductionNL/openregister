@@ -57,7 +57,7 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Delegation\DelegationVerdict;
 use Psr\Log\LoggerInterface;
@@ -98,12 +98,12 @@ class FlowConsentParking {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapper     $runs       Reads and writes runs.
+	 * @param FlowRunMapperInterface     $runs       Reads and writes runs.
 	 * @param DelegationService $delegation Re-resolves the grant.
 	 * @param LoggerInterface   $logger     Records releases and failures.
 	 */
 	public function __construct(
-		private readonly FlowRunMapper $runs,
+		private readonly FlowRunMapperInterface $runs,
 		private readonly DelegationService $delegation,
 		private readonly LoggerInterface $logger,
 	) {

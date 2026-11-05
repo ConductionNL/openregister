@@ -26,6 +26,7 @@ use OCA\OpenRegister\Listener\DecisionTableValidationListener;
 use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\BulkRowRules;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -46,6 +47,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator
  * @uses \OCA\OpenRegister\Service\Dmn\DecisionTableValidator
  * @uses \OCA\OpenRegister\Service\Dmn\UnaryTestEvaluator
+ * @uses \OCA\OpenRegister\Service\Object\BulkRowRules
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects
  */
 class DecisionTableBulkGuardTest extends TestCase {
@@ -189,7 +191,7 @@ class DecisionTableBulkGuardTest extends TestCase {
 			null,
 			null,
 			null,
-			$this->guard([$other])
+			new BulkRowRules(decisionTables: $this->guard([$other]))
 		);
 
 		$result = $service->saveObjects([3 => $this->table()]);

@@ -29,6 +29,7 @@
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
@@ -39,13 +40,13 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
 use OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
-use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -87,9 +88,9 @@ class ExportService implements ObjectExporterInterface {
 	/**
 	 * Register mapper instance
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Group manager for checking admin group membership
@@ -101,16 +102,16 @@ class ExportService implements ObjectExporterInterface {
 	/**
 	 * Object service for optimized object operations
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Cache handler for UUID-to-name resolution
 	 *
-	 * @var CacheHandler
+	 * @var CacheHandlerInterface
 	 */
-	private readonly CacheHandler $cacheHandler;
+	private readonly CacheHandlerInterface $cacheHandler;
 
 	/**
 	 * Property RBAC handler for property-level authorization checks
@@ -143,11 +144,11 @@ class ExportService implements ObjectExporterInterface {
 	/**
 	 * Constructor for the ExportService.
 	 *
-	 * @param RegisterMapper $registerMapper The register mapper.
+	 * @param RegisterMapperInterface $registerMapper The register mapper.
 	 * @param IUserManager $_userManager The user manager (unused).
 	 * @param IGroupManager $groupManager The group manager.
-	 * @param ObjectService $objectService The object service.
-	 * @param CacheHandler $cacheHandler The cache handler for name resolution.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 * @param CacheHandlerInterface $cacheHandler The cache handler for name resolution.
 	 * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler.
 	 * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler The translation handler.
 	 * @param NcOfficeConverterInterface|null $officeConverter Office server conversion; PDF output needs it.
@@ -155,11 +156,11 @@ class ExportService implements ObjectExporterInterface {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
 	public function __construct(
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		IUserManager $_userManager,
 		IGroupManager $groupManager,
-		ObjectService $objectService,
-		CacheHandler $cacheHandler,
+		ObjectOperationsInterface $objectService,
+		CacheHandlerInterface $cacheHandler,
 		PropertyRbacHandler $propertyRbacHandler,
 		\OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler,
 		private readonly ?NcOfficeConverterInterface $officeConverter = null,

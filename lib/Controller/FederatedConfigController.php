@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Service\Config\FederatedConfigAccess;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
 use OCP\AppFramework\Controller;
@@ -58,27 +59,41 @@ class FederatedConfigController extends Controller {
 	private const CREDENTIAL_PREF = 'pref_federated-config-credential';
 
 	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * The group manager.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param FederatedConfigService $service The federation engine.
 	 * @param FederatedConfigAccess $access Per-org publish/install gating.
-	 * @param IUserSession $userSession The current user.
+	 * @param ControllerSession $session Session, group manager and logger.
 	 * @param IConfig $config Reads the user's chosen store credential.
-	 * @param IGroupManager $groupManager Gates the trust-governance endpoints to admins.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly FederatedConfigService $service,
 		private readonly FederatedConfigAccess $access,
-		private readonly IUserSession $userSession,
+		ControllerSession $session,
 		private readonly IConfig $config,
-		private readonly IGroupManager $groupManager,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
+		$this->userSession = $session->userSession;
+		$this->groupManager = $session->groupManager;
 	}//end __construct()
 
 	/**
@@ -163,13 +178,14 @@ class FederatedConfigController extends Controller {
 		} catch (UnexpectedValueException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		} catch (Throwable $e) {
-			// A blocked source, an untrusted key, or a bad signature is a 403;
-			// anything else a 500.
+			// A blocked source, an untrusted key, a bad signature or a crossing rule
+			// is a 403; anything else a 500.
 			$status = Http::STATUS_INTERNAL_SERVER_ERROR;
 			$message = $e->getMessage();
 			if (str_contains($message, 'allowlist') === true
 				|| str_contains($message, 'trusted') === true
 				|| str_contains($message, 'signature') === true
+				|| str_contains($message, 'crossOrganisation') === true
 			) {
 				$status = Http::STATUS_FORBIDDEN;
 			}

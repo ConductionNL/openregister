@@ -105,6 +105,12 @@ class PermissionCatalogue {
 	 * schema's `read` grant, so an upgraded instance keeps exporting; the
 	 * catalogue publishes it so the narrowing can be made at all.
 	 *
+	 * `readGrants` admits a caller to an object's grants list beyond its owner,
+	 * owning group, administrators and `manage` holders. Unlike `export` it has
+	 * no fallback: a block that does not write it admits nobody through it,
+	 * because an ordinary reader of a record has no business listing the people
+	 * on it ({@see AccessReviewGate}).
+	 *
 	 * @var array<string, string>
 	 */
 	public const CANONICAL = [
@@ -120,6 +126,7 @@ class PermissionCatalogue {
 		'readFiles' => 'Read the files of an object.',
 		'addFiles' => 'Add a file to an object, or change one of its files.',
 		'deleteFiles' => 'Delete a file of an object.',
+		'readGrants' => 'See who can open an object and where each grant came from.',
 	];
 
 	/**
@@ -161,6 +168,10 @@ class PermissionCatalogue {
 		// feature could be declared nowhere. SchemaMapper::validateRevealAudit()
 		// still checks its shape (only on a property with a read rule).
 		RevealCollector::AUDIT_KEY,
+		// `reveal: explicit` on a PROPERTY's block keeps the value masked until
+		// a read asks for it (ExplicitReveal). A flag, like `audit` above;
+		// Schema::validateRevealValue() checks its value.
+		ExplicitReveal::KEY,
 	];
 
 	/**

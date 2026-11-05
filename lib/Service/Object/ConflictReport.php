@@ -122,7 +122,7 @@ class ConflictReport {
 	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
 	 */
 	public function build(ObjectEntity $stored, Schema $schema, array $sent, array $intervening): array {
-		$current = ($stored->getObject() ?? []);
+		$current = $stored->getMatchEnvelope();
 		$changedByOthers = $this->changedByOthers(intervening: $intervening);
 
 		$conflicts = [];

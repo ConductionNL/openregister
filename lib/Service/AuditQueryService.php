@@ -32,10 +32,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -71,14 +72,14 @@ class AuditQueryService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService Cross-schema object search (audit entries ARE objects).
-	 * @param RegisterMapper $registerMapper Register lookup + register/schema relationship helpers.
-	 * @param SchemaMapper $schemaMapper Schema lookup.
+	 * @param ObjectOperationsInterface $objectService Cross-schema object search (audit entries ARE objects).
+	 * @param RegisterMapperInterface $registerMapper Register lookup + register/schema relationship helpers.
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly ObjectOperationsInterface $objectService,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 
 	}//end __construct()

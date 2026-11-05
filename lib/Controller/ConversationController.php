@@ -26,13 +26,14 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Controller\Support\ConversationControllerServices;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Db\MessageMapper;
 use OCA\OpenRegister\Service\ChatService;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -88,9 +89,9 @@ class ConversationController extends Controller {
 	/**
 	 * Organisation service
 	 *
-	 * @var OrganisationService
+	 * @var OrganisationServiceInterface
 	 */
-	private OrganisationService $organisationService;
+	private OrganisationServiceInterface $organisationService;
 
 	/**
 	 * Chat service
@@ -118,37 +119,23 @@ class ConversationController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request Request object
-	 * @param ConversationMapper $conversationMapper Conversation mapper
-	 * @param MessageMapper $messageMapper Message mapper
-	 * @param FeedbackMapper $feedbackMapper Feedback mapper
-	 * @param AgentMapper $agentMapper Agent mapper
-	 * @param OrganisationService $organisationService Organisation service
-	 * @param ChatService $chatService Chat service
-	 * @param LoggerInterface $logger Logger
+	 * @param ConversationControllerServices $services The conversation controller services.
 	 * @param string $userId User ID
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		ConversationMapper $conversationMapper,
-		MessageMapper $messageMapper,
-		FeedbackMapper $feedbackMapper,
-		AgentMapper $agentMapper,
-		OrganisationService $organisationService,
-		ChatService $chatService,
-		LoggerInterface $logger,
+		ConversationControllerServices $services,
 		string $userId,
 	) {
 		parent::__construct(appName: $appName, request: $request);
-		$this->conversationMapper = $conversationMapper;
-		$this->messageMapper = $messageMapper;
-		$this->feedbackMapper = $feedbackMapper;
-		$this->agentMapper = $agentMapper;
-		$this->organisationService = $organisationService;
-		$this->chatService = $chatService;
-		$this->logger = $logger;
+		$this->conversationMapper = $services->mappers->conversationMapper;
+		$this->messageMapper = $services->mappers->messageMapper;
+		$this->feedbackMapper = $services->mappers->feedbackMapper;
+		$this->agentMapper = $services->mappers->agentMapper;
+		$this->organisationService = $services->domain->organisationService;
+		$this->chatService = $services->domain->chatService;
+		$this->logger = $services->platform->logger;
 		$this->userId = $userId;
 	}//end __construct()
 
@@ -835,7 +822,10 @@ class ConversationController extends Controller {
 				return $this->accessDenied(message: 'You do not have permission to delete this conversation');
 			}
 
-			// Delete messages first.
+			// Delete feedback first.
+			$this->feedbackMapper->deleteByConversation($conversation->getId());
+
+			// Delete messages.
 			$this->messageMapper->deleteByConversation($conversation->getId());
 
 			// Delete conversation.

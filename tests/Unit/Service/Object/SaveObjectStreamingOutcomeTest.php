@@ -265,4 +265,50 @@ class SaveObjectStreamingOutcomeTest extends TestCase {
 		$this->assertSame(['uuid-2'], $status->getUpdated());
 
 	}//end testAnUnsetVerdictFallsBackInsteadOfInheritingThePreviousRow()
+
+	/**
+	 * A failed row reports the identifier it carries, from `@self.id`, `id` or `uuid`, and only a string one.
+	 *
+	 * @return void
+	 */
+	public function testAFailedRowReportsTheIdentifierItCarries(): void {
+		$uuids = [];
+		foreach ([['@self' => ['id' => 'self-id'], 'id' => 'plain'], ['id' => 'plain'], ['uuid' => 'u'], ['id' => 7], 'not-a-row'] as $row) {
+			$status = $this->handlerYieldingWithFailureAt(failIndex: 0)->saveObjectsStreaming(register: 1, schema: 1, rows: [$row]);
+			$uuids[] = $status->getFailed()[0]['uuid'];
+		}
+
+		$this->assertSame(['self-id', 'plain', 'u', null, null], $uuids);
+	}//end testAFailedRowReportsTheIdentifierItCarries()
+
+	/**
+	 * Each reference-cache entry a row adds counts as a miss; a row that adds none counts as one hit.
+	 *
+	 * @return void
+	 */
+	public function testReferenceCacheGrowthCountsAsMissesAndNoGrowthAsAHit(): void {
+		$handler = $this->createPartialMock(SaveObject::class, ['saveObject']);
+		$cache = new ReflectionProperty(SaveObject::class, 'referenceValidationCache');
+		$cache->setAccessible(true);
+		$growth = [2, 0, 1];
+		$call = 0;
+		$handler->method('saveObject')->willReturnCallback(
+			function () use ($handler, $cache, $growth, &$call): ObjectEntity {
+				$entries = $cache->getValue($handler);
+				for ($i = 0; $i < $growth[$call]; $i++) {
+					$entries['k' . $call . '-' . $i] = true;
+				}
+
+				$cache->setValue($handler, $entries);
+				$call++;
+				$entity = new ObjectEntity();
+				$entity->setUuid('uuid-' . $call);
+				return $entity;
+			}
+		);
+
+		$status = $handler->saveObjectsStreaming(register: 1, schema: 1, rows: [['a' => 1], ['a' => 2], ['a' => 3]]);
+
+		$this->assertSame([1, 3], [$status->getReferenceCacheHits(), $status->getReferenceCacheMisses()]);
+	}//end testReferenceCacheGrowthCountsAsMissesAndNoGrowthAsAHit()
 }//end class

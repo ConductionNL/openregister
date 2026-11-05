@@ -34,6 +34,7 @@ use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -241,131 +242,42 @@ class UserController extends Controller {
 	#[AnonRateLimit(limit: 20, period: 60)]
 	public function login(): JSONResponse {
 		try {
-			// Memory monitoring: Check initial memory usage to prevent OOM.
+			// Memory monitoring: refuse when already above 80% of the memory limit, to prevent OOM.
 			$initialMemoryUsage = memory_get_usage(true);
-			$memoryLimit = ini_get('memory_limit');
-			$memoryLimitBytes = $this->convertToBytes(memoryLimit: $memoryLimit);
-
-			// If we're already using more than 80% of memory limit, return error.
+			$memoryLimitBytes   = $this->convertToBytes(memoryLimit: ini_get('memory_limit'));
 			if ($memoryLimitBytes > 0 && $initialMemoryUsage > ($memoryLimitBytes * 0.8)) {
-				$response = new JSONResponse(
-					data: ['error' => 'Server memory usage too high, please try again later'],
-					statusCode: 503
-				);
-				return $this->securityService->addSecurityHeaders(response: $response);
+				return $this->errorResponse(message: 'Server memory usage too high, please try again later', statusCode: 503);
 			}
 
-			// Get client IP address for rate limiting.
-			$clientIp = $this->securityService->getClientIpAddress(request: $this->request);
-
-			// Get and validate login credentials from request.
-			$data = $this->request->getParams();
-			$credentialValidation = $this->securityService->validateLoginCredentials(credentials: $data);
-
+			$clientIp             = $this->securityService->getClientIpAddress(request: $this->request);
+			$credentialValidation = $this->securityService->validateLoginCredentials(credentials: $this->request->getParams());
 			if ($credentialValidation['valid'] === false) {
-				$response = new JSONResponse(
-					data: ['error' => $credentialValidation['error']],
-					statusCode: 400
-				);
-				return $this->securityService->addSecurityHeaders(response: $response);
+				return $this->errorResponse(message: $credentialValidation['error'], statusCode: 400);
 			}
 
-			$credentials = $credentialValidation['credentials'];
-			$username = $credentials['username'];
-			$password = $credentials['password'];
+			$attempt = ['username' => $credentialValidation['credentials']['username'], 'ipAddress' => $clientIp];
 
-			// Check rate limiting before attempting authentication.
-			$rateLimitCheck = $this->securityService->checkLoginRateLimit(username: $username, ipAddress: $clientIp);
+			// Rate limiting is checked before attempting authentication.
+			$rateLimitCheck = $this->securityService->checkLoginRateLimit(username: $attempt['username'], ipAddress: $clientIp);
 			if ($rateLimitCheck['allowed'] === false) {
-				// Apply progressive delay if specified.
-				if (isset($rateLimitCheck['delay']) === true) {
-					sleep($rateLimitCheck['delay']);
-				}
-
-				$response = new JSONResponse(
-					data: [
-						'error' => $rateLimitCheck['reason'],
-						'retry_after' => $rateLimitCheck['delay'] ?? null,
-						'lockout_until' => $rateLimitCheck['lockout_until'] ?? null,
-					],
-					statusCode: 429
-				);
-				return $this->securityService->addSecurityHeaders(response: $response);
+				return $this->rateLimitedLoginResponse(rateLimitCheck: $rateLimitCheck);
 			}
 
-			// Attempt to authenticate the user.
-			$user = $this->userManager->checkPassword($username, $password);
-
-			// Check if authentication was successful.
-			if ($user === false) {
-				// Record failed login attempt for rate limiting.
-				$this->securityService->recordFailedLoginAttempt(
-					username: $username,
-					ipAddress: $clientIp,
-					reason: 'invalid_credentials'
-				);
-
-				// Return generic error message to prevent username enumeration.
-				$response = new JSONResponse(
-					data: ['error' => 'Invalid username or password'],
-					statusCode: 401
-				);
-				return $this->securityService->addSecurityHeaders(response: $response);
+			$user    = $this->userManager->checkPassword($attempt['username'], $credentialValidation['credentials']['password']);
+			$refusal = $this->refusedLogin(user: $user, attempt: $attempt);
+			if ($refusal !== null) {
+				return $refusal;
 			}
 
-			// Check if user account is enabled.
-			if ($user->isEnabled() === false) {
-				// Record failed login attempt for disabled account.
-				$this->securityService->recordFailedLoginAttempt(
-					username: $username,
-					ipAddress: $clientIp,
-					reason: 'account_disabled'
-				);
-
-				$response = new JSONResponse(
-					data: ['error' => 'Account is disabled'],
-					statusCode: 401
-				);
-				return $this->securityService->addSecurityHeaders(response: $response);
-			}
-
-			// Authentication successful - record success and clear rate limits.
-			$this->securityService->recordSuccessfulLogin(username: $username, ipAddress: $clientIp);
-
-			// Set the user in the session to create login session.
+			// Authentication successful: record success (clears rate limits) and create the login session.
+			$this->securityService->recordSuccessfulLogin(username: $attempt['username'], ipAddress: $clientIp);
 			$this->userSession->setUser($user);
-
-			// Build user data array for response (sanitized).
 			$userData = $this->userService->buildUserDataArray(user: $user);
+			$this->logLoginMemoryIncrease(user: $user, initialMemoryUsage: $initialMemoryUsage);
 
-			// Memory monitoring: Log high memory usage.
-			$finalMemoryUsage = memory_get_usage(true);
-			$memoryIncreaseBytes = $finalMemoryUsage - $initialMemoryUsage;
-
-			if ($memoryIncreaseBytes > 10 * 1024 * 1024) {
-				$this->logger->warning(
-					message: '[UserController] High memory usage during login',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'user' => $user->getUID(),
-						'initial_memory' => $initialMemoryUsage,
-						'final_memory' => $finalMemoryUsage,
-						'increase_bytes' => $memoryIncreaseBytes,
-						'increase_mb' => round($memoryIncreaseBytes / (1024 * 1024), 2),
-					]
-				);
-			}
-
-			// Create successful response with security headers.
 			$response = new JSONResponse(
-				data: [
-					'message' => 'Login successful',
-					'user' => $userData,
-					'session_created' => true,
-				]
+				data: ['message' => 'Login successful', 'user' => $userData, 'session_created' => true]
 			);
-
 			return $this->securityService->addSecurityHeaders(response: $response);
 		} catch (Exception $e) {
 			// Log the error securely without exposing sensitive information.
@@ -374,13 +286,89 @@ class UserController extends Controller {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error_message' => $e->getMessage()]
 			);
 
-			$response = new JSONResponse(
-				data: ['error' => 'Login failed due to a system error'],
-				statusCode: 500
-			);
-			return $this->securityService->addSecurityHeaders(response: $response);
+			return $this->errorResponse(message: 'Login failed due to a system error', statusCode: 500);
 		}//end try
 	}//end login()
+
+	/**
+	 * The 429 response of a rate-limited login, after its progressive delay.
+	 *
+	 * @param array $rateLimitCheck The rate limit verdict (reason, delay, lockout_until).
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function rateLimitedLoginResponse(array $rateLimitCheck): JSONResponse {
+		if (isset($rateLimitCheck['delay']) === true) {
+			sleep($rateLimitCheck['delay']);
+		}
+
+		$response = new JSONResponse(
+			data: [
+				'error'         => $rateLimitCheck['reason'],
+				'retry_after'   => $rateLimitCheck['delay'] ?? null,
+				'lockout_until' => $rateLimitCheck['lockout_until'] ?? null,
+			],
+			statusCode: 429
+		);
+		return $this->securityService->addSecurityHeaders(response: $response);
+	}//end rateLimitedLoginResponse()
+
+	/**
+	 * The 401 response for wrong credentials or a disabled account, recorded as a failed attempt.
+	 *
+	 * Wrong credentials get a generic message to prevent username enumeration.
+	 *
+	 * @param IUser|false                                 $user    The authenticated user, false on wrong credentials.
+	 * @param array{username: string, ipAddress: string} $attempt The login attempt.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the user may log in.
+	 */
+	private function refusedLogin(IUser|false $user, array $attempt): ?JSONResponse {
+		$reason  = 'account_disabled';
+		$message = 'Account is disabled';
+		if ($user === false) {
+			$reason  = 'invalid_credentials';
+			$message = 'Invalid username or password';
+		} else if ($user->isEnabled() !== false) {
+			return null;
+		}
+
+		$this->securityService->recordFailedLoginAttempt(
+			username: $attempt['username'],
+			ipAddress: $attempt['ipAddress'],
+			reason: $reason
+		);
+		return $this->errorResponse(message: $message, statusCode: 401);
+	}//end refusedLogin()
+
+	/**
+	 * Log a login that raised memory usage by more than 10 MB.
+	 *
+	 * @param IUser $user               The user who logged in.
+	 * @param int   $initialMemoryUsage Memory usage when the login started.
+	 *
+	 * @return void
+	 */
+	private function logLoginMemoryIncrease(IUser $user, int $initialMemoryUsage): void {
+		$finalMemoryUsage    = memory_get_usage(true);
+		$memoryIncreaseBytes = $finalMemoryUsage - $initialMemoryUsage;
+		if ($memoryIncreaseBytes <= 10 * 1024 * 1024) {
+			return;
+		}
+
+		$this->logger->warning(
+			message: '[UserController] High memory usage during login',
+			context: [
+				'file'           => __FILE__,
+				'line'           => __LINE__,
+				'user'           => $user->getUID(),
+				'initial_memory' => $initialMemoryUsage,
+				'final_memory'   => $finalMemoryUsage,
+				'increase_bytes' => $memoryIncreaseBytes,
+				'increase_mb'    => round($memoryIncreaseBytes / (1024 * 1024), 2),
+			]
+		);
+	}//end logLoginMemoryIncrease()
 
 	/**
 	 * Logout the current user session

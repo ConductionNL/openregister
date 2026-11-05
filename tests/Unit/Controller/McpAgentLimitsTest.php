@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\McpServerControllerFactory;
 use OCA\OpenRegister\Controller\McpServerController;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\AgentMapper;
@@ -204,7 +205,7 @@ class McpAgentLimitsTest extends TestCase {
 
 		$logger = new NullLogger();
 		$tools = new McpToolsService([$provider], $logger);
-		$this->controller = new McpServerController(
+		$this->controller = McpServerControllerFactory::create(
 			'openregister',
 			$request,
 			new McpProtocolService($cacheFactory, $random, $logger),

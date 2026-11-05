@@ -46,11 +46,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectionService;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -104,19 +104,19 @@ class DsarDpiaDetectionJob extends TimedJob {
 	 *
 	 * @param ITimeFactory $time Time factory required by parent.
 	 * @param IAppConfig $appConfig App-config reader.
-	 * @param ObjectService $objectService Object read/write path.
+	 * @param ObjectOperationsInterface $objectService Object read/write path.
 	 * @param DsarPolicyPackResolver $packResolver Active-pack resolution per jurisdiction.
 	 * @param DpiaPatternDetectionService $detectionService Pure grouping/threshold engine.
-	 * @param AuditTrailMapper $auditTrailMapper Immutable detection audit rows.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Immutable detection audit rows.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly IAppConfig $appConfig,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly DsarPolicyPackResolver $packResolver,
 		private readonly DpiaPatternDetectionService $detectionService,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
@@ -251,7 +251,8 @@ class DsarDpiaDetectionJob extends TimedJob {
 					_rbac: false,
 					_multitenancy: false
 				));
-				if ($entity === null) {
+				// A row without a uuid has nothing to be written under.
+				if ($entity === null || (string) $entity->getUuid() === '') {
 					continue;
 				}
 
@@ -267,7 +268,7 @@ class DsarDpiaDetectionJob extends TimedJob {
 					object: $data,
 					register: CaseObjectAccessor::REGISTER_SLUG,
 					schema: CaseObjectAccessor::SCHEMA_SLUG,
-					uuid: $uuid,
+					uuid: $entity->getUuid(),
 					_rbac: false,
 					_multitenancy: false
 				);

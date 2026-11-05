@@ -31,11 +31,11 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use Psr\Log\LoggerInterface;
@@ -59,8 +59,8 @@ class GetObject
     /**
      * Constructor for GetObject handler.
      *
-     * @param MagicMapper          $objectMapper         Object entity data mapper.
-     * @param AuditTrailMapper     $auditTrailMapper     Audit trail mapper for logs.
+     * @param MagicMapperInterface          $objectMapper         Object entity data mapper.
+     * @param AuditTrailMapperInterface     $auditTrailMapper     Audit trail mapper for logs.
      * @param ReadHistoryService   $readHistory          The one read registration (audit trail and AVG log).
      * @param ObjectSourceRegistry $objectSourceRegistry Registry of object-source providers (virtual schemas).
      * @param LoggerInterface      $logger               Logger for object-source delegation warnings.
@@ -68,8 +68,8 @@ class GetObject
      * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
-        private readonly MagicMapper $objectMapper,
-        private readonly AuditTrailMapper $auditTrailMapper,
+        private readonly MagicMapperInterface $objectMapper,
+        private readonly AuditTrailMapperInterface $auditTrailMapper,
         private readonly ReadHistoryService $readHistory,
         private readonly ObjectSourceRegistry $objectSourceRegistry,
         private readonly LoggerInterface $logger
@@ -315,54 +315,20 @@ class GetObject
         $sourced  = false;
         $provider = $this->resolveObjectSource(schema: $schema, sourced: $sourced);
         if ($sourced === true) {
-            if ($provider === null) {
-                return [];
-            }
-
-            $source = $schema->getObjectSource();
-            $query  = [
-                'limit'   => $limit,
-                'offset'  => $offset,
-                'filters' => $filters,
-                'sort'    => $sort,
-                'search'  => $search,
-                'ids'     => $ids,
-            ];
-
-            return $provider->findAll(
-                register: $register,
-                schema: $schema,
-                query: $query,
-                config: ($source['config'] ?? [])
-            );
-        }//end if
+            $query  = ['limit' => $limit, 'offset' => $offset, 'filters' => $filters, 'sort' => $sort, 'search' => $search, 'ids' => $ids];
+            return $provider?->findAll(register: $register, schema: $schema, query: $query, config: $schema->getObjectSource()['config'] ?? []) ?? [];
+        }
 
         // Thread the RBAC / multitenancy posture into the filters so the search
         // handler honours them. These are read from the query array downstream;
         // passing them only as method arguments left them silently dropped, so
         // a caller's `_rbac:false` (e.g. installer/system context) had no effect.
-        $filters['_rbac']         = $_rbac;
-        $filters['_multitenancy'] = $_multitenancy;
-
-        // Retrieve objects using the objectEntityMapper with optional register, schema, and ids.
         $objects = $this->objectMapper->findAll(
-            limit: $limit,
-            offset: $offset,
-            filters: $filters,
-            sort: $sort,
-            search: $search,
-            ids: $ids,
-            uses: $uses,
-            register: $register,
-            schema: $schema
+            limit: $limit, offset: $offset, filters: array_merge($filters, ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy]),
+            sort: $sort, search: $search, ids: $ids, uses: $uses, register: $register, schema: $schema
         );
-
-        // If files are to be included, hydrate each object with its file information.
         if ($files === true) {
-            foreach ($objects as &$object) {
-                $object = $this->hydrateFiles(object: $object, files: []);
-                // TODO.
-            }
+            return array_map(fn (ObjectEntity $object): ObjectEntity => $this->hydrateFiles(object: $object, files: []), $objects);
         }
 
         return $objects;

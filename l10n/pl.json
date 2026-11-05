@@ -2925,7 +2925,7 @@
         "Complete: {outcome}": "Zakończ: {outcome}",
         "Could not load the task": "Nie można wczytać zadania",
         "The task refused that action": "Zadanie odrzuciło tę akcję",
-        "Store": "Sklep",
+        "Marketplace": "Sklep",
         "Install registers, schemas and flows that other organisations have published.": "Zainstaluj rejestry, schematy i przepływy opublikowane przez inne organizacje.",
         "No such run": "Nie ma takiego uruchomienia",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Uruchomienie nie istnieje lub nie masz do niego wglądu. Usunięcie przepływu usuwa też jego uruchomienia.",

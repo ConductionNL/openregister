@@ -43,7 +43,25 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLock
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetParties
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
  */
 class ExampleSetCatalogueTest extends ExampleSetTestCase {
 	public function testGathersEnabledAppsInOrderAndNamesTheAbsentOnes(): void {

@@ -7,11 +7,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
 use OCA\OpenRegister\BackgroundJob\ChunkVectorizationJob;
 use OCA\OpenRegister\Db\Chunk;
 use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Service\Vectorization\Handlers\VectorStorageHandler;
-use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
+use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
@@ -19,6 +20,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 
 /**
  * Golden test for ChunkVectorizationJob::run().
@@ -285,8 +287,8 @@ class ChunkVectorizationJobGoldenTest extends TestCase
         $this->registerService(LoggerInterface::class, fn () => $logger);
         $this->registerService(IAppConfig::class, fn () => $config);
         $this->registerService(ChunkMapper::class, fn () => $mapper);
-        $this->registerService(VectorEmbeddings::class, fn () => $embeddings);
-        $this->registerService(VectorStorageHandler::class, fn () => $storage);
+        $this->registerService(EmbeddingGeneratorInterface::class, fn () => $embeddings);
+        $this->registerService(VectorStorageHandlerInterface::class, fn () => $storage);
     }//end wire()
 
     /**

@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationLink;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -48,6 +49,7 @@ use ReflectionClass;
 /**
  * @covers \OCA\OpenRegister\Service\Object\RelationHandler
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\RelationLink
  * @uses \OCA\OpenRegister\Service\Relation\RelationAnnotationValidator
  * @uses \OCA\OpenRegister\Service\Relation\RelationTypeResolver
  */
@@ -187,9 +189,7 @@ class RelationHandlerLabelsTest extends TestCase {
 			'withRelation',
 			[
 				'row' => ['id' => 'uuid-b'],
-				'schema' => $this->schema(),
-				'path' => 'blokkeert.0',
-				'direction' => RelationTypeResolver::DIRECTION_OUTGOING,
+				'link' => new RelationLink(schema: $this->schema(), path: 'blokkeert.0'),
 			]
 		);
 
@@ -209,9 +209,7 @@ class RelationHandlerLabelsTest extends TestCase {
 			'withRelation',
 			[
 				'row' => ['id' => 'uuid-a'],
-				'schema' => $this->schema(),
-				'path' => 'blokkeert.0',
-				'direction' => RelationTypeResolver::DIRECTION_INCOMING,
+				'link' => (new RelationLink(schema: $this->schema(), path: 'blokkeert.0'))->incoming(),
 			]
 		);
 
@@ -232,9 +230,7 @@ class RelationHandlerLabelsTest extends TestCase {
 			'withRelation',
 			[
 				'row' => ['id' => 'uuid-p'],
-				'schema' => $this->schema(),
-				'path' => 'owner',
-				'direction' => RelationTypeResolver::DIRECTION_INCOMING,
+				'link' => (new RelationLink(schema: $this->schema(), path: 'owner'))->incoming(),
 			]
 		);
 
@@ -252,9 +248,7 @@ class RelationHandlerLabelsTest extends TestCase {
 			'withRelation',
 			[
 				'row' => ['id' => 'uuid-b'],
-				'schema' => null,
-				'path' => 'blokkeert.0',
-				'direction' => RelationTypeResolver::DIRECTION_INCOMING,
+				'link' => (new RelationLink(schema: null, path: 'blokkeert.0'))->incoming(),
 			]
 		);
 
@@ -285,9 +279,7 @@ class RelationHandlerLabelsTest extends TestCase {
 			$handler,
 			[
 				'row' => ['id' => 'uuid-b'],
-				'schema' => $this->schema(),
-				'path' => 'blokkeert.0',
-				'direction' => RelationTypeResolver::DIRECTION_OUTGOING,
+				'link' => new RelationLink(schema: $this->schema(), path: 'blokkeert.0'),
 			]
 		);
 

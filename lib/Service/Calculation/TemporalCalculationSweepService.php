@@ -41,15 +41,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calculation;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleDeclarationForms;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -66,23 +66,23 @@ class TemporalCalculationSweepService {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema enumeration (system scope).
-	 * @param RegisterMapper $registerMapper Register enumeration for schema→register resolution.
-	 * @param MagicMapper $objectMapper Raw per-table object enumeration.
-	 * @param CalculationEvaluator $evaluator Expression evaluator (exposes `now`).
+	 * @param SchemaMapperInterface $schemaMapper Schema enumeration (system scope).
+	 * @param RegisterMapperInterface $registerMapper Register enumeration for schema→register resolution.
+	 * @param MagicMapperInterface $objectMapper Raw per-table object enumeration.
+	 * @param CalculationEvaluatorInterface $evaluator Expression evaluator (exposes `now`).
 	 * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
-	 * @param ObjectService $objectService The normal object write path (events + audit).
+	 * @param ObjectOperationsInterface $objectService The normal object write path (events + audit).
 	 * @param LoggerInterface $logger Structured logging.
 	 * @param LifecycleDeclarationForms $finalForm Owns the shape rules for `initial` and `final`.
 	 * @param SchemaTypeConverter $types Restores the stored form of `type: string` values the read decoded.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly MagicMapper $objectMapper,
-		private readonly CalculationEvaluator $evaluator,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly MagicMapperInterface $objectMapper,
+		private readonly CalculationEvaluatorInterface $evaluator,
 		private readonly CalculationPayloadBuilder $payloadBuilder,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 		private readonly LifecycleDeclarationForms $finalForm = new LifecycleDeclarationForms(),
 		private readonly SchemaTypeConverter $types = new SchemaTypeConverter(),

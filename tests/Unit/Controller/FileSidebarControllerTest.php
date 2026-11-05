@@ -72,9 +72,8 @@ class FileSidebarControllerTest extends TestCase {
 			'openregister',
 			$this->request,
 			$this->fileSidebarService,
-			$this->logger,
-			$this->rootFolder,
-			$this->userSession
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, $this->createMock(\OCP\IGroupManager::class), $this->logger),
+			$this->rootFolder
 		);
 	}//end setUp()
 
@@ -98,9 +97,8 @@ class FileSidebarControllerTest extends TestCase {
 			'openregister',
 			$this->request,
 			$this->fileSidebarService,
-			$this->logger,
-			$rootFolder,
-			$session
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($session, $this->createMock(\OCP\IGroupManager::class), $this->logger),
+			$rootFolder
 		);
 
 		$this->fileSidebarService->expects($this->never())->method('getObjectsForFile');

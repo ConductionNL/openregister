@@ -766,7 +766,7 @@ class ValidateObjectCoverageTest extends TestCase {
 
 	public function testTransformSchemaForValidationNoProperties(): void {
 		$schema = (object)['type' => 'object'];
-		[$resultSchema, $resultObj] = $this->invokeMethod('transformSchemaForValidation', [$schema, ['foo' => 'bar'], 'test']);
+		$resultSchema = $this->invokeMethod('transformSchemaForValidation', [$schema, 'test']);
 		$this->assertSame('object', $resultSchema->type);
 	}
 
@@ -781,7 +781,7 @@ class ValidateObjectCoverageTest extends TestCase {
 				],
 			],
 		];
-		[$resultSchema, $resultObj] = $this->invokeMethod('transformSchemaForValidation', [$schema, ['parent' => 'uuid-123'], 'item']);
+		$resultSchema = $this->invokeMethod('transformSchemaForValidation', [$schema, 'item']);
 		// parent should have been transformed (self-ref + related-object)
 		$this->assertSame('string', $resultSchema->properties->parent->type ?? null);
 	}
@@ -798,7 +798,7 @@ class ValidateObjectCoverageTest extends TestCase {
 				],
 			],
 		];
-		[$resultSchema, $resultObj] = $this->invokeMethod('transformSchemaForValidation', [$schema, [], 'item']);
+		$resultSchema = $this->invokeMethod('transformSchemaForValidation', [$schema, 'item']);
 		// Should have oneOf with null, string, object
 		$this->assertTrue(isset($resultSchema->properties->parent->oneOf));
 	}
@@ -817,7 +817,7 @@ class ValidateObjectCoverageTest extends TestCase {
 				],
 			],
 		];
-		[$resultSchema, $resultObj] = $this->invokeMethod('transformSchemaForValidation', [$schema, [], 'item']);
+		$resultSchema = $this->invokeMethod('transformSchemaForValidation', [$schema, 'item']);
 		// Array items should be UUID pattern
 		$items = $resultSchema->properties->children->items ?? null;
 		$this->assertNotNull($items);
@@ -838,7 +838,7 @@ class ValidateObjectCoverageTest extends TestCase {
 				],
 			],
 		];
-		[$resultSchema, $resultObj] = $this->invokeMethod('transformSchemaForValidation', [$schema, [], 'item']);
+		$resultSchema = $this->invokeMethod('transformSchemaForValidation', [$schema, 'item']);
 		// Items should have oneOf since inversedBy on self-ref array items
 		$children = $resultSchema->properties->children ?? null;
 		$this->assertNotNull($children);
@@ -859,7 +859,7 @@ class ValidateObjectCoverageTest extends TestCase {
 				'name' => (object)['type' => 'string'],
 			],
 		];
-		[$resultSchema, $resultObj] = $this->invokeMethod('transformSchemaForValidation', [$schema, ['name' => 'test'], 'test']);
+		$resultSchema = $this->invokeMethod('transformSchemaForValidation', [$schema, 'test']);
 		$this->assertFalse(isset($resultSchema->{'$id'}));
 	}
 

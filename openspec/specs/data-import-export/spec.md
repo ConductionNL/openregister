@@ -1476,3 +1476,25 @@ recorded, with the reason.
 **Nextcloud Core Integration**: The import pipeline leverages `QueuedJob` (OCP\BackgroundJob\QueuedJob) for SOLR warmup scheduling after imports. Completion notifications should use `INotifier` (OCP\Notification\INotifier). File handling should integrate with Nextcloud Files (WebDAV) for import template storage, scheduled file imports, and export file delivery. The `IJobList` service is already injected into `ImportService` for background job management.
 
 **Recommendation**: The core import/export services are solid and production-ready for backend operations. Priority enhancements should be: (1) Add JSON and XML import/export formats to match competitor feature parity, (2) Implement progress tracking with a polling endpoint for imports over 100 rows, (3) Add downloadable error report generation, (4) Implement import template generation per schema, (5) Add UTF-8 BOM to CSV exports for Excel compatibility. For streaming large exports, consider using `StreamResponse` or chunked transfer encoding rather than buffering in `ob_start()`. The existing `PropertyRbacHandler` integration is excellent and should be extended to import operations (rejecting writes to RBAC-protected properties for non-authorized users).
+
+### Requirement: A bundle uploaded by a register manager stays inside that register
+
+A configuration bundle uploaded to a register by a caller who is not an administrator MUST hold only the schemas of that register and, optionally, that register itself. Any other register, schema or component MUST be refused with 403 before anything is written, and so MUST a schema that adds a `crossOrganisation: true` rule its stored form did not hold. The app id and the owner of the import MUST come from the server: the register's application and the signed-in user, never from the request or the bundle.
+
+#### Scenario: A manager's bundle names another schema
+- **GIVEN** a register manager who is not an administrator
+- **WHEN** the manager uploads a bundle with a schema that is not in that register, or another register
+- **THEN** the import MUST be refused with 403 and the importer MUST NOT run
+- @e2e exclude {controller and binding unit tests}
+
+#### Scenario: A manager's bundle adds a crossing
+- **GIVEN** the same manager and a schema of that register
+- **WHEN** the bundle gives the schema a new `crossOrganisation: true` rule
+- **THEN** the import MUST be refused with 403
+- @e2e exclude {binding unit test}
+
+#### Scenario: A request names an app
+- **GIVEN** an upload with an `appId` parameter or an `appId` key in the bundle
+- **WHEN** the import runs
+- **THEN** the importer MUST get the register's application as the app id
+- @e2e exclude {controller unit test}

@@ -243,6 +243,24 @@ class RelatedRowExistsClauseTest extends TestCase {
 	}//end testInBindsOnePlaceholderPerValue()
 
 	/**
+	 * A property name cannot end its JSON path literal through a backslash on MariaDB.
+	 *
+	 * @return void
+	 */
+	public function testAFieldBackslashIsDoubledOnMariaDbOnly(): void {
+		$conditions = [['field' => "a\\' OR 1=1 -- ", 'operator' => 'eq', 'value' => '1']];
+
+		$this->assertStringContainsString(
+			"'$.a\\\\'' OR 1=1 -- '",
+			$this->render($conditions, RelatedRowExistsClause::ENGINE_MARIADB)['sql']
+		);
+		$this->assertStringContainsString(
+			"->> 'a\\'' OR 1=1 -- '",
+			$this->render($conditions, RelatedRowExistsClause::ENGINE_POSTGRES)['sql']
+		);
+	}//end testAFieldBackslashIsDoubledOnMariaDbOnly()
+
+	/**
 	 * MariaDB gets its own JSON spelling, with the quotes stripped.
 	 *
 	 * `JSON_EXTRACT` keeps the quotes, so `"7"` would never equal `7`. This is

@@ -38,14 +38,15 @@ namespace OCA\OpenRegister\Service\Aggregation;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
@@ -54,14 +55,18 @@ use OCA\OpenRegister\Service\Object\DraftListLens;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Support\NullFilter;
 use OCP\IDBConnection;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationCacheInterface;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationJoinAnnotationValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Search\Service\Aggregation\ThresholdEvaluationService;
 
 /**
  * Runs a named aggregation against a schema.
@@ -90,6 +95,14 @@ use RuntimeException;
  * @spec openspec/specs/aggregation-api/spec.md
  */
 class AggregationRunner {
+
+	/**
+	 * An organisation scope the native SQL cannot render: the boundary has a
+	 * branch for the caller's conditional `crossOrganisation` rules.
+	 *
+	 * @var string
+	 */
+	private const SCOPE_CROSS_ORGANISATION_BRANCH = 'cross-organisation-branch';
 
 	/**
 	 * Hard cap on the number of rows the PHP fallback path will hydrate
@@ -137,15 +150,15 @@ class AggregationRunner {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $magicMapper Magic-table mapper used for the PHP fallback path.
-	 * @param RegisterMapper $registerMapper Register loader.
-	 * @param SchemaMapper $schemaMapper Schema loader.
+	 * @param MagicMapperInterface $magicMapper Magic-table mapper used for the PHP fallback path.
+	 * @param RegisterMapperInterface $registerMapper Register loader.
+	 * @param SchemaMapperInterface $schemaMapper Schema loader.
 	 * @param PlaceholderResolver $placeholders Resolves dynamic placeholders inside filters.
 	 * @param IDBConnection $db Database connection for the Postgres-native fast path.
-	 * @param AggregationCache $cache 60s aggregation result cache.
+	 * @param AggregationCacheInterface $cache 60s aggregation result cache.
 	 * @param PermissionHandler $permissionHandler RBAC verdict on the schema's `list` action.
 	 * @param IUserSession $userSession Active session, for the RBAC + cache-key user scope.
-	 * @param OrganisationService $organisationService Active-organisation lookup for the cache key.
+	 * @param OrganisationServiceInterface $organisationService Active-organisation lookup for the cache key.
 	 * @param MagicOrganizationHandler $organizationHandler Owns the organisation-boundary decision the native SQL renders.
 	 * @param TranslationHandler $translationHandler Resolves translatable group keys to the negotiated language.
 	 * @param LanguageService $languageService Request-scoped language negotiation (Accept-Language / _lang).
@@ -156,6 +169,8 @@ class AggregationRunner {
 	 * @param PropertyRbacHandler|null $propertyRbac Withholds an aggregation over a property the caller may
 	 *                                               not read. Nullable and last so no construction site
 	 *                                               shifts; absent, a governed property is withheld.
+	 * @param ExplicitReveal|null $explicitReveal The request's trusted-code state for explicit-reveal properties;
+	 *                                            absent, only a system operation may aggregate over one.
 	 *
 	 * @return void
 	 *
@@ -164,15 +179,15 @@ class AggregationRunner {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly MagicMapperInterface $magicMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PlaceholderResolver $placeholders,
 		private readonly IDBConnection $db,
-		private readonly AggregationCache $cache,
+		private readonly AggregationCacheInterface $cache,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly IUserSession $userSession,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 		private readonly MagicOrganizationHandler $organizationHandler,
 		private readonly TranslationHandler $translationHandler,
 		private readonly LanguageService $languageService,
@@ -183,6 +198,7 @@ class AggregationRunner {
 		// and then a GOVERNED property's aggregate is withheld, which is the
 		// safe direction.
 		private readonly ?PropertyRbacHandler $propertyRbac = null,
+		private readonly ?ExplicitReveal $explicitReveal = null,
 	) {
 		$this->scopedResolver = new RegisterScopedSchemaResolver(
 			registerMapper: $registerMapper,
@@ -346,20 +362,30 @@ class AggregationRunner {
 		// `$bypassRbac` is honoured because it is how internal callers compute
 		// figures for somebody else, and those callers have already decided who
 		// may see the result.
-		if ($bypassRbac === false) {
-			$fieldNames = [];
-			if ($field !== null) {
-				$fieldNames = [(string)$field];
-			}
+		$fieldNames = [];
+		if ($field !== null) {
+			$fieldNames = [(string)$field];
+		}
 
-			$this->assertFieldsAreReadable(
-				schema: $schema,
-				fields: array_merge(
-					$fieldNames,
-					$this->groupByFields(groupBy: $groupBy),
-					$this->metricFields(metrics: $metrics)
-				)
-			);
+		$touched = array_merge(
+			$fieldNames,
+			$this->groupByFields(groupBy: $groupBy),
+			$this->metricFields(metrics: $metrics)
+		);
+
+		// 🔴 THE EXPLICIT-REVEAL GUARD HOLDS WITH `$bypassRbac` TOO. A bypassing
+		// caller computes a figure for somebody else and stores or shows it
+		// (a materialised aggregate on another object), so a bucket key or a
+		// min/max over the value would leave in clear. Only trusted code
+		// (ExplicitReveal::trustedDuring, a system operation) passes. It is
+		// named first, so the refusal says why.
+		$this->assertNoExplicitValues(schema: $schema, fields: $touched);
+		// A caller's narrowing filter on an explicit-reveal property is an
+		// oracle: try values, read whether the figure changes.
+		$this->assertNoExplicitFilter(schema: $schema, filter: $extraFilter);
+
+		if ($bypassRbac === false) {
+			$this->assertFieldsAreReadable(schema: $schema, fields: $touched);
 		}
 
 		// Normalized groupBy spec (array or null) — used both for the native
@@ -722,6 +748,21 @@ class AggregationRunner {
 				)
 			);
 		}
+
+		// An explicit-reveal value leaves only as its mask, so the ad-hoc path
+		// may neither group on it (a bucket key is the value), take a min or max
+		// of it, nor filter on it. With `$bypassRbac` too: a materialised
+		// aggregate (AggregateReferenceResolver) stores the figure on another
+		// object, in clear.
+		$this->assertNoExplicitValues(
+			schema: $schema,
+			fields: array_merge(
+				[(string)$query->field],
+				$this->groupByFields(groupBy: $query->groupBy),
+				$this->metricFields(metrics: $query->metrics)
+			)
+		);
+		$this->assertNoExplicitFilter(schema: $schema, filter: $query->filter);
 
 		// Resolve placeholders inside the filter (e.g. $now, $startOfMonth)
 		// so the native SQL path can bind concrete values. The resolved
@@ -2790,6 +2831,13 @@ class AggregationRunner {
 		);
 		if ($rowRbac === false) {
 			return $orgScope;
+		}
+
+		// The list widens the boundary by the rows of the caller's conditional
+		// `crossOrganisation` rules; this SQL cannot, so a mode it does not know sends the
+		// aggregation to the PHP path, which reads through the list.
+		if ($this->magicMapper->organisationBoundaryHasCrossOrganisationBranch(schema: $schema) === true) {
+			return ['mode' => self::SCOPE_CROSS_ORGANISATION_BRANCH, 'uuids' => []];
 		}
 
 		if ($this->magicMapper->organisationBoundaryWaivedByRbac(schema: $schema) === true) {
@@ -4951,6 +4999,58 @@ class AggregationRunner {
 	}//end assertFieldsAreReadable()
 
 	/**
+	 * Refuse an aggregate that would show the values of an explicit-reveal property.
+	 *
+	 * @param Schema             $schema The schema.
+	 * @param array<int, string> $fields Every property the aggregate touches.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When any of them is explicit-reveal.
+	 *
+	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
+	 */
+	private function assertNoExplicitValues(Schema $schema, array $fields): void {
+		$withheld = [];
+		foreach ($fields as $field) {
+			$name = trim((string)$field);
+			if ($name !== '' && $this->aggregateVisibility()->isMaskedExplicit(schema: $schema, property: $name) === true) {
+				$withheld[$name] = true;
+			}
+		}
+
+		if ($withheld === []) {
+			return;
+		}
+
+		throw new NotAuthorizedException(
+			message: sprintf(
+				'This aggregation reads %s, which is shown only on request, so it cannot be computed for you.',
+				implode(', ', array_keys($withheld))
+			)
+		);
+	}//end assertNoExplicitValues()
+
+	/**
+	 * Refuse an aggregation filter on an explicit-reveal property.
+	 *
+	 * @param Schema       $schema The schema.
+	 * @param array<mixed> $filter The caller's filter.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When the filter names such a property.
+	 *
+	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
+	 */
+	private function assertNoExplicitFilter(Schema $schema, array $filter): void {
+		$this->assertNoExplicitValues(
+			schema: $schema,
+			fields: array_map(callback: 'strval', array: array_keys($filter))
+		);
+	}//end assertNoExplicitFilter()
+
+	/**
 	 * The property names a groupBy spec refers to.
 	 *
 	 * @param mixed $groupBy The groupBy spec.
@@ -5018,7 +5118,7 @@ class AggregationRunner {
 	 * @return AggregateVisibility The answer.
 	 */
 	private function aggregateVisibility(): AggregateVisibility {
-		return new AggregateVisibility(rbac: $this->propertyRbac, logger: $this->logger);
+		return new AggregateVisibility(rbac: $this->propertyRbac, logger: $this->logger, reveal: $this->explicitReveal);
 	}//end aggregateVisibility()
 
 }//end class

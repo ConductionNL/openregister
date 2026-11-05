@@ -60,6 +60,9 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary
  * @uses \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnExporter
  * @uses \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnImporter
+ * @uses \OCA\OpenRegister\Exception\FlowRunRefused
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnDiagramLayout
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnMappingReport
  */
 class FlowControllerTest extends TestCase {
 

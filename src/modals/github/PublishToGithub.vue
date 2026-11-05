@@ -345,34 +345,50 @@ export default {
 					'Failed to load repositories',
 				)
 				this.repositories = data.repositories || []
-
-				// Pre-select the GitHub repo the entity was already published to
-				if (this.preselectPublished && this.entity?.githubRepo) {
-					const existingRepo = this.repositories.find(
-						(r) => r.full_name === this.entity.githubRepo,
-					)
-					if (existingRepo) {
-						this.selectedRepository = existingRepo.full_name
-						// Load branches for this repo
-						await this.loadBranches(
-							existingRepo.owner,
-							existingRepo.name,
-						)
-						// Pre-select existing branch
-						if (this.entity?.githubBranch) {
-							this.selectedBranch = this.entity.githubBranch
-						}
-						// Pre-fill path
-						if (this.entity?.githubPath) {
-							this.filePath = this.entity.githubPath
-						}
-					}
+				const publishedRepo = this.publishedRepository()
+				if (publishedRepo) {
+					this.selectedRepository = publishedRepo.full_name
+					await this.loadBranches(publishedRepo.owner, publishedRepo.name)
+					this.restorePublishedPlace()
 				}
 			} catch (e) {
 				this.error = e.message || 'Failed to load repositories'
 				console.error('Failed to load repositories:', e)
 			} finally {
 				this.loadingRepositories = false
+			}
+		},
+
+		/**
+		 * The loaded repository the entity was already published to, when the
+		 * form preselects the published target. Synchronous, so loading the
+		 * repositories awaits nothing but the branch request.
+		 *
+		 * @spec exclude Modal data-load plumbing — finds the GitHub target the entity was published to.
+		 * @return {object|null}
+		 */
+		publishedRepository() {
+			if (!this.preselectPublished || !this.entity?.githubRepo) {
+				return null
+			}
+			return (
+				this.repositories.find((r) => r.full_name === this.entity.githubRepo)
+				|| null
+			)
+		},
+
+		/**
+		 * Restore the branch and path the entity was published to, when known.
+		 *
+		 * @spec exclude Modal data-load plumbing — restores the GitHub target the entity was published to.
+		 * @return {void}
+		 */
+		restorePublishedPlace() {
+			if (this.entity?.githubBranch) {
+				this.selectedBranch = this.entity.githubBranch
+			}
+			if (this.entity?.githubPath) {
+				this.filePath = this.entity.githubPath
 			}
 		},
 

@@ -27,13 +27,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -118,18 +118,18 @@ class SchemaDeletionService {
 	 * SchemaDeletionService constructor.
 	 *
 	 * @param IDBConnection $db Database connection, for phase-1 transaction control.
-	 * @param MagicMapper $magicMapper Magic-table mapper (row reads, bulk delete, table drop).
-	 * @param RegisterMapper $registerMapper Register mapper, to resolve register entities.
-	 * @param SchemaMapper $schemaMapper Schema mapper, to resolve and delete schema entities.
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper (ADR-003 hash-chained writes).
+	 * @param MagicMapperInterface $magicMapper Magic-table mapper (row reads, bulk delete, table drop).
+	 * @param RegisterMapperInterface $registerMapper Register mapper, to resolve register entities.
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper, to resolve and delete schema entities.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper (ADR-003 hash-chained writes).
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly MagicMapper $magicMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly MagicMapperInterface $magicMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -795,7 +795,7 @@ class SchemaDeletionService {
 			$tables[] = [
 				'registerId' => $registerId,
 				'register' => $register,
-				'tableName' => MagicMapper::TABLE_PREFIX . $registerId . '_' . $schemaId,
+				'tableName' => MagicMapperInterface::TABLE_PREFIX . $registerId . '_' . $schemaId,
 			];
 		}//end foreach
 

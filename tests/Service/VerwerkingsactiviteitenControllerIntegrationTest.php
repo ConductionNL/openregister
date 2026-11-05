@@ -408,8 +408,7 @@ class VerwerkingsactiviteitenControllerIntegrationTest extends TestCase {
 			'openregister',
 			$request,
 			$this->vrwMapper,
-			$this->userSession,
-			\OC::$server->get(\OCP\IGroupManager::class),
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, \OC::$server->get(\OCP\IGroupManager::class), $this->createMock(\Psr\Log\LoggerInterface::class)),
 			\OC::$server->get(\OCP\IDBConnection::class),
 			\OC::$server->get(\OCA\OpenRegister\Service\OrganisationService::class)
 		);

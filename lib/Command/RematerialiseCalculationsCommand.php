@@ -33,16 +33,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use DateTimeInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -58,11 +58,11 @@ class RematerialiseCalculationsCommand extends Command {
 	/**
 	 * Wire the mappers, evaluator, and object service used by the command.
 	 *
-	 * @param RegisterMapper $registerMapper Register lookup mapper.
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
-	 * @param MagicMapper $magicMapper Magic table mapper for objects.
-	 * @param ObjectService $objectService Object persistence service.
-	 * @param CalculationEvaluator $evaluator Expression evaluator.
+	 * @param RegisterMapperInterface $registerMapper Register lookup mapper.
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
+	 * @param MagicMapperInterface $magicMapper Magic table mapper for objects.
+	 * @param ObjectOperationsInterface $objectService Object persistence service.
+	 * @param CalculationEvaluatorInterface $evaluator Expression evaluator.
 	 * @param ReferenceResolver $references Cross-object reference pre-resolver.
 	 * @param AggregateReferenceResolver $aggregates Aggregate-reference pre-resolver.
 	 * @param SchemaTypeConverter $types Restores the stored form of `type: string` values the read decoded.
@@ -74,11 +74,11 @@ class RematerialiseCalculationsCommand extends Command {
 	 * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-2
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly MagicMapper $magicMapper,
-		private readonly ObjectService $objectService,
-		private readonly CalculationEvaluator $evaluator,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly MagicMapperInterface $magicMapper,
+		private readonly ObjectOperationsInterface $objectService,
+		private readonly CalculationEvaluatorInterface $evaluator,
 		private readonly ReferenceResolver $references,
 		private readonly AggregateReferenceResolver $aggregates,
 		private readonly SchemaTypeConverter $types=new SchemaTypeConverter(),

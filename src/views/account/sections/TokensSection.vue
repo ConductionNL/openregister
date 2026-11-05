@@ -101,7 +101,7 @@ export default {
 					generateUrl('/apps/openregister/api/user/me/tokens'),
 				)
 				this.tokens = data || []
-			} catch (e) {
+			} catch {
 				// Handle silently.
 			} finally {
 				this.loading = false
@@ -169,7 +169,7 @@ export default {
 				await navigator.clipboard.writeText(this.createdToken)
 				this.message = t('openregister', 'Token copied to clipboard')
 				this.isError = false
-			} catch (e) {
+			} catch {
 				this.message = t('openregister', 'Failed to copy token')
 				this.isError = true
 			}

@@ -356,50 +356,104 @@ export default {
 				this.releaseLiveSubscription()
 				return
 			}
-			if (this.liveHandle && this.liveType === type) {
-				return
-			}
-			if (this.livePendingType === type) {
-				// A subscribe for this exact scope is already in flight —
-				// re-subscribing here would leak the first handle.
+			if (this.isLiveScope(type)) {
 				return
 			}
 			this.releaseLiveSubscription()
 			try {
-				// Subscription is independent of refreshObjectList timing:
-				// register the type ourselves when it is not known yet.
-				if (!objectStore.objectTypes.includes(type)) {
-					const registerId = registerStore.registerItem?.id
-					const schemaId = schemaStore.schemaItem?.id
-					if (!registerId || !schemaId) {
-						return
-					}
-					objectStore.registerObjectType(type, schemaId, registerId)
-				}
-				const epoch = this.liveEpoch
-				this.livePendingType = type
-				this.liveType = type
-				const handle = await objectStore.subscribe(type)
-				if (this.livePendingType === type) {
-					this.livePendingType = ''
-				}
-				if (this.liveEpoch !== epoch) {
-					// released while awaiting (scope change / destroy) — drop
-					// the now-stale subscription instead of leaking it.
-					objectStore.unsubscribe(handle)
-					return
-				}
-				this.liveHandle = handle
+				await this.subscribeLive(type)
 			} catch (e) {
-				if (this.livePendingType === type) {
-					this.livePendingType = ''
-				}
-				this.liveHandle = null
-				this.liveType = ''
-				console.warn(
-					'[ObjectsList] live subscription failed:',
-					e?.message ?? e,
-				)
+				this.liveSubscriptionFailed(type, e)
+			}
+		},
+
+		/**
+		 * Reset the live state after a subscribe that threw.
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 * @param {string} type The collection type
+		 * @param {Error} e What was thrown
+		 * @return {void}
+		 */
+		liveSubscriptionFailed(type, e) {
+			this.clearLivePending(type)
+			this.liveHandle = null
+			this.liveType = ''
+			console.warn('[ObjectsList] live subscription failed:', e?.message ?? e)
+		},
+
+		/**
+		 * Whether the live subscription already covers this type, either
+		 * subscribed or still in flight. Re-subscribing an in-flight scope
+		 * would leak the first handle.
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 * @param {string} type The collection type
+		 * @return {boolean} True when nothing needs to change
+		 */
+		isLiveScope(type) {
+			return (
+				(this.liveHandle && this.liveType === type)
+				|| this.livePendingType === type
+			)
+		},
+
+		/**
+		 * Register the collection type with the store when it is not known
+		 * yet, so the subscription does not depend on refreshObjectList timing.
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 * @param {string} type The collection type
+		 * @return {boolean} False when the register or schema is not in scope
+		 */
+		ensureLiveObjectType(type) {
+			if (objectStore.objectTypes.includes(type)) {
+				return true
+			}
+			const registerId = registerStore.registerItem?.id
+			const schemaId = schemaStore.schemaItem?.id
+			if (!registerId || !schemaId) {
+				return false
+			}
+			objectStore.registerObjectType(type, schemaId, registerId)
+			return true
+		},
+
+		/**
+		 * Subscribe to the collection type and keep the handle, unless the
+		 * type cannot be registered, or the subscription was released while it
+		 * was in flight: then the stale handle is dropped instead of leaked.
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 * @param {string} type The collection type
+		 * @return {Promise<void>}
+		 */
+		async subscribeLive(type) {
+			if (!this.ensureLiveObjectType(type)) {
+				return
+			}
+			const epoch = this.liveEpoch
+			this.livePendingType = type
+			this.liveType = type
+			const handle = await objectStore.subscribe(type)
+			this.clearLivePending(type)
+			if (this.liveEpoch !== epoch) {
+				objectStore.unsubscribe(handle)
+				return
+			}
+			this.liveHandle = handle
+		},
+
+		/**
+		 * Clear the in-flight marker when it still belongs to this type.
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 * @param {string} type The collection type
+		 * @return {void}
+		 */
+		clearLivePending(type) {
+			if (this.livePendingType === type) {
+				this.livePendingType = ''
 			}
 		},
 

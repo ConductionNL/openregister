@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Quota;
 
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 
 /**
@@ -54,14 +54,14 @@ class ObjectQuotaService {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper    $objects   The object store, for the unrestricted count.
-	 * @param RegisterMapper $registers Resolves the register the count runs in.
+	 * @param MagicMapperInterface    $objects   The object store, for the unrestricted count.
+	 * @param RegisterMapperInterface $registers Resolves the register the count runs in.
 	 *
 	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $objects,
-		private readonly RegisterMapper $registers,
+		private readonly MagicMapperInterface $objects,
+		private readonly RegisterMapperInterface $registers,
 	) {
 	}//end __construct()
 

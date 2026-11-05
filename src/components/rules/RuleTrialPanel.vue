@@ -250,27 +250,9 @@ export default {
 			this.sampleError = ''
 			this.result = null
 
-			let payload
-			if (this.target === 'sample') {
-				try {
-					payload = {
-						object:
-							this.sample.trim() === '' ? {} : JSON.parse(this.sample),
-					}
-				} catch (parseFailure) {
-					this.sampleError = t(
-						'openregister',
-						'That is not valid JSON: {reason}',
-						{ reason: parseFailure.message },
-					)
-					return
-				}
-			} else {
-				payload = { register: this.register, objectId: this.objectId }
-			}
-
-			if (this.draft !== null) {
-				payload.rule = { expression: this.draft }
+			const payload = this.trialPayload()
+			if (payload === null) {
+				return
 			}
 
 			this.running = true
@@ -289,6 +271,50 @@ export default {
 				)
 			} finally {
 				this.running = false
+			}
+		},
+
+		/**
+		 * The payload for a trial: the parsed sample or the stored object, plus
+		 * the unsaved draft when there is one.
+		 *
+		 * @return {object|null} The payload, or null when the sample is not valid JSON
+		 *
+		 * @spec openspec/specs/flow-engine/spec.md
+		 */
+		trialPayload() {
+			const payload =
+				this.target === 'sample'
+					? this.samplePayload()
+					: { register: this.register, objectId: this.objectId }
+			if (payload !== null && this.draft !== null) {
+				payload.rule = { expression: this.draft }
+			}
+			return payload
+		},
+
+		/**
+		 * The sample as an object to try the rule on. An empty sample is an
+		 * empty object; a sample that does not parse sets the sample error.
+		 *
+		 * @return {object|null} The payload, or null when the sample is not valid JSON
+		 *
+		 * @spec openspec/specs/flow-engine/spec.md
+		 */
+		samplePayload() {
+			try {
+				return {
+					object: this.sample.trim() === '' ? {} : JSON.parse(this.sample),
+				}
+			} catch (parseFailure) {
+				this.sampleError = t(
+					'openregister',
+					'That is not valid JSON: {reason}',
+					{
+						reason: parseFailure.message,
+					},
+				)
+				return null
 			}
 		},
 	},

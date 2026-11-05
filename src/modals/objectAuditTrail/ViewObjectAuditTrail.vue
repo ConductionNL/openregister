@@ -170,7 +170,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {unknown} value
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		formatValue(value) {

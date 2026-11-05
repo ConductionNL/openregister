@@ -20,8 +20,8 @@
  * "Due" is decided per flow: the last time it fired is remembered (in app
  * config, keyed by the flow's id — so the flow object itself is never
  * rewritten), and a flow is due when a cron occurrence has passed since then. A
- * flow seen for the first time has no last-fire, so it fires once on the next
- * tick and then follows its cron.
+ * flow that has never fired is measured from when it was last saved, so it
+ * fires on its first occurrence after that save and never earlier.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -71,13 +71,13 @@ class FlowScheduleService {
 	 * Constructor.
 	 *
 	 * @param FlowLocator $resolvers Lists the scheduled flows every app owns.
-	 * @param FlowRunService $runs Queues a run for a due flow.
+	 * @param FlowRunServiceInterface $runs Queues a run for a due flow.
 	 * @param IAppConfig $appConfig Remembers last-fire.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		private readonly FlowLocator $resolvers,
-		private readonly FlowRunService $runs,
+		private readonly FlowRunServiceInterface $runs,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
@@ -111,7 +111,7 @@ class FlowScheduleService {
 			// The registry guarantees a non-empty id — a candidate without one
 			// is dropped there, so every id here is one a resolver can load.
 			$uuid = $candidate['id'];
-			if ($this->isDue(cron: $cron, uuid: $uuid, now: $now) === false) {
+			if ($this->isDue(candidate: $candidate, cron: $cron, now: $now) === false) {
 				continue;
 			}
 
@@ -286,35 +286,58 @@ class FlowScheduleService {
 	}//end scheduleOf()
 
 	/**
-	 * Whether a cron occurrence has passed since the flow last fired.
+	 * Whether a cron occurrence has passed since the flow's baseline.
 	 *
-	 * A flow with no recorded last-fire is treated as never run, so its next
-	 * occurrence after the epoch is in the past and it fires once on this tick.
-	 *
+	 * @param array $candidate The candidate flow, shaped `{id, since, ...}`.
 	 * @param string $cron The cron expression.
-	 * @param string $uuid The flow uuid.
 	 * @param DateTimeInterface $now The moment to evaluate against.
 	 *
 	 * @return boolean Whether the flow is due.
 	 */
-	private function isDue(string $cron, string $uuid, DateTimeInterface $now): bool {
-		$lastRaw = $this->appConfig->getValueString(self::APP_ID, self::LAST_FIRE_KEY . $uuid, '');
-
-		// A flow never fired has an epoch baseline, so its next occurrence is in
-		// the past and it fires once on this tick.
-		$lastStamp = '@0';
-		if ($lastRaw !== '') {
-			$lastStamp = $lastRaw;
+	private function isDue(array $candidate, string $cron, DateTimeInterface $now): bool {
+		$baseline = $this->baselineOf(candidate: $candidate, now: $now);
+		if ($baseline === null) {
+			return false;
 		}
 
 		try {
-			$next = (new CronExpression($cron))->getNextRunDate(new DateTimeImmutable($lastStamp));
+			$next = (new CronExpression($cron))->getNextRunDate(new DateTimeImmutable($baseline));
 		} catch (Throwable $e) {
 			return false;
 		}
 
 		return $next <= $now;
 	}//end isDue()
+
+	/**
+	 * The moment a flow's next occurrence is measured from.
+	 *
+	 * The last fire when there is one, otherwise the flow's last save. A flow
+	 * with neither starts its clock at `$now`: the baseline is recorded and the
+	 * flow is not due on this tick. Never the epoch: measured from there, every
+	 * new schedule is due on the first tick that sees it, whatever its cron says.
+	 *
+	 * @param array $candidate The candidate flow; `since` is when it was last saved.
+	 * @param DateTimeInterface $now The moment to evaluate against.
+	 *
+	 * @return string|null The baseline, or null when the clock starts now.
+	 */
+	private function baselineOf(array $candidate, DateTimeInterface $now): ?string {
+		$uuid = (string)$candidate['id'];
+		$since = (string)($candidate['since'] ?? '');
+		$lastFire = $this->appConfig->getValueString(self::APP_ID, self::LAST_FIRE_KEY . $uuid, '');
+		if ($lastFire !== '') {
+			return $lastFire;
+		}
+
+		if ($since !== '') {
+			return $since;
+		}
+
+		$this->appConfig->setValueString(self::APP_ID, self::LAST_FIRE_KEY . $uuid, $now->format(DATE_ATOM));
+
+		return null;
+	}//end baselineOf()
 
 	/**
 	 * Queue a run for a due flow and record that it fired.

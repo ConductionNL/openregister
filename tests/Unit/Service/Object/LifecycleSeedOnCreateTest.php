@@ -182,4 +182,24 @@ class LifecycleSeedOnCreateTest extends TestCase {
 
 		$this->assertArrayNotHasKey('status', $result);
 	}//end testLiteralStringInitialIsNotSeeded()
+
+	/**
+	 * An `initial` missing its parent field, or an annotation naming no field, seeds nothing;
+	 * `property` names the field when `field` is absent.
+	 */
+	public function testIncompleteInitialIsNotSeededAndPropertyNamesTheField(): void {
+		$this->mapper->method('find')->willReturn($this->parent(self::S1));
+		$seed = function (array $annotation): array {
+			$schema = $this->createMock(Schema::class);
+			$schema->method('getConfiguration')->willReturn(['x-openregister-lifecycle' => $annotation]);
+			return $this->sut->seedLifecycleFieldOnCreate($schema, ['caseType' => self::PARENT]);
+		};
+
+		$this->assertSame(['caseType' => self::PARENT], $seed(['field' => 'status', 'initial' => ['from' => 'caseType']]));
+		$this->assertSame(['caseType' => self::PARENT], $seed(['initial' => ['from' => 'caseType', 'field' => 'initialStatus']]));
+		$this->assertSame(
+			['caseType' => self::PARENT, 'phase' => self::S1],
+			$seed(['property' => 'phase', 'initial' => ['from' => 'caseType', 'field' => 'initialStatus']])
+		);
+	}//end testIncompleteInitialIsNotSeededAndPropertyNamesTheField()
 }//end class
