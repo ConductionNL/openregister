@@ -27,6 +27,7 @@ use RuntimeException;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\ObjectsController
+ * @covers \OCA\OpenRegister\Controller\Support\ValidationWindow
  */
 class ObjectsControllerBulkRoutesGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-bulk-routes-golden.json';

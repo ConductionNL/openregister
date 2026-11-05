@@ -34,6 +34,7 @@ use OCA\OpenRegister\Controller\Support\ObjectGovernanceServices;
 use OCA\OpenRegister\Controller\Support\LinkedDataServices;
 use OCA\OpenRegister\Controller\Support\GeoServices;
 use OCA\OpenRegister\Controller\Support\ObjectsControllerServices;
+use OCA\OpenRegister\Controller\Support\ValidationWindow;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -6679,26 +6680,12 @@ class ObjectsController extends Controller {
 			$batchSize = (int)($data['batchSize'] ?? 25);
 
 			// Use ObjectService delegation to handler.
-			$result = $this->objectService->vectorizeBatchObjects(
-				_views: $views,
-				_batchSize: $batchSize
-			);
+			$result = $this->objectService->vectorizeBatchObjects(_views: $views, _batchSize: $batchSize);
 
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'data' => $result,
-				]
-			);
+			return new JSONResponse(data: ['success' => true, 'data' => $result]);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => 'Internal server error',
-				],
-				statusCode: 500
-			);
-		}//end try
+			return new JSONResponse(data: ['success' => false, 'error' => 'Internal server error'], statusCode: 500);
+		}
 	}//end vectorizeBatch()
 
 	/**
@@ -6727,21 +6714,10 @@ class ObjectsController extends Controller {
 			// Use ObjectService delegation to handler.
 			$stats = $this->objectService->getVectorizationStatistics(_views: $views);
 
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'stats' => $stats,
-				]
-			);
+			return new JSONResponse(data: ['success' => true, 'stats' => $stats]);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => 'Internal server error',
-				],
-				statusCode: 500
-			);
-		}//end try
+			return new JSONResponse(data: ['success' => false, 'error' => 'Internal server error'], statusCode: 500);
+		}
 	}//end getObjectVectorizationStats()
 
 	/**
@@ -6761,106 +6737,112 @@ class ObjectsController extends Controller {
 	 */
 	public function validate(): JSONResponse {
 		try {
-			// Get request parameters.
-			$register = $this->request->getParam(key: 'register');
-			$schemaId = $this->request->getParam(key: 'schema');
-			$limit = $this->request->getParam(key: 'limit');
-			$offset = $this->request->getParam(key: 'offset');
-
-			if ($register === null || $schemaId === null) {
+			$window = new ValidationWindow(request: $this->request);
+			if ($window->isComplete() === false) {
 				return new JSONResponse(
-					data: [
-						'success' => false,
-						'error' => 'Register and schema parameters are required',
-					],
+					data: ['success' => false, 'error' => 'Register and schema parameters are required'],
 					statusCode: 400
 				);
 			}
 
-			// Parse limit/offset with sensible defaults for chunked processing.
-			if ($limit !== null) {
-				$limitInt = (int)$limit;
-			} else {
-				$limitInt = null;
-			}
-
-			if ($offset !== null) {
-				$offsetInt = (int)$offset;
-			} else {
-				$offsetInt = 0;
-			}
-
-			$this->logger->info(
-				message: '[ObjectsController] Starting bulk validation for schema',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'register' => $register,
-					'schema' => $schemaId,
-					'limit' => $limitInt,
-					'offset' => $offsetInt,
-				]
-			);
-
-			// Validate and save objects in the schema to update metadata.
-			$result = $this->objectService->validateAndSaveObjectsBySchema(
-				registerId: (int)$register,
-				schemaId: (int)$schemaId,
-				limit: $limitInt,
-				offset: $offsetInt
-			);
-
-			$this->logger->info(
-				message: '[ObjectsController] Bulk validation and save completed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'register' => $register,
-					'schema' => $schemaId,
-					'processed' => $result['processed'] ?? 0,
-					'updated' => $result['updated'] ?? 0,
-					'failed' => $result['failed'] ?? 0,
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'message' => 'Validation completed successfully',
-					'statistics' => [
-						'processed' => $result['processed'] ?? 0,
-						'updated' => $result['updated'] ?? 0,
-						'failed' => $result['failed'] ?? 0,
-						'total' => $result['total'] ?? null,
-					],
-					'pagination' => [
-						'limit' => $limitInt,
-						'offset' => $offsetInt,
-					],
-					'errors' => $result['errors'] ?? [],
-				]
-			);
+			return $this->validationResponse(window: $window, result: $this->validatedChunk(window: $window));
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[ObjectsController] Bulk validation failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-					'message' => 'Validation failed',
-				],
-				statusCode: 500
-			);
-		}//end try
+			return $this->validationFailureResponse(failure: $e);
+		}
 	}//end validate()
+
+	/**
+	 * Validate and save one chunk of a schema's objects, logging start and end.
+	 *
+	 * @param ValidationWindow $window The register, schema and chunk.
+	 *
+	 * @return array The validation result.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function validatedChunk(ValidationWindow $window): array {
+		$scope = ['file' => __FILE__, 'line' => __LINE__, 'register' => $window->register, 'schema' => $window->schema];
+		$start = '[ObjectsController] Starting bulk validation for schema';
+		$this->logger->info(message: $start, context: $scope + ['limit' => $window->limit, 'offset' => $window->offset]);
+
+		// Validate and save objects in the schema to update metadata.
+		$result = $this->objectService->validateAndSaveObjectsBySchema(
+			registerId: (int)$window->register,
+			schemaId: (int)$window->schema,
+			limit: $window->limit,
+			offset: $window->offset
+		);
+
+		$done = '[ObjectsController] Bulk validation and save completed';
+		$this->logger->info(message: $done, context: $scope + $this->validationCounts(result: $result));
+
+		return $result;
+	}//end validatedChunk()
+
+	/**
+	 * The processed, updated and failed counts of a validation result.
+	 *
+	 * @param array $result The validation result.
+	 *
+	 * @return array{processed: mixed, updated: mixed, failed: mixed} The counts.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function validationCounts(array $result): array {
+		return [
+			'processed' => ($result['processed'] ?? 0),
+			'updated' => ($result['updated'] ?? 0),
+			'failed' => ($result['failed'] ?? 0),
+		];
+	}//end validationCounts()
+
+	/**
+	 * The answer to a completed bulk validation.
+	 *
+	 * @param ValidationWindow $window The register, schema and chunk.
+	 * @param array            $result The validation result.
+	 *
+	 * @return JSONResponse The statistics, pagination and errors.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function validationResponse(ValidationWindow $window, array $result): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'success' => true,
+				'message' => 'Validation completed successfully',
+				'statistics' => ($this->validationCounts(result: $result) + ['total' => ($result['total'] ?? null)]),
+				'pagination' => ['limit' => $window->limit, 'offset' => $window->offset],
+				'errors' => ($result['errors'] ?? []),
+			]
+		);
+	}//end validationResponse()
+
+	/**
+	 * Log a failed bulk validation and answer it.
+	 *
+	 * @param Exception $failure The failure.
+	 *
+	 * @return JSONResponse The 500 answer.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function validationFailureResponse(Exception $failure): JSONResponse {
+		$this->logger->error(
+			message: '[ObjectsController] Bulk validation failed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $failure->getMessage(),
+				'trace' => $failure->getTraceAsString(),
+			]
+		);
+
+		return new JSONResponse(
+			data: ['success' => false, 'error' => $failure->getMessage(), 'message' => 'Validation failed'],
+			statusCode: 500
+		);
+	}//end validationFailureResponse()
 
 	/**
 	 * Collect UUID-to-name mappings for all related objects in a response.
