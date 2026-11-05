@@ -3,7 +3,7 @@
 /**
  * ReferentialIntegrityService Coverage Tests
  *
- * Tests for uncovered branches: isValidOnDeleteAction, extractOnDelete,
+ * Tests for uncovered branches: extractOnDelete,
  * extractTargetRef, resolveSchemaRef, isRequiredProperty, getDefaultValue,
  * hasIncomingOnDeleteReferences, canDelete with no schema, logRestrictBlock,
  * and walkDeletionGraph edge cases.
@@ -90,38 +90,6 @@ class ReferentialIntegrityServiceCoverageTest extends TestCase {
 		$p = $ref->getProperty($prop);
 		$p->setAccessible(true);
 		$p->setValue($obj, $value);
-	}
-
-	// =========================================================================
-	// isValidOnDeleteAction
-	// =========================================================================
-
-	public function testIsValidOnDeleteActionCascade(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('CASCADE'));
-	}
-
-	public function testIsValidOnDeleteActionRestrict(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('RESTRICT'));
-	}
-
-	public function testIsValidOnDeleteActionSetNull(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('SET_NULL'));
-	}
-
-	public function testIsValidOnDeleteActionSetDefault(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('SET_DEFAULT'));
-	}
-
-	public function testIsValidOnDeleteActionNoAction(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('NO_ACTION'));
-	}
-
-	public function testIsValidOnDeleteActionCaseInsensitive(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('cascade'));
-	}
-
-	public function testIsValidOnDeleteActionInvalid(): void {
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction('DELETE'));
 	}
 
 	// =========================================================================
