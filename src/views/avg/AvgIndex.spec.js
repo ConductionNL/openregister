@@ -280,6 +280,11 @@ describe('AvgIndex — Cases surface', () => {
 		expect(methodCall('tierIcon', {}, 'on-track')).toBe(
 			'CheckboxMarkedCircleOutline',
 		)
+		expect(methodCall('tierIcon', {}, 'escalation')).toBe('AlertOutline')
+		expect(methodCall('tierIcon', {}, 'reminder')).toBe('ClockOutline')
+		expect(methodCall('tierIcon', {}, undefined)).toBe(
+			'CheckboxMarkedCircleOutline',
+		)
 	})
 
 	it('onTransition posts a plain transition and reloads the case', async () => {
