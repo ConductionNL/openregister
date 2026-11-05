@@ -184,12 +184,7 @@ class EndpointService {
 			);
 
 			// Return error result.
-			return [
-				'success' => false,
-				'statusCode' => 500,
-				'response' => null,
-				'error' => $e->getMessage(),
-			];
+			return $this->failure(statusCode: 500, error: $e->getMessage());
 		}//end try
 	}//end testEndpoint()
 
@@ -229,12 +224,7 @@ class EndpointService {
 				// Execute schema-based endpoint (queries schema data).
 				return $this->executeSchemaEndpoint(_endpoint: $endpoint, _request: $request);
 			default:
-				return [
-					'success' => false,
-					'statusCode' => 400,
-					'response' => null,
-					'error' => 'Unknown target type: ' . $endpoint->getTargetType(),
-				];
+				return $this->failure(statusCode: 400, error: 'Unknown target type: ' . $endpoint->getTargetType());
 		}//end switch
 	}//end executeEndpoint()
 
@@ -298,23 +288,13 @@ class EndpointService {
 			$message = $request['data']['message'] ?? $request['message'] ?? '';
 
 			if (empty($message) === true) {
-				return [
-					'success' => false,
-					'statusCode' => 400,
-					'response' => null,
-					'error' => 'Message is required',
-				];
+				return $this->failure(statusCode: 400, error: 'Message is required');
 			}
 
 			// Agent endpoint LLM execution (tool loading + chat calls) is
 			// deprecated pending the agent-core migration to hermiq; return
 			// a clean not-implemented response instead of calling an LLM.
-			return [
-				'success' => false,
-				'statusCode' => 501,
-				'response' => null,
-				'error' => 'Agent endpoint type is not implemented',
-			];
+			return $this->failure(statusCode: 501, error: 'Agent endpoint type is not implemented');
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[EndpointService] Error executing agent endpoint: ' . $e->getMessage(),
@@ -325,14 +305,26 @@ class EndpointService {
 				]
 			);
 
-			return [
-				'success' => false,
-				'statusCode' => 500,
-				'response' => null,
-				'error' => $e->getMessage(),
-			];
+			return $this->failure(statusCode: 500, error: $e->getMessage());
 		}//end try
 	}//end executeAgentEndpoint()
+
+	/**
+	 * The result of an endpoint run that failed.
+	 *
+	 * @param int    $statusCode The HTTP status to report.
+	 * @param string $error      The error message.
+	 *
+	 * @return array{success: false, statusCode: int, response: null, error: string}
+	 */
+	private function failure(int $statusCode, string $error): array {
+		return [
+			'success' => false,
+			'statusCode' => $statusCode,
+			'response' => null,
+			'error' => $error,
+		];
+	}//end failure()
 
 	/**
 	 * Execute a webhook endpoint
