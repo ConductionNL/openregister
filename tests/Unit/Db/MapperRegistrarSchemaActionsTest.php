@@ -31,6 +31,8 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevation
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionInputSchema
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionShape
  * @uses \OCA\OpenRegister\Db\Schema
  */
 class MapperRegistrarSchemaActionsTest extends TestCase {
