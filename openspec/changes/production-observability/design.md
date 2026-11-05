@@ -13,4 +13,3 @@ Implement the requirements defined in the spec using OpenRegister's existing ser
 - `lib/Service/DashboardService.php`
 - `lib/Service/MetricsService.php`
 - `lib/Service/Object/AuditHandler.php`
-- `lib/Service/Object/PerformanceHandler.php`

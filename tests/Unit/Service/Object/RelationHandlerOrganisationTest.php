@@ -33,7 +33,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;

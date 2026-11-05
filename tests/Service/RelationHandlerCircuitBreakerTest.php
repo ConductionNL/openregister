@@ -11,7 +11,7 @@
  * - Empty / missing extend properties are skipped without error.
  *
  * The handler's only dependencies (MagicMapper, SchemaMapper,
- * PerformanceHandler, MagicRbacHandler) are unused by
+ * MagicRbacHandler) are unused by
  * `extractAllRelationshipIds`, so we mock them and exercise the
  * extraction loop in isolation. No DB access required.
  *
@@ -30,7 +30,6 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

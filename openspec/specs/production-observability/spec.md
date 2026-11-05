@@ -338,12 +338,7 @@ Since PHP is a request-scoped runtime without persistent in-memory state, the sy
 - **AND** the deletion count MUST be logged at INFO level
 
 ### Requirement: Performance Baseline Metrics
-The system MUST expose metrics from the `PerformanceHandler` (`lib/Service/Object/PerformanceHandler.php`) and `PerformanceOptimizationHandler` to track internal optimization effectiveness. These metrics enable capacity planning and regression detection.
-
-#### Scenario: Fast-path detection rate
-- **GIVEN** the `PerformanceHandler.optimizeRequestForPerformance()` classifies requests as simple or complex
-- **WHEN** the metrics endpoint is scraped
-- **THEN** `openregister_fast_path_requests_total` and `openregister_slow_path_requests_total` counters MUST be present
+The system MUST expose metrics from the `PerformanceOptimizationHandler` to track internal optimization effectiveness. These metrics enable capacity planning and regression detection.
 
 #### Scenario: Cache hit ratio
 - **GIVEN** the `CacheHandler` serves cached objects for repeated lookups
@@ -603,7 +598,7 @@ log level.
 - **Implemented -- metrics recording service**: `MetricsService` (`lib/Service/MetricsService.php`) records operational metrics to `openregister_metrics` table with support for file processing, embedding generation, search latency, and storage growth tracking. Includes 90-day retention cleanup.
 - **Implemented -- audit trail**: `AuditTrail` entity, `AuditTrailMapper`, `AuditHandler`, `LogService`, and `AuditTrailController` provide complete object-level audit logging with export support (CSV, JSON, XML, TXT).
 - **Implemented -- webhook logging**: `WebhookLog` entity and `WebhookLogMapper` track webhook delivery attempts, success/failure, retry counts, and response data.
-- **Implemented -- performance tracking**: `PerformanceHandler` and `PerformanceOptimizationHandler` track fast-path detection, extend optimization, and cache preloading.
+- **Implemented -- performance tracking**: `PerformanceOptimizationHandler` tracks extend optimization and cache preloading.
 - **Not implemented -- request duration histograms**: No middleware tracks per-request duration as histogram data with Prometheus bucket boundaries.
 - **Not implemented -- CRUD operation counters**: No counters for create/update/delete operations in Prometheus format (MetricsService records metrics but MetricsController does not format them as counters with register/schema labels).
 - **Not implemented -- readiness endpoint**: No `/api/ready` endpoint that checks migration status.
