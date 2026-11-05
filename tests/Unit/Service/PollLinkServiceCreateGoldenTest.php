@@ -25,6 +25,8 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\PollLink;
 use OCA\OpenRegister\Db\PollLinkMapper;
 use OCA\OpenRegister\Service\PollLinkService;
+use OCA\OpenRegister\Service\PollDraft;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -103,7 +105,10 @@ class PollLinkServiceCreateGoldenTest extends TestCase {
 
 		$before = time();
 		try {
-			$link = $service->createAndLinkPoll('obj-1', 3, 4, $title, $description, $type, $options, $deadlineValue);
+			$link = $service->createAndLinkPoll(
+				(new LinkTarget('obj-1', 3))->inSchema(4),
+				(new PollDraft($title, $description))->withType($type)->withOptions($options, $deadlineValue)
+			);
 			$result = ['link' => $this->linkFields($link)];
 		} catch (Throwable $e) {
 			$result = ['error' => [get_class($e), $e->getMessage(), $e->getCode()]];

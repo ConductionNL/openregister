@@ -27,9 +27,14 @@ use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Db\MapLinkMapper;
 use OCA\OpenRegister\Service\DeckLinkService;
+use OCA\OpenRegister\Service\CardDraft;
 use OCA\OpenRegister\Service\EmailLinkService;
+use OCA\OpenRegister\Service\LinkTarget;
+use OCA\OpenRegister\Service\EmailMessageRef;
 use OCA\OpenRegister\Service\MapLinkService;
+use OCA\OpenRegister\Service\PoiDraft;
 use OCA\OpenRegister\Service\ShareLinkService;
+use OCA\OpenRegister\Service\ShareDraft;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\IResult;
@@ -108,7 +113,7 @@ class LinkServiceCreateGoldenTest extends TestCase {
 
 		$this->assertGolden(
 			function () use ($service, $messageId, $uid, $schemaId) {
-				return $this->entityFields($service->linkEmail('obj-1', 3, $schemaId, 42, $messageId, $uid));
+				return $this->entityFields($service->linkEmail((new LinkTarget('obj-1', 3))->inSchema($schemaId), (new EmailMessageRef(42, $messageId))->withUid($uid)));
 			}
 		);
 	}//end testLinkEmailGolden()
@@ -190,7 +195,10 @@ class LinkServiceCreateGoldenTest extends TestCase {
 
 		$this->assertGolden(
 			function () use ($service, &$calls, $fileId, $shareType, $shareWith, $permissions, $password, $expiration) {
-				$result = $service->createShare('obj-1', 3, 4, $fileId, $shareType, $shareWith, $permissions, $password, $expiration);
+				$result = $service->createShare(
+					'obj-1',
+					(new ShareDraft($fileId, $shareType))->withRecipient($shareWith, $permissions)->withProtection($password, $expiration)
+				);
 				return ['returnsBuiltShare' => $result instanceof IShare, 'calls' => $calls];
 			}
 		);
@@ -260,7 +268,10 @@ class LinkServiceCreateGoldenTest extends TestCase {
 		$this->assertGolden(
 			function () use ($service, &$calls, $description, $duedate) {
 				try {
-					$link = $service->createAndLinkCard('obj-1', 3, 4, 12, 5, 'Card', $description, $duedate);
+					$link = $service->createAndLinkCard(
+						(new LinkTarget('obj-1', 3))->inSchema(4),
+						(new CardDraft('Card', 5))->onBoard(12)->withDetails($description, $duedate)
+					);
 				} finally {
 					$this->lastCalls = $calls;
 				}
@@ -335,7 +346,10 @@ class LinkServiceCreateGoldenTest extends TestCase {
 		$this->assertGolden(
 			function () use ($service, &$calls, $name, $category, $comment) {
 				try {
-					$link = $service->createAndLinkPoi('obj-1', 3, 4, $name, 52.37, 4.89, $category, $comment);
+					$link = $service->createAndLinkPoi(
+						(new LinkTarget('obj-1', 3))->inSchema(4),
+						(new PoiDraft($name))->locatedAt(52.37, 4.89)->withNotes($category, $comment)
+					);
 				} finally {
 					$this->lastCalls = $calls;
 				}
