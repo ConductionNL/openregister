@@ -54,6 +54,7 @@ use UnexpectedValueException;
  *
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\PortalTaskConfig
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\PortalTaskRound
  * @covers \OCA\OpenRegister\Db\Task
  * @covers \OCA\OpenRegister\Service\Flow\FlowNodeResumeState
  * @covers \OCA\OpenRegister\Service\Flow\FlowResumeState
