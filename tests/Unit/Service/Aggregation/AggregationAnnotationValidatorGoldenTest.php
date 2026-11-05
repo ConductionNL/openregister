@@ -22,6 +22,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationJoinAnnotationValidator
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationMetricsAnnotationValidator
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\MetricEntrySite
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationSpecEntry
  */
