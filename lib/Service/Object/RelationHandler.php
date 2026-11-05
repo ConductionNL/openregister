@@ -18,7 +18,6 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
-use Adbar\Dot;
 use Closure;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
@@ -31,7 +30,6 @@ use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * Handles relationship operations for ObjectService.
@@ -97,123 +95,6 @@ class RelationHandler {
 		private readonly ?RelationTypeResolver $relationTypes = null,
 	) {
 	}//end __construct()
-
-	/**
-	 * Apply inversedBy filter to find objects by their inverse relations.
-	 *
-	 * @param array $filters The filters array (passed by reference).
-	 * @param callable $findAllCallback Callback to findAll method.
-	 *
-	 * @psalm-param array<string, mixed> &$filters
-	 * @psalm-param callable(array): array $findAllCallback
-	 *
-	 * @phpstan-param array<string, mixed> &$filters
-	 * @phpstan-param callable(array): array $findAllCallback
-	 *
-	 * @return ((mixed|null|string)[]|mixed|null|string)[]|null
-	 *
-	 * @psalm-return   array<array{name: mixed|null|string,...}|mixed|null|string>|null
-	 * @phpstan-return array<int, string>|null
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)          Uuid::isValid is standard Symfony UID pattern
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex inverse relation filter logic with multiple conditions
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional paths for schema property handling
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Inverse filter resolution requires comprehensive handling
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	public function applyInversedByFilter(array &$filters, callable $findAllCallback): ?array {
-		if ($filters['schema'] === false) {
-			return [];
-		}
-
-		$schema = $this->schemaMapper->find($filters['schema']);
-
-		$filterKeysWithSub = array_filter(
-			array_keys($filters),
-			function ($filter) {
-				if (str_contains($filter, '_') === true) {
-					return true;
-				}
-
-				return false;
-			}
-		);
-
-		$filtersWithSub = array_intersect_key($filters, array_flip($filterKeysWithSub));
-
-		if (empty($filtersWithSub) === true) {
-			return [];
-		}
-
-		$filterDot = new Dot(items: $filtersWithSub, parse: true, delimiter: '_');
-
-		$ids = [];
-
-		$iterator = 0;
-		foreach ($filterDot as $key => $value) {
-			if (isset($schema->getProperties()[$key]['inversedBy']) === false) {
-				continue;
-			}
-
-			$iterator++;
-			$schemaProperties = $schema->getProperties();
-			if (is_array($schemaProperties) === false || isset($schemaProperties[$key]) === false) {
-				continue;
-			}
-
-			$property = $schemaProperties[$key];
-
-			$value = (new Dot($value))->flatten(delimiter: '_');
-
-			// @TODO fix schema finder.
-			$value['schema'] = $property['$ref'] ?? null;
-
-			$objects = $findAllCallback(['filters' => $value]);
-			$foundIds = array_map(
-				function (ObjectEntity $object) use ($property, $key) {
-					$serialized = $object->jsonSerialize();
-					$idRaw = null;
-					if (is_array($property) === true
-						&& isset($property['inversedBy']) === true
-					) {
-						$idRaw = $serialized[$property['inversedBy']];
-					}
-
-					if (Uuid::isValid($idRaw) === true) {
-						return $idRaw;
-					}
-
-					if (filter_var($idRaw, FILTER_VALIDATE_URL) !== false) {
-						$path = explode(separator: '/', string: parse_url($idRaw, PHP_URL_PATH));
-
-						return end($path);
-					}
-
-					return null;
-				},
-				$objects
-			);
-
-			if ($ids === []) {
-				$ids = $foundIds;
-			}
-
-			if ($ids !== []) {
-				$ids = array_intersect($ids, $foundIds);
-			}
-
-			foreach (array_keys($value) as $k) {
-				unset($filters[$key . '_' . $k]);
-			}
-		}//end foreach
-
-		if ($iterator > 0 && $ids === []) {
-			return null;
-		}
-
-		return $ids;
-	}//end applyInversedByFilter()
 
 	/**
 	 * Extract all relationship IDs from objects with circuit breaker.
@@ -353,95 +234,93 @@ class RelationHandler {
 			return [];
 		}
 
-		// **HARD LIMIT**: Cap at 200 relationships total for safety.
-		if (count($relationshipIds) > 200) {
-			$this->logger->warning(
-				message: '[RelationHandler] ⚠️ RELATIONSHIP LOADING: Capping at 200 relationships',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'requested' => count($relationshipIds),
-					'capped' => 200,
-					'reason' => 'prevent_timeout',
-				]
-			);
-			$relationshipIds = array_slice($relationshipIds, 0, 200);
-		}
-
-		$startTime = microtime(true);
-		$batchSize = 50;
-		// Load 50 relationships at a time.
-		$batches = array_chunk($relationshipIds, $batchSize);
-		$loadedObjects = [];
-
-		$this->logger->info(
-			message: '[RelationHandler] 🔄 BULK RELATIONSHIP LOADING: Starting batched load',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'totalRelationships' => count($relationshipIds),
-				'batchSize' => $batchSize,
-				'totalBatches' => count($batches),
-				'strategy' => 'batched_sequential',
-			]
-		);
-
-		foreach ($batches as $batchIndex => $batch) {
-			$batchStart = microtime(true);
-
-			try {
-				$chunkObjects = $this->loadRelationshipChunkOptimized(relationshipIds: $batch);
-
-				foreach ($chunkObjects as $obj) {
-					// Index by both UUID and ID for flexible lookup.
-					$loadedObjects[$obj->getUuid()] = $obj;
-					$loadedObjects[$obj->getId()] = $obj;
-				}
-
-				$batchTime = (microtime(true) - $batchStart) * 1000;
-
-				$this->logger->debug(
-					message: '[RelationHandler] ✅ Batch loaded',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'batch' => ($batchIndex + 1),
-						'idsInBatch' => count($batch),
-						'objectsLoaded' => count($chunkObjects),
-						'batchTime' => round($batchTime, 2) . 'ms',
-					]
-				);
-			} catch (\Exception $e) {
-				$this->logger->error(
-					message: '[RelationHandler] ❌ BATCH LOADING FAILED',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'batch' => ($batchIndex + 1),
-						'error' => $e->getMessage(),
-						'idsInBatch' => count($batch),
-					]
-				);
-				// Continue with next batch instead of failing completely.
-			}//end try
-		}//end foreach
-
-		$totalTime = (microtime(true) - $startTime) * 1000;
-
-		$this->logger->info(
-			message: '[RelationHandler] ✅ BULK RELATIONSHIP LOADING: Completed',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'totalRequested' => count($relationshipIds),
-				'totalLoaded' => count($loadedObjects),
-				'totalTime' => round($totalTime, 2) . 'ms',
-				'avgPerBatch' => round($totalTime / count($batches), 2) . 'ms',
-			]
-		);
-
+		$relationshipIds = $this->cappedRelationshipIds(relationshipIds: $relationshipIds);
+		$batches = array_chunk($relationshipIds, 50);
+		$run = new RelationLoadRun(requested: count($relationshipIds), batches: count($batches), start: microtime(true));
+		$context = ['file' => __FILE__, 'line' => __LINE__];
+		$this->logger->info(message: '[RelationHandler] 🔄 BULK RELATIONSHIP LOADING: Starting batched load', context: $context + $run->startContext());
+		$loadedObjects = $this->loadInBatches(batches: $batches);
+		$done = $context + $run->doneContext(loaded: count($loadedObjects));
+		$this->logger->info(message: '[RelationHandler] ✅ BULK RELATIONSHIP LOADING: Completed', context: $done);
 		return $loadedObjects;
 	}//end bulkLoadRelationshipsBatched()
+
+	/**
+	 * The relationship ids, capped at 200 with a warning, so a load cannot time out.
+	 *
+	 * @param array<string> $relationshipIds The requested ids.
+	 *
+	 * @return array<string>
+	 */
+	private function cappedRelationshipIds(array $relationshipIds): array {
+		if (count($relationshipIds) <= 200) {
+			return $relationshipIds;
+		}
+
+		$this->logger->warning(
+			message: '[RelationHandler] ⚠️ RELATIONSHIP LOADING: Capping at 200 relationships',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'requested' => count($relationshipIds), 'capped' => 200, 'reason' => 'prevent_timeout']
+		);
+		return array_slice($relationshipIds, 0, 200);
+	}//end cappedRelationshipIds()
+
+	/**
+	 * Load the batches in turn; later batches win on a shared key.
+	 *
+	 * @param array<int, array<string>> $batches The ids, 50 per batch.
+	 *
+	 * @return array<int|string, ObjectEntity>
+	 */
+	private function loadInBatches(array $batches): array {
+		$loadedObjects = [];
+		foreach ($batches as $batchIndex => $batch) {
+			$loadedObjects = array_replace($loadedObjects, $this->loadBatch(batch: $batch, number: $batchIndex + 1));
+		}
+
+		return $loadedObjects;
+	}//end loadInBatches()
+
+	/**
+	 * Load one batch, indexed by uuid and by id; a failed batch is logged and loads nothing.
+	 *
+	 * @param array<string> $batch  The ids in the batch.
+	 * @param int           $number The batch number, from 1.
+	 *
+	 * @return array<int|string, ObjectEntity>
+	 */
+	private function loadBatch(array $batch, int $number): array {
+		$batchStart = microtime(true);
+		try {
+			$chunkObjects = $this->loadRelationshipChunkOptimized(relationshipIds: $batch);
+			$loaded = $this->indexedByUuidAndId(objects: $chunkObjects);
+		} catch (\Exception $e) {
+			$failure = ['batch' => $number, 'error' => $e->getMessage(), 'idsInBatch' => count($batch)];
+			$this->logger->error(message: '[RelationHandler] ❌ BATCH LOADING FAILED', context: ['file' => __FILE__, 'line' => __LINE__] + $failure);
+			return [];
+		}
+
+		$batchTime = round((microtime(true) - $batchStart) * 1000, 2) . 'ms';
+		$loadedStats = ['batch' => $number, 'idsInBatch' => count($batch), 'objectsLoaded' => count($chunkObjects), 'batchTime' => $batchTime];
+		$this->logger->debug(message: '[RelationHandler] ✅ Batch loaded', context: ['file' => __FILE__, 'line' => __LINE__] + $loadedStats);
+		return $loaded;
+	}//end loadBatch()
+
+	/**
+	 * Objects keyed by uuid and by id, both pointing at the same object.
+	 *
+	 * @param ObjectEntity[] $objects The objects.
+	 *
+	 * @return array<int|string, ObjectEntity>
+	 */
+	private function indexedByUuidAndId(array $objects): array {
+		$indexed = [];
+		foreach ($objects as $obj) {
+			$indexed[$obj->getUuid()] = $obj;
+			$indexed[$obj->getId()] = $obj;
+		}
+
+		return $indexed;
+	}//end indexedByUuidAndId()
 
 	/**
 	 * Load a chunk of relationships optimized.
@@ -470,12 +349,7 @@ class RelationHandler {
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[RelationHandler] Failed to load relationship chunk',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'idsCount' => count($relationshipIds),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage(), 'idsCount' => count($relationshipIds)]
 			);
 			return [];
 		}
@@ -498,46 +372,36 @@ class RelationHandler {
 	 */
 	public function getContracts(string $objectId, array $filters = []): array {
 		try {
-			// Find the object.
-			$object = $this->objectEntityMapper->find(identifier: $objectId);
-			$objectData = $object->getObject();
-
-			// Extract contracts from object data (typically stored in 'contracts' property).
-			$contracts = $objectData['contracts'] ?? [];
-
-			// Apply pagination.
-			$limit = $filters['_limit'] ?? 30;
-			$offset = $filters['_offset'] ?? 0;
-			$total = 0;
-			if (is_array($contracts) === true) {
-				$total = count($contracts);
-				$contracts = array_slice($contracts, $offset, $limit);
-			}
-
-			return [
-				'results' => $contracts,
-				'total' => $total,
-				'limit' => $limit,
-				'offset' => $offset,
-			];
+			$contracts = ($this->objectEntityMapper->find(identifier: $objectId)->getObject()['contracts'] ?? []);
+			return $this->contractsPage(contracts: $contracts, filters: $filters);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[RelationHandler] Failed to get contracts',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'objectId' => $objectId,
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage(), 'objectId' => $objectId]
 			);
-			return [
-				'results' => [],
-				'total' => 0,
-				'limit' => $filters['_limit'] ?? 30,
-				'offset' => $filters['_offset'] ?? 0,
-			];
-		}//end try
+			return ['results' => [], 'total' => 0, 'limit' => $filters['_limit'] ?? 30, 'offset' => $filters['_offset'] ?? 0];
+		}
 	}//end getContracts()
+
+	/**
+	 * One page of an object's contracts, with the total before paging.
+	 *
+	 * @param mixed $contracts The object's `contracts` value.
+	 * @param array $filters   `_limit` (default 30) and `_offset` (default 0).
+	 *
+	 * @return array{results: mixed, total: int, limit: mixed, offset: mixed}
+	 */
+	private function contractsPage(mixed $contracts, array $filters): array {
+		$limit = $filters['_limit'] ?? 30;
+		$offset = $filters['_offset'] ?? 0;
+		$total = 0;
+		if (is_array($contracts) === true) {
+			$total = count($contracts);
+			$contracts = array_slice($contracts, $offset, $limit);
+		}
+
+		return ['results' => $contracts, 'total' => $total, 'limit' => $limit, 'offset' => $offset];
+	}//end contractsPage()
 
 	/**
 	 * Get objects that this object uses (outgoing relations).
