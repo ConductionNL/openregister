@@ -360,7 +360,7 @@ class ConfigurationSettingsHandler {
 	 *
 	 * @return array<string, mixed> The stored section.
 	 */
-	private function storeSection(string $key, mixed $values): array {
+	private function storeSection(string $key, $values): array {
 		$section = $this->overDefaults(defaults: self::SECTION_DEFAULTS[$key], values: $values);
 		$this->appConfig->setValueString($this->appName, $key, json_encode($section));
 
@@ -375,7 +375,7 @@ class ConfigurationSettingsHandler {
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function overDefaults(array $defaults, mixed $values): array {
+	private function overDefaults(array $defaults, $values): array {
 		if (is_array($values) === false) {
 			$values = [];
 		}
@@ -559,7 +559,7 @@ class ConfigurationSettingsHandler {
 	 *
 	 * @return void
 	 */
-	private function storePartyCap(mixed $party): void {
+	private function storePartyCap($party): void {
 		if (is_array($party) === false) {
 			return;
 		}
@@ -579,7 +579,7 @@ class ConfigurationSettingsHandler {
 	 *
 	 * @return void
 	 */
-	private function storeFlowSettings(mixed $flow): void {
+	private function storeFlowSettings($flow): void {
 		if ($flow === null) {
 			return;
 		}
