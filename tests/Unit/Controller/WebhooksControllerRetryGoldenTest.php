@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\WebhooksController;
 use OCA\OpenRegister\Db\Webhook;
@@ -33,6 +34,9 @@ use Psr\Log\LoggerInterface;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\WebhooksController
+ * @uses \OCA\OpenRegister\Controller\Support\WebhooksMappers
+ * @uses \OCA\OpenRegister\Controller\Support\WebhooksPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\WebhooksControllerServices
  * @uses \OCA\OpenRegister\Db\Webhook
  * @uses \OCA\OpenRegister\Db\WebhookLog
  */
@@ -107,7 +111,7 @@ class WebhooksControllerRetryGoldenTest extends TestCase {
 			$this->calls[] = ['logger.error' => $args];
 		});
 
-		$controller = new WebhooksController(
+		$controller = WebhooksControllerFactory::create(
 			'openregister',
 			$request,
 			$this->webhookMapper($case),
@@ -126,7 +130,7 @@ class WebhooksControllerRetryGoldenTest extends TestCase {
 	public function testRetryFailsClosedWithoutTheSessionCollaborators(): void {
 		$logMapper = $this->createMock(WebhookLogMapper::class);
 		$logMapper->expects($this->never())->method('find');
-		$controller = new WebhooksController(
+		$controller = WebhooksControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(WebhookMapper::class),

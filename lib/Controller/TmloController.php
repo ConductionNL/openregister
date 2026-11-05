@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\TmloControllerServices;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
@@ -69,33 +70,63 @@ class TmloController extends Controller {
 
 
 	/**
+	 * TMLO metadata service
+	 *
+	 * @var TmloService
+	 */
+	private readonly TmloService $tmloService;
+
+	/**
+	 * Object service for querying objects
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Register mapper
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Logger interface
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * The export verb, checked before any archival metadata leaves.
+	 *
+	 * @var ExportGate
+	 */
+	private readonly ExportGate $exportGate;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app name
 	 * @param IRequest $request The request object
-	 * @param TmloService $tmloService TMLO metadata service
-	 * @param ObjectOperationsInterface $objectService Object service for querying objects
-	 * @param RegisterMapperInterface $registerMapper Register mapper
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper
-	 * @param LoggerInterface $logger Logger interface
-	 * @param ExportGate $exportGate The export verb, checked before any archival metadata leaves.
+	 * @param TmloControllerServices $services The tmlo controller services.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-1
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly TmloService $tmloService,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly RegisterMapperInterface $registerMapper,
-		SchemaMapperInterface $schemaMapper,
-		private readonly LoggerInterface $logger,
-		private readonly ExportGate $exportGate,
+		TmloControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->tmloService = $services->records->tmloService;
+		$this->objectService = $services->records->objectService;
+		$this->registerMapper = $services->records->registerMapper;
+		$this->logger = $services->guards->logger;
+		$this->exportGate = $services->guards->exportGate;
 		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper
+			registerMapper: $services->records->registerMapper,
+			schemaMapper: $services->records->schemaMapper
 		);
 	}//end __construct()
 

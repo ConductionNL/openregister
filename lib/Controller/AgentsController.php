@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\AgentsControllerServices;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
@@ -115,10 +116,7 @@ class AgentsController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param AgentMapper $agentMapper Agent mapper for database operations
-	 * @param OrganisationServiceInterface $organisationService Organisation service for multi-tenancy
-	 * @param ToolRegistry $toolRegistry Tool registry for available tools
-	 * @param LoggerInterface $logger Logger for error tracking
+	 * @param AgentsControllerServices $services The agents controller services.
 	 * @param string|null $userId Current user ID for RBAC checks
 	 *
 	 * @return void
@@ -126,20 +124,17 @@ class AgentsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		AgentMapper $agentMapper,
-		OrganisationServiceInterface $organisationService,
-		ToolRegistry $toolRegistry,
-		LoggerInterface $logger,
+		AgentsControllerServices $services,
 		?string $userId,
 	) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
 
 		// Store dependencies for use in controller methods.
-		$this->agentMapper = $agentMapper;
-		$this->organisationService = $organisationService;
-		$this->toolRegistry = $toolRegistry;
-		$this->logger = $logger;
+		$this->agentMapper = $services->agentMapper;
+		$this->organisationService = $services->organisationService;
+		$this->toolRegistry = $services->toolRegistry;
+		$this->logger = $services->logger;
 		$this->userId = $userId;
 	}//end __construct()
 

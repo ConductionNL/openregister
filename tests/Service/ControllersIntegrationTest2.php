@@ -26,6 +26,8 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\GdprEntitiesControllerFactory
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FileExtractionControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FileTextControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\BulkControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\LlmSettingsControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
 use OC\Files\AppData\Factory;
 use OCA\OpenRegister\Controller\BulkController;
 use OCA\OpenRegister\Controller\ChatController;
@@ -1823,7 +1825,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return WebhooksController
 	 */
 	private function buildWebhooksController(): WebhooksController {
-		return new WebhooksController(
+		return WebhooksControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(WebhookMapper::class),
@@ -1979,7 +1981,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return LlmSettingsController
 	 */
 	private function buildLlmSettingsController(): LlmSettingsController {
-		return new LlmSettingsController(
+		return LlmSettingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->db,

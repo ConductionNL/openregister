@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\PortalTaskControllerFactory;
 use OCA\OpenRegister\Controller\PortalTaskController;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\Task;
@@ -52,6 +53,9 @@ use RuntimeException;
  * HTTP status and body translation for every portal task route.
  *
  * @covers \OCA\OpenRegister\Controller\PortalTaskController
+ * @uses \OCA\OpenRegister\Controller\Support\PortalTaskDomain
+ * @uses \OCA\OpenRegister\Controller\Support\PortalTaskPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\PortalTaskControllerServices
  * @covers \OCA\OpenRegister\Exception\PortalSubjectException
  * @covers \OCA\OpenRegister\Db\PortalTaskDelivery
  * @uses \OCA\OpenRegister\Db\Task
@@ -127,7 +131,7 @@ class PortalTaskControllerTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturn($admin);
 
-		return new PortalTaskController('openregister', $this->request, $this->assertion, $this->portal, $this->delivery, $session, $groups, $this->logger);
+		return PortalTaskControllerFactory::create('openregister', $this->request, $this->assertion, $this->portal, $this->delivery, $session, $groups, $this->logger);
 	}//end controller()
 
 	/**

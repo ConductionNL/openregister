@@ -55,6 +55,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\PermissionsAuditControllerServices;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
@@ -74,28 +75,66 @@ use OCP\IRequest;
 class PermissionsAuditController extends Controller {
 
 	/**
+	 * The grantable set, for the declared/undeclared split.
+	 *
+	 * @var PermissionCatalogue
+	 */
+	private readonly PermissionCatalogue $catalogue;
+
+	/**
+	 * The staging switch, reported beside every rule.
+	 *
+	 * @var DenyEnforcementMode
+	 */
+	private readonly DenyEnforcementMode $enforcement;
+
+	/**
+	 * The one reader of the deny grammar.
+	 *
+	 * @var DenyResolver
+	 */
+	private readonly DenyResolver $denyResolver;
+
+	/**
+	 * Resolves which registers and schemas a report covers.
+	 *
+	 * @var PermissionReportScope
+	 */
+	private readonly PermissionReportScope $scope;
+
+	/**
+	 * Assembles the per-rule audit.
+	 *
+	 * @var ScopeAudit
+	 */
+	private readonly ScopeAudit $audit;
+
+	/**
+	 * Answers whether the caller is an admin.
+	 *
+	 * @var AdminGate
+	 */
+	private readonly AdminGate $adminGate;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string         $appName        Application identifier.
 	 * @param IRequest       $request        Active HTTP request.
-	 * @param PermissionCatalogue $catalogue The grantable set, for the declared/undeclared split.
-	 * @param DenyEnforcementMode $enforcement The staging switch, reported beside every rule.
-	 * @param DenyResolver   $denyResolver   The one reader of the deny grammar.
-	 * @param PermissionReportScope $scope Resolves which registers and schemas a report covers.
-	 * @param ScopeAudit     $audit          Assembles the per-rule audit.
-	 * @param AdminGate      $adminGate      Answers whether the caller is an admin.
+	 * @param PermissionsAuditControllerServices $services The permissions audit controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly PermissionCatalogue $catalogue,
-		private readonly DenyEnforcementMode $enforcement,
-		private readonly DenyResolver $denyResolver,
-		private readonly PermissionReportScope $scope,
-		private readonly ScopeAudit $audit = new ScopeAudit(),
-		private readonly AdminGate $adminGate = new AdminGate(),
+		PermissionsAuditControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->catalogue = $services->rules->catalogue;
+		$this->enforcement = $services->rules->enforcement;
+		$this->denyResolver = $services->rules->denyResolver;
+		$this->scope = $services->rules->scope;
+		$this->audit = $services->scope->audit;
+		$this->adminGate = $services->scope->adminGate;
 
 	}//end __construct()
 

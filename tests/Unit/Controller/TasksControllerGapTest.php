@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TasksControllerFactory;
 use OCA\OpenRegister\Controller\TasksController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -29,7 +30,7 @@ class TasksControllerGapTest extends TestCase {
 		$this->taskService = $this->createMock(TaskService::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 
-		$this->controller = new TasksController(
+		$this->controller = TasksControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->taskService,

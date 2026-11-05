@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\LlmSettingsControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\Settings\LlmSettingsController;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
@@ -30,6 +31,9 @@ use Psr\Log\LoggerInterface;
  * fixture.
  *
  * @covers \OCA\OpenRegister\Controller\Settings\LlmSettingsController
+ * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsDomain
+ * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsControllerServices
  */
 class LlmSettingsControllerOllamaModelsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/llm-ollama-models-golden.json';
@@ -112,7 +116,7 @@ class LlmSettingsControllerOllamaModelsGoldenTest extends TestCase {
 			return $bytes . ' bytes';
 		});
 
-		$controller = new LlmSettingsController(
+		$controller = LlmSettingsControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(IDBConnection::class),

@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\LlmSettingsControllerServices;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
@@ -44,28 +45,66 @@ use Psr\Log\LoggerInterface;
  */
 class LlmSettingsController extends Controller {
 	/**
+	 * Database connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * DI container.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * Settings service.
+	 *
+	 * @var AppSettingsInterface
+	 */
+	private readonly AppSettingsInterface $settingsService;
+
+	/**
+	 * Vectorization service.
+	 *
+	 * @var VectorizationServiceInterface
+	 */
+	private readonly VectorizationServiceInterface $vectorizationService;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Reports the saved provider to integriq's connection registry.
+	 *
+	 * @var ConnectionReporter
+	 */
+	private readonly ConnectionReporter $connectionReporter;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param IDBConnection $db Database connection.
-	 * @param ContainerInterface $container DI container.
-	 * @param AppSettingsInterface $settingsService Settings service.
-	 * @param VectorizationServiceInterface $vectorizationService Vectorization service.
-	 * @param LoggerInterface $logger Logger.
-	 * @param ConnectionReporter $connectionReporter Reports the saved provider to integriq's connection registry.
+	 * @param LlmSettingsControllerServices $services The llm settings controller services.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly IDBConnection $db,
-		private readonly ContainerInterface $container,
-		private readonly AppSettingsInterface $settingsService,
-		private readonly VectorizationServiceInterface $vectorizationService,
-		private readonly LoggerInterface $logger,
-		private readonly ConnectionReporter $connectionReporter,
+		LlmSettingsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->db = $services->domain->db;
+		$this->container = $services->platform->container;
+		$this->settingsService = $services->domain->settingsService;
+		$this->vectorizationService = $services->domain->vectorizationService;
+		$this->logger = $services->platform->logger;
+		$this->connectionReporter = $services->domain->connectionReporter;
 	}//end __construct()
 
 	/**

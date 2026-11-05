@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
 use OCA\OpenRegister\Controller\WebhooksController;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
@@ -45,7 +46,7 @@ class WebhooksControllerTest extends TestCase {
 		// Anonymous / non-admin behaviour is verified in dedicated tests below.
 		$this->setupAdminUser();
 
-		$this->controller = new WebhooksController(
+		$this->controller = WebhooksControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->webhookMapper,
@@ -1487,7 +1488,7 @@ class WebhooksControllerTest extends TestCase {
 		$this->nonAdminLogMapper = $webhookLogMapper;
 		$this->nonAdminWebhookService = $webhookService;
 
-		return new WebhooksController(
+		return WebhooksControllerFactory::create(
 			'openregister',
 			$request,
 			$webhookMapper,
@@ -1517,7 +1518,7 @@ class WebhooksControllerTest extends TestCase {
 		$this->nonAdminLogMapper = $webhookLogMapper;
 		$this->nonAdminWebhookService = $webhookService;
 
-		return new WebhooksController(
+		return WebhooksControllerFactory::create(
 			'openregister',
 			$request,
 			$webhookMapper,

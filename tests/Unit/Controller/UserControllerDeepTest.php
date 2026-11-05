@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\UserControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\UserController;
 use OCA\OpenRegister\Service\SecurityService;
@@ -37,7 +38,7 @@ class UserControllerDeepTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new UserController(
+		$this->controller = UserControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->userService,

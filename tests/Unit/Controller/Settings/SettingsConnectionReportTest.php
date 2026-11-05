@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use OCA\OpenRegister\Tests\Unit\Controller\Support\EdepotSettingsControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\LlmSettingsControllerFactory;
 use OCA\OpenRegister\Controller\Settings\ApiTokenSettingsController;
 use OCA\OpenRegister\Controller\Settings\EdepotSettingsController;
 use OCA\OpenRegister\Controller\Settings\LlmSettingsController;
@@ -58,6 +59,9 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Controller\Support\EdepotSettingsPlatform
  * @uses \OCA\OpenRegister\Controller\Support\EdepotSettingsDomain
  * @uses \OCA\OpenRegister\Controller\Support\EdepotSettingsControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsDomain
+ * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsControllerServices
  * @covers \OCA\OpenRegister\Controller\Settings\ApiTokenSettingsController
  * @covers \OCA\OpenRegister\Controller\Settings\EdepotSettingsController
  * @uses \OCA\OpenRegister\Service\Connection\ConnectionReporter
@@ -136,7 +140,7 @@ class SettingsConnectionReportTest extends TestCase {
 
 		$this->request->method('getParams')->willReturn([]);
 
-		return new LlmSettingsController(
+		return LlmSettingsControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			db: $this->createMock(originalClassName: IDBConnection::class),
