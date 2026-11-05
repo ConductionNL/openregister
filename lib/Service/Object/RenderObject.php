@@ -2746,7 +2746,12 @@ class RenderObject {
 		}
 
 		try {
-			$subject = new LanguageMetaSubject(entity: $entity, schema: $schema, register: $register, preResolveData: $preResolveData);
+			$subject = new LanguageMetaSubject(
+				entity: $entity,
+				schema: $schema,
+				registerDefault: ($register?->getDefaultLanguage() ?? 'nl'),
+				preResolveData: $preResolveData
+			);
 			return $this->attachLanguageMeta(objectData: $objectData, subject: $subject);
 		} catch (\Throwable $e) {
 			$this->logRenderFailure(failure: 'languageMeta attach failed for', entity: $entity, error: $e);
@@ -3392,7 +3397,7 @@ class RenderObject {
 	 * its translation in the served language.
 	 *
 	 * @param array               $objectData The rendered object data
-	 * @param LanguageMetaSubject $subject    The entity, schema, register and raw data
+	 * @param LanguageMetaSubject $subject    The entity, schema, register default and raw data
 	 *
 	 * @return array The object data with the envelope, or unchanged without translatable properties
 	 *
@@ -3420,7 +3425,7 @@ class RenderObject {
 	 * The source language comes from the object body override, then the schema
 	 * property, then the register default ('nl' without a register).
 	 *
-	 * @param LanguageMetaSubject $subject The entity, schema, register and raw data
+	 * @param LanguageMetaSubject $subject The entity, schema, register default and raw data
 	 *
 	 * @return array<string, array{served: string, sourceLanguage: string, isSource: bool, status: string}>
 	 *
@@ -3432,7 +3437,6 @@ class RenderObject {
 			return [];
 		}
 
-		$registerDefault = ($subject->register?->getDefaultLanguage() ?? 'nl');
 		$served = $this->languageService->getPreferredLanguage();
 		$languageMeta = [];
 		foreach ($translatableProps as $property) {
@@ -3440,7 +3444,7 @@ class RenderObject {
 				schema: $subject->schema,
 				preResolveData: $subject->preResolveData,
 				property: $property,
-				registerDefault: $registerDefault
+				registerDefault: $subject->registerDefault
 			);
 			$languageMeta[$property] = $this->languageEntry(served: $served, sourceLanguage: $sourceLanguage);
 		}

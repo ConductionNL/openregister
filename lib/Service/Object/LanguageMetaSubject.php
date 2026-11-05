@@ -19,26 +19,25 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 
 /**
- * An entity with its schema, register and object data before translations were resolved.
+ * An entity with its schema, its register's default language and its object data before translations were resolved.
  */
 final readonly class LanguageMetaSubject {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectEntity         $entity         The rendered entity.
-	 * @param Schema               $schema         The entity's schema.
-	 * @param Register|null        $register       The entity's register, when found.
-	 * @param array<string, mixed> $preResolveData The object data with its `_translationMeta` block intact.
+	 * @param ObjectEntity         $entity          The rendered entity.
+	 * @param Schema               $schema          The entity's schema.
+	 * @param string               $registerDefault The register's default language ('nl' without a register).
+	 * @param array<string, mixed> $preResolveData  The object data with its `_translationMeta` block intact.
 	 */
 	public function __construct(
 		public ObjectEntity $entity,
 		public Schema $schema,
-		public ?Register $register,
+		public string $registerDefault,
 		public array $preResolveData,
 	) {
 	}//end __construct()

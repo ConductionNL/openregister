@@ -38,6 +38,7 @@ use ReflectionMethod;
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects
  * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectDefaults
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectOwnership
  */
 class SaveObjectsSingleSchemaPreparationGoldenTest extends TestCase {
 

@@ -21,25 +21,23 @@ namespace OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Db\Schema;
 
 /**
- * Register, schema, owner and organisation shared by every object of one bulk save.
+ * Register, schema and ownership shared by every object of one bulk save.
  */
 final readonly class BulkObjectDefaults {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param int|string  $registerId   The register id.
-	 * @param int|string  $schemaId     The schema id.
-	 * @param Schema      $schema       The schema used for metadata hydration and relation scanning.
-	 * @param string|null $owner        The owner uid taken from the session.
-	 * @param string|null $organisation The active organisation.
+	 * @param int|string          $registerId The register id.
+	 * @param int|string          $schemaId   The schema id.
+	 * @param Schema              $schema     The schema used for metadata hydration and relation scanning.
+	 * @param BulkObjectOwnership $ownership  The owner and organisation to stamp.
 	 */
 	public function __construct(
 		public int|string $registerId,
 		public int|string $schemaId,
 		public Schema $schema,
-		public ?string $owner,
-		public ?string $organisation,
+		public BulkObjectOwnership $ownership,
 	) {
 	}//end __construct()
 }//end class

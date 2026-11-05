@@ -74,6 +74,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Object\SaveObject\BulkObjectSlugs;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectDefaults;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectOwnership;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -1904,8 +1905,7 @@ class SaveObjects {
 			registerId: $registerId,
 			schemaId: $schemaId,
 			schema: $schemaObj,
-			owner: $defaultOwner,
-			organisation: $defaultOrganisation
+			ownership: new BulkObjectOwnership(owner: $defaultOwner, organisation: $defaultOrganisation)
 		);
 
 		// PERFORMANCE OPTIMIZATION: Process all objects with pre-calculated values.
@@ -2041,8 +2041,8 @@ class SaveObjects {
 		$selfData['register'] = $selfData['register'] ?? $defaults->registerId;
 		$selfData['schema'] = $selfData['schema'] ?? $defaults->schemaId;
 		$selfData = $this->withBulkObjectId(selfData: $selfData, object: $object);
-		$selfData['owner'] = $defaults->owner;
-		$selfData['organisation'] = $defaults->organisation;
+		$selfData['owner'] = $defaults->ownership->owner;
+		$selfData['organisation'] = $defaults->ownership->organisation;
 
 		return $selfData;
 	}//end stampBulkSelfData()
