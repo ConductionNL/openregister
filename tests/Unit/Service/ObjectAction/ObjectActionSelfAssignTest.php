@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionAudit;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionInputs;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
@@ -276,7 +277,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 
 		return new ObjectActionRunner(
 			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-			new ObjectActionGate($permissions, $session, $l10n),
+			new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)),
 			new ObjectActionInputs(new OasRequestValidator()),
 			$this->createMock(ObjectActionStepsFlow::class),
 			$audit,
@@ -469,7 +470,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 		$list = new ObjectActionList(
 			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-			new ObjectActionGate($permissions, $session, $l10n),
+			new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)),
 			new ObjectActionInputs(new OasRequestValidator()),
 			$this->createMock(TransitionEngine::class),
 			$l10n
@@ -584,7 +585,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 			$l10n->method('t')->willReturnArgument(0);
 			$list = new ObjectActionList(
 				new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-				new ObjectActionGate($permissions, $session, $l10n),
+				new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)),
 				new ObjectActionInputs(new OasRequestValidator()),
 				$this->createMock(TransitionEngine::class),
 				$l10n
@@ -867,7 +868,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 			$l10n->method('t')->willReturnArgument(0);
 			$list = new ObjectActionList(
 				new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-				new ObjectActionGate($permissions, $session, $l10n),
+				new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)),
 				new ObjectActionInputs(new OasRequestValidator()),
 				$this->createMock(TransitionEngine::class),
 				$l10n
