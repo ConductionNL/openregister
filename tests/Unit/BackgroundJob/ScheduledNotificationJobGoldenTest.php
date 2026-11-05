@@ -40,6 +40,8 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\BackgroundJob\ScheduledNotificationJob
  * @uses   \OCA\OpenRegister\Service\Notification\ScheduledFilterEvaluator
  * @uses   \OCA\OpenRegister\Service\Notification\ScheduledFilterParser
+ * @uses   \OCA\OpenRegister\Service\Notification\ScheduledFilterPosition
+ * @uses   \OCA\OpenRegister\Service\Notification\ScheduledFilterGrammar
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\BackgroundJob\ScheduledFire
  * @uses   \OCA\OpenRegister\Db\Schema
