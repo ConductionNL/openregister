@@ -2667,14 +2667,10 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return array Array of ObjectEntity objects.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-limit-supports-an-explicit-unlimited-value
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
 	 */
 	private function searchAcrossMultipleTablesSequential(array $query, array $registerSchemaPairs): array {
-		$allResults = [];
-
 		// Each table answers the merged question's first `offset + limit` rows,
 		// the same over-fetch buildUnionBatchQuery() uses for UNION batches.
 		$pageQuery = $query;
@@ -2690,64 +2686,10 @@ class MagicMapper extends AbstractObjectMapper {
 		$propertyFields = $this->orderedPropertyFields(query: $pageQuery);
 		$query['_order'] = $this->buildSequentialTableOrder(orderKeys: $orderKeys, propertyFields: $propertyFields);
 
+		$allResults = [];
 		foreach ($registerSchemaPairs as $pair) {
-			$register = $pair['register'] ?? null;
-			$schema = $pair['schema'] ?? null;
-
-			if ($register === null || $schema === null) {
-				$this->logger->warning(
-					message: '[MagicMapper] Invalid register+schema pair in cross-table search',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'pair' => $pair]
-				);
-				continue;
-			}
-
-			try {
-				$this->logger->debug(
-					message: '[MagicMapper] Searching table (sequential)',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schema->getId()]
-				);
-
-				// Search in this table.
-				$results = $this->searchObjectsInRegisterSchemaTable(
-					query: $query,
-					register: $register,
-					schema: $schema
-				);
-
-				$this->logger->debug(
-					message: '[MagicMapper] Table search completed',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'schemaId' => $schema->getId(),
-						'schemaTitle' => $schema->getTitle(),
-						'resultCount' => count($results),
-					]
-				);
-
-				// Add schema information to each result for context.
-				foreach ($results as $result) {
-					$result->setSchema((string)$schema->getId());
-					$result->setRegister((string)$register->getId());
-				}
-
-				$allResults = array_merge($allResults, $results);
-			} catch (Exception $e) {
-				$this->logger->error(
-					message: '[MagicMapper] Failed to search in register+schema table',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'registerId' => $register->getId(),
-						'schemaId' => $schema->getId(),
-						'error' => $e->getMessage(),
-					]
-				);
-				// Continue with other tables even if one fails.
-				continue;
-			}//end try
-		}//end foreach
+			$allResults = array_merge($allResults, $this->searchSequentialPair(query: $query, pair: $pair));
+		}
 
 		$this->logger->debug(
 			message: '[MagicMapper] Sequential search completed',
@@ -2763,9 +2705,11 @@ class MagicMapper extends AbstractObjectMapper {
 		);
 
 		// The caller's page, cut once from the merged rows.
-		$offset = max(0, (int)($pageQuery['_offset'] ?? 0));
-		$normalisedLimit = QueryLimit::normalise($pageQuery['_limit'] ?? null);
-		$allResults = array_slice($allResults, $offset, $normalisedLimit);
+		$allResults = array_slice(
+			$allResults,
+			max(0, (int)($pageQuery['_offset'] ?? 0)),
+			QueryLimit::normalise($pageQuery['_limit'] ?? null)
+		);
 
 		$this->logger->debug(
 			message: '[MagicMapper] Cross-table search completed',
@@ -2779,6 +2723,89 @@ class MagicMapper extends AbstractObjectMapper {
 
 		return $allResults;
 	}//end searchAcrossMultipleTablesSequential()
+
+	/**
+	 * The rows one register+schema pair contributes to a sequential search.
+	 *
+	 * An invalid pair, or a table whose search fails, is logged and
+	 * contributes no rows, so the other tables still answer.
+	 *
+	 * @param array $query The per-table query.
+	 * @param array $pair  The register+schema pair.
+	 *
+	 * @return ObjectEntity[] The table's rows, tagged with their register and schema.
+	 */
+	private function searchSequentialPair(array $query, array $pair): array {
+		$register = $pair['register'] ?? null;
+		$schema = $pair['schema'] ?? null;
+
+		if ($register === null || $schema === null) {
+			$this->logger->warning(
+				message: '[MagicMapper] Invalid register+schema pair in cross-table search',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'pair' => $pair]
+			);
+			return [];
+		}
+
+		try {
+			return $this->searchSequentialTable(query: $query, pair: $pair);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[MagicMapper] Failed to search in register+schema table',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'registerId' => $register->getId(),
+					'schemaId' => $schema->getId(),
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
+		}
+	}//end searchSequentialPair()
+
+	/**
+	 * Search one register+schema table and tag its rows with that pair.
+	 *
+	 * @param array $query The per-table query.
+	 * @param array $pair  The register+schema pair, both set.
+	 *
+	 * @return ObjectEntity[] The table's rows.
+	 */
+	private function searchSequentialTable(array $query, array $pair): array {
+		$register = $pair['register'];
+		$schema = $pair['schema'];
+
+		$this->logger->debug(
+			message: '[MagicMapper] Searching table (sequential)',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schema->getId()]
+		);
+
+		$results = $this->searchObjectsInRegisterSchemaTable(
+			query: $query,
+			register: $register,
+			schema: $schema
+		);
+
+		$this->logger->debug(
+			message: '[MagicMapper] Table search completed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schemaId' => $schema->getId(),
+				'schemaTitle' => $schema->getTitle(),
+				'resultCount' => count($results),
+			]
+		);
+
+		// Add schema information to each result for context.
+		foreach ($results as $result) {
+			$result->setSchema((string)$schema->getId());
+			$result->setRegister((string)$register->getId());
+		}
+
+		return $results;
+	}//end searchSequentialTable()
 
 	/**
 	 * The property fields a query orders by, keyed by their column name.
