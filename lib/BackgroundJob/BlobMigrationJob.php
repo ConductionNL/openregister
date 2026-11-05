@@ -289,9 +289,7 @@ class BlobMigrationJob extends TimedJob {
 
 			$stmt = $db->prepare($sql);
 			$stmt->execute();
-			$result = $stmt->fetch();
-
-			return $result !== false;
+			return $stmt->fetch() !== false;
 		} catch (Exception $e) {
 			return false;
 		}//end try
