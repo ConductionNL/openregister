@@ -27,20 +27,20 @@
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/AppInfo/Application.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/AppInfo/Application.php"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/BackgroundJob/DestructionCheckJob.php" method="sendPreDestructionNotifications"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/BackgroundJob/NotificationQueueFlushJob.php"/>
-  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/BackgroundJob/ScheduledNotificationJob.php"/>
-  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/BackgroundJob/ScheduledNotificationJob.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/BackgroundJob/ScheduledNotificationJob.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/BackgroundJob/ScheduledNotificationJob.php" method="fire"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/BackgroundJob/ScheduledNotificationJob.php" method="fire"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/BackgroundJob/ScheduledNotificationJob.php" method="fire"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/BackgroundJob/ScheduledNotificationJob.php" method="resolveWatchedFields"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/BackgroundJob/ScheduledNotificationJob.php" method="resolveWatchedFields"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Notifications/BackgroundJob/NotificationQueueFlushJob.php"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Notifications/BackgroundJob/ScheduledNotificationJob.php"/>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Notifications/BackgroundJob/ScheduledNotificationJob.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Notifications/BackgroundJob/ScheduledNotificationJob.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Notifications/BackgroundJob/ScheduledNotificationJob.php" method="fire"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Notifications/BackgroundJob/ScheduledNotificationJob.php" method="fire"/>
+  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Notifications/BackgroundJob/ScheduledNotificationJob.php" method="fire"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Notifications/BackgroundJob/ScheduledNotificationJob.php" method="resolveWatchedFields"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Notifications/BackgroundJob/ScheduledNotificationJob.php" method="resolveWatchedFields"/>
   <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/BackgroundJob/TransferExecutionJob.php" method="__construct"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/BackgroundJob/TransferExecutionJob.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Command/DedupCollidedSchemasCommand.php" method="execute"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Command/DedupCollidedSchemasCommand.php" method="execute"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Command/GenerateVapidKeys.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Notifications/Command/GenerateVapidKeys.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Command/ReconcileMagicTablesCommand.php" method="execute"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Command/ReconcileMagicTablesCommand.php" method="execute"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Command/ReconcileMagicTablesCommand.php" method="execute"/>
@@ -162,7 +162,7 @@
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Listener/ObjectEventProxyListener.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Listener/ObjectEventProxyListener.php" method="traceEnabled"/>
   <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Listener/ObjectEventProxyListener.php" method="flushTrace"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Listener/SystemEntityNotificationListener.php" method="extractEventData"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Notifications/Listener/SystemEntityNotificationListener.php" method="extractEventData"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Mcp/AttributeToolScanner.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Mcp/AttributeToolScanner.php" method="scanClass"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Mcp/AttributeToolScanner.php" method="mapReflectionType"/>
@@ -304,38 +304,38 @@
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Lifecycle/TransitionEngine.php" method="transition"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/Lifecycle/TransitionEngine.php" method="transition"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Search/Service/MapsOverviewService.php" method="deriveLabel"/>
-  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Service/Notification/AnnotationNotificationDispatcher.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Notification/AnnotationNotificationDispatcher.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Notification/AnnotationNotificationDispatcher.php" method="deliveryWindowOrDigestSuppresses"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/Notification/AnnotationNotificationDispatcher.php" method="deliveryWindowOrDigestSuppresses"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/Notification/AnnotationNotificationDispatcher.php" method="deliveryWindowOrDigestSuppresses"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Notification/AnnotationNotificationDispatcher.php" method="dispatchQueued"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/Notification/AnnotationNotificationDispatcher.php" method="dispatchQueued"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/Notification/AnnotationNotificationDispatcher.php" method="matches"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Notification/AnnotationNotificationDispatcher.php"/>
-  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/Notification/AnnotationNotificationDispatcher.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Notification/AnnotationNotificationDispatcher.php" method="resolveRelationDeeplink"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Notification/AnnotationNotificationDispatcher.php" method="buildObjectDetailLink"/>
-  <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Service/Notification/AnnotationNotificationDispatcher.php" method="emitNotification"/>
-  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Notification/AnnotationNotificationDispatcher.php"/>
-  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/Notification/DigestScheduleEvaluator.php"/>
-  <violation rule="PHPMD\Rule\Design\LongClass" file="lib/Service/Notification/NotificationAnnotationValidator.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Notification/NotificationAnnotationValidator.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Notification/NotificationAnnotationValidator.php" method="validateActions"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/Notification/NotificationAnnotationValidator.php" method="validateActions"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Notification/NotificationAnnotationValidator.php" method="validateCriticalAndDigest"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/Notification/NotificationAnnotationValidator.php" method="validateCriticalAndDigest"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/Notification/NotificationAnnotationValidator.php" method="validateCriticalAndDigest"/>
-  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/Notification/NotificationAnnotationValidator.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Notification/NotificationAnnotationValidator.php" method="validateMessage"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Notification/NotificationAnnotationValidator.php" method="validateScheduledFilterEntry"/>
-  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/Notification/NotificationDeliveryWindowService.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Notification/NotificationDeliveryWindowService.php" method="validateAndNormalize"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/Notification/NotificationDeliveryWindowService.php" method="validateAndNormalize"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Notification/NotificationDeliveryWindowService.php" method="isInsideWindow"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/Notification/NotificationDeliveryWindowService.php" method="isInsideWindow"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Notification/ScheduledFilterEvaluator.php" method="entryMatches"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Notification/SystemEntityObjectAdapter.php" method="__construct"/>
+  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php" method="deliveryWindowOrDigestSuppresses"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php" method="deliveryWindowOrDigestSuppresses"/>
+  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php" method="deliveryWindowOrDigestSuppresses"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php" method="dispatchQueued"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php" method="dispatchQueued"/>
+  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php" method="matches"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php"/>
+  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php" method="resolveRelationDeeplink"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php" method="buildObjectDetailLink"/>
+  <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php" method="emitNotification"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php"/>
+  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Notifications/Service/Notification/DigestScheduleEvaluator.php"/>
+  <violation rule="PHPMD\Rule\Design\LongClass" file="lib/Notifications/Service/Notification/NotificationAnnotationValidator.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Notifications/Service/Notification/NotificationAnnotationValidator.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Notifications/Service/Notification/NotificationAnnotationValidator.php" method="validateActions"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Notifications/Service/Notification/NotificationAnnotationValidator.php" method="validateActions"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Notifications/Service/Notification/NotificationAnnotationValidator.php" method="validateCriticalAndDigest"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Notifications/Service/Notification/NotificationAnnotationValidator.php" method="validateCriticalAndDigest"/>
+  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Notifications/Service/Notification/NotificationAnnotationValidator.php" method="validateCriticalAndDigest"/>
+  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Notifications/Service/Notification/NotificationAnnotationValidator.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Notifications/Service/Notification/NotificationAnnotationValidator.php" method="validateMessage"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Notifications/Service/Notification/NotificationAnnotationValidator.php" method="validateScheduledFilterEntry"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Notifications/Service/Notification/NotificationDeliveryWindowService.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Notifications/Service/Notification/NotificationDeliveryWindowService.php" method="validateAndNormalize"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Notifications/Service/Notification/NotificationDeliveryWindowService.php" method="validateAndNormalize"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Notifications/Service/Notification/NotificationDeliveryWindowService.php" method="isInsideWindow"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Notifications/Service/Notification/NotificationDeliveryWindowService.php" method="isInsideWindow"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Notifications/Service/Notification/ScheduledFilterEvaluator.php" method="entryMatches"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Notifications/Service/Notification/SystemEntityObjectAdapter.php" method="__construct"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Object/DeleteObject.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Object/LockHandler.php"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Service/Object/PermissionHandler.php"/>
@@ -443,9 +443,9 @@
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/VocabularyImportService.php" method="extractLangMap"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/VocabularyImportService.php" method="extractLangMap"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/VocabularyImportService.php" method="extractIdRefs"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/WebPush/WebPushService.php" method="deliver"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/WebPush/WebPushService.php" method="deliver"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/WebPush/WebPushService.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Notifications/Service/WebPush/WebPushService.php" method="deliver"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Notifications/Service/WebPush/WebPushService.php" method="deliver"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Notifications/Service/WebPush/WebPushService.php"/>
   <violation rule="PHPMD\Rule\Design\LongClass" file="lib/Service/WebhookService.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/WebhookService.php" method="assertSafeWebhookUri"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/WebhookService.php" method="assertSafeWebhookUri"/>

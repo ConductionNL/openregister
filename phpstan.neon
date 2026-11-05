@@ -187,7 +187,7 @@ parameters:
         -
             message: '#Parameter \#[12] \$(entity|systemSlug) of method .+SystemEntityObjectAdapter::__construct\(\) is not optional#'
             identifier: parameter.notOptional
-            path: lib/Service/Notification/SystemEntityObjectAdapter.php
+            path: lib/Notifications/Service/Notification/SystemEntityObjectAdapter.php
 
         # OCP types IDBConnection::executeQuery()'s $params as `string[]`, but
         # bound parameters are legitimately int/float/null too — the narrow stub
