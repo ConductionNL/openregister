@@ -1,0 +1,328 @@
+{
+    "defaults": {
+        "id": null,
+        "uuid": null,
+        "slug": null,
+        "name": null,
+        "description": null,
+        "users": [],
+        "groups": [],
+        "owner": null,
+        "active": true,
+        "parent": null,
+        "children": [],
+        "quota": {
+            "storage": null,
+            "bandwidth": null,
+            "requests": null,
+            "users": null,
+            "objects": null,
+            "objectsSchema": null,
+            "groups": null
+        },
+        "usage": {
+            "storage": null,
+            "bandwidth": null,
+            "requests": null,
+            "objects": null,
+            "users": 0,
+            "groups": 0
+        },
+        "authorization": {
+            "register": {
+                "create": [],
+                "read": [],
+                "update": [],
+                "delete": []
+            },
+            "schema": {
+                "create": [],
+                "read": [],
+                "update": [],
+                "delete": []
+            },
+            "object": {
+                "create": [],
+                "read": [],
+                "update": [],
+                "delete": []
+            },
+            "view": {
+                "create": [],
+                "read": [],
+                "update": [],
+                "delete": []
+            },
+            "agent": {
+                "create": [],
+                "read": [],
+                "update": [],
+                "delete": []
+            },
+            "configuration": {
+                "create": [],
+                "read": [],
+                "update": [],
+                "delete": []
+            },
+            "application": {
+                "create": [],
+                "read": [],
+                "update": [],
+                "delete": []
+            },
+            "object_publish": [],
+            "agent_use": [],
+            "dashboard_view": [],
+            "llm_use": [],
+            "grant_manage": []
+        },
+        "status": "active",
+        "environment": "production",
+        "type": "organisation",
+        "isLocalTenant": true,
+        "remoteInstanceUrl": null,
+        "contactEmail": null,
+        "defaultPermissionLevel": null,
+        "qualityScore": null,
+        "qualityStatus": null,
+        "summary": null,
+        "oin": null,
+        "tooi": null,
+        "rsin": null,
+        "kvk": null,
+        "legalName": null,
+        "pki": null,
+        "image": null,
+        "registrationStatus": null,
+        "mergedInto": null,
+        "mergedAt": null,
+        "provisionedAt": null,
+        "suspendedAt": null,
+        "deprovisionedAt": null,
+        "retainedAt": null,
+        "created": null,
+        "updated": null,
+        "_mail": null,
+        "_contacts": null,
+        "_notes": null,
+        "_todos": null,
+        "_calendar": null,
+        "_talk": null,
+        "_deck": null
+    },
+    "all null": {
+        "id": null,
+        "uuid": null,
+        "slug": null,
+        "name": null,
+        "description": null,
+        "users": [],
+        "groups": [],
+        "owner": null,
+        "active": true,
+        "parent": null,
+        "children": [],
+        "quota": {
+            "storage": null,
+            "bandwidth": null,
+            "requests": null,
+            "users": null,
+            "objects": null,
+            "objectsSchema": null,
+            "groups": null
+        },
+        "usage": {
+            "storage": null,
+            "bandwidth": null,
+            "requests": null,
+            "objects": null,
+            "users": 0,
+            "groups": 0
+        },
+        "authorization": {
+            "register": {
+                "create": [],
+                "read": [],
+                "update": [],
+                "delete": []
+            },
+            "schema": {
+                "create": [],
+                "read": [],
+                "update": [],
+                "delete": []
+            },
+            "object": {
+                "create": [],
+                "read": [],
+                "update": [],
+                "delete": []
+            },
+            "view": {
+                "create": [],
+                "read": [],
+                "update": [],
+                "delete": []
+            },
+            "agent": {
+                "create": [],
+                "read": [],
+                "update": [],
+                "delete": []
+            },
+            "configuration": {
+                "create": [],
+                "read": [],
+                "update": [],
+                "delete": []
+            },
+            "application": {
+                "create": [],
+                "read": [],
+                "update": [],
+                "delete": []
+            },
+            "object_publish": [],
+            "agent_use": [],
+            "dashboard_view": [],
+            "llm_use": [],
+            "grant_manage": []
+        },
+        "status": "active",
+        "environment": "production",
+        "type": "organisation",
+        "isLocalTenant": true,
+        "remoteInstanceUrl": null,
+        "contactEmail": null,
+        "defaultPermissionLevel": null,
+        "qualityScore": null,
+        "qualityStatus": null,
+        "summary": null,
+        "oin": null,
+        "tooi": null,
+        "rsin": null,
+        "kvk": null,
+        "legalName": null,
+        "pki": null,
+        "image": null,
+        "registrationStatus": null,
+        "mergedInto": null,
+        "mergedAt": null,
+        "provisionedAt": null,
+        "suspendedAt": null,
+        "deprovisionedAt": null,
+        "retainedAt": null,
+        "created": null,
+        "updated": null,
+        "_mail": null,
+        "_contacts": null,
+        "_notes": null,
+        "_todos": null,
+        "_calendar": null,
+        "_talk": null,
+        "_deck": null
+    },
+    "all set": {
+        "id": null,
+        "uuid": "v-uuid",
+        "slug": "v-slug",
+        "name": "v-name",
+        "description": "v-description",
+        "users": {
+            "1": "users",
+            "2": "users",
+            "3": "users"
+        },
+        "groups": {
+            "1": "groups"
+        },
+        "owner": "v-owner",
+        "active": false,
+        "parent": "v-parent",
+        "children": {
+            "1": "children",
+            "2": "children",
+            "3": "children"
+        },
+        "quota": {
+            "storage": 12,
+            "bandwidth": 14,
+            "requests": 12,
+            "users": 9,
+            "objects": 11,
+            "objectsSchema": "v-objectQuotaSchema",
+            "groups": null
+        },
+        "usage": {
+            "storage": null,
+            "bandwidth": null,
+            "requests": null,
+            "objects": null,
+            "users": 3,
+            "groups": 1
+        },
+        "authorization": {
+            "1": "authorization",
+            "2": "authorization"
+        },
+        "status": "v-status",
+        "environment": "v-environment",
+        "type": "v-type",
+        "isLocalTenant": false,
+        "remoteInstanceUrl": "v-remoteInstanceUrl",
+        "contactEmail": "v-contactEmail",
+        "defaultPermissionLevel": "v-defaultPermissionLevel",
+        "qualityScore": 12,
+        "qualityStatus": "v-qualityStatus",
+        "summary": "v-summary",
+        "oin": "v-oin",
+        "tooi": "v-tooi",
+        "rsin": "v-rsin",
+        "kvk": "v-kvk",
+        "legalName": "v-legalName",
+        "pki": "v-pki",
+        "image": "v-image",
+        "registrationStatus": "v-registrationStatus",
+        "mergedInto": "v-mergedInto",
+        "mergedAt": "2026-01-02T03:04:05+00:00",
+        "provisionedAt": "2026-01-02T03:04:05+00:00",
+        "suspendedAt": "2026-01-02T03:04:05+00:00",
+        "deprovisionedAt": "2026-01-02T03:04:05+00:00",
+        "retainedAt": "2026-01-02T03:04:05+00:00",
+        "created": "2026-01-02T03:04:05+00:00",
+        "updated": "2026-01-02T03:04:05+00:00",
+        "_mail": {
+            "1": "mail",
+            "2": "mail"
+        },
+        "_contacts": {
+            "1": "contacts",
+            "2": "contacts",
+            "3": "contacts"
+        },
+        "_notes": {
+            "1": "notes",
+            "2": "notes",
+            "3": "notes"
+        },
+        "_todos": {
+            "1": "todos",
+            "2": "todos",
+            "3": "todos"
+        },
+        "_calendar": {
+            "1": "calendar",
+            "2": "calendar",
+            "3": "calendar"
+        },
+        "_talk": {
+            "1": "talk",
+            "2": "talk"
+        },
+        "_deck": {
+            "1": "deck",
+            "2": "deck"
+        }
+    }
+}

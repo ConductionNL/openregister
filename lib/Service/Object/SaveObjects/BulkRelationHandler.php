@@ -18,7 +18,7 @@
 
 namespace OCA\OpenRegister\Service\Object\SaveObjects;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\RelationDetectionTrait;
@@ -49,14 +49,14 @@ class BulkRelationHandler {
 	 * Constructor for BulkRelationHandler.
 	 *
 	 * @param BulkValidationHandler $bulkValidHandler Handler for bulk validation operations.
-	 * @param MagicMapper $objectEntityMapper Mapper for object entities.
+	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entities.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
 		private readonly BulkValidationHandler $bulkValidHandler,
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

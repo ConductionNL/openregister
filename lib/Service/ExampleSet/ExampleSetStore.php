@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;

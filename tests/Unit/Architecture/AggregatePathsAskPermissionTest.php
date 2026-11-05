@@ -66,6 +66,7 @@ class AggregatePathsAskPermissionTest extends TestCase {
 		'lib/Controller/AggregationController.php' => 'delegates to AggregationRunner',
 		'lib/Controller/ObjectsController.php' => 'delegates to ObjectService and FacetHandler',
 		'lib/Db/MagicMapper.php' => 'delegates to its handlers',
+		'lib/Db/MagicMapperInterface.php' => 'the mapper\'s interface, declares, summarises nothing',
 		'lib/Service/ObjectService.php' => 'delegates to FacetHandler and the mappers',
 		'lib/Db/AbstractObjectMapper.php' => 'base class; concrete mappers carry the gate',
 

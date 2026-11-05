@@ -33,7 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use DateTimeInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -60,7 +60,7 @@ class RematerialiseCalculationsCommand extends Command {
 	 *
 	 * @param RegisterMapperInterface $registerMapper Register lookup mapper.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param MagicMapper $magicMapper Magic table mapper for objects.
+	 * @param MagicMapperInterface $magicMapper Magic table mapper for objects.
 	 * @param ObjectOperationsInterface $objectService Object persistence service.
 	 * @param CalculationEvaluatorInterface $evaluator Expression evaluator.
 	 * @param ReferenceResolver $references Cross-object reference pre-resolver.
@@ -76,7 +76,7 @@ class RematerialiseCalculationsCommand extends Command {
 	public function __construct(
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly CalculationEvaluatorInterface $evaluator,
 		private readonly ReferenceResolver $references,

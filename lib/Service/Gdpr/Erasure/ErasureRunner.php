@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Service\Gdpr\Erasure;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ErasurePreview;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -80,7 +80,7 @@ class ErasureRunner {
 	 * @param ErasurePreviewService     $previewService The preview, recomputed for the digest check.
 	 * @param ErasurePreviewStore       $store          The recorded preview and its approval.
 	 * @param DataSubjectRequestService $subjects       Discovery and the audited pseudonymise write.
-	 * @param MagicMapper               $objectMapper   Object loads and the final delete.
+	 * @param MagicMapperInterface               $objectMapper   Object loads and the final delete.
 	 * @param SchemaMapperInterface              $schemaMapper   Schema resolution for the destruction scope.
 	 * @param DestroyRightService       $destroyRight   Whether this caller may destroy.
 	 * @param RetentionClockService     $clockService   Whether the clocks allow it.
@@ -99,7 +99,7 @@ class ErasureRunner {
 		private readonly ErasurePreviewService $previewService,
 		private readonly ErasurePreviewStore $store,
 		private readonly DataSubjectRequestService $subjects,
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly DestroyRightService $destroyRight,
 		private readonly RetentionClockService $clockService,
