@@ -159,11 +159,6 @@
       <code><![CDATA[public function __construct(Entity $entity, string $systemSlug) {]]></code>
     </ConstructorSignatureMismatch>
   </file>
-  <file src="lib/Service/OasService.php">
-    <UnsupportedPropertyReferenceUsage>
-      <code><![CDATA[$operation = &$this->oas['paths'][$pathName][$method]]]></code>
-    </UnsupportedPropertyReferenceUsage>
-  </file>
   <file src="lib/Service/Object/SaveObjects.php">
     <ImplicitToStringCast>
       <code><![CDATA[$registerId]]></code>
