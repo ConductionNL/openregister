@@ -110,6 +110,27 @@ class SettingsControllerSearchIndexStatusTest extends TestCase {
 	}//end testTheStatusCarriesTheInventoryAndTheLastRun()
 
 	/**
+	 * The row counts arrive beside the inventory, under their own names.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-the-search-index-status-names-how-many-rows-it-covers
+	 */
+	public function testTheStatusCarriesTheRowCounts(): void {
+		$maintenance = $this->createMock(originalClassName: SearchIndexMaintenance::class);
+		$maintenance->method('tablesInScope')->willReturn([]);
+		$maintenance->method('indexNamesFor')->willReturn([]);
+		$maintenance->method('lastRun')->willReturn([]);
+		$maintenance->method('rowCounts')->willReturn(['rowsInTables' => 44320, 'indexed' => ['cases' => 12418, 'documents' => 31902]]);
+
+		$data = $this->controllerWith(maintenance: $maintenance)->getSearchIndexStatus()->getData();
+
+		$this->assertSame(expected: 44320, actual: $data['rowsInTables']);
+		$this->assertSame(expected: ['cases' => 12418, 'documents' => 31902], actual: $data['indexed']);
+		$this->assertSame(expected: [], actual: $data['lastRun']);
+	}//end testTheStatusCarriesTheRowCounts()
+
+	/**
 	 * Before the first rebuild the counts are zero and lastRun is empty, not missing.
 	 *
 	 * A caller that reads `lastRun` must find the key on a fresh instance too.
