@@ -250,11 +250,6 @@
       "count": 1
     }
   },
-  "src/mail-sidebar/components/LinkedObjectsList.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    }
-  },
   "src/mail-sidebar/components/ObjectsTab.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 1
@@ -264,11 +259,6 @@
     },
     "vue/custom-event-name-casing": {
       "count": 2
-    }
-  },
-  "src/mail-sidebar/components/SuggestedObjectsList.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
     }
   },
   "src/mail-sidebar/composables/useAttachmentDrag.js": {
@@ -901,11 +891,6 @@
   },
   "src/services/AppInitializationService.js": {
     "no-console": {
-      "count": 2
-    }
-  },
-  "src/services/appInstallService.js": {
-    "no-use-before-define": {
       "count": 2
     }
   },
