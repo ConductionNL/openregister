@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCP\ICache;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -113,7 +113,7 @@ class MagicMetadataColumnHealer {
 	 *
 	 * @param IDBConnection   $db          Connection the ALTER statements run on.
 	 * @param LoggerInterface $logger      Logger.
-	 * @param MagicMapper     $magicMapper Column definitions, column introspection and DDL rendering.
+	 * @param MagicMapperInterface     $magicMapper Column definitions, column introspection and DDL rendering.
 	 * @param ICache|null     $cache       Distributed cache shared across requests, null for none.
 	 *
 	 * @return void
@@ -121,7 +121,7 @@ class MagicMetadataColumnHealer {
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly ?ICache $cache = null,
 	) {
 	}//end __construct()

@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Db\FileMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
@@ -58,13 +58,13 @@ class FilePublishingHandler {
 	/**
 	 * Constructor for FilePublishingHandler.
 	 *
-	 * @param MagicMapper $objectEntityMapper Object entity mapper for fetching objects.
+	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper for fetching objects.
 	 * @param FileMapperInterface $fileMapper File mapper for share operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param IServerContainer $container Container, for the lazily resolved party indicator guard.
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly FileMapperInterface $fileMapper,
 		private readonly LoggerInterface $logger,
 		private readonly IServerContainer $container,

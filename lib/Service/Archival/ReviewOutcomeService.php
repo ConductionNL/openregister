@@ -38,7 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
 use RuntimeException;
 use Throwable;
@@ -53,11 +53,11 @@ class ReviewOutcomeService {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper         $objectMapper        The record the decision is about.
+	 * @param MagicMapperInterface         $objectMapper        The record the decision is about.
 	 * @param TransferListService $transferListService The e-Depot transfer path a transfer hands to.
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly TransferListService $transferListService,
 	) {
 	}//end __construct()
