@@ -89,6 +89,7 @@ class RetentionControllerDestructionListGoldenTest extends TestCase {
 			'approve: dual approval first step' => [['action' => 'approve', 'list' => $review, 'dual' => true]],
 			'approve: dual approval string flag' => [['action' => 'approve', 'list' => $review, 'dual' => 'true']],
 			'approve: schema lookup throws' => [['action' => 'approve', 'list' => $review, 'schemaThrows' => true]],
+			'approve: in review after an approval by the same user' => [['action' => 'approve', 'list' => $review + ['approvals' => [['userId' => 'alice', 'timestamp' => 'x']]]]],
 			'approve: second approval by first approver' => [['action' => 'approve', 'list' => $second]],
 			'approve: second approval by another archivist' => [['action' => 'approve', 'list' => $second, 'user' => 'bob']],
 			'approve: second step without earlier approvals' => [['action' => 'approve', 'list' => ['status' => 'awaiting_second_approval', 'objects' => $objects]]],
@@ -181,7 +182,7 @@ class RetentionControllerDestructionListGoldenTest extends TestCase {
 		$list = null;
 		if ($case['list'] !== null) {
 			$list = new ObjectEntity();
-			$list->setUuid('list-1');
+			$list->setUuid('list-uuid-1');
 			$list->setObject($case['list']);
 		}
 

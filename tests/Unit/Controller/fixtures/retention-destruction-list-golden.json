@@ -30,9 +30,9 @@
             },
             {
                 "objectMapper.update": {
-                    "uuid": "list-1",
+                    "uuid": "list-uuid-1",
                     "object": {
-                        "id": "list-1",
+                        "id": "list-uuid-1",
                         "status": "awaiting_second_approval",
                         "objects": [
                             {
@@ -97,7 +97,7 @@
             },
             {
                 "destruction.withholdDecidedEntries": {
-                    "id": "list-1",
+                    "id": "list-uuid-1",
                     "status": "in_review",
                     "objects": [
                         {
@@ -123,9 +123,9 @@
             },
             {
                 "objectMapper.update": {
-                    "uuid": "list-1",
+                    "uuid": "list-uuid-1",
                     "object": {
-                        "id": "list-1",
+                        "id": "list-uuid-1",
                         "status": "approved",
                         "objects": [
                             {
@@ -155,7 +155,7 @@
             },
             {
                 "audit.createAuditTrailEntry": [
-                    "list-1",
+                    "list-uuid-1",
                     "archival.destruction_approved",
                     {
                         "approvedBy": "alice",
@@ -219,7 +219,7 @@
             },
             {
                 "destruction.withholdDecidedEntries": {
-                    "id": "list-1",
+                    "id": "list-uuid-1",
                     "status": "in_review",
                     "objects": [
                         {
@@ -247,9 +247,9 @@
             },
             {
                 "objectMapper.update": {
-                    "uuid": "list-1",
+                    "uuid": "list-uuid-1",
                     "object": {
-                        "id": "list-1",
+                        "id": "list-uuid-1",
                         "status": "approved",
                         "objects": [
                             {
@@ -286,7 +286,7 @@
             },
             {
                 "audit.createAuditTrailEntry": [
-                    "list-1",
+                    "list-uuid-1",
                     "archival.destruction_approved",
                     {
                         "approvedBy": "alice",
@@ -397,7 +397,7 @@
             },
             {
                 "destruction.withholdDecidedEntries": {
-                    "id": "list-1",
+                    "id": "list-uuid-1",
                     "status": "in_review",
                     "objects": [
                         {
@@ -433,9 +433,9 @@
             },
             {
                 "objectMapper.update": {
-                    "uuid": "list-1",
+                    "uuid": "list-uuid-1",
                     "object": {
-                        "id": "list-1",
+                        "id": "list-uuid-1",
                         "status": "approved",
                         "objects": [],
                         "excluded": [
@@ -474,7 +474,7 @@
             },
             {
                 "audit.createAuditTrailEntry": [
-                    "list-1",
+                    "list-uuid-1",
                     "archival.destruction_approved",
                     {
                         "approvedBy": "alice",
@@ -548,7 +548,7 @@
             },
             {
                 "destruction.withholdDecidedEntries": {
-                    "id": "list-1",
+                    "id": "list-uuid-1",
                     "status": "in_review",
                     "objects": [
                         {
@@ -580,9 +580,9 @@
             },
             {
                 "objectMapper.update": {
-                    "uuid": "list-1",
+                    "uuid": "list-uuid-1",
                     "object": {
-                        "id": "list-1",
+                        "id": "list-uuid-1",
                         "status": "approved",
                         "objects": [
                             {
@@ -618,7 +618,7 @@
             },
             {
                 "audit.createAuditTrailEntry": [
-                    "list-1",
+                    "list-uuid-1",
                     "archival.destruction_approved",
                     {
                         "approvedBy": "alice",
@@ -671,7 +671,7 @@
             },
             {
                 "destruction.withholdDecidedEntries": {
-                    "id": "list-1",
+                    "id": "list-uuid-1",
                     "status": "in_review",
                     "objects": [
                         {
@@ -697,9 +697,9 @@
             },
             {
                 "objectMapper.update": {
-                    "uuid": "list-1",
+                    "uuid": "list-uuid-1",
                     "object": {
-                        "id": "list-1",
+                        "id": "list-uuid-1",
                         "status": "approved",
                         "objects": [
                             {
@@ -729,7 +729,7 @@
             },
             {
                 "audit.createAuditTrailEntry": [
-                    "list-1",
+                    "list-uuid-1",
                     "archival.destruction_approved",
                     {
                         "approvedBy": "alice",
@@ -782,7 +782,7 @@
             },
             {
                 "destruction.withholdDecidedEntries": {
-                    "id": "list-1",
+                    "id": "list-uuid-1",
                     "status": "in_review",
                     "objects": [
                         {
@@ -808,9 +808,9 @@
             },
             {
                 "objectMapper.update": {
-                    "uuid": "list-1",
+                    "uuid": "list-uuid-1",
                     "object": {
-                        "id": "list-1",
+                        "id": "list-uuid-1",
                         "status": "approved",
                         "objects": [
                             {
@@ -840,7 +840,126 @@
             },
             {
                 "audit.createAuditTrailEntry": [
+                    "list-uuid-1",
+                    "archival.destruction_approved",
+                    {
+                        "approvedBy": "alice",
+                        "objectCount": 2,
+                        "excluded": 0
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "approved",
+                "objectCount": 2,
+                "excludedCount": 0
+            }
+        }
+    },
+    "approve: in review after an approval by the same user": {
+        "calls": [
+            {
+                "objectMapper.find": [
                     "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "excluded",
+                    []
+                ]
+            },
+            {
+                "schemaMapper.find": [
+                    7,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "destruction.withholdDecidedEntries": {
+                    "id": "list-uuid-1",
+                    "status": "in_review",
+                    "objects": [
+                        {
+                            "uuid": "a",
+                            "schema": null
+                        },
+                        {
+                            "uuid": "b",
+                            "schema": 7,
+                            "decision": "retain"
+                        },
+                        {
+                            "uuid": "c"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "alice",
+                            "timestamp": "x"
+                        },
+                        {
+                            "userId": "alice",
+                            "timestamp": "<time>"
+                        }
+                    ]
+                }
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "approved",
+                        "objects": [
+                            {
+                                "uuid": "a",
+                                "schema": null
+                            },
+                            {
+                                "uuid": "c"
+                            }
+                        ],
+                        "approvals": [
+                            {
+                                "userId": "alice",
+                                "timestamp": "x"
+                            },
+                            {
+                                "userId": "alice",
+                                "timestamp": "<time>"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "jobList.add": [
+                    "OCA\\OpenRegister\\BackgroundJob\\DestructionExecutionJob",
+                    {
+                        "destructionListUuid": "list-1"
+                    }
+                ]
+            },
+            {
+                "audit.createAuditTrailEntry": [
+                    "list-uuid-1",
                     "archival.destruction_approved",
                     {
                         "approvedBy": "alice",
@@ -913,7 +1032,7 @@
             },
             {
                 "destruction.withholdDecidedEntries": {
-                    "id": "list-1",
+                    "id": "list-uuid-1",
                     "status": "in_review",
                     "objects": [
                         {
@@ -939,9 +1058,9 @@
             },
             {
                 "objectMapper.update": {
-                    "uuid": "list-1",
+                    "uuid": "list-uuid-1",
                     "object": {
-                        "id": "list-1",
+                        "id": "list-uuid-1",
                         "status": "approved",
                         "objects": [
                             {
@@ -971,7 +1090,7 @@
             },
             {
                 "audit.createAuditTrailEntry": [
-                    "list-1",
+                    "list-uuid-1",
                     "archival.destruction_approved",
                     {
                         "approvedBy": "unknown",
@@ -1024,7 +1143,7 @@
             },
             {
                 "destruction.withholdDecidedEntries": {
-                    "id": "list-1",
+                    "id": "list-uuid-1",
                     "status": "in_review",
                     "objects": [
                         {
@@ -1050,9 +1169,9 @@
             },
             {
                 "objectMapper.update": {
-                    "uuid": "list-1",
+                    "uuid": "list-uuid-1",
                     "object": {
-                        "id": "list-1",
+                        "id": "list-uuid-1",
                         "status": "approved",
                         "objects": [
                             {
@@ -1082,7 +1201,7 @@
             },
             {
                 "audit.createAuditTrailEntry": [
-                    "list-1",
+                    "list-uuid-1",
                     "archival.destruction_approved",
                     {
                         "approvedBy": "alice",
@@ -1135,7 +1254,7 @@
             },
             {
                 "destruction.withholdDecidedEntries": {
-                    "id": "list-1",
+                    "id": "list-uuid-1",
                     "status": "in_review",
                     "objects": [
                         {
@@ -1161,9 +1280,9 @@
             },
             {
                 "objectMapper.update": {
-                    "uuid": "list-1",
+                    "uuid": "list-uuid-1",
                     "object": {
-                        "id": "list-1",
+                        "id": "list-uuid-1",
                         "status": "approved",
                         "objects": [
                             {
@@ -1193,7 +1312,7 @@
             },
             {
                 "audit.createAuditTrailEntry": [
-                    "list-1",
+                    "list-uuid-1",
                     "archival.destruction_approved",
                     {
                         "approvedBy": "alice",
@@ -1246,7 +1365,7 @@
             },
             {
                 "destruction.withholdDecidedEntries": {
-                    "id": "list-1",
+                    "id": "list-uuid-1",
                     "status": "awaiting_second_approval",
                     "objects": [
                         {
@@ -1276,9 +1395,9 @@
             },
             {
                 "objectMapper.update": {
-                    "uuid": "list-1",
+                    "uuid": "list-uuid-1",
                     "object": {
-                        "id": "list-1",
+                        "id": "list-uuid-1",
                         "status": "approved",
                         "objects": [
                             {
@@ -1312,7 +1431,7 @@
             },
             {
                 "audit.createAuditTrailEntry": [
-                    "list-1",
+                    "list-uuid-1",
                     "archival.destruction_approved",
                     {
                         "approvedBy": "bob",
@@ -1402,7 +1521,7 @@
             },
             {
                 "destruction.withholdDecidedEntries": {
-                    "id": "list-1",
+                    "id": "list-uuid-1",
                     "status": "awaiting_second_approval",
                     "objects": [
                         {
@@ -1431,9 +1550,9 @@
             },
             {
                 "objectMapper.update": {
-                    "uuid": "list-1",
+                    "uuid": "list-uuid-1",
                     "object": {
-                        "id": "list-1",
+                        "id": "list-uuid-1",
                         "status": "approved",
                         "objects": [
                             {
@@ -1466,7 +1585,7 @@
             },
             {
                 "audit.createAuditTrailEntry": [
-                    "list-1",
+                    "list-uuid-1",
                     "archival.destruction_approved",
                     {
                         "approvedBy": "unknown",
@@ -1519,7 +1638,7 @@
             },
             {
                 "destruction.withholdDecidedEntries": {
-                    "id": "list-1",
+                    "id": "list-uuid-1",
                     "status": "awaiting_second_approval",
                     "objects": [
                         {
@@ -1549,9 +1668,9 @@
             },
             {
                 "objectMapper.update": {
-                    "uuid": "list-1",
+                    "uuid": "list-uuid-1",
                     "object": {
-                        "id": "list-1",
+                        "id": "list-uuid-1",
                         "status": "approved",
                         "objects": [
                             {
@@ -1585,7 +1704,7 @@
             },
             {
                 "audit.createAuditTrailEntry": [
-                    "list-1",
+                    "list-uuid-1",
                     "archival.destruction_approved",
                     {
                         "approvedBy": "bob",
@@ -1638,7 +1757,7 @@
             },
             {
                 "destruction.withholdDecidedEntries": {
-                    "id": "list-1",
+                    "id": "list-uuid-1",
                     "status": "awaiting_second_approval",
                     "objects": [
                         {
@@ -1664,9 +1783,9 @@
             },
             {
                 "objectMapper.update": {
-                    "uuid": "list-1",
+                    "uuid": "list-uuid-1",
                     "object": {
-                        "id": "list-1",
+                        "id": "list-uuid-1",
                         "status": "approved",
                         "objects": [
                             {
@@ -1696,7 +1815,7 @@
             },
             {
                 "audit.createAuditTrailEntry": [
-                    "list-1",
+                    "list-uuid-1",
                     "archival.destruction_approved",
                     {
                         "approvedBy": "alice",
@@ -1789,7 +1908,7 @@
             },
             {
                 "destruction.withholdDecidedEntries": {
-                    "id": "list-1",
+                    "id": "list-uuid-1",
                     "status": "in_review",
                     "objects": [
                         {
@@ -1815,9 +1934,9 @@
             },
             {
                 "objectMapper.update": {
-                    "uuid": "list-1",
+                    "uuid": "list-uuid-1",
                     "object": {
-                        "id": "list-1",
+                        "id": "list-uuid-1",
                         "status": "approved",
                         "objects": [
                             {
@@ -1951,9 +2070,9 @@
             },
             {
                 "objectMapper.update": {
-                    "uuid": "list-1",
+                    "uuid": "list-uuid-1",
                     "object": {
-                        "id": "list-1",
+                        "id": "list-uuid-1",
                         "status": "rejected",
                         "objects": [
                             {
@@ -2071,9 +2190,9 @@
             },
             {
                 "objectMapper.update": {
-                    "uuid": "list-1",
+                    "uuid": "list-uuid-1",
                     "object": {
-                        "id": "list-1",
+                        "id": "list-uuid-1",
                         "status": "rejected",
                         "objects": [
                             {
@@ -2211,9 +2330,9 @@
             },
             {
                 "objectMapper.update": {
-                    "uuid": "list-1",
+                    "uuid": "list-uuid-1",
                     "object": {
-                        "id": "list-1",
+                        "id": "list-uuid-1",
                         "status": "rejected",
                         "objects": [
                             {
@@ -2328,9 +2447,9 @@
             },
             {
                 "objectMapper.update": {
-                    "uuid": "list-1",
+                    "uuid": "list-uuid-1",
                     "object": {
-                        "id": "list-1",
+                        "id": "list-uuid-1",
                         "status": "rejected",
                         "objects": [
                             {
