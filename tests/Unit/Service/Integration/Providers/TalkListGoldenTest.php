@@ -47,6 +47,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\NcAppLinkTableProvider
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\LinkTableAppDescriptor
  * @uses   \OCA\OpenRegister\Db\TalkLink
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\TalkRoomScope
  */
 class TalkListGoldenTest extends TestCase {
 
