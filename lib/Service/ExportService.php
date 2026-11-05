@@ -1167,14 +1167,27 @@ class ExportService implements ObjectExporterInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
 	private function getObjectValue(ObjectEntity $object, string $header): ?string {
-		if (str_starts_with(haystack: $header, needle: '@self.') === true) {
-			return $this->metadataValue(object: $object, fieldName: substr(string: $header, offset: 6));
-		}
+		// Metadata headers: `@self.<field>`, and the legacy `_<field>`.
+		foreach (['@self.', '_'] as $prefix) {
+			if (str_starts_with(haystack: $header, needle: $prefix) === false) {
+				continue;
+			}
 
-		// Legacy metadata headers carry a `_` prefix.
-		if (str_starts_with(haystack: $header, needle: '_') === true) {
-			return $this->metadataValue(object: $object, fieldName: substr(string: $header, offset: 1));
-		}
+			$value = $object->getObjectArray()[substr(string: $header, offset: strlen($prefix))] ?? null;
+			if (is_string($value) === false
+				|| str_contains(haystack: $value, needle: 'T') === false
+				|| str_contains(haystack: $value, needle: 'Z') === false
+			) {
+				return $this->convertValueToString(value: $value);
+			}
+
+			// An ISO 8601 timestamp is written as `Y-m-d H:i:s`.
+			try {
+				return (new DateTime($value))->format('Y-m-d H:i:s');
+			} catch (Exception $e) {
+				return $value;
+			}
+		}//end foreach
 
 		// Handle regular fields.
 		switch ($header) {
@@ -1201,31 +1214,6 @@ class ExportService implements ObjectExporterInterface {
 				return $this->convertValueToString(value: $value);
 		}
 	}//end getObjectValue()
-
-	/**
-	 * The export cell for one metadata field of an object.
-	 *
-	 * @param ObjectEntity $object    The object
-	 * @param string       $fieldName The metadata field, without its header prefix
-	 *
-	 * @return string|null
-	 */
-	private function metadataValue(ObjectEntity $object, string $fieldName): ?string {
-		$value = $object->getObjectArray()[$fieldName] ?? null;
-		if (is_string($value) === false
-			|| str_contains(haystack: $value, needle: 'T') === false
-			|| str_contains(haystack: $value, needle: 'Z') === false
-		) {
-			return $this->convertValueToString(value: $value);
-		}
-
-		// An ISO 8601 timestamp is written as `Y-m-d H:i:s`.
-		try {
-			return (new DateTime($value))->format('Y-m-d H:i:s');
-		} catch (Exception $e) {
-			return $value;
-		}
-	}//end metadataValue()
 
 	/**
 	 * Resolve the language list to use for translatable column emission.
