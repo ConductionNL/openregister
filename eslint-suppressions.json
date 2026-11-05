@@ -352,18 +352,17 @@
       "count": 1
     }
   },
-  "src/modals/deleted/PurgeMultiple.vue": {
+  "src/modals/deleted/BulkSelectionDialog.vue": {
     "@nextcloud/no-deprecated-library-props": {
       "count": 1
-    },
+    }
+  },
+  "src/modals/deleted/PurgeMultiple.vue": {
     "vue/prefer-define-options": {
       "count": 1
     }
   },
   "src/modals/deleted/RestoreMultiple.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "vue/prefer-define-options": {
       "count": 1
     }
