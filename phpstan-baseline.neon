@@ -4969,41 +4969,6 @@ parameters:
 			path: lib/Service/Object/SaveObject/RelationCascadeHandler.php
 
 		-
-			message: "#^Offset 'inverseProperties' on array on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 1
-			path: lib/Service/Object/SaveObjects/BulkRelationHandler.php
-
-		-
-			message: "#^Offset 'inverseProperty' on array\\{targetObject\\: OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity, sourceUuid\\: string, inverseProperty\\: string\\} on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 1
-			path: lib/Service/Object/SaveObjects/BulkRelationHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Object\\\\SaveObjects\\\\BulkRelationHandler\\:\\:\\$bulkValidHandler is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/Object/SaveObjects/BulkRelationHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Object\\\\SaveObjects\\\\BulkRelationHandler\\:\\:\\$logger is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/Object/SaveObjects/BulkRelationHandler.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between string and null will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Service/Object/SaveObjects/BulkRelationHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Object\\\\SaveObjects\\\\BulkValidationHandler\\:\\:\\$logger is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/Object/SaveObjects/BulkValidationHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Object\\\\SaveObjects\\\\PreparationHandler\\:\\:\\$userSession is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/Object/SaveObjects/PreparationHandler.php
-
-		-
 			message: "#^Variable \\$businessData might not be defined\\.$#"
 			count: 2
 			path: lib/Service/Object/SaveObjects/TransformationHandler.php
