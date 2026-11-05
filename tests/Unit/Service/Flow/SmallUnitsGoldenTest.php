@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Service\File\PlaceholderIdTranslator;
 use OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarDependency;
@@ -26,6 +27,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Flow\Timer\CalendarDependency
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
  * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
+ * @uses \OCA\OpenRegister\Db\FlowTimer
  */
 class SmallUnitsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/small-units-golden.json';
@@ -50,7 +52,7 @@ class SmallUnitsGoldenTest extends TestCase {
 		foreach ([null, '', ' nl ', 'nl', 'org-cal', 'boom'] as $slug) {
 			foreach ([null, 'org-1'] as $organisation) {
 				foreach (['nl', 'org-cal', ''] as $changed) {
-					$verdicts[] = [$slug, $organisation, $changed, $this->dependency()->verdictFor(timerCalendarSlug: $slug, organisation: $organisation, changedSlug: $changed)];
+					$verdicts[] = [$slug, $organisation, $changed, $this->dependency()->verdictFor(timer: $this->timer(slug: $slug, organisation: $organisation), changedSlug: $changed)];
 				}
 			}
 		}
@@ -61,6 +63,13 @@ class SmallUnitsGoldenTest extends TestCase {
 		}
 
 		$this->assertSame(json_decode((string)file_get_contents(self::FIXTURE), true), $actual);
+	}
+
+	private function timer(?string $slug, ?string $organisation): FlowTimer {
+		$timer = new FlowTimer();
+		$timer->setCalendarSlug($slug);
+		$timer->setOrganisation($organisation);
+		return $timer;
 	}
 
 	private function dependency(): CalendarDependency {
