@@ -46,7 +46,7 @@ use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
 use OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
-use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -109,9 +109,9 @@ class ExportService implements ObjectExporterInterface {
 	/**
 	 * Cache handler for UUID-to-name resolution
 	 *
-	 * @var CacheHandler
+	 * @var CacheHandlerInterface
 	 */
-	private readonly CacheHandler $cacheHandler;
+	private readonly CacheHandlerInterface $cacheHandler;
 
 	/**
 	 * Property RBAC handler for property-level authorization checks
@@ -148,7 +148,7 @@ class ExportService implements ObjectExporterInterface {
 	 * @param IUserManager $_userManager The user manager (unused).
 	 * @param IGroupManager $groupManager The group manager.
 	 * @param ObjectOperationsInterface $objectService The object service.
-	 * @param CacheHandler $cacheHandler The cache handler for name resolution.
+	 * @param CacheHandlerInterface $cacheHandler The cache handler for name resolution.
 	 * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler.
 	 * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler The translation handler.
 	 * @param NcOfficeConverterInterface|null $officeConverter Office server conversion; PDF output needs it.
@@ -160,7 +160,7 @@ class ExportService implements ObjectExporterInterface {
 		IUserManager $_userManager,
 		IGroupManager $groupManager,
 		ObjectOperationsInterface $objectService,
-		CacheHandler $cacheHandler,
+		CacheHandlerInterface $cacheHandler,
 		PropertyRbacHandler $propertyRbacHandler,
 		\OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler,
 		private readonly ?NcOfficeConverterInterface $officeConverter = null,

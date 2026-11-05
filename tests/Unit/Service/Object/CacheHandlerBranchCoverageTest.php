@@ -54,7 +54,7 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 		$objectMapperRef = $this->objectMapper;
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapperRef) {
-				if ($class === MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $objectMapperRef;
 				}
 				return null;

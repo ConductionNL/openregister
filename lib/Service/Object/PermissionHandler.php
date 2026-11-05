@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -299,7 +299,7 @@ class PermissionHandler {
 	 * @param IUserManager $userManager User manager for getting user objects.
 	 * @param IGroupManager $groupManager Group manager for checking user groups.
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schema operations.
-	 * @param MagicMapper $objectEntityMapper Mapper for object entity operations.
+	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entity operations.
 	 * @param ConditionMatcher $conditionMatcher Shared PHP-side match evaluator (ADR-011).
 	 * @param IAppConfig $appConfig App config for the inheritFromPublic tenant default and
 	 *                              the `enforce_default_closed` opt-in flag (Wave-12 Fix
@@ -327,7 +327,7 @@ class PermissionHandler {
 		private readonly IUserManager $userManager,
 		private readonly IGroupManager $groupManager,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly ConditionMatcher $conditionMatcher,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,

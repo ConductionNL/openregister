@@ -110,7 +110,7 @@ class CacheHandlerCoverageTest extends TestCase {
 		// Set up container callback that uses containerServices map.
 		// Tests can add services to $this->containerServices before calling createHandler.
 		$this->containerServices = [];
-		$this->containerServices[MagicMapper::class] = $this->objectMapper;
+		$this->containerServices[\OCA\OpenRegister\Db\MagicMapperInterface::class] = $this->objectMapper;
 
 		$servicesRef = &$this->containerServices;
 		$this->container->method('get')

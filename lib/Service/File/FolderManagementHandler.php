@@ -24,7 +24,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterFolderRecorder;
@@ -89,7 +89,7 @@ class FolderManagementHandler {
 	 * Constructor for FolderManagementHandler.
 	 *
 	 * @param IRootFolder $rootFolder Root folder for file operations.
-	 * @param MagicMapper $objectEntityMapper Mapper for object entities.
+	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entities.
 	 * @param RegisterMapperInterface $registerMapper Mapper for registers.
 	 * @param IUserSession $userSession User session for user context.
 	 * @param IGroupManager $groupManager Group manager for group operations.
@@ -106,7 +106,7 @@ class FolderManagementHandler {
 	 */
 	public function __construct(
 		private readonly IRootFolder $rootFolder,
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,

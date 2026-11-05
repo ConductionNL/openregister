@@ -54,7 +54,7 @@ use OCA\OpenRegister\Service\Object\DraftFinder;
 use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
-use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -115,7 +115,7 @@ class FormSubmitService {
 	 *
 	 * @param RegisterMapperInterface       $registers Resolves a destination's register.
 	 * @param SchemaMapperInterface         $schemas   Resolves a destination's schema.
-	 * @param ValidateObject       $validator The destination schema's full validator.
+	 * @param ValidateObjectInterface       $validator The destination schema's full validator.
 	 * @param ObjectOperationsInterface        $objects   Creates, re-reads and (to compensate) deletes objects.
 	 * @param FormPayloadFindings  $findings  Turns a refusal into per-property findings.
 	 * @param FormIdempotencyStore $keys      Repeats the first answer for a retried key.
@@ -131,7 +131,7 @@ class FormSubmitService {
 	public function __construct(
 		private readonly RegisterMapperInterface $registers,
 		private readonly SchemaMapperInterface $schemas,
-		private readonly ValidateObject $validator,
+		private readonly ValidateObjectInterface $validator,
 		private readonly ObjectOperationsInterface $objects,
 		private readonly FormPayloadFindings $findings,
 		private readonly FormIdempotencyStore $keys,

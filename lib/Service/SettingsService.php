@@ -25,11 +25,11 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
-use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
@@ -148,9 +148,9 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	/**
 	 * Object cache service (lazy-loaded when needed)
 	 *
-	 * @var CacheHandler|null
+	 * @var CacheHandlerInterface|null
 	 */
-	private ?CacheHandler $objectCacheService = null;
+	private ?CacheHandlerInterface $objectCacheService = null;
 
 	/**
 	 * Group manager
@@ -218,7 +218,7 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	/**
 	 * REMOVED: Object mapper (unused, caused circular dependency)
 	 *
-	 * @var MagicMapper|null
+	 * @var MagicMapperInterface|null
 	 */
 	// Private ?MagicMapper $objectMapper;.
 
@@ -345,7 +345,7 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * @param SearchTrailMapper $searchTrailMapper Search trail mapper
 	 * @param IUserManager $userManager User manager
 	 * @param IDBConnection $db Database connection
-	 * @param CacheHandler|null $objectCacheService Object cache service (optional)
+	 * @param CacheHandlerInterface|null $objectCacheService Object cache service (optional)
 	 * @param IAppContainer|null $container Container for lazy loading (optional)
 	 * @param string $appName Application name
 	 * @param ValidationOperationsHandler|null $validOpsHandler Validation operations handler
@@ -373,7 +373,7 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 		SearchTrailMapper $searchTrailMapper,
 		IUserManager $userManager,
 		IDBConnection $db,
-		?CacheHandler $objectCacheService = null,
+		?CacheHandlerInterface $objectCacheService = null,
 		?IAppContainer $container = null,
 		string $appName = 'openregister',
 		?ValidationOperationsHandler $validOpsHandler = null,
@@ -892,7 +892,7 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 		}
 
 		$run = new MassValidationRun(
-			objectMapper: $this->container->get(MagicMapper::class),
+			objectMapper: $this->container->get(MagicMapperInterface::class),
 			settings: $this,
 			logger: $this->logger
 		);

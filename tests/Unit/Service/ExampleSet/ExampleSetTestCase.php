@@ -206,6 +206,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<int, string> The uuids of the flows published, in order. */
 	protected array $publishedFlows = [];
 
+	/** @var array<int, array{uuid: string, enabled: bool, published: bool}> Each flow update, as it was saved. */
+	protected array $flowUpdates = [];
+
 	/** @var array<string, array<int, array<string, mixed>>> The Deck rows written, by kind (boards, stacks, labels, cards), keyed by id. */
 	protected array $deck = ['boards' => [], 'stacks' => [], 'labels' => [], 'cards' => []];
 
@@ -618,6 +621,15 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function flowMapper(): FlowMapper {
 		$mapper = $this->createMock(FlowMapper::class);
 		$mapper->method('insert')->willReturnCallback(function (Flow $flow): Flow {
+			$this->flows[(string) $flow->getUuid()] = $flow;
+			return $flow;
+		});
+		$mapper->method('update')->willReturnCallback(function (Flow $flow): Flow {
+			$this->flowUpdates[] = [
+				'uuid'      => (string) $flow->getUuid(),
+				'enabled'   => (bool) $flow->getEnabled(),
+				'published' => in_array((string) $flow->getUuid(), $this->publishedFlows, true),
+			];
 			$this->flows[(string) $flow->getUuid()] = $flow;
 			return $flow;
 		});

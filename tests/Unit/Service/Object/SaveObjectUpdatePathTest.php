@@ -28,7 +28,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
-use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\TranslationProjectionService;
@@ -225,7 +225,7 @@ final class SaveObjectUpdatePathTest extends TestCase {
 			$log->method('jsonSerialize')->willReturn(['log' => 1]);
 			return $log;
 		});
-		$retention = $this->createMock(RetentionService::class);
+		$retention = $this->createMock(RetentionServiceInterface::class);
 		$retention->method('guardClassificationOverride')->willReturnCallback(function (Schema $schema, array $data): void {
 			$this->trace[] = ['retentionGuard', $schema->getId(), array_key_exists('title', $data)];
 		});
@@ -243,7 +243,7 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		$hints->method('check')->willReturnCallback(function (array $configuration, $register, $schema, array $data, ?string $selfUuid = null): void {
 			$this->trace[] = ['hints', $register, $schema, $selfUuid];
 		});
-		$services = [\OCA\OpenRegister\Service\RetentionServiceInterface::class => $retention, \OCA\OpenRegister\Service\Quality\UniqueHintChecker::class => $hints];
+		$services = [RetentionServiceInterface::class => $retention, \OCA\OpenRegister\Service\Quality\UniqueHintChecker::class => $hints];
 		$container->method('get')->willReturnCallback(static fn (string $id): object => $services[$id] ?? throw new \RuntimeException('no ' . $id));
 		$folders = $this->createMock(FolderManagementHandler::class);
 		$translations = $this->createMock(TranslationHandler::class);
