@@ -118,16 +118,6 @@ class RenderObject {
 	private array $objectsCache = [];
 
 	/**
-	 * Ultra-aggressive preload cache for sub-second performance
-	 *
-	 * Contains ALL relationship objects preloaded in a single query
-	 * for instant access during rendering without any additional database calls.
-	 *
-	 * @var array<string, ObjectEntity>
-	 */
-	private array $ultraPreloadCache = [];
-
-	/**
 	 * Cache of inverse relationships: maps entity UUID to array of referencing objects.
 	 * Used to batch-load inverse relationships for performance optimization.
 	 *
@@ -273,47 +263,6 @@ class RenderObject {
 		private readonly ?LensResolver $lensResolver = null,
 	) {
 	}//end __construct()
-
-	/**
-	 * Set the ultra-aggressive preload cache for maximum performance
-	 *
-	 * This method receives ALL relationship objects loaded in a single query
-	 * and stores them for instant access during rendering, eliminating all
-	 * individual database queries for extended properties.
-	 *
-	 * @param array $ultraPreloadCache Array of preloaded objects indexed by ID/UUID
-	 *
-	 * @psalm-param   array<string, ObjectEntity> $ultraPreloadCache
-	 * @phpstan-param array<string, ObjectEntity> $ultraPreloadCache
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	public function setUltraPreloadCache(array $ultraPreloadCache): void {
-		$this->ultraPreloadCache = $ultraPreloadCache;
-		$this->logger->debug(
-			message: '[RenderObject] Ultra preload cache set',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'cachedObjectCount' => count($ultraPreloadCache),
-			]
-		);
-	}//end setUltraPreloadCache()
-
-	/**
-	 * Get the size of the ultra preload cache for monitoring
-	 *
-	 * @return int Number of objects in the ultra preload cache
-	 *
-	 * @psalm-return int<0, max>
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	public function getUltraCacheSize(): int {
-		return count($this->ultraPreloadCache);
-	}//end getUltraCacheSize()
 
 	/**
 	 * Get a register from cache or database
@@ -522,11 +471,6 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function getObject(int|string $id): ?ObjectEntity {
-		// **ULTRA PERFORMANCE**: Check ultra preload cache first (fastest possible).
-		if (($this->ultraPreloadCache[(string)$id] ?? null) !== null) {
-			return $this->ultraPreloadCache[(string)$id];
-		}
-
 		// **PERFORMANCE OPTIMIZATION**: Use CacheHandler for optimized caching.
 		// First check local cache for backward compatibility.
 		if (($this->objectsCache[$id] ?? null) !== null) {
@@ -1379,80 +1323,42 @@ class RenderObject {
 			return $object;
 		}
 
-		// Batch-load all file tags in 2 queries instead of 2*N queries.
-		$allFileIds = array_map(fn ($f) => (string)$f['fileid'], $fileRecords);
-
-		// OCP declares this `array<string, list<string>>`, but file ids are
-		// canonical numeric strings, so PHP coerces every key to INT on the way
-		// in. Without the annotation below PHPStan concludes a numeric-string
-		// offset can never match an `array<string, ...>` and reports the
-		// per-file tag loop as iterating an always-empty array. It is not: PHP
-		// applies the same coercion on lookup, so `$allTagIdsPerFile["123"]`
-		// finds the row stored under 123.
-		// phpcs:ignore Squiz.Commenting.InlineComment.DocBlock -- PHPStan only reads @var from a /** */ block.
-		/** @var array<int|string, list<string>> $allTagIdsPerFile */
-		$allTagIdsPerFile = $this->systemTagMapper->getTagIdsForObjects(
-			objIds: $allFileIds,
-			objectType: 'files'
-		);
-
-		// Collect all unique tag IDs across all files and load them in one call.
-		$uniqueTagIds = [];
-		foreach ($allTagIdsPerFile as $fileTagIds) {
-			foreach ($fileTagIds as $tagId) {
-				$uniqueTagIds[$tagId] = true;
-			}
-		}
-
-		$tagNameMap = [];
-		if (empty($uniqueTagIds) === false) {
-			$tags = $this->systemTagManager->getTagsByIds(tagIds: array_keys($uniqueTagIds));
-			foreach ($tags as $tag) {
-				$name = $tag->getName();
-				if (str_starts_with($name, 'object:') === false) {
-					$tagNameMap[$tag->getId()] = $name;
-				}
-			}
-		}
-
-		// Format the files using the pre-loaded tag data.
+		$labelsPerFile = $this->tagLabels(fileIds: array_map(fn ($f) => (string)$f['fileid'], $fileRecords));
 		$formattedFiles = [];
 		foreach ($fileRecords as $fileRecord) {
-			$fileId = (string)$fileRecord['fileid'];
+			$formattedFiles[] = $this->fileShape(fileRecord: $fileRecord, labels: $labelsPerFile[(string)$fileRecord['fileid']]);
+		}
 
-			// Build labels from pre-loaded tags.
-			$labels = [];
-			foreach ($allTagIdsPerFile[$fileId] ?? [] as $tagId) {
-				if (isset($tagNameMap[$tagId]) === true) {
-					$labels[] = $tagNameMap[$tagId];
-				}
-			}
-
-			// Create formatted file metadata matching FileService->formatFile() structure.
-			// Share information is now included directly from FileMapper.
-			$formattedFile = [
-				'id' => $fileId,
-				'path' => $fileRecord['path'],
-				'title' => $fileRecord['name'],
-				'accessUrl' => $fileRecord['accessUrl'] ?? null,
-				'downloadUrl' => $fileRecord['downloadUrl'] ?? null,
-				'type' => $fileRecord['mimetype'] ?? 'application/octet-stream',
-				'extension' => pathinfo($fileRecord['name'], PATHINFO_EXTENSION),
-				'size' => (int)$fileRecord['size'],
-				'hash' => $fileRecord['etag'] ?? '',
-				'published' => $fileRecord['published'] ?? null,
-				'modified' => $fileRecord['mtime'] ?? null,
-				'labels' => $labels,
-			];
-
-			$formattedFiles[] = $formattedFile;
-		}//end foreach
-
-		// Set the formatted files on the object.
 		$object->setFiles($formattedFiles);
 
 		return $object;
 	}//end renderFiles()
+
+	/**
+	 * The visible tag names of each file, by file id, loaded in two queries for all files.
+	 *
+	 * @param list<string> $fileIds The file ids
+	 *
+	 * @return array<string, list<string>>
+	 */
+	private function tagLabels(array $fileIds): array {
+		// OCP declares this `array<string, list<string>>`, but file ids are
+		// canonical numeric strings, so PHP coerces every key to INT on the way
+		// in; PHP applies the same coercion on lookup, so `$tagIdsPerFile["123"]`
+		// finds the row stored under 123.
+		// phpcs:ignore Squiz.Commenting.InlineComment.DocBlock -- PHPStan only reads @var from a /** */ block.
+		/** @var array<int|string, list<string>> $tagIdsPerFile */
+		$tagIdsPerFile = $this->systemTagMapper->getTagIdsForObjects(objIds: $fileIds, objectType: 'files');
+		$tagNames = $this->visibleTagNames(tagIdsPerFile: $tagIdsPerFile);
+
+		$labels = [];
+		foreach ($fileIds as $fileId) {
+			$known = array_filter($tagIdsPerFile[$fileId] ?? [], fn ($tagId) => isset($tagNames[$tagId]));
+			$labels[$fileId] = array_values(array_map(fn ($tagId) => $tagNames[$tagId], $known));
+		}
+
+		return $labels;
+	}//end tagLabels()
 
 	/**
 	 * Get the tags associated with a file.
@@ -1962,10 +1868,18 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function formatFileRecord(array $fileRecord): array {
-		// Get file tags (request-cached).
-		$labels = $this->getFileTags(fileId: (string)$fileRecord['fileid']);
+		return $this->fileShape(fileRecord: $fileRecord, labels: $this->getFileTags(fileId: (string)$fileRecord['fileid']));
+	}//end formatFileRecord()
 
-		// Format the file object (same structure as renderFiles method).
+	/**
+	 * The rendered shape of one file record with its labels.
+	 *
+	 * @param array<string, mixed> $fileRecord The raw file record from FileMapperInterface
+	 * @param list<string>         $labels     The file's tag names
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function fileShape(array $fileRecord, array $labels): array {
 		return [
 			'id' => (string)$fileRecord['fileid'],
 			'path' => $fileRecord['path'],
@@ -1980,7 +1894,7 @@ class RenderObject {
 			'modified' => $fileRecord['mtime'] ?? null,
 			'labels' => $labels,
 		];
-	}//end formatFileRecord()
+	}//end fileShape()
 
 	/**
 	 * Renders an entity with optional extensions and filters.
@@ -5680,27 +5594,8 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function cacheFileTags(array $fileIds): void {
-		$stringFileIds = array_map(static fn ($id) => (string)$id, $fileIds);
-
-		// Numeric-string keys are coerced to int by PHP — see the longer
-		// note on the other getTagIdsForObjects() call in this class.
-		// phpcs:ignore Squiz.Commenting.InlineComment.DocBlock -- PHPStan only reads @var from a /** */ block.
-		/** @var array<int|string, list<string>> $allTagIdsPerFile */
-		$allTagIdsPerFile = $this->systemTagMapper->getTagIdsForObjects(
-			objIds: $stringFileIds,
-			objectType: 'files'
-		);
-
-		$tagNameMap = $this->visibleTagNames(tagIdsPerFile: $allTagIdsPerFile);
-		foreach ($stringFileIds as $fileIdStr) {
-			$labels = [];
-			foreach (($allTagIdsPerFile[$fileIdStr] ?? []) as $tagId) {
-				if (isset($tagNameMap[$tagId]) === true) {
-					$labels[] = $tagNameMap[$tagId];
-				}
-			}
-
-			$this->fileTagsCache[$fileIdStr] = $labels;
+		foreach ($this->tagLabels(fileIds: array_map(static fn ($id) => (string)$id, $fileIds)) as $fileId => $labels) {
+			$this->fileTagsCache[$fileId] = $labels;
 		}
 	}//end cacheFileTags()
 

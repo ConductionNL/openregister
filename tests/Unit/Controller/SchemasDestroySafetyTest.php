@@ -43,7 +43,7 @@ use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaDeletionService;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\UploadService;
@@ -86,9 +86,9 @@ class SchemasDestroySafetyTest extends TestCase {
 	private SchemaCacheHandler $schemaCacheService;
 
 	/**
-	 * @var FacetCacheHandler&MockObject
+	 * @var FacetResultCacheClearer&MockObject
 	 */
-	private FacetCacheHandler $facetCacheSvc;
+	private FacetResultCacheClearer $facetCacheSvc;
 
 	/**
 	 * @var LoggerInterface&MockObject
@@ -130,7 +130,7 @@ class SchemasDestroySafetyTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->objectMapper = $this->createMock(MagicMapper::class);
 		$this->schemaCacheService = $this->createMock(SchemaCacheHandler::class);
-		$this->facetCacheSvc = $this->createMock(FacetCacheHandler::class);
+		$this->facetCacheSvc = $this->createMock(FacetResultCacheClearer::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->schemaDeletionService = $this->createMock(SchemaDeletionService::class);
 
@@ -410,7 +410,7 @@ class SchemasDestroySafetyTest extends TestCase {
 
 		// Caches are invalidated on EVERY disposition, cascade included.
 		$this->schemaCacheService->expects($this->once())->method('invalidate')->with($this->equalTo(42));
-		$this->facetCacheSvc->expects($this->once())->method('invalidateForSchemaChange');
+		$this->facetCacheSvc->expects($this->once())->method('clearAll');
 
 		$response = $this->controller->destroy(42);
 

@@ -34,7 +34,6 @@ use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Service\File\FilePropertyRules;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\IAppData;
-use OCP\Files\NotFoundException;
 use OCP\Files\SimpleFS\ISimpleFile;
 use OCP\Files\SimpleFS\ISimpleFolder;
 use OCP\IL10N;
@@ -46,6 +45,8 @@ use OCP\ITempManager;
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
  */
 class FormUploadStore {
+
+	use AppDataFolder;
 
 	/**
 	 * The app-data folder.
@@ -424,25 +425,4 @@ class FormUploadStore {
 	private function megabytes(int $bytes): string {
 		return number_format($bytes / 1048576, 1);
 	}//end megabytes()
-
-	/**
-	 * The store's folder.
-	 *
-	 * @param bool $create Create it when absent.
-	 *
-	 * @return ISimpleFolder|null The folder; null only when absent and not created.
-	 *
-	 * @psalm-return ($create is true ? ISimpleFolder : ISimpleFolder|null)
-	 */
-	private function folder(bool $create): ?ISimpleFolder {
-		try {
-			return $this->appData->getFolder(self::FOLDER);
-		} catch (NotFoundException) {
-			if ($create === false) {
-				return null;
-			}
-
-			return $this->appData->newFolder(self::FOLDER);
-		}
-	}//end folder()
 }//end class

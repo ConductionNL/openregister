@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Settings;
 use Exception;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCP\AppFramework\IAppContainer;
@@ -97,7 +97,7 @@ class CacheSettingsHandlerStatsGoldenTest extends TestCase {
 		$settings = new CacheSettingsHandler(
 			$factory,
 			$this->createMock(SchemaCacheHandler::class),
-			$this->createMock(FacetCacheHandler::class),
+			$this->createMock(FacetResultCacheClearer::class),
 			$direct,
 			$container
 		);

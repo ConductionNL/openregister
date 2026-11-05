@@ -60,7 +60,7 @@ use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
@@ -208,9 +208,9 @@ class SchemasController extends Controller {
 	/**
 	 * The facet cache svc.
 	 *
-	 * @var FacetCacheHandler
+	 * @var FacetResultCacheClearer
 	 */
-	private readonly FacetCacheHandler $facetCacheSvc;
+	private readonly FacetResultCacheClearer $facetResults;
 
 	/**
 	 * The logger.
@@ -286,7 +286,7 @@ class SchemasController extends Controller {
 		$this->objectEntityMapper = $services->mappers->objectEntityMapper;
 		$this->auditTrailMapper = $services->mappers->auditTrailMapper;
 		$this->schemaCacheService = $services->schemas->schemaCacheService;
-		$this->facetCacheSvc = $services->schemas->facetCacheSvc;
+		$this->facetResults = $services->schemas->facetResults;
 		$this->logger = $services->platform->logger;
 		$this->container = $services->platform->container;
 		$this->schemaVersioningService = $services->schemas->versioning;
@@ -1503,7 +1503,7 @@ class SchemasController extends Controller {
 		// `invalidate()` also drops the mapper's request-scoped find cache, so reads
 		// in this worker observe the new state.
 		$this->schemaCacheService->invalidate(schemaId: $updatedSchema->getId());
-		$this->facetCacheSvc->invalidateForSchemaChange(schemaId: $updatedSchema->getId(), operation: 'update');
+		$this->facetResults->clearAll();
 
 		if ($update['forms'] !== null && $update['forms']['affected'] !== []) {
 			return new JSONResponse(
@@ -1908,10 +1908,7 @@ class SchemasController extends Controller {
 	 */
 	private function invalidateSchemaCaches(int $schemaId): void {
 		$this->schemaCacheService->invalidate(schemaId: $schemaId);
-		$this->facetCacheSvc->invalidateForSchemaChange(
-			schemaId: $schemaId,
-			operation: 'delete'
-		);
+		$this->facetResults->clearAll();
 	}//end invalidateSchemaCaches()
 
 	/**
@@ -2181,7 +2178,7 @@ class SchemasController extends Controller {
 		if ($schema->getId() !== null) {
 			$schema = $this->schemaMapper->update($schema);
 			$this->schemaCacheService->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'update');
-			$this->facetCacheSvc->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'update');
+			$this->facetResults->clearAll();
 			return $schema;
 		}
 
@@ -2192,7 +2189,7 @@ class SchemasController extends Controller {
 		}
 
 		$this->schemaCacheService->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'create');
-		$this->facetCacheSvc->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'create');
+		$this->facetResults->clearAll();
 		return $schema;
 	}//end saveUploadedSchema()
 
