@@ -90,6 +90,8 @@ class ScheduledNotificationJobGoldenTest extends TestCase
             'dedupe fields'        => [['rules' => ['e' => ['trigger' => $explicit]], 'objects' => [['uuid' => 'same', 'data' => ['a' => 1, 'b' => 2]]]]],
             'rotating window'      => [['rules' => ['r' => ['trigger' => ['type' => 'scheduled', 'intervalSec' => 60, 'filter' => ['status' => 'open']]]], 'objects' => $many, 'offset' => '4000']],
             'rotation start'       => [['rules' => ['r' => ['trigger' => ['type' => 'scheduled', 'intervalSec' => 60, 'filter' => ['status' => 'open']]]], 'objects' => $many, 'offset' => '-3', 'offsetThrows' => true]],
+            'offset past the end'  => [['rules' => ['r' => ['trigger' => ['type' => 'scheduled', 'intervalSec' => 60, 'filter' => ['status' => 'open']]]], 'objects' => $many, 'offset' => '9000']],
+            'older-than field'     => [['rules' => ['o' => ['trigger' => ['type' => 'scheduled', 'intervalSec' => 60, 'filter' => ['seen' => ['operator' => 'olderThan', 'value' => 'P1D']]]]], 'objects' => [['uuid' => 'same', 'data' => ['seen' => '2000-01-01']]]]],
             'retention off'        => [['rules' => [], 'retention' => '0']],
             'retention unreadable' => [['rules' => [], 'retention' => 'throw', 'cacheSetThrows' => true]],
             'no notifications'     => [['rules' => null]],
