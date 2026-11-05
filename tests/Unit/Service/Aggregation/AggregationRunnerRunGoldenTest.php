@@ -22,6 +22,9 @@ use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
+use Doctrine\DBAL\Platforms\SqlitePlatform;
+use OCP\DB\IPreparedStatement;
+use OCP\DB\IResult;
 use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -86,6 +89,18 @@ class AggregationRunnerRunGoldenTest extends TestCase {
 		$cases['narrowing-new-key'] = [['spec' => ['agg' => ['metric' => 'count', 'where' => ['status' => 'open']]], 'extra' => ['team' => 'a']] + $base];
 		$cases['narrowing-declared-key'] = [['spec' => ['agg' => ['metric' => 'count', 'where' => ['status' => 'open']]], 'extra' => ['status' => 'done']] + $base];
 		$cases['narrowing-operator'] = [['spec' => $sum, 'extra' => ['amount' => ['gte' => 1]]] + $base];
+		$governed = ['metric' => 'sum', 'field' => 'salary'];
+		$cases['governed-field'] = [['spec' => ['agg' => $governed]] + $base];
+		$cases['governed-field-bypass'] = [['spec' => ['agg' => $governed], 'bypass' => true] + $base];
+		$cases['governed-metrics-field'] = [['spec' => ['agg' => ['metrics' => [['metric' => 'count'], ['metric' => 'sum', 'field' => 'salary']]]]] + $base];
+		$cases['governed-group-by'] = [['spec' => ['agg' => ['metric' => 'count', 'groupBy' => ['salary']]]] + $base];
+		$native = ['agg' => ['metric' => 'count', 'groupBy' => ['status'], 'where' => ['team' => 'a']]];
+		$nativeRows = [['g0' => 'open', 'agg' => '3'], ['g0' => 'done', 'agg' => '1']];
+		$cases['native-grouped'] = [['spec' => $native, 'platform' => 'sqlite', 'nativeRows' => $nativeRows] + $base];
+		$cases['native-grouped-bypass'] = [['spec' => $native, 'platform' => 'sqlite', 'nativeRows' => $nativeRows, 'bypass' => true] + $base];
+		$cases['native-grouped-user'] = [['spec' => $native, 'platform' => 'sqlite', 'nativeRows' => $nativeRows, 'user' => 'alice', 'org' => 'org-2'] + $base];
+		$cases['from-empty'] = [['spec' => ['agg' => ['metric' => 'count', 'from' => '']]] + $base];
+		$cases['row-cap'] = [['spec' => $sum, 'rows' => array_fill(0, 10000, ['amount' => 1])] + $base];
 		$cases['current-user-placeholder'] = [['spec' => ['agg' => ['metric' => 'count', 'where' => ['owner' => '$currentUser']]], 'user' => 'alice'] + $base];
 
 		return $cases;
@@ -145,7 +160,7 @@ class AggregationRunnerRunGoldenTest extends TestCase {
 		$schema = new Schema();
 		$schema->setId(5);
 		$schema->setSlug('things');
-		$schema->setProperties(['status' => ['type' => 'string'], 'amount' => ['type' => 'number'], 'team' => ['type' => 'string']]);
+		$schema->setProperties(['status' => ['type' => 'string'], 'amount' => ['type' => 'number'], 'team' => ['type' => 'string'], 'salary' => ['type' => 'number', 'authorization' => ['read' => ['hr']]]]);
 		if ($case['spec'] !== null) {
 			$schema->setConfiguration(['x-openregister-aggregations' => $case['spec']]);
 		}
@@ -157,10 +172,22 @@ class AggregationRunnerRunGoldenTest extends TestCase {
 
 		$magic = $this->createMock(MagicMapper::class);
 		$magic->method('callerQualifiesForAction')->willReturn($case['qualifies']);
+		$magic->method('getTableNameForRegisterSchema')->willReturn('oc_or_3_5');
+		$magic->method('rbacRowPredicateSql')->willReturnCallback(
+			function () {
+				$this->calls[] = ['rowPredicate' => true];
+				return 'rbac_pred = 1';
+			}
+		);
 		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(
 			function (Register $register, Schema $schema, ?int $limit = null) use ($case): array {
 				$this->calls[] = ['table' => [$register->getSlug(), $schema->getSlug(), $limit]];
-				return array_map(fn (array $row): ObjectEntity => $this->entity(row: $row), $case['rows']);
+				$entities = [];
+				foreach ($case['rows'] as $row) {
+					$entities[] = ($entities[0] ?? null)?->getObject() === $row ? $entities[0] : $this->entity(row: $row);
+				}
+
+				return $entities;
 			}
 		);
 
@@ -204,12 +231,9 @@ class AggregationRunnerRunGoldenTest extends TestCase {
 		$orgs->method('getActiveOrganisation')->willReturn($org);
 
 		$db = $this->createMock(IDBConnection::class);
-		$db->method('getDatabasePlatform')->willReturn(
-			new class {
-				public function __toString(): string {
-					return 'OtherPlatform';
-				}
-			}
+		$db->method('getDatabasePlatform')->willReturn($this->platform(case: $case));
+		$db->method('prepare')->willReturnCallback(
+			fn (string $sql): IPreparedStatement => $this->statement(sql: $sql, rows: ($case['nativeRows'] ?? []))
 		);
 
 		$orgHandler = $this->createMock(MagicOrganizationHandler::class);
@@ -230,6 +254,38 @@ class AggregationRunnerRunGoldenTest extends TestCase {
 			languageService: $this->createMock(LanguageService::class)
 		);
 	}//end runner()
+
+	/**
+	 * @param array<string, mixed> $case
+	 */
+	private function platform(array $case): object {
+		if (($case['platform'] ?? null) === 'sqlite') {
+			return $this->createMock(SqlitePlatform::class);
+		}
+
+		return new class {
+			public function __toString(): string {
+				return 'OtherPlatform';
+			}
+		};
+	}//end platform()
+
+	/**
+	 * @param list<array<string, mixed>> $rows
+	 */
+	private function statement(string $sql, array $rows): IPreparedStatement {
+		$index = count($this->calls);
+		$this->calls[$index] = ['sql' => (string)preg_replace('/\s+/', ' ', trim($sql))];
+		$stmt = $this->createMock(IPreparedStatement::class);
+		$stmt->method('execute')->willReturnCallback(
+			function (array $bindings = []) use ($index): IResult {
+				$this->calls[$index]['bindings'] = $bindings;
+				return $this->createMock(IResult::class);
+			}
+		);
+		$stmt->method('fetch')->willReturnOnConsecutiveCalls(...array_merge($rows, [false]));
+		return $stmt;
+	}//end statement()
 
 	/**
 	 * @param array<string, mixed> $row
