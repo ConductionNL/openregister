@@ -55,6 +55,9 @@ use RuntimeException;
  * Unit tests for the connection reports sent from the settings controllers.
  *
  * @covers \OCA\OpenRegister\Controller\Settings\LlmSettingsController
+ * @uses \OCA\OpenRegister\Controller\Support\EdepotSettingsPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\EdepotSettingsDomain
+ * @uses \OCA\OpenRegister\Controller\Support\EdepotSettingsControllerServices
  * @covers \OCA\OpenRegister\Controller\Settings\ApiTokenSettingsController
  * @covers \OCA\OpenRegister\Controller\Settings\EdepotSettingsController
  * @uses \OCA\OpenRegister\Service\Connection\ConnectionReporter
