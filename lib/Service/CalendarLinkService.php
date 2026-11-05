@@ -512,16 +512,12 @@ class CalendarLinkService {
 			throw new Exception('Calendar ' . $calendarUri . ' not found for user');
 		}
 
-		$cutoff = $after?->getTimestamp();
+		$scan = new CalendarPickerScan(calendarId: $calendarId, calendarUri: $calendarUri);
+		$scan->cutoff = $after?->getTimestamp();
 		$results = [];
 
 		foreach ($this->calDavBackend->getCalendarObjects($calendarId) as $object) {
-			$row = $this->parseCalendarObjectForPicker(
-				calendarId: $calendarId,
-				calendarUri: $calendarUri,
-				object: $object,
-				cutoff: $cutoff
-			);
+			$row = $this->parseCalendarObjectForPicker(scan: $scan, object: $object);
 			if ($row !== null) {
 				$results[] = $row;
 			}
@@ -580,20 +576,13 @@ class CalendarLinkService {
 	 * Returns null when the object is not a parseable VEVENT, has no UID,
 	 * or falls before the cutoff timestamp.
 	 *
-	 * @param int $calendarId Numeric calendar id.
-	 * @param string $calendarUri Calendar URI string.
+	 * @param CalendarPickerScan  $scan   The calendar being listed and the cutoff.
 	 * @param array<string,mixed> $object Lightweight object row from getCalendarObjects().
-	 * @param int|null $cutoff Unix timestamp lower bound (null = no filter).
 	 *
 	 * @return array<string,mixed>|null Picker row, or null to skip this object.
 	 */
-	private function parseCalendarObjectForPicker(
-		int $calendarId,
-		string $calendarUri,
-		array $object,
-		?int $cutoff,
-	): ?array {
-		$fullObject = $this->calDavBackend->getCalendarObject($calendarId, $object['uri']);
+	private function parseCalendarObjectForPicker(CalendarPickerScan $scan, array $object): ?array {
+		$fullObject = $this->calDavBackend->getCalendarObject($scan->calendarId, $object['uri']);
 		if ($fullObject === null || empty($fullObject['calendardata']) === true) {
 			return null;
 		}
@@ -604,13 +593,7 @@ class CalendarLinkService {
 		}
 
 		try {
-			return $this->buildPickerRowFromIcal(
-				calendarData: $calendarData,
-				objectUri: (string)$object['uri'],
-				calendarId: $calendarId,
-				calendarUri: $calendarUri,
-				cutoff: $cutoff
-			);
+			return $scan->pickerRow(vevent: Reader::read($calendarData)->VEVENT, objectUri: (string)$object['uri']);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'Failed to parse calendar event for picker: ' . $e->getMessage(),
@@ -620,65 +603,6 @@ class CalendarLinkService {
 
 		return null;
 	}//end parseCalendarObjectForPicker()
-
-	/**
-	 * Build a picker row from raw iCal data.
-	 *
-	 * Returns null when the iCal has no VEVENT, no UID, or the event
-	 * is before the cutoff timestamp.
-	 *
-	 * @param string $calendarData Raw iCal data.
-	 * @param string $objectUri CalDAV object URI.
-	 * @param int $calendarId Numeric calendar id.
-	 * @param string $calendarUri Calendar URI string.
-	 * @param int|null $cutoff Unix timestamp lower bound (null = no filter).
-	 *
-	 * @return array<string,mixed>|null Picker row, or null to skip.
-	 */
-	private function buildPickerRowFromIcal(
-		string $calendarData,
-		string $objectUri,
-		int $calendarId,
-		string $calendarUri,
-		?int $cutoff,
-	): ?array {
-		$vcalendar = Reader::read($calendarData);
-		$vevent = $vcalendar->VEVENT;
-		if ($vevent === null || isset($vevent->UID) === false) {
-			return null;
-		}
-
-		$uid = (string)$vevent->UID;
-		$start = null;
-		if (isset($vevent->DTSTART) === true) {
-			$start = $vevent->DTSTART->getDateTime();
-		}
-
-		if ($cutoff !== null && $start !== null && $start->getTimestamp() < $cutoff) {
-			return null;
-		}
-
-		$dtend = null;
-		if (isset($vevent->DTEND) === true) {
-			$dtend = $vevent->DTEND->getDateTime()->format('c');
-		}
-
-		$rowLocation = null;
-		if (isset($vevent->LOCATION) === true) {
-			$rowLocation = (string)$vevent->LOCATION;
-		}
-
-		return [
-			'uid' => $uid,
-			'uri' => $objectUri,
-			'summary' => (string)($vevent->SUMMARY ?? ''),
-			'dtstart' => $start?->format('c'),
-			'dtend' => $dtend,
-			'location' => $rowLocation,
-			'calendarId' => $calendarId,
-			'calendarUri' => $calendarUri,
-		];
-	}//end buildPickerRowFromIcal()
 
 	/**
 	 * Locate a VEVENT on a named calendar and pull cacheable fields.

@@ -77,6 +77,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRowWrite
  */
 class MagicMapperRefusedCreateComposedTest extends TestCase {
 
