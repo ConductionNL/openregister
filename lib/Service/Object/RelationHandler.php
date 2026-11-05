@@ -768,7 +768,7 @@ class RelationHandler {
 	 * @param \Exception     $error  What went wrong.
 	 * @param RelationLookup $lookup The lookup, labelled with what it lists.
 	 *
-	 * @return array{results: list<never>, total: 0, limit: mixed, offset: mixed} The empty page.
+	 * @return array{results: array<int, mixed>, total: int, limit: mixed, offset: mixed} The empty page.
 	 *
 	 * @throws MultipleObjectsReturnedException When the identifier is ambiguous.
 	 *
