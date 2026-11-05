@@ -5489,31 +5489,6 @@ parameters:
 			path: lib/Service/TenantLifecycleService.php
 
 		-
-			message: "#^Offset 'confidence' on array\\{language\\: null, level\\: null, confidence\\: null, method\\: null\\} on left side of \\?\\? always exists and is always null\\.$#"
-			count: 1
-			path: lib/Service/TextExtraction/FileHandler.php
-
-		-
-			message: "#^Offset 'language' on array\\{language\\: null, level\\: null, confidence\\: null, method\\: null\\} on left side of \\?\\? always exists and is always null\\.$#"
-			count: 1
-			path: lib/Service/TextExtraction/FileHandler.php
-
-		-
-			message: "#^Offset 'level' on array\\{language\\: null, level\\: null, confidence\\: null, method\\: null\\} on left side of \\?\\? always exists and is always null\\.$#"
-			count: 1
-			path: lib/Service/TextExtraction/FileHandler.php
-
-		-
-			message: "#^Offset 'method' on array\\{language\\: null, level\\: null, confidence\\: null, method\\: null\\} on left side of \\?\\? always exists and is always null\\.$#"
-			count: 1
-			path: lib/Service/TextExtraction/FileHandler.php
-
-		-
-			message: "#^Offset 'mtime' on array\\{fileid\\: int, storage\\: int, path\\: string, path_hash\\: string, parent\\: int, name\\: string, mimetype\\: string, mimepart\\: string, \\.\\.\\.\\} on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 1
-			path: lib/Service/TextExtraction/FileHandler.php
-
-		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Register\\:\\:getName\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/TextExtraction/ObjectHandler.php
