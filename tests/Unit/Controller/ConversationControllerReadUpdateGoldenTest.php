@@ -40,6 +40,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Controller\Support\ConversationDomain
  * @uses \OCA\OpenRegister\Controller\Support\ConversationPlatform
  * @uses \OCA\OpenRegister\Controller\Support\ConversationControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ConversationFailure
  * @uses \OCA\OpenRegister\Db\Conversation
  * @uses \OCA\OpenRegister\Db\Organisation
  * @uses \OCA\OpenRegister\Notifications\Db\Message

@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Controller\Support\ConversationControllerServices;
+use OCA\OpenRegister\Controller\Support\ConversationFailure;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
@@ -269,62 +270,22 @@ class ConversationController extends Controller {
 	 */
 	public function show(string $uuid): JSONResponse {
 		try {
-			// Find conversation.
 			$conversation = $this->conversationMapper->findByUuid($uuid);
-
-			// Get active organisation.
-			$organisation = $this->organisationService->getActiveOrganisation();
-			$organisationUuid = $organisation?->getUuid();
-
-			// Validate Check access rights using method.
-			if ($this->conversationMapper->canUserAccessConversation(
-				conversation: $conversation,
-				userId: $this->userId,
-				organisationUuid: $organisationUuid
-			) === false
-			) {
-				return new JSONResponse(
-					data: [
-						'error' => 'Access denied',
-						'message' => 'You do not have access to this conversation',
-					],
-					statusCode: 403
-				);
+			$denied = $this->readDenied(conversation: $conversation);
+			if ($denied !== null) {
+				return $denied;
 			}
 
-			// Build response without messages.
+			// Build response without messages; the message count is read separately for efficiency.
 			$response = $conversation->jsonSerialize();
-			// Get message count separately for efficiency.
 			$response['messageCount'] = $this->messageMapper->countByConversation($conversation->getId());
 
 			return new JSONResponse(data: $response, statusCode: 200);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Conversation not found',
-					'message' => 'The requested conversation does not exist',
-				],
-				statusCode: 404
-			);
+			return $this->conversationNotFound();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ConversationController] Failed to get conversation',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to fetch conversation',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			$failure = new ConversationFailure(uuid: $uuid, error: 'Failed to fetch conversation');
+			return $this->failed(failure: $failure->loggedAs(message: 'Failed to get conversation'), e: $e);
 		}//end try
 	}//end show()
 
@@ -353,27 +314,10 @@ class ConversationController extends Controller {
 	 */
 	public function messages(string $uuid): JSONResponse {
 		try {
-			// Find conversation.
 			$conversation = $this->conversationMapper->findByUuid($uuid);
-
-			// Get active organisation.
-			$organisation = $this->organisationService->getActiveOrganisation();
-			$organisationUuid = $organisation?->getUuid();
-
-			// Validate Check access rights using method.
-			if ($this->conversationMapper->canUserAccessConversation(
-				conversation: $conversation,
-				userId: $this->userId,
-				organisationUuid: $organisationUuid
-			) === false
-			) {
-				return new JSONResponse(
-					data: [
-						'error' => 'Access denied',
-						'message' => 'You do not have access to this conversation',
-					],
-					statusCode: 403
-				);
+			$denied = $this->readDenied(conversation: $conversation);
+			if ($denied !== null) {
+				return $denied;
 			}
 
 			// Get query parameters for pagination.
@@ -381,14 +325,11 @@ class ConversationController extends Controller {
 			$limit = (int)($params['limit'] ?? $params['_limit'] ?? 50);
 			$offset = (int)($params['offset'] ?? $params['_offset'] ?? 0);
 
-			// Get messages with pagination.
 			$messages = $this->messageMapper->findByConversation(
 				conversationId: $conversation->getId(),
 				limit: $limit,
 				offset: $offset
 			);
-
-			// Get total count.
 			$total = $this->messageMapper->countByConversation($conversation->getId());
 
 			return new JSONResponse(
@@ -401,32 +342,10 @@ class ConversationController extends Controller {
 				statusCode: 200
 			);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Conversation not found',
-					'message' => 'The requested conversation does not exist',
-				],
-				statusCode: 404
-			);
+			return $this->conversationNotFound();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ConversationController] Failed to get messages',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to fetch messages',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			$failure = new ConversationFailure(uuid: $uuid, error: 'Failed to fetch messages');
+			return $this->failed(failure: $failure->loggedAs(message: 'Failed to get messages'), e: $e);
 		}//end try
 	}//end messages()
 
@@ -574,25 +493,12 @@ class ConversationController extends Controller {
 	 */
 	public function update(string $uuid): JSONResponse {
 		try {
-			// Find conversation.
 			$conversation = $this->conversationMapper->findByUuid($uuid);
-
-			// Check modify rights using mapper method.
-			$canModify = $this->conversationMapper->canUserModifyConversation(
-				conversation: $conversation,
-				userId: $this->userId
-			);
-			if ($canModify === false) {
-				return new JSONResponse(
-					data: [
-						'error' => 'Access denied',
-						'message' => 'You do not have permission to modify this conversation',
-					],
-					statusCode: 403
-				);
+			$denied = $this->modifyDenied(conversation: $conversation, message: 'You do not have permission to modify this conversation');
+			if ($denied !== null) {
+				return $denied;
 			}
 
-			// Get request data.
 			$data = $this->request->getParams();
 
 			// SECURITY: Only update allowed fields to prevent tampering with immutable fields.
@@ -606,47 +512,14 @@ class ConversationController extends Controller {
 			}
 
 			$conversation->setUpdated(new DateTime());
-
-			// Save to database.
 			$conversation = $this->conversationMapper->update($conversation);
-
-			$this->logger->info(
-				message: '[ConversationController] Conversation updated',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-				]
-			);
+			$this->logged(message: 'Conversation updated', uuid: $uuid);
 
 			return new JSONResponse(data: $conversation->jsonSerialize(), statusCode: 200);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Conversation not found',
-					'message' => 'The requested conversation does not exist',
-				],
-				statusCode: 404
-			);
+			return $this->conversationNotFound();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ConversationController] Failed to update conversation',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to update conversation',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->failed(failure: new ConversationFailure(uuid: $uuid, error: 'Failed to update conversation'), e: $e);
 		}//end try
 	}//end update()
 
@@ -672,45 +545,23 @@ class ConversationController extends Controller {
 	 */
 	public function destroy(string $uuid): JSONResponse {
 		try {
-			// Find conversation.
 			$conversation = $this->conversationMapper->findByUuid($uuid);
-
-			// Check modify rights using mapper method.
-			$canModify = $this->conversationMapper->canUserModifyConversation(
-				conversation: $conversation,
-				userId: $this->userId
-			);
-			if ($canModify === false) {
-				return $this->accessDenied(message: 'You do not have permission to delete this conversation');
+			$denied = $this->modifyDenied(conversation: $conversation, message: 'You do not have permission to delete this conversation');
+			if ($denied !== null) {
+				return $denied;
 			}
 
 			// An already archived (soft-deleted) conversation is deleted permanently.
 			if ($conversation->getDeletedAt() !== null) {
-				return $this->purgeArchived(conversation: $conversation, uuid: $uuid);
+				$this->logged(message: 'Permanently deleting archived conversation', uuid: $uuid);
+				return $this->purge(conversation: $conversation, uuid: $uuid);
 			}
 
 			return $this->archive(conversation: $conversation, uuid: $uuid);
 		} catch (DoesNotExistException $e) {
 			return $this->conversationNotFound();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ConversationController] Failed to delete conversation',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to delete conversation',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->failed(failure: new ConversationFailure(uuid: $uuid, error: 'Failed to delete conversation'), e: $e);
 		}//end try
 	}//end destroy()
 
@@ -739,52 +590,20 @@ class ConversationController extends Controller {
 	 */
 	public function restore(string $uuid): JSONResponse {
 		try {
-			// Find conversation.
 			$conversation = $this->conversationMapper->findByUuid($uuid);
-
-			// Check modify rights using mapper method.
-			$canModify = $this->conversationMapper->canUserModifyConversation(
-				conversation: $conversation,
-				userId: $this->userId
-			);
-			if ($canModify === false) {
-				return $this->accessDenied(message: 'You do not have permission to restore this conversation');
+			$denied = $this->modifyDenied(conversation: $conversation, message: 'You do not have permission to restore this conversation');
+			if ($denied !== null) {
+				return $denied;
 			}
 
-			// Restore.
 			$conversation = $this->conversationMapper->restore($conversation->getId());
-
-			$this->logger->info(
-				message: '[ConversationController] Conversation restored',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-				]
-			);
+			$this->logged(message: 'Conversation restored', uuid: $uuid);
 
 			return new JSONResponse(data: $conversation->jsonSerialize(), statusCode: 200);
 		} catch (DoesNotExistException $e) {
 			return $this->conversationNotFound();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ConversationController] Failed to restore conversation',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to restore conversation',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->failed(failure: new ConversationFailure(uuid: $uuid, error: 'Failed to restore conversation'), e: $e);
 		}//end try
 	}//end restore()
 
@@ -810,97 +629,35 @@ class ConversationController extends Controller {
 	 */
 	public function destroyPermanent(string $uuid): JSONResponse {
 		try {
-			// Find conversation.
 			$conversation = $this->conversationMapper->findByUuid($uuid);
-
-			// Check modify rights using mapper method.
-			$canModify = $this->conversationMapper->canUserModifyConversation(
-				conversation: $conversation,
-				userId: $this->userId
-			);
-			if ($canModify === false) {
-				return $this->accessDenied(message: 'You do not have permission to delete this conversation');
+			$denied = $this->modifyDenied(conversation: $conversation, message: 'You do not have permission to delete this conversation');
+			if ($denied !== null) {
+				return $denied;
 			}
 
-			// Delete feedback first.
-			$this->feedbackMapper->deleteByConversation($conversation->getId());
-
-			// Delete messages.
-			$this->messageMapper->deleteByConversation($conversation->getId());
-
-			// Delete conversation.
-			$this->conversationMapper->delete($conversation);
-
-			$this->logger->info(
-				message: '[ConversationController] Conversation permanently deleted',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'message' => 'Conversation permanently deleted',
-					'uuid' => $uuid,
-				],
-				statusCode: 200
-			);
+			return $this->purge(conversation: $conversation, uuid: $uuid);
 		} catch (DoesNotExistException $e) {
 			return $this->conversationNotFound();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ConversationController] Failed to permanently delete conversation',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to permanently delete conversation',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->failed(failure: new ConversationFailure(uuid: $uuid, error: 'Failed to permanently delete conversation'), e: $e);
 		}//end try
 	}//end destroyPermanent()
 
 	/**
-	 * Permanently delete an archived conversation with its feedback and messages.
+	 * Delete a conversation with its feedback and messages.
 	 *
-	 * @param Conversation $conversation The archived conversation.
-	 * @param string       $uuid         The requested conversation UUID.
+	 * @param Conversation $conversation The conversation.
+	 * @param string       $uuid         Its UUID, for the log and the response.
 	 *
 	 * @return JSONResponse The deletion confirmation.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	private function purgeArchived(Conversation $conversation, string $uuid): JSONResponse {
-		$this->logger->info(
-			message: '[ConversationController] Permanently deleting archived conversation',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $uuid,
-			]
-		);
-
+	private function purge(Conversation $conversation, string $uuid): JSONResponse {
 		$this->feedbackMapper->deleteByConversation($conversation->getId());
 		$this->messageMapper->deleteByConversation($conversation->getId());
 		$this->conversationMapper->delete($conversation);
-
-		$this->logger->info(
-			message: '[ConversationController] Conversation permanently deleted',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $uuid,
-			]
-		);
+		$this->logged(message: 'Conversation permanently deleted', uuid: $uuid);
 
 		return new JSONResponse(
 			data: [
@@ -909,7 +666,7 @@ class ConversationController extends Controller {
 			],
 			statusCode: 200
 		);
-	}//end purgeArchived()
+	}//end purge()
 
 	/**
 	 * Archive (soft delete) a conversation.
@@ -921,15 +678,7 @@ class ConversationController extends Controller {
 	 */
 	private function archive(Conversation $conversation, string $uuid): JSONResponse {
 		$this->conversationMapper->softDelete($conversation->getId());
-
-		$this->logger->info(
-			message: '[ConversationController] Conversation archived (soft deleted)',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $uuid,
-			]
-		);
+		$this->logged(message: 'Conversation archived (soft deleted)', uuid: $uuid);
 
 		return new JSONResponse(
 			data: [
@@ -972,4 +721,97 @@ class ConversationController extends Controller {
 			statusCode: 404
 		);
 	}//end conversationNotFound()
+	/**
+	 * The refusal for a caller who may not read the conversation, in the active organisation.
+	 *
+	 * @param Conversation $conversation The conversation.
+	 *
+	 * @return JSONResponse|null A 403, or null when the caller may read it.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function readDenied(Conversation $conversation): ?JSONResponse {
+		$organisation = $this->organisationService->getActiveOrganisation();
+		$mayRead = $this->conversationMapper->canUserAccessConversation(
+			conversation: $conversation,
+			userId: $this->userId,
+			organisationUuid: $organisation?->getUuid()
+		);
+		if ($mayRead === false) {
+			return $this->accessDenied(message: 'You do not have access to this conversation');
+		}
+
+		return null;
+	}//end readDenied()
+
+	/**
+	 * The refusal for a caller who may not change the conversation.
+	 *
+	 * @param Conversation $conversation The conversation.
+	 * @param string       $message      The refusal text.
+	 *
+	 * @return JSONResponse|null A 403, or null when the caller may change it.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function modifyDenied(Conversation $conversation, string $message): ?JSONResponse {
+		$mayModify = $this->conversationMapper->canUserModifyConversation(conversation: $conversation, userId: $this->userId);
+		if ($mayModify === false) {
+			return $this->accessDenied(message: $message);
+		}
+
+		return null;
+	}//end modifyDenied()
+
+	/**
+	 * Log an action on a conversation at info level.
+	 *
+	 * @param string $message The message, without the controller prefix.
+	 * @param string $uuid    The conversation.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function logged(string $message, string $uuid): void {
+		$this->logger->info(
+			message: '[ConversationController] ' . $message,
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+			]
+		);
+	}//end logged()
+
+	/**
+	 * Log a failed action on a conversation and answer it with a 500.
+	 *
+	 * @param ConversationFailure $failure How the failure is logged and answered.
+	 * @param \Exception          $e       The failure.
+	 *
+	 * @return JSONResponse The 500 answer.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	private function failed(ConversationFailure $failure, \Exception $e): JSONResponse {
+		$this->logger->error(
+			message: '[ConversationController] ' . $failure->logMessage(),
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $failure->uuid,
+				'error' => $e->getMessage(),
+				'trace' => $e->getTraceAsString(),
+			]
+		);
+
+		return new JSONResponse(
+			data: [
+				'error' => $failure->error,
+				'message' => $e->getMessage(),
+			],
+			statusCode: 500
+		);
+	}//end failed()
 }//end class
