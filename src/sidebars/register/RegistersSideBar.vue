@@ -232,8 +232,28 @@ import PackageVariantClosed from 'vue-material-design-icons/PackageVariantClosed
 import TableIcon from 'vue-material-design-icons/Table.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import formatBytes from '../../services/formatBytes.js'
+import {
+	registerSelect,
+	schemaSelect,
+	scopeOption,
+} from '../../services/scopeSelect.js'
 // Ensure data is loaded
 dashboardStore.preload()
+
+const BREAKDOWN_COUNTS = ['invalid', 'deleted', 'locked']
+
+/**
+ * Add the object counts that are not zero to a stats breakdown.
+ *
+ * @param {object} breakdown The breakdown being built
+ * @param {object} stats The object statistics
+ */
+function addCounts(breakdown, stats) {
+	for (const key of BREAKDOWN_COUNTS) {
+		const count = stats[key]
+		if (count) breakdown[key] = count
+	}
+}
 
 export default {
 	name: 'RegistersSideBar',
@@ -323,25 +343,7 @@ export default {
 		 * @return {object} NcSelect options bag for registers
 		 */
 		registerOptions() {
-			return {
-				options: registerStore.registerList.map((register) => ({
-					value: register.id,
-					label: register.title,
-					title: register.title,
-					register,
-				})),
-
-				reduce: (option) => option.register,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.register && option.register.title)
-						|| option.label
-						|| ''
-					)
-				},
-			}
+			return registerSelect(registerStore.registerList)
 		},
 
 		/**
@@ -351,33 +353,7 @@ export default {
 		 * @return {object} NcSelect options bag for schemas
 		 */
 		schemaOptions() {
-			if (!registerStore.registerItem) return { options: [] }
-
-			return {
-				options: schemaStore.schemaList
-					.filter((schema) =>
-						registerStore.registerItem.schemas.some(
-							(registerSchema) => registerSchema.id === schema.id,
-						),
-					)
-					.map((schema) => ({
-						value: schema.id,
-						label: schema.title,
-						title: schema.title,
-						schema,
-					})),
-
-				reduce: (option) => option.schema,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.schema && option.schema.title)
-						|| option.label
-						|| ''
-					)
-				},
-			}
+			return schemaSelect(registerStore.registerItem, schemaStore.schemaList)
 		},
 
 		/**
@@ -387,14 +363,7 @@ export default {
 		 * @return {object|null} Selected register option, or null
 		 */
 		selectedRegisterValue() {
-			if (!registerStore.registerItem) return null
-			const register = registerStore.registerItem
-			return {
-				value: register.id,
-				label: register.title,
-				title: register.title,
-				register,
-			}
+			return scopeOption(registerStore.registerItem, 'register')
 		},
 
 		/**
@@ -404,14 +373,7 @@ export default {
 		 * @return {object|null} Selected schema option, or null
 		 */
 		selectedSchemaValue() {
-			if (!schemaStore.schemaItem) return null
-			const schema = schemaStore.schemaItem
-			return {
-				value: schema.id,
-				label: schema.title,
-				title: schema.title,
-				schema,
-			}
+			return scopeOption(schemaStore.schemaItem, 'schema')
 		},
 	},
 
@@ -463,9 +425,7 @@ export default {
 			if (!stats) return null
 			const breakdown = {}
 			if (stats.size) breakdown.size = formatBytes(stats.size)
-			if (stats.invalid) breakdown.invalid = stats.invalid
-			if (stats.deleted) breakdown.deleted = stats.deleted
-			if (stats.locked) breakdown.locked = stats.locked
+			addCounts(breakdown, stats)
 			return Object.keys(breakdown).length > 0 ? breakdown : null
 		},
 

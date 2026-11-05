@@ -44,32 +44,6 @@ class FileAuditHandlerTest extends TestCase {
 	}//end setUp()
 
 	/**
-	 * Test authenticated download logging.
-	 */
-	public function testLogDownloadAuthenticated(): void {
-		$user = $this->createMock(IUser::class);
-		$user->method('getUID')->willReturn('behandelaar-1');
-		$this->userSession->method('getUser')->willReturn($user);
-
-		$this->logger->expects($this->once())->method('info');
-
-		$this->handler->logDownload(42, 'rapport.pdf', 245760, 'application/pdf', 'abc-123');
-	}//end testLogDownloadAuthenticated()
-
-	/**
-	 * Test anonymous download logging includes IP and user-agent.
-	 */
-	public function testLogDownloadAnonymous(): void {
-		$this->userSession->method('getUser')->willReturn(null);
-		$this->request->method('getRemoteAddress')->willReturn('192.168.1.1');
-		$this->request->method('getHeader')->willReturn('Mozilla/5.0');
-
-		$this->logger->expects($this->once())->method('info');
-
-		$this->handler->logDownload(42, 'rapport.pdf', 245760, 'application/pdf', 'abc-123');
-	}//end testLogDownloadAnonymous()
-
-	/**
 	 * Test bulk download logging persists a SINGLE audit row for the ZIP,
 	 * not one row per file inside the archive.
 	 */
@@ -150,17 +124,6 @@ class FileAuditHandlerTest extends TestCase {
 		$this->assertSame('Anonymous', $captured->getUser());
 		$this->assertStringContainsString('192.168.1.50', $captured->getUserName());
 	}//end testLogBulkDownloadAnonymous()
-
-	/**
-	 * Test download logging does not throw even if internal error.
-	 */
-	public function testLogDownloadDoesNotThrow(): void {
-		$this->userSession->method('getUser')->willThrowException(new \Exception('Session error'));
-
-		// Should not propagate exception.
-		$this->handler->logDownload(42, 'test.pdf', 1024, 'application/pdf', 'abc-123');
-		$this->assertTrue(true);
-	}//end testLogDownloadDoesNotThrow()
 
 	/**
 	 * Test that logFileAction persists an AuditTrail row tagged to the

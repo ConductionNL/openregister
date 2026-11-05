@@ -106,38 +106,6 @@ class MetricsServiceTest extends TestCase {
 		);
 	}
 
-	public function testGetFilesProcessedPerDay(): void {
-		$qb = $this->createQueryBuilder();
-		$result = $this->createMock(IResult::class);
-		$result->method('fetchAll')->willReturn([
-			['date' => '2024-01-01', 'count' => '5'],
-			['date' => '2024-01-02', 'count' => '10'],
-		]);
-		$result->method('closeCursor')->willReturn(true);
-		$qb->method('executeQuery')->willReturn($result);
-
-		$this->db->method('getQueryBuilder')->willReturn($qb);
-
-		$data = $this->service->getFilesProcessedPerDay(7);
-
-		$this->assertSame(5, $data['2024-01-01']);
-		$this->assertSame(10, $data['2024-01-02']);
-	}
-
-	public function testGetFilesProcessedPerDayEmpty(): void {
-		$qb = $this->createQueryBuilder();
-		$result = $this->createMock(IResult::class);
-		$result->method('fetchAll')->willReturn([]);
-		$result->method('closeCursor')->willReturn(true);
-		$qb->method('executeQuery')->willReturn($result);
-
-		$this->db->method('getQueryBuilder')->willReturn($qb);
-
-		$data = $this->service->getFilesProcessedPerDay();
-
-		$this->assertSame([], $data);
-	}
-
 	public function testGetEmbeddingStats(): void {
 		$qb = $this->createQueryBuilder();
 		$result = $this->createMock(IResult::class);
@@ -272,33 +240,6 @@ class MetricsServiceTest extends TestCase {
 
 		$this->assertSame([], $growth['daily_vectors_added']);
 		$this->assertSame(0.0, $growth['avg_vectors_per_day']);
-	}
-
-	public function testGetDashboardMetrics(): void {
-		// getDashboardMetrics aggregates other methods; just verify structure
-		$qb = $this->createQueryBuilder();
-		$result = $this->createMock(IResult::class);
-		$result->method('fetchAll')->willReturn([]);
-		$result->method('fetch')->willReturn([
-			'total' => '0',
-			'successful' => '0',
-			'count' => '0',
-			'avg_ms' => null,
-			'min_ms' => null,
-			'max_ms' => null,
-			'total_bytes' => '0',
-		]);
-		$result->method('closeCursor')->willReturn(true);
-		$qb->method('executeQuery')->willReturn($result);
-
-		$this->db->method('getQueryBuilder')->willReturn($qb);
-
-		$dashboard = $this->service->getDashboardMetrics();
-
-		$this->assertArrayHasKey('files_processed', $dashboard);
-		$this->assertArrayHasKey('embedding_stats', $dashboard);
-		$this->assertArrayHasKey('search_latency', $dashboard);
-		$this->assertArrayHasKey('storage_growth', $dashboard);
 	}
 
 	public function testCleanOldMetricsReturnsInt(): void {

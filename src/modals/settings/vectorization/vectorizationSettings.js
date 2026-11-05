@@ -40,3 +40,15 @@ function saveFailure(error) {
 		error: error.response?.data?.error || error.message,
 	})
 }
+
+/**
+ * The hint under a field that sets how many file chunks go in one call.
+ *
+ * @return {string} The hint
+ */
+export function chunkBatchSizeHint() {
+	return t(
+		'openregister',
+		'Number of chunks to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.',
+	)
+}
