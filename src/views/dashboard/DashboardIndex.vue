@@ -837,6 +837,13 @@ export default {
 </script>
 
 <style scoped>
+/* Date-range pill on the range-driven KPI cards (Searches, Events). */
+.kpi-chip {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+}
+
 /* Chart widget — center the pie within the widget body */
 .chart-widget-content {
 	display: flex;

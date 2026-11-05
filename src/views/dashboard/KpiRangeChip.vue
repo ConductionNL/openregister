@@ -59,12 +59,6 @@ export default {
 </script>
 
 <style scoped>
-.kpi-chip {
-	position: absolute;
-	top: 10px;
-	right: 10px;
-}
-
 .kpi-chip-label {
 	display: inline-block;
 	padding: 2px 10px;

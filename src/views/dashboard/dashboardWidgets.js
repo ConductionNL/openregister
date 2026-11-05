@@ -96,10 +96,7 @@ function kpiWidgets() {
 function panelWidgets() {
 	return [
 		flushWidget('popular-terms', t('openregister', 'Popular Search Terms')),
-		flushWidget(
-			'objects-by-register',
-			t('openregister', 'Objects by Register'),
-		),
+		flushWidget('objects-by-register', t('openregister', 'Objects by Register')),
 		flushWidget('objects-by-schema', t('openregister', 'Objects by Schema')),
 		customWidget('objects-chart', t('openregister', 'Objects Distribution')),
 	]

@@ -83,10 +83,7 @@ export function storedRange() {
  */
 export function storeRange(presetId) {
 	try {
-		localStorage.setItem(
-			RANGE_PERSIST_KEY,
-			JSON.stringify({ preset: presetId }),
-		)
+		localStorage.setItem(RANGE_PERSIST_KEY, JSON.stringify({ preset: presetId }))
 	} catch {
 		// Non-fatal: private window or quota.
 	}
