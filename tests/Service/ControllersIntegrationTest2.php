@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ApiTokenSettingsControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ConversationControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\GdprEntitiesControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FileExtractionControllerFactory;
@@ -2013,7 +2014,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return ApiTokenSettingsController
 	 */
 	private function buildApiTokenSettingsController(): ApiTokenSettingsController {
-		return new ApiTokenSettingsController(
+		return ApiTokenSettingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->appConfig,
