@@ -266,50 +266,28 @@ class ValidateObject implements ValidateObjectInterface {
 		array $existingObject,
 		Schema $schema,
 	): array {
-		// No existing object → CREATE path, readOnly is not enforced.
 		if ($existingObject === []) {
 			return [];
 		}
 
-		$properties = $schema->getProperties();
-		if (is_array($properties) === false || $properties === []) {
-			return [];
-		}
+		$names   = $this->collectReadOnlyPropertyNames(properties: self::declaredProperties(schema: $schema));
+		$changed = array_filter(
+			$names,
+			static fn (string $name): bool => array_key_exists($name, $incomingObject) === true
+				&& $incomingObject[$name] !== ($existingObject[$name] ?? null)
+		);
 
-		$readOnlyNames = $this->collectReadOnlyPropertyNames(properties: $properties);
-		if ($readOnlyNames === []) {
-			return [];
-		}
-
-		$violations = [];
-		foreach ($readOnlyNames as $name) {
-			// Omitted from the payload → not a mutation → OK.
-			if (array_key_exists($name, $incomingObject) === false) {
-				continue;
-			}
-
-			$attempted = $incomingObject[$name];
-			$stored = $existingObject[$name] ?? null;
-
-			// Compare with PHP-equality (===) so type-coercion doesn't mask a
-			// mutation: `42` (int) vs `"42"` (string) IS a mutation. Authors
-			// who care about looser equality should use `default` instead.
-			if ($attempted === $stored) {
-				continue;
-			}
-
-			$violations[] = [
-				'property' => $name,
-				'attempted' => $attempted,
-				'stored' => $stored,
-				'message' => sprintf(
-					"Property '%s' is declared readOnly and cannot be modified after creation.",
-					$name
-				),
-			];
-		}//end foreach
-
-		return $violations;
+		return array_values(
+			array_map(
+				static fn (string $name): array => [
+					'property'  => $name,
+					'attempted' => $incomingObject[$name],
+					'stored'    => $existingObject[$name] ?? null,
+					'message'   => sprintf("Property '%s' is declared readOnly and cannot be modified after creation.", $name),
+				],
+				$changed
+			)
+		);
 	}//end validateReadOnlyConstraints()
 
 	/**
@@ -378,48 +356,43 @@ class ValidateObject implements ValidateObjectInterface {
 			return [];
 		}
 
+		$names   = $this->collectImmutablePropertyNames(properties: self::declaredProperties(schema: $schema));
+		$changed = array_filter(
+			$names,
+			static fn (string $name): bool => array_key_exists($name, $incomingObject) === true
+				&& in_array($existingObject[$name] ?? null, [null, ''], true) === false
+				&& $incomingObject[$name] !== $existingObject[$name]
+		);
+
+		return array_values(
+			array_map(
+				static fn (string $name): array => [
+					'property'  => $name,
+					'attempted' => $incomingObject[$name],
+					'stored'    => $existingObject[$name],
+					'message'   => sprintf("Property '%s' is immutable once set and cannot be changed.", $name),
+				],
+				$changed
+			)
+		);
+	}//end validateImmutableConstraints()
+
+	/**
+	 * The schema's property definitions, or an empty list when it declares none.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array The property definitions.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	private static function declaredProperties(Schema $schema): array {
 		$properties = $schema->getProperties();
-		if (is_array($properties) === false || $properties === []) {
+		if (is_array($properties) === false) {
 			return [];
 		}
 
-		$immutableNames = $this->collectImmutablePropertyNames(properties: $properties);
-		if ($immutableNames === []) {
-			return [];
-		}
-
-		$violations = [];
-		foreach ($immutableNames as $name) {
-			// Omitted from the payload is not a mutation.
-			if (array_key_exists($name, $incomingObject) === false) {
-				continue;
-			}
-
-			$stored = $existingObject[$name] ?? null;
-
-			// Not set yet. The whole difference from `readOnly`: the first
-			// value is accepted, and only then does the property close.
-			if ($stored === null || $stored === '') {
-				continue;
-			}
-
-			$attempted = $incomingObject[$name];
-			if ($attempted === $stored) {
-				continue;
-			}
-
-			$violations[] = [
-				'property' => $name,
-				'attempted' => $attempted,
-				'stored' => $stored,
-				'message' => sprintf(
-					"Property '%s' is immutable once set and cannot be changed.",
-					$name
-				),
-			];
-		}//end foreach
-
-		return $violations;
+		return $properties;
 	}//end validateImmutableConstraints()
 
 	/**
@@ -2754,52 +2727,40 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function handleValidationException(ValidationException|CustomValidationException $exception): JSONResponse {
-		$errors = [];
 		if ($exception instanceof ValidationException === false) {
-			foreach ($exception->getErrors() as $error) {
-				$errors[] = $error;
-			}
-
-			return new JSONResponse(
-				data: [
-					'status' => 'error',
-					'message' => 'Validation failed',
-					'errors' => $errors,
-				],
-				statusCode: 400
-			);
+			return self::validationFailedResponse(errors: array_values($exception->getErrors()));
 		}
 
-		// The exception message should already be meaningful thanks to generateErrorMessage().
-		$property = null;
-		if (method_exists($exception, 'getProperty') === true) {
-			$property = $exception->getProperty();
-		}
-
-		// `getErrors()` is typed `?ValidationError` and IS null for every
-		// ValidationException thrown with a message alone — readOnly enforcement
-		// on update is one such path, and says so where it throws. Formatting
-		// that null is a TypeError, so the 400 this method exists to return
-		// became a 500 with the reason nowhere in the response: the caller saw
-		// "server error" instead of "cannot modify readOnly property X".
-		$formatted = [];
+		// `getErrors()` is null for a ValidationException thrown with a message alone (readOnly
+		// enforcement is one); formatting null is a TypeError and would turn this 400 into a 500.
+		$formatted       = [];
 		$validationError = $exception->getErrors();
 		if ($validationError !== null) {
 			$formatted = (new ErrorFormatter())->format($validationError);
 		}
 
-		$errors[] = [
-			'property' => $property,
-			'message' => $exception->getMessage(),
-			'errors' => $formatted,
-		];
+		$property = null;
+		if (method_exists($exception, 'getProperty') === true) {
+			$property = $exception->getProperty();
+		}
 
+		return self::validationFailedResponse(
+			errors: [['property' => $property, 'message' => $exception->getMessage(), 'errors' => $formatted]]
+		);
+	}//end handleValidationException()
+
+	/**
+	 * The 400 response for a failed validation.
+	 *
+	 * @param array $errors The error entries.
+	 *
+	 * @return JSONResponse The response.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function validationFailedResponse(array $errors): JSONResponse {
 		return new JSONResponse(
-			data: [
-				'status' => 'error',
-				'message' => 'Validation failed',
-				'errors' => $errors,
-			],
+			data: ['status' => 'error', 'message' => 'Validation failed', 'errors' => $errors],
 			statusCode: 400
 		);
 	}//end handleValidationException()
@@ -2816,12 +2777,30 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function validateUniqueFields(array $object, Schema $schema): void {
-		$config = $schema->getConfiguration();
-		$uniqueFields = $config['unique'] ?? null;
-
-		// BUGFIX: Early return if no unique fields are configured.
+		$uniqueFields = ($schema->getConfiguration()['unique'] ?? null);
 		if (empty($uniqueFields) === true) {
 			return;
+		}
+
+		$filters = self::uniqueFilters(object: $object, uniqueFields: $uniqueFields);
+		if ($this->objectMapper->countAll(_filters: $filters, schema: $schema) !== 0) {
+			throw self::notUniqueException(object: $object, uniqueFields: $uniqueFields);
+		}
+	}//end validateUniqueFields()
+
+	/**
+	 * The filters that find objects sharing the object's unique field values.
+	 *
+	 * @param array $object       The object.
+	 * @param mixed $uniqueFields The configured unique field, or list of fields.
+	 *
+	 * @return array The filters, keyed by field.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function uniqueFilters(array $object, mixed $uniqueFields): array {
+		if (is_string($uniqueFields) === true) {
+			return [$uniqueFields => $object[$uniqueFields]];
 		}
 
 		$filters = [];
@@ -2829,48 +2808,31 @@ class ValidateObject implements ValidateObjectInterface {
 			foreach ($uniqueFields as $field) {
 				$filters[$field] = $object[$field];
 			}
-		} elseif (is_string($uniqueFields) === true) {
-			$filters[$uniqueFields] = $object[$uniqueFields];
 		}
 
-		$count = $this->objectMapper->countAll(_filters: $filters, schema: $schema);
+		return $filters;
+	}//end uniqueFilters()
 
-		if ($count !== 0) {
-			// IMPROVED ERROR MESSAGE: Show which field(s) caused the uniqueness violation.
-			$fieldNames = $uniqueFields;
-			if (is_array($uniqueFields) === true) {
-				$fieldNames = implode(', ', $uniqueFields);
-			}
+	/**
+	 * The exception naming the unique fields and the values that are already taken.
+	 *
+	 * @param array $object       The object.
+	 * @param mixed $uniqueFields The configured unique field, or list of fields.
+	 *
+	 * @return CustomValidationException The exception.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function notUniqueException(array $object, mixed $uniqueFields): CustomValidationException {
+		$fields      = (array) $uniqueFields;
+		$fieldNames  = implode(', ', $fields);
+		$fieldValues = implode(', ', array_map(static fn ($field) => $field . '=' . ($object[$field] ?? 'null'), $fields));
+		$errorName   = (string) ($fields[array_key_first($fields)] ?? 'uniqueField');
 
-			if (is_array($uniqueFields) === true) {
-				$fieldValues = implode(
-					', ',
-					array_map(
-						function ($field) use ($object) {
-							return $field . '=' . ($object[$field] ?? 'null');
-						},
-						$uniqueFields
-					)
-				);
-				$errorName = (string)(array_shift($uniqueFields) ?? 'uniqueField');
-			}
-
-			if (is_array($uniqueFields) === false) {
-				// Scalar field name only — guarding the concat here avoids an
-				// "Array to string conversion" when $uniqueFields is an array.
-				$fieldValues = $uniqueFields . '=' . ($object[$uniqueFields] ?? 'null');
-				$errorName = (string)$uniqueFields;
-			}
-
-			$errMsg = "The identifying fields ({$fieldNames}) are not unique. ";
-			$errMsg .= "Found duplicate values: {$fieldValues}";
-			throw new CustomValidationException(
-				message: "Fields are not unique: {$fieldNames} (values: {$fieldValues})",
-				errors: [
-					$errorName => $errMsg,
-				]
-			);
-		}//end if
+		return new CustomValidationException(
+			message: "Fields are not unique: {$fieldNames} (values: {$fieldValues})",
+			errors: [$errorName => "The identifying fields ({$fieldNames}) are not unique. Found duplicate values: {$fieldValues}"]
+		);
 	}//end validateUniqueFields()
 
 	/**
