@@ -28,6 +28,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<FlowLink>
  */
 class FlowLinkMapper extends QBMapper {
+	use FindLinksByObjectUuidTrait;
+	use DeleteLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -36,23 +38,6 @@ class FlowLinkMapper extends QBMapper {
 	public function __construct(IDBConnection $db) {
 		parent::__construct(db: $db, tableName: 'openregister_flow_links', entityClass: FlowLink::class);
 	}//end __construct()
-
-	/**
-	 * Find flow links by object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return FlowLink[] Array of flow links.
-	 */
-	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
 
 	/**
 	 * Find flow links by operation id.
@@ -92,21 +77,6 @@ class FlowLinkMapper extends QBMapper {
 			return null;
 		}
 	}//end findByObjectAndOperation()
-
-	/**
-	 * Delete all flow links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 
 	/**
 	 * Delete a flow link by object UUID + operation id (Tier-2 unlink path).
