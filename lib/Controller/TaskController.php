@@ -43,6 +43,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Controller\Support\TaskControllerServices;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
@@ -97,42 +98,90 @@ use Throwable;
 class TaskController extends Controller {
 
 	/**
+	 * The authorized lifecycle.
+	 *
+	 * @var TaskManagerInterface
+	 */
+	private readonly TaskManagerInterface $tasks;
+
+	/**
+	 * The inbox queries.
+	 *
+	 * @var TaskInboxService
+	 */
+	private readonly TaskInboxService $inbox;
+
+	/**
+	 * Read-visibility decisions.
+	 *
+	 * @var TaskAuthorizationService
+	 */
+	private readonly TaskAuthorizationService $authorization;
+
+	/**
+	 * The one overdue derivation.
+	 *
+	 * @var TaskTemporalProjection
+	 */
+	private readonly TaskTemporalProjection $temporal;
+
+	/**
+	 * Names the acting identity.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Resolves the form a task presents, per read.
+	 *
+	 * @var TaskFormResolver
+	 */
+	private readonly TaskFormResolver $forms;
+
+	/**
+	 * Completes a task with a form payload,
+	 *
+	 * @var TaskFormCompletion
+	 */
+	private readonly TaskFormCompletion $completion;
+
+	/**
+	 * Where an unexpected failure's
+	 *
+	 * @var ?LoggerInterface
+	 */
+	private readonly ?LoggerInterface $logger;
+
+	/**
+	 * Resolves the caller's groups
+	 *
+	 * @var ?IGroupManager
+	 */
+	private readonly ?IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param TaskManagerInterface $tasks The authorized lifecycle.
-	 * @param TaskInboxService $inbox The inbox queries.
-	 * @param TaskAuthorizationService $authorization Read-visibility decisions.
-	 * @param TaskTemporalProjection $temporal The one overdue derivation.
-	 * @param IUserSession $userSession Names the acting identity.
-	 * @param TaskFormResolver $forms Resolves the form a task presents, per read.
-	 * @param TaskFormCompletion $completion Completes a task with a form payload,
-	 *                                       writing the subject first.
-	 * @param LoggerInterface|null $logger Where an unexpected failure's
-	 *                                     detail goes, INSTEAD of the response.
-	 * @param IGroupManager|null $groupManager Resolves the caller's groups
-	 *                                         and admin status for inbox
-	 *                                         visibility. Nullable so the
-	 *                                         controller stays constructible
-	 *                                         bare; absent means no groups
-	 *                                         and not admin, which SCOPES
-	 *                                         rather than widens.
+	 * @param TaskControllerServices $services The task controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly TaskManagerInterface $tasks,
-		private readonly TaskInboxService $inbox,
-		private readonly TaskAuthorizationService $authorization,
-		private readonly TaskTemporalProjection $temporal,
-		private readonly IUserSession $userSession,
-		private readonly TaskFormResolver $forms,
-		private readonly TaskFormCompletion $completion,
-		private readonly ?LoggerInterface $logger = null,
-		private readonly ?IGroupManager $groupManager = null,
+		TaskControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->tasks = $services->work->tasks;
+		$this->inbox = $services->work->inbox;
+		$this->authorization = $services->work->authorization;
+		$this->temporal = $services->work->temporal;
+		$this->userSession = $services->platform->userSession;
+		$this->forms = $services->completion->forms;
+		$this->completion = $services->completion->completion;
+		$this->logger = $services->platform->logger;
+		$this->groupManager = $services->platform->groupManager;
 
 	}//end __construct()
 
