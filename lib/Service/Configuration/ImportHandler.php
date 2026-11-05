@@ -477,7 +477,7 @@ class ImportHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function setSlugHandler(?\OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler $slugHandler): void {
 		$this->slugHandler = $slugHandler;

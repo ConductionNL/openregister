@@ -35,7 +35,7 @@ use Throwable;
 /**
  * The bookkeeping side of the slug backfill.
  *
- * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
  */
 class ObjectSlugBackfillLedger {
 
@@ -97,7 +97,7 @@ class ObjectSlugBackfillLedger {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function record(array $applied, Register $register, Schema $schema, array $summary): void {
 		$this->logLargeRun(applied: $applied, register: $register, schema: $schema);
