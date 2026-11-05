@@ -247,6 +247,7 @@ class CascadingHandler {
 	 * @return string|null The created uuid, or null without a target schema.
 	 *
 	 * @throws NotAuthorizedException When the caller may not create objects in the target schema.
+	 * @throws Exception When the save fails.
 	 */
 	private function cascadeCreate(array $objectData, CascadeTarget $target): ?string {
 		$schema = $this->cascadeSchema(definition: $target->definition());

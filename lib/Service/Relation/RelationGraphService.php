@@ -245,7 +245,8 @@ class RelationGraphService {
 	 *
 	 * @param GraphWalk $walk The finished walk.
 	 *
-	 * @return array{root: string, depth: int, requestedDepth: int, maxDepth: int, nodes: list<array>, edges: array, truncated: bool, truncatedBy: string|null}
+	 * @return array{root: string, depth: int, requestedDepth: int, maxDepth: int,
+	 *     nodes: list<array>, edges: array, truncated: bool, truncatedBy: string|null}
 	 */
 	private function graphResult(GraphWalk $walk): array {
 		return [

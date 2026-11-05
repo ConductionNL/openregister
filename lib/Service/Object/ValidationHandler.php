@@ -469,11 +469,13 @@ class ValidationHandler {
 	private function processValidationChunk(ValidationChunk $chunk, ValidationRun $run): array {
 		$objectsData = $this->convertChunkToArrays(objectsChunk: $chunk->objects);
 		$context = $this->chunkLogContext(chunk: $chunk, run: $run);
-		$this->logger->info(message: '[ValidationHandler] Processing validation chunk', context: $context + $this->chunkStartDetails(chunk: $chunk, run: $run));
+		$started = $this->chunkStartDetails(chunk: $chunk, run: $run);
+		$this->logger->info(message: '[ValidationHandler] Processing validation chunk', context: $context + $started);
 
 		try {
 			$counts = $this->bulkSaveCounts(objectsData: $objectsData, run: $run);
-			$this->logger->info(message: '[ValidationHandler] Chunk validation completed', context: $context + $this->chunkDoneDetails(counts: $counts, run: $run));
+			$done = $this->chunkDoneDetails(counts: $counts, run: $run);
+			$this->logger->info(message: '[ValidationHandler] Chunk validation completed', context: $context + $done);
 			return $counts;
 		} catch (\Exception $e) {
 			$this->logger->error(
