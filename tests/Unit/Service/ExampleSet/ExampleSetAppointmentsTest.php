@@ -61,6 +61,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetExternalTask
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskChecklist
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskDates
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskClaim
  * @uses \OCA\OpenRegister\Service\Task\TaskState
  */

@@ -166,7 +166,7 @@ abstract class ExampleSetEngineRows {
 
 		$today = ($context['today'] ?? null);
 		if ($isEnd === true && $today instanceof DateTimeImmutable === true
-			&& $moment->format('Y-m-d') < $today->setTimezone($moment->getTimezone())->format('Y-m-d')
+			&& $moment->setTimezone($today->getTimezone())->format('Y-m-d') < $today->format('Y-m-d')
 		) {
 			return $field.' "'.$value.'" lies before the install day';
 		}
