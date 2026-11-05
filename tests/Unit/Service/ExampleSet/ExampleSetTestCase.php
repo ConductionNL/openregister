@@ -101,6 +101,7 @@ use OCP\Comments\ICommentsManager;
 use OCP\Comments\NotFoundException as CommentNotFoundException;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapper;
+use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapper;
@@ -304,7 +305,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			TaskMapper::class         => $this->taskMapper(),
 			ViewService::class        => $this->viewService(),
 			ViewMapperInterface::class         => $this->viewMapper(),
-			WatcherMapper::class      => $this->watcherMapper(),
+			WatcherMapperInterface::class      => $this->watcherMapper(),
 			PartyRoleService::class   => $this->partyRoles(),
 			PartyService::class       => $this->partyService(),
 			ContactLinkMapper::class  => $this->contactLinks(),

@@ -44,7 +44,6 @@ class ServiceRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Contract\EmailLinkReaderInterface',
 				'OCA\OpenRegister\Service\Credential\CredentialStore',
 				'OCA\OpenRegister\Service\Translation\TranslationProviderInterface',
-				'OCA\OpenRegister\Notifications\Service\WebPush\HexIconService',
 				'OCA\OpenRegister\Service\Sync\SourceFetcherRegistry',
 				'OCA\OpenRegister\Service\SchemaImport\SchemaImportService',
 				'OCA\OpenRegister\Service\OrganisationService',

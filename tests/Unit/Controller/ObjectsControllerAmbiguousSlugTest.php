@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Notifications\Service\PresenceService;
+use OCA\OpenRegister\Notifications\Service\PresenceServiceInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByService;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\App\IAppManager;
@@ -78,7 +79,7 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 		$presence->method('depart')->willReturn(true);
 		$presence->method('present')->willReturn([]);
 		$container->method('get')->willReturnCallback(
-			fn (string $id) => ($id === PresenceService::class) ? $presence : $this->createMock(MagicMapper::class)
+			fn (string $id) => ($id === PresenceServiceInterface::class) ? $presence : $this->createMock(MagicMapper::class)
 		);
 
 		return ObjectsControllerFactory::create(

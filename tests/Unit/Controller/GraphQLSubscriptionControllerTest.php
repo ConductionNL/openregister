@@ -37,7 +37,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Controller {
+namespace OCA\OpenRegister\Notifications\Controller {
 
 	/**
 	 * Test-only shadow of the global `connection_aborted()`.

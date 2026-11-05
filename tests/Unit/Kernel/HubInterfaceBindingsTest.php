@@ -23,6 +23,7 @@ use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Notifications\NotificationsRegistrar;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -40,6 +41,7 @@ use PHPUnit\Framework\TestCase;
  * that type-hints the class get the same object.
  *
  * @covers \OCA\OpenRegister\Service\ContractBindings
+ * @uses   \OCA\OpenRegister\Notifications\NotificationsRegistrar
  */
 class HubInterfaceBindingsTest extends TestCase {
 
@@ -74,6 +76,7 @@ class HubInterfaceBindingsTest extends TestCase {
 	public function testTheInterfaceResolvesToItsImplementation(string $interface, string $implementation): void {
 		$context = new RecordingRegistrationContext();
 		ContractBindings::register(context: $context);
+		NotificationsRegistrar::register(context: $context);
 
 		$this->assertContains(needle: ['alias' => $interface, 'target' => $implementation], haystack: $context->aliases);
 		$this->assertTrue(is_subclass_of($implementation, $interface));
