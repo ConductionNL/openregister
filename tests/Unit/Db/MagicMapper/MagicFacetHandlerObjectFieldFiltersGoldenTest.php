@@ -19,6 +19,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
+use OCA\OpenRegister\Db\MagicMapper\TableTermsFacet;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -33,6 +35,8 @@ use ReflectionProperty;
  * Object field filters on the facet path, recorded per base query.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\TableTermsFacet
+ * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Support\FilterParams
  */
@@ -91,7 +95,7 @@ class MagicFacetHandlerObjectFieldFiltersGoldenTest extends TestCase {
 	 * Run applyObjectFieldFilters() on one base query.
 	 *
 	 * @param array $query      The base query.
-	 * @param bool  $withSchema Whether a schema is passed.
+	 * @param bool  $withSchema Whether the schema declares the property types.
 	 *
 	 * @return void
 	 */
@@ -103,9 +107,8 @@ class MagicFacetHandlerObjectFieldFiltersGoldenTest extends TestCase {
 			['oc_openregister_table_1_1' => ['title' => true, 'first_name' => true, 'status' => true, 'flag' => true, 'other' => true, 'amount' => true, 'count' => true, 'tags' => true]]
 		);
 
-		$schema = null;
+		$schema = new Schema();
 		if ($withSchema === true) {
-			$schema = new Schema();
 			$schema->setProperties(
 				[
 					'title' => ['type' => 'string'],
@@ -120,7 +123,8 @@ class MagicFacetHandlerObjectFieldFiltersGoldenTest extends TestCase {
 		}
 
 		$method = new ReflectionMethod(MagicFacetHandler::class, 'applyObjectFieldFilters');
-		$method->invoke($facets, $this->queryBuilder(), $query, 'openregister_table_1_1', $schema);
+		$facet  = new TableTermsFacet('openregister_table_1_1', 'title', $query, false, new Register(), $schema);
+		$method->invoke($facets, $this->queryBuilder(), $facet);
 	}//end apply()
 
 	/**
