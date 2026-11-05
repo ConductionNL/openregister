@@ -51,6 +51,8 @@ use ReflectionClass;
 /**
  * @covers \OCA\OpenRegister\Service\Object\BulkWriteEvents
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectDefaults
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectOwnership
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
