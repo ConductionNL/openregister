@@ -47,43 +47,10 @@ class SettingsControllerDeepTest extends TestCase {
 			$this->config,
 			$this->db,
 			$this->container,
-			$this->appManager,
 			$this->settingsService,
 			$this->logger,
 			$l10n
 		);
-	}
-
-	public function testGetObjectServiceWhenInstalled(): void {
-		$this->appManager->method('getInstalledApps')->willReturn(['openregister']);
-
-		$result = $this->controller->getObjectService();
-
-		$this->assertNull($result);
-	}
-
-	public function testGetObjectServiceWhenNotInstalled(): void {
-		$this->appManager->method('getInstalledApps')->willReturn([]);
-
-		$this->expectException(\RuntimeException::class);
-		$this->controller->getObjectService();
-	}
-
-	public function testGetConfigurationServiceWhenInstalled(): void {
-		$this->appManager->method('getInstalledApps')->willReturn(['openregister']);
-		$mockService = $this->createMock(\OCA\OpenRegister\Service\ConfigurationService::class);
-		$this->container->method('get')->willReturn($mockService);
-
-		$result = $this->controller->getConfigurationService();
-
-		$this->assertNotNull($result);
-	}
-
-	public function testGetConfigurationServiceWhenNotInstalled(): void {
-		$this->appManager->method('getInstalledApps')->willReturn([]);
-
-		$this->expectException(\RuntimeException::class);
-		$this->controller->getConfigurationService();
 	}
 
 	public function testUpdateException(): void {
