@@ -42,6 +42,7 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Service\Object\LockHandler
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
  */
 final class LockHandlerUpdatePermissionTest extends TestCase {
 
