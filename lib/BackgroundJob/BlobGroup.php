@@ -56,4 +56,15 @@ final class BlobGroup {
 	public function __construct(string $key, public readonly array $rows) {
 		[$this->registerId, $this->schemaId] = explode('_', $key);
 	}//end __construct()
+
+	/**
+	 * The register and schema ids, keyed for a log context.
+	 *
+	 * @return array{registerId: string, schemaId: string}
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function ids(): array {
+		return ['registerId' => $this->registerId, 'schemaId' => $this->schemaId];
+	}//end ids()
 }//end class

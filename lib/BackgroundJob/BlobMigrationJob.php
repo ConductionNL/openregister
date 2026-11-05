@@ -221,7 +221,7 @@ class BlobMigrationJob extends TimedJob {
 		$objects = array_map(fn (array $row): array => $this->blobRowToObjectArray(row: $row), $group->rows);
 		$saved   = count($run->magicMapper->saveObjectsToRegisterSchemaTable(objects: $objects, register: $register, schema: $schema));
 
-		$context = ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $group->registerId, 'schemaId' => $group->schemaId, 'count' => $saved];
+		$context = ['file' => __FILE__, 'line' => __LINE__] + $group->ids() + ['count' => $saved];
 		$run->logger->info(message: '[BlobMigrationJob] Migrated group to magic table', context: $context);
 		$this->deleteBlobRows(db: $run->db, rows: $group->rows);
 		$run->migrated += $saved;
@@ -241,7 +241,7 @@ class BlobMigrationJob extends TimedJob {
 			$schema   = $run->schemaMapper->find(id: (int)$group->schemaId, _rbac: false, _multitenancy: false);
 			return [$register, $schema];
 		} catch (Exception $e) {
-			$context = ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $group->registerId, 'schemaId' => $group->schemaId, 'error' => $e->getMessage()];
+			$context = ['file' => __FILE__, 'line' => __LINE__] + $group->ids() + ['error' => $e->getMessage()];
 			$run->logger->warning(message: '[BlobMigrationJob] Could not resolve register/schema, skipping group', context: $context);
 			return null;
 		}
@@ -280,7 +280,11 @@ class BlobMigrationJob extends TimedJob {
 	private function blobTableExists(IDBConnection $db): bool {
 		try {
 			$platform = $db->getDatabasePlatform();
-			$schema   = stripos($platform::class, 'PostgreSQL') !== false ? 'current_schema()' : 'DATABASE()';
+			$schema   = 'DATABASE()';
+			if (stripos($platform::class, 'PostgreSQL') !== false) {
+				$schema = 'current_schema()';
+			}
+
 			$sql      = "SELECT 1 FROM information_schema.tables WHERE table_name = 'oc_openregister_objects' AND table_schema = $schema LIMIT 1";
 
 			$stmt = $db->prepare($sql);
@@ -426,7 +430,8 @@ class BlobMigrationJob extends TimedJob {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function deleteBlobRows(IDBConnection $db, array $rows): void {
-		$ids = array_filter(array_map(static fn (array $row): ?int => isset($row['id']) === true ? (int)$row['id'] : null, $rows));
+		$withId = array_filter($rows, static fn (array $row): bool => isset($row['id']) === true);
+		$ids    = array_filter(array_map(static fn (array $row): int => (int)$row['id'], $withId));
 
 		if (empty($ids) === true) {
 			return;
