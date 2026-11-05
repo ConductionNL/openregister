@@ -171,16 +171,14 @@ class FlowTimerService implements FlowTimerControlInterface {
 		return $this->transactional(
 			mutation: function () use ($timer, $actor, $now): FlowTimer {
 				$persisted = $this->timers->insert($timer);
-				$this->record(
-					timer: $persisted,
+				$entry = new FlowTimerLedgerEntry(
 					type: FlowTimerEvent::TYPE_ARMED,
 					actor: $actor,
 					reason: sprintf('Armed from anchor %s.', $persisted->getAnchorAt()->format('c')),
-					priorFireAt: null,
-					newFireAt: $persisted->getFireAt(),
-					basis: (string)($persisted->getMetadata()['basis'] ?? ''),
 					moment: $now
 				);
+				$entry = $entry->withFireMoments(prior: null, next: $persisted->getFireAt());
+				$this->record(timer: $persisted, entry: $entry->withBasis(basis: (string)($persisted->getMetadata()['basis'] ?? '')));
 				$this->project(timer: $persisted);
 
 				return $persisted;
@@ -256,16 +254,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 					$untilNote = sprintf(' Expected until %s.', $until->format('c'));
 				}
 
-				$this->record(
-					timer: $persisted,
-					type: FlowTimerEvent::TYPE_SUSPENDED,
-					actor: $actor,
-					reason: $reason . $untilNote,
-					priorFireAt: $priorFireAt,
-					newFireAt: null,
-					basis: (string)$basis,
-					moment: $now
-				);
+				$entry = new FlowTimerLedgerEntry(type: FlowTimerEvent::TYPE_SUSPENDED, actor: $actor, reason: $reason . $untilNote, moment: $now);
+				$this->record(timer: $persisted, entry: $entry->withFireMoments(prior: $priorFireAt, next: null)->withBasis(basis: (string)$basis));
 				$this->project(timer: $persisted, suspendedUntil: $until);
 
 				return $persisted;
@@ -314,16 +304,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 				$timer->setState(FlowTimer::STATE_ARMED);
 				$this->recompute(timer: $timer, calendar: $calendar, firedKeys: $this->firedKeys(timerUuid: (string)$timer->getUuid()));
 				$persisted = $this->timers->update($timer);
-				$this->record(
-					timer: $persisted,
-					type: FlowTimerEvent::TYPE_RESUMED,
-					actor: $actor,
-					reason: (string)$reason,
-					priorFireAt: null,
-					newFireAt: $persisted->getFireAt(),
-					basis: '',
-					moment: $now
-				);
+				$entry = new FlowTimerLedgerEntry(type: FlowTimerEvent::TYPE_RESUMED, actor: $actor, reason: (string)$reason, moment: $now);
+				$this->record(timer: $persisted, entry: $entry->withFireMoments(prior: null, next: $persisted->getFireAt()));
 				$this->project(timer: $persisted);
 
 				return $persisted;
@@ -454,32 +436,21 @@ class FlowTimerService implements FlowTimerControlInterface {
 				$prior->setState(FlowTimer::STATE_SUPERSEDED);
 				$this->recompute(timer: $prior, calendar: $calendar, firedKeys: []);
 				$this->timers->update($prior);
-				$this->record(
-					timer: $prior,
-					type: FlowTimerEvent::TYPE_SUPERSEDED,
-					actor: $actor,
-					reason: $reason,
-					priorFireAt: $priorFireAt,
-					newFireAt: $successor->getFireAt(),
-					basis: '',
-					moment: $now
-				);
+				$entry = new FlowTimerLedgerEntry(type: FlowTimerEvent::TYPE_SUPERSEDED, actor: $actor, reason: $reason, moment: $now);
+				$this->record(timer: $prior, entry: $entry->withFireMoments(prior: $priorFireAt, next: $successor->getFireAt()));
 
 				// The successor must exist before its inherited fire rows.
 				$persisted = $this->timers->insert($successor);
 				$inherited = $this->inheritFires(successor: $persisted, priorFired: $priorFired, calendar: $calendar, now: $now);
 				$this->recompute(timer: $persisted, calendar: $calendar, firedKeys: $inherited);
 				$persisted = $this->timers->update($persisted);
-				$this->record(
-					timer: $persisted,
+				$entry = new FlowTimerLedgerEntry(
 					type: FlowTimerEvent::TYPE_ARMED,
 					actor: $actor,
 					reason: sprintf("Re-armed from moved anchor; supersedes '%s'.", (string)$prior->getUuid()),
-					priorFireAt: $priorFireAt,
-					newFireAt: $persisted->getFireAt(),
-					basis: '',
 					moment: $now
 				);
+				$this->record(timer: $persisted, entry: $entry->withFireMoments(prior: $priorFireAt, next: $persisted->getFireAt()));
 				$this->project(timer: $persisted);
 
 				return $persisted;
@@ -636,16 +607,13 @@ class FlowTimerService implements FlowTimerControlInterface {
 			$type = FlowTimerEvent::TYPE_BREACHED;
 		}
 
-		$this->record(
-			timer: $timer,
+		$entry = new FlowTimerLedgerEntry(
 			type: $type,
 			actor: self::ACTOR_SWEEP,
 			reason: sprintf("Expiry reached; outcome '%s'.", (string)$timer->getOnExpiry()),
-			priorFireAt: $timer->getFireAt(),
-			newFireAt: null,
-			basis: '',
 			moment: $now
 		);
+		$this->record(timer: $timer, entry: $entry->withFireMoments(prior: $timer->getFireAt(), next: null));
 
 		$this->applyOutcome(timer: $timer);
 		$this->dispatcher->dispatchTyped(
@@ -1051,17 +1019,14 @@ class FlowTimerService implements FlowTimerControlInterface {
 				$timer->setExtensionCount((int)$timer->getExtensionCount() + 1);
 				$this->recompute(timer: $timer, calendar: $calendar, firedKeys: $this->firedKeys(timerUuid: (string)$timer->getUuid()));
 				$persisted = $this->timers->update($timer);
-				$this->record(
-					timer: $persisted,
+				$entry = new FlowTimerLedgerEntry(
 					type: FlowTimerEvent::TYPE_EXTENDED,
 					actor: $actor,
 					reason: sprintf('%s (+%d %s)', $rationale, $amount, $unit),
-					priorFireAt: $priorFireAt,
-					newFireAt: $persisted->getFireAt(),
-					basis: $basis,
-					moment: $now,
-					impact: $added
+					moment: $now
 				);
+				$entry = $entry->withFireMoments(prior: $priorFireAt, next: $persisted->getFireAt());
+				$this->record(timer: $persisted, entry: $entry->withBasis(basis: $basis, impact: $added));
 				$this->project(timer: $persisted);
 
 				return $persisted;
@@ -1208,16 +1173,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 			$timer->setFireAt(null);
 			$timer->setNextRungAt(null);
 			$this->timers->update($timer);
-			$this->record(
-				timer: $timer,
-				type: FlowTimerEvent::TYPE_CANCELLED,
-				actor: $actor,
-				reason: $reason,
-				priorFireAt: $priorFireAt,
-				newFireAt: null,
-				basis: '',
-				moment: $now
-			);
+			$entry = new FlowTimerLedgerEntry(type: FlowTimerEvent::TYPE_CANCELLED, actor: $actor, reason: $reason, moment: $now);
+			$this->record(timer: $timer, entry: $entry->withFireMoments(prior: $priorFireAt, next: null));
 			$cancelled++;
 		}
 
@@ -1374,44 +1331,27 @@ class FlowTimerService implements FlowTimerControlInterface {
 	/**
 	 * Append one history row.
 	 *
-	 * @param FlowTimer $timer The timer.
-	 * @param string $type The event type.
-	 * @param string|null $actor The acting identity.
-	 * @param string $reason The reason.
-	 * @param DateTime|null $priorFireAt The fire moment before.
-	 * @param DateTime|null $newFireAt The fire moment after.
-	 * @param string $basis The legal ground.
-	 * @param DateTimeInterface $moment The moment.
-	 * @param float|null $impact The impact in the budget unit.
+	 * @param FlowTimer            $timer The timer.
+	 * @param FlowTimerLedgerEntry $entry The row.
 	 *
 	 * @return void
 	 */
-	private function record(
-		FlowTimer $timer,
-		string $type,
-		?string $actor,
-		string $reason,
-		?DateTime $priorFireAt,
-		?DateTime $newFireAt,
-		string $basis,
-		DateTimeInterface $moment,
-		?float $impact = null,
-	): void {
+	private function record(FlowTimer $timer, FlowTimerLedgerEntry $entry): void {
 		$event = new FlowTimerEvent();
 		$event->setTimerUuid((string)$timer->getUuid());
-		$event->setType($type);
-		$event->setActor($actor);
-		$event->setReason($reason);
-		$event->setPriorFireAt($priorFireAt);
-		$event->setNewFireAt($newFireAt);
-		$event->setDaysImpact($impact);
-		$event->setBasis($this->stringOrNull(value: $basis));
+		$event->setType($entry->type);
+		$event->setActor($entry->actor);
+		$event->setReason($entry->reason);
+		$event->setPriorFireAt($entry->priorFireAt());
+		$event->setNewFireAt($entry->newFireAt());
+		$event->setDaysImpact($entry->impact());
+		$event->setBasis($this->stringOrNull(value: $entry->basis()));
 		// The ledger carries the explanation, not just the timer. A timer holds
 		// one deadline; an auditor reading why a term ended on Tuesday a year
 		// later is reading the ledger.
 		$event->setUnrolledAt($timer->getUnrolledAt());
 		$event->setRolledBy($timer->getRolledBy());
-		$event->setCreated($this->mutable(value: $moment));
+		$event->setCreated($this->mutable(value: $entry->moment));
 		$this->events->insert($event);
 	}//end record()
 
