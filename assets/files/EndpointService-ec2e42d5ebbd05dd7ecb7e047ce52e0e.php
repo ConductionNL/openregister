@@ -54,15 +54,6 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class EndpointService {
-	/**
-	 * Target types that run no logic yet, with the name their placeholder response uses.
-	 */
-	private const PLACEHOLDER_TARGETS = [
-		'view' => 'View',
-		'webhook' => 'Webhook',
-		'register' => 'Register',
-		'schema' => 'Schema',
-	];
 
 	/**
 	 * Endpoint log mapper
@@ -162,36 +153,45 @@ class EndpointService {
 				];
 			}
 
-			return $this->runEndpointTest(endpoint: $endpoint, testData: $testData);
+			// Step 2: Prepare test request data from endpoint configuration.
+			// Combines endpoint method and path with provided test data.
+			$request = [
+				'method' => $endpoint->getMethod() ?? 'GET',
+				'path' => $endpoint->getEndpoint(),
+				'data' => $testData,
+				'headers' => [],
+			];
+
+			// Step 3: Execute the endpoint based on target type.
+			// Different target types (view, agent, webhook, etc.) have different execution logic.
+			$result = $this->executeEndpoint(endpoint: $endpoint, request: $request);
+
+			// Step 4: Log the test execution for audit trail and debugging.
+			$this->logEndpointCall(endpoint: $endpoint, request: $request, result: $result);
+
+			// Step 5: Return execution result.
+			return $result;
 		} catch (\Exception $e) {
+			// Log error for debugging and monitoring.
 			$this->logger->error(
 				message: '[EndpointService] Error testing endpoint: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'endpoint_id' => $endpoint->getId(), 'trace' => $e->getTraceAsString()]
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'endpoint_id' => $endpoint->getId(),
+					'trace' => $e->getTraceAsString(),
+				]
 			);
-			return $this->failure(statusCode: 500, error: $e->getMessage());
+
+			// Return error result.
+			return [
+				'success' => false,
+				'statusCode' => 500,
+				'response' => null,
+				'error' => $e->getMessage(),
+			];
 		}//end try
 	}//end testEndpoint()
-
-	/**
-	 * Run an endpoint once with test data and log the call.
-	 *
-	 * @param Endpoint             $endpoint The endpoint to run
-	 * @param array<string, mixed> $testData The test data to send
-	 *
-	 * @return array<string, mixed> The execution result
-	 */
-	private function runEndpointTest(Endpoint $endpoint, array $testData): array {
-		$request = [
-			'method' => $endpoint->getMethod() ?? 'GET',
-			'path' => $endpoint->getEndpoint(),
-			'data' => $testData,
-			'headers' => [],
-		];
-		$result = $this->executeEndpoint(endpoint: $endpoint, request: $request);
-		$this->logEndpointCall(endpoint: $endpoint, request: $request, result: $result);
-
-		return $result;
-	}//end runEndpointTest()
 
 	/**
 	 * Execute an endpoint with given request data
@@ -210,21 +210,57 @@ class EndpointService {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	private function executeEndpoint(Endpoint $endpoint, array $request): array {
-		$type = $endpoint->getTargetType();
-		if ($type === 'agent') {
-			return $this->executeAgentEndpoint(endpoint: $endpoint, request: $request);
-		}
-
-		if (isset(self::PLACEHOLDER_TARGETS[$type]) === true) {
-			return [
-				'success' => true,
-				'statusCode' => 200,
-				'response' => ['message' => self::PLACEHOLDER_TARGETS[$type] . ' endpoint executed (placeholder)'],
-			];
-		}
-
-		return $this->failure(statusCode: 400, error: 'Unknown target type: ' . $type);
+		// Route execution to appropriate handler based on endpoint target type.
+		// Each target type has specific execution logic.
+		switch ($endpoint->getTargetType()) {
+			case 'view':
+				// Execute view-based endpoint (queries view data).
+				return $this->executeViewEndpoint(_endpoint: $endpoint, _request: $request);
+			case 'agent':
+				// Execute agent-based endpoint (uses AI agent).
+				return $this->executeAgentEndpoint(endpoint: $endpoint, request: $request);
+			case 'webhook':
+				// Execute webhook-based endpoint (HTTP webhook call).
+				return $this->executeWebhookEndpoint(_endpoint: $endpoint, _request: $request);
+			case 'register':
+				// Execute register-based endpoint (queries register data).
+				return $this->executeRegisterEndpoint(_endpoint: $endpoint, _request: $request);
+			case 'schema':
+				// Execute schema-based endpoint (queries schema data).
+				return $this->executeSchemaEndpoint(_endpoint: $endpoint, _request: $request);
+			default:
+				return [
+					'success' => false,
+					'statusCode' => 400,
+					'response' => null,
+					'error' => 'Unknown target type: ' . $endpoint->getTargetType(),
+				];
+		}//end switch
 	}//end executeEndpoint()
+
+	/**
+	 * Execute a view endpoint
+	 *
+	 * @param Endpoint $_endpoint The endpoint to execute
+	 * @param array $_request Request data
+	 *
+	 * @return (int|string[]|true)[]
+	 *
+	 * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
+	 *
+	 * @psalm-return array{success: true, statusCode: 200, response: array{message: 'View endpoint executed (placeholder)'}}
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 */
+	private function executeViewEndpoint(Endpoint $_endpoint, array $_request): array {
+		// Placeholder for view execution logic.
+		// This would integrate with the view service to execute the view.
+		return [
+			'success' => true,
+			'statusCode' => 200,
+			'response' => ['message' => 'View endpoint executed (placeholder)'],
+		];
+	}//end executeViewEndpoint()
 
 	/**
 	 * Execute an agent endpoint
@@ -248,67 +284,130 @@ class EndpointService {
 	 */
 	private function executeAgentEndpoint(Endpoint $endpoint, array $request): array {
 		try {
-			return $this->agentEndpointResult(endpoint: $endpoint, request: $request);
+			$agentId = $endpoint->getTargetId();
+			$this->logger->info(
+				message: '[EndpointService] Executing agent endpoint',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'agentId' => $agentId]
+			);
+
+			// Find agent by UUID; the mapper throws when there is none, and the
+			// catch below turns that into the 500 envelope.
+			$this->agentMapper->findByUuid($agentId);
+
+			// Extract message from request.
+			$message = $request['data']['message'] ?? $request['message'] ?? '';
+
+			if (empty($message) === true) {
+				return [
+					'success' => false,
+					'statusCode' => 400,
+					'response' => null,
+					'error' => 'Message is required',
+				];
+			}
+
+			// Agent endpoint LLM execution (tool loading + chat calls) is
+			// deprecated pending the agent-core migration to hermiq; return
+			// a clean not-implemented response instead of calling an LLM.
+			return [
+				'success' => false,
+				'statusCode' => 501,
+				'response' => null,
+				'error' => 'Agent endpoint type is not implemented',
+			];
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[EndpointService] Error executing agent endpoint: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'trace' => $e->getTraceAsString()]
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'trace' => $e->getTraceAsString(),
+				]
 			);
 
-			return $this->failure(statusCode: 500, error: $e->getMessage());
+			return [
+				'success' => false,
+				'statusCode' => 500,
+				'response' => null,
+				'error' => $e->getMessage(),
+			];
 		}//end try
 	}//end executeAgentEndpoint()
 
 	/**
-	 * The result of an agent endpoint: the agent must exist and a message is required.
+	 * Execute a webhook endpoint
 	 *
-	 * @param Endpoint             $endpoint The agent endpoint
-	 * @param array<string, mixed> $request  The request data
+	 * @param Endpoint $_endpoint The endpoint to execute
+	 * @param array $_request Request data
 	 *
-	 * @return array{success: bool, statusCode: int, response: mixed, error?: string}
+	 * @return (int|string[]|true)[]
 	 *
-	 * @throws \Exception When the agent cannot be found.
+	 * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
+	 *
+	 * @psalm-return array{success: true, statusCode: 200,
+	 *     response: array{message: 'Webhook endpoint executed (placeholder)'}}
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
-	private function agentEndpointResult(Endpoint $endpoint, array $request): array {
-		$agentId = $endpoint->getTargetId();
-		$this->logger->info(
-			message: '[EndpointService] Executing agent endpoint',
-			context: ['file' => __FILE__, 'line' => __LINE__, 'agentId' => $agentId]
-		);
-
-		// Find agent by UUID; the mapper throws when there is none, and the
-		// catch in executeAgentEndpoint() turns that into the 500 envelope.
-		$this->agentMapper->findByUuid($agentId);
-
-		// Extract message from request.
-		$message = $request['data']['message'] ?? $request['message'] ?? '';
-
-		if (empty($message) === true) {
-			return $this->failure(statusCode: 400, error: 'Message is required');
-		}
-
-		// Agent endpoint LLM execution (tool loading + chat calls) is
-		// deprecated pending the agent-core migration to hermiq; return
-		// a clean not-implemented response instead of calling an LLM.
-		return $this->failure(statusCode: 501, error: 'Agent endpoint type is not implemented');
-	}//end agentEndpointResult()
+	private function executeWebhookEndpoint(Endpoint $_endpoint, array $_request): array {
+		// Placeholder for webhook execution logic.
+		// This would integrate with the webhook service to trigger the webhook.
+		return [
+			'success' => true,
+			'statusCode' => 200,
+			'response' => ['message' => 'Webhook endpoint executed (placeholder)'],
+		];
+	}//end executeWebhookEndpoint()
 
 	/**
-	 * The result of an endpoint run that failed.
+	 * Execute a register endpoint
 	 *
-	 * @param int    $statusCode The HTTP status to report.
-	 * @param string $error      The error message.
+	 * @param Endpoint $_endpoint The endpoint to execute
+	 * @param array $_request Request data
 	 *
-	 * @return array{success: false, statusCode: int, response: null, error: string}
+	 * @return (int|string[]|true)[]
+	 *
+	 * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
+	 *
+	 * @psalm-return array{success: true, statusCode: 200,
+	 *     response: array{message: 'Register endpoint executed (placeholder)'}}
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
-	private function failure(int $statusCode, string $error): array {
+	private function executeRegisterEndpoint(Endpoint $_endpoint, array $_request): array {
+		// Placeholder for register execution logic.
+		// This would integrate with the register/object service to handle CRUD operations.
 		return [
-			'success' => false,
-			'statusCode' => $statusCode,
-			'response' => null,
-			'error' => $error,
+			'success' => true,
+			'statusCode' => 200,
+			'response' => ['message' => 'Register endpoint executed (placeholder)'],
 		];
-	}//end failure()
+	}//end executeRegisterEndpoint()
+
+	/**
+	 * Execute a schema endpoint
+	 *
+	 * @param Endpoint $_endpoint The endpoint to execute
+	 * @param array $_request Request data
+	 *
+	 * @return (int|string[]|true)[]
+	 *
+	 * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
+	 *
+	 * @psalm-return array{success: true, statusCode: 200,
+	 *     response: array{message: 'Schema endpoint executed (placeholder)'}}
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 */
+	private function executeSchemaEndpoint(Endpoint $_endpoint, array $_request): array {
+		// Placeholder for schema execution logic.
+		// This would integrate with the schema/object service to handle schema-specific operations.
+		return [
+			'success' => true,
+			'statusCode' => 200,
+			'response' => ['message' => 'Schema endpoint executed (placeholder)'],
+		];
+	}//end executeSchemaEndpoint()
 
 	/**
 	 * Check if the current user can execute an endpoint
