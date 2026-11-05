@@ -76,6 +76,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class MagicFacetHandler {
+	use MagicColumnNameTrait;
 
 	/**
 	 * Reserved query parameters that are never object field filters.
@@ -1244,36 +1245,6 @@ class MagicFacetHandler {
 	}//end expandFacetConfigFromAllSchemas()
 
 	/**
-	 * Sanitize column name for database compatibility.
-	 *
-	 * Converts camelCase to snake_case for PostgreSQL compatibility.
-	 * This matches MagicMapper::sanitizeColumnName().
-	 *
-	 * @param string $name The property name to sanitize.
-	 *
-	 * @return string The sanitized column name.
-	 */
-	private function sanitizeColumnName(string $name): string {
-		// Convert camelCase to snake_case.
-		$name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name);
-		$name = strtolower($name);
-
-		// Replace any remaining invalid characters with underscore.
-		$name = preg_replace('/[^a-z0-9_]/', '_', $name);
-
-		// Ensure it starts with a letter or underscore.
-		if (preg_match('/^[a-z_]/', $name) === 0) {
-			$name = 'col_' . $name;
-		}
-
-		// Remove consecutive underscores.
-		$name = preg_replace('/_+/', '_', $name);
-
-		// Remove trailing underscores.
-		return rtrim($name, '_');
-	}//end sanitizeColumnName()
-
-	/**
 	 * Whether the caller may be offered a facet over this property.
 	 *
 	 * A facet groups a column and returns its distinct values with counts, which
@@ -1473,12 +1444,7 @@ class MagicFacetHandler {
 			->from($facet->tableName)
 			->groupBy($field);
 		$this->orderFacetGroups(queryBuilder: $queryBuilder, columnRef: $field);
-		$this->applyBaseFilters(
-			queryBuilder: $queryBuilder,
-			baseQuery: $facet->baseQuery,
-			tableName: $facet->tableName,
-			schema: $facet->schema
-		);
+		$this->applyBaseFilters(queryBuilder: $queryBuilder, facet: $facet);
 
 		if ($this->searchHandler === null) {
 			return $queryBuilder;
@@ -1960,19 +1926,13 @@ class MagicFacetHandler {
 	/**
 	 * Apply base query filters to the query builder.
 	 *
-	 * @param IQueryBuilder $queryBuilder The query builder to modify.
-	 * @param array $baseQuery The base query filters.
-	 * @param string $tableName The table name.
-	 * @param Schema|null $schema The schema for property type checking.
+	 * @param IQueryBuilder   $queryBuilder The query builder to modify.
+	 * @param TableTermsFacet $facet        The table, schema and base query of the facet.
 	 *
 	 * @return void
 	 */
-	private function applyBaseFilters(
-		IQueryBuilder $queryBuilder,
-		array $baseQuery,
-		string $tableName,
-		?Schema $schema = null,
-	): void {
+	private function applyBaseFilters(IQueryBuilder $queryBuilder, TableTermsFacet $facet): void {
+		$baseQuery = $facet->baseQuery;
 		// The deleted lens, spelled once in DeletedLens so the facets
 		// count the rows the list shows.
 		$lens = new DeletedLens();
@@ -1986,7 +1946,7 @@ class MagicFacetHandler {
 			foreach ($baseQuery['@self'] as $field => $value) {
 				$columnName = self::METADATA_PREFIX . $field;
 
-				if ($this->columnExists(tableName: $tableName, columnName: $columnName) === false) {
+				if ($this->columnExists(tableName: $facet->tableName, columnName: $columnName) === false) {
 					continue;
 				}
 
@@ -2008,22 +1968,12 @@ class MagicFacetHandler {
 
 		// Apply object field filters (schema property filters).
 		// These are filters like licentietype[]=Open source that filter on object fields.
-		$this->applyObjectFieldFilters(
-			queryBuilder: $queryBuilder,
-			baseQuery: $baseQuery,
-			tableName: $tableName,
-			schema: $schema
-		);
+		$this->applyObjectFieldFilters(queryBuilder: $queryBuilder, facet: $facet);
 
 		// Apply search filter if provided.
 		$search = $baseQuery['_search'] ?? null;
 		if ($search !== null && trim($search) !== '') {
-			$this->applySearchFilter(
-				queryBuilder: $queryBuilder,
-				searchTerm: trim($search),
-				tableName: $tableName,
-				schema: $schema
-			);
+			$this->applySearchFilter(queryBuilder: $queryBuilder, facet: $facet);
 		}
 	}//end applyBaseFilters()
 
@@ -2033,26 +1983,16 @@ class MagicFacetHandler {
 	 * Handles filters on schema properties like licentietype[]=Open source.
 	 * Properly handles both regular string fields and JSON array fields.
 	 *
-	 * @param IQueryBuilder $queryBuilder The query builder.
-	 * @param array $baseQuery The base query with filters.
-	 * @param string $tableName The table name.
-	 * @param Schema|null $schema The schema for property type checking.
+	 * @param IQueryBuilder   $queryBuilder The query builder.
+	 * @param TableTermsFacet $facet        The table, schema and base query of the facet.
 	 *
 	 * @return void
 	 */
-	private function applyObjectFieldFilters(
-		IQueryBuilder $queryBuilder,
-		array $baseQuery,
-		string $tableName,
-		?Schema $schema = null,
-	): void {
-		// Get schema properties for type checking.
-		$properties = [];
-		if ($schema !== null) {
-			$properties = ($schema->getProperties() ?? []);
-		}
+	private function applyObjectFieldFilters(IQueryBuilder $queryBuilder, TableTermsFacet $facet): void {
+		$tableName  = $facet->tableName;
+		$properties = ($facet->schema->getProperties() ?? []);
 
-		foreach ($this->objectFieldFilterTerms(baseQuery: $baseQuery) as $key => $value) {
+		foreach ($this->objectFieldFilterTerms(baseQuery: $facet->baseQuery) as $key => $value) {
 			// This is an object field filter.
 			$columnName = $this->sanitizeColumnName(name: $key);
 
@@ -2163,35 +2103,30 @@ class MagicFacetHandler {
 	 * search logic: searches all string properties in the schema using ILIKE and
 	 * trigram similarity (for PostgreSQL).
 	 *
-	 * @param IQueryBuilder $queryBuilder The query builder.
-	 * @param string $searchTerm The search term.
-	 * @param string $tableName The table name.
-	 * @param Schema|null $schema The schema for determining searchable columns.
+	 * Searches for the trimmed `_search` term of the facet's base query.
+	 *
+	 * @param IQueryBuilder   $queryBuilder The query builder.
+	 * @param TableTermsFacet $facet        The table, schema and base query of the facet.
 	 *
 	 * @return void
 	 */
-	private function applySearchFilter(
-		IQueryBuilder $queryBuilder,
-		string $searchTerm,
-		string $tableName,
-		?Schema $schema = null,
-	): void {
+	private function applySearchFilter(IQueryBuilder $queryBuilder, TableTermsFacet $facet): void {
+		$searchTerm   = trim($facet->baseQuery['_search']);
+		$tableName    = $facet->tableName;
 		$orConditions = $queryBuilder->expr()->orX();
 
 		// Get all text-based properties from the schema (matching MagicMapper logic).
 		$searchableColumns = [];
 
-		if ($schema !== null) {
-			$properties = $schema->getProperties() ?? [];
-			if (is_array($properties) === true) {
-				foreach ($properties as $propertyName => $propertyConfig) {
-					$type = $propertyConfig['type'] ?? 'string';
-					// Only search in string fields (same as MagicMapper).
-					if ($type === 'string') {
-						$columnName = $this->sanitizeColumnName(name: $propertyName);
-						if ($this->columnExists(tableName: $tableName, columnName: $columnName) === true) {
-							$searchableColumns[] = $columnName;
-						}
+		$properties = $facet->schema->getProperties() ?? [];
+		if (is_array($properties) === true) {
+			foreach ($properties as $propertyName => $propertyConfig) {
+				$type = $propertyConfig['type'] ?? 'string';
+				// Only search in string fields (same as MagicMapper).
+				if ($type === 'string') {
+					$columnName = $this->sanitizeColumnName(name: $propertyName);
+					if ($this->columnExists(tableName: $tableName, columnName: $columnName) === true) {
+						$searchableColumns[] = $columnName;
 					}
 				}
 			}

@@ -178,9 +178,7 @@ class XwikiLinkService {
 	 * at link time; when the upstream is unreachable the caller-supplied
 	 * reference is stored with best-effort metadata so the link survives.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
+	 * @param LinkTarget $target The object to link to.
 	 * @param string $pageReference Remote xWiki page reference (URL or `Space.Page`).
 	 *
 	 * @return XwikiLink The persisted link row.
@@ -190,7 +188,7 @@ class XwikiLinkService {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
-	public function linkPage(string $objectUuid, int $registerId, int $schemaId, string $pageReference): XwikiLink {
+	public function linkPage(LinkTarget $target, string $pageReference): XwikiLink {
 		$uid = $this->requireUid();
 
 		$pageReference = trim($pageReference);
@@ -205,14 +203,14 @@ class XwikiLinkService {
 		// Resolve the canonical reference + metadata via OpenConnector so
 		// the row caches a real title/space/url. The source normalises a
 		// full URL or a `Space.Page` path to a canonical reference (AD-2).
-		$info = $this->resolveRemotePage(pageReference: $pageReference, registerId: $registerId, schemaId: $schemaId, objectUuid: $objectUuid);
+		$info = $this->resolveRemotePage(pageReference: $pageReference, target: $target);
 
 		$canonicalReference = (string)($info['reference'] ?? $pageReference);
 		if ($canonicalReference === '') {
 			$canonicalReference = $pageReference;
 		}
 
-		$existing = $this->xwikiLinkMapper->findByObjectAndPage($objectUuid, $canonicalReference);
+		$existing = $this->xwikiLinkMapper->findByObjectAndPage($target->objectUuid, $canonicalReference);
 		if ($existing !== null) {
 			throw new Exception('Page already linked to this object', 409);
 		}
@@ -221,9 +219,7 @@ class XwikiLinkService {
 			pageReference: $canonicalReference,
 			info: $info
 		);
-		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
-			->inSchema(schemaId: $schemaId)
-			->stamp(link: $link, linkedBy: $uid);
+		$target->stamp(link: $link, linkedBy: $uid);
 
 		return $this->xwikiLinkMapper->insert($link);
 	}//end linkPage()
@@ -231,9 +227,7 @@ class XwikiLinkService {
 	/**
 	 * Create a new page in remote xWiki via OpenConnector and link it.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
+	 * @param LinkTarget $target The object to link to.
 	 * @param string $space Target xWiki space.
 	 * @param string $title New page title.
 	 *
@@ -252,13 +246,7 @@ class XwikiLinkService {
 	 * + provider-null + ProviderUnavailableException + generic-Throwable + canonical-reference-fallback
 	 * + title-fallback + space-fallback produce many independent paths; all guard the create+link contract.
 	 */
-	public function createAndLinkPage(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		string $space,
-		string $title,
-	): XwikiLink {
+	public function createAndLinkPage(LinkTarget $target, string $space, string $title): XwikiLink {
 		$uid = $this->requireUid();
 
 		$space = trim($space);
@@ -284,9 +272,9 @@ class XwikiLinkService {
 			// The OpenConnector source resolves `{ space, title }` to a new
 			// remote xWiki page and returns the normalised row.
 			$row = $provider->create(
-				(string)$registerId,
-				(string)$schemaId,
-				$objectUuid,
+				(string)$target->registerId,
+				(string)$target->schemaId(),
+				$target->objectUuid,
 				['space' => $space, 'title' => $title]
 			);
 		} catch (ProviderUnavailableException $e) {
@@ -314,9 +302,7 @@ class XwikiLinkService {
 			pageReference: $canonicalReference,
 			info: $info
 		);
-		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
-			->inSchema(schemaId: $schemaId)
-			->stamp(link: $link, linkedBy: $uid);
+		$target->stamp(link: $link, linkedBy: $uid);
 
 		return $this->xwikiLinkMapper->insert($link);
 	}//end createAndLinkPage()
@@ -546,23 +532,21 @@ class XwikiLinkService {
 	 * caller-supplied reference is returned with empty metadata so the
 	 * link still persists.
 	 *
-	 * @param string $pageReference Caller reference (URL or `Space.Page`).
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
-	 * @param string $objectUuid Parent OR object uuid.
+	 * @param string     $pageReference Caller reference (URL or `Space.Page`).
+	 * @param LinkTarget $target        The object the page is linked to.
 	 *
 	 * @return array<string,mixed> Normalised info `{ reference, title, space, url }`.
 	 *
 	 * @throws Exception When the source is unconfigured/down (503).
 	 */
-	private function resolveRemotePage(string $pageReference, int $registerId, int $schemaId, string $objectUuid): array {
+	private function resolveRemotePage(string $pageReference, LinkTarget $target): array {
 		$provider = $this->getProvider();
 		if ($provider === null) {
 			throw new Exception('OpenConnector is not available', 503);
 		}
 
 		try {
-			$row = $provider->get((string)$registerId, (string)$schemaId, $objectUuid, $pageReference);
+			$row = $provider->get((string)$target->registerId, (string)$target->schemaId(), $target->objectUuid, $pageReference);
 		} catch (ProviderUnavailableException $e) {
 			throw $this->toServiceException(exception: $e);
 		} catch (Throwable $e) {
