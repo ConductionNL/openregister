@@ -27,7 +27,7 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCP\AppFramework\IAppContainer;
 use OCP\ICacheFactory;
@@ -140,9 +140,9 @@ class CacheSettingsHandler {
 	/**
 	 * Schema facet cache service
 	 *
-	 * @var FacetCacheHandler
+	 * @var FacetResultCacheClearer
 	 */
-	private FacetCacheHandler $schemaFacetCacheService;
+	private FacetResultCacheClearer $facetResults;
 
 	/**
 	 * Object cache service (lazy-loaded when needed)
@@ -179,7 +179,7 @@ class CacheSettingsHandler {
 	 *
 	 * @param ICacheFactory $cacheFactory Cache factory.
 	 * @param SchemaCacheHandler $schemaCacheService Schema cache handler.
-	 * @param FacetCacheHandler $facetCacheSvc Schema facet cache service.
+	 * @param FacetResultCacheClearer $facetResults Clears the facet result caches.
 	 * @param CacheHandlerInterface|null $objectCacheService Object cache service (optional, lazy-loaded).
 	 * @param IAppContainer|null $container Container for lazy loading (optional).
 	 *
@@ -188,13 +188,13 @@ class CacheSettingsHandler {
 	public function __construct(
 		ICacheFactory $cacheFactory,
 		SchemaCacheHandler $schemaCacheService,
-		FacetCacheHandler $facetCacheSvc,
+		FacetResultCacheClearer $facetResults,
 		?CacheHandlerInterface $objectCacheService = null,
 		?IAppContainer $container = null,
 	) {
 		$this->cacheFactory = $cacheFactory;
 		$this->schemaCacheService = $schemaCacheService;
-		$this->schemaFacetCacheService = $facetCacheSvc;
+		$this->facetResults = $facetResults;
 		$this->objectCacheService = $objectCacheService;
 		$this->container = $container;
 	}//end __construct()
@@ -742,27 +742,40 @@ class CacheSettingsHandler {
 	 * @SuppressWarnings (PHPMD.UnusedFormalParameter)
 	 */
 	private function clearFacetCache(?string $_userId = null): array {
-		try {
-			$beforeStats = $this->schemaFacetCacheService->getCacheStatistics();
-			$this->schemaFacetCacheService->clearAllCaches();
-			$afterStats = $this->schemaFacetCacheService->getCacheStatistics();
+		$before = $this->emptyFacetStatistics();
+		$this->facetResults->clearAll();
 
-			return [
-				'service' => 'facet',
-				'cleared' => ($beforeStats['total_entries'] ?? 0) - ($afterStats['total_entries'] ?? 0),
-				'before' => $beforeStats,
-				'after' => $afterStats,
-				'success' => true,
-			];
-		} catch (Exception $e) {
-			return [
-				'service' => 'facet',
-				'cleared' => 0,
-				'success' => false,
-				'error' => $e->getMessage(),
-			];
-		}
+		return [
+			'service' => 'facet',
+			'cleared' => 0,
+			'before' => $before,
+			'after' => $this->emptyFacetStatistics(),
+			'success' => true,
+		];
 	}//end clearFacetCache()
+
+	/**
+	 * The facet cache statistics in the shape the cache API has always returned.
+	 *
+	 * Facet results live only in the distributed facet caches, which keep no
+	 * count; the persistent facet table was never written, so its figures are
+	 * zero by construction.
+	 *
+	 * @return array{total_entries: int, by_type: array<string, int>, memory_cache_size: int,
+	 *     cache_table: string, query_time: string, timestamp: int}
+	 */
+	private function emptyFacetStatistics(): array {
+		$startTime = microtime(true);
+
+		return [
+			'total_entries' => 0,
+			'by_type' => [],
+			'memory_cache_size' => 0,
+			'cache_table' => 'openregister_schema_facet_cache',
+			'query_time' => round((microtime(true) - $startTime) * 1000, 2) . 'ms',
+			'timestamp' => time(),
+		];
+	}//end emptyFacetStatistics()
 
 	/**
 	 * Clear distributed cache

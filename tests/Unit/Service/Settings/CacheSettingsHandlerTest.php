@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Settings;
 
 use Exception;
 use OCA\OpenRegister\Service\Object\CacheHandler;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCP\AppFramework\IAppContainer;
@@ -53,8 +53,8 @@ class CacheSettingsHandlerTest extends TestCase {
 	/** @var SchemaCacheHandler&MockObject */
 	private SchemaCacheHandler $schemaCacheService;
 
-	/** @var FacetCacheHandler&MockObject */
-	private FacetCacheHandler $facetCacheService;
+	/** @var FacetResultCacheClearer&MockObject */
+	private FacetResultCacheClearer $facetCacheService;
 
 	/** @var CacheHandler&MockObject */
 	private CacheHandler $cacheHandler;
@@ -72,7 +72,7 @@ class CacheSettingsHandlerTest extends TestCase {
 
 		$this->cacheFactory = $this->createMock(ICacheFactory::class);
 		$this->schemaCacheService = $this->createMock(SchemaCacheHandler::class);
-		$this->facetCacheService = $this->createMock(FacetCacheHandler::class);
+		$this->facetCacheService = $this->createMock(FacetResultCacheClearer::class);
 		$this->cacheHandler = $this->createMock(CacheHandler::class);
 		$this->container = $this->createMock(IAppContainer::class);
 
@@ -325,9 +325,7 @@ class CacheSettingsHandlerTest extends TestCase {
 			->willReturn(['entries' => 5, 'total_entries' => 5]);
 		$this->schemaCacheService->method('clearAllCaches');
 
-		$this->facetCacheService->method('getCacheStatistics')
-			->willReturn(['total_entries' => 3]);
-		$this->facetCacheService->method('clearAllCaches');
+		$this->facetCacheService->method('clearAll');
 
 		$distributedCache = $this->createMock(ICache::class);
 		$distributedCache->method('clear');
@@ -364,9 +362,7 @@ class CacheSettingsHandlerTest extends TestCase {
 			->willReturn(['entries' => 5, 'total_entries' => 5]);
 		$this->schemaCacheService->expects($this->once())->method('clearAllCaches');
 
-		$this->facetCacheService->method('getCacheStatistics')
-			->willReturn(['total_entries' => 3]);
-		$this->facetCacheService->expects($this->once())->method('clearAllCaches');
+		$this->facetCacheService->expects($this->once())->method('clearAll');
 
 		$distributedCache = $this->createMock(ICache::class);
 		$distributedCache->expects($this->once())->method('clear');
@@ -426,9 +422,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	 * @return void
 	 */
 	public function testClearCacheFacet(): void {
-		$this->facetCacheService->method('getCacheStatistics')
-			->willReturn(['total_entries' => 5]);
-		$this->facetCacheService->expects($this->once())->method('clearAllCaches');
+		$this->facetCacheService->expects($this->once())->method('clearAll');
 
 		$result = $this->handler->clearCache('facet');
 
@@ -564,22 +558,6 @@ class CacheSettingsHandlerTest extends TestCase {
 	}
 
 	/**
-	 * Test clearCache facet when facetCacheService throws
-	 *
-	 * @return void
-	 */
-	public function testClearCacheFacetOnException(): void {
-		$this->facetCacheService->method('getCacheStatistics')
-			->willThrowException(new Exception('facet error'));
-
-		$result = $this->handler->clearCache('facet');
-
-		$this->assertFalse($result['results']['facet']['success']);
-		$this->assertSame(0, $result['results']['facet']['cleared']);
-		$this->assertSame('facet error', $result['results']['facet']['error']);
-	}
-
-	/**
 	 * Test clearCache distributed when cacheFactory throws returns failure result
 	 *
 	 * @return void
@@ -634,9 +612,7 @@ class CacheSettingsHandlerTest extends TestCase {
 			->willReturn(['entries' => 0, 'total_entries' => 0]);
 		$this->schemaCacheService->method('clearAllCaches');
 
-		$this->facetCacheService->method('getCacheStatistics')
-			->willReturn(['total_entries' => 0]);
-		$this->facetCacheService->method('clearAllCaches');
+		$this->facetCacheService->method('clearAll');
 
 		$distributedCache = $this->createMock(ICache::class);
 		$distributedCache->method('clear');
@@ -877,21 +853,14 @@ class CacheSettingsHandlerTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testClearFacetCacheClearedCount(): void {
-		$callCount = 0;
-		$this->facetCacheService->method('getCacheStatistics')
-			->willReturnCallback(function () use (&$callCount) {
-				$callCount++;
-				if ($callCount === 1) {
-					return ['total_entries' => 20];
-				}
-				return ['total_entries' => 0];
-			});
-		$this->facetCacheService->method('clearAllCaches');
+	public function testClearFacetCacheReportsNothingCleared(): void {
+		$this->facetCacheService->expects($this->once())->method('clearAll');
 
 		$result = $this->handler->clearCache('facet');
 
-		$this->assertSame(20, $result['results']['facet']['cleared']);
+		$this->assertSame(0, $result['results']['facet']['cleared']);
+		$this->assertSame(0, $result['results']['facet']['before']['total_entries']);
+		$this->assertSame([], $result['results']['facet']['after']['by_type']);
 	}
 
 	// =========================================================================

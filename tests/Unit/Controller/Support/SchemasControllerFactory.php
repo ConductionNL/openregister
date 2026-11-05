@@ -28,7 +28,7 @@ final class SchemasControllerFactory {
 	 * @param AuditTrailMapper $auditTrailMapper Constructor argument.
 	 * @param OrganisationService $organisationService Constructor argument.
 	 * @param SchemaCacheHandler $schemaCacheService Constructor argument.
-	 * @param FacetCacheHandler $facetCacheSvc Constructor argument.
+	 * @param FacetResultCacheClearer $facetCacheSvc Constructor argument.
 	 * @param SchemaExplorationInterface $schemaService Constructor argument.
 	 * @param LoggerInterface $logger Constructor argument.
 	 * @param ContainerInterface $container Constructor argument.
@@ -51,7 +51,7 @@ final class SchemasControllerFactory {
 		\OCA\OpenRegister\Db\AuditTrailMapper $auditTrailMapper,
 		\OCA\OpenRegister\Service\OrganisationService $organisationService,
 		\OCA\OpenRegister\Service\Schemas\SchemaCacheHandler $schemaCacheService,
-		\OCA\OpenRegister\Service\Schemas\FacetCacheHandler $facetCacheSvc,
+		\OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer $facetCacheSvc,
 		\OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface $schemaService,
 		\Psr\Log\LoggerInterface $logger,
 		\Psr\Container\ContainerInterface $container,
@@ -73,7 +73,7 @@ final class SchemasControllerFactory {
 				),
 				schemas: new \OCA\OpenRegister\Controller\Support\SchemaServices(
 					schemaCacheService: $schemaCacheService,
-					facetCacheSvc: $facetCacheSvc,
+					facetResults: $facetCacheSvc,
 					schemaService: $schemaService,
 					versioning: $schemaVersioningService,
 				),
