@@ -28,10 +28,8 @@ use OCA\OpenRegister\Db\ConfigurationDraftSetMapper;
 use OCA\OpenRegister\Db\ConfigurationValueMapper;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MappingMapper;
-use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Service\Configuration\CacheHandler as ConfigurationCacheHandler;
 use OCA\OpenRegister\Service\Configuration\ExportHandler as ConfigurationExportHandler;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
@@ -47,8 +45,6 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
-use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
@@ -156,24 +152,18 @@ final class ConfigurationServiceRegistrar {
 				$appDataPath = $dataDir . '/appdata_openregister';
 
 				return new ConfigurationService(
-					schemaMapper: $container->get(SchemaMapperInterface::class),
-					registerMapper: $container->get(RegisterMapperInterface::class),
 					configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
 					appManager: $container->get('OCP\App\IAppManager'),
 					container: $container,
 					appConfig: $container->get('OCP\IAppConfig'),
 					logger: $container->get('Psr\Log\LoggerInterface'),
-					client: new Client(),
-					objectService: $container->get(ObjectOperationsInterface::class),
 					githubHandler: $container->get(GitHubHandler::class),
 					gitlabHandler: $container->get(GitLabHandler::class),
 					cacheHandler: $container->get(ConfigurationCacheHandler::class),
 					previewHandler: $container->get(PreviewHandler::class),
 					exportHandler: $container->get(ConfigurationExportHandler::class),
 					// NOTE: ImportHandler is lazy-loaded in ConfigurationService to prevent circular dependency.
-					uploadHandler: $container->get(ConfigurationUploadHandler::class),
-					appDataPath: $appDataPath
-				);
+					uploadHandler: $container->get(ConfigurationUploadHandler::class));
 			}
 		);
 
@@ -357,17 +347,8 @@ final class ConfigurationServiceRegistrar {
 			function (ContainerInterface $container) {
 				return new SettingsService(
 					config: $container->get('OCP\IConfig'),
-					auditTrailMapper: $container->get(AuditTrailMapperInterface::class),
-					cacheFactory: $container->get('OCP\ICacheFactory'),
-					groupManager: $container->get('OCP\IGroupManager'),
 					logger: $container->get('Psr\Log\LoggerInterface'),
-					organisationMapper: $container->get(OrganisationMapperInterface::class),
-					schemaCacheService: $container->get(SchemaCacheHandler::class),
-					facetCacheSvc: $container->get(FacetCacheHandler::class),
-					searchTrailMapper: $container->get(SearchTrailMapper::class),
-					userManager: $container->get('OCP\IUserManager'),
 					db: $container->get('OCP\IDBConnection'),
-					objectCacheService: null,
 					container: $container,
 					appName: 'openregister',
 					validOpsHandler: $container->get(ValidationOperationsHandler::class),

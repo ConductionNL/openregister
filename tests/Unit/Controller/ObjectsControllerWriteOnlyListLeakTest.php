@@ -233,7 +233,6 @@ class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 			$this->createMock(\OCP\SystemTag\ISystemTagManager::class),
 			$this->createMock(\OCP\SystemTag\ISystemTagObjectMapper::class),
 			$this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class),
 			$propertyRbacHandler,
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(\OCA\OpenRegister\Service\FileService::class),

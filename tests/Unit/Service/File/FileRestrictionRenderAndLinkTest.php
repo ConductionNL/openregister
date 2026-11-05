@@ -105,7 +105,6 @@ class FileRestrictionRenderAndLinkTest extends TestCase {
 			schemaMapper: $this->createMock(SchemaMapper::class),
 			systemTagManager: $this->createMock(ISystemTagManager::class),
 			systemTagMapper: $this->createMock(ISystemTagObjectMapper::class),
-			cacheHandler: $this->createMock(CacheHandler::class),
 			objectCacheService: $this->createMock(CacheHandler::class),
 			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
 			logger: new NullLogger(),

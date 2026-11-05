@@ -204,7 +204,7 @@ class ShareLinkServiceTest extends TestCase {
 			]
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService( $this->buildLogger(), $container);
 		$rows = $service->getLinkedShares('uuid-1');
 
 		$this->assertCount(1, $rows);
@@ -225,7 +225,7 @@ class ShareLinkServiceTest extends TestCase {
 			]
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService( $this->buildLogger(), $container);
 		$this->assertSame([], $service->getLinkedShares('uuid-1'));
 	}//end testGetLinkedSharesNoFolderReturnsEmpty()
 
@@ -251,7 +251,7 @@ class ShareLinkServiceTest extends TestCase {
 			]
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService( $this->buildLogger(), $container);
 		$result = $service->createShare('uuid-1', (new ShareDraft(10, IShare::TYPE_USER))->withRecipient('bob', 1));
 
 		$this->assertSame('s99', $result->getId());
@@ -270,7 +270,7 @@ class ShareLinkServiceTest extends TestCase {
 			]
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService( $this->buildLogger(), $container);
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(404);
@@ -293,7 +293,7 @@ class ShareLinkServiceTest extends TestCase {
 			]
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService( $this->buildLogger(), $container);
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
@@ -318,7 +318,7 @@ class ShareLinkServiceTest extends TestCase {
 			]
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService( $this->buildLogger(), $container);
 		$service->revokeShare('uuid-1', 's1');
 		// No exception == pass; deleteShare expectation asserts the call.
 		$this->addToAssertionCount(1);
@@ -344,7 +344,7 @@ class ShareLinkServiceTest extends TestCase {
 			]
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService( $this->buildLogger(), $container);
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(403);
@@ -365,7 +365,7 @@ class ShareLinkServiceTest extends TestCase {
 			]
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService( $this->buildLogger(), $container);
 		$files = $service->getShareableFiles('uuid-1');
 
 		$this->assertCount(1, $files);

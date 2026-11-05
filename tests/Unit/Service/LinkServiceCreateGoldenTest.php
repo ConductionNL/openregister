@@ -206,7 +206,7 @@ class LinkServiceCreateGoldenTest extends TestCase {
 			]
 		);
 		$l10n = $this->createMock(IL10N::class);
-		$service = new ShareLinkService($l10n, $this->createMock(LoggerInterface::class), $container);
+		$service = new ShareLinkService( $this->createMock(LoggerInterface::class), $container);
 
 		$this->assertGolden(
 			function () use ($service, &$calls, $fileId, $shareType, $shareWith, $permissions, $password, $expiration) {
