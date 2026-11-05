@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Db\EndpointMapper;
 use OCA\OpenRegister\Service\EndpointService;
@@ -512,6 +513,8 @@ class EndpointsController extends Controller {
 	 * Retrieves endpoint execution logs with optional filtering by endpoint ID.
 	 * Supports pagination via limit and offset parameters.
 	 * Returns logs for specific endpoint if endpoint_id provided, otherwise all logs.
+	 * A non-admin only sees logs of endpoints visible to them (the organisation-scoped
+	 * endpoint list); an endpoint_id outside that list yields an empty result.
 	 *
 	 * @NoAdminRequired
 	 *
@@ -663,7 +666,7 @@ class EndpointsController extends Controller {
 	}//end page()
 
 	/**
-	 * One page of logs with the total count, of one endpoint or of all.
+	 * One page of logs with the total count, of one endpoint or of all, limited to visible endpoints for a non-admin.
 	 *
 	 * @param int|null $endpointId The endpoint, or null for all endpoints.
 	 *
@@ -673,6 +676,17 @@ class EndpointsController extends Controller {
 	 */
 	private function logPage(?int $endpointId): JSONResponse {
 		[$limit, $offset] = $this->page();
+		if ($this->isCurrentUserAdmin() === false) {
+			$visibleIds = array_map(static fn (Endpoint $endpoint): int => (int)$endpoint->getId(), $this->endpointMapper->findAll());
+			[$logs, $total] = $this->endpointLogMapper->findPageWithin(
+				visibleIds: $visibleIds,
+				endpointId: $endpointId,
+				limit: $limit,
+				offset: $offset
+			);
+			return new JSONResponse(data: ['results' => $logs, 'total' => $total], statusCode: 200);
+		}
+
 		if ($endpointId === null) {
 			$logs = $this->endpointLogMapper->findAll(limit: $limit, offset: $offset);
 			$total = count($this->endpointLogMapper->findAll(limit: null, offset: null));
