@@ -166,34 +166,6 @@ class UtilityHandler {
 	}//end normalizeEntity()
 
 	/**
-	 * Calculate efficiency metric for bulk operations.
-	 *
-	 * Computes average time per object for performance tracking.
-	 *
-	 * @param array $lookupMap The lookup map of loaded objects.
-	 * @param float $totalTime Total execution time in milliseconds.
-	 *
-	 * @psalm-param array<string, mixed> $lookupMap
-	 *
-	 * @phpstan-param array<string, mixed> $lookupMap
-	 *
-	 * @return string
-	 *
-	 * @psalm-return   string
-	 * @phpstan-return string
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function calculateEfficiency(array $lookupMap, float $totalTime): string {
-		$count = count($lookupMap);
-		if ($count > 0) {
-			return round($totalTime / $count, 2) . 'ms/object';
-		}
-
-		return 'no_objects';
-	}//end calculateEfficiency()
-
-	/**
 	 * Clean query parameters by removing internal/system parameters.
 	 *
 	 * Removes parameters starting with underscore and specific

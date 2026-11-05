@@ -912,53 +912,50 @@ export default {
 		 * @spec exclude Hydrates the local form model and selected groups/users from the store; modal init plumbing.
 		 */
 		initializeOrganisationItem() {
-			if (organisationStore.organisationItem?.uuid) {
-				this.organisationItem = {
-					...this.organisationItem, // Keep default structure
-					...organisationStore.organisationItem,
-					active: organisationStore.organisationItem.active ?? true,
-				}
-
-				// Load existing groups selection
-				// Groups can be stored as either an array of IDs or array of objects (for backwards compatibility)
-				if (
-					Array.isArray(this.organisationItem.groups)
-					&& this.organisationItem.groups.length > 0
-				) {
-					this.selectedGroups = this.organisationItem.groups
-						.map((role) => {
-							// Handle both formats: string IDs or objects
-							const roleId =
-								typeof role === 'string'
-									? role
-									: role.id || role.name
-
-							// Find the group in availableGroups
-							const group = this.availableGroups.find(
-								(g) => g.id === roleId,
-							)
-							if (group) {
-								return group
-							}
-							// If not found in availableGroups, create a temporary object
-							// This ensures we show the group even if the groups API failed
-							return {
-								id: roleId,
-								name: roleId,
-								userCount: 0,
-							}
-						})
-						.filter((g) => g !== null)
-				}
-
-				// Load users array
-				if (Array.isArray(this.organisationItem.users)) {
-					this.organisationUsers = [...this.organisationItem.users]
-				}
-
-				// Initialize special rights from authorization
-				this.initializeSpecialRights()
+			if (!organisationStore.organisationItem?.uuid) {
+				return
 			}
+			this.organisationItem = {
+				...this.organisationItem, // Keep default structure
+				...organisationStore.organisationItem,
+				active: organisationStore.organisationItem.active ?? true,
+			}
+			this.loadGroupsSelection()
+			if (Array.isArray(this.organisationItem.users)) {
+				this.organisationUsers = [...this.organisationItem.users]
+			}
+			// Initialize special rights from authorization
+			this.initializeSpecialRights()
+		},
+
+		/**
+		 * Select the organisation's stored groups. Groups can be stored as either
+		 * an array of IDs or an array of objects (for backwards compatibility).
+		 *
+		 * @return {void}
+		 * @spec exclude Hydrates the selected groups from the form model; modal init plumbing.
+		 */
+		loadGroupsSelection() {
+			const groups = this.organisationItem.groups
+			if (Array.isArray(groups) && groups.length > 0) {
+				this.selectedGroups = groups
+					.map((role) => this.groupForRole(role))
+					.filter((g) => g !== null)
+			}
+		},
+
+		/**
+		 * The group a stored role refers to. A group the groups API did not
+		 * return is still shown, as a placeholder.
+		 *
+		 * @param {string|object} role A group id, or an object with an id or name
+		 * @return {object} The group
+		 * @spec exclude Resolves a stored group reference for display; UI plumbing.
+		 */
+		groupForRole(role) {
+			const roleId = typeof role === 'string' ? role : role.id || role.name
+			const group = this.availableGroups.find((g) => g.id === roleId)
+			return group || { id: roleId, name: roleId, userCount: 0 }
 		},
 
 		/**
@@ -994,52 +991,20 @@ export default {
 		 */
 		async confirmRemoveUser() {
 			if (!this.organisationItem.uuid || !this.userToRemove) return
-
 			this.removingUser = this.userToRemove
 			this.error = null
-
 			try {
 				const response = await fetch(
 					`/index.php/apps/openregister/api/organisations/${this.organisationItem.uuid}/leave`,
 					{
 						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
+						headers: { 'Content-Type': 'application/json' },
 						body: JSON.stringify({ userId: this.userToRemove }),
 					},
 				)
-
-				if (response.ok) {
-					// Remove user from local list
-					this.organisationUsers = this.organisationUsers.filter(
-						(u) => u !== this.userToRemove,
-					)
-					// Also update the organisation item
-					if (this.organisationItem.users) {
-						this.organisationItem.users =
-							this.organisationItem.users.filter(
-								(u) => u !== this.userToRemove,
-							)
-					}
-					// Refresh organisation store
-					await organisationStore.refreshOrganisations()
-
-					// Close dialog
-					this.showRemoveUserDialog = false
-					this.userToRemove = null
-
-					showSuccess(t('openregister', 'User removed successfully'))
-				} else {
-					const errorData = await response.json()
-					this.error =
-						errorData.error
-						|| t(
-							'openregister',
-							'Failed to remove user from organisation',
-						)
-					showError(this.error)
-				}
+				await (response.ok
+					? this.userRemoved()
+					: this.removalRefused(response))
 			} catch (error) {
 				console.error('Error removing user:', error)
 				this.error = t(
@@ -1050,6 +1015,43 @@ export default {
 			} finally {
 				this.removingUser = null
 			}
+		},
+
+		/**
+		 * Drop the removed user from the form, refresh the store and close the dialog.
+		 *
+		 * @return {Promise<void>}
+		 * @spec exclude Updates the local member list after a leave request; UI plumbing.
+		 */
+		async userRemoved() {
+			const removed = this.userToRemove
+			this.organisationUsers = this.organisationUsers.filter(
+				(u) => u !== removed,
+			)
+			if (this.organisationItem.users) {
+				this.organisationItem.users = this.organisationItem.users.filter(
+					(u) => u !== removed,
+				)
+			}
+			await organisationStore.refreshOrganisations()
+			this.showRemoveUserDialog = false
+			this.userToRemove = null
+			showSuccess(t('openregister', 'User removed successfully'))
+		},
+
+		/**
+		 * Show why the server refused to remove the user.
+		 *
+		 * @param {Response} response The refused response
+		 * @return {Promise<void>}
+		 * @spec exclude Error display for a refused leave request; UI plumbing.
+		 */
+		async removalRefused(response) {
+			const errorData = await response.json()
+			this.error =
+				errorData.error
+				|| t('openregister', 'Failed to remove user from organisation')
+			showError(this.error)
 		},
 
 		/**
@@ -1228,60 +1230,18 @@ export default {
 		async saveOrganisation() {
 			this.loading = true
 			this.error = null
-
 			// Validate required fields
 			if (!this.organisationItem.name.trim()) {
 				this.error = t('openregister', 'Organisation name is required')
 				this.loading = false
 				return
 			}
-
 			try {
 				const { response } = await organisationStore.saveOrganisation({
 					...this.organisationItem,
 				})
-
 				if (response.ok) {
-					// Explicitly refresh the organisation list to ensure UI is updated
-					await organisationStore.refreshOrganisationList()
-
-					// Also refresh active organisation in case it was just created
-					if (!this.organisationItem.uuid) {
-						await organisationStore.getActiveOrganisation()
-					}
-
-					if (this.createAnother) {
-						// Clear the form after successful creation
-						setTimeout(() => {
-							this.organisationItem = {
-								name: '',
-								slug: '',
-								description: '',
-								active: true,
-								quota: {
-									storage: null,
-									bandwidth: null,
-									requests: null,
-								},
-								groups: [],
-							}
-							this.selectedGroups = []
-							this.activeTab = 0
-						}, 500)
-
-						this.success = true
-						this.error = false
-
-						// Clear success message after 2s
-						setTimeout(() => {
-							this.success = null
-						}, 2000)
-					} else {
-						this.success = true
-						this.error = false
-
-						this.closeModalTimeout = setTimeout(this.closeModal, 2000)
-					}
+					await this.organisationSaved()
 				}
 			} catch (error) {
 				console.error('Error saving organisation:', error)
@@ -1295,6 +1255,53 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Refresh the lists after a save, then either clear the form for another
+		 * organisation or close the modal.
+		 *
+		 * @return {Promise<void>}
+		 * @spec exclude Post-save refresh and modal follow-up; UI orchestration plumbing.
+		 */
+		async organisationSaved() {
+			// Explicitly refresh the organisation list to ensure UI is updated
+			await organisationStore.refreshOrganisationList()
+			// Also refresh active organisation in case it was just created
+			if (!this.organisationItem.uuid) {
+				await organisationStore.getActiveOrganisation()
+			}
+			this.success = true
+			this.error = false
+			if (this.createAnother) {
+				this.prepareForAnother()
+			} else {
+				this.closeModalTimeout = setTimeout(this.closeModal, 2000)
+			}
+		},
+
+		/**
+		 * Clear the form shortly after a save, and the success message after 2s.
+		 *
+		 * @return {void}
+		 * @spec exclude Form reset timers for creating another organisation; UI plumbing.
+		 */
+		prepareForAnother() {
+			setTimeout(() => {
+				this.organisationItem = {
+					name: '',
+					slug: '',
+					description: '',
+					active: true,
+					quota: { storage: null, bandwidth: null, requests: null },
+					groups: [],
+				}
+				this.selectedGroups = []
+				this.activeTab = 0
+			}, 500)
+			setTimeout(() => {
+				this.success = null
+			}, 2000)
 		},
 
 		/**
@@ -1323,32 +1330,36 @@ export default {
 		 * @spec exclude Reactive setter toggling a group's entity-permission entry on the local authorization model; UI form plumbing.
 		 */
 		updateEntityPermission({ entityType, groupId, action, hasPermission }) {
-			// Initialize authorization object if it doesn't exist
+			const currentPermissions = this.permissionList(entityType, action)
+			const groupIndex = currentPermissions.indexOf(groupId)
+			if (hasPermission && groupIndex === -1) {
+				currentPermissions.push(groupId)
+			} else if (!hasPermission && groupIndex !== -1) {
+				currentPermissions.splice(groupIndex, 1)
+			}
+		},
+
+		/**
+		 * The groups allowed an action on an entity type, created empty when the
+		 * authorization model has no entry for it yet.
+		 *
+		 * @param {string} entityType The entity type (register, schema, object, view, agent)
+		 * @param {string} action The action (create, read, update, delete)
+		 * @return {Array<string>} The group ids; changes to it change the model
+		 * @spec exclude Accessor on the local authorization model; UI form plumbing.
+		 */
+		permissionList(entityType, action) {
 			if (!this.organisationItem.authorization) {
 				this.organisationItem.authorization = {}
 			}
-
-			// Initialize entity type if it doesn't exist
-			if (!this.organisationItem.authorization[entityType]) {
-				this.organisationItem.authorization[entityType] = {}
+			const authorization = this.organisationItem.authorization
+			if (!authorization[entityType]) {
+				authorization[entityType] = {}
 			}
-
-			// Initialize action array if it doesn't exist
-			if (!this.organisationItem.authorization[entityType][action]) {
-				this.organisationItem.authorization[entityType][action] = []
+			if (!authorization[entityType][action]) {
+				authorization[entityType][action] = []
 			}
-
-			const currentPermissions =
-				this.organisationItem.authorization[entityType][action]
-			const groupIndex = currentPermissions.indexOf(groupId)
-
-			if (hasPermission && groupIndex === -1) {
-				// Add permission
-				currentPermissions.push(groupId)
-			} else if (!hasPermission && groupIndex !== -1) {
-				// Remove permission
-				currentPermissions.splice(groupIndex, 1)
-			}
+			return authorization[entityType][action]
 		},
 
 		/**

@@ -4969,11 +4969,6 @@ parameters:
 			path: lib/Service/Object/SaveObject/RelationCascadeHandler.php
 
 		-
-			message: "#^Variable \\$businessData might not be defined\\.$#"
-			count: 2
-			path: lib/Service/Object/SaveObjects/TransformationHandler.php
-
-		-
 			message: "#^Offset '_search' on non\\-empty\\-array\\<string, mixed\\> in isset\\(\\) always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Service/Object/SearchQueryHandler.php

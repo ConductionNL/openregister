@@ -1167,93 +1167,27 @@ class ExportService implements ObjectExporterInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
 	private function getObjectValue(ObjectEntity $object, string $header): ?string {
-		// Handle metadata fields with @self. prefix.
-		if (str_starts_with(haystack: $header, needle: '@self.') === true) {
-			// Remove the @self. prefix (6 characters).
-			$fieldName = substr(string: $header, offset: 6);
+		// Metadata headers: `@self.<field>`, and the legacy `_<field>`.
+		foreach (['@self.', '_'] as $prefix) {
+			if (str_starts_with(haystack: $header, needle: $prefix) === false) {
+				continue;
+			}
 
-			// Get the object array which contains all metadata.
-			$objectArray = $object->getObjectArray();
+			$value = $object->getObjectArray()[substr(string: $header, offset: strlen($prefix))] ?? null;
+			if (is_string($value) === false
+				|| str_contains(haystack: $value, needle: 'T') === false
+				|| str_contains(haystack: $value, needle: 'Z') === false
+			) {
+				return $this->convertValueToString(value: $value);
+			}
 
-			// Check if the field exists in the object array.
-			if (($objectArray[$fieldName] ?? null) !== null) {
-				$value = $objectArray[$fieldName];
-
-				// Handle DateTime objects (they come as ISO strings from getObjectArray).
-				if (is_string($value) === true
-					&& str_contains(haystack: $value, needle: 'T') === true
-					&& str_contains(haystack: $value, needle: 'Z') === true
-				) {
-					// Convert ISO 8601 to our preferred format.
-					try {
-						$date = new DateTime($value);
-						return $date->format('Y-m-d H:i:s');
-					} catch (Exception $e) {
-						// Return as-is if parsing fails.
-						return $value;
-					}
-				}
-
-				// Handle arrays and objects.
-				if (is_array($value) === true || is_object($value) === true) {
-					return $this->convertValueToString(value: $value);
-				}
-
-				// Handle scalar values.
-				if ($value !== null) {
-					return (string)$value;
-				}
-
-				return null;
-			}//end if
-
-			// Fallback for fields that might not exist.
-			return null;
-		}//end if
-
-		// Handle legacy metadata fields with _ prefix for backward compatibility.
-		if (str_starts_with(haystack: $header, needle: '_') === true) {
-			// Remove the _ prefix.
-			$fieldName = substr(string: $header, offset: 1);
-
-			// Get the object array which contains all metadata.
-			$objectArray = $object->getObjectArray();
-
-			// Check if the field exists in the object array.
-			if (($objectArray[$fieldName] ?? null) !== null) {
-				$value = $objectArray[$fieldName];
-
-				// Handle DateTime objects (they come as ISO strings from getObjectArray).
-				if (is_string($value) === true
-					&& str_contains(haystack: $value, needle: 'T') === true
-					&& str_contains(haystack: $value, needle: 'Z') === true
-				) {
-					// Convert ISO 8601 to our preferred format.
-					try {
-						$date = new DateTime($value);
-						return $date->format('Y-m-d H:i:s');
-					} catch (Exception $e) {
-						// Return as-is if parsing fails.
-						return $value;
-					}
-				}
-
-				// Handle arrays and objects.
-				if (is_array($value) === true || is_object($value) === true) {
-					return $this->convertValueToString(value: $value);
-				}
-
-				// Handle scalar values.
-				if ($value !== null) {
-					return (string)$value;
-				}
-
-				return null;
-			}//end if
-
-			// Fallback for fields that might not exist.
-			return null;
-		}//end if
+			// An ISO 8601 timestamp is written as `Y-m-d H:i:s`.
+			try {
+				return (new DateTime($value))->format('Y-m-d H:i:s');
+			} catch (Exception $e) {
+				return $value;
+			}
+		}//end foreach
 
 		// Handle regular fields.
 		switch ($header) {

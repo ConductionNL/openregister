@@ -20,7 +20,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 
 /**
  * Branch coverage tests for ReferentialIntegrityService — targets uncovered
- * branches in canDelete, isValidOnDeleteAction, logRestrictBlock,
+ * branches in canDelete, logRestrictBlock,
  * hasIncomingOnDeleteReferences, applyDeletionActions.
  */
 class ReferentialIntegrityServiceBranchTest extends TestCase {
@@ -74,42 +74,6 @@ class ReferentialIntegrityServiceBranchTest extends TestCase {
 		$mock->method('getSchema')->willReturn($schemaId);
 		$mock->method('getDeleted')->willReturn(null);
 		return $mock;
-	}
-
-	// =========================================================================
-	// isValidOnDeleteAction
-	// =========================================================================
-
-	public function testIsValidOnDeleteActionCascade(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('CASCADE'));
-	}
-
-	public function testIsValidOnDeleteActionRestrict(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('RESTRICT'));
-	}
-
-	public function testIsValidOnDeleteActionSetNull(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('SET_NULL'));
-	}
-
-	public function testIsValidOnDeleteActionSetDefault(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('SET_DEFAULT'));
-	}
-
-	public function testIsValidOnDeleteActionNoAction(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('NO_ACTION'));
-	}
-
-	public function testIsValidOnDeleteActionLowercase(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('cascade'));
-	}
-
-	public function testIsValidOnDeleteActionInvalid(): void {
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction('INVALID'));
-	}
-
-	public function testIsValidOnDeleteActionEmpty(): void {
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction(''));
 	}
 
 	// =========================================================================
