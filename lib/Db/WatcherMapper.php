@@ -55,6 +55,7 @@ use OCP\IDBConnection;
  * @psalm-suppress PossiblyUnusedMethod
  */
 class WatcherMapper extends QBMapper {
+	use DeleteByObjectTrait;
 
 	/**
 	 * The follow table, named once for the query lenses that join on it.
@@ -349,25 +350,4 @@ class WatcherMapper extends QBMapper {
 		return ($qb->executeStatement() > 0);
 
 	}//end unsubscribe()
-
-	/**
-	 * Remove every subscription on one object.
-	 *
-	 * Called when the object is deleted, so a re-created uuid never inherits
-	 * somebody else's audience.
-	 *
-	 * @param string $objectUuid The deleted object's uuid.
-	 *
-	 * @return integer How many rows were removed.
-	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-deleting-an-object-removes-its-watchers
-	 */
-	public function deleteByObject(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-
-	}//end deleteByObject()
 }//end class

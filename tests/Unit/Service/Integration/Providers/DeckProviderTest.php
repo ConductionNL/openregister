@@ -50,6 +50,7 @@ use RuntimeException;
  * Unit tests for DeckProvider.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) Many small AAA tests, one per behaviour.
+ * @uses \OCA\OpenRegister\Service\LinkTarget
  */
 class DeckProviderTest extends TestCase {
 
@@ -123,7 +124,7 @@ class DeckProviderTest extends TestCase {
 		$linkService
 			->expects($this->once())
 			->method('linkCard')
-			->with('obj-uuid', 10, 20, 42)
+			->with($this->equalTo((new LinkTarget('obj-uuid', 10))->inSchema(20)), 42)
 			->willReturn($this->buildDeckLink(42));
 
 		$linkService->expects($this->never())->method('createAndLinkCard');

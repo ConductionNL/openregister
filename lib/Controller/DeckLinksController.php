@@ -125,9 +125,7 @@ class DeckLinksController extends Controller {
 				}
 
 				$link = $this->deckLinkService->linkCard(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
+					$this->linkTargetOf(object: $object),
 					$cardId
 				);
 

@@ -201,17 +201,10 @@ class FlowRunCommitTest extends TestCase {
 			$items[$to] = [['json' => ['via' => $transition]]];
 		}
 
-		return new FlowFiring(
-			streamId: $stream,
-			transition: $transition,
-			froms: $froms,
-			taken: $taken,
-			itemsByPlace: $items,
-			claimedPlaces: array_merge($froms, $taken),
-			consumedStreamIds: [],
-			logEntry: ['transition' => $transition, 'type' => 'x', 'status' => 'completed', 'itemsIn' => 1, 'itemsOut' => 1],
-			enabledAfter: $enabledAfter
-		);
+		return (new FlowFiring(streamId: $stream, transition: $transition, froms: $froms, taken: $taken))
+			->withPlaceItems(placeItems: $items)
+			->withClaimedPlaces(claimedPlaces: array_merge($froms, $taken))
+			->withLogEntry(logEntry: ['transition' => $transition, 'type' => 'x', 'status' => 'completed', 'itemsIn' => 1, 'itemsOut' => 1], enabledAfter: $enabledAfter);
 	}//end firing()
 
 	public function testTwoInterleavedCommitsKeepBothEffects(): void {
@@ -277,17 +270,11 @@ class FlowRunCommitTest extends TestCase {
 		$this->commit->commitFiring(run: $this->row, firing: $this->firing($childY, 'ey', ['y'], ['j#e2'], true), owner: 'W');
 		$this->assertEqualsCanonicalizing(['j#e1' => 1, 'j#e2' => 1], $this->row->getMarking());
 
-		$join = new FlowFiring(
-			streamId: $childX,
-			transition: 'j',
-			froms: ['j#e1', 'j#e2'],
-			taken: ['after'],
-			itemsByPlace: ['after' => []],
-			claimedPlaces: ['j#e1', 'j#e2', 'after'],
-			consumedStreamIds: [$childY],
-			logEntry: ['transition' => 'j', 'status' => 'completed'],
-			enabledAfter: false
-		);
+		$join = (new FlowFiring(streamId: $childX, transition: 'j', froms: ['j#e1', 'j#e2'], taken: ['after']))
+			->withPlaceItems(placeItems: ['after' => []])
+			->withClaimedPlaces(claimedPlaces: ['j#e1', 'j#e2', 'after'])
+			->withConsumedStreamIds(consumedStreamIds: [$childY])
+			->withLogEntry(logEntry: ['transition' => 'j', 'status' => 'completed'], enabledAfter: false);
 		$this->commit->commitFiring(run: $this->row, firing: $join, owner: 'W');
 
 		$this->assertSame(['after' => 1], $this->row->getMarking());

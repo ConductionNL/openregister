@@ -45,6 +45,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicBulkSaveGroup
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler

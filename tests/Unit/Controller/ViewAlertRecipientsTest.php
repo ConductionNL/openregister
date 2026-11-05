@@ -46,6 +46,7 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ViewsController
+ * @uses \OCA\OpenRegister\Controller\Support\ViewPatch
  * @covers \OCA\OpenRegister\Service\Rbac\ViewerReachResolver
  * @uses \OCA\OpenRegister\Search\Db\View
  * @uses \OCA\OpenRegister\Exception\InvalidViewAlertException

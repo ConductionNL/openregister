@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionInputs;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
@@ -98,7 +99,7 @@ class RenderObjectUpdateRightTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 		$actionList = new ObjectActionList(
 			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-			new ObjectActionGate($permissions, $userSession, $l10n),
+			new ObjectActionGate($permissions, $userSession, $l10n, $this->createMock(ObjectActionElevationEntries::class)),
 			new ObjectActionInputs(new OasRequestValidator()),
 			$this->createMock(TransitionEngine::class),
 			$l10n

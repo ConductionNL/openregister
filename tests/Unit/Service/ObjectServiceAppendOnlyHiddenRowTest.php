@@ -104,6 +104,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Exception\AppendOnlyException
  * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
  */
 class ObjectServiceAppendOnlyHiddenRowTest extends TestCase {
 

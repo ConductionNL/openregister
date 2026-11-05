@@ -65,6 +65,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
  * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaDeclaration
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingDayRoll
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerLedgerEntry
  */
 class FlowTimerServiceTest extends TestCase {
 
@@ -94,6 +95,87 @@ class FlowTimerServiceTest extends TestCase {
 		$this->calculator = new SlaCalculator();
 		$this->service = $this->buildService();
 	}//end setUp()
+
+	/**
+	 * Compare this test's ledger rows with `fixtures/flow-timer-ledger-golden.json`.
+	 *
+	 * Timer uuids, in the timer field and inside reasons, are replaced by their
+	 * order of first appearance. Set
+	 * `OR_GOLDEN_WRITE=1` to rewrite the recording.
+	 *
+	 * @return void
+	 */
+	protected function tearDown(): void {
+		$path = __DIR__ . '/fixtures/flow-timer-ledger-golden.json';
+		$golden = [];
+		if (file_exists($path) === true) {
+			$golden = json_decode((string)file_get_contents($path), true);
+		}
+
+		$key = $this->name() . ' ' . $this->dataName();
+		$rows = self::ledgerRows(events: $this->store->events);
+		if (getenv('OR_GOLDEN_WRITE') === '1') {
+			$golden[$key] = $rows;
+			ksort($golden);
+			@mkdir(dirname($path));
+			file_put_contents($path, json_encode($golden, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n");
+		} elseif ($this->status()->isSuccess() === true) {
+			self::assertArrayHasKey($key, $golden, 'No ledger recording for ' . $key);
+			self::assertSame($golden[$key], $rows);
+		}
+
+		parent::tearDown();
+	}//end tearDown()
+
+	/**
+	 * Every recorded field of the ledger rows, timer uuids by order of appearance.
+	 *
+	 * @param array<int, FlowTimerEvent> $events The rows.
+	 *
+	 * @return array<int, array<string, mixed>> The rows as plain values.
+	 */
+	private static function ledgerRows(array $events): array {
+		$uuids = [];
+		$format = static fn (?\DateTimeInterface $at): ?string => $at?->format('Y-m-d\TH:i:sP');
+		foreach ($events as $event) {
+			$uuids[(string)$event->getTimerUuid()] ??= count($uuids);
+		}
+
+		$names = array_map(static fn (int $n): string => 'timer#' . $n, $uuids);
+		$rows = [];
+		foreach ($events as $event) {
+			$rows[] = [
+				'timer' => $uuids[(string)$event->getTimerUuid()],
+				'type' => $event->getType(),
+				'actor' => $event->getActor(),
+				'reason' => strtr((string)$event->getReason(), $names),
+				'priorFireAt' => $format($event->getPriorFireAt()),
+				'newFireAt' => $format($event->getNewFireAt()),
+				'daysImpact' => var_export($event->getDaysImpact(), true),
+				'basis' => $event->getBasis(),
+				'unrolledAt' => $format($event->getUnrolledAt()),
+				'rolledBy' => $event->getRolledBy(),
+				'created' => self::moment(at: $event->getCreated()),
+			];
+		}
+
+		return $rows;
+	}//end ledgerRows()
+
+	/**
+	 * A row's creation moment; a wall-clock moment (within the hour) reads `now`.
+	 *
+	 * @param \DateTimeInterface|null $at The moment.
+	 *
+	 * @return string|null The moment.
+	 */
+	private static function moment(?\DateTimeInterface $at): ?string {
+		if ($at !== null && abs($at->getTimestamp() - time()) < 3600) {
+			return 'now';
+		}
+
+		return $at?->format('Y-m-d\TH:i:sP');
+	}//end moment()
 
 	/**
 	 * A service over the SAME store: a "restart" keeps the rows and loses everything else.

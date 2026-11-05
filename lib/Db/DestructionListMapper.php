@@ -44,6 +44,8 @@ use Symfony\Component\Uid\Uuid;
  * @psalm-suppress PossiblyUnusedMethod
  */
 class DestructionListMapper extends QBMapper {
+	use FindAllNewestFirstTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -105,31 +107,6 @@ class DestructionListMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findByStatus()
-
-	/**
-	 * Find all destruction lists.
-	 *
-	 * @param int|null $limit Maximum number of entries to return
-	 * @param int|null $offset Offset for pagination
-	 *
-	 * @return DestructionList[]
-	 */
-	public function findAll(?int $limit = null, ?int $offset = null): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->orderBy('created', 'DESC');
-
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
-
-		return $this->findEntities(query: $qb);
-	}//end findAll()
 
 	/**
 	 * Create a new destruction list with auto-generated UUID.
