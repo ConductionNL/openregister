@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TablesControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\TablesController;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -41,7 +42,7 @@ class TablesControllerTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new TablesController(
+		$this->controller = TablesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,

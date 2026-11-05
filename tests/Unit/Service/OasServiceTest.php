@@ -2450,7 +2450,9 @@ class OasServiceTest extends TestCase {
 			'deleteGroups' => ['admin'],
 		];
 
-		$this->invokePrivateMethod('addCrudPaths', [$register, $schema, $rbac, '']);
+		$this->setPrivateProperty('pathRbac', $rbac);
+		$this->setPrivateProperty('operationIdPrefix', '');
+		$this->invokePrivateMethod('addCrudPaths', [$register, $schema]);
 
 		$oas = $this->getPrivateProperty('oas');
 
@@ -2482,7 +2484,9 @@ class OasServiceTest extends TestCase {
 			],
 		]);
 
-		$this->invokePrivateMethod('addCrudPaths', [$register, $schema, [], 'MyPrefix']);
+		$this->setPrivateProperty('pathRbac', []);
+		$this->setPrivateProperty('operationIdPrefix', 'MyPrefix');
+		$this->invokePrivateMethod('addCrudPaths', [$register, $schema]);
 
 		$oas = $this->getPrivateProperty('oas');
 
@@ -2505,11 +2509,25 @@ class OasServiceTest extends TestCase {
 			],
 		]);
 
-		$this->invokePrivateMethod('addCrudPaths', [$register, $schema, [], '']);
+		$this->setPrivateProperty('pathRbac', []);
+		$this->setPrivateProperty('operationIdPrefix', '');
+		$this->invokePrivateMethod('addCrudPaths', [$register, $schema]);
 
 		$oas = $this->getPrivateProperty('oas');
 
 		$this->assertArrayHasKey('/objects/my-register/my-schema', $oas['paths']);
+	}
+
+	public function testAddCrudPathsTreatsAnEmptySlugAsNone(): void {
+		$register = $this->createRegister(1, 'My Register', [], null, '1.0', '');
+		$schema = $this->createSchema(1, 'My Schema', ['name' => ['type' => 'string']], '');
+		$this->setPrivateProperty('oas', ['paths' => [], 'components' => ['schemas' => []]]);
+
+		$this->setPrivateProperty('pathRbac', []);
+		$this->setPrivateProperty('operationIdPrefix', '');
+		$this->invokePrivateMethod('addCrudPaths', [$register, $schema]);
+
+		$this->assertArrayHasKey('/objects/my-register/my-schema', $this->getPrivateProperty('oas')['paths']);
 	}
 
 	// ========================================================================
@@ -2856,7 +2874,8 @@ class OasServiceTest extends TestCase {
 		$schema = $this->createSchema(10, 'Person', ['name' => ['type' => 'string']], 'person');
 		$this->setPrivateProperty('oas', ['paths' => [], 'components' => ['schemas' => []]]);
 
-		$this->invokePrivateMethod('addCrudPaths', [$register, $schema, ['updateGroups' => []], '']);
+		$this->setPrivateProperty('pathRbac', ['updateGroups' => []]);
+		$this->invokePrivateMethod('addCrudPaths', [$register, $schema]);
 
 		$paths = $this->getPrivateProperty('oas')['paths'];
 		$this->assertArrayHasKey('/objects/people/person/{id}', $paths);
