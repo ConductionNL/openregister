@@ -437,53 +437,33 @@ export default {
 <style scoped lang="scss">
 @use '../../styles/modals.scss' as *;
 
-@include loading-container-2;
-
-@include loading-subtitle;
+@include loading-container-2-rules;
 
 .confirmation-container {
 	padding: 1rem 0;
 }
 
-@include object-count-section;
+@include object-count-section-rules;
 
-@include object-count-section-h4;
-
-@include object-count-centered;
-
-@include count-value;
+@include object-count-centered-rules;
 
 .count-label {
 	color: var(--color-text-lighter);
 }
 
-@include loading-count;
-
-@include object-breakdown;
-
-@include breakdown-item;
+@include loading-count-rules;
 
 .breakdown-item:last-child {
 	margin-bottom: 0;
 }
 
-@include breakdown-label;
-
-@include breakdown-value;
-
-@include breakdown-value-invalid;
-
-@include breakdown-value-deleted;
+@include breakdown-label-rules;
 
 .steps-section {
 	margin-bottom: 2rem;
 }
 
-@include steps-section-h4;
-
-@include steps-list;
-
-@include steps-list-li;
+@include steps-section-h4-rules;
 
 .results-container {
 	padding: 1rem 0;

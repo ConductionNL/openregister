@@ -786,9 +786,7 @@ export default {
 	padding-top: 0 !important;
 }
 
-@include step-title;
-
-@include report-title;
+@include step-title-rules;
 
 .migration-step h3 {
 	margin-bottom: 16px;
@@ -978,15 +976,11 @@ export default {
 
 @include loading-container;
 
-@include object-info-strong;
-
-@include object-id;
+@include object-info-strong-rules;
 
 @include report-section;
 
-@include report-section-h4;
-
-@include report-section-ul;
+@include report-section-h4-rules;
 
 .report-section li {
 	margin-bottom: 4px;

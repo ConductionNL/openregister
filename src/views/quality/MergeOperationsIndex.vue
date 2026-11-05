@@ -312,9 +312,7 @@ export default {
 	border-bottom: 1px solid var(--color-border);
 }
 
-@include pagination-2;
-
-@include badge-2;
+@include pagination-2-rules;
 
 .badge-status-reversible {
 	color: var(--color-main-text);

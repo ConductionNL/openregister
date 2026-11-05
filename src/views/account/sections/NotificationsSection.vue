@@ -122,9 +122,7 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
-@include section-error;
-
-@include section-success;
+@include section-error-rules;
 
 .notifications-section__toggle {
 	margin-bottom: 8px;

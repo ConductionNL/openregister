@@ -1592,11 +1592,7 @@ export default {
 
 @include managed-badge-local;
 
-@include status-pill;
-
-@include status-pill-alert;
-
-@include status-pill-success;
+@include status-pill-rules;
 
 .schemaNameCell {
 	display: table-cell;

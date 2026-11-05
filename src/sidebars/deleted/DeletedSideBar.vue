@@ -633,9 +633,7 @@ export default {
 	margin: 0 0 12px 0;
 }
 
-@include filter-group;
-
-@include filter-group-label;
+@include filter-group-rules;
 
 .filter-hint {
 	margin: 8px 16px;
@@ -656,9 +654,7 @@ export default {
 
 @include stat-card;
 
-@include stat-number;
-
-@include stat-label;
+@include stat-number-rules;
 
 .topDeleters {
 	margin-top: 20px;

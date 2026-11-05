@@ -57,9 +57,5 @@ export default {
 	padding: 20px;
 }
 
-@include clear-dialog-content-h3;
-
-@include clear-dialog-content-p;
-
-@include dialog-actions;
+@include clear-dialog-content-h3-rules-2;
 </style>

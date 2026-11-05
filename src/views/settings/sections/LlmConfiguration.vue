@@ -1101,11 +1101,7 @@ export default {
 
 /* SettingsSection handles all action button positioning and spacing */
 
-@include section-description-full;
-
-@include main-description;
-
-@include main-description-info-note;
+@include section-description-full-rules-2;
 
 .main-description.info-note strong {
 	color: var(--color-primary-element);

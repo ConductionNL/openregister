@@ -342,23 +342,13 @@ export default {
 	margin-bottom: 20px;
 }
 
-@include view-header-title;
-
-@include view-header-title-indented;
-
-@include view-header-p;
-
-@include view-actions-bar;
-
-@include view-info;
+@include view-header-title-rules;
 
 .viewTotalCount {
 	font-weight: 600;
 }
 
-@include view-actions;
-
-@include table-container;
+@include view-actions-rules;
 
 .templatesTable {
 	width: 100%;
@@ -390,9 +380,7 @@ export default {
 	font-weight: 500;
 }
 
-@include badge;
-
-@include badge-type;
+@include badge-rules;
 
 .column-name {
 	min-width: 200px;
@@ -414,7 +402,5 @@ export default {
 	width: 50px;
 }
 
-@include pagination;
-
-@include pagination-info;
+@include pagination-rules;
 </style>

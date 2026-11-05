@@ -534,3 +534,108 @@
 		text-align: right;
 	}
 }
+
+@mixin view-header-title-rules {
+	@include view-header-title;
+	@include view-header-title-indented;
+	@include view-header-p;
+	@include view-actions-bar;
+	@include view-info;
+}
+
+@mixin section-error-rules {
+	@include section-error;
+	@include section-success;
+}
+
+@mixin option-description-rules {
+	@include option-description;
+	@include option-section-h4;
+	@include groups-table;
+	@include groups-row;
+	@include group-label-strong;
+	@include user-type-description;
+	@include group-select;
+	@include loading-icon;
+	@include media-max-width-768px-2;
+}
+
+@mixin table-container-2-rules {
+	@include table-container-2;
+	@include table-container-is-loading;
+	@include loading-wrapper;
+	@include webhooks-table;
+	@include webhooks-table-thead;
+	@include webhooks-table-th;
+	@include webhooks-table-td;
+}
+
+@mixin section-description-full-2-rules {
+	@include section-description-full-2;
+	@include main-description-2;
+	@include toggle-status;
+	@include impact-description;
+	@include status-enabled;
+	@include status-disabled;
+}
+
+@mixin view-container-rules {
+	@include view-container;
+	@include view-header;
+}
+
+@mixin badge-rules {
+	@include badge;
+	@include badge-type;
+}
+
+@mixin pagination-rules {
+	@include pagination;
+	@include pagination-info;
+}
+
+@mixin section-description-full-rules {
+	@include section-description-full;
+	@include main-description;
+}
+
+@mixin save-message-rules {
+	@include save-message;
+	@include save-message-success;
+	@include save-message-error;
+}
+
+@mixin section-disabled-rules {
+	@include section-disabled;
+	@include section-error-rules;
+}
+
+@mixin badge-rules-2 {
+	@include badge-rules;
+	@include badge-category;
+}
+
+@mixin view-actions-rules {
+	@include view-actions;
+	@include table-container;
+}
+
+@mixin keyframes-copy-success-rules {
+	@include keyframes-copy-success;
+	@include media-prefers-reduced-motion-reduce-2;
+}
+
+@mixin default-badge-rules {
+	@include default-badge;
+	@include active-badge;
+}
+
+@mixin pagination-2-rules {
+	@include pagination-2;
+	@include badge-2;
+}
+
+@mixin section-description-full-rules-2 {
+	@include section-description-full-rules;
+	@include main-description-info-note;
+}

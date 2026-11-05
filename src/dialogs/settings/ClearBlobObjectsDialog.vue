@@ -59,9 +59,7 @@ export default {
 	padding: 20px;
 }
 
-@include clear-dialog-content-h3;
-
-@include clear-dialog-content-p;
+@include clear-dialog-content-h3-rules;
 
 .clear-dialog-content .warning-text {
 	color: var(--color-error);

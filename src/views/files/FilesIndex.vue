@@ -600,23 +600,13 @@ export default {
 	margin-bottom: 20px;
 }
 
-@include view-header-title;
-
-@include view-header-title-indented;
-
-@include view-header-p;
-
-@include view-actions-bar;
-
-@include view-info;
+@include view-header-title-rules;
 
 .viewTotalCount {
 	font-weight: 600;
 }
 
-@include view-actions;
-
-@include table-container;
+@include view-actions-rules;
 
 .filesTable {
 	width: 100%;
@@ -766,7 +756,5 @@ export default {
 	width: 50px;
 }
 
-@include pagination;
-
-@include pagination-info;
+@include pagination-rules;
 </style>

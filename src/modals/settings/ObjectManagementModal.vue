@@ -655,11 +655,7 @@ export default {
 	}
 }
 
-@include info-grid;
-
-@include info-item;
-
-@include info-note;
+@include info-grid-rules;
 
 /* Actions layout */
 @include deep-dialog-actions;

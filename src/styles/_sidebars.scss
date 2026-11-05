@@ -71,3 +71,13 @@
 		padding: 0 8px;
 	}
 }
+
+@mixin filter-group-rules {
+	@include filter-group;
+	@include filter-group-label;
+}
+
+@mixin stat-number-rules {
+	@include stat-number;
+	@include stat-label;
+}

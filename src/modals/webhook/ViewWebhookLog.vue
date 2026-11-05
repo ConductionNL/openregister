@@ -415,9 +415,7 @@ export default {
 	font-size: 12px;
 }
 
-@include status-success;
-
-@include status-failed;
+@include status-success-rules;
 
 .text-muted {
 	color: var(--color-text-maxcontrast);

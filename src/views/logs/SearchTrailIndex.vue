@@ -940,7 +940,5 @@ export default {
 	animation: copySuccess 0.3s ease-in-out;
 }
 
-@include keyframes-copy-success;
-
-@include media-prefers-reduced-motion-reduce-2;
+@include keyframes-copy-success-rules;
 </style>

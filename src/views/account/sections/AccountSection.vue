@@ -171,9 +171,7 @@ export default {
 
 @include section-field-label;
 
-@include section-error;
-
-@include section-success;
+@include section-error-rules;
 
 .account-section__pending {
 	background: var(--color-warning-background, #fff3cd);

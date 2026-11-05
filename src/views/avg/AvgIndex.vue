@@ -2060,9 +2060,7 @@ export default {
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
 
-@include view-container;
-
-@include view-header;
+@include view-container-rules;
 
 .viewHeaderTitle {
 	display: flex;

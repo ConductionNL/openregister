@@ -206,9 +206,7 @@ export default {
 
 @include section-field-label;
 
-@include section-error;
-
-@include section-success;
+@include section-error-rules;
 
 .tokens-section__list {
 	list-style: none;

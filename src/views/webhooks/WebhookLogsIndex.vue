@@ -497,15 +497,7 @@ export default {
 	margin-bottom: 20px;
 }
 
-@include view-header-title;
-
-@include view-header-title-indented;
-
-@include view-header-p;
-
-@include view-actions-bar;
-
-@include view-info;
+@include view-header-title-rules;
 
 .viewTotalCount {
 	font-weight: 600;
@@ -517,19 +509,7 @@ export default {
 	align-items: center;
 }
 
-@include table-container-2;
-
-@include table-container-is-loading;
-
-@include loading-wrapper;
-
-@include webhooks-table;
-
-@include webhooks-table-thead;
-
-@include webhooks-table-th;
-
-@include webhooks-table-td;
+@include table-container-2-rules;
 
 .webhooksTable tbody tr:hover {
 	background: var(--color-background-hover);
@@ -551,9 +531,7 @@ export default {
 	background: var(--color-background-hover);
 }
 
-@include status-success;
-
-@include status-failed;
+@include status-success-rules;
 
 .event-class {
 	font-family: monospace;

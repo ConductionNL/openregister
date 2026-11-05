@@ -135,9 +135,5 @@ export default {
 
 @include section-field-label;
 
-@include section-disabled;
-
-@include section-error;
-
-@include section-success;
+@include section-disabled-rules;
 </style>

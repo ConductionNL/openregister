@@ -1213,9 +1213,7 @@ export default {
 	padding-top: 0 !important;
 }
 
-@include step-title;
-
-@include report-title;
+@include step-title-rules;
 
 .merge-step h3 {
 	margin-bottom: 16px;
@@ -1462,9 +1460,7 @@ export default {
 	color: var(--color-error);
 }
 
-@include report-section-h4;
-
-@include report-section-ul;
+@include report-section-h4-rules;
 
 .report-section li {
 	margin-bottom: 4px;

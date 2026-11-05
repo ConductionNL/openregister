@@ -142,11 +142,7 @@ export default {
 
 @include section;
 
-@include section-disabled;
-
-@include section-error;
-
-@include section-success;
+@include section-disabled-rules;
 
 .avatar-section {
 	display: flex;

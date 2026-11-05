@@ -919,9 +919,7 @@ export default {
 	margin: 0 0 12px 0;
 }
 
-@include filter-group;
-
-@include filter-group-label;
+@include filter-group-rules;
 
 @include action-group;
 
@@ -969,9 +967,7 @@ export default {
 	border-left: 4px solid var(--color-error);
 }
 
-@include stat-number;
-
-@include stat-label;
+@include stat-number-rules;
 
 .actionDistribution,
 .topObjects {

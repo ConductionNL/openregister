@@ -706,9 +706,7 @@ export default {
 @use '../../../styles/views.scss' as *;
 
 /* Section Description */
-@include section-description-full;
-
-@include main-description;
+@include section-description-full-rules;
 
 .main-description:last-child {
 	margin-bottom: 0;
@@ -946,11 +944,7 @@ export default {
 }
 
 /* Save Message */
-@include save-message;
-
-@include save-message-success;
-
-@include save-message-error;
+@include save-message-rules;
 
 @media (max-width: 768px) {
 	.scopes-info {

@@ -43,3 +43,8 @@
 		margin-bottom: 12px;
 	}
 }
+
+@mixin filter-section-h4-rules {
+	@include filter-section-h4;
+	@include filter-options;
+}

@@ -557,11 +557,7 @@ export default {
 }
 
 /* Status Pills */
-@include status-pill;
-
-@include status-pill-alert;
-
-@include status-pill-success;
+@include status-pill-rules;
 
 /* Title with badges layout */
 @include title-with-badges;

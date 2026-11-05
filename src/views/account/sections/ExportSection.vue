@@ -95,7 +95,5 @@ export default {
 
 @include section;
 
-@include section-error;
-
-@include section-success;
+@include section-error-rules;
 </style>

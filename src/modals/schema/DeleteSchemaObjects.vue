@@ -329,9 +329,7 @@ export default {
 <style scoped lang="scss">
 @use '../../styles/modals.scss' as *;
 
-@include loading-container-2;
-
-@include loading-subtitle;
+@include loading-container-2-rules;
 
 .success-container {
 	padding: 1rem 0;
@@ -390,13 +388,7 @@ export default {
 	margin-bottom: 0;
 }
 
-@include breakdown-label;
-
-@include breakdown-value;
-
-@include breakdown-value-invalid;
-
-@include breakdown-value-deleted;
+@include breakdown-label-rules;
 
 .no-objects-info {
 	margin: 1rem 0;

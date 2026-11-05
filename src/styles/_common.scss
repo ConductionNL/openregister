@@ -115,3 +115,19 @@
 		font-weight: 600;
 	}
 }
+
+@mixin status-pill-rules {
+	@include status-pill;
+	@include status-pill-alert;
+	@include status-pill-success;
+}
+
+@mixin config-badge-sync-success-rules {
+	@include config-badge-sync-success;
+	@include config-badge-sync-failed;
+}
+
+@mixin status-success-rules {
+	@include status-success;
+	@include status-failed;
+}

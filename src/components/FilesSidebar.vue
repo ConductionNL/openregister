@@ -292,9 +292,7 @@ export default {
 	margin-bottom: 24px;
 }
 
-@include filter-section-h4;
-
-@include filter-options;
+@include filter-section-h4-rules;
 
 .clear-filters {
 	margin-top: 20px;

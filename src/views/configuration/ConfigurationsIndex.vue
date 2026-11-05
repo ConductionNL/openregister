@@ -865,9 +865,7 @@ export default {
 }
 
 /* Sync status badges */
-@include config-badge-sync-success;
-
-@include config-badge-sync-failed;
+@include config-badge-sync-success-rules;
 
 .configBadge--sync-pending,
 .configBadge--sync-never {

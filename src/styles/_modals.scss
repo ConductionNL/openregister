@@ -622,3 +622,106 @@
 		}
 	}
 }
+
+@mixin breakdown-label-rules {
+	@include breakdown-label;
+	@include breakdown-value;
+	@include breakdown-value-invalid;
+	@include breakdown-value-deleted;
+}
+
+@mixin object-info-strong-rules {
+	@include object-info-strong;
+	@include object-id;
+}
+
+@mixin loading-groups-rules {
+	@include loading-groups;
+	@include groups-list;
+	@include groups-list-h3;
+	@include group-items;
+	@include group-item;
+	@include group-badge;
+	@include no-groups;
+}
+
+@mixin groups-select-container-rules {
+	@include groups-select-container;
+	@include groups-label;
+	@include field-hint;
+}
+
+@mixin selected-objects-list-rules {
+	@include selected-objects-list;
+	@include selected-object-item;
+}
+
+@mixin tab-headers-rules {
+	@include tab-headers;
+	@include tab-header;
+	@include tab-header-hover;
+	@include tab-header-active;
+}
+
+@mixin tab-container-deep-nav-link-rules {
+	@include tab-container-deep-nav-link;
+	@include form-editor;
+}
+
+@mixin loading-count-rules {
+	@include loading-count;
+	@include object-breakdown;
+	@include breakdown-item;
+}
+
+@mixin steps-section-h4-rules {
+	@include steps-section-h4;
+	@include steps-list;
+	@include steps-list-li;
+}
+
+@mixin info-grid-rules {
+	@include info-grid;
+	@include info-item;
+	@include info-note;
+}
+
+@mixin groups-select-container-rules-2 {
+	@include groups-select-container-rules;
+	@include group-option;
+}
+
+@mixin property-item-rules {
+	@include property-item;
+	@include property-item-strong;
+}
+
+@mixin empty-tab-content-rules {
+	@include empty-tab-content;
+	@include media-prefers-reduced-motion-reduce;
+}
+
+@mixin step-title-rules {
+	@include step-title;
+	@include report-title;
+}
+
+@mixin report-section-h4-rules {
+	@include report-section-h4;
+	@include report-section-ul;
+}
+
+@mixin loading-container-2-rules {
+	@include loading-container-2;
+	@include loading-subtitle;
+}
+
+@mixin object-count-section-rules {
+	@include object-count-section;
+	@include object-count-section-h4;
+}
+
+@mixin object-count-centered-rules {
+	@include object-count-centered;
+	@include count-value;
+}

@@ -558,11 +558,7 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
-@include badge;
-
-@include badge-type;
-
-@include badge-category;
+@include badge-rules-2;
 
 .badge-count {
 	background: var(--color-primary-element);

@@ -466,9 +466,7 @@ export default {
 	border-radius: var(--border-radius);
 }
 
-@include property-item;
-
-@include property-item-strong;
+@include property-item-rules;
 
 .urlValue {
 	word-break: break-all;
@@ -479,13 +477,7 @@ export default {
 	margin-top: 1rem;
 }
 
-@include tab-headers;
-
-@include tab-header;
-
-@include tab-header-hover;
-
-@include tab-header-active;
+@include tab-headers-rules;
 
 .tabContent {
 	min-height: 200px;
@@ -525,7 +517,5 @@ export default {
 	margin: 0;
 }
 
-@include empty-tab-content;
-
-@include media-prefers-reduced-motion-reduce;
+@include empty-tab-content-rules;
 </style>

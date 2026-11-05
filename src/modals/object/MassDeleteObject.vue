@@ -343,17 +343,13 @@ export default {
 	margin: 20px 0;
 }
 
-@include selected-objects-list;
-
-@include selected-object-item;
+@include selected-objects-list-rules;
 
 .selected-object-item:last-child {
 	border-bottom: none;
 }
 
-@include object-info-strong;
-
-@include object-id;
+@include object-info-strong-rules;
 
 .deleted-link {
 	color: var(--color-primary);

@@ -26,3 +26,13 @@
 		margin-top: 24px;
 	}
 }
+
+@mixin clear-dialog-content-h3-rules {
+	@include clear-dialog-content-h3;
+	@include clear-dialog-content-p;
+}
+
+@mixin clear-dialog-content-h3-rules-2 {
+	@include clear-dialog-content-h3-rules;
+	@include dialog-actions;
+}

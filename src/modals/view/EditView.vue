@@ -472,15 +472,9 @@ export default {
 }
 
 /* Tab title styling with icons */
-@include tab-container-deep-nav-link;
+@include tab-container-deep-nav-link-rules;
 
-@include form-editor;
-
-@include groups-select-container;
-
-@include groups-label;
-
-@include field-hint;
+@include groups-select-container-rules;
 
 .group-option,
 .user-option {

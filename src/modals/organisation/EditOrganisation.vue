@@ -1413,21 +1413,13 @@ export default {
 }
 
 /* Tab title styling with icons */
-@include tab-container-deep-nav-link;
-
-@include form-editor;
+@include tab-container-deep-nav-link-rules;
 
 .create-another-checkbox {
 	margin-right: auto;
 }
 
-@include groups-select-container;
-
-@include groups-label;
-
-@include field-hint;
-
-@include group-option;
+@include groups-select-container-rules-2;
 
 .group-name {
 	font-weight: 500;
@@ -1435,19 +1427,7 @@ export default {
 
 @include security-section;
 
-@include loading-groups;
-
-@include groups-list;
-
-@include groups-list-h3;
-
-@include group-items;
-
-@include group-item;
-
-@include group-badge;
-
-@include no-groups;
+@include loading-groups-rules;
 
 .no-groups p {
 	margin: 0;

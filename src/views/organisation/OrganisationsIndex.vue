@@ -837,9 +837,7 @@ export default {
 	white-space: nowrap;
 }
 
-@include default-badge;
-
-@include active-badge;
+@include default-badge-rules;
 
 /* Cards styling */
 .active-org-card {

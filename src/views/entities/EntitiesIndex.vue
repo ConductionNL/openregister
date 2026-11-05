@@ -656,15 +656,7 @@ export default {
 	margin-bottom: 20px;
 }
 
-@include view-header-title;
-
-@include view-header-title-indented;
-
-@include view-header-p;
-
-@include view-actions-bar;
-
-@include view-info;
+@include view-header-title-rules;
 
 .viewTotalCount {
 	font-weight: 600;
@@ -795,11 +787,7 @@ export default {
 }
 
 /* Badges */
-@include badge;
-
-@include badge-type;
-
-@include badge-category;
+@include badge-rules-2;
 
 /* Column sizes for table view */
 .tableColumnCheckbox {

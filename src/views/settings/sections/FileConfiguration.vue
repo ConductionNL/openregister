@@ -2110,11 +2110,7 @@ export default {
 	height: 20px;
 }
 
-@include section-description-full;
-
-@include main-description;
-
-@include main-description-info-note;
+@include section-description-full-rules-2;
 
 .main-description.info-note strong {
 	color: var(--color-primary-element);
@@ -2306,11 +2302,7 @@ export default {
 	margin: 0;
 }
 
-@include save-message;
-
-@include save-message-success;
-
-@include save-message-error;
+@include save-message-rules;
 
 @include loading-icon;
 

@@ -619,9 +619,7 @@ export default {
 	margin-left: 8px;
 }
 
-@include default-badge;
-
-@include active-badge;
+@include default-badge-rules;
 
 .ownerBadge {
 	background: var(--color-primary);

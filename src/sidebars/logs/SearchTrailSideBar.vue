@@ -1308,9 +1308,7 @@ export default {
 	margin: 0 0 12px 0;
 }
 
-@include filter-group;
-
-@include filter-group-label;
+@include filter-group-rules;
 
 .rangeFilter {
 	display: flex;

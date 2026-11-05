@@ -274,37 +274,11 @@ export default {
 
 /* SettingsSection handles all action button positioning and spacing */
 
-@include section-description-full-2;
-
-@include main-description-2;
-
-@include toggle-status;
-
-@include impact-description;
-
-@include status-enabled;
-
-@include status-disabled;
+@include section-description-full-2-rules;
 
 .option-section {
 	margin: 24px 0;
 }
 
-@include option-description;
-
-@include option-section-h4;
-
-@include groups-table;
-
-@include groups-row;
-
-@include group-label-strong;
-
-@include user-type-description;
-
-@include group-select;
-
-@include loading-icon;
-
-@include media-max-width-768px-2;
+@include option-description-rules;
 </style>
