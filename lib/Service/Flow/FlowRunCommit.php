@@ -127,28 +127,10 @@ class FlowRunCommit {
 			$locked = $this->runs->lockByUuid(uuid: $uuid);
 
 			// THE DELTA, against the value read inside the lock.
-			$marking = self::normaliseMarking(places: ($locked->getMarking() ?? []));
-			foreach ($firing->froms as $from) {
-				$marking[$from] = (($marking[$from] ?? 0) - 1);
-				if ($marking[$from] <= 0) {
-					unset($marking[$from]);
-				}
-			}
-
-			foreach ($firing->taken as $to) {
-				$marking[$to] = (($marking[$to] ?? 0) + 1);
-			}
+			$marking = self::markingAfter(marking: self::normaliseMarking(places: ($locked->getMarking() ?? [])), firing: $firing);
 
 			// The per-place items move with the tokens, in the same write.
-			$placeItems = (array)($locked->getPlaceItems() ?? []);
-			foreach ($firing->froms as $from) {
-				unset($placeItems[$from]);
-			}
-
-			$itemsByPlace = $firing->getItemsByPlace();
-			foreach ($firing->taken as $to) {
-				$placeItems[$to] = ($itemsByPlace[$to] ?? []);
-			}
+			$placeItems = self::placeItemsAfter(placeItems: (array)($locked->getPlaceItems() ?? []), firing: $firing);
 
 			// STREAMS. The firing stream continues, splits, or is folded.
 			$streams = $this->indexByStreamId(streams: $this->streams->findByRun(runUuid: $uuid));
@@ -214,6 +196,54 @@ class FlowRunCommit {
 			firings: (int)$locked->getFirings()
 		);
 	}//end commitFiring()
+
+	/**
+	 * The marking after a firing: one token off each consumed place, one on
+	 * each taken place.
+	 *
+	 * @param array<string, int> $marking The marking read inside the lock.
+	 * @param FlowFiring         $firing  The firing.
+	 *
+	 * @return array<string, int> The marking after.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-marking-must-be-written-as-a-delta-never-as-a-whole-overwrite
+	 */
+	private static function markingAfter(array $marking, FlowFiring $firing): array {
+		foreach ($firing->froms as $from) {
+			$marking[$from] = (($marking[$from] ?? 0) - 1);
+			if ($marking[$from] <= 0) {
+				unset($marking[$from]);
+			}
+		}
+
+		foreach ($firing->taken as $to) {
+			$marking[$to] = (($marking[$to] ?? 0) + 1);
+		}
+
+		return $marking;
+	}//end markingAfter()
+
+	/**
+	 * The per-place items after a firing: the items move with the tokens.
+	 *
+	 * @param array<string, array> $placeItems The items read inside the lock.
+	 * @param FlowFiring           $firing     The firing.
+	 *
+	 * @return array<string, array> The items after.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-marking-must-be-written-as-a-delta-never-as-a-whole-overwrite
+	 */
+	private static function placeItemsAfter(array $placeItems, FlowFiring $firing): array {
+		foreach ($firing->froms as $from) {
+			unset($placeItems[$from]);
+		}
+
+		foreach ($firing->getItemsByPlace() as $to => $items) {
+			$placeItems[$to] = $items;
+		}
+
+		return $placeItems;
+	}//end placeItemsAfter()
 
 	/**
 	 * Stop one stream and re-derive the run's status. A parked stream is
