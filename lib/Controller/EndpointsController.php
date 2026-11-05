@@ -34,9 +34,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -106,18 +104,11 @@ class EndpointsController extends Controller {
 	private readonly LoggerInterface $logger;
 
 	/**
-	 * User session for authentication checks.
+	 * The session bundle, which answers the admin check.
 	 *
-	 * @var IUserSession User session instance
+	 * @var ControllerSession
 	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Group manager for admin-role checks.
-	 *
-	 * @var IGroupManager Group manager instance
-	 */
-	private readonly IGroupManager $groupManager;
+	private readonly ControllerSession $session;
 
 	/**
 	 * Constructor
@@ -150,8 +141,7 @@ class EndpointsController extends Controller {
 		$this->endpointLogMapper = $endpointLogMapper;
 		$this->endpointService = $endpointService;
 		$this->logger = $session->logger;
-		$this->userSession = $session->userSession;
-		$this->groupManager = $session->groupManager;
+		$this->session = $session;
 	}//end __construct()
 
 	/**
@@ -160,12 +150,7 @@ class EndpointsController extends Controller {
 	 * @return bool True when the active session user belongs to the admin group.
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->session->isAdmin();
 	}//end isCurrentUserAdmin()
 
 	/**

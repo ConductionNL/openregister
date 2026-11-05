@@ -29,6 +29,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Controller\Support\OrganisationControllerServices;
@@ -46,7 +47,6 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -107,18 +107,18 @@ class OrganisationController extends Controller {
 	private TenantUsageMapper $tenantUsageMapper;
 
 	/**
+	 * The session bundle, which answers the admin check.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
+
+	/**
 	 * User session for authorization checks
 	 *
 	 * @var IUserSession
 	 */
 	private IUserSession $userSession;
-
-	/**
-	 * Group manager for admin/group membership checks
-	 *
-	 * @var IGroupManager
-	 */
-	private IGroupManager $groupManager;
 
 	/**
 	 * Records a change of who holds the special right `grant_manage`.
@@ -163,7 +163,7 @@ class OrganisationController extends Controller {
 		$this->tenantLifecycleService = $services->domain->tenantLifecycle;
 		$this->tenantUsageMapper = $services->mappers->tenantUsageMapper;
 		$this->userSession = $services->session->userSession;
-		$this->groupManager = $services->session->groupManager;
+		$this->session = $services->session;
 	}//end __construct()
 
 	/**
@@ -172,12 +172,7 @@ class OrganisationController extends Controller {
 	 * @return bool True if a user is signed in and belongs to the admin group.
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->session->isAdmin();
 	}//end isCurrentUserAdmin()
 
 	/**
