@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCP\IUserManager;
 
 /**
  * Every public method of NotificationRecipientResolver. Callers depend on this interface, not on the class.
@@ -48,13 +47,7 @@ interface NotificationRecipientResolverInterface {
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
-	public function resolve(
-		array $recipientsSpec,
-		array $data,
-		?ObjectEntity $object = null,
-		array $context = [],
-		array $roleGroups = [],
-	): array;
+	public function resolve(array $recipientsSpec, array $data, ?ObjectEntity $object = null, array $context = [], array $roleGroups = []): array;
 
 	/**
 	 * Resolve a recipients spec, and say which entries resolved to nobody.
@@ -82,11 +75,7 @@ interface NotificationRecipientResolverInterface {
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
 	 */
 	public function resolveWithDiagnostics(
-		array $recipientsSpec,
-		array $data,
-		?ObjectEntity $object = null,
-		array $context = [],
-		array $roleGroups = [],
+		array $recipientsSpec, array $data, ?ObjectEntity $object = null, array $context = [], array $roleGroups = []
 	): array;
 
 	/**

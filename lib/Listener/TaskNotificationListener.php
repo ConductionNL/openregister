@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
-use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcherInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRulesInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
@@ -60,14 +60,14 @@ class TaskNotificationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param AnnotationNotificationDispatcherInterface $dispatcher The one dispatcher.
+	 * @param NotificationRuleDispatcherInterface $dispatcher The one dispatcher.
 	 * @param TaskNotificationRulesInterface $rules The task rule registry.
 	 * @param TaskInboxService $inbox The row the adapter is built from.
 	 * @param INotificationManager $notifications Withdrawal only, never delivery.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		private readonly AnnotationNotificationDispatcherInterface $dispatcher,
+		private readonly NotificationRuleDispatcherInterface $dispatcher,
 		private readonly TaskNotificationRulesInterface $rules,
 		private readonly TaskInboxService $inbox,
 		private readonly INotificationManager $notifications,

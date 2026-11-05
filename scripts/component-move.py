@@ -155,8 +155,10 @@ def rewrite_fqcns(text, old_to_new):
     return FQCN_TOKEN.sub(repl, text)
 
 
-def qualify_relative_names(src, old_ns, new_of, imported):
-    """`Object\\SaveObject` resolves against the namespace; make it absolute before the namespace changes."""
+def qualify_relative_names(src, old_ns, new_of, imported, moved_only=False):
+    """`Object\\SaveObject` resolves against the namespace; make it absolute before the namespace changes.
+
+    With moved_only, as for a file that stays, only names that resolve to a moving class change."""
     code_spans = strip_strings_and_comments(src)
     out, last = [], 0
     for match in re.finditer(r'(?<![\\\w$>:])([A-Z]\w*(?:\\[A-Z]\w*)+)\b', code_spans):
@@ -167,6 +169,8 @@ def qualify_relative_names(src, old_ns, new_of, imported):
         if first in imported or first == 'OCA':
             continue
         old = old_ns + '\\' + match.group(1)
+        if moved_only and old not in new_of:
+            continue
         target = new_of.get(old, old)
         out.append(src[last:match.start()])
         out.append('\\' + target)
@@ -272,6 +276,12 @@ def main():
     for fqcn, rel in sorted(all_classes.items()):
         old_ns = split_fqcn(fqcn)[0]
         if old_ns not in affected_ns:
+            if fqcn not in new_of:
+                path = os.path.join(lib, rel)
+                src = open(path, encoding='utf-8').read()
+                fixed = qualify_relative_names(src, old_ns, new_of, imported_names(src), moved_only=True)
+                if fixed != src:
+                    open(path, 'w', encoding='utf-8').write(fixed)
             continue
         path = os.path.join(lib, rel)
         src = open(path, encoding='utf-8').read()

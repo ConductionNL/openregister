@@ -64,16 +64,8 @@ interface NcNotificationSenderInterface {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	public function send(
-		string $uid,
-		ObjectEntity $object,
-		string $subjectKey,
-		string $name,
-		string $subject,
-		string $message,
-		array $context,
-		string $originApp = 'openregister',
-		array $actions = [],
-		bool $webPushActive = false,
+		string $uid, ObjectEntity $object, string $subjectKey, string $name, string $subject, string $message, array $context,
+		string $originApp = 'openregister', array $actions = [], bool $webPushActive = false
 	): string;
 
 	/**
@@ -98,12 +90,6 @@ interface NcNotificationSenderInterface {
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function enqueueWebPush(
-		array $recipients,
-		string $ruleId,
-		string $originApp,
-		string $subject,
-		string $message,
-		array $actions,
-		ObjectEntity $object,
+		array $recipients, string $ruleId, string $originApp, string $subject, string $message, array $actions, ObjectEntity $object
 	): void;
 }//end interface

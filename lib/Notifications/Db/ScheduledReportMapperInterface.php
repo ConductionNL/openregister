@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Db;
 
+use OCP\AppFramework\Db\Entity;
+
 /**
  * Every public method of ScheduledReportMapper. Callers depend on this interface, not on the class.
  */
@@ -60,4 +62,31 @@ interface ScheduledReportMapperInterface {
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
 	public function findAll(): array;
+
+	/**
+	 * Insert through the mapper (QBMapper).
+	 *
+	 * @param ScheduledReport $entity The entity.
+	 *
+	 * @return ScheduledReport The stored entity.
+	 */
+	public function insert(Entity $entity): Entity;
+
+	/**
+	 * Update through the mapper (QBMapper).
+	 *
+	 * @param ScheduledReport $entity The entity.
+	 *
+	 * @return ScheduledReport The stored entity.
+	 */
+	public function update(Entity $entity): Entity;
+
+	/**
+	 * Delete through the mapper (QBMapper).
+	 *
+	 * @param ScheduledReport $entity The entity.
+	 *
+	 * @return ScheduledReport The stored entity.
+	 */
+	public function delete(Entity $entity): Entity;
 }//end interface

@@ -49,7 +49,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows;
  *
  * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
  */
-class ExampleSetTimelineEntries extends ExampleSetEngineRows implements ExampleSetTimelineEntriesInterface {
+class ExampleSetTimelineEntries extends ExampleSetEngineRows {
 
 	/**
 	 * The entry fields a fragment may set.

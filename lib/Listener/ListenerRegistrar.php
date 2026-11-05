@@ -78,7 +78,7 @@ final class ListenerRegistrar {
 		Registrar\ConfigurationListenerRegistrar::register(context: $context);
 		Registrar\FlowsListenerRegistrar::register(context: $context);
 		Registrar\McpListenerRegistrar::register(context: $context);
-		Registrar\NotificationsListenerRegistrar::register(context: $context);
+		\OCA\OpenRegister\Notifications\Listener\Registrar\NotificationsListenerRegistrar::register(context: $context);
 		Registrar\WorkListenerRegistrar::register(context: $context);
 		self::registerFileAndPlatformListeners(context: $context);
 		self::registerFlowAndTaskListeners(context: $context);

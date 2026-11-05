@@ -1,7 +1,7 @@
 <?php
 
 /**
- * AnnotationNotificationDispatcherInterface: the public surface of AnnotationNotificationDispatcher, for callers to type against.
+ * NotificationRuleDispatcherInterface: the public surface of AnnotationNotificationDispatcher, for callers to type against.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\Schema;
 /**
  * Every public method of AnnotationNotificationDispatcher. Callers depend on this interface, not on the class.
  */
-interface AnnotationNotificationDispatcherInterface {
+interface NotificationRuleDispatcherInterface {
 
 	/**
 	 * Fire any notifications declared on the schema whose trigger matches.

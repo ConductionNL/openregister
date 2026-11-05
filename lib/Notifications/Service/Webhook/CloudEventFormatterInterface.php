@@ -49,12 +49,7 @@ interface CloudEventFormatterInterface {
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function formatAsCloudEvent(
-		string $eventType,
-		array $payload,
-		?string $source = null,
-		?string $subject = null,
-	): array;
+	public function formatAsCloudEvent(string $eventType, array $payload, ?string $source = null, ?string $subject = null): array;
 
 	/**
 	 * Format a request as a CloudEvent
@@ -78,9 +73,5 @@ interface CloudEventFormatterInterface {
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function formatRequestAsCloudEvent(
-		IRequest $request,
-		string $eventType,
-		array $data = [],
-	): array;
+	public function formatRequestAsCloudEvent(IRequest $request, string $eventType, array $data = []): array;
 }//end interface

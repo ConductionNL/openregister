@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
-use OCP\IUserManager;
-
 /**
  * Every public method of EmailSender. Callers depend on this interface, not on the class.
  */

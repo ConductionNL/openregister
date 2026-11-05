@@ -35,10 +35,7 @@ use OCA\OpenRegister\Notifications\Db\WatcherMapper;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
-use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries;
-use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntriesInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
-use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcherInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
@@ -51,6 +48,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceSe
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceServiceInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolverInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplatingInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
@@ -88,7 +86,7 @@ final class NotificationsRegistrar {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
-		AnnotationNotificationDispatcherInterface::class => AnnotationNotificationDispatcher::class,
+		NotificationRuleDispatcherInterface::class => AnnotationNotificationDispatcher::class,
 		NotificationPreferenceServiceInterface::class => NotificationPreferenceService::class,
 		NotificationRecipientResolverInterface::class => NotificationRecipientResolver::class,
 		EmailServiceInterface::class => EmailService::class,
@@ -102,7 +100,6 @@ final class NotificationsRegistrar {
 		PresenceServiceInterface::class => PresenceService::class,
 		NotificationTemplatingInterface::class => NotificationTemplating::class,
 		CloudEventFormatterInterface::class => CloudEventFormatter::class,
-		ExampleSetTimelineEntriesInterface::class => ExampleSetTimelineEntries::class,
 		TalkSenderInterface::class => TalkSender::class,
 		PublicTimelineInterface::class => PublicTimeline::class,
 		QueuedNotificationMapperInterface::class => QueuedNotificationMapper::class,

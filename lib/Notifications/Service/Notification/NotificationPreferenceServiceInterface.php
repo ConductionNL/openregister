@@ -59,11 +59,6 @@ interface NotificationPreferenceServiceInterface {
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 */
 	public function resolveEffective(
-		array $schemaDefault,
-		string $userId,
-		string $schemaSlug,
-		string $notificationKey,
-		array $scopes = [],
-		?array $groupIds = null,
+		array $schemaDefault, string $userId, string $schemaSlug, string $notificationKey, array $scopes = [], ?array $groupIds = null
 	): array;
 }//end interface

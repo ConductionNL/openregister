@@ -24,7 +24,6 @@ namespace OCA\OpenRegister\Notifications\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
-use OCA\OpenRegister\Db\EmailLinkMapper;
 
 /**
  * Every public method of EmailService. Callers depend on this interface, not on the class.
@@ -65,12 +64,7 @@ interface EmailServiceInterface {
 	 *
 	 * @spec openspec/specs/mail-sidebar/spec.md
 	 */
-	public function linkEmail(
-		string $objectUuid,
-		int $registerId,
-		int $mailAccountId,
-		int $mailMessageId,
-	): EmailLink;
+	public function linkEmail(string $objectUuid, int $registerId, int $mailAccountId, int $mailMessageId): EmailLink;
 
 	/**
 	 * Remove an email link.

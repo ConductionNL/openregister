@@ -44,7 +44,7 @@ use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
-use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcherInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRulesInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -80,7 +80,7 @@ class TaskVtodoWriteBackGate {
 	 * @param TaskCalendarProjector $projector Renders the engine's truth back over a refused edit.
 	 * @param TaskProjectionService $projections Failure-isolated reconciliation.
 	 * @param TaskInboxService $inbox The row the refusal notice is built from.
-	 * @param AnnotationNotificationDispatcherInterface $dispatcher The one dispatcher, for the refusal notice.
+	 * @param NotificationRuleDispatcherInterface $dispatcher The one dispatcher, for the refusal notice.
 	 * @param TaskNotificationRulesInterface $rules The task rule registry.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
@@ -91,7 +91,7 @@ class TaskVtodoWriteBackGate {
 		private readonly TaskCalendarProjector $projector,
 		private readonly TaskProjectionService $projections,
 		private readonly TaskInboxService $inbox,
-		private readonly AnnotationNotificationDispatcherInterface $dispatcher,
+		private readonly NotificationRuleDispatcherInterface $dispatcher,
 		private readonly TaskNotificationRulesInterface $rules,
 		private readonly LoggerInterface $logger,
 	) {

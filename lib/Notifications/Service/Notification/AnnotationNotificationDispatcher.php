@@ -77,7 +77,7 @@ use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
  *
  * @spec openspec/changes/openregister-system-notifications/tasks.md#task-2
  */
-class AnnotationNotificationDispatcher implements AnnotationNotificationDispatcherInterface {
+class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInterface {
 
 	/**
 	 * The nc-notification channel unit — injected, or lazily built.

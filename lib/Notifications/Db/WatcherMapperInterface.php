@@ -137,13 +137,7 @@ interface WatcherMapperInterface {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
-	public function subscribe(
-		string $userId,
-		string $objectUuid,
-		?string $register = null,
-		?string $schema = null,
-		?bool $notify = null,
-	): Watcher;
+	public function subscribe(string $userId, string $objectUuid, ?string $register = null, ?string $schema = null, ?bool $notify = null): Watcher;
 
 	/**
 	 * Remove one user's subscription to one object.

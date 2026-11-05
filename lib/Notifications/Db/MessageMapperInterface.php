@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Notifications\Db;
 
 use OCA\OpenRegister\Db\Conversation;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 
 /**
@@ -59,11 +60,7 @@ interface MessageMapperInterface {
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Notifications\Db\Message>
 	 */
-	public function findByConversation(
-		int $conversationId,
-		int $limit = 100,
-		int $offset = 0,
-	): array;
+	public function findByConversation(int $conversationId, int $limit = 100, int $offset = 0): array;
 
 	/**
 	 * Find recent messages in a conversation
@@ -104,4 +101,13 @@ interface MessageMapperInterface {
 	 * @psalm-suppress PossiblyUnusedReturnValue
 	 */
 	public function deleteByConversation(int $conversationId): int|\OCP\DB\IResult;
+
+	/**
+	 * Insert through the mapper (QBMapper).
+	 *
+	 * @param Message $entity The entity.
+	 *
+	 * @return Message The stored entity.
+	 */
+	public function insert(Entity $entity): Entity;
 }//end interface
