@@ -33,6 +33,7 @@ use Psr\EventDispatcher\StoppableEventInterface;
  * Implements StoppableEventInterface so hooks can reject creation.
  */
 class ObjectCreatingEvent extends Event implements StoppableEventInterface {
+	use WriteVetoState;
 
 	/**
 	 * The newly created object entity
@@ -40,27 +41,6 @@ class ObjectCreatingEvent extends Event implements StoppableEventInterface {
 	 * @var ObjectEntity The object entity that is being created
 	 */
 	private ObjectEntity $object;
-
-	/**
-	 * Whether event propagation has been stopped
-	 *
-	 * @var boolean
-	 */
-	private bool $propagationStopped = false;
-
-	/**
-	 * Errors from hooks that stopped propagation
-	 *
-	 * @var array<string, mixed>
-	 */
-	private array $errors = [];
-
-	/**
-	 * Modified data from hooks
-	 *
-	 * @var array<string, mixed>
-	 */
-	private array $modifiedData = [];
 
 	/**
 	 * Constructor for ObjectCreatingEvent
@@ -84,74 +64,4 @@ class ObjectCreatingEvent extends Event implements StoppableEventInterface {
 	public function getObject(): ObjectEntity {
 		return $this->object;
 	}//end getObject()
-
-	/**
-	 * Check if propagation has been stopped by a hook
-	 *
-	 * @return bool True if propagation is stopped
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
-	 */
-	public function isPropagationStopped(): bool {
-		return $this->propagationStopped;
-	}//end isPropagationStopped()
-
-	/**
-	 * Stop event propagation (used by hooks to reject creation)
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
-	 */
-	public function stopPropagation(): void {
-		$this->propagationStopped = true;
-	}//end stopPropagation()
-
-	/**
-	 * Set errors from hooks
-	 *
-	 * @param array<string, mixed> $errors The error details
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
-	 */
-	public function setErrors(array $errors): void {
-		$this->errors = $errors;
-	}//end setErrors()
-
-	/**
-	 * Get errors from hooks
-	 *
-	 * @return array<string, mixed> The error details
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
-	 */
-	public function getErrors(): array {
-		return $this->errors;
-	}//end getErrors()
-
-	/**
-	 * Set modified data from hooks
-	 *
-	 * @param array<string, mixed> $data The modified data
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
-	 */
-	public function setModifiedData(array $data): void {
-		$this->modifiedData = $data;
-	}//end setModifiedData()
-
-	/**
-	 * Get modified data from hooks
-	 *
-	 * @return array<string, mixed> The modified data
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
-	 */
-	public function getModifiedData(): array {
-		return $this->modifiedData;
-	}//end getModifiedData()
 }//end class
