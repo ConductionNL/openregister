@@ -172,16 +172,7 @@ final class RegisterResolverService {
 		?string $default = null,
 		?string $organisationUuid = null,
 	): string {
-		$value = $this->appConfig->getValueString($appId, $configKey, '');
-		if ($value !== '') {
-			return $value;
-		}
-
-		if ($default !== null && $default !== '') {
-			return $default;
-		}
-
-		throw new MissingConfigException(appId: $appId, configKey: $configKey);
+		return $this->resolveRegisterId(appId: $appId, configKey: $configKey, default: $default);
 	}//end resolveSchemaId()
 
 	/**
@@ -212,16 +203,7 @@ final class RegisterResolverService {
 		?string $default = null,
 		?string $organisationUuid = null,
 	): string {
-		$value = $this->appConfig->getValueString($appId, $configKey, '');
-		if ($value !== '') {
-			return $value;
-		}
-
-		if ($default !== null && $default !== '') {
-			return $default;
-		}
-
-		throw new MissingConfigException(appId: $appId, configKey: $configKey);
+		return $this->resolveRegisterId(appId: $appId, configKey: $configKey, default: $default);
 	}//end resolvePropertyId()
 
 	/**
