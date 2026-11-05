@@ -51,12 +51,24 @@ use Throwable;
  */
 class DeckObjectSourceProvider implements ObjectSourceProvider {
 
+	use CountsThroughFindAll;
+	use InstalledAppCheck;
+	use ContainerServiceLookup;
+	use DefensiveGetters;
+
 	/**
 	 * NC app id whose install-state gates this provider.
 	 *
 	 * @var string
 	 */
 	private const REQUIRED_APP = 'deck';
+
+	/**
+	 * Label the warnings of this provider carry.
+	 *
+	 * @var string
+	 */
+	private const SOURCE_LABEL = 'deck-source';
 
 	/**
 	 * Deck's per-user board service (resolved dynamically — Deck's namespace).
@@ -100,24 +112,6 @@ class DeckObjectSourceProvider implements ObjectSourceProvider {
 	public function getId(): string {
 		return 'deck-source';
 	}//end getId()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * Gated on the Deck app: when it is not installed the bound schema degrades
-	 * to an empty list rather than erroring.
-	 *
-	 * @return bool True when the Deck app is installed.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	public function isEnabled(): bool {
-		try {
-			return $this->appManager->isInstalled(self::REQUIRED_APP);
-		} catch (Throwable $e) {
-			return false;
-		}
-	}//end isEnabled()
 
 	/**
 	 * {@inheritDoc}
@@ -176,22 +170,6 @@ class DeckObjectSourceProvider implements ObjectSourceProvider {
 
 		return $objects;
 	}//end findAll()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
-	 * @param array<string, mixed> $query Query (limit/offset).
-	 * @param array<string, mixed> $config The object-source config block (unused).
-	 *
-	 * @return int The number of matching virtual objects.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
-		return count($this->findAll(register: $register, schema: $schema, query: $query, config: $config));
-	}//end count()
 
 	/**
 	 * Read the Deck cards visible to the acting user, failing closed to an empty
@@ -285,75 +263,6 @@ class DeckObjectSourceProvider implements ObjectSourceProvider {
 
 		return $result;
 	}//end cardsFromStack()
-
-	/**
-	 * Resolve one of Deck's service classes from the container, or null when
-	 * Deck is not installed / its service cannot be resolved.
-	 *
-	 * @param string $class The fully-qualified Deck service class name.
-	 *
-	 * @return object|null The resolved service, or null.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	private function resolveService(string $class): ?object {
-		if (class_exists($class) === false) {
-			return null;
-		}
-
-		try {
-			$service = $this->container->get($class);
-			if (is_object($service) === true) {
-				return $service;
-			}
-		} catch (Throwable $e) {
-			$this->logger->warning('[ObjectSource:deck-source] could not resolve ' . $class . ': ' . $e->getMessage());
-		}
-
-		return null;
-	}//end resolveService()
-
-	/**
-	 * Read an integer getter from a Deck entity (getters resolve via OCP Entity
-	 * magic, so method_exists is unreliable — each call is guarded).
-	 *
-	 * @param object $entity The Deck entity.
-	 * @param string $getter The getter method name.
-	 *
-	 * @return int|null The integer value, or null when unavailable.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	private function intGetter(object $entity, string $getter): ?int {
-		try {
-			$value = $entity->$getter();
-			if ($value === null) {
-				return null;
-			}
-
-			return (int)$value;
-		} catch (Throwable $e) {
-			return null;
-		}
-	}//end intGetter()
-
-	/**
-	 * Read a string getter from a Deck entity, defaulting to '' on failure.
-	 *
-	 * @param object $entity The Deck entity.
-	 * @param string $getter The getter method name.
-	 *
-	 * @return string The string value, or ''.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	private function stringGetter(object $entity, string $getter): string {
-		try {
-			return (string)$entity->$getter();
-		} catch (Throwable $e) {
-			return '';
-		}
-	}//end stringGetter()
 
 	/**
 	 * Read a Deck card's due date as an ISO-8601 string, or null.

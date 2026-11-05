@@ -873,30 +873,6 @@ class FolderManagementHandler {
 	}//end getObjectForFile()
 
 	/**
-	 * Get node type from node (file or folder).
-	 *
-	 * @param Node $node The node to check.
-	 *
-	 * @return string Node type ('file' or 'folder').
-	 *
-	 * @psalm-return   'file'|'folder'|'unknown'
-	 * @phpstan-return 'file'|'folder'|'unknown'
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function getNodeTypeFromFolder(Node $node): string {
-		if ($node instanceof Folder) {
-			return 'folder';
-		}
-
-		if ($node instanceof \OCP\Files\File) {
-			return 'file';
-		}
-
-		return 'unknown';
-	}//end getNodeTypeFromFolder()
-
-	/**
 	 * The openregister account, which holds every managed folder.
 	 *
 	 * @return IUser The openregister account.

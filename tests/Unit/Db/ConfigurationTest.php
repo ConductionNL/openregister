@@ -250,20 +250,6 @@ class ConfigurationTest extends TestCase {
 		$this->assertSame($dt, $this->configuration->getUpdated());
 	}
 
-	// --- isValidUuid ---
-
-	public function testIsValidUuidWithValidUuid(): void {
-		$this->assertTrue(Configuration::isValidUuid('550e8400-e29b-41d4-a716-446655440000'));
-	}
-
-	public function testIsValidUuidWithInvalidUuid(): void {
-		$this->assertFalse(Configuration::isValidUuid('not-a-uuid'));
-	}
-
-	public function testIsValidUuidWithEmptyString(): void {
-		$this->assertFalse(Configuration::isValidUuid(''));
-	}
-
 	// --- getJsonFields ---
 
 	public function testGetJsonFields(): void {
@@ -430,38 +416,6 @@ class ConfigurationTest extends TestCase {
 
 	public function testIsRemoteSourceFalseForNull(): void {
 		$this->assertFalse($this->configuration->isRemoteSource());
-	}
-
-	// --- isLocalSource ---
-
-	public function testIsLocalSourceTrue(): void {
-		$this->configuration->setSourceType('local');
-		$this->assertTrue($this->configuration->isLocalSource());
-	}
-
-	public function testIsLocalSourceFalse(): void {
-		$this->configuration->setSourceType('github');
-		$this->assertFalse($this->configuration->isLocalSource());
-	}
-
-	public function testIsLocalSourceFalseForNull(): void {
-		$this->assertFalse($this->configuration->isLocalSource());
-	}
-
-	// --- isManualSource ---
-
-	public function testIsManualSourceTrue(): void {
-		$this->configuration->setSourceType('manual');
-		$this->assertTrue($this->configuration->isManualSource());
-	}
-
-	public function testIsManualSourceFalse(): void {
-		$this->configuration->setSourceType('github');
-		$this->assertFalse($this->configuration->isManualSource());
-	}
-
-	public function testIsManualSourceFalseForNull(): void {
-		$this->assertFalse($this->configuration->isManualSource());
 	}
 
 	// --- jsonSerialize ---

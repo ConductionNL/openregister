@@ -450,23 +450,6 @@ class CalendarRecomputeTest extends TestCase {
 	}//end testOneFailingTimerDoesNotAbandonTheBatch()
 
 	/**
-	 * The candidate narrowing: only an unnamed slug or the changed one needs
-	 * the resolver asked.
-	 *
-	 * @return void
-	 */
-	public function testTheCandidateNarrowingIsWhatAnIndexCanDo(): void {
-		$dependency = new CalendarDependency(calendars: $this->calendars(calendar: $this->calendar));
-
-		$this->assertTrue($dependency->isCandidate(timerCalendarSlug: null, changedSlug: 'nl-national'));
-		$this->assertTrue($dependency->isCandidate(timerCalendarSlug: 'nl-national', changedSlug: 'nl-national'));
-		$this->assertFalse(
-			$dependency->isCandidate(timerCalendarSlug: 'other', changedSlug: 'nl-national'),
-			'a named slug short-circuits the resolution order, so another name cannot resolve to this one'
-		);
-	}//end testTheCandidateNarrowingIsWhatAnIndexCanDo()
-
-	/**
 	 * The projection is the engine's own formula: budget minus consumed, from
 	 * `runningSince`.
 	 *

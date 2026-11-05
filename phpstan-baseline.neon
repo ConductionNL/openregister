@@ -1914,16 +1914,6 @@ parameters:
 
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\VectorSettingsController\\:\\:\\$logger is never read, only written\\.$#"
-			count: 1
-			path: lib/Controller/Settings/VectorSettingsController.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\VectorSettingsController\\:\\:\\$vectorizationService is never read, only written\\.$#"
-			count: 1
-			path: lib/Controller/Settings/VectorSettingsController.php
-
-		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SettingsController\\:\\:debugTypeFiltering\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, trace\\?\\: string, all_organizations\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed, object_data\\: array\\|null\\}\\>\\}, type_samenwerking\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_community\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_both\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, direct_database_query\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: mixed, name\\: mixed, type\\: mixed, object_json\\: mixed\\}\\>\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{all_organizations\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed, object_data\\: array\\|null\\}\\>\\}, type_samenwerking\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_community\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_both\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, direct_database_query\\: array\\{count\\: int, organizations\\: array\\<int, array\\{id\\: mixed, name\\: mixed, type\\: mixed, object_json\\: mixed\\}\\>\\}\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/SettingsController.php
@@ -4023,36 +4013,6 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileBatchHandler\\:\\:\\$taggingHandler is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/File/FileBatchHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileCrudHandler\\:\\:\\$fileOwnershipHandler is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileCrudHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileCrudHandler\\:\\:\\$fileSharingHandler is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileCrudHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileCrudHandler\\:\\:\\$fileValidHandler is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileCrudHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileCrudHandler\\:\\:\\$folderMgmtHandler is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileCrudHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileCrudHandler\\:\\:\\$logger is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileCrudHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileCrudHandler\\:\\:\\$rootFolder is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileCrudHandler.php
 
 		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\File\\:\\:getCategory\\(\\)\\.$#"

@@ -380,32 +380,7 @@ class DeckCardService {
 	 * @return array{id: ?int, title: string, color: string}
 	 */
 	private function mapLabel(object $label): array {
-		$id = null;
-		$title = '';
-		$color = '';
-
-		try {
-			$rawId = $label->getId();
-			if ($rawId !== null) {
-				$id = (int)$rawId;
-			}
-		} catch (\Throwable $e) {
-			// Leave null.
-		}
-
-		try {
-			$title = (string)$label->getTitle();
-		} catch (\Throwable $e) {
-			// Leave empty.
-		}
-
-		try {
-			$color = (string)$label->getColor();
-		} catch (\Throwable $e) {
-			// Leave empty.
-		}
-
-		return ['id' => $id, 'title' => $title, 'color' => $color];
+		return (new DeckRowMapper(userManager: $this->userManager))->label(label: $label);
 	}//end mapLabel()
 
 	/**
@@ -420,41 +395,7 @@ class DeckCardService {
 	 * @return array{uid: string, type: string, displayName: string}
 	 */
 	private function mapAssignee(object $assignment): array {
-		$uid = '';
-		$type = 'user';
-
-		try {
-			$uid = (string)$assignment->getParticipant();
-		} catch (\Throwable $e) {
-			// Leave empty.
-		}
-
-		try {
-			$type = (string)$assignment->getTypeString();
-		} catch (\Throwable $e) {
-			// Leave default.
-		}
-
-		// Resolve a displayName for user assignments via the user manager;
-		// group/circle assignments echo the participant id as displayName
-		// until we wire up those backends.
-		$displayName = $uid;
-		if ($type === 'user' && $uid !== '') {
-			try {
-				$userObj = $this->userManager->get($uid);
-				if ($userObj !== null) {
-					$displayName = (string)$userObj->getDisplayName();
-				}
-			} catch (\Throwable $e) {
-				// Leave displayName as uid.
-			}
-		}
-
-		return [
-			'uid' => $uid,
-			'type' => $type,
-			'displayName' => $displayName,
-		];
+		return (new DeckRowMapper(userManager: $this->userManager))->assignee(assignment: $assignment);
 	}//end mapAssignee()
 
 	/**

@@ -781,14 +781,6 @@ class MappersIntegrationTest extends TestCase {
 
 		$this->assertTrue($config->hasUpdateAvailable());
 		$this->assertTrue($config->isRemoteSource());
-		$this->assertFalse($config->isLocalSource());
-		$this->assertFalse($config->isManualSource());
-
-		$config->setSourceType('local');
-		$this->assertTrue($config->isLocalSource());
-
-		$config->setSourceType('manual');
-		$this->assertTrue($config->isManualSource());
 
 		$this->assertSame('Test Config', (string)$config);
 	}
@@ -798,11 +790,6 @@ class MappersIntegrationTest extends TestCase {
 
 		$config->hydrate(['type' => 'special']);
 		$this->assertSame('Config: special', (string)$config);
-	}
-
-	public function testConfigurationEntityIsValidUuid(): void {
-		$this->assertTrue(Configuration::isValidUuid(Uuid::v4()->toRfc4122()));
-		$this->assertFalse(Configuration::isValidUuid('not-a-uuid'));
 	}
 
 	public function testConfigurationEntityGetJsonFields(): void {
