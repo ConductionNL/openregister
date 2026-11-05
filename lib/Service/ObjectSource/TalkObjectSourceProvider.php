@@ -52,7 +52,9 @@ use Throwable;
 class TalkObjectSourceProvider implements ObjectSourceProvider {
 
 	use CountsThroughFindAll;
-	use NcAppServiceReads;
+	use InstalledAppCheck;
+	use ContainerServiceLookup;
+	use DefensiveGetters;
 
 	/**
 	 * NC app id whose install-state gates this provider.
@@ -60,6 +62,13 @@ class TalkObjectSourceProvider implements ObjectSourceProvider {
 	 * @var string
 	 */
 	private const REQUIRED_APP = 'spreed';
+
+	/**
+	 * Label the warnings of this provider carry.
+	 *
+	 * @var string
+	 */
+	private const SOURCE_LABEL = 'talk-source';
 
 	/**
 	 * Talk's room manager (resolved dynamically — Talk's namespace).

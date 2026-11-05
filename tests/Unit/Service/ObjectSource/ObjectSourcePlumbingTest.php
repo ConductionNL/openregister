@@ -141,6 +141,35 @@ class ObjectSourcePlumbingTest extends TestCase {
 	 */
 	#[DataProvider('appProviders')]
 	public function testResolveService(string $class): void {
+		$id = (new ReflectionClass($class))->newInstanceWithoutConstructor()->getId();
+		$this->assertServiceResolution(
+			label: $id,
+			build: fn (ContainerInterface $container, LoggerInterface $logger): object => $this->build($class, $this->createMock(IAppManager::class), $container, $logger)
+		);
+	}//end testResolveService()
+
+	/**
+	 * The Tables reader resolves its services the same way, labelled `tables`.
+	 *
+	 * @return void
+	 */
+	public function testTablesReaderResolvesServicesTheSameWay(): void {
+		$this->assertServiceResolution(
+			label: 'tables',
+			build: fn (ContainerInterface $container, LoggerInterface $logger): object => new ObjectSource\TablesTableReader($this->createMock(IAppManager::class), $container, $logger)
+		);
+	}//end testTablesReaderResolvesServicesTheSameWay()
+
+	/**
+	 * Null for an unknown class, the service when the container has it, null
+	 * plus a warning carrying the label when the container throws.
+	 *
+	 * @param string   $label The log label.
+	 * @param callable $build Builds the object over a container and a logger.
+	 *
+	 * @return void
+	 */
+	private function assertServiceResolution(string $label, callable $build): void {
 		$service   = new \stdClass();
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
@@ -153,17 +182,16 @@ class ObjectSourcePlumbingTest extends TestCase {
 			}
 		);
 		$logger = $this->createMock(LoggerInterface::class);
-		$id     = (new ReflectionClass($class))->newInstanceWithoutConstructor()->getId();
 		$logger->expects($this->once())->method('warning')
-			->with('[ObjectSource:'.$id.'] could not resolve '.ReflectionClass::class.': no such service');
+			->with('[ObjectSource:'.$label.'] could not resolve '.ReflectionClass::class.': no such service');
 
-		$provider = $this->build($class, $this->createMock(IAppManager::class), $container, $logger);
+		$provider = $build($container, $logger);
 		$resolve  = new ReflectionMethod($provider, 'resolveService');
 
 		$this->assertNull($resolve->invoke($provider, 'OCA\\Nope\\Missing'));
 		$this->assertSame($service, $resolve->invoke($provider, \stdClass::class));
 		$this->assertNull($resolve->invoke($provider, ReflectionClass::class));
-	}//end testResolveService()
+	}//end assertServiceResolution()
 
 	/**
 	 * intGetter() and stringGetter() cast, pass null through, and swallow a failing getter.

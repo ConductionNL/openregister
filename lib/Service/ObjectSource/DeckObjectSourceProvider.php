@@ -52,7 +52,9 @@ use Throwable;
 class DeckObjectSourceProvider implements ObjectSourceProvider {
 
 	use CountsThroughFindAll;
-	use NcAppServiceReads;
+	use InstalledAppCheck;
+	use ContainerServiceLookup;
+	use DefensiveGetters;
 
 	/**
 	 * NC app id whose install-state gates this provider.
@@ -60,6 +62,13 @@ class DeckObjectSourceProvider implements ObjectSourceProvider {
 	 * @var string
 	 */
 	private const REQUIRED_APP = 'deck';
+
+	/**
+	 * Label the warnings of this provider carry.
+	 *
+	 * @var string
+	 */
+	private const SOURCE_LABEL = 'deck-source';
 
 	/**
 	 * Deck's per-user board service (resolved dynamically — Deck's namespace).
