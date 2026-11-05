@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Middleware;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FederationControllerFactory;
 use DateTime;
 use GraphQL\GraphQL;
 use OCA\OpenRegister\Controller\FederationController;
@@ -75,6 +76,7 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator
  * @uses   \OCA\OpenRegister\Service\Rbac\AnonymousEnvelope
  * @uses   \OCA\OpenRegister\Controller\FederationController
+ * @uses \OCA\OpenRegister\Controller\Support\FederationControllerServices
  * @uses   \OCA\OpenRegister\Controller\ObjectsController
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Controller\Support\ObjectsControllerServices
@@ -234,7 +236,7 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('find')->willReturn($this->record());
 
-		return new FederationController(
+		return FederationControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$shareMapper,

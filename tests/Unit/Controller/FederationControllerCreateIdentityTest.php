@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FederationControllerFactory;
 use OCA\OpenRegister\Controller\FederationController;
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapper;
@@ -138,7 +139,7 @@ class FederationControllerCreateIdentityTest extends TestCase {
 			$this->objectService->method('find')->willReturn($stored);
 		}
 
-		return new FederationController(
+		return FederationControllerFactory::create(
 			'openregister',
 			$request,
 			$this->shareMapper,
