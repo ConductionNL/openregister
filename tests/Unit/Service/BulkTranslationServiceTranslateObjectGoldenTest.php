@@ -24,6 +24,7 @@ use Psr\Log\LoggerInterface;
  * against fixtures/bulk-translation-object-golden.json. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\BulkTranslationService
+ * @uses   \OCA\OpenRegister\Service\ObjectTranslationRequest
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Translation

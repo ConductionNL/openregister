@@ -20,7 +20,7 @@ use ReflectionMethod;
  * caches afterwards.
  *
  * @covers \OCA\OpenRegister\Service\ObjectService
- * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
+ * @uses   \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  */
 class ObjectServiceSaveObjectsGoldenTest extends TestCase {
 
