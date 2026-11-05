@@ -333,28 +333,7 @@ class AgentMapper extends QBMapper {
 		$qb->select('*')
 			->from($this->tableName);
 
-		// Apply filters.
-		if (empty($filters) === false) {
-			foreach ($filters as $field => $value) {
-				if ($value !== null && $field !== '_route') {
-					if ($field === 'active') {
-						$qb->andWhere(
-							$qb->expr()->eq($field, $qb->createNamedParameter((bool)$value, IQueryBuilder::PARAM_BOOL))
-						);
-						continue;
-					}
-
-					if (is_array($value) === true) {
-						$qb->andWhere(
-							$qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY))
-						);
-						continue;
-					}
-
-					$qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
-				}
-			}
-		}//end if
+		$this->applyAgentFilters(qb: $qb, filters: $filters);
 
 		// Apply ordering.
 		if (empty($order) === false) {
@@ -530,34 +509,43 @@ class AgentMapper extends QBMapper {
 		$qb->select($qb->createFunction('COUNT(*)'))
 			->from($this->tableName);
 
-		// Apply filters.
-		if (empty($filters) === false) {
-			foreach ($filters as $field => $value) {
-				if ($value !== null && $field !== '_route') {
-					if ($field === 'active') {
-						$qb->andWhere(
-							$qb->expr()->eq($field, $qb->createNamedParameter((bool)$value, IQueryBuilder::PARAM_BOOL))
-						);
-						continue;
-					}
-
-					if (is_array($value) === true) {
-						$qb->andWhere(
-							$qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY))
-						);
-						continue;
-					}
-
-					$qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
-				}
-			}
-		}//end if
+		$this->applyAgentFilters(qb: $qb, filters: $filters);
 
 		// Apply organisation filter (all users including admins must have active org).
 		$this->applyOrganisationFilter(qb: $qb);
 
 		return (int)$qb->executeQuery()->fetchOne();
 	}//end count()
+
+	/**
+	 * Add a condition per agent filter, skipping null values and the `_route` key.
+	 *
+	 * `active` compares as a boolean, a list value as IN, anything else as a string.
+	 *
+	 * @param IQueryBuilder $qb      The builder to add the conditions to.
+	 * @param array|null    $filters Column name to value.
+	 *
+	 * @return void
+	 */
+	private function applyAgentFilters(IQueryBuilder $qb, ?array $filters): void {
+		foreach ($filters ?? [] as $field => $value) {
+			if ($value === null || $field === '_route') {
+				continue;
+			}
+
+			if ($field === 'active') {
+				$qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter((bool)$value, IQueryBuilder::PARAM_BOOL)));
+				continue;
+			}
+
+			if (is_array($value) === true) {
+				$qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
+				continue;
+			}
+
+			$qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
+		}
+	}//end applyAgentFilters()
 
 	/**
 	 * Normalise a caller-supplied sort direction to 'ASC' or 'DESC'.
