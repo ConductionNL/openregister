@@ -125,6 +125,48 @@
             "total": 0
         }
     },
+    "allLogs with an empty endpoint": {
+        "calls": [
+            {
+                "endpointLogMapper.findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "endpointLogMapper.findAll": [
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 0
+        }
+    },
+    "allLogs with endpoint 0": {
+        "calls": [
+            {
+                "endpointLogMapper.findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "endpointLogMapper.findAll": [
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 0
+        }
+    },
     "create by a non-admin": {
         "calls": [
             {
@@ -301,6 +343,17 @@
         }
     },
     "create without a name": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "Name and endpoint path are required"
+        }
+    },
+    "create without an endpoint path": {
         "calls": [
             {
                 "groupManager.isAdmin": "alice"
@@ -1090,6 +1143,31 @@
             "success": false,
             "message": "upstream",
             "statusCode": 502
+        }
+    },
+    "test with a truthy non-boolean success": {
+        "calls": [
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            },
+            {
+                "endpointService.testEndpoint": [
+                    {
+                        "endpoint": 5
+                    },
+                    {
+                        "q": 1
+                    }
+                ]
+            }
+        ],
+        "status": 201,
+        "data": {
+            "success": false,
+            "message": "Test endpoint execution failed",
+            "statusCode": 201
         }
     },
     "update by a non-admin": {

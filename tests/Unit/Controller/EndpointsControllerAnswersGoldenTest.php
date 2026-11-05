@@ -62,6 +62,10 @@ class EndpointsControllerAnswersGoldenTest extends TestCase {
 
 		$cases['create without a name'] = [['action' => 'create', 'params' => ['endpoint' => '/x']]];
 		$cases['test with a failing endpoint'] = [['action' => 'test', 'testResult' => ['success' => false, 'statusCode' => 502, 'response' => 'bad', 'error' => 'upstream']]];
+		$cases['create without an endpoint path'] = [['action' => 'create', 'params' => ['name' => 'Ep']]];
+		$cases['allLogs with endpoint 0'] = [['action' => 'allLogs', 'params' => ['endpoint_id' => '0']]];
+		$cases['allLogs with an empty endpoint'] = [['action' => 'allLogs', 'params' => ['endpoint_id' => '']]];
+		$cases['test with a truthy non-boolean success'] = [['action' => 'test', 'testResult' => ['success' => 1, 'statusCode' => 201, 'response' => 'r']]];
 		$cases['allLogs for one endpoint'] = [['action' => 'allLogs', 'params' => ['endpoint_id' => '5']]];
 		$cases['allLogs for one endpoint fails'] = [['action' => 'allLogs', 'params' => ['endpoint_id' => '5'], 'fail' => 'boom']];
 		return $cases;
