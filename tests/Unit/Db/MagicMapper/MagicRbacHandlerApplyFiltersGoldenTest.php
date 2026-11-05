@@ -23,9 +23,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Tests\Unit\Db\RecordingQueryBuilderTrait;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -49,13 +52,22 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses   \OCA\OpenRegister\Service\SystemOperationContext
  */
 class MagicRbacHandlerApplyFiltersGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
 
 	private const FIXTURE = __DIR__ . '/fixtures/rbac-apply-filters-golden.json';
 
+	private const EDGE_FIXTURE = __DIR__ . '/fixtures/rbac-apply-filters-edge-golden.json';
+
 	private array $logs = [];
+
+	private bool $webRequest = false;
+
+	private bool $unresolvable = false;
+
+	private bool $statusMissing = false;
 
 	private static function authorizations(): array {
 		return [
@@ -114,6 +126,44 @@ class MagicRbacHandlerApplyFiltersGoldenTest extends TestCase {
 		$this->assertSame(array_keys($expected), array_keys($actual));
 	}//end testApplyRbacFiltersMatchesGolden()
 
+	public function testWebRequestsAndUnresolvableAuthorizationMatchGolden(): void {
+		$actual = [];
+		$modes = [
+			'web request' => [true, false, false],
+			'unresolvable' => [false, true, false],
+			'web unresolvable' => [true, true, false],
+			'web status missing' => [true, false, true],
+		];
+		foreach ($modes as $modeName => $mode) {
+			[$this->webRequest, $this->unresolvable, $this->statusMissing] = $mode;
+			foreach (self::callers() as $callerName => [$uid, $groups]) {
+				foreach (self::authorizations() as $authName => $authorization) {
+					foreach ([null, 'openregister_table_1_2'] as $table) {
+						$name = "{$modeName} / {$callerName} / {$authName} / " . ($table ?? 'no table');
+						$actual[$name] = $this->filter(uid: $uid, groups: $groups, authorization: $authorization, call: ['read', $table]);
+					}
+				}
+			}
+		}
+
+		$this->webRequest = false;
+		$this->unresolvable = false;
+		$this->statusMissing = false;
+
+		if (getenv('UPDATE_GOLDEN') === '1') {
+			file_put_contents(self::EDGE_FIXTURE, json_encode($actual, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+			$this->addToAssertionCount(1);
+			return;
+		}
+
+		$expected = json_decode((string) file_get_contents(self::EDGE_FIXTURE), true);
+		foreach ($expected as $name => $outcome) {
+			$this->assertSame($outcome, $actual[$name] ?? null, $name);
+		}
+
+		$this->assertSame(array_keys($expected), array_keys($actual));
+	}//end testWebRequestsAndUnresolvableAuthorizationMatchGolden()
+
 	private function filter(?string $uid, array $groups, ?array $authorization, array $call): array {
 		$this->queryLog = [];
 		$this->logs = [];
@@ -139,15 +189,34 @@ class MagicRbacHandlerApplyFiltersGoldenTest extends TestCase {
 			);
 		}
 
-		$handler = new MagicRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(IUserManager::class),
-			$this->appConfig(),
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(ContainerInterface::class),
-			$logger
-		);
+		$container = $this->createMock(ContainerInterface::class);
+		if ($this->unresolvable === true) {
+			$permissionHandler = $this->createMock(PermissionHandler::class);
+			$permissionHandler->method('resolveAuthorization')->willThrowException(
+				new AuthorizationUnresolvableException('register cascade unreadable')
+			);
+			$container->method('get')->willReturnCallback(
+				static fn (string $id) => ($id === PermissionHandler::class ? $permissionHandler : throw new \RuntimeException('no ' . $id))
+			);
+		}
+
+		$args = [$userSession, $groupManager, $this->createMock(IUserManager::class), $this->appConfig(), $this->createMock(ConditionMatcher::class), $container, $logger];
+		if ($this->statusMissing === true) {
+			$healer = $this->createMock(MagicMetadataColumnHealer::class);
+			$healer->method('missingFor')->willReturnCallback(
+				static fn (string $table): array => ($table === 'openregister_table_1_2' ? ['_status'] : [])
+			);
+			$args['metadataColumns'] = $healer;
+		}
+
+		$handler = new MagicRbacHandler(...$args);
+		if ($this->webRequest === true) {
+			$handler = new class(...$args) extends MagicRbacHandler {
+				protected function isCommandLine(): bool {
+					return false;
+				}
+			};
+		}
 
 		$schema = new Schema();
 		$schema->setId(1);
