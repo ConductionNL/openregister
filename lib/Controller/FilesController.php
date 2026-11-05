@@ -1283,15 +1283,10 @@ class FilesController extends Controller {
 	 * @throws Exception If no files are uploaded
 	 */
 	private function extractUploadedFiles(): array {
-		$uploadedFiles = [];
 		$data = $this->request->getParams();
 
 		// Check for multipart file uploads.
-		$files = $this->request->getUploadedFile('files') ?? [];
-
-		if (empty($files) === false) {
-			$uploadedFiles = $this->normalizeMultipartFiles(files: $files, data: $data);
-		}
+		$uploadedFiles = $this->normalizeMultipartFiles(files: ($this->request->getUploadedFile('files') ?? []), data: $data);
 
 		// Check for single file upload via the 'file' field. Run it through
 		// the same normalizer as 'files[]' so 'share' and 'tags' are populated.
@@ -1331,7 +1326,7 @@ class FilesController extends Controller {
 
 		// Multiple file upload.
 		if ($fileName !== null) {
-			$uploadedFiles = $this->normalizeMultipleFiles(files: $files, data: $data, fileNames: $fileName);
+			$uploadedFiles = $this->normalizeMultipleFiles(files: $files, data: $data);
 		}
 
 		return $uploadedFiles;
@@ -1346,13 +1341,6 @@ class FilesController extends Controller {
 	 * @return array Normalized file data
 	 */
 	private function normalizeSingleFile(array $files, array $data): array {
-		$tags = $data['tags'] ?? '';
-		if (is_array($tags) === false) {
-			$tags = explode(',', $tags);
-		}
-
-		$tags = array_values(array_filter($tags, static fn ($t) => trim($t) !== ''));
-
 		return [
 			'name' => $files['name'] ?? '',
 			'type' => $files['type'] ?? '',
@@ -1360,7 +1348,7 @@ class FilesController extends Controller {
 			'error' => $files['error'] ?? UPLOAD_ERR_NO_FILE,
 			'size' => $files['size'] ?? 0,
 			'share' => $this->parseBool(value: $data['share'] ?? false),
-			'tags' => $tags,
+			'tags' => $this->uploadTags(tags: $data['tags'] ?? ''),
 		];
 	}//end normalizeSingleFile()
 
@@ -1369,71 +1357,90 @@ class FilesController extends Controller {
 	 *
 	 * @param array<string, array<int, string>|string|int> $files Files from $_FILES
 	 * @param array $data Request parameters
-	 * @param array<int, string> $fileNames Array of file names
 	 *
 	 * @return array<int,
 	 *     array{name: string, type: string, tmp_name: string, error: int,
 	 *     size: int, share: bool, tags: array<int, string>}>
 	 *     Normalized files array
 	 */
-	private function normalizeMultipleFiles(array $files, array $data, array $fileNames): array {
+	private function normalizeMultipleFiles(array $files, array $data): array {
 		$uploadedFiles = [];
-		$fileCount = count($fileNames);
+		$fileCount = count($files['name']);
 
 		for ($i = 0; $i < $fileCount; $i++) {
-			$tags = $data['tags'][$i] ?? '';
-			if (is_array($tags) === false) {
-				$tags = explode(',', $tags);
-			}
-
-			$tags = array_values(array_filter($tags, static fn ($t) => trim($t) !== ''));
-
-			// Extract file arrays safely.
-			$typeArray = [];
-			if (is_array($files['type'] ?? null) === true) {
-				$typeArray = $files['type'];
-			}
-
-			$tmpNameArray = [];
-			if (is_array($files['tmp_name'] ?? null) === true) {
-				$tmpNameArray = $files['tmp_name'];
-			}
-
-			$errorValue = $files['error'] ?? null;
-			$errorArray = [];
-			if (is_array($errorValue) === true) {
-				$errorArray = $errorValue;
-			}
-
-			$errorScalar = null;
-			if (is_int($errorValue) === true) {
-				$errorScalar = $errorValue;
-			}
-
-			$sizeValue = $files['size'] ?? null;
-			$sizeArray = [];
-			if (is_array($sizeValue) === true) {
-				$sizeArray = $sizeValue;
-			}
-
-			$sizeScalar = null;
-			if (is_int($sizeValue) === true) {
-				$sizeScalar = $sizeValue;
-			}
-
-			$uploadedFiles[] = [
-				'name' => $fileNames[$i] ?? '',
-				'type' => $typeArray[$i] ?? '',
-				'tmp_name' => $tmpNameArray[$i] ?? '',
-				'error' => $errorArray[$i] ?? $errorScalar ?? UPLOAD_ERR_NO_FILE,
-				'size' => $sizeArray[$i] ?? $sizeScalar ?? 0,
+			$uploadedFiles[] = $this->uploadAt(files: $files, index: $i) + [
 				'share' => $this->parseBool(value: $data['share'] ?? false),
-				'tags' => $tags,
+				'tags' => $this->uploadTags(tags: $data['tags'][$i] ?? ''),
 			];
-		}//end for
+		}
 
 		return $uploadedFiles;
 	}//end normalizeMultipleFiles()
+
+	/**
+	 * One file of a multiple upload; `error` and `size` may be one number for all files.
+	 *
+	 * @param array<string, array<int, string>|string|int> $files Files from $_FILES
+	 * @param int                                          $index The position of the file.
+	 *
+	 * @return array{name: mixed, type: mixed, tmp_name: mixed, error: mixed, size: mixed} The file.
+	 */
+	private function uploadAt(array $files, int $index): array {
+		return [
+			'name' => ($this->uploadColumn(column: $files['name'] ?? null, index: $index) ?? ''),
+			'type' => ($this->uploadColumn(column: $files['type'] ?? null, index: $index) ?? ''),
+			'tmp_name' => ($this->uploadColumn(column: $files['tmp_name'] ?? null, index: $index) ?? ''),
+			'error' => ($this->uploadNumber(column: $files['error'] ?? null, index: $index) ?? UPLOAD_ERR_NO_FILE),
+			'size' => ($this->uploadNumber(column: $files['size'] ?? null, index: $index) ?? 0),
+		];
+	}//end uploadAt()
+
+	/**
+	 * The entry of an upload column at a position.
+	 *
+	 * @param mixed $column The column.
+	 * @param int   $index  The position.
+	 *
+	 * @return mixed The entry, or null when the column is not an array or has none.
+	 */
+	private function uploadColumn(mixed $column, int $index): mixed {
+		if (is_array($column) === true) {
+			return ($column[$index] ?? null);
+		}
+
+		return null;
+	}//end uploadColumn()
+
+	/**
+	 * The entry of a numeric upload column, or the number that stands for every file.
+	 *
+	 * @param mixed $column The column.
+	 * @param int   $index  The position.
+	 *
+	 * @return mixed The entry, or null.
+	 */
+	private function uploadNumber(mixed $column, int $index): mixed {
+		if (is_int($column) === true) {
+			return $column;
+		}
+
+		return $this->uploadColumn(column: $column, index: $index);
+	}//end uploadNumber()
+
+	/**
+	 * The tags of an upload: an array or a comma-separated string, without blanks.
+	 *
+	 * @param mixed $tags The tags.
+	 *
+	 * @return array<int, string> The tags.
+	 */
+	private function uploadTags(mixed $tags): array {
+		if (is_array($tags) === false) {
+			$tags = explode(',', $tags);
+		}
+
+		return array_values(array_filter($tags, static fn ($t) => trim($t) !== ''));
+	}//end uploadTags()
 
 	/**
 	 * Process all uploaded files and create file entities.
