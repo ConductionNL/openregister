@@ -14,7 +14,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCP\IAppConfig;
 use OCP\IRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -78,7 +77,6 @@ class TablesControllerSyncGoldenTest extends TestCase {
 		$controller = TablesControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
-			$this->createMock(IAppConfig::class),
 			$this->magicMapper($case),
 			$this->registerMapper($case),
 			$this->schemaMapper(),

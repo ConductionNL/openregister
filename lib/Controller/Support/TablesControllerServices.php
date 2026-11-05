@@ -25,7 +25,6 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCP\IAppConfig;
 
 /**
  * The services of the tables API.
@@ -36,7 +35,6 @@ final class TablesControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param IAppConfig              $config         Application config
 	 * @param MagicMapperInterface    $magicMapper    Magic mapper for table operations
 	 * @param RegisterMapperInterface $registerMapper Register mapper
 	 * @param SchemaMapperInterface   $schemaMapper   Schema mapper
@@ -44,7 +42,6 @@ final class TablesControllerServices {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-8
 	 */
 	public function __construct(
-		public readonly IAppConfig $config,
 		public readonly MagicMapperInterface $magicMapper,
 		public readonly RegisterMapperInterface $registerMapper,
 		public readonly SchemaMapperInterface $schemaMapper,
