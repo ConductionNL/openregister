@@ -168,81 +168,64 @@ class DashboardService {
 	 */
 	private function getStats(?int $registerId = null, ?int $schemaId = null): array {
 		try {
-			// Get object statistics.
-			$objectStats = $this->objectMapper->getStatistics(registerId: $registerId, schemaId: $schemaId);
-
-			// Get audit trail statistics.
-			$logStats = $this->auditTrailMapper->getStatistics(registerId: $registerId, schemaId: $schemaId);
-
-			// Get webhook log statistics (0 = all webhooks).
-			$webhookLogStats = $this->webhookLogMapper->getStatistics(webhookId: 0);
-
 			return [
-				'objects' => $this->objectTotals(stats: $objectStats),
-				'logs' => $this->sizeTotals(stats: $logStats),
-				'webhookLogs' => [
-					'total' => $webhookLogStats['total'] ?? 0,
-					'size' => 0,
-				],
+				'objects' => $this->objectTotals(stats: $this->objectMapper->getStatistics(registerId: $registerId, schemaId: $schemaId)),
+				'logs' => $this->sizeTotals(stats: $this->auditTrailMapper->getStatistics(registerId: $registerId, schemaId: $schemaId)),
+				'webhookLogs' => $this->webhookLogTotals(),
 				'files' => self::ZERO_TOTALS,
 			];
 		} catch (Exception $e) {
 			$this->logFailure(what: 'statistics', error: $e);
-			return [
-				'objects' => self::ZERO_OBJECTS,
-				'logs' => self::ZERO_TOTALS,
-				'webhookLogs' => self::ZERO_TOTALS,
-				'files' => self::ZERO_TOTALS,
-			];
-		}//end try
+			return ['objects' => self::ZERO_OBJECTS, 'logs' => self::ZERO_TOTALS, 'webhookLogs' => self::ZERO_TOTALS, 'files' => self::ZERO_TOTALS];
+		}
 	}//end getStats()
 
 	/**
+	 * The webhook log count across all webhooks; webhook log size is not tracked.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function webhookLogTotals(): array {
+		$webhookLogStats = $this->webhookLogMapper->getStatistics(webhookId: 0);
+		return ['total' => $webhookLogStats['total'] ?? 0, 'size' => 0];
+	}//end webhookLogTotals()
+
+	/**
 	 * Get statistics for orphaned items
+	 *
+	 * Orphaned rows are those outside every register/schema combination that exists.
 	 *
 	 * @return array Statistics for orphaned objects, logs, and files.
 	 */
 	private function getOrphanedStats(): array {
 		try {
-			// Get all registers.
-			$registers = $this->registerMapper->findAll();
-
-			// Build array of valid register/schema combinations.
-			$validCombinations = [];
-			foreach ($registers as $register) {
-				$schemas = $this->registerMapper->getSchemasByRegisterId($register->getId());
-				foreach ($schemas as $schema) {
-					$validCombinations[] = [
-						'register' => $register->getId(),
-						'schema' => $schema->getId(),
-					];
-				}
-			}
-
-			// Get orphaned object statistics by excluding all valid combinations.
-			$objectStats = $this->objectMapper->getStatistics(registerId: null, schemaId: null, exclude: $validCombinations);
-
-			// Get orphaned audit trail statistics using the same exclusions.
-			$auditStats = $this->auditTrailMapper->getStatistics(
-				registerId: null,
-				schemaId: null,
-				exclude: $validCombinations
-			);
-
+			$valid = $this->validCombinations();
 			return [
-				'objects' => $this->objectTotals(stats: $objectStats),
-				'logs' => $this->sizeTotals(stats: $auditStats),
+				'objects' => $this->objectTotals(stats: $this->objectMapper->getStatistics(registerId: null, schemaId: null, exclude: $valid)),
+				'logs' => $this->sizeTotals(stats: $this->auditTrailMapper->getStatistics(registerId: null, schemaId: null, exclude: $valid)),
 				'files' => self::ZERO_TOTALS,
 			];
 		} catch (Exception $e) {
 			$this->logFailure(what: 'orphaned statistics', error: $e);
-			return [
-				'objects' => self::ZERO_OBJECTS,
-				'logs' => self::ZERO_TOTALS,
-				'files' => self::ZERO_TOTALS,
-			];
-		}//end try
+			return ['objects' => self::ZERO_OBJECTS, 'logs' => self::ZERO_TOTALS, 'files' => self::ZERO_TOTALS];
+		}
 	}//end getOrphanedStats()
+
+	/**
+	 * Every register/schema combination that exists.
+	 *
+	 * @return array<int, array{register: int, schema: int}>
+	 */
+	private function validCombinations(): array {
+		$combinations = [];
+		foreach ($this->registerMapper->findAll() as $register) {
+			foreach ($this->registerMapper->getSchemasByRegisterId($register->getId()) as $schema) {
+				$combinations[] = ['register' => $register->getId(), 'schema' => $schema->getId()];
+			}
+		}
+
+		return $combinations;
+	}//end validCombinations()
 
 	/**
 	 * Get all registers with their schemas and statistics
@@ -720,12 +703,7 @@ class DashboardService {
 		?int $schemaId = null,
 	): array {
 		try {
-			return $this->auditTrailMapper->getActionChartData(
-				from: $from,
-				till: $till,
-				registerId: $registerId,
-				schemaId: $schemaId
-			);
+			return $this->auditTrailMapper->getActionChartData(from: $from, till: $till, registerId: $registerId, schemaId: $schemaId);
 		} catch (Exception $e) {
 			$this->logFailure(what: 'audit trail action chart data', error: $e);
 			return self::EMPTY_CHART;
@@ -811,20 +789,10 @@ class DashboardService {
 	 */
 	public function getAuditTrailStatistics(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array {
 		try {
-			return $this->auditTrailMapper->getDetailedStatistics(
-				registerId: $registerId,
-				schemaId: $schemaId,
-				hours: $hours
-			);
+			return $this->auditTrailMapper->getDetailedStatistics(registerId: $registerId, schemaId: $schemaId, hours: $hours);
 		} catch (Exception $e) {
 			$this->logFailure(what: 'audit trail statistics', error: $e);
-			return [
-				'total' => 0,
-				'creates' => 0,
-				'updates' => 0,
-				'deletes' => 0,
-				'reads' => 0,
-			];
+			return ['total' => 0, 'creates' => 0, 'updates' => 0, 'deletes' => 0, 'reads' => 0];
 		}
 	}//end getAuditTrailStatistics()
 

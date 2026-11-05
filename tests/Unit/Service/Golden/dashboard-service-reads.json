@@ -98,7 +98,16 @@
                 "schemas": []
             }
         ],
-        "logged": []
+        "logged": [
+            "objects.getStatistics [null,null,[]]",
+            "audit.getStatistics [null,null,[]]",
+            "objects.getStatistics [7,null,[]]",
+            "audit.getStatistics [7,null,[]]",
+            "objects.getStatistics [7,70,[]]",
+            "audit.getStatistics [7,70,[]]",
+            "objects.getStatistics [null,null,[{\"register\":7,\"schema\":70}]]",
+            "audit.getStatistics [null,null,[{\"register\":7,\"schema\":70}]]"
+        ]
     },
     "failed": {
         "registersWithSchemas": [

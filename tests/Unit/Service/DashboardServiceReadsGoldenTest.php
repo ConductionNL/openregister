@@ -88,8 +88,14 @@ class DashboardServiceReadsGoldenTest extends TestCase {
 				$audit->method($m)->willThrowException($boom);
 			}
 		} else {
-			$objects->method('getStatistics')->willReturn(['total' => 11, 'size' => 12, 'invalid' => 13, 'deleted' => 14, 'locked' => 15, 'published' => 16]);
-			$audit->method('getStatistics')->willReturn(['total' => 21, 'size' => 22]);
+			$objects->method('getStatistics')->willReturnCallback(function (...$args): array {
+				$this->logged[] = 'objects.getStatistics ' . json_encode($args);
+				return ['total' => 11, 'size' => 12, 'invalid' => 13, 'deleted' => 14, 'locked' => 15, 'published' => 16];
+			});
+			$audit->method('getStatistics')->willReturnCallback(function (...$args): array {
+				$this->logged[] = 'audit.getStatistics ' . json_encode($args);
+				return ['total' => 21, 'size' => 22];
+			});
 			$webhooks->method('getStatistics')->willReturn(['total' => 31]);
 		}
 
