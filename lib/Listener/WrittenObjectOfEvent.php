@@ -41,9 +41,17 @@ trait WrittenObjectOfEvent {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-an-object-write-must-invalidate-the-facet-response-derived-from-it
 	 */
 	private function extractObject(Event $event): ?ObjectEntity {
-		foreach (['getObject', 'getNewObject'] as $getter) {
-			if (method_exists($event, $getter) === true && $event->$getter() instanceof ObjectEntity) {
-				return $event->$getter();
+		if (method_exists($event, 'getObject') === true) {
+			$object = $event->getObject();
+			if ($object instanceof ObjectEntity) {
+				return $object;
+			}
+		}
+
+		if (method_exists($event, 'getNewObject') === true) {
+			$object = $event->getNewObject();
+			if ($object instanceof ObjectEntity) {
+				return $object;
 			}
 		}
 
