@@ -67,11 +67,11 @@ use Psr\Log\LoggerInterface;
 class RelationHandler {
 
 	/**
-	 * Registers and schemas loaded for relation lookups, keyed "registerId_schemaId".
+	 * The registers and schemas relation lookups have loaded, created on first use.
 	 *
-	 * @var array<string, array{register: Register, schema: Schema}|null>
+	 * @var RelationTables|null
 	 */
-	private array $pairCache = [];
+	private ?RelationTables $tables = null;
 
 	/**
 	 * Constructor for RelationHandler.
@@ -95,6 +95,18 @@ class RelationHandler {
 		private readonly ?RelationTypeResolver $relationTypes = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The registers and schemas relation lookups have loaded; each pair is loaded once per handler.
+	 *
+	 * @return RelationTables
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function tables(): RelationTables {
+		$this->tables ??= new RelationTables(registers: $this->registerMapper, schemas: $this->schemaMapper, logger: $this->logger);
+		return $this->tables;
+	}//end tables()
 
 	/**
 	 * Extract all relationship IDs from objects with circuit breaker.
@@ -441,36 +453,19 @@ class RelationHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function usesPage(RelationLookup $lookup): array {
-		$pinned = $this->usesPin(lookup: $lookup);
+		$pinned = $this->tables()->pinnedForUses(lookup: $lookup);
 		$object = $this->pinnedObject(lookup: $lookup, pinned: $pinned);
-		$uniqueIds = $this->relatedUuids(object: $object);
+		$uniqueIds = (new RelationMap(relations: ($object->getRelations() ?? [])))->uuidsBesides(ownUuid: $object->getUuid());
 		if (empty($uniqueIds) === true) {
-			return $this->emptyPage(query: $lookup->query);
+			return $this->paged(items: [], query: $lookup->query);
 		}
 
 		$related = $this->readableRelated(uuids: $uniqueIds, lookup: $lookup);
-		$source = $this->sourceOf(object: $object, pinned: $pinned);
+		$source = $this->tables()->sourceOf(object: $object, pinned: $pinned);
 		$page = $this->paged(items: $related, query: $lookup->query);
 		$page['results'] = array_map(fn ($row) => $this->outgoingRow(related: $row, source: $source), $page['results']);
 		return $page;
 	}//end usesPage()
-
-	/**
-	 * The source object's relation map and schema: the pinned schema, else its own, loaded without RBAC.
-	 *
-	 * @param ObjectEntity $object The source object.
-	 * @param PinnedTable  $pinned The pinned register and schema.
-	 *
-	 * @return RelationSource
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	private function sourceOf(ObjectEntity $object, PinnedTable $pinned): RelationSource {
-		return new RelationSource(
-			relations: ($object->getRelations() ?? []),
-			schema: ($pinned->schema ?? $this->schemaOf(schemaId: $object->getSchema()))
-		);
-	}//end sourceOf()
 
 	/**
 	 * The lookup's object, found in the pinned register and schema when both loaded.
@@ -510,7 +505,7 @@ class RelationHandler {
 		// The per-table reads apply RBAC at query level, but the fallback rows
 		// were located without it, so every result is filtered here.
 		if ($lookup->appliesRbac() === true) {
-			$related = $this->filterByRbac(objects: $related);
+			$related = (new RelatedReadFilter(rbac: $this->rbacHandler, schemas: $this->schemaMapper))->admitted(objects: $related);
 		}
 
 		$this->logger->debug(
@@ -542,138 +537,6 @@ class RelationHandler {
 	}//end paged()
 
 	/**
-	 * Load the register and schema a lookup was pinned to, without RBAC or multitenancy.
-	 *
-	 * Nothing is loaded unless both ids are given. Loading stops at the first failure,
-	 * which is kept on the result for the caller to log.
-	 *
-	 * @param RelationLookup $lookup The lookup.
-	 *
-	 * @return PinnedTable
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	private function pinnedTable(RelationLookup $lookup): PinnedTable {
-		$pinned = new PinnedTable();
-		if ($lookup->isPinned() === false) {
-			return $pinned;
-		}
-
-		try {
-			$pinned->register = $this->registerMapper->find($lookup->registerId(), _rbac: false, _multitenancy: false);
-			$pinned->schema = $this->schemaMapper->find($lookup->schemaId(), _rbac: false, _multitenancy: false);
-		} catch (\Exception $e) {
-			$pinned->failure = $e;
-		}
-
-		return $pinned;
-	}//end pinnedTable()
-
-	/**
-	 * The pinned register and schema of an outgoing lookup; a load failure is logged at debug level.
-	 *
-	 * @param RelationLookup $lookup The lookup.
-	 *
-	 * @return PinnedTable
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	private function usesPin(RelationLookup $lookup): PinnedTable {
-		$pinned = $this->pinnedTable(lookup: $lookup);
-		if ($pinned->failure !== null) {
-			$context = ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $lookup->registerId(), 'schemaId' => $lookup->schemaId()];
-			$this->logger->debug(
-				message: '[RelationHandler::getUses] Could not load register/schema for magic table lookup',
-				context: $context + ['error' => $pinned->failure->getMessage()]
-			);
-		}
-
-		return $pinned;
-	}//end usesPin()
-
-	/**
-	 * An empty page that echoes the requested limit and offset.
-	 *
-	 * @param array<string, mixed> $query The request's paging parameters.
-	 *
-	 * @return array{results: list<never>, total: 0, limit: mixed, offset: mixed}
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	private function emptyPage(array $query): array {
-		return [
-			'results' => [],
-			'total' => 0,
-			'limit' => $query['_limit'] ?? 30,
-			'offset' => $query['_offset'] ?? 0,
-		];
-	}//end emptyPage()
-
-	/**
-	 * The distinct uuids the object's relation map names, without its own uuid.
-	 *
-	 * The map is pre-scanned, populated during save/import by scanForRelations().
-	 * Keys are kept as array_unique() leaves them.
-	 *
-	 * @param ObjectEntity $object The source object.
-	 *
-	 * @return array<int, string>
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	private function relatedUuids(ObjectEntity $object): array {
-		$ownUuid = $object->getUuid();
-		$uniqueIds = array_unique($this->referencedStrings(relations: ($object->getRelations() ?? [])));
-		if ($ownUuid !== null) {
-			$uniqueIds = array_filter($uniqueIds, fn ($id) => $id !== $ownUuid);
-		}
-
-		return $uniqueIds;
-	}//end relatedUuids()
-
-	/**
-	 * Every non-empty string a relation map holds, in order, as a list.
-	 *
-	 * Relations are stored as ['field' => 'uuid'] or as lists of uuids; empty
-	 * strings, '0' and non-string values are skipped.
-	 *
-	 * @param array<mixed, mixed> $relations The stored relation map.
-	 *
-	 * @return array<int, string>
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	private function referencedStrings(array $relations): array {
-		$ids = [];
-		foreach ($relations as $value) {
-			$candidates = array_filter(
-				$this->listOf(value: $value),
-				fn ($candidate) => is_string($candidate) === true && empty($candidate) === false
-			);
-			$ids = array_merge($ids, array_values($candidates));
-		}
-
-		return $ids;
-	}//end referencedStrings()
-
-	/**
-	 * The value itself when it is an array, otherwise a list holding only the value.
-	 *
-	 * @param mixed $value The stored relation value.
-	 *
-	 * @return array<mixed, mixed>
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	private function listOf(mixed $value): array {
-		if (is_array($value) === true) {
-			return $value;
-		}
-
-		return [$value];
-	}//end listOf()
-
-	/**
 	 * Load the related objects: locate them in one UNION query, then read each table.
 	 *
 	 * The UNION replaced loading every register and schema and querying the tables
@@ -691,7 +554,7 @@ class RelationHandler {
 	private function locateRelated(array $uuids, Closure $admitsFallback): array {
 		$located = $this->objectEntityMapper->findMultipleAcrossAllMagicTables(uuids: array_values($uuids));
 		$found = new RelatedObjectSet(wanted: $uuids);
-		foreach ($this->tablesOf(objects: $located) as $table) {
+		foreach ($this->tables()->groups(objects: $located) as $table) {
 			foreach ($this->relatedRows(table: $table) as $object) {
 				$found->offer(object: $object);
 			}
@@ -710,7 +573,7 @@ class RelationHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function relatedRows(array $table): array {
-		$pair = $this->registerSchemaPair(registerId: $table['registerId'], schemaId: $table['schemaId']);
+		$pair = $this->tables()->pair(registerId: $table['registerId'], schemaId: $table['schemaId']);
 		if ($pair === null) {
 			return [];
 		}
@@ -742,7 +605,7 @@ class RelationHandler {
 			return $related;
 		}
 
-		$path = $this->pathHolding(relations: $source->relations, uuid: (string)$related->getUuid());
+		$path = (new RelationMap(relations: $source->relations))->pathHolding(uuid: (string)$related->getUuid());
 		return $this->withRelation(row: $row, link: new RelationLink(schema: $source->schema, path: $path));
 	}//end outgoingRow()
 
@@ -778,7 +641,7 @@ class RelationHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function withinOrganisationBoundary(ObjectEntity $candidate, RelationLookup $lookup): bool {
-		$pair = $this->registerSchemaPair(registerId: (int)$candidate->getRegister(), schemaId: (int)$candidate->getSchema());
+		$pair = $this->tables()->pair(registerId: (int)$candidate->getRegister(), schemaId: (int)$candidate->getSchema());
 		if ($pair === null) {
 			return false;
 		}
@@ -812,276 +675,6 @@ class RelationHandler {
 
 		return true;
 	}//end readsIn()
-
-	/**
-	 * Filter objects by RBAC (schema-level authorization).
-	 *
-	 * Checks each object's schema authorization rules and removes objects
-	 * the current user does not have read access to.
-	 *
-	 * @param ObjectEntity[] $objects The objects to filter.
-	 *
-	 * @return ObjectEntity[] Filtered objects the user has access to.
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	private function filterByRbac(array $objects): array {
-		if ($this->rbacHandler->isAdmin() === true) {
-			return $objects;
-		}
-
-		$schemaOf = $this->readSchemaMemo();
-		return array_values(array_filter($objects, fn ($object): bool => $this->admitsRead(object: $object, schemaOf: $schemaOf)));
-	}//end filterByRbac()
-
-	/**
-	 * A lookup of schemas by id, without RBAC or multitenancy, that remembers each schema it loaded.
-	 *
-	 * A schema that cannot be loaded gives null and is asked for again next time.
-	 *
-	 * @return Closure(mixed): ?Schema
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	private function readSchemaMemo(): Closure {
-		$cache = [];
-		return function (mixed $schemaId) use (&$cache): ?Schema {
-			if (isset($cache[$schemaId]) === false) {
-				try {
-					$cache[$schemaId] = $this->schemaMapper->find((int)$schemaId, _multitenancy: false, _rbac: false);
-				} catch (\Exception $e) {
-					return null;
-				}
-			}
-
-			return $cache[$schemaId];
-		};
-	}//end readSchemaMemo()
-
-	/**
-	 * Whether the current user may read the object; values that are not objects, and objects without a schema, pass.
-	 *
-	 * @param mixed                    $object   The candidate.
-	 * @param Closure(mixed): ?Schema $schemaOf The schema lookup.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	private function admitsRead(mixed $object, Closure $schemaOf): bool {
-		if (($object instanceof ObjectEntity) === false || $object->getSchema() === null) {
-			return true;
-		}
-
-		$schema = $schemaOf($object->getSchema());
-		if ($schema === null) {
-			return false;
-		}
-
-		return $this->readableUnder(object: $object, schema: $schema);
-	}//end admitsRead()
-
-	/**
-	 * Whether the current user may read the object under its schema.
-	 *
-	 * Another user's draft is kept from this caller, as on every other path. The
-	 * candidates come from a lookup that applied no access rule, so a draft the
-	 * per-table query left out reaches this list through the fallback;
-	 * hasPermission() has no draft rule.
-	 *
-	 * @param ObjectEntity $object The object.
-	 * @param Schema       $schema Its schema.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	private function readableUnder(ObjectEntity $object, Schema $schema): bool {
-		$userId = $this->rbacHandler->getCurrentUserId();
-		if ((new DraftCallerRule())->keptFromCaller(object: $object, schema: $schema, userId: $userId, isAdmin: false) === true) {
-			return false;
-		}
-
-		return $this->rbacHandler->hasPermission(
-			schema: $schema,
-			action: 'read',
-			objectOwner: $object->getOwner(),
-			objectData: $object->getMatchEnvelope(),
-			objectAuthorization: $object->getAuthorization(),
-			objectUuid: $object->getUuid()
-		) === true;
-	}//end readableUnder()
-
-	/**
-	 * The stored relation path that holds a given uuid, if any.
-	 *
-	 * Relations are stored as a map of property path to reference value:
-	 * `['blocks.0' => 'uuid-b', 'owner' => 'https://…/uuid-o']`. That map
-	 * already records which property a reference came in through, so neither
-	 * direction has to walk the schema's `$ref` properties guessing which one
-	 * holds the value. The walk stays as the fallback for rows written before
-	 * the map carried paths.
-	 *
-	 * @param array<mixed, mixed> $relations The object's stored relation map.
-	 * @param string $uuid The uuid to find.
-	 *
-	 * @return string|null The path, or null when the map does not name it.
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	private function pathHolding(array $relations, string $uuid): ?string {
-		foreach (array_filter($relations, 'is_string', ARRAY_FILTER_USE_KEY) as $path => $value) {
-			if ($this->holds(value: $value, uuid: $uuid) === true) {
-				return $path;
-			}
-
-			$index = $this->indexHolding(value: $value, uuid: $uuid);
-			if ($index !== null) {
-				return $path.'.'.$index;
-			}
-		}
-
-		return null;
-	}//end pathHolding()
-
-	/**
-	 * Whether a stored reference value names the uuid (as itself or inside a URL); an empty uuid names nothing.
-	 *
-	 * @param mixed  $value The stored value.
-	 * @param string $uuid  The uuid.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	private function holds(mixed $value, string $uuid): bool {
-		return $uuid !== '' && is_string($value) === true && str_contains($value, $uuid) === true;
-	}//end holds()
-
-	/**
-	 * The index of the first list entry that names the uuid, or null.
-	 *
-	 * @param mixed  $value The stored value; anything but an array gives null.
-	 * @param string $uuid  The uuid.
-	 *
-	 * @return string|null
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	private function indexHolding(mixed $value, string $uuid): ?string {
-		if (is_array($value) === false) {
-			return null;
-		}
-
-		foreach ($value as $index => $sub) {
-			if ($this->holds(value: $sub, uuid: $uuid) === true) {
-				return (string)$index;
-			}
-		}
-
-		return null;
-	}//end indexHolding()
-
-	/**
-	 * Group located objects by the table they came from.
-	 *
-	 * @param ObjectEntity[] $objects Objects found by a cross-table lookup.
-	 *
-	 * @return array<int, array{registerId: int, schemaId: int, uuids: array<int, string>}> One entry per table.
-	 *
-	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/linked-entity-types/spec.md#requirement-related-objects-must-be-found-without-scanning-every-schema
-	 */
-	private function tablesOf(array $objects): array {
-		$tables = [];
-		foreach ($objects as $object) {
-			$key = $this->tableKey(object: $object);
-			if ($key === null) {
-				continue;
-			}
-
-			$tables[$key] ??= ['registerId' => (int)$object->getRegister(), 'schemaId' => (int)$object->getSchema(), 'uuids' => []];
-			$tables[$key]['uuids'][] = (string)$object->getUuid();
-		}
-
-		return array_values($tables);
-	}//end tablesOf()
-
-	/**
-	 * The `register_schema` key of the table an object lives in, or null when either id is not numeric.
-	 *
-	 * @param ObjectEntity $object The object.
-	 *
-	 * @return string|null
-	 *
-	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/linked-entity-types/spec.md#requirement-related-objects-must-be-found-without-scanning-every-schema
-	 */
-	private function tableKey(ObjectEntity $object): ?string {
-		$registerId = $object->getRegister();
-		$schemaId = $object->getSchema();
-		if (is_numeric($registerId) === false || is_numeric($schemaId) === false) {
-			return null;
-		}
-
-		return $registerId.'_'.$schemaId;
-	}//end tableKey()
-
-	/**
-	 * Load a register and schema, once per request.
-	 *
-	 * @param int $registerId The register id.
-	 * @param int $schemaId   The schema id.
-	 *
-	 * @return array{register: Register, schema: Schema}|null The pair, or null when either cannot be loaded.
-	 *
-	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/linked-entity-types/spec.md#requirement-related-objects-must-be-found-without-scanning-every-schema
-	 */
-	private function registerSchemaPair(int $registerId, int $schemaId): ?array {
-		$key = $registerId.'_'.$schemaId;
-		if (array_key_exists($key, $this->pairCache) === false) {
-			try {
-				$this->pairCache[$key] = [
-					'register' => $this->registerMapper->find($registerId),
-					'schema' => $this->schemaMapper->find($schemaId),
-				];
-			} catch (\Exception $e) {
-				$this->pairCache[$key] = null;
-			}
-		}
-
-		return $this->pairCache[$key];
-	}//end registerSchemaPair()
-
-	/**
-	 * The schema an object belongs to, loaded without RBAC.
-	 *
-	 * Reading a label is not reading the schema's data, and the objects the
-	 * labels describe have already been filtered by {@see self::filterByRbac()}.
-	 * A label that silently disappears because the reader may not read the
-	 * schema row would leave the far side saying "referenced by" with no way
-	 * to tell that apart from a schema that declares nothing.
-	 *
-	 * @param mixed $schemaId The object's schema id.
-	 *
-	 * @return Schema|null The schema, or null when it cannot be loaded.
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	private function schemaOf(mixed $schemaId): ?Schema {
-		if (is_numeric($schemaId) === false) {
-			return null;
-		}
-
-		try {
-			return $this->schemaMapper->find((int)$schemaId, _rbac: false, _multitenancy: false);
-		} catch (\Exception $e) {
-			$this->logger->debug(
-				message: '[RelationHandler] Could not load a schema to resolve relation labels',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId],
-			);
-
-			return null;
-		}
-	}//end schemaOf()
 
 	/**
 	 * Attach the relation descriptor to one serialised row.
@@ -1151,11 +744,11 @@ class RelationHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function usedByPage(RelationLookup $lookup): array {
-		$object = $this->pinnedObject(lookup: $lookup, pinned: $this->usedByPin(lookup: $lookup));
+		$object = $this->pinnedObject(lookup: $lookup, pinned: $this->tables()->pinnedForUsedBy(lookup: $lookup));
 		$page = new ReferrerPage(targetUuid: $object->getUuid(), query: $lookup->query);
 
 		$located = $this->objectEntityMapper->findByRelationAcrossAllMagicTables(uuid: (string)$page->targetUuid);
-		foreach ($this->tablesOf(objects: $located) as $table) {
+		foreach ($this->tables()->groups(objects: $located) as $table) {
 			if ($page->isFull() === true) {
 				break;
 			}
@@ -1165,27 +758,6 @@ class RelationHandler {
 
 		return ['results' => $page->rows(), 'total' => count($page->rows()), 'limit' => $page->limit, 'offset' => $page->offset];
 	}//end usedByPage()
-
-	/**
-	 * The pinned register and schema of an incoming lookup; a load failure is logged as a warning.
-	 *
-	 * @param RelationLookup $lookup The lookup.
-	 *
-	 * @return PinnedTable
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	private function usedByPin(RelationLookup $lookup): PinnedTable {
-		$pinned = $this->pinnedTable(lookup: $lookup);
-		if ($pinned->failure !== null) {
-			$this->logger->warning(
-				message: '[RelationHandler] Failed to load register/schema for getUsedBy magic table support',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $pinned->failure->getMessage()]
-			);
-		}
-
-		return $pinned;
-	}//end usedByPin()
 
 	/**
 	 * The answer of a relation listing that failed: an empty page, logged.
@@ -1211,7 +783,7 @@ class RelationHandler {
 			message: '[RelationHandler] Failed to get ' . $lookup->lists(),
 			context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $error->getMessage(), 'objectId' => $lookup->objectId]
 		);
-		return $this->emptyPage(query: $lookup->query);
+		return $this->paged(items: [], query: $lookup->query);
 	}//end failedPage()
 
 	/**
@@ -1255,7 +827,7 @@ class RelationHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function readReferrers(array $table, ReferrerPage $page): void {
-		$pair = $this->registerSchemaPair(registerId: $table['registerId'], schemaId: $table['schemaId']);
+		$pair = $this->tables()->pair(registerId: $table['registerId'], schemaId: $table['schemaId']);
 		if ($pair === null) {
 			return;
 		}
@@ -1263,7 +835,8 @@ class RelationHandler {
 		$referrers = $this->referrerSearch(pair: $pair, page: $page);
 		foreach ($referrers as $referrer) {
 			if ($referrer->getUuid() !== $page->targetUuid) {
-				$link = (new RelationLink(schema: $pair['schema'], path: $this->referrerPath(referrer: $referrer, page: $page)))->incoming();
+				$path = (new RelationMap(relations: ($referrer->getRelations() ?? [])))->pathHolding(uuid: (string)$page->targetUuid);
+				$link = (new RelationLink(schema: $pair['schema'], path: $path))->incoming();
 				$page->add(row: $this->withRelation(row: $referrer->jsonSerialize(), link: $link));
 			}
 		}
@@ -1291,19 +864,5 @@ class RelationHandler {
 			sort: ['_updated' => 'DESC']
 		);
 	}//end referrerSearch()
-
-	/**
-	 * The path of the referrer's own relation map that holds the page's target.
-	 *
-	 * @param ObjectEntity $referrer The referring object.
-	 * @param ReferrerPage $page     The page, naming the target.
-	 *
-	 * @return string|null
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	private function referrerPath(ObjectEntity $referrer, ReferrerPage $page): ?string {
-		return $this->pathHolding(relations: ($referrer->getRelations() ?? []), uuid: (string)$page->targetUuid);
-	}//end referrerPath()
 
 }//end class

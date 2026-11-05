@@ -32,14 +32,39 @@ namespace OCA\OpenRegister\Service\Object;
  */
 final class RelationLookup {
 
+	/**
+	 * Whether RBAC filters apply.
+	 *
+	 * @var bool
+	 */
 	private bool $rbac = true;
 
+	/**
+	 * Whether multitenancy filters apply.
+	 *
+	 * @var bool
+	 */
 	private bool $multitenancy = true;
 
+	/**
+	 * The pinned register id, or null.
+	 *
+	 * @var int|null
+	 */
 	private ?int $registerId = null;
 
+	/**
+	 * The pinned schema id, or null.
+	 *
+	 * @var int|null
+	 */
 	private ?int $schemaId = null;
 
+	/**
+	 * What the lookup lists, for log lines.
+	 *
+	 * @var string
+	 */
 	private string $listing = 'relations';
 
 	/**

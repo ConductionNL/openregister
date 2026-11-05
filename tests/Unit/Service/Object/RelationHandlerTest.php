@@ -46,6 +46,10 @@ use OCA\OpenRegister\Service\Object\RelationLookup;
  * Unit tests for RelationHandler.
  *
  * @covers \OCA\OpenRegister\Service\Object\RelationHandler
+ * @covers \OCA\OpenRegister\Service\Object\RelationMap
+ * @covers \OCA\OpenRegister\Service\Object\RelationTables
+ * @covers \OCA\OpenRegister\Service\Object\RelatedReadFilter
+ * @covers \OCA\OpenRegister\Service\Object\RelationLookup
  * @uses   \OCA\OpenRegister\Service\Object\RelationLoadRun
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Object\PinnedTable
@@ -53,7 +57,6 @@ use OCA\OpenRegister\Service\Object\RelationLookup;
  * @uses \OCA\OpenRegister\Service\Object\RelatedObjectSet
  * @uses \OCA\OpenRegister\Service\Object\RelationLink
  * @uses \OCA\OpenRegister\Service\Object\RelationSource
- * @uses \OCA\OpenRegister\Service\Object\RelationLookup
  */
 class RelationHandlerTest extends TestCase {
 	private RelationHandler $handler;

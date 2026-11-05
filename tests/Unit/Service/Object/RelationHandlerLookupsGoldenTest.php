@@ -33,6 +33,10 @@ use Psr\Log\LoggerInterface;
  * object data. Set OR_GOLDEN_RECORD=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Object\RelationHandler
+ * @covers \OCA\OpenRegister\Service\Object\RelationMap
+ * @covers \OCA\OpenRegister\Service\Object\RelationTables
+ * @covers \OCA\OpenRegister\Service\Object\RelatedReadFilter
+ * @covers \OCA\OpenRegister\Service\Object\RelationLookup
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
@@ -42,7 +46,6 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Object\ReferrerPage
  * @uses   \OCA\OpenRegister\Service\Object\RelatedObjectSet
  * @uses   \OCA\OpenRegister\Service\Object\RelationLink
- * @uses   \OCA\OpenRegister\Service\Object\RelationLookup
  * @uses   \OCA\OpenRegister\Service\Object\RelationSource
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
