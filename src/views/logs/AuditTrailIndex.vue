@@ -849,5 +849,11 @@ export default {
 	animation: copySuccess 0.3s ease-in-out;
 }
 
+@media (prefers-reduced-motion: reduce) {
+	:deep(.copySuccessIcon) {
+		animation: none;
+	}
+}
+
 @include keyframes-copy-success-rules;
 </style>

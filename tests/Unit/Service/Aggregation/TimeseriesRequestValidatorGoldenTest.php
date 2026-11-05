@@ -24,6 +24,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationMetricsAnnotationValidator
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\MetricEntrySite
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\TimeseriesDateBucketValidator
  */
 class TimeseriesRequestValidatorGoldenTest extends TestCase {

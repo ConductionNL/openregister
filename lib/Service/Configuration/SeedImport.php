@@ -96,6 +96,8 @@ final class SeedImport
 	 *
 	 * @param array<string, mixed> $configData The configuration payload.
 	 * @param array<string, mixed> $result     The import result, updated in place.
+	 *
+	 * @psalm-suppress UnusedParam `$result` is bound by reference below; psalm does not count that binding as a use.
 	 */
 	public function __construct(
 		public readonly array $configData,

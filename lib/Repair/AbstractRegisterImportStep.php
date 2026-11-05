@@ -84,8 +84,7 @@ abstract class AbstractRegisterImportStep implements IRepairStep {
 	 */
 	public function __construct(
 		private readonly ConfigurationServiceInterface $configurationService,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
+		private readonly IAppManager $appManager, private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -99,18 +98,10 @@ abstract class AbstractRegisterImportStep implements IRepairStep {
 	public function run(\OCP\Migration\IOutput $output): void {
 		try {
 			$data = $this->readDescriptor(output: $output);
-			if ($data === null) {
-				return;
+			if ($data !== null) {
+				$this->configurationService->importFromApp(appId: static::CONFIG_APP_ID, data: $data, version: static::REGISTER_VERSION, force: false);
+				$output->info(static::IMPORTED);
 			}
-
-			$this->configurationService->importFromApp(
-				appId: static::CONFIG_APP_ID,
-				data: $data,
-				version: static::REGISTER_VERSION,
-				force: false
-			);
-
-			$output->info(static::IMPORTED);
 		} catch (Throwable $e) {
 			$step = substr((string)strrchr(static::class, '\\'), 1);
 			$this->logger->warning('[' . $step . '] import failed: ' . $e->getMessage());

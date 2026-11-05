@@ -403,6 +403,8 @@ exports[`entity validation golden validates schemas 1`] = `
         "configuration": {
           "objectDescriptionField": "",
           "objectNameField": "",
+          "objectSlugField": "",
+          "objectSlugSuffix": false,
         },
         "created": "2026-01-02T03:04:05.000Z",
         "description": "Defines the structure for character data",
@@ -429,6 +431,8 @@ exports[`entity validation golden validates schemas 1`] = `
         "configuration": {
           "objectDescriptionField": "",
           "objectNameField": "",
+          "objectSlugField": "",
+          "objectSlugSuffix": false,
         },
         "created": "2026-01-02T03:04:05.000Z",
         "description": "Defines the structure for character data",
@@ -457,6 +461,8 @@ exports[`entity validation golden validates schemas 1`] = `
         "configuration": {
           "objectDescriptionField": "",
           "objectNameField": "",
+          "objectSlugField": "",
+          "objectSlugSuffix": false,
         },
         "created": "2026-01-02T03:04:05.000Z",
         "description": "Defines the structure for character data",
@@ -483,6 +489,8 @@ exports[`entity validation golden validates schemas 1`] = `
         "configuration": {
           "objectDescriptionField": "",
           "objectNameField": "",
+          "objectSlugField": "",
+          "objectSlugSuffix": false,
         },
         "created": "2026-01-02T03:04:05.000Z",
         "description": "Defines the structure for character data",
