@@ -986,35 +986,6 @@ class RegistersController extends Controller {
 	}//end schemas()
 
 	/**
-	 * Get objects
-	 *
-	 * Get all the objects for a register and schema
-	 *
-	 * @param int $register The ID of the register
-	 * @param int $schema The ID of the schema
-	 *
-	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
-	 *
-	 * @return JSONResponse JSON response with objects
-	 *
-	 * @spec openspec/specs/openapi-generation/spec.md#requirement-schema-authoring-sub-resources-and-meta-entity-operational-endpoints
-	 */
-	public function objects(int $register, int $schema): JSONResponse {
-		// Find objects by register and schema IDs.
-		$query = [
-			'@self' => [
-				'register' => $register,
-				'schema' => $schema,
-			],
-		];
-		return new JSONResponse(
-			data: $this->objectEntityMapper->searchObjects(query: $query)
-		);
-	}//end objects()
-
-	/**
 	 * Export a register and its related data
 	 *
 	 * This method exports a register, its schemas, and optionally its objects

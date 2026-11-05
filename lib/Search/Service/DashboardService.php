@@ -55,6 +55,21 @@ use Throwable;
  * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
  */
 class DashboardService {
+	/**
+	 * Object totals reported when the statistics cannot be read.
+	 */
+	private const ZERO_OBJECTS = ['total' => 0, 'size' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0];
+
+	/**
+	 * A count and size pair reported when nothing is counted.
+	 */
+	private const ZERO_TOTALS = ['total' => 0, 'size' => 0];
+
+	/**
+	 * Chart data reported when the chart cannot be read.
+	 */
+	private const EMPTY_CHART = ['labels' => [], 'series' => []];
+
 
 	/**
 	 * Object entity mapper
@@ -153,138 +168,64 @@ class DashboardService {
 	 */
 	private function getStats(?int $registerId = null, ?int $schemaId = null): array {
 		try {
-			// Get object statistics.
-			$objectStats = $this->objectMapper->getStatistics(registerId: $registerId, schemaId: $schemaId);
-
-			// Get audit trail statistics.
-			$logStats = $this->auditTrailMapper->getStatistics(registerId: $registerId, schemaId: $schemaId);
-
-			// Get webhook log statistics (0 = all webhooks).
-			$webhookLogStats = $this->webhookLogMapper->getStatistics(webhookId: 0);
-
 			return [
-				'objects' => [
-					'total' => $objectStats['total'],
-					'size' => $objectStats['size'],
-					'invalid' => $objectStats['invalid'],
-					'deleted' => $objectStats['deleted'],
-					'locked' => $objectStats['locked'],
-				],
-				'logs' => [
-					'total' => $logStats['total'],
-					'size' => $logStats['size'],
-				],
-				'webhookLogs' => [
-					'total' => $webhookLogStats['total'] ?? 0,
-					'size' => 0,
-				],
-				'files' => [
-					'total' => 0,
-					'size' => 0,
-				],
+				'objects' => $this->objectTotals(stats: $this->objectMapper->getStatistics(registerId: $registerId, schemaId: $schemaId)),
+				'logs' => $this->sizeTotals(stats: $this->auditTrailMapper->getStatistics(registerId: $registerId, schemaId: $schemaId)),
+				'webhookLogs' => $this->webhookLogTotals(),
+				'files' => self::ZERO_TOTALS,
 			];
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[DashboardService] Failed to get statistics: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return [
-				'objects' => [
-					'total' => 0,
-					'size' => 0,
-					'invalid' => 0,
-					'deleted' => 0,
-					'locked' => 0,
-				],
-				'logs' => [
-					'total' => 0,
-					'size' => 0,
-				],
-				'webhookLogs' => [
-					'total' => 0,
-					'size' => 0,
-				],
-				'files' => [
-					'total' => 0,
-					'size' => 0,
-				],
-			];
-		}//end try
+			$this->logFailure(what: 'statistics', error: $e);
+			return ['objects' => self::ZERO_OBJECTS, 'logs' => self::ZERO_TOTALS, 'webhookLogs' => self::ZERO_TOTALS, 'files' => self::ZERO_TOTALS];
+		}
 	}//end getStats()
 
 	/**
+	 * The webhook log count across all webhooks; webhook log size is not tracked.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function webhookLogTotals(): array {
+		$webhookLogStats = $this->webhookLogMapper->getStatistics(webhookId: 0);
+		return ['total' => $webhookLogStats['total'] ?? 0, 'size' => 0];
+	}//end webhookLogTotals()
+
+	/**
 	 * Get statistics for orphaned items
+	 *
+	 * Orphaned rows are those outside every register/schema combination that exists.
 	 *
 	 * @return array Statistics for orphaned objects, logs, and files.
 	 */
 	private function getOrphanedStats(): array {
 		try {
-			// Get all registers.
-			$registers = $this->registerMapper->findAll();
-
-			// Build array of valid register/schema combinations.
-			$validCombinations = [];
-			foreach ($registers as $register) {
-				$schemas = $this->registerMapper->getSchemasByRegisterId($register->getId());
-				foreach ($schemas as $schema) {
-					$validCombinations[] = [
-						'register' => $register->getId(),
-						'schema' => $schema->getId(),
-					];
-				}
-			}
-
-			// Get orphaned object statistics by excluding all valid combinations.
-			$objectStats = $this->objectMapper->getStatistics(registerId: null, schemaId: null, exclude: $validCombinations);
-
-			// Get orphaned audit trail statistics using the same exclusions.
-			$auditStats = $this->auditTrailMapper->getStatistics(
-				registerId: null,
-				schemaId: null,
-				exclude: $validCombinations
-			);
-
+			$valid = $this->validCombinations();
 			return [
-				'objects' => [
-					'total' => $objectStats['total'],
-					'size' => $objectStats['size'],
-					'invalid' => $objectStats['invalid'],
-					'deleted' => $objectStats['deleted'],
-					'locked' => $objectStats['locked'],
-				],
-				'logs' => [
-					'total' => $auditStats['total'],
-					'size' => $auditStats['size'],
-				],
-				'files' => [
-					'total' => 0,
-					'size' => 0,
-				],
+				'objects' => $this->objectTotals(stats: $this->objectMapper->getStatistics(registerId: null, schemaId: null, exclude: $valid)),
+				'logs' => $this->sizeTotals(stats: $this->auditTrailMapper->getStatistics(registerId: null, schemaId: null, exclude: $valid)),
+				'files' => self::ZERO_TOTALS,
 			];
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[DashboardService] Failed to get orphaned statistics: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return [
-				'objects' => [
-					'total' => 0,
-					'size' => 0,
-					'invalid' => 0,
-					'deleted' => 0,
-					'locked' => 0,
-				],
-				'logs' => [
-					'total' => 0,
-					'size' => 0,
-				],
-				'files' => [
-					'total' => 0,
-					'size' => 0,
-				],
-			];
-		}//end try
+			$this->logFailure(what: 'orphaned statistics', error: $e);
+			return ['objects' => self::ZERO_OBJECTS, 'logs' => self::ZERO_TOTALS, 'files' => self::ZERO_TOTALS];
+		}
 	}//end getOrphanedStats()
+
+	/**
+	 * Every register/schema combination that exists.
+	 *
+	 * @return array<int, array{register: int, schema: int}>
+	 */
+	private function validCombinations(): array {
+		$combinations = [];
+		foreach ($this->registerMapper->findAll() as $register) {
+			foreach ($this->registerMapper->getSchemasByRegisterId($register->getId()) as $schema) {
+				$combinations[] = ['register' => $register->getId(), 'schema' => $schema->getId()];
+			}
+		}
+
+		return $combinations;
+	}//end validCombinations()
 
 	/**
 	 * Get all registers with their schemas and statistics
@@ -359,10 +300,7 @@ class DashboardService {
 
 			return $result;
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[DashboardService] Failed to get registers with schemas: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->logFailure(what: 'registers with schemas', error: $e);
 			throw new Exception('Failed to get registers with schemas: ' . $e->getMessage());
 		}//end try
 	}//end getRegistersWithSchemas()
@@ -765,21 +703,10 @@ class DashboardService {
 		?int $schemaId = null,
 	): array {
 		try {
-			return $this->auditTrailMapper->getActionChartData(
-				from: $from,
-				till: $till,
-				registerId: $registerId,
-				schemaId: $schemaId
-			);
+			return $this->auditTrailMapper->getActionChartData(from: $from, till: $till, registerId: $registerId, schemaId: $schemaId);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[DashboardService] Failed to get audit trail action chart data: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return [
-				'labels' => [],
-				'series' => [],
-			];
+			$this->logFailure(what: 'audit trail action chart data', error: $e);
+			return self::EMPTY_CHART;
 		}
 	}//end getAuditTrailActionChartData()
 
@@ -799,14 +726,8 @@ class DashboardService {
 		try {
 			return $this->objectMapper->getRegisterChartData(registerId: $registerId, schemaId: $schemaId);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[DashboardService] Failed to get objects by register chart data: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return [
-				'labels' => [],
-				'series' => [],
-			];
+			$this->logFailure(what: 'objects by register chart data', error: $e);
+			return self::EMPTY_CHART;
 		}
 	}//end getObjectsByRegisterChartData()
 
@@ -826,14 +747,8 @@ class DashboardService {
 		try {
 			return $this->objectMapper->getSchemaChartData(registerId: $registerId, schemaId: $schemaId);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[DashboardService] Failed to get objects by schema chart data: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return [
-				'labels' => [],
-				'series' => [],
-			];
+			$this->logFailure(what: 'objects by schema chart data', error: $e);
+			return self::EMPTY_CHART;
 		}
 	}//end getObjectsBySchemaChartData()
 
@@ -854,14 +769,8 @@ class DashboardService {
 		try {
 			return $this->objectMapper->getSizeDistributionChartData(registerId: $registerId, schemaId: $schemaId);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[DashboardService] Failed to get objects by size chart data: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return [
-				'labels' => [],
-				'series' => [],
-			];
+			$this->logFailure(what: 'objects by size chart data', error: $e);
+			return self::EMPTY_CHART;
 		}
 	}//end getObjectsBySizeChartData()
 
@@ -880,23 +789,10 @@ class DashboardService {
 	 */
 	public function getAuditTrailStatistics(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array {
 		try {
-			return $this->auditTrailMapper->getDetailedStatistics(
-				registerId: $registerId,
-				schemaId: $schemaId,
-				hours: $hours
-			);
+			return $this->auditTrailMapper->getDetailedStatistics(registerId: $registerId, schemaId: $schemaId, hours: $hours);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[DashboardService] Failed to get audit trail statistics: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return [
-				'total' => 0,
-				'creates' => 0,
-				'updates' => 0,
-				'deletes' => 0,
-				'reads' => 0,
-			];
+			$this->logFailure(what: 'audit trail statistics', error: $e);
+			return ['total' => 0, 'creates' => 0, 'updates' => 0, 'deletes' => 0, 'reads' => 0];
 		}
 	}//end getAuditTrailStatistics()
 
@@ -921,10 +817,7 @@ class DashboardService {
 				hours: $hours
 			);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[DashboardService] Failed to get audit trail action distribution: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->logFailure(what: 'audit trail action distribution', error: $e);
 			return [
 				'actions' => [],
 			];
@@ -954,13 +847,56 @@ class DashboardService {
 				hours: $hours
 			);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[DashboardService] Failed to get most active objects: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->logFailure(what: 'most active objects', error: $e);
 			return [
 				'objects' => [],
 			];
 		}
 	}//end getMostActiveObjects()
+
+	/**
+	 * The object totals of a mapper statistics row.
+	 *
+	 * @param array<string, mixed> $stats Row with total, size, invalid, deleted and locked.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function objectTotals(array $stats): array {
+		return [
+			'total' => $stats['total'],
+			'size' => $stats['size'],
+			'invalid' => $stats['invalid'],
+			'deleted' => $stats['deleted'],
+			'locked' => $stats['locked'],
+		];
+	}//end objectTotals()
+
+	/**
+	 * The count and size of a mapper statistics row.
+	 *
+	 * @param array<string, mixed> $stats Row with total and size.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function sizeTotals(array $stats): array {
+		return [
+			'total' => $stats['total'],
+			'size' => $stats['size'],
+		];
+	}//end sizeTotals()
+
+	/**
+	 * Log that one dashboard read failed.
+	 *
+	 * @param string $what What could not be read.
+	 * @param Exception $error The failure.
+	 *
+	 * @return void
+	 */
+	private function logFailure(string $what, Exception $error): void {
+		$this->logger->error(
+			message: '[DashboardService] Failed to get ' . $what . ': ' . $error->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end logFailure()
 }//end class

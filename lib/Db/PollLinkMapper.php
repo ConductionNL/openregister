@@ -40,23 +40,6 @@ class PollLinkMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Find poll links by poll id.
-	 *
-	 * @param int $pollId The poll id.
-	 *
-	 * @return PollLink[] Array of poll links.
-	 */
-	public function findByPollId(int $pollId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('poll_id', $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByPollId()
-
-	/**
 	 * Find a specific poll link by object UUID and poll id.
 	 *
 	 * @param string $objectUuid The object UUID.

@@ -125,13 +125,6 @@ class Application extends Entity implements JsonSerializable {
 	protected ?string $organisation = null;
 
 	/**
-	 * Configuration that manages this application (transient, not stored in DB)
-	 *
-	 * @var Configuration|null
-	 */
-	private ?Configuration $managedByConfig = null;
-
-	/**
 	 * Array of configuration IDs associated with this application
 	 *
 	 * @var array|null Array of configuration IDs
@@ -272,24 +265,6 @@ class Application extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'updated', type: 'datetime');
 	}//end __construct()
-
-	/**
-	 * Validate UUID format
-	 *
-	 * @param string $uuid The UUID to validate
-	 *
-	 * @return bool True if UUID format is valid
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::fromString is standard Symfony UID pattern
-	 */
-	public static function isValidUuid(string $uuid): bool {
-		try {
-			Uuid::fromString($uuid);
-			return true;
-		} catch (\InvalidArgumentException $e) {
-			return false;
-		}
-	}//end isValidUuid()
 
 	/**
 	 * Get the organisation UUID
@@ -560,7 +535,7 @@ class Application extends Entity implements JsonSerializable {
 			'authorization' => $this->authorization ?? $this->getDefaultAuthorization(),
 			'created' => $this->getCreatedFormatted(),
 			'updated' => $this->getUpdatedFormatted(),
-			'managedByConfiguration' => $this->getManagedByConfigurationData(),
+			'managedByConfiguration' => null,
 		];
 	}//end jsonSerialize()
 
@@ -580,26 +555,6 @@ class Application extends Entity implements JsonSerializable {
 
 		return $this->uuid;
 	}//end __toString()
-
-	/**
-	 * Get the configuration that manages this application (transient property)
-	 *
-	 * @return Configuration|null The managing configuration or null
-	 */
-	public function getManagedByConfigurationEntity(): ?Configuration {
-		return $this->managedByConfig;
-	}//end getManagedByConfigurationEntity()
-
-	/**
-	 * Set the configuration that manages this application (transient property)
-	 *
-	 * @param Configuration|null $configuration The managing configuration
-	 *
-	 * @return void
-	 */
-	public function setManagedByConfigurationEntity(?Configuration $configuration): void {
-		$this->managedByConfig = $configuration;
-	}//end setManagedByConfigurationEntity()
 
 	/**
 	 * Check if this application is managed by a configuration
@@ -696,23 +651,4 @@ class Application extends Entity implements JsonSerializable {
 			'groups' => count($groups ?? []),
 		];
 	}//end getUsageData()
-
-	/**
-	 * Get managed by configuration data for JSON serialization
-	 *
-	 * @return (int|null|string)[]|null Configuration data or null
-	 *
-	 * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
-	 */
-	private function getManagedByConfigurationData(): ?array {
-		if ($this->managedByConfig !== null) {
-			return [
-				'id' => $this->managedByConfig->getId(),
-				'uuid' => $this->managedByConfig->getUuid(),
-				'title' => $this->managedByConfig->getTitle(),
-			];
-		}
-
-		return null;
-	}//end getManagedByConfigurationData()
 }//end class

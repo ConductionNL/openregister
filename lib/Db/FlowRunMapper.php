@@ -539,41 +539,13 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
 	 */
 	public function deleteTerminalOlderThan(DateTime $cutoff, ?string $flowId = null): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('uuid')
-			->from($this->getTableName())
-			->where($qb->expr()->lt('updated', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
-			->andWhere(
-				$qb->expr()->in(
-					'status',
-					$qb->createNamedParameter(FlowRun::TERMINAL, IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			);
+		$qb = $this->selectTerminalUuidsBefore(cutoff: $cutoff);
 
 		if ($flowId !== null && $flowId !== '') {
 			$qb->andWhere($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowId)));
 		}
 
-		$result = $qb->executeQuery();
-		$uuids = [];
-		while (($row = $result->fetch()) !== false) {
-			$uuids[] = (string)$row['uuid'];
-		}
-
-		$result->closeCursor();
-
-		if (empty($uuids) === true) {
-			return [];
-		}
-
-		$del = $this->db->getQueryBuilder();
-		$del->delete($this->getTableName())
-			->where(
-				$del->expr()->in('uuid', $del->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY))
-			);
-		$del->executeStatement();
-
-		return $uuids;
+		return $this->deleteSelectedRuns(select: $qb);
 	}//end deleteTerminalOlderThan()
 
 	/**
@@ -639,26 +611,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 			->from($this->getTableName())
 			->where($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowId)));
 
-		$result = $qb->executeQuery();
-		$uuids = [];
-		while (($row = $result->fetch()) !== false) {
-			$uuids[] = (string)$row['uuid'];
-		}
-
-		$result->closeCursor();
-
-		if (empty($uuids) === true) {
-			return [];
-		}
-
-		$del = $this->db->getQueryBuilder();
-		$del->delete($this->getTableName())
-			->where(
-				$del->expr()->in('uuid', $del->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY))
-			);
-		$del->executeStatement();
-
-		return $uuids;
+		return $this->deleteSelectedRuns(select: $qb);
 	}//end deleteByFlow()
 
 	/**
@@ -675,16 +628,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
 	 */
 	public function deleteTerminalOlderThanExcluding(DateTime $cutoff, array $excludeFlowIds): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('uuid')
-			->from($this->getTableName())
-			->where($qb->expr()->lt('updated', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
-			->andWhere(
-				$qb->expr()->in(
-					'status',
-					$qb->createNamedParameter(FlowRun::TERMINAL, IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			);
+		$qb = $this->selectTerminalUuidsBefore(cutoff: $cutoff);
 
 		if (empty($excludeFlowIds) === false) {
 			$qb->andWhere(
@@ -695,27 +639,63 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 			);
 		}
 
-		$result = $qb->executeQuery();
-		$uuids = [];
-		while (($row = $result->fetch()) !== false) {
-			$uuids[] = (string)$row['uuid'];
-		}
+		return $this->deleteSelectedRuns(select: $qb);
+	}//end deleteTerminalOlderThanExcluding()
 
-		$result->closeCursor();
+	/**
+	 * A select of the uuids of terminal runs last updated before a cutoff.
+	 *
+	 * @param DateTime $cutoff Runs updated before this are selected.
+	 *
+	 * @return IQueryBuilder The select, open for more conditions.
+	 */
+	private function selectTerminalUuidsBefore(DateTime $cutoff): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('uuid')
+			->from($this->getTableName())
+			->where($qb->expr()->lt('updated', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->andWhere($qb->expr()->in('status', $qb->createNamedParameter(FlowRun::TERMINAL, IQueryBuilder::PARAM_STR_ARRAY)));
 
+		return $qb;
+	}//end selectTerminalUuidsBefore()
+
+	/**
+	 * Run a select of run uuids, then delete those runs in one statement.
+	 *
+	 * @param IQueryBuilder $select A select of the `uuid` column.
+	 *
+	 * @return array<int, string> The uuids of the deleted runs.
+	 */
+	private function deleteSelectedRuns(IQueryBuilder $select): array {
+		$uuids = $this->selectedUuids(select: $select);
 		if (empty($uuids) === true) {
 			return [];
 		}
 
 		$del = $this->db->getQueryBuilder();
 		$del->delete($this->getTableName())
-			->where(
-				$del->expr()->in('uuid', $del->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY))
-			);
+			->where($del->expr()->in('uuid', $del->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY)));
 		$del->executeStatement();
-
 		return $uuids;
-	}//end deleteTerminalOlderThanExcluding()
+	}//end deleteSelectedRuns()
+
+	/**
+	 * Run a select of the `uuid` column and return the uuids as strings.
+	 *
+	 * @param IQueryBuilder $select The select.
+	 *
+	 * @return array<int, string> The uuids.
+	 */
+	private function selectedUuids(IQueryBuilder $select): array {
+		$result = $select->executeQuery();
+		$uuids = [];
+		while (($row = $result->fetch()) !== false) {
+			$uuids[] = (string)$row['uuid'];
+		}
+
+		$result->closeCursor();
+		return $uuids;
+	}//end selectedUuids()
 
 	/**
 	 * The runs that are still going, newest first.

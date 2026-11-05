@@ -132,95 +132,6 @@ class FacetCacheHandlerTest extends TestCase {
 	}
 
 	// -----------------------------------------------------------------------
-	// cacheFacetableFields()
-	// -----------------------------------------------------------------------
-
-	public function testCacheFacetableFieldsStoresInMemoryAndDatabase(): void {
-		$qb = $this->createMockQueryBuilder(false, 0);
-		$this->db->method('getQueryBuilder')->willReturn($qb);
-
-		$fields = [
-			'status' => ['type' => 'terms', 'field' => 'status'],
-			'created' => ['type' => 'date_histogram', 'field' => 'created'],
-		];
-
-		$this->handler->cacheFacetableFields(1, $fields);
-
-		$cache = $this->getFacetConfigCache();
-		$this->assertArrayHasKey('facetable_fields_1', $cache);
-		$this->assertSame($fields, $cache['facetable_fields_1']);
-	}
-
-	public function testCacheFacetableFieldsWithDefaultTtl(): void {
-		$qb = $this->createMockQueryBuilder(false, 0);
-		$this->db->method('getQueryBuilder')->willReturn($qb);
-
-		$this->logger->expects($this->atLeastOnce())
-			->method('debug')
-			->with(
-				$this->stringContains('Cached facetable fields'),
-				$this->callback(function (array $context) {
-					return $context['ttl'] === 7200;
-				})
-			);
-
-		$this->handler->cacheFacetableFields(5, ['field1' => ['type' => 'terms']]);
-	}
-
-	public function testCacheFacetableFieldsWithCustomTtl(): void {
-		$qb = $this->createMockQueryBuilder(false, 0);
-		$this->db->method('getQueryBuilder')->willReturn($qb);
-
-		$this->logger->expects($this->atLeastOnce())
-			->method('debug')
-			->with(
-				$this->stringContains('Cached facetable fields'),
-				$this->callback(function (array $context) {
-					return $context['ttl'] === 3600;
-				})
-			);
-
-		$this->handler->cacheFacetableFields(6, ['f' => []], 3600);
-	}
-
-	public function testCacheFacetableFieldsLogsFieldCount(): void {
-		$qb = $this->createMockQueryBuilder(false, 0);
-		$this->db->method('getQueryBuilder')->willReturn($qb);
-
-		$fields = ['a' => [], 'b' => [], 'c' => []];
-
-		$this->logger->expects($this->atLeastOnce())
-			->method('debug')
-			->with(
-				$this->stringContains('Cached facetable fields'),
-				$this->callback(function (array $context) {
-					return $context['fieldCount'] === 3;
-				})
-			);
-
-		$this->handler->cacheFacetableFields(7, $fields);
-	}
-
-	public function testCacheFacetableFieldsEmptyArray(): void {
-		$qb = $this->createMockQueryBuilder(false, 0);
-		$this->db->method('getQueryBuilder')->willReturn($qb);
-
-		$this->handler->cacheFacetableFields(8, []);
-
-		$cache = $this->getFacetConfigCache();
-		$this->assertSame([], $cache['facetable_fields_8']);
-	}
-
-	public function testCacheFacetableFieldsUpdatesExistingRecord(): void {
-		// executeStatement returns 1 (update succeeded, no insert needed).
-		$qb = $this->createMockQueryBuilder(false, 1);
-		$this->db->method('getQueryBuilder')->willReturn($qb);
-
-		$this->handler->cacheFacetableFields(9, ['x' => ['type' => 'range']]);
-		$this->assertTrue(true);
-	}
-
-	// -----------------------------------------------------------------------
 	// invalidateForSchemaChange()
 	// -----------------------------------------------------------------------
 
@@ -573,28 +484,6 @@ class FacetCacheHandlerTest extends TestCase {
 
 		// Should not throw.
 		$this->handler->clearAllCaches();
-		$this->assertTrue(true);
-	}
-
-	// -----------------------------------------------------------------------
-	// setCachedFacetData() (private, tested via cacheFacetableFields)
-	// -----------------------------------------------------------------------
-
-	public function testSetCachedFacetDataEnforcesMaxTtl(): void {
-		$qb = $this->createMockQueryBuilder(false, 0);
-		$this->db->method('getQueryBuilder')->willReturn($qb);
-
-		// TTL 999999 should be clamped to MAX_CACHE_TTL (28800).
-		$this->handler->cacheFacetableFields(40, ['f' => []], 999999);
-		$this->assertTrue(true);
-	}
-
-	public function testSetCachedFacetDataWithZeroTtl(): void {
-		$qb = $this->createMockQueryBuilder(false, 0);
-		$this->db->method('getQueryBuilder')->willReturn($qb);
-
-		// TTL of 0 means no expiry (expires = null).
-		$this->handler->cacheFacetableFields(41, ['f' => []], 0);
 		$this->assertTrue(true);
 	}
 }

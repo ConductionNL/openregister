@@ -8,7 +8,6 @@ use GraphQL\Error\Error;
 use OCA\OpenRegister\Search\Service\GraphQL\Scalar\DateTimeType;
 use OCA\OpenRegister\Search\Service\GraphQL\Scalar\EmailType;
 use OCA\OpenRegister\Search\Service\GraphQL\Scalar\JsonType;
-use OCA\OpenRegister\Search\Service\GraphQL\Scalar\UploadType;
 use OCA\OpenRegister\Search\Service\GraphQL\Scalar\UriType;
 use OCA\OpenRegister\Search\Service\GraphQL\Scalar\UuidType;
 use PHPUnit\Framework\TestCase;
@@ -138,30 +137,5 @@ class ScalarTypesTest extends TestCase {
 		$scalar = new JsonType();
 		$this->assertSame(['key' => 'value'], $scalar->parseValue(['key' => 'value']));
 		$this->assertSame('string', $scalar->parseValue('string'));
-	}
-
-	// ── Upload ──
-
-	public function testUploadSerializesValue(): void {
-		$scalar = new UploadType();
-		$value = ['filename' => 'test.pdf'];
-		$this->assertSame($value, $scalar->serialize($value));
-	}
-
-	public function testUploadParsesArray(): void {
-		$scalar = new UploadType();
-		$value = ['tmp_name' => '/tmp/upload'];
-		$this->assertSame($value, $scalar->parseValue($value));
-	}
-
-	public function testUploadParsesString(): void {
-		$scalar = new UploadType();
-		$this->assertSame('file-ref-uuid', $scalar->parseValue('file-ref-uuid'));
-	}
-
-	public function testUploadRejectsInteger(): void {
-		$scalar = new UploadType();
-		$this->expectException(Error::class);
-		$scalar->parseValue(12345);
 	}
 }

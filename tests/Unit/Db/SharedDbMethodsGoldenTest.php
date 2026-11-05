@@ -30,7 +30,6 @@ use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemMapper;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ContentReport;
-use OCA\OpenRegister\Db\DestructionListMapper;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
 use OCA\OpenRegister\Db\Organisation;
@@ -50,7 +49,6 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Db\CaseItemMapper
  * @covers \OCA\OpenRegister\Db\Configuration
  * @covers \OCA\OpenRegister\Db\ContentReport
- * @covers \OCA\OpenRegister\Db\DestructionListMapper
  * @covers \OCA\OpenRegister\Db\EndpointLogMapper
  * @covers \OCA\OpenRegister\Db\ObjectReadStateMapper
  * @covers \OCA\OpenRegister\Db\Organisation
@@ -60,9 +58,9 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Notifications\Db\WatcherMapper
  * @covers \OCA\OpenRegister\Db\WebhookLogMapper
  * @covers \OCA\OpenRegister\Search\Db\View
- * @uses   \OCA\OpenRegister\Db\DestructionList
  * @uses   \OCA\OpenRegister\Db\EndpointLog
  * @uses   \OCA\OpenRegister\Db\WebhookLog
+ * @uses   \OCA\OpenRegister\Db\QueryPage
  */
 class SharedDbMethodsGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -80,7 +78,6 @@ class SharedDbMethodsGoldenTest extends TestCase {
 		return [
 			'endpoint log'     => [EndpointLogMapper::class],
 			'webhook log'      => [WebhookLogMapper::class],
-			'destruction list' => [DestructionListMapper::class],
 		];
 	}//end findAllMappers()
 

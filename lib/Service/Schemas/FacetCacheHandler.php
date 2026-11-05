@@ -89,17 +89,6 @@ class FacetCacheHandler {
 	private const DEFAULT_FACET_TTL = 1800;
 
 	/**
-	 * Maximum cache TTL for office environments
-	 *
-	 * Maximum time-to-live for cached facet data (8 hours in seconds).
-	 * This prevents indefinite cache buildup while maintaining performance
-	 * during business hours.
-	 *
-	 * @var int Maximum cache TTL in seconds (28800 = 8 hours)
-	 */
-	private const MAX_CACHE_TTL = 28800;
-
-	/**
 	 * Facet type constant for terms facets
 	 *
 	 * Used for categorical/string field faceting.
@@ -197,45 +186,6 @@ class FacetCacheHandler {
 		$this->cacheFactory = $cacheFactory;
 		$this->logger = $logger;
 	}//end __construct()
-
-	/**
-	 * Cache facetable fields configuration for a schema
-	 *
-	 * @param int $schemaId The schema ID
-	 * @param array $facetableFields The facetable fields configuration
-	 * @param int $ttl Cache TTL in seconds (longer for config)
-	 *
-	 * @return void
-	 *
-	 * @throws \OCP\DB\Exception If a database error occurs
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-12
-	 */
-	public function cacheFacetableFields(int $schemaId, array $facetableFields, int $ttl = 7200): void {
-		$this->setCachedFacetData(
-			schemaId: $schemaId,
-			cacheKey: 'facetable_fields',
-			facetType: 'config',
-			facetConfig: [],
-			data: $facetableFields,
-			ttl: $ttl
-		);
-
-		// Store in memory cache.
-		$cacheKey = "facetable_fields_{$schemaId}";
-		self::$facetConfigCache[$cacheKey] = $facetableFields;
-
-		$this->logger->debug(
-			message: '[FacetCacheHandler] Cached facetable fields configuration',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'schemaId' => $schemaId,
-				'fieldCount' => count($facetableFields),
-				'ttl' => $ttl,
-			]
-		);
-	}//end cacheFacetableFields()
 
 	/**
 	 * Invalidate all cached facets for a schema
@@ -471,72 +421,4 @@ class FacetCacheHandler {
 			]
 		);
 	}//end clearDistributedFacetCaches()
-
-	/**
-	 * Set cached facet data in database
-	 *
-	 * @param int $schemaId Schema ID
-	 * @param string $cacheKey Cache key
-	 * @param string $facetType Facet type
-	 * @param array $facetConfig Facet configuration
-	 * @param mixed $data Data to cache
-	 * @param int $ttl Cache TTL in seconds
-	 *
-	 * @return void
-	 *
-	 * @throws \OCP\DB\Exception If a database error occurs
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Database upsert logic with conditional insert/update
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Multiple cache configuration parameters required
-	 * Insert alternative when update returns zero rows
-	 */
-	private function setCachedFacetData(
-		int $schemaId,
-		string $cacheKey,
-		string $facetType,
-		array $facetConfig,
-		mixed $data,
-		int $ttl,
-	): void {
-		// Enforce maximum cache TTL for office environments.
-		$ttl = min($ttl, self::MAX_CACHE_TTL);
-
-		$now = new DateTime();
-		$expires = null;
-		if ($ttl > 0) {
-			$expires = (clone $now)->add(new DateInterval("PT{$ttl}S"));
-		}
-
-		// Use INSERT ... ON DUPLICATE KEY UPDATE pattern.
-		$qb = $this->db->getQueryBuilder();
-
-		// Try update first.
-		$qb->update(self::FACET_CACHE_TABLE)
-			->set('cache_data', $qb->createNamedParameter(json_encode($data)))
-			->set('updated', $qb->createNamedParameter($now, 'datetime'))
-			->set('expires', $qb->createNamedParameter($expires, 'datetime'))
-			->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId)))
-			->andWhere($qb->expr()->eq('field_name', $qb->createNamedParameter($cacheKey)));
-
-		$updated = $qb->executeStatement();
-
-		// If no rows updated, insert new record.
-		if ($updated === 0) {
-			$qb = $this->db->getQueryBuilder();
-			$qb->insert(self::FACET_CACHE_TABLE)
-				->values(
-					values: [
-						'schema_id' => $qb->createNamedParameter($schemaId),
-						'facet_type' => $qb->createNamedParameter($facetType),
-						'field_name' => $qb->createNamedParameter($cacheKey),
-						'facet_config' => $qb->createNamedParameter(json_encode($facetConfig)),
-						'cache_data' => $qb->createNamedParameter(json_encode($data)),
-						'created' => $qb->createNamedParameter($now, 'datetime'),
-						'updated' => $qb->createNamedParameter($now, 'datetime'),
-						'expires' => $qb->createNamedParameter($expires, 'datetime'),
-					]
-				);
-			$qb->executeStatement();
-		}
-	}//end setCachedFacetData()
 }//end class

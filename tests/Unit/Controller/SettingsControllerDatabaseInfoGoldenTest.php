@@ -131,7 +131,6 @@ class SettingsControllerDatabaseInfoGoldenTest extends TestCase {
 			$config,
 			$this->connection($case),
 			$container,
-			$this->createMock(IAppManager::class),
 			$this->createMock(SettingsService::class),
 			$logger,
 			$l10n

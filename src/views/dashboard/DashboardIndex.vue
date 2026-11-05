@@ -382,6 +382,23 @@ function resolvePresetWindow(presetId) {
 	return { from: iso(from), till: iso(till) }
 }
 
+/**
+ * Register a collection type with the package store for the selected
+ * register and schema.
+ *
+ * @param {string} type The collection type
+ * @return {boolean} Whether a register and schema were selected
+ */
+function registerLiveType(type) {
+	const registerId = registerStore.registerItem?.id
+	const schemaId = schemaStore.schemaItem?.id
+	if (!registerId || !schemaId) {
+		return false
+	}
+	objectStore.registerObjectType(type, schemaId, registerId)
+	return true
+}
+
 export default {
 	name: 'DashboardIndex',
 	components: {
@@ -784,52 +801,85 @@ export default {
 				this.releaseLiveSubscription()
 				return
 			}
-			if (this.liveHandle && this.liveType === type) {
-				return
-			}
-			if (this.livePendingType === type) {
-				// A subscribe for this exact scope is already in flight —
-				// re-subscribing here would leak the first handle.
+			if (this.isLiveFor(type)) {
 				return
 			}
 			this.releaseLiveSubscription()
 			try {
-				// Subscription is independent of the sidebar's object-list
-				// refresh timing: register the type ourselves when it is not
-				// known to the package store yet.
-				if (!objectStore.objectTypes.includes(type)) {
-					const registerId = registerStore.registerItem?.id
-					const schemaId = schemaStore.schemaItem?.id
-					if (!registerId || !schemaId) {
-						return
-					}
-					objectStore.registerObjectType(type, schemaId, registerId)
-				}
-				const epoch = this.liveEpoch
-				this.livePendingType = type
-				this.liveType = type
-				const handle = await objectStore.subscribe(type)
-				if (this.livePendingType === type) {
-					this.livePendingType = ''
-				}
-				if (this.liveEpoch !== epoch) {
-					// released while awaiting (scope change / destroy) — drop
-					// the now-stale subscription instead of leaking it.
-					objectStore.unsubscribe(handle)
-					return
-				}
-				this.liveHandle = handle
+				await this.subscribeLive(type)
 			} catch (e) {
-				if (this.livePendingType === type) {
-					this.livePendingType = ''
-				}
-				this.liveHandle = null
-				this.liveType = ''
-				console.warn(
-					'[DashboardIndex] live subscription failed:',
-					e?.message ?? e,
-				)
+				this.liveFailed(type, e)
 			}
+		},
+
+		/**
+		 * Whether this scope is already followed, or a subscribe for it is in
+		 * flight (re-subscribing would leak the first handle).
+		 *
+		 * @param {string} type The collection type
+		 * @return {boolean} Whether to leave the subscription as it is
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		isLiveFor(type) {
+			return (
+				Boolean(this.liveHandle && this.liveType === type)
+				|| this.livePendingType === type
+			)
+		},
+
+		/**
+		 * Subscribe to the collection. The type is registered here when the
+		 * sidebar has not done so yet; without a selected register and schema
+		 * nothing subscribes. A subscription released while it was awaited is
+		 * dropped.
+		 *
+		 * @param {string} type The collection type
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		async subscribeLive(type) {
+			if (!objectStore.objectTypes.includes(type) && !registerLiveType(type)) {
+				return
+			}
+			const epoch = this.liveEpoch
+			this.livePendingType = type
+			this.liveType = type
+			const handle = await objectStore.subscribe(type)
+			this.clearLivePending(type)
+			if (this.liveEpoch !== epoch) {
+				objectStore.unsubscribe(handle)
+				return
+			}
+			this.liveHandle = handle
+		},
+
+		/**
+		 * Forget the pending subscribe for a type, unless a newer one replaced it.
+		 *
+		 * @param {string} type The collection type
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		clearLivePending(type) {
+			if (this.livePendingType === type) {
+				this.livePendingType = ''
+			}
+		},
+
+		/**
+		 * Reset the live state after a failed subscribe.
+		 *
+		 * @param {string} type The collection type
+		 * @param {*} e The failure
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		liveFailed(type, e) {
+			this.clearLivePending(type)
+			this.liveHandle = null
+			this.liveType = ''
+			console.warn(
+				'[DashboardIndex] live subscription failed:',
+				e?.message ?? e,
+			)
 		},
 
 		/**

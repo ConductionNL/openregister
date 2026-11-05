@@ -44,23 +44,6 @@ class PhotoLinkMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Find photo links by album id.
-	 *
-	 * @param int $albumId The album id.
-	 *
-	 * @return PhotoLink[] Array of photo links.
-	 */
-	public function findByAlbumId(int $albumId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('album_id', $qb->createNamedParameter($albumId, IQueryBuilder::PARAM_INT)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByAlbumId()
-
-	/**
 	 * Find a specific photo link by object UUID and album id.
 	 *
 	 * @param string $objectUuid The object UUID.
