@@ -3442,11 +3442,25 @@ class RenderObject {
 				property: $property,
 				registerDefault: $registerDefault
 			);
-			$languageMeta[$property] = ['served' => $served, 'sourceLanguage' => $sourceLanguage, 'isSource' => ($served === $sourceLanguage), 'status' => 'source'];
+			$languageMeta[$property] = $this->languageEntry(served: $served, sourceLanguage: $sourceLanguage);
 		}
 
 		return $this->withSidecarStatus(languageMeta: $languageMeta, uuid: (string) ($subject->entity->getUuid() ?? ''));
 	}//end languageMetaFor()
+
+	/**
+	 * The language meta of one property before its sidecar status is known.
+	 *
+	 * @param string $served         The served language
+	 * @param string $sourceLanguage The property's source language
+	 *
+	 * @return array{served: string, sourceLanguage: string, isSource: bool, status: string}
+	 *
+	 * @spec openspec/specs/i18n-source-of-truth/spec.md
+	 */
+	private function languageEntry(string $served, string $sourceLanguage): array {
+		return ['served' => $served, 'sourceLanguage' => $sourceLanguage, 'isSource' => ($served === $sourceLanguage), 'status' => 'source'];
+	}//end languageEntry()
 
 	/**
 	 * Set the status of every property served in another language than its

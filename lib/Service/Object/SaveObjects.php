@@ -2034,8 +2034,8 @@ class SaveObjects {
 	private function stampBulkSelfData(array $object, BulkObjectDefaults $defaults): array {
 		$selfData = $object['@self'] ?? [];
 
-		// extractBusinessData() drops an undeclared top-level `slug`. Keep it for
-		// the slug decision, which removes this key again (#4037).
+		// The call to extractBusinessData() drops an undeclared top-level `slug`.
+		// Keep it for the slug decision, which removes this key again (#4037).
 		$selfData[BulkObjectSlugs::CLIENT_SLUG_KEY] = $this->bulkSlugs()->clientSlugToCarry(selfData: $selfData, object: $object);
 
 		$selfData['register'] = $selfData['register'] ?? $defaults->registerId;
