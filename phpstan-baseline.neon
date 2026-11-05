@@ -4704,21 +4704,6 @@ parameters:
 			path: lib/Service/Object/ContentSearchHandler.php
 
 		-
-			message: "#^Offset 'results' on array\\{results\\: array\\{\\}, total\\: 0\\} on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 1
-			path: lib/Service/Object/CrudHandler.php
-
-		-
-			message: "#^Offset 'total' on array\\{results\\: array\\{\\}, total\\: 0\\} on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 1
-			path: lib/Service/Object/CrudHandler.php
-
-		-
-			message: "#^Unreachable statement \\- code above always terminates\\.$#"
-			count: 1
-			path: lib/Service/Object/CrudHandler.php
-
-		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Object\\\\ExportHandler\\:\\:\\$fileService is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/Object/ExportHandler.php

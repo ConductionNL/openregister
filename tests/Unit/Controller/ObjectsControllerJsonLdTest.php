@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -69,7 +70,7 @@ class ObjectsControllerJsonLdTest extends TestCase {
 		$contextService = new JsonLdContextService($urlGenerator);
 		$this->serializer = $withJsonLd ? new JsonLdSerializer($contextService, $urlGenerator) : null;
 
-		return new ObjectsController(
+		return ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),

@@ -1,0 +1,372 @@
+{
+    "register getIdToSlugMap none": {
+        "result": [],
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register getSlugToIdMap none": {
+        "result": [],
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register findIdsBySlugs empty none": {
+        "result": [],
+        "queries": []
+    },
+    "register findIdsBySlugs single none": {
+        "result": {
+            "alpha": []
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = [\"alpha\"], 102",
+            "#1 expr.in(lower(slug), :p1, NULL)",
+            "#1 where(in(lower(slug), :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register findIdsBySlugs mixed case none": {
+        "result": {
+            "alpha": [],
+            "beta": [],
+            "gamma": []
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = [\"alpha\",\"beta\",\"gamma\"], 102",
+            "#1 expr.in(lower(slug), :p1, NULL)",
+            "#1 where(in(lower(slug), :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register getIdToSlugMap one": {
+        "result": {
+            "3": "alpha"
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register getSlugToIdMap one": {
+        "result": {
+            "alpha": 3
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register findIdsBySlugs empty one": {
+        "result": [],
+        "queries": []
+    },
+    "register findIdsBySlugs single one": {
+        "result": {
+            "alpha": [
+                "3"
+            ]
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = [\"alpha\"], 102",
+            "#1 expr.in(lower(slug), :p1, NULL)",
+            "#1 where(in(lower(slug), :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register findIdsBySlugs mixed case one": {
+        "result": {
+            "alpha": [
+                "3"
+            ],
+            "beta": [],
+            "gamma": []
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = [\"alpha\",\"beta\",\"gamma\"], 102",
+            "#1 expr.in(lower(slug), :p1, NULL)",
+            "#1 where(in(lower(slug), :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register getIdToSlugMap repeated": {
+        "result": {
+            "3": "Alpha",
+            "4": "alpha",
+            "5": "beta",
+            "6": null
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register getSlugToIdMap repeated": {
+        "result": {
+            "Alpha": 3,
+            "alpha": "4",
+            "beta": 5,
+            "": 6
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register findIdsBySlugs empty repeated": {
+        "result": [],
+        "queries": []
+    },
+    "register findIdsBySlugs single repeated": {
+        "result": {
+            "alpha": [
+                "3",
+                "4"
+            ],
+            "beta": [
+                "5"
+            ],
+            "": [
+                "6"
+            ]
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = [\"alpha\"], 102",
+            "#1 expr.in(lower(slug), :p1, NULL)",
+            "#1 where(in(lower(slug), :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register findIdsBySlugs mixed case repeated": {
+        "result": {
+            "alpha": [
+                "3",
+                "4"
+            ],
+            "beta": [
+                "5"
+            ],
+            "gamma": [],
+            "": [
+                "6"
+            ]
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = [\"alpha\",\"beta\",\"gamma\"], 102",
+            "#1 expr.in(lower(slug), :p1, NULL)",
+            "#1 where(in(lower(slug), :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema getIdToSlugMap none": {
+        "result": [],
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema getSlugToIdMap none": {
+        "result": [],
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema findIdsBySlugs empty none": {
+        "result": [],
+        "queries": []
+    },
+    "schema findIdsBySlugs single none": {
+        "result": {
+            "alpha": []
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = [\"alpha\"], 102",
+            "#1 expr.in(lower(slug), :p1, NULL)",
+            "#1 where(in(lower(slug), :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema findIdsBySlugs mixed case none": {
+        "result": {
+            "alpha": [],
+            "beta": [],
+            "gamma": []
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = [\"alpha\",\"beta\",\"gamma\"], 102",
+            "#1 expr.in(lower(slug), :p1, NULL)",
+            "#1 where(in(lower(slug), :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema getIdToSlugMap one": {
+        "result": {
+            "3": "alpha"
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema getSlugToIdMap one": {
+        "result": {
+            "alpha": 3
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema findIdsBySlugs empty one": {
+        "result": [],
+        "queries": []
+    },
+    "schema findIdsBySlugs single one": {
+        "result": {
+            "alpha": [
+                "3"
+            ]
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = [\"alpha\"], 102",
+            "#1 expr.in(lower(slug), :p1, NULL)",
+            "#1 where(in(lower(slug), :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema findIdsBySlugs mixed case one": {
+        "result": {
+            "alpha": [
+                "3"
+            ],
+            "beta": [],
+            "gamma": []
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = [\"alpha\",\"beta\",\"gamma\"], 102",
+            "#1 expr.in(lower(slug), :p1, NULL)",
+            "#1 where(in(lower(slug), :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema getIdToSlugMap repeated": {
+        "result": {
+            "3": "Alpha",
+            "4": "alpha",
+            "5": "beta",
+            "6": null
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema getSlugToIdMap repeated": {
+        "result": {
+            "Alpha": 3,
+            "alpha": "4",
+            "beta": 5,
+            "": 6
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema findIdsBySlugs empty repeated": {
+        "result": [],
+        "queries": []
+    },
+    "schema findIdsBySlugs single repeated": {
+        "result": {
+            "alpha": [
+                "3",
+                "4"
+            ],
+            "beta": [
+                "5"
+            ],
+            "": [
+                "6"
+            ]
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = [\"alpha\"], 102",
+            "#1 expr.in(lower(slug), :p1, NULL)",
+            "#1 where(in(lower(slug), :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema findIdsBySlugs mixed case repeated": {
+        "result": {
+            "alpha": [
+                "3",
+                "4"
+            ],
+            "beta": [
+                "5"
+            ],
+            "gamma": [],
+            "": [
+                "6"
+            ]
+        },
+        "queries": [
+            "#1 select(id, slug)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = [\"alpha\",\"beta\",\"gamma\"], 102",
+            "#1 expr.in(lower(slug), :p1, NULL)",
+            "#1 where(in(lower(slug), :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    }
+}

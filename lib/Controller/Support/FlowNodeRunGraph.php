@@ -1,0 +1,53 @@
+<?php
+
+/**
+ * OpenRegister flow node run domain
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller\Support
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Controller\Support;
+
+use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
+use OCA\OpenRegister\Service\Flow\FlowService;
+
+/**
+ * The domain services of the flow node run API.
+ *
+ * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
+ */
+final class FlowNodeRunGraph {
+	/**
+	 * Bundle the services.
+	 *
+	 * @param FlowService        $flows           Org-scoped flow lookup — the same non-oracle
+	 * @param FlowPublishedGraph $publishedGraphs Resolves the flow's PUBLISHED
+	 * @param FlowLocator        $subjects        Resolves the live flow document (for
+	 * @param FlowNodeRegistry   $nodes           Resolves a
+	 *
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
+	 */
+	public function __construct(
+		public readonly FlowService $flows,
+		public readonly FlowPublishedGraph $publishedGraphs,
+		public readonly FlowLocator $subjects,
+		public readonly FlowNodeRegistry $nodes,
+	) {
+	}//end __construct()
+}//end class

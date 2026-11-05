@@ -21,6 +21,8 @@ namespace OCA\OpenRegister\Tests\Service;
 
 use OCA\OpenRegister\Tests\Unit\Controller\Support\LlmSettingsControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ChatControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ConversationControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\GdprEntitiesControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FileExtractionControllerFactory;
@@ -1761,7 +1763,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return ChatController
 	 */
 	private function buildChatController(): ChatController {
-		return new ChatController(
+		return ChatControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(ChatService::class),
@@ -1838,7 +1840,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return OrganisationController
 	 */
 	private function buildOrganisationController(): OrganisationController {
-		return new OrganisationController(
+		return OrganisationControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(OrganisationService::class),

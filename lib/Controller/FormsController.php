@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\FormsControllerServices;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
@@ -69,37 +70,92 @@ class FormsController extends Controller {
 	public const HONEYPOT = '_hp';
 
 	/**
+	 * Resolves a stored form.
+	 *
+	 * @var FormDefinitionResolver
+	 */
+	private readonly FormDefinitionResolver $resolver;
+
+	/**
+	 * Creates the destination.
+	 *
+	 * @var FormSubmitService
+	 */
+	private readonly FormSubmitService $submitter;
+
+	/**
+	 * Judges a mapping.
+	 *
+	 * @var FormDestinationValidator
+	 */
+	private readonly FormDestinationValidator $validator;
+
+	/**
+	 * Holds upload tokens.
+	 *
+	 * @var FormUploadStore
+	 */
+	private readonly FormUploadStore $uploads;
+
+	/**
+	 * Resolves a destination schema.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemas;
+
+	/**
+	 * The signed-in subject, if any.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Counts guesses at form ids.
+	 *
+	 * @var IThrottler
+	 */
+	private readonly IThrottler $throttler;
+
+	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * Logs a throttler failure.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                   $appName     The app id.
 	 * @param IRequest                 $request     The request.
-	 * @param FormDefinitionResolver   $resolver    Resolves a stored form.
-	 * @param FormSubmitService        $submitter   Creates the destination.
-	 * @param FormDestinationValidator $validator   Judges a mapping.
-	 * @param FormUploadStore          $uploads     Holds upload tokens.
-	 * @param SchemaMapperInterface             $schemas     Resolves a destination schema.
-	 * @param IUserSession             $userSession The signed-in subject, if any.
-	 * @param IThrottler               $throttler   Counts guesses at form ids.
-	 * @param IL10N                    $l10n        Translations.
-	 * @param LoggerInterface          $logger      Logs a throttler failure.
+	 * @param FormsControllerServices $services The forms controller services.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Three routes over four services, plus the
 	 * request, session, throttler, translations and logger every public controller here takes.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly FormDefinitionResolver $resolver,
-		private readonly FormSubmitService $submitter,
-		private readonly FormDestinationValidator $validator,
-		private readonly FormUploadStore $uploads,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly IUserSession $userSession,
-		private readonly IThrottler $throttler,
-		private readonly IL10N $l10n,
-		private readonly LoggerInterface $logger,
+		FormsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->resolver = $services->domain->resolver;
+		$this->submitter = $services->domain->submitter;
+		$this->validator = $services->domain->validator;
+		$this->uploads = $services->domain->uploads;
+		$this->schemas = $services->mappers->schemas;
+		$this->userSession = $services->platform->userSession;
+		$this->throttler = $services->platform->throttler;
+		$this->l10n = $services->platform->l10n;
+		$this->logger = $services->platform->logger;
 	}//end __construct()
 
 	/**

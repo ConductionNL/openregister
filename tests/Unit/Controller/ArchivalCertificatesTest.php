@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ArchivalControllerFactory;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\ArchivalController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -123,7 +124,7 @@ class ArchivalCertificatesTest extends TestCase {
 
 		$this->creator = $this->createMock(DestructionListCreator::class);
 
-		$this->controller = new ArchivalController(
+		$this->controller = ArchivalControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(DestructionService::class),

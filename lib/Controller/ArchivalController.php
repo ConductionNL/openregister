@@ -32,6 +32,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\ArchivalControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -128,53 +129,81 @@ class ArchivalController extends Controller {
 	private LoggerInterface $logger;
 
 	/**
+	 * Finds the destruction lists this instance holds.
+	 *
+	 * @var DestructionListRepository
+	 */
+	private readonly DestructionListRepository $lists;
+
+	/**
+	 * Assignment, sign-off and the decision history.
+	 *
+	 * @var DestructionReviewService
+	 */
+	private readonly DestructionReviewService $reviews;
+
+	/**
+	 * Carries an answer out against the record.
+	 *
+	 * @var ReviewOutcomeService
+	 */
+	private readonly ReviewOutcomeService $outcomes;
+
+	/**
+	 * Records who signed off what.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditMapper;
+
+	/**
+	 * Derives and writes an archival nomination.
+	 *
+	 * @var ArchivalNominationService
+	 */
+	private readonly ArchivalNominationService $nominations;
+
+	/**
+	 * Loads the schema a nomination is derived from.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Creates a destruction list for the objects an app names.
+	 *
+	 * @var DestructionListCreator
+	 */
+	private readonly DestructionListCreator $creator;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The request object.
-	 * @param DestructionService $destructionService Destruction service.
-	 * @param LegalHoldService $legalHoldService Legal hold service.
-	 * @param MagicMapperInterface $objectMapper Object mapper.
-	 * @param IUserSession $userSession User session.
-	 * @param IGroupManager $groupManager Group manager.
-	 * @param LoggerInterface $logger Logger.
-	 * @param DestructionListRepository $lists Finds the destruction lists this instance holds.
-	 * @param DestructionReviewService $reviews Assignment, sign-off and the decision history.
-	 * @param ReviewOutcomeService $outcomes Carries an answer out against the record.
-	 * @param AuditTrailMapperInterface $auditMapper Records who signed off what.
-	 * @param ArchivalNominationService $nominations Derives and writes an archival nomination.
-	 * @param SchemaMapperInterface $schemaMapper Loads the schema a nomination is derived from.
-	 * @param DestructionListCreator $creator Creates a destruction list for the objects an app names.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A DI constructor; every parameter is a
-	 *              distinct collaborator, and four of them arrived with the review half of the
-	 *              archiving process rather than by widening what this controller already did.
+	 * @param ArchivalControllerServices $services The archival controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		DestructionService $destructionService,
-		LegalHoldService $legalHoldService,
-		MagicMapperInterface $objectMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
-		LoggerInterface $logger,
-		private readonly DestructionListRepository $lists,
-		private readonly DestructionReviewService $reviews,
-		private readonly ReviewOutcomeService $outcomes,
-		private readonly AuditTrailMapperInterface $auditMapper,
-		private readonly ArchivalNominationService $nominations,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly DestructionListCreator $creator,
+		ArchivalControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->lists = $services->mappers->lists;
+		$this->reviews = $services->decisions->reviews;
+		$this->outcomes = $services->decisions->outcomes;
+		$this->auditMapper = $services->mappers->auditMapper;
+		$this->nominations = $services->nomination->nominations;
+		$this->schemaMapper = $services->mappers->schemaMapper;
+		$this->creator = $services->nomination->creator;
 
-		$this->destructionService = $destructionService;
-		$this->legalHoldService = $legalHoldService;
-		$this->objectMapper = $objectMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
-		$this->logger = $logger;
+		$this->destructionService = $services->decisions->destructionService;
+		$this->legalHoldService = $services->decisions->legalHoldService;
+		$this->objectMapper = $services->mappers->objectMapper;
+		$this->userSession = $services->session->userSession;
+		$this->groupManager = $services->session->groupManager;
+		$this->logger = $services->session->logger;
 	}//end __construct()
 
 	/**

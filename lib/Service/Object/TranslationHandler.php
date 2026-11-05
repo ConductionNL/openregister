@@ -104,91 +104,85 @@ class TranslationHandler {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function resolveTranslationsForRender(
-		array $objectData,
-		Schema $schema,
-		?Register $register = null,
-	): array {
+	public function resolveTranslationsForRender(array $objectData, Schema $schema, ?Register $register = null): array {
 		// If returning all translations, no resolution needed.
 		if ($this->languageService->shouldReturnAllTranslations() === true) {
 			return $objectData;
 		}
 
 		$translatableProps = $this->getTranslatableProperties(schema: $schema);
-
 		if (empty($translatableProps) === true) {
 			return $objectData;
 		}
 
-		// Determine register languages and resolve best language.
-		$registerLanguages = [];
-		$defaultLanguage = 'nl';
-		if ($register !== null) {
-			$registerLanguages = $register->getLanguages() ?? [];
-			$defaultLanguage = $register->getDefaultLanguage();
-		}
-
-		$resolvedLanguage = $this->languageService->resolveLanguageForRegister($registerLanguages);
-
-		// Build the per-property fallback chain (Decision 2 from
-		// register-i18n architecture pass): try the user's resolved
-		// language first, then walk the register's languages list in
-		// declared order, then any remaining variant. Each property
-		// resolves independently — a missing NL value for `body`
-		// doesn't force `title` (which has NL) to fall back too.
-		$chain = [$resolvedLanguage];
-		foreach ($registerLanguages as $long) {
-			if (in_array($long, $chain, true) === false) {
-				$chain[] = $long;
-			}
-		}
-
-		if (in_array($defaultLanguage, $chain, true) === false) {
-			$chain[] = $defaultLanguage;
-		}
-
+		$chain = $this->languageChain(register: $register);
 		foreach ($translatableProps as $propName) {
-			if (isset($objectData[$propName]) === false) {
-				continue;
+			$value = ($objectData[$propName] ?? null);
+			if (is_array($value) === true && $this->isLanguageKeyedObject(value: $value) === true) {
+				$objectData[$propName] = $this->translatedValue(value: $value, chain: $chain);
 			}
-
-			$value = $objectData[$propName];
-
-			// Only resolve if the value is a language-keyed object (associative array).
-			if (is_array($value) === false || $this->isLanguageKeyedObject(value: $value) === false) {
-				continue;
-			}
-
-			// Walk the configured chain. If the picked language isn't
-			// the user's resolved one, mark fallback-used so the
-			// Content-Language response header can advertise it.
-			$picked = null;
-			foreach ($chain as $candidate) {
-				if (isset($value[$candidate]) === true) {
-					$picked = $candidate;
-					$objectData[$propName] = $value[$candidate];
-					if ($candidate !== $resolvedLanguage) {
-						$this->languageService->setFallbackUsed(true);
-					}
-
-					break;
-				}
-			}
-
-			// Final fallback: any available variant (useful when an
-			// object carries a translation in a language not in the
-			// register's configured chain — e.g. legacy data).
-			if ($picked === null) {
-				$firstValue = reset($value);
-				if ($firstValue !== false) {
-					$objectData[$propName] = $firstValue;
-					$this->languageService->setFallbackUsed(true);
-				}
-			}
-		}//end foreach
+		}
 
 		return $objectData;
 	}//end resolveTranslationsForRender()
+
+	/**
+	 * The languages a property is looked up in, in order: the user's resolved
+	 * language, then the register's languages as declared, then the register's
+	 * default ('nl' without a register). Each property resolves independently.
+	 *
+	 * @param Register|null $register The register for language configuration
+	 *
+	 * @return list<string> The language chain, resolved language first
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function languageChain(?Register $register): array {
+		$registerLanguages = ($register?->getLanguages() ?? []);
+		$defaultLanguage = ($register?->getDefaultLanguage() ?? 'nl');
+
+		$chain = [$this->languageService->resolveLanguageForRegister($registerLanguages)];
+		foreach ([...$registerLanguages, $defaultLanguage] as $language) {
+			if (in_array($language, $chain, true) === false) {
+				$chain[] = $language;
+			}
+		}
+
+		return $chain;
+	}//end languageChain()
+
+	/**
+	 * The value of a language-keyed property in the first chain language it
+	 * has, else its first variant (legacy data in a language outside the
+	 * chain). Any pick other than the resolved language marks the fallback as
+	 * used, for the Content-Language header.
+	 *
+	 * @param array        $value The language-keyed value
+	 * @param list<string> $chain The language chain, resolved language first
+	 *
+	 * @return mixed The picked value, or the language-keyed value when it has no usable variant
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function translatedValue(array $value, array $chain): mixed {
+		foreach ($chain as $candidate) {
+			if (isset($value[$candidate]) === true) {
+				if ($candidate !== $chain[0]) {
+					$this->languageService->setFallbackUsed(true);
+				}
+
+				return $value[$candidate];
+			}
+		}
+
+		$firstValue = reset($value);
+		if ($firstValue === false) {
+			return $value;
+		}
+
+		$this->languageService->setFallbackUsed(true);
+		return $firstValue;
+	}//end translatedValue()
 
 	/**
 	 * Normalize translatable properties in object data for saving.

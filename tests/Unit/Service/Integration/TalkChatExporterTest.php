@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Controller\FilesController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\FileService;
@@ -108,7 +109,7 @@ class TalkChatExporterTest extends TestCase {
 			->willReturn($this->createMock(File::class));
 		$fileService->method('formatFile')->willReturn(['title' => 'Overleg.txt']);
 
-		$controller = new FilesController(
+		$controller = FilesControllerFactory::create(
 			'openregister',
 			$request,
 			$fileService,
