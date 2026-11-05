@@ -22,11 +22,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Middleware;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FederationControllerFactory;
 use DateTime;
 use GraphQL\GraphQL;
 use OCA\OpenRegister\Controller\FederationController;
 use OCA\OpenRegister\Controller\McpController;
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapper;
@@ -74,7 +76,16 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator
  * @uses   \OCA\OpenRegister\Service\Rbac\AnonymousEnvelope
  * @uses   \OCA\OpenRegister\Controller\FederationController
+ * @uses \OCA\OpenRegister\Controller\Support\FederationControllerServices
  * @uses   \OCA\OpenRegister\Controller\ObjectsController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectsControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectStore
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectTransfer
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectGovernanceServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectsExtensions
+ * @uses \OCA\OpenRegister\Controller\Support\GeoServices
+ * @uses \OCA\OpenRegister\Controller\Support\LinkedDataServices
  * @uses   \OCA\OpenRegister\Db\FederatedShare
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
@@ -182,7 +193,7 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 		$request->method('getParams')->willReturn([]);
 		$request->method('getRequestUri')->willReturn('/api/objects/1/2');
 
-		$controller = new ObjectsController(
+		$controller = ObjectsControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(IAppConfig::class),
@@ -225,7 +236,7 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('find')->willReturn($this->record());
 
-		return new FederationController(
+		return FederationControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$shareMapper,

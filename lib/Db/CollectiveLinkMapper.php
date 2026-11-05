@@ -32,6 +32,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<CollectiveLink>
  */
 class CollectiveLinkMapper extends QBMapper {
+	use FindLinksByObjectUuidTrait;
+	use DeleteLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -40,23 +42,6 @@ class CollectiveLinkMapper extends QBMapper {
 	public function __construct(IDBConnection $db) {
 		parent::__construct(db: $db, tableName: 'openregister_collective_links', entityClass: CollectiveLink::class);
 	}//end __construct()
-
-	/**
-	 * Find collective links by object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return CollectiveLink[] Array of collective links.
-	 */
-	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
 
 	/**
 	 * Find collective links by page id.
@@ -96,21 +81,6 @@ class CollectiveLinkMapper extends QBMapper {
 			return null;
 		}
 	}//end findByObjectAndPage()
-
-	/**
-	 * Delete all collective links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 
 	/**
 	 * Delete a collective link by object UUID + page id (Tier-2 unlink path).

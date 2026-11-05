@@ -20,6 +20,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ViewPatch;
 use OCA\OpenRegister\Search\Db\View;
 use InvalidArgumentException;
 use OCA\OpenRegister\Search\Service\ViewPresentationService;
@@ -703,101 +704,89 @@ class ViewsController extends Controller {
 	 */
 	public function patch(string $id): JSONResponse {
 		try {
-			$userId = $this->viewers->currentUid();
-
-			if (empty($userId) === true) {
-				return new JSONResponse(
-					data: [
-						'error' => 'User not authenticated',
-					],
-					statusCode: 401
-				);
-			}
-
-			$view = $this->requireReachableView(id: $id, userId: $userId);
-
-			$data = $this->request->getParams();
-
-			// The same guard as `update()`. Leaving it off here would have
-			// left the hole open behind a different verb, and this method
-			// additionally carries `@NoCSRFRequired`.
-			$refusal = $this->refuseForbiddenViewFields(view: $view, userId: $userId, data: $data);
-			if ($refusal !== null) {
-				return $refusal;
-			}
-
-			// Use existing values for fields not provided.
-			$name = $data['name'] ?? $view->getName() ?? '';
-			$description = $data['description'] ?? $view->getDescription() ?? '';
-			$isPublic = $view->getIsPublic();
-			if (($data['isPublic'] ?? null) !== null) {
-				$isPublic = $data['isPublic'];
-			}
-
-			$isDefault = $view->getIsDefault();
-			if (($data['isDefault'] ?? null) !== null) {
-				$isDefault = $data['isDefault'];
-			}
-
-			$favoredBy = $data['favoredBy'] ?? $view->getFavoredBy();
-
-			// Handle query parameter.
-			$query = $this->viewQueryFrom(data: $data) ?? ($view->getQuery() ?? []);
-			$presentation = $this->presentationFrom(data: $data) ?? $view->getPresentation();
-
-			$shareRefusal = $this->refuseInvalidShares(data: $data);
-			if ($shareRefusal !== null) {
-				return $shareRefusal;
-			}
-
-			// Update view.
-			$updatedView = $this->viewService->update(
-				id: $id,
-				name: $name,
-				description: $description,
-				owner: $view->getOwner(),
-				isPublic: $isPublic,
-				isDefault: $isDefault,
-				query: $query,
-				favoredBy: $favoredBy,
-				presentation: $presentation,
-				sharedWith: $this->sharesFrom(data: $data),
-				alert: ViewAlert::declaredIn(body: $data)
-			);
-
-			return new JSONResponse(
-				data: [
-					'view' => $updatedView->jsonSerialize(),
-				]
-			);
+			return $this->patchView(id: $id);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'View not found',
-				],
-				statusCode: 404
-			);
+			return new JSONResponse(data: ['error' => 'View not found'], statusCode: 404);
 		} catch (InvalidArgumentException $e) {
 			return $this->refusalFor(e: $e);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ViewsController] Error patching view',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'id' => $id,
-					'exception' => $e->getMessage(),
-				]
-			);
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to patch view',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->patchFailed(id: $id, e: $e);
 		}//end try
 	}//end patch()
+
+	/**
+	 * Patch a view the caller reaches, after the field guard.
+	 *
+	 * @param string $id View ID.
+	 *
+	 * @return JSONResponse The patched view, or the refusal.
+	 */
+	private function patchView(string $id): JSONResponse {
+		$userId = $this->viewers->currentUid();
+		if (empty($userId) === true) {
+			return new JSONResponse(data: ['error' => 'User not authenticated'], statusCode: 401);
+		}
+
+		$patch       = new ViewPatch();
+		$patch->id   = $id;
+		$patch->view = $this->requireReachableView(id: $id, userId: $userId);
+		$patch->data = $this->request->getParams();
+
+		// The same guard as `update()`. Leaving it off here would have
+		// left the hole open behind a different verb, and this method
+		// additionally carries `@NoCSRFRequired`.
+		$refusal = $this->refuseForbiddenViewFields(view: $patch->view, userId: $userId, data: $patch->data);
+		return $refusal ?? $this->savePatch(patch: $patch);
+	}//end patchView()
+
+	/**
+	 * Save the patch, keeping the stored value of every field the request leaves out.
+	 *
+	 * @param ViewPatch $patch The route id, stored view and request body.
+	 *
+	 * @return JSONResponse The patched view, or the share refusal.
+	 */
+	private function savePatch(ViewPatch $patch): JSONResponse {
+		$view         = $patch->view;
+		$data         = $patch->data;
+		$query        = $this->viewQueryFrom(data: $data) ?? ($view->getQuery() ?? []);
+		$presentation = $this->presentationFrom(data: $data) ?? $view->getPresentation();
+		$shareRefusal = $this->refuseInvalidShares(data: $data);
+		if ($shareRefusal !== null) {
+			return $shareRefusal;
+		}
+
+		$updatedView = $this->viewService->update(
+			id: $patch->id,
+			name: $data['name'] ?? $view->getName() ?? '',
+			description: $data['description'] ?? $view->getDescription() ?? '',
+			owner: $view->getOwner(),
+			isPublic: $data['isPublic'] ?? $view->getIsPublic(),
+			isDefault: $data['isDefault'] ?? $view->getIsDefault(),
+			query: $query,
+			favoredBy: $data['favoredBy'] ?? $view->getFavoredBy(),
+			presentation: $presentation,
+			sharedWith: $this->sharesFrom(data: $data),
+			alert: ViewAlert::declaredIn(body: $data)
+		);
+		return new JSONResponse(data: ['view' => $updatedView->jsonSerialize()]);
+	}//end savePatch()
+
+	/**
+	 * Log a failed patch and answer 500.
+	 *
+	 * @param string     $id View ID.
+	 * @param \Exception $e  The failure.
+	 *
+	 * @return JSONResponse The 500 response.
+	 */
+	private function patchFailed(string $id, \Exception $e): JSONResponse {
+		$this->logger->error(
+			message: '[ViewsController] Error patching view',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id, 'exception' => $e->getMessage()]
+		);
+		return new JSONResponse(data: ['error' => 'Failed to patch view', 'message' => $e->getMessage()], statusCode: 500);
+	}//end patchFailed()
 
 	/**
 	 * Delete a view

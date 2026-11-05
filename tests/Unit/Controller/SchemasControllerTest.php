@@ -9,6 +9,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\SchemasController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -146,7 +147,7 @@ class SchemasControllerTest extends TestCase {
 			}
 		);
 
-		$this->controller = new SchemasController(
+		$this->controller = SchemasControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,
@@ -1801,7 +1802,7 @@ class SchemasControllerTest extends TestCase {
 			null
 		);
 
-		return new SchemasController(
+		return SchemasControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,

@@ -1874,63 +1874,80 @@ class OasService {
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function validateOasIntegrity(): void {
-		// Pass 1: $ref / allOf integrity inside component schemas.
-		if (isset($this->oas['components']['schemas']) === true) {
-			$schemaNames = array_keys($this->oas['components']['schemas']);
-			foreach ($schemaNames as $schemaName) {
-				if (is_array($this->oas['components']['schemas'][$schemaName]) === true) {
-					$this->validateSchemaReferences(
-						schema: $this->oas['components']['schemas'][$schemaName],
-						context: 'components.schemas.' . $schemaName
-					);
-				}
-			}
-		}
-
-		// Pass 2: $ref integrity inside path response schemas.
-		if (isset($this->oas['paths']) === true) {
-			$pathNames = array_keys($this->oas['paths']);
-			foreach ($pathNames as $pathName) {
-				$methods = array_keys($this->oas['paths'][$pathName]);
-				foreach ($methods as $method) {
-					$operation = &$this->oas['paths'][$pathName][$method];
-					if (is_array($operation) === true && isset($operation['responses']) === true) {
-						$statusCodes = array_keys($operation['responses']);
-						foreach ($statusCodes as $statusCode) {
-							$respContent = ($operation['responses'][$statusCode]['content'] ?? []);
-							$respSchema = ($respContent['application/json']['schema'] ?? null);
-							if ($respSchema !== null) {
-								$this->validateSchemaReferences(
-									schema: $respSchema,
-									context: 'paths.' . $pathName . '.' . $method . '.responses.' . $statusCode
-								);
-							}
-						}
-					}
-
-					unset($operation);
-				}
-			}//end foreach
-		}//end if
-
-		// Pass 3: server URL must be absolute.
+		$this->validateComponentReferences();
+		$this->validateResponseReferences();
 		$this->validateServerUrls();
-
-		// Pass 4: operationId uniqueness with auto-suffix de-duplication.
 		$this->validateOperationIdUniqueness();
-
-		// Pass 5: tag consistency — referenced tags must be defined; defined tags must be used.
 		$this->validateTagConsistency();
-
-		// Pass 6: NLGov rules — /core/http-methods and /core/http-response-code whitelists.
 		$this->validateNlGovRules();
 
-		// Pass 7: Strict-mode meta-schema validation against the
-		// vendored OpenAPI 3.1 meta-schema. Best-effort: missing
-		// validator (DI not wired in older fixtures) or missing meta
-		// file (vendoring not run) silently skips this pass.
+		// Best-effort: skipped when no validator is wired or the meta file is not vendored.
 		$this->validateAgainstMetaSchema();
 	}//end validateOasIntegrity()
+
+	/**
+	 * Repair the $ref and allOf use inside every component schema.
+	 *
+	 * @return void
+	 */
+	private function validateComponentReferences(): void {
+		if (isset($this->oas['components']['schemas']) === false) {
+			return;
+		}
+
+		foreach (array_keys($this->oas['components']['schemas']) as $schemaName) {
+			if (is_array($this->oas['components']['schemas'][$schemaName]) === true) {
+				$this->validateSchemaReferences(
+					schema: $this->oas['components']['schemas'][$schemaName],
+					context: 'components.schemas.' . $schemaName
+				);
+			}
+		}
+	}//end validateComponentReferences()
+
+	/**
+	 * Report broken references in the JSON response schemas of every operation.
+	 *
+	 * The response schemas are checked on a copy: the document keeps them as they are.
+	 *
+	 * @return void
+	 */
+	private function validateResponseReferences(): void {
+		if (isset($this->oas['paths']) === false) {
+			return;
+		}
+
+		foreach (array_keys($this->oas['paths']) as $pathName) {
+			foreach (array_keys($this->oas['paths'][$pathName]) as $method) {
+				$this->validateOperationResponses(pathName: $pathName, method: $method);
+			}
+		}
+	}//end validateResponseReferences()
+
+	/**
+	 * Report broken references in the JSON response schemas of one operation.
+	 *
+	 * @param int|string $pathName The path.
+	 * @param int|string $method   The method key under the path.
+	 *
+	 * @return void
+	 */
+	private function validateOperationResponses(int|string $pathName, int|string $method): void {
+		$operation = $this->oas['paths'][$pathName][$method];
+		if (is_array($operation) === false || isset($operation['responses']) === false) {
+			return;
+		}
+
+		foreach (array_keys($operation['responses']) as $statusCode) {
+			$respSchema = ($operation['responses'][$statusCode]['content']['application/json']['schema'] ?? null);
+			if ($respSchema !== null) {
+				$this->validateSchemaReferences(
+					schema: $respSchema,
+					context: 'paths.' . $pathName . '.' . $method . '.responses.' . $statusCode
+				);
+			}
+		}
+	}//end validateOperationResponses()
 
 	/**
 	 * Validate the generated OAS document against the vendored OpenAPI 3.1
@@ -1943,37 +1960,57 @@ class OasService {
 			return;
 		}
 
-		$metaPath = __DIR__ . '/Resources/meta/openapi-3.1.0.json';
-		if (file_exists($metaPath) === false) {
-			return;
-		}
-
-		$metaJson = (string)file_get_contents($metaPath);
-		$meta = json_decode($metaJson, true);
-		if (is_array($meta) === false) {
+		$meta = $this->openApiMetaSchema();
+		if ($meta === null) {
 			return;
 		}
 
 		try {
-			$errors = $this->metaValidator->validate(body: $this->oas, schema: $meta);
-			foreach ($errors as $err) {
-				$this->report->addError(
-					path: $err['path'],
-					message: 'OpenAPI 3.1 meta-schema violation: ' . $err['message'],
-					code: 'meta-schema-violation'
-				);
-			}
+			$this->reportMetaSchemaErrors(errors: $this->metaValidator->validate(body: $this->oas, schema: $meta));
 		} catch (\Throwable $e) {
 			// Validator errors MUST NOT block OAS generation — log and move on.
-			if ($this->logger !== null) {
-				$this->logger->warning(
-					'[OasService] meta-schema validation pass errored: ' . $e->getMessage(),
-					['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
+			$this->logger?->warning(
+				'[OasService] meta-schema validation pass errored: ' . $e->getMessage(),
+				['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+	}//end validateAgainstMetaSchema()
+
+	/**
+	 * The vendored OpenAPI 3.1 meta-schema; null when it is missing or unreadable.
+	 *
+	 * @return array<string,mixed>|null The meta-schema.
+	 */
+	private function openApiMetaSchema(): ?array {
+		$metaPath = __DIR__ . '/Resources/meta/openapi-3.1.0.json';
+		if (file_exists($metaPath) === false) {
+			return null;
 		}
 
-	}//end validateAgainstMetaSchema()
+		$meta = json_decode((string)file_get_contents($metaPath), true);
+		if (is_array($meta) === false) {
+			return null;
+		}
+
+		return $meta;
+	}//end openApiMetaSchema()
+
+	/**
+	 * Add each meta-schema violation to the report as an error.
+	 *
+	 * @param array<int,array{path:string,message:string}> $errors The violations.
+	 *
+	 * @return void
+	 */
+	private function reportMetaSchemaErrors(array $errors): void {
+		foreach ($errors as $err) {
+			$this->report->addError(
+				path: $err['path'],
+				message: 'OpenAPI 3.1 meta-schema violation: ' . $err['message'],
+				code: 'meta-schema-violation'
+			);
+		}
+	}//end reportMetaSchemaErrors()
 
 	/**
 	 * Verify every entry in `servers` uses an absolute URL.
@@ -2014,49 +2051,81 @@ class OasService {
 		}
 
 		$seen = [];
-		foreach ($this->oas['paths'] as $pathName => &$pathItem) {
-			if (is_array($pathItem) === false) {
+		foreach (array_keys($this->oas['paths']) as $pathName) {
+			if (is_array($this->oas['paths'][$pathName]) === true) {
+				$this->dedupeOperationIds(pathName: $pathName, seen: $seen);
+			}
+		}
+	}//end validateOperationIdUniqueness()
+
+	/**
+	 * Rename the operationIds under one path that an earlier operation already took.
+	 *
+	 * @param int|string        $pathName The path.
+	 * @param array<string,int> $seen     Use count per operationId taken so far.
+	 *
+	 * @return void
+	 */
+	private function dedupeOperationIds(int|string $pathName, array &$seen): void {
+		foreach ($this->oas['paths'][$pathName] as $method => &$operation) {
+			$original = $this->operationIdOf(operation: $operation);
+			if ($original === '') {
 				continue;
 			}
 
-			foreach ($pathItem as $method => &$operation) {
-				if (is_array($operation) === false || isset($operation['operationId']) === false) {
-					continue;
-				}
+			$candidate = $this->claimOperationId(seen: $seen, operationId: $original);
+			if ($candidate === $original) {
+				continue;
+			}
 
-				$original = (string)$operation['operationId'];
-				if ($original === '') {
-					continue;
-				}
+			$operation['operationId'] = $candidate;
+			$this->report->addAutoCorrection(
+				path: 'paths.' . $pathName . '.' . $method . '.operationId',
+				message: 'Duplicate operationId "' . $original . '" auto-renamed to "' . $candidate . '".',
+				code: OasValidationReport::CODE_DUPLICATE_OPERATION_ID,
+			);
+		}
 
-				if (isset($seen[$original]) === false) {
-					$seen[$original] = 1;
-					continue;
-				}
+		unset($operation);
+	}//end dedupeOperationIds()
 
-				// Collision — auto-suffix until unique.
-				$seen[$original]++;
-				$candidate = $original . '_' . $seen[$original];
-				while (isset($seen[$candidate]) === true) {
-					$seen[$original]++;
-					$candidate = $original . '_' . $seen[$original];
-				}
+	/**
+	 * Take an operationId: the id itself when free, otherwise the first free `_2`, `_3`, ... form.
+	 *
+	 * @param array<string,int> $seen        Use count per operationId taken so far.
+	 * @param string            $operationId The wanted operationId.
+	 *
+	 * @return string The operationId taken.
+	 */
+	private function claimOperationId(array &$seen, string $operationId): string {
+		if (isset($seen[$operationId]) === false) {
+			$seen[$operationId] = 1;
+			return $operationId;
+		}
 
-				$seen[$candidate] = 1;
+		do {
+			$seen[$operationId]++;
+			$candidate = $operationId . '_' . $seen[$operationId];
+		} while (isset($seen[$candidate]) === true);
 
-				$operation['operationId'] = $candidate;
-				$this->report->addAutoCorrection(
-					path: 'paths.' . $pathName . '.' . $method . '.operationId',
-					message: 'Duplicate operationId "' . $original . '" auto-renamed to "' . $candidate . '".',
-					code: OasValidationReport::CODE_DUPLICATE_OPERATION_ID,
-				);
-			}//end foreach
+		$seen[$candidate] = 1;
+		return $candidate;
+	}//end claimOperationId()
 
-			unset($operation);
-		}//end foreach
+	/**
+	 * The operationId of an operation; '' when it is not an operation or has none.
+	 *
+	 * @param mixed $operation A path item entry.
+	 *
+	 * @return string The operationId.
+	 */
+	private function operationIdOf($operation): string {
+		if (is_array($operation) === false || isset($operation['operationId']) === false) {
+			return '';
+		}
 
-		unset($pathItem);
-	}//end validateOperationIdUniqueness()
+		return (string)$operation['operationId'];
+	}//end operationIdOf()
 
 	/**
 	 * Cross-check declared `tags` against tag references in path operations.
@@ -2073,6 +2142,18 @@ class OasService {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateTagConsistency(): void {
+		$declaredTags = $this->declaredTags();
+		$usedTags = $this->usedTags();
+		$this->addOrphanTags(declaredTags: $declaredTags, usedTags: $usedTags);
+		$this->reportUnusedTags(declaredTags: $declaredTags, usedTags: $usedTags);
+	}//end validateTagConsistency()
+
+	/**
+	 * The top-level tag names, each with its index in the tags array.
+	 *
+	 * @return array<string,int|string> Index by tag name.
+	 */
+	private function declaredTags(): array {
 		$declaredTags = [];
 		foreach (($this->oas['tags'] ?? []) as $idx => $tagDef) {
 			if (is_array($tagDef) === true && isset($tagDef['name']) === true) {
@@ -2080,6 +2161,15 @@ class OasService {
 			}
 		}
 
+		return $declaredTags;
+	}//end declaredTags()
+
+	/**
+	 * The tag names operations use, each with the paths of the operations using it.
+	 *
+	 * @return array<string,array<int,string>> Operation paths by tag name.
+	 */
+	private function usedTags(): array {
 		$usedTags = [];
 		foreach (($this->oas['paths'] ?? []) as $pathName => $pathItem) {
 			if (is_array($pathItem) === false) {
@@ -2087,50 +2177,70 @@ class OasService {
 			}
 
 			foreach ($pathItem as $method => $operation) {
-				if (is_array($operation) === false) {
-					continue;
-				}
-
-				foreach (($operation['tags'] ?? []) as $tagName) {
-					if (is_string($tagName) === false || $tagName === '') {
-						continue;
-					}
-
+				foreach ($this->operationTags(operation: $operation) as $tagName) {
 					$usedTags[$tagName][] = 'paths.' . $pathName . '.' . $method;
 				}
 			}
 		}
 
-		// Orphan tags — used in operations but not declared.
+		return $usedTags;
+	}//end usedTags()
+
+	/**
+	 * The non-empty string tags of an operation.
+	 *
+	 * @param mixed $operation A path item entry.
+	 *
+	 * @return array<int,string> The tag names.
+	 */
+	private function operationTags($operation): array {
+		if (is_array($operation) === false || is_array($operation['tags'] ?? []) === false) {
+			return [];
+		}
+
+		return array_filter(($operation['tags'] ?? []), fn ($tagName): bool => is_string($tagName) === true && $tagName !== '');
+	}//end operationTags()
+
+	/**
+	 * Declare, with a generated description, every used tag that is not declared.
+	 *
+	 * @param array<string,int|string>         $declaredTags Index by declared tag name.
+	 * @param array<string,array<int,string>> $usedTags     Operation paths by used tag name.
+	 *
+	 * @return void
+	 */
+	private function addOrphanTags(array $declaredTags, array $usedTags): void {
 		foreach ($usedTags as $tagName => $usages) {
 			if (isset($declaredTags[$tagName]) === true) {
 				continue;
 			}
 
-			$this->oas['tags'][] = [
-				'name' => $tagName,
-				'description' => 'Operations for ' . $tagName,
-			];
+			$this->oas['tags'][] = ['name' => $tagName, 'description' => 'Operations for ' . $tagName];
 			$this->report->addAutoCorrection(
 				path: $usages[0],
 				message: 'Tag "' . $tagName . '" used by operations but not declared in top-level tags; auto-added.',
 				code: OasValidationReport::CODE_ORPHAN_TAG,
 			);
 		}
+	}//end addOrphanTags()
 
-		// Unused tags — declared but never referenced.
-		foreach (array_keys($declaredTags) as $tagName) {
-			if (isset($usedTags[$tagName]) === true) {
-				continue;
-			}
-
+	/**
+	 * Warn about every declared tag no operation uses.
+	 *
+	 * @param array<string,int|string>         $declaredTags Index by declared tag name.
+	 * @param array<string,array<int,string>> $usedTags     Operation paths by used tag name.
+	 *
+	 * @return void
+	 */
+	private function reportUnusedTags(array $declaredTags, array $usedTags): void {
+		foreach (array_diff_key($declaredTags, $usedTags) as $tagName => $idx) {
 			$this->report->addWarning(
-				path: 'tags[' . $declaredTags[$tagName] . '].name',
+				path: 'tags[' . $idx . '].name',
 				message: 'Top-level tag "' . $tagName . '" is declared but not referenced by any operation.',
 				code: OasValidationReport::CODE_UNUSED_TAG,
 			);
 		}
-	}//end validateTagConsistency()
+	}//end reportUnusedTags()
 
 	/**
 	 * NLGov API Design Rules — narrow checks that are verifiable from the
@@ -2148,49 +2258,66 @@ class OasService {
 			return;
 		}
 
-		$allowedMethods = array_flip(self::ALLOWED_HTTP_METHODS);
-		$pathItemFields = array_flip(self::PATH_ITEM_FIELDS);
-		$allowedCodes = array_flip(self::ALLOWED_STATUS_CODES);
-
 		foreach ($this->oas['paths'] as $pathName => $pathItem) {
 			if (is_array($pathItem) === false) {
 				continue;
 			}
 
-			foreach ($pathItem as $method => $operation) {
-				$methodKey = strtolower((string)$method);
-				if (isset($pathItemFields[$methodKey]) === true) {
-					continue;
-				}
-
-				if (isset($allowedMethods[$methodKey]) === false) {
-					$reason = 'violates NLGov /core/http-methods (only GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS allowed).';
-					$message = sprintf('Non-standard HTTP method "%s" %s', (string)$method, $reason);
-					$this->report->addError(
-						path: 'paths.' . $pathName . '.' . $method,
-						message: $message,
-						code: OasValidationReport::CODE_INVALID_HTTP_METHOD,
-					);
-					continue;
-				}
-
-				if (is_array($operation) === false) {
-					continue;
-				}
-
-				foreach (array_keys(($operation['responses'] ?? [])) as $statusCode) {
-					$statusKey = (string)$statusCode;
-					if (isset($allowedCodes[$statusKey]) === false) {
-						$this->report->addWarning(
-							path: 'paths.' . $pathName . '.' . $method . '.responses.' . $statusCode,
-							message: 'Non-standard HTTP status code "' . $statusCode . '" violates NLGov /core/http-response-code conventions.',
-							code: OasValidationReport::CODE_INVALID_STATUS_CODE,
-						);
-					}
-				}
-			}//end foreach
-		}//end foreach
+			foreach (array_keys($pathItem) as $method) {
+				$this->checkNlGovOperation(pathName: $pathName, method: $method);
+			}
+		}
 	}//end validateNlGovRules()
+
+	/**
+	 * Check one path item entry against the NLGov method and status code rules.
+	 *
+	 * @param int|string $pathName The path.
+	 * @param int|string $method   The key under the path.
+	 *
+	 * @return void
+	 */
+	private function checkNlGovOperation(int|string $pathName, int|string $method): void {
+		$methodKey = strtolower((string)$method);
+		if (isset(array_flip(self::PATH_ITEM_FIELDS)[$methodKey]) === true) {
+			return;
+		}
+
+		$path = 'paths.' . $pathName . '.' . $method;
+		if (isset(array_flip(self::ALLOWED_HTTP_METHODS)[$methodKey]) === false) {
+			$reason = 'violates NLGov /core/http-methods (only GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS allowed).';
+			$message = sprintf('Non-standard HTTP method "%s" %s', (string)$method, $reason);
+			$this->report->addError(path: $path, message: $message, code: OasValidationReport::CODE_INVALID_HTTP_METHOD);
+			return;
+		}
+
+		$this->checkNlGovStatusCodes(path: $path, operation: $this->oas['paths'][$pathName][$method]);
+	}//end checkNlGovOperation()
+
+	/**
+	 * Warn about every non-standard response status code of an operation.
+	 *
+	 * @param string $path      The operation's path in the document.
+	 * @param mixed  $operation The operation.
+	 *
+	 * @return void
+	 */
+	private function checkNlGovStatusCodes(string $path, $operation): void {
+		if (is_array($operation) === false) {
+			return;
+		}
+
+		$allowedCodes = array_flip(self::ALLOWED_STATUS_CODES);
+		foreach (array_keys(($operation['responses'] ?? [])) as $statusCode) {
+			if (isset($allowedCodes[(string)$statusCode]) === false) {
+				$this->report->addWarning(
+					path: $path . '.responses.' . $statusCode,
+					message: 'Non-standard HTTP status code "' . $statusCode . '" violates NLGov /core/http-response-code conventions.',
+					code: OasValidationReport::CODE_INVALID_STATUS_CODE,
+				);
+			}
+		}
+	}//end checkNlGovStatusCodes()
 
 	/**
 	 * Validate schema references recursively
@@ -2299,6 +2426,19 @@ class OasService {
 			return;
 		}
 
+		$this->replaceDanglingRef(schema: $schema, context: $context);
+	}//end validateRef()
+
+	/**
+	 * Replace a $ref to a missing component with type=string and report it.
+	 *
+	 * @param array<string, mixed> $schema  The schema, repaired in place.
+	 * @param string               $context The schema's path, for the report.
+	 *
+	 * @return void
+	 */
+	private function replaceDanglingRef(array &$schema, string $context): void {
+		$refPath = str_replace('#/components/schemas/', '', $schema['$ref']);
 		unset($schema['$ref']);
 		if (isset($schema['type']) === false) {
 			$schema['type'] = 'string';
@@ -2310,7 +2450,7 @@ class OasService {
 			message: 'Dangling $ref to "#/components/schemas/' . $refPath . '"; substituted with type=string.',
 			code: OasValidationReport::CODE_DANGLING_REF,
 		);
-	}//end validateRef()
+	}//end replaceDanglingRef()
 
 	/**
 	 * The component schema whose name matches ignoring case, if any.
@@ -2357,18 +2497,28 @@ class OasService {
 		}
 
 		foreach (['oneOf', 'anyOf', 'allOf'] as $compositionKey) {
-			if (is_array($schema[$compositionKey] ?? null) === false) {
-				continue;
+			if (is_array($schema[$compositionKey] ?? null) === true) {
+				$this->validateCompositionItems(items: $schema[$compositionKey], context: "{$context}.{$compositionKey}");
 			}
-
-			foreach ($schema[$compositionKey] as $idx => &$compositionItem) {
-				if (is_array($compositionItem) === true) {
-					$this->validateSchemaReferences(schema: $compositionItem, context: "{$context}.{$compositionKey}[{$idx}]");
-				}
-			}
-
-			unset($compositionItem);
 		}
 	}//end validateNestedReferences()
+
+	/**
+	 * Repair the references inside each schema of a oneOf, anyOf or allOf list.
+	 *
+	 * @param array<int|string, mixed> $items   The list, repaired in place.
+	 * @param string                   $context The list's path, for the report.
+	 *
+	 * @return void
+	 */
+	private function validateCompositionItems(array &$items, string $context): void {
+		foreach ($items as $idx => &$compositionItem) {
+			if (is_array($compositionItem) === true) {
+				$this->validateSchemaReferences(schema: $compositionItem, context: "{$context}[{$idx}]");
+			}
+		}
+
+		unset($compositionItem);
+	}//end validateCompositionItems()
 
 }//end class
