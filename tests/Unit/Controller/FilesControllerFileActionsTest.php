@@ -339,6 +339,42 @@ class FilesControllerFileActionsTest extends TestCase {
 	}//end testPreviewUnsupported()
 
 	/**
+	 * Test preview streams the generated image at the requested size.
+	 */
+	public function testPreviewStreamsTheRequestedSize(): void {
+		$object = $this->createObjectMock();
+		$this->setupObjectServiceMocks($object);
+
+		$file = $this->createMock(File::class);
+		$this->fileService->method('getFile')->willReturn($file);
+
+		$image = $this->createMock(\OCP\Files\SimpleFS\ISimpleFile::class);
+		$image->method('read')->willReturn('png-bytes');
+		$image->method('getMimeType')->willReturn('image/png');
+		$image->method('getSize')->willReturn(9);
+
+		$asked = [];
+		$previewHandler = $this->createMock(FilePreviewHandler::class);
+		$previewHandler->method('getPreview')->willReturnCallback(
+			function (...$args) use (&$asked, $image) {
+				$asked = $args;
+				return $image;
+			}
+		);
+		$this->fileService->method('getPreviewHandler')->willReturn($previewHandler);
+
+		$this->request->method('getParam')->willReturnMap([['width', null, '100'], ['height', null, '50']]);
+
+		$response = $this->controller->preview('reg', 'sch', 'abc-123', 42);
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame('image/png', $response->getHeaders()['Content-Type']);
+		$this->assertSame('max-age=3600, public', $response->getHeaders()['Cache-Control']);
+		$this->assertSame('9', $response->getHeaders()['Content-Length']);
+		$this->assertSame([$file, 100, 50], $asked);
+	}//end testPreviewStreamsTheRequestedSize()
+
+	/**
 	 * Test that an anonymous caller hitting preview() on an UNPUBLISHED file
 	 * gets 403 — the public-preview gate must block previewing files that
 	 * haven't been explicitly published with a public share.
