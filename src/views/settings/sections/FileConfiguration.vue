@@ -4,7 +4,7 @@
 		:name="t('openregister', 'Text Extraction')"
 		description="Configure extraction pipelines for files, objects, and detected entities"
 		:loading="settingsStore.loadingFileSettings"
-		:loadingMessage="t('openregister', 'Loading text extraction settings...')">
+		:loadingMessage="t('openregister', 'Loading text extraction settings…')">
 		<template #actions>
 			<!-- File Actions Menu -->
 			<NcActions
@@ -920,6 +920,7 @@ import MagnifyIcon from 'vue-material-design-icons/Magnify.vue'
 import RefreshIcon from 'vue-material-design-icons/Refresh.vue'
 import SettingsCard from '../../../components/shared/SettingsCard.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import { freshState } from '../../../services/initialState.js'
 import { useSettingsStore } from '../../../store/settings.js'
 
 /**
@@ -1113,6 +1114,335 @@ function extractionStatsOf(stats) {
 	}
 }
 
+/**
+ * The state every instance of this component starts from.
+ */
+const INITIAL_STATE = {
+	fileSettings: {
+		extractionScope: {
+			id: 'objects',
+			label: 'Files Attached to Objects',
+		},
+
+		textExtractor: { id: 'llphant', label: 'LLPhant' },
+		extractionMode: { id: 'background', label: 'Background Job' },
+		includeInSearch: true,
+		maxFileSize: 100,
+		chunkSize: 1000,
+		chunkOverlap: 200,
+		chunkingStrategy: 'RECURSIVE_CHARACTER',
+		batchSize: 10,
+		dolphinApiEndpoint: '',
+		dolphinApiKey: '',
+		entityRecognitionEnabled: false,
+		entityRecognitionMethod: { id: 'regex', label: 'Regex' },
+		presidioApiEndpoint: '',
+		openAnonymiserApiEndpoint: '',
+		// OpenAnonymiser source: 'internal' (AppAPI ExApp) or 'external' (URL).
+		openAnonymiserSource: 'internal',
+		// HTTP Basic user for the external endpoint; the password is write-only.
+		openAnonymiserUsername: '',
+		openAnonymiserPasswordSet: false,
+	},
+
+	// A newly typed OpenAnonymiser password, sent once and then cleared.
+	openAnonymiserPassword: '',
+	openAnonymiserPasswordChanged: false,
+
+	// Resolved backend state from GET /api/admin/anonymisation/backend-state.
+	backendState: null,
+	// Last probe error code for the openanonymiser backend (drives the install hint).
+	openAnonymiserError: null,
+	// Method name currently being probed via the test-connection endpoint.
+	testingBackendMethod: '',
+	// Persistent per-backend test outcomes: { [method]: 'success' | 'error' }.
+	backendTestResults: {},
+	objectSettings: {
+		extractionMode: { id: 'background', label: 'Background Job' },
+	},
+
+	fileTypes: [
+		// Text formats (LLPhant supported)
+		{
+			extension: 'txt',
+			label: 'Text Files',
+			icon: '📝',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'md',
+			label: 'Markdown',
+			icon: '📋',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'html',
+			label: 'HTML Files',
+			icon: '🌐',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'json',
+			label: 'JSON Files',
+			icon: '📦',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'xml',
+			label: 'XML Files',
+			icon: '📰',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'csv',
+			label: 'CSV Files',
+			icon: '📊',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+
+		// Document formats (LLPhant supported)
+		{
+			extension: 'pdf',
+			label: 'PDF Documents',
+			icon: '📄',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: true,
+		},
+		{
+			extension: 'docx',
+			label: 'Word Documents',
+			icon: '📘',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'doc',
+			label: 'Word (Legacy)',
+			icon: '📘',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'xlsx',
+			label: 'Excel Spreadsheets',
+			icon: '📊',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'xls',
+			label: 'Excel (Legacy)',
+			icon: '📊',
+			enabled: true,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'pptx',
+			label: 'PowerPoint',
+			icon: '📽️',
+			enabled: false,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+
+		// Image formats (Dolphin required for OCR)
+		{
+			extension: 'jpg',
+			label: 'JPEG Images',
+			icon: '🖼️',
+			enabled: false,
+			llphantSupport: 'none',
+			dolphinOcr: true,
+		},
+		{
+			extension: 'jpeg',
+			label: 'JPEG Images',
+			icon: '🖼️',
+			enabled: false,
+			llphantSupport: 'none',
+			dolphinOcr: true,
+		},
+		{
+			extension: 'png',
+			label: 'PNG Images',
+			icon: '🖼️',
+			enabled: false,
+			llphantSupport: 'none',
+			dolphinOcr: true,
+		},
+		{
+			extension: 'gif',
+			label: 'GIF Images',
+			icon: '🖼️',
+			enabled: false,
+			llphantSupport: 'none',
+			dolphinOcr: true,
+		},
+		{
+			extension: 'webp',
+			label: 'WebP Images',
+			icon: '🖼️',
+			enabled: false,
+			llphantSupport: 'none',
+			dolphinOcr: true,
+		},
+
+		// Other formats
+		{
+			extension: 'odt',
+			label: 'OpenDocument Text',
+			icon: '📄',
+			enabled: false,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+		{
+			extension: 'rtf',
+			label: 'Rich Text Format',
+			icon: '📝',
+			enabled: false,
+			llphantSupport: 'yes',
+			dolphinOcr: false,
+		},
+	],
+
+	textExtractors: [
+		{
+			id: 'llphant',
+			label: 'LLPhant',
+			icon: '🐘',
+			description:
+				'Local PHP library - Best for: TXT, MD, HTML, JSON, XML, CSV, simple PDFs',
+		},
+		{
+			id: 'dolphin',
+			label: 'Dolphin',
+			icon: '🐬',
+			description:
+				'ByteDance AI - Best for: Complex PDFs, tables, formulas, DOCX, XLSX, PPT',
+		},
+	],
+
+	extractionScopes: [
+		{
+			id: 'none',
+			label: 'None (Disabled)',
+			description: 'Do not extract text automatically',
+		},
+		{
+			id: 'all',
+			label: 'All Files',
+			description: 'Extract text from all uploaded files in Nextcloud',
+		},
+		{
+			id: 'folders',
+			label: 'Files in Specific Folders',
+			description: 'Extract text from files in designated folders only',
+		},
+		{
+			id: 'objects',
+			label: 'Files Attached to Objects',
+			description:
+				'Extract text only from files attached to OpenRegister objects (recommended)',
+		},
+	],
+
+	extractionModes: [
+		{
+			id: 'immediate',
+			label: 'Immediate',
+			description:
+				'Process during upload - direct link between file upload and parsing logic',
+		},
+		{
+			id: 'background',
+			label: 'Background Job',
+			description:
+				'Delayed extraction action on the job stack - process files asynchronously after upload',
+		},
+		{
+			id: 'cron',
+			label: 'Cron Job',
+			description:
+				'Repeating action handling files - periodic batch processing via scheduled jobs',
+		},
+		{
+			id: 'manual',
+			label: 'Manual Only',
+			description: 'Only extract when manually triggered via Actions menu',
+		},
+	],
+
+	extractionStats: {
+		totalFiles: 0,
+		untrackedFiles: 0,
+		pendingFiles: 0,
+		processedFiles: 0,
+		failedFiles: 0,
+		totalChunks: 0,
+		totalObjects: 0,
+		totalEntities: 0,
+	},
+
+	discoveringFiles: false,
+	extractingFiles: false,
+	retryingFiles: false,
+	saveMessage: '',
+	saveMessageType: 'success',
+	dolphinConnectionTested: null, // null, 'success', 'error'
+	presidioConnectionTested: null,
+	openAnonymiserConnectionTested: null,
+	testingPresidio: false,
+	testingOpenAnonymiser: false,
+	entityRecognitionMethods: [
+		{
+			id: 'regex',
+			label: 'Regex',
+			icon: '🔤',
+			description:
+				'Local pattern matching - Fast, privacy-friendly, detects emails, phones, IBANs',
+		},
+		{
+			id: 'presidio',
+			label: 'Presidio',
+			icon: '🛡️',
+			description:
+				'Microsoft Presidio - Accurate NER for names, organizations, locations (English)',
+		},
+		{
+			id: 'openanonymiser',
+			label: 'OpenAnonymiser',
+			icon: '🇳🇱',
+			description:
+				'Dutch-focused PII detection - Best for Dutch names, BSN, addresses',
+		},
+		{
+			id: 'hybrid',
+			label: 'Hybrid',
+			icon: '⚡',
+			description:
+				'Combines regex with external services for maximum coverage',
+		},
+	],
+}
+
 export default {
 	name: 'FileConfiguration',
 
@@ -1137,333 +1467,7 @@ export default {
 	},
 
 	data() {
-		return {
-			fileSettings: {
-				extractionScope: {
-					id: 'objects',
-					label: 'Files Attached to Objects',
-				},
-
-				textExtractor: { id: 'llphant', label: 'LLPhant' },
-				extractionMode: { id: 'background', label: 'Background Job' },
-				includeInSearch: true,
-				maxFileSize: 100,
-				chunkSize: 1000,
-				chunkOverlap: 200,
-				chunkingStrategy: 'RECURSIVE_CHARACTER',
-				batchSize: 10,
-				dolphinApiEndpoint: '',
-				dolphinApiKey: '',
-				entityRecognitionEnabled: false,
-				entityRecognitionMethod: { id: 'regex', label: 'Regex' },
-				presidioApiEndpoint: '',
-				openAnonymiserApiEndpoint: '',
-				// OpenAnonymiser source: 'internal' (AppAPI ExApp) or 'external' (URL).
-				openAnonymiserSource: 'internal',
-				// HTTP Basic user for the external endpoint; the password is write-only.
-				openAnonymiserUsername: '',
-				openAnonymiserPasswordSet: false,
-			},
-
-			// A newly typed OpenAnonymiser password, sent once and then cleared.
-			openAnonymiserPassword: '',
-			openAnonymiserPasswordChanged: false,
-
-			// Resolved backend state from GET /api/admin/anonymisation/backend-state.
-			backendState: null,
-			// Last probe error code for the openanonymiser backend (drives the install hint).
-			openAnonymiserError: null,
-			// Method name currently being probed via the test-connection endpoint.
-			testingBackendMethod: '',
-			// Persistent per-backend test outcomes: { [method]: 'success' | 'error' }.
-			backendTestResults: {},
-			objectSettings: {
-				extractionMode: { id: 'background', label: 'Background Job' },
-			},
-
-			fileTypes: [
-				// Text formats (LLPhant supported)
-				{
-					extension: 'txt',
-					label: 'Text Files',
-					icon: '📝',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'md',
-					label: 'Markdown',
-					icon: '📋',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'html',
-					label: 'HTML Files',
-					icon: '🌐',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'json',
-					label: 'JSON Files',
-					icon: '📦',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'xml',
-					label: 'XML Files',
-					icon: '📰',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'csv',
-					label: 'CSV Files',
-					icon: '📊',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-
-				// Document formats (LLPhant supported)
-				{
-					extension: 'pdf',
-					label: 'PDF Documents',
-					icon: '📄',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: true,
-				},
-				{
-					extension: 'docx',
-					label: 'Word Documents',
-					icon: '📘',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'doc',
-					label: 'Word (Legacy)',
-					icon: '📘',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'xlsx',
-					label: 'Excel Spreadsheets',
-					icon: '📊',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'xls',
-					label: 'Excel (Legacy)',
-					icon: '📊',
-					enabled: true,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'pptx',
-					label: 'PowerPoint',
-					icon: '📽️',
-					enabled: false,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-
-				// Image formats (Dolphin required for OCR)
-				{
-					extension: 'jpg',
-					label: 'JPEG Images',
-					icon: '🖼️',
-					enabled: false,
-					llphantSupport: 'none',
-					dolphinOcr: true,
-				},
-				{
-					extension: 'jpeg',
-					label: 'JPEG Images',
-					icon: '🖼️',
-					enabled: false,
-					llphantSupport: 'none',
-					dolphinOcr: true,
-				},
-				{
-					extension: 'png',
-					label: 'PNG Images',
-					icon: '🖼️',
-					enabled: false,
-					llphantSupport: 'none',
-					dolphinOcr: true,
-				},
-				{
-					extension: 'gif',
-					label: 'GIF Images',
-					icon: '🖼️',
-					enabled: false,
-					llphantSupport: 'none',
-					dolphinOcr: true,
-				},
-				{
-					extension: 'webp',
-					label: 'WebP Images',
-					icon: '🖼️',
-					enabled: false,
-					llphantSupport: 'none',
-					dolphinOcr: true,
-				},
-
-				// Other formats
-				{
-					extension: 'odt',
-					label: 'OpenDocument Text',
-					icon: '📄',
-					enabled: false,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-				{
-					extension: 'rtf',
-					label: 'Rich Text Format',
-					icon: '📝',
-					enabled: false,
-					llphantSupport: 'yes',
-					dolphinOcr: false,
-				},
-			],
-
-			textExtractors: [
-				{
-					id: 'llphant',
-					label: 'LLPhant',
-					icon: '🐘',
-					description:
-						'Local PHP library - Best for: TXT, MD, HTML, JSON, XML, CSV, simple PDFs',
-				},
-				{
-					id: 'dolphin',
-					label: 'Dolphin',
-					icon: '🐬',
-					description:
-						'ByteDance AI - Best for: Complex PDFs, tables, formulas, DOCX, XLSX, PPT',
-				},
-			],
-
-			extractionScopes: [
-				{
-					id: 'none',
-					label: 'None (Disabled)',
-					description: 'Do not extract text automatically',
-				},
-				{
-					id: 'all',
-					label: 'All Files',
-					description: 'Extract text from all uploaded files in Nextcloud',
-				},
-				{
-					id: 'folders',
-					label: 'Files in Specific Folders',
-					description:
-						'Extract text from files in designated folders only',
-				},
-				{
-					id: 'objects',
-					label: 'Files Attached to Objects',
-					description:
-						'Extract text only from files attached to OpenRegister objects (recommended)',
-				},
-			],
-
-			extractionModes: [
-				{
-					id: 'immediate',
-					label: 'Immediate',
-					description:
-						'Process during upload - direct link between file upload and parsing logic',
-				},
-				{
-					id: 'background',
-					label: 'Background Job',
-					description:
-						'Delayed extraction action on the job stack - process files asynchronously after upload',
-				},
-				{
-					id: 'cron',
-					label: 'Cron Job',
-					description:
-						'Repeating action handling files - periodic batch processing via scheduled jobs',
-				},
-				{
-					id: 'manual',
-					label: 'Manual Only',
-					description:
-						'Only extract when manually triggered via Actions menu',
-				},
-			],
-
-			extractionStats: {
-				totalFiles: 0,
-				untrackedFiles: 0,
-				pendingFiles: 0,
-				processedFiles: 0,
-				failedFiles: 0,
-				totalChunks: 0,
-				totalObjects: 0,
-				totalEntities: 0,
-			},
-
-			discoveringFiles: false,
-			extractingFiles: false,
-			retryingFiles: false,
-			saveMessage: '',
-			saveMessageType: 'success',
-			dolphinConnectionTested: null, // null, 'success', 'error'
-			presidioConnectionTested: null,
-			openAnonymiserConnectionTested: null,
-			testingPresidio: false,
-			testingOpenAnonymiser: false,
-			entityRecognitionMethods: [
-				{
-					id: 'regex',
-					label: 'Regex',
-					icon: '🔤',
-					description:
-						'Local pattern matching - Fast, privacy-friendly, detects emails, phones, IBANs',
-				},
-				{
-					id: 'presidio',
-					label: 'Presidio',
-					icon: '🛡️',
-					description:
-						'Microsoft Presidio - Accurate NER for names, organizations, locations (English)',
-				},
-				{
-					id: 'openanonymiser',
-					label: 'OpenAnonymiser',
-					icon: '🇳🇱',
-					description:
-						'Dutch-focused PII detection - Best for Dutch names, BSN, addresses',
-				},
-				{
-					id: 'hybrid',
-					label: 'Hybrid',
-					icon: '⚡',
-					description:
-						'Combines regex with external services for maximum coverage',
-				},
-			],
-		}
+		return freshState(INITIAL_STATE)
 	},
 
 	computed: {
