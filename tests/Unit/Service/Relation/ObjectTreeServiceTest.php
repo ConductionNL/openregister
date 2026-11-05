@@ -55,6 +55,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander
  * @uses   \OCA\OpenRegister\Service\Rbac\HierarchyDescender
  * @uses   \OCA\OpenRegister\Service\Relation\RelationGraphService
+ * @uses   \OCA\OpenRegister\Service\Relation\EdgeSource
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Register
