@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
+use OCA\OpenRegister\Search\Service\Geo\RdCrsTransformer;
 use OCA\OpenRegister\Service\Geo\PdokGeocoder;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -165,6 +166,69 @@ class ObjectsControllerGeoTest extends TestCase {
 		$this->assertArrayHasKey('features', $data);
 		$this->assertSame('Feature', $data['features'][0]['type']);
 	}//end testGeoJsonBodyIsValidGeoJson()
+
+	/**
+	 * Rows with a point at Amsterdam Centraal, and a controller over them.
+	 *
+	 * @param string $accept The `Accept-Crs` header.
+	 *
+	 * @return ObjectsController The controller.
+	 */
+	private function controllerAskedFor(string $accept): ObjectsController {
+		$controller = $this->controllerWithScopedIndex(
+			[['id' => 'a', 'location' => ['type' => 'Point', 'coordinates' => [4.9003, 52.3791]]]]
+		);
+		$this->request->method('getParams')->willReturn([]);
+		$this->request->method('getHeader')->willReturnCallback(
+			static fn (string $name): string => ($name === 'Accept-Crs') ? $accept : ''
+		);
+
+		return $controller;
+	}//end controllerAskedFor()
+
+	public function testGeoJsonAnswersInRdWhenAskedAndNamesIt(): void {
+		$response = $this->controllerAskedFor('EPSG:28992')->geoJson('1', '2', $this->createMock(ObjectService::class));
+
+		$this->assertSame(
+			(new RdCrsTransformer())->wgs84ToRd(longitude: 4.9003, latitude: 52.3791),
+			$response->getData()['features'][0]['geometry']['coordinates']
+		);
+		$this->assertSame('EPSG:28992', $response->getHeaders()['Content-Crs']);
+	}//end testGeoJsonAnswersInRdWhenAskedAndNamesIt()
+
+	public function testWfsAnswersInRdWhenAsked(): void {
+		$response = $this->controllerAskedFor('epsg:28992')->wfs('1', '2', $this->createMock(ObjectService::class));
+
+		$this->assertGreaterThan(1000, $response->getData()['features'][0]['geometry']['coordinates'][0]);
+		$this->assertSame('EPSG:28992', $response->getHeaders()['Content-Crs']);
+	}//end testWfsAnswersInRdWhenAsked()
+
+	public function testWithoutAnAcceptCrsTheBodyAndHeadersStayAsTheyWere(): void {
+		$response = $this->controllerAskedFor('')->geoJson('1', '2', $this->createMock(ObjectService::class));
+
+		$this->assertSame([4.9003, 52.3791], $response->getData()['features'][0]['geometry']['coordinates']);
+		$this->assertArrayNotHasKey('Content-Crs', $response->getHeaders());
+	}//end testWithoutAnAcceptCrsTheBodyAndHeadersStayAsTheyWere()
+
+	public function testAskingForWgs84KeepsTheCoordinatesAndNamesTheCrs(): void {
+		$response = $this->controllerAskedFor('EPSG:4326')->geoJson('1', '2', $this->createMock(ObjectService::class));
+
+		$this->assertSame([4.9003, 52.3791], $response->getData()['features'][0]['geometry']['coordinates']);
+		$this->assertSame('EPSG:4326', $response->getHeaders()['Content-Crs']);
+	}//end testAskingForWgs84KeepsTheCoordinatesAndNamesTheCrs()
+
+	public function testAnUnsupportedCrsIsRefusedWith406BeforeAnyRowIsRead(): void {
+		foreach (['geoJson', 'wfs'] as $endpoint) {
+			$controller = $this->controllerAskedFor('EPSG:3857');
+			$controller->expects($this->never())->method('index');
+
+			$response = $controller->$endpoint('1', '2', $this->createMock(ObjectService::class));
+
+			$this->assertSame(406, $response->getStatus());
+			$this->assertSame(['EPSG:4326', 'EPSG:28992'], $response->getData()['supported']);
+			$this->assertStringContainsString('EPSG:28992', $response->getData()['error']);
+		}
+	}//end testAnUnsupportedCrsIsRefusedWith406BeforeAnyRowIsRead()
 
 	public function testGeoJsonNotConfiguredReturns501(): void {
 		$this->request = $this->createMock(IRequest::class);
