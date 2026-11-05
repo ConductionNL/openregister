@@ -33,7 +33,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -101,18 +100,12 @@ class QueuedNotificationMapper extends QBMapper implements QueuedNotificationMap
 			$qb = $this->db->getQueryBuilder();
 			$qb->select('*')
 				->from($this->getTableName())
-				->where(
-					$qb->expr()->eq(
-						'id',
-						$qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)
-					)
-				)
+				->where($this->idIs(qb: $qb, id: $id))
 				->setMaxResults(1);
 
 			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
 		} catch (\Throwable $e) {
+			// A missing row and a failed read both answer "not found".
 			return null;
 		}
 
@@ -130,12 +123,7 @@ class QueuedNotificationMapper extends QBMapper implements QueuedNotificationMap
 		try {
 			$qb = $this->db->getQueryBuilder();
 			$qb->delete($this->getTableName())
-				->where(
-					$qb->expr()->eq(
-						'id',
-						$qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)
-					)
-				);
+				->where($this->idIs(qb: $qb, id: $id));
 			$qb->executeStatement();
 		} catch (\Throwable $e) {
 			// Best-effort: worst case a stale row survives until the next
@@ -143,4 +131,17 @@ class QueuedNotificationMapper extends QBMapper implements QueuedNotificationMap
 		}
 
 	}//end deleteById()
+
+	/**
+	 * Condition matching the row with the given id.
+	 *
+	 * @param IQueryBuilder $qb The query being built.
+	 * @param int           $id Row id.
+	 *
+	 * @return string
+	 */
+	private function idIs(IQueryBuilder $qb, int $id): string {
+		return $qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT));
+
+	}//end idIs()
 }//end class
