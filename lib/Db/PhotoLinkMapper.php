@@ -32,6 +32,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<PhotoLink>
  */
 class PhotoLinkMapper extends QBMapper {
+	use FindLinksByObjectUuidTrait;
+	use DeleteLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -40,23 +42,6 @@ class PhotoLinkMapper extends QBMapper {
 	public function __construct(IDBConnection $db) {
 		parent::__construct(db: $db, tableName: 'openregister_photo_links', entityClass: PhotoLink::class);
 	}//end __construct()
-
-	/**
-	 * Find photo links by object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return PhotoLink[] Array of photo links.
-	 */
-	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
 
 	/**
 	 * Find photo links by album id.
@@ -96,21 +81,6 @@ class PhotoLinkMapper extends QBMapper {
 			return null;
 		}
 	}//end findByObjectAndAlbum()
-
-	/**
-	 * Delete all photo links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 
 	/**
 	 * Delete a photo link by object UUID + album id (Tier-2 unlink path).

@@ -32,6 +32,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<OpenProjectLink>
  */
 class OpenProjectLinkMapper extends QBMapper {
+	use FindLinksByObjectUuidTrait;
+	use DeleteLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -40,23 +42,6 @@ class OpenProjectLinkMapper extends QBMapper {
 	public function __construct(IDBConnection $db) {
 		parent::__construct(db: $db, tableName: 'openregister_openproject_links', entityClass: OpenProjectLink::class);
 	}//end __construct()
-
-	/**
-	 * Find OpenProject links by object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return OpenProjectLink[] Array of OpenProject links.
-	 */
-	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
 
 	/**
 	 * Find OpenProject links by work-package id.
@@ -96,21 +81,6 @@ class OpenProjectLinkMapper extends QBMapper {
 			return null;
 		}
 	}//end findByObjectAndWorkPackage()
-
-	/**
-	 * Delete all OpenProject links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 
 	/**
 	 * Delete an OpenProject link by object UUID + work-package id (Tier-2

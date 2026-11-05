@@ -32,6 +32,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<AnalyticsLink>
  */
 class AnalyticsLinkMapper extends QBMapper {
+	use FindLinksByObjectUuidTrait;
+	use DeleteLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -40,23 +42,6 @@ class AnalyticsLinkMapper extends QBMapper {
 	public function __construct(IDBConnection $db) {
 		parent::__construct(db: $db, tableName: 'openregister_analytics_links', entityClass: AnalyticsLink::class);
 	}//end __construct()
-
-	/**
-	 * Find analytics links by object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return AnalyticsLink[] Array of analytics links.
-	 */
-	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
 
 	/**
 	 * Find analytics links by report id.
@@ -96,21 +81,6 @@ class AnalyticsLinkMapper extends QBMapper {
 			return null;
 		}
 	}//end findByObjectAndReport()
-
-	/**
-	 * Delete all analytics links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 
 	/**
 	 * Delete an analytics link by object UUID + report id (Tier-2 unlink

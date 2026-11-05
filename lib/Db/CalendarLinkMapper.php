@@ -27,6 +27,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<CalendarLink>
  */
 class CalendarLinkMapper extends QBMapper {
+	use DeleteLinksByObjectUuidTrait;
+	use CountLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -72,41 +74,6 @@ class CalendarLinkMapper extends QBMapper {
 
 		return $this->findEntity(query: $qb);
 	}//end findByObjectAndEvent()
-
-	/**
-	 * Count calendar links for an object.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Count.
-	 */
-	public function countByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->createFunction('COUNT(*)'))
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		$result = $qb->executeQuery();
-		$count = (int)$result->fetchOne();
-		$result->closeCursor();
-
-		return $count;
-	}//end countByObjectUuid()
-
-	/**
-	 * Delete all calendar links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 
 	/**
 	 * Delete a single calendar link by object UUID + event UID.
