@@ -91,6 +91,10 @@ class ArchivalRetentionTaskGoldenTest extends TestCase
             'schema not loadable'    => [['schemas' => 'throw']],
             'schema not annotated'   => [['annotation' => 'none']],
             'register not an entity' => [['registers' => 'odd']],
+            'rule on a row field'    => [[
+                'rows'       => [['_uuid' => 'gone', '_created' => $old, 'code' => 1], ['_uuid' => 'other', '_created' => $old, 'code' => 5]],
+                'annotation' => ['retention' => ['default' => 'P1Y', 'rules' => [['condition' => 'code < 3', 'retention' => 'P10Y']]]],
+            ]],
         ];
     }//end cases()
 

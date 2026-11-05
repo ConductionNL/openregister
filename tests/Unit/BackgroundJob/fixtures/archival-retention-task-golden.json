@@ -676,6 +676,87 @@
             ]
         }
     ],
+    "rule on a row field": [
+        {
+            "schemaFind": [
+                7,
+                [],
+                true,
+                true
+            ]
+        },
+        {
+            "tableExists": [
+                3,
+                7
+            ]
+        },
+        {
+            "select": [
+                "*"
+            ]
+        },
+        {
+            "from": [
+                "openregister_table_3_7",
+                null
+            ]
+        },
+        {
+            "magicFind": [
+                "other",
+                3,
+                7,
+                [
+                    false,
+                    false,
+                    false
+                ]
+            ]
+        },
+        {
+            "hasActiveLegalHold": [
+                "other"
+            ]
+        },
+        {
+            "setRegister": [
+                3
+            ]
+        },
+        {
+            "setSchema": [
+                7
+            ]
+        },
+        {
+            "deleteObject": [
+                "other",
+                null,
+                null,
+                false,
+                false,
+                true
+            ]
+        },
+        {
+            "closeCursor": []
+        },
+        {
+            "info": [
+                "[ArchivalRetentionTask] schema=\"ledger\" scanned=2 expired=1 deleted=1 held=0 unresolved=0",
+                {
+                    "app": "openregister",
+                    "schemaSlug": "ledger",
+                    "scanned": 2,
+                    "expired": 1,
+                    "deleted": 1,
+                    "held": 0,
+                    "unresolved": 0
+                }
+            ]
+        }
+    ],
     "schema not annotated": [
         {
             "schemaFind": [
