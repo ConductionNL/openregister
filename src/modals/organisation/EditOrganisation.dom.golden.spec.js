@@ -364,7 +364,9 @@ describe('EditOrganisation special rights', () => {
 
 	it('writes the ids of a right and keeps the picked groups', async () => {
 		const wrapper = await mountFor(null)
-		wrapper.vm.updateSpecialRight('llm_use', GROUPS)
+		wrapper
+			.findComponent({ name: 'SpecialRightsTable' })
+			.vm.$emit('update', { right: 'llm_use', groups: GROUPS })
 		expect(wrapper.vm.organisationItem.authorization).toEqual({
 			llm_use: ['admin', 'staff'],
 		})
