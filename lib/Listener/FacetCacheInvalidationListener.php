@@ -74,13 +74,8 @@ class FacetCacheInvalidationListener implements IEventListener {
 	 */
 	public function handle(Event $event): void {
 		$object = $this->extractObject(event: $event);
-		if ($object === null) {
-			return;
+		if ($object !== null) {
+			$this->versions->bump(register: $object->getRegister(), schema: $object->getSchema());
 		}
-
-		$this->versions->bump(
-			register: $object->getRegister(),
-			schema: $object->getSchema()
-		);
 	}//end handle()
 }//end class

@@ -41,20 +41,45 @@ trait WrittenObjectOfEvent {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-an-object-write-must-invalidate-the-facet-response-derived-from-it
 	 */
 	private function extractObject(Event $event): ?ObjectEntity {
-		if (method_exists($event, 'getObject') === true) {
-			$object = $event->getObject();
-			if ($object instanceof ObjectEntity) {
-				return $object;
-			}
+		$object = $this->objectOf(event: $event);
+		if ($object instanceof ObjectEntity === false) {
+			$object = $this->newObjectOf(event: $event);
 		}
 
-		if (method_exists($event, 'getNewObject') === true) {
-			$object = $event->getNewObject();
-			if ($object instanceof ObjectEntity) {
-				return $object;
-			}
+		if ($object instanceof ObjectEntity) {
+			return $object;
 		}
 
 		return null;
 	}//end extractObject()
+
+	/**
+	 * What the event's getObject() answers, or null when it has none.
+	 *
+	 * @param Event $event Inbound dispatcher event.
+	 *
+	 * @return mixed
+	 */
+	private function objectOf(Event $event): mixed {
+		if (method_exists($event, 'getObject') === true) {
+			return $event->getObject();
+		}
+
+		return null;
+	}//end objectOf()
+
+	/**
+	 * What the event's getNewObject() answers, or null when it has none.
+	 *
+	 * @param Event $event Inbound dispatcher event.
+	 *
+	 * @return mixed
+	 */
+	private function newObjectOf(Event $event): mixed {
+		if (method_exists($event, 'getNewObject') === true) {
+			return $event->getNewObject();
+		}
+
+		return null;
+	}//end newObjectOf()
 }//end trait

@@ -119,7 +119,36 @@ class WrittenObjectOfEventTest extends TestCase {
 				return $this->second;
 			}
 		};
+		$fallsThrough = new class ($object) extends Event {
+			/**
+			 * Hold the post-write object.
+			 *
+			 * @param ObjectEntity $after Returned by getNewObject().
+			 */
+			public function __construct(private ObjectEntity $after) {
+				parent::__construct();
+			}
+
+			/**
+			 * Not an object.
+			 *
+			 * @return string
+			 */
+			public function getObject(): string {
+				return 'x';
+			}
+
+			/**
+			 * The post-write object.
+			 *
+			 * @return ObjectEntity
+			 */
+			public function getNewObject(): ObjectEntity {
+				return $this->after;
+			}
+		};
 		$events = [
+			'getObject not an object, getNewObject is' => [$fallsThrough, $object],
 			'updating' => [new ObjectUpdatingEvent($object, $old), $object],
 			'both getters' => [$both, $object],
 			'created' => [new ObjectCreatedEvent($object), $object],
