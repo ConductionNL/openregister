@@ -31,6 +31,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\EmailLinkService
  * @uses   \OCA\OpenRegister\Service\MailboxPage
+ * @uses   \OCA\OpenRegister\Service\MailTableQueries
  */
 class EmailLinkServicePickerGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
