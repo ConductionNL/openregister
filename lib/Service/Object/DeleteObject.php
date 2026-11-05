@@ -1208,27 +1208,7 @@ class DeleteObject {
 		}
 
 		[$userId, $activeOrganisation] = $this->resolveUserContext();
-		$deletedAt = (new DateTime())->format(DateTime::ATOM);
-
-		$handled = [];
-		$oldEntities = [];
-		foreach ($targets as $entity) {
-			$uuid = $entity->getUuid();
-			if ($uuid === null || $uuid === '') {
-				continue;
-			}
-
-			$handled[$uuid] = true;
-			$oldEntities[$uuid] = clone $entity;
-			$entity->setDeleted(
-				[
-					'deletedBy' => $userId,
-					'deletedAt' => $deletedAt,
-					'objectId' => $uuid,
-					'organisation' => $activeOrganisation,
-				]
-			);
-		}
+		[$handled, $oldEntities] = (new SoftDeleteStamp(deletedBy: $userId, organisation: $activeOrganisation))->apply(targets: $targets);
 
 		try {
 			$deleted = $this->objectEntityMapper->softDeleteMultipleObjectEntities(

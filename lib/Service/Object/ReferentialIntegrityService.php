@@ -1826,27 +1826,7 @@ class ReferentialIntegrityService {
 			return [[], []];
 		}
 
-		$deletedAt = (new DateTime())->format(DateTime::ATOM);
-
-		$handled = [];
-		$oldEntities = [];
-		foreach ($targets as $entity) {
-			$uuid = $entity->getUuid();
-			if ($uuid === null || $uuid === '') {
-				continue;
-			}
-
-			$handled[$uuid] = true;
-			$oldEntities[$uuid] = clone $entity;
-			$entity->setDeleted(
-				[
-					'deletedBy' => $origin->userId,
-					'deletedAt' => $deletedAt,
-					'objectId' => $uuid,
-					'organisation' => $origin->organisationId,
-				]
-			);
-		}
+		[$handled, $oldEntities] = (new SoftDeleteStamp(deletedBy: $origin->userId, organisation: $origin->organisationId))->apply(targets: $targets);
 
 		try {
 			$deletedEntities = $this->objectEntityMapper->softDeleteMultipleObjectEntities(

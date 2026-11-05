@@ -4884,11 +4884,6 @@ parameters:
 			path: lib/Service/Object/SaveObject/RelationCascadeHandler.php
 
 		-
-			message: "#^Strict comparison using \\=\\=\\= between 0\\|1\\|false and true will always evaluate to false\\.$#"
-			count: 2
-			path: lib/Service/Object/SaveObject/RelationCascadeHandler.php
-
-		-
 			message: "#^Offset '_search' on non\\-empty\\-array\\<string, mixed\\> in isset\\(\\) always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Service/Object/SearchQueryHandler.php
