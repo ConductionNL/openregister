@@ -20,7 +20,6 @@ use OCA\OpenRegister\Db\FileMapperInterface;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCP\Files\Node;
 use OCP\Files\NotPermittedException;
-use OCP\IUser;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -534,7 +533,10 @@ class FileValidationHandlerTest extends TestCase {
 		$file->method('getName')->willReturn('test.pdf');
 		$file->method('getId')->willReturn(42);
 
-		// Readable: no exception, nothing logged, the owner is never consulted.
+		// Readable: no exception, nothing logged, the owner is never consulted —
+		// so a file owned by another user (reached through a share) or by the
+		// openregister system user passes exactly like an own file, and no
+		// ownership repair can run.
 		$this->logger->expects($this->never())->method('warning');
 		$file->expects($this->never())->method('getOwner');
 
@@ -556,27 +558,6 @@ class FileValidationHandlerTest extends TestCase {
 
 		$this->handler->checkOwnership(file: $file);
 	}//end testCheckOwnershipUnreadableFileThrowsNotPermitted()
-
-	public function testCheckOwnershipReadableFileWithDifferentOwnerIsAllowed(): void {
-		// Access is readability-based and ownership-agnostic: a file the session can
-		// read but does not own (e.g. reached via a file share, or owned by the
-		// openregister system user) must be allowed. No ownership repair is performed.
-		$file = $this->createMock(Node::class);
-		$file->method('isReadable')->willReturn(true);
-		$file->method('getName')->willReturn('test.pdf');
-		$file->method('getId')->willReturn(42);
-
-		$fileOwner = $this->createMock(IUser::class);
-		$fileOwner->method('getUID')->willReturn('other-user');
-		$file->method('getOwner')->willReturn($fileOwner);
-
-		// Ownership is never consulted, let alone mutated, on an access check.
-		$file->expects($this->never())->method('getOwner');
-
-		$this->handler->checkOwnership(file: $file);
-
-		$this->assertTrue(true);
-	}//end testCheckOwnershipReadableFileWithDifferentOwnerIsAllowed()
 
 	public function testCheckOwnershipReadableFileWithNullOwnerIsAllowed(): void {
 		// A readable file is allowed even when getOwner() returns null: readability is
@@ -604,6 +585,23 @@ class FileValidationHandlerTest extends TestCase {
 		$this->assertFalse(method_exists(FileValidationHandler::class, 'ownFile'));
 		$this->assertFalse(method_exists(FileMapperInterface::class, 'setFileOwnership'));
 		$this->assertFalse(method_exists(FileMapper::class, 'setFileOwnership'));
+
+		// Not only those names: no query builder in lib/ may write either table.
+		$libDir = dirname(__DIR__, 4) . '/lib';
+		$offenders = [];
+		$files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($libDir, \FilesystemIterator::SKIP_DOTS));
+		foreach ($files as $path => $info) {
+			if ($info->getExtension() !== 'php') {
+				continue;
+			}
+
+			$source = (string)file_get_contents($path);
+			if (preg_match('/->(update|insert|delete)\(\s*[\'"](storages|mounts)[\'"]/', $source) === 1) {
+				$offenders[] = substr($path, strlen($libDir) + 1);
+			}
+		}
+
+		$this->assertSame([], $offenders, 'Direct writes to oc_storages / oc_mounts in lib/');
 	}//end testOwnershipRepairMechanicsAreGone()
 
 	// =========================================================================

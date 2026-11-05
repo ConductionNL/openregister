@@ -26,8 +26,9 @@ storage rename back.
 - The app-user transfer that is still wanted (a user's own upload moving into the
   `openregister` account) stays where it already is: `FileOwnershipHandler::
   transferFileOwnershipIfNeeded()` (`chown` on the storage plus a share back).
-- Specs: `file-actions` drops the `ownFile()` bullet; `object-interactions` drops the
-  scenario that required the direct DB repair during a listing.
+- Specs: `file-actions` drops the `ownFile()` bullet and is renamed to "…and access gated
+  on readability", since its old title named the repair; `object-interactions` replaces the
+  scenario that required the direct DB repair during a listing with one that forbids it.
 - A unit test asserts that neither method exists, so the path cannot be revived quietly.
 
 ## Impact

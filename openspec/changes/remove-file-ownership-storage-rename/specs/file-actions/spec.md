@@ -1,11 +1,24 @@
 # file-actions (delta)
 
-## MODIFIED Requirements
+## RENAMED Requirements
 
 ### Requirement: Uploaded files screened for executable content and ownership repaired safely
 
+FROM: Uploaded files screened for executable content and ownership repaired safely
+TO: Uploaded files screened for executable content and access gated on readability
+
+<!-- The old title names a repair the requirement now forbids; the behaviour change is in the MODIFIED block below. -->
+
+## MODIFIED Requirements
+
+### Requirement: Uploaded files screened for executable content and access gated on readability
+
 `FileValidationHandler` MUST screen uploaded content for executables and MUST
 gate file access on readability without forcing content reads.
+
+(Previously: `ownFile(node)` set the OR-side ownership record via
+`FileMapper::setFileOwnership()`, a direct write that renamed the file's whole storage;
+the requirement allowed it for explicit ownership-management flows, none of which called it.)
 
 - `blockExecutableFile(fileName, fileContent)` MUST reject the file when its
   extension is in the dangerous-extension list (Windows/Unix executables,
