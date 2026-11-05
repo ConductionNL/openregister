@@ -21,12 +21,7 @@
                 ]
             },
             {
-                "schemaMapper.find": [
-                    7,
-                    [],
-                    true,
-                    true
-                ]
+                "schemaMapper.find": 7
             },
             {
                 "objectMapper.update": {
@@ -88,12 +83,7 @@
                 ]
             },
             {
-                "schemaMapper.find": [
-                    7,
-                    [],
-                    true,
-                    true
-                ]
+                "schemaMapper.find": 7
             },
             {
                 "destruction.withholdDecidedEntries": {
@@ -388,12 +378,7 @@
                 ]
             },
             {
-                "schemaMapper.find": [
-                    7,
-                    [],
-                    true,
-                    true
-                ]
+                "schemaMapper.find": 7
             },
             {
                 "destruction.withholdDecidedEntries": {
@@ -539,12 +524,7 @@
                 }
             },
             {
-                "schemaMapper.find": [
-                    7,
-                    [],
-                    true,
-                    true
-                ]
+                "schemaMapper.find": 7
             },
             {
                 "destruction.withholdDecidedEntries": {
@@ -662,12 +642,7 @@
                 ]
             },
             {
-                "schemaMapper.find": [
-                    7,
-                    [],
-                    true,
-                    true
-                ]
+                "schemaMapper.find": 7
             },
             {
                 "destruction.withholdDecidedEntries": {
@@ -773,12 +748,7 @@
                 ]
             },
             {
-                "schemaMapper.find": [
-                    7,
-                    [],
-                    true,
-                    true
-                ]
+                "schemaMapper.find": 7
             },
             {
                 "destruction.withholdDecidedEntries": {
@@ -884,12 +854,7 @@
                 ]
             },
             {
-                "schemaMapper.find": [
-                    7,
-                    [],
-                    true,
-                    true
-                ]
+                "schemaMapper.find": 7
             },
             {
                 "destruction.withholdDecidedEntries": {
@@ -1023,12 +988,7 @@
                 ]
             },
             {
-                "schemaMapper.find": [
-                    7,
-                    [],
-                    true,
-                    true
-                ]
+                "schemaMapper.find": 7
             },
             {
                 "destruction.withholdDecidedEntries": {
@@ -1134,12 +1094,7 @@
                 ]
             },
             {
-                "schemaMapper.find": [
-                    7,
-                    [],
-                    true,
-                    true
-                ]
+                "schemaMapper.find": 7
             },
             {
                 "destruction.withholdDecidedEntries": {
@@ -1245,12 +1200,7 @@
                 ]
             },
             {
-                "schemaMapper.find": [
-                    7,
-                    [],
-                    true,
-                    true
-                ]
+                "schemaMapper.find": 7
             },
             {
                 "destruction.withholdDecidedEntries": {
@@ -1356,12 +1306,7 @@
                 ]
             },
             {
-                "schemaMapper.find": [
-                    7,
-                    [],
-                    true,
-                    true
-                ]
+                "schemaMapper.find": 7
             },
             {
                 "destruction.withholdDecidedEntries": {
@@ -1475,12 +1420,7 @@
                 ]
             },
             {
-                "schemaMapper.find": [
-                    7,
-                    [],
-                    true,
-                    true
-                ]
+                "schemaMapper.find": 7
             }
         ],
         "result": {
@@ -1512,12 +1452,7 @@
                 ]
             },
             {
-                "schemaMapper.find": [
-                    7,
-                    [],
-                    true,
-                    true
-                ]
+                "schemaMapper.find": 7
             },
             {
                 "destruction.withholdDecidedEntries": {
@@ -1629,12 +1564,7 @@
                 ]
             },
             {
-                "schemaMapper.find": [
-                    7,
-                    [],
-                    true,
-                    true
-                ]
+                "schemaMapper.find": 7
             },
             {
                 "destruction.withholdDecidedEntries": {
@@ -1748,12 +1678,7 @@
                 ]
             },
             {
-                "schemaMapper.find": [
-                    7,
-                    [],
-                    true,
-                    true
-                ]
+                "schemaMapper.find": 7
             },
             {
                 "destruction.withholdDecidedEntries": {
@@ -1899,12 +1824,7 @@
                 ]
             },
             {
-                "schemaMapper.find": [
-                    7,
-                    [],
-                    true,
-                    true
-                ]
+                "schemaMapper.find": 7
             },
             {
                 "destruction.withholdDecidedEntries": {

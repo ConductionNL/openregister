@@ -218,7 +218,7 @@ class RetentionControllerDestructionListGoldenTest extends TestCase {
 	private function schemaMapper(array $case): SchemaMapper {
 		$mapper = $this->createMock(SchemaMapper::class);
 		$mapper->method('find')->willReturnCallback(function (...$args) use ($case) {
-			$this->calls[] = ['schemaMapper.find' => $args];
+			$this->calls[] = ['schemaMapper.find' => $args[0]];
 			if (($case['schemaThrows'] ?? false) === true) {
 				throw new Exception('no schema');
 			}
