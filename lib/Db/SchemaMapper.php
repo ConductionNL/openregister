@@ -140,6 +140,8 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class SchemaMapper extends QBMapper implements SchemaMapperInterface {
+
+	use ColumnFiltersTrait;
 	use MultiTenancyTrait;
 	use SlugIdLookupTrait;
 
@@ -1051,19 +1053,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
-		foreach ($filters ?? [] as $filter => $value) {
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull($filter));
-				continue;
-			}
-
-			if ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-				continue;
-			}
-
-			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-		}
+		$this->applyColumnFilters(qb: $qb, filters: $filters);
 
 		if (empty($searchConditions) === false) {
 			$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
