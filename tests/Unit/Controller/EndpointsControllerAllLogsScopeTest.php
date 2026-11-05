@@ -100,14 +100,10 @@ class EndpointsControllerAllLogsScopeTest extends TestCase {
 		$this->endpointMapper->method('findAll')->willReturn($this->endpoints(3, 7));
 		$this->endpointLogMapper->expects($this->never())->method('findAll');
 		$ownLog = new EndpointLog();
-		$this->endpointLogMapper->expects($this->exactly(2))
-			->method('findByEndpoints')
-			->willReturnCallback(
-				function (array $endpointIds, ?int $limit = null, ?int $offset = null) use ($ownLog): array {
-					$this->assertSame([3, 7], $endpointIds);
-					return [$ownLog];
-				}
-			);
+		$this->endpointLogMapper->expects($this->once())
+			->method('findPageWithin')
+			->with([3, 7], null, 10, 0)
+			->willReturn([[$ownLog], 1]);
 
 		$result = $this->controller(admin: false, params: ['limit' => 10, 'offset' => 0])->allLogs();
 
@@ -115,36 +111,19 @@ class EndpointsControllerAllLogsScopeTest extends TestCase {
 		$this->assertSame(['results' => [$ownLog], 'total' => 1], $result->getData());
 	}
 
-	public function testANonAdminGetsNoLogsOfAnotherOrganisationsEndpoint(): void {
+	public function testANonAdminFilteringOnAnEndpointIsLimitedToTheirVisibleEndpoints(): void {
 		$this->endpointMapper->method('findAll')->willReturn($this->endpoints(3, 7));
 		$this->endpointLogMapper->expects($this->never())->method('findByEndpoint');
-		$this->endpointLogMapper->expects($this->never())->method('findByEndpoints');
 		$this->endpointLogMapper->expects($this->never())->method('findAll');
+		$this->endpointLogMapper->expects($this->once())
+			->method('findPageWithin')
+			->with([3, 7], 99, 50, 0)
+			->willReturn([[], 0]);
 
 		$result = $this->controller(admin: false, params: ['endpoint_id' => '99'])->allLogs();
 
 		$this->assertSame(200, $result->getStatus());
 		$this->assertSame(['results' => [], 'total' => 0], $result->getData());
-	}
-
-	public function testANonAdminWithoutVisibleEndpointsGetsNoLogs(): void {
-		$this->endpointMapper->method('findAll')->willReturn([]);
-		$this->endpointLogMapper->expects($this->never())->method('findAll');
-		$this->endpointLogMapper->method('findByEndpoints')->willReturn([]);
-
-		$result = $this->controller(admin: false, params: [])->allLogs();
-
-		$this->assertSame(['results' => [], 'total' => 0], $result->getData());
-	}
-
-	public function testANonAdminStillReadsTheirOwnEndpointsLogs(): void {
-		$this->endpointMapper->method('findAll')->willReturn($this->endpoints(3, 7));
-		$log = new EndpointLog();
-		$this->endpointLogMapper->method('findByEndpoint')->with(7)->willReturn([$log]);
-
-		$result = $this->controller(admin: false, params: ['endpoint_id' => '7'])->allLogs();
-
-		$this->assertSame(['results' => [$log], 'total' => 1], $result->getData());
 	}
 
 	public function testAnAdminStillListsEveryLogWithoutConsultingTheEndpointList(): void {

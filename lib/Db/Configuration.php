@@ -27,7 +27,6 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * Configuration entity class
@@ -395,24 +394,6 @@ class Configuration extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
-	 * Validate UUID format
-	 *
-	 * @param string $uuid The UUID to validate
-	 *
-	 * @return bool True if UUID format is valid
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::fromString is standard Symfony UID pattern
-	 */
-	public static function isValidUuid(string $uuid): bool {
-		try {
-			Uuid::fromString($uuid);
-			return true;
-		} catch (\InvalidArgumentException $e) {
-			return false;
-		}
-	}//end isValidUuid()
-
-	/**
 	 * Hydrate the entity with data from an array
 	 *
 	 * Sets entity properties based on input array values
@@ -560,24 +541,6 @@ class Configuration extends Entity implements JsonSerializable {
 	public function isRemoteSource(): bool {
 		return in_array($this->sourceType, ['github', 'gitlab', 'url']);
 	}//end isRemoteSource()
-
-	/**
-	 * Check if this configuration is local
-	 *
-	 * @return bool True if source type is local
-	 */
-	public function isLocalSource(): bool {
-		return $this->sourceType === 'local';
-	}//end isLocalSource()
-
-	/**
-	 * Check if this configuration is manually created
-	 *
-	 * @return bool True if source type is manual
-	 */
-	public function isManualSource(): bool {
-		return $this->sourceType === 'manual';
-	}//end isManualSource()
 
 	/**
 	 * String representation of the configuration

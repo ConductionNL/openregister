@@ -290,19 +290,6 @@ class ReferenceService {
 	}//end forEntry()
 
 	/**
-	 * Everything that points at one object: the other end of the link.
-	 *
-	 * @param string $targetUuid The referenced object.
-	 *
-	 * @return array<int, EntryReference> The rows.
-	 *
-	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
-	 */
-	public function forTarget(string $targetUuid): array {
-		return $this->references->findForTarget(targetUuid: $targetUuid);
-	}//end forTarget()
-
-	/**
 	 * Forget what an entry pointed at.
 	 *
 	 * @param string $entryUuid The entry.

@@ -23,7 +23,6 @@ final class SettingsControllerFactory {
 	 * @param IAppConfig $config Constructor argument.
 	 * @param IDBConnection $db Constructor argument.
 	 * @param ContainerInterface $container Constructor argument.
-	 * @param IAppManager $appManager Constructor argument.
 	 * @param AppSettingsInterface $settingsService Constructor argument.
 	 * @param LoggerInterface $logger Constructor argument.
 	 * @param ?IL10N $l10n Constructor argument.
@@ -36,7 +35,6 @@ final class SettingsControllerFactory {
 		\OCP\IAppConfig $config,
 		\OCP\IDBConnection $db,
 		\Psr\Container\ContainerInterface $container,
-		\OCP\App\IAppManager $appManager,
 		\OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface $settingsService,
 		\Psr\Log\LoggerInterface $logger,
 		?\OCP\IL10N $l10n = null,
@@ -52,7 +50,6 @@ final class SettingsControllerFactory {
 					container: $container,
 				),
 				runtime: new \OCA\OpenRegister\Controller\Support\SettingsRuntime(
-					appManager: $appManager,
 					logger: $logger,
 					l10n: $l10n,
 				),

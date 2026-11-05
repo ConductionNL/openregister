@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Service\Object\PropertySourceLanguage;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -343,36 +344,8 @@ class TranslationProjectionService {
 		string $property,
 		string $registerDefault,
 	): string {
-		// Step 1 — object-level override.
-		$body = (array)($object->getObject() ?? []);
-		$meta = $body['_translationMeta'] ?? null;
-		if (is_array($meta) === true
-			&& isset($meta[$property]) === true
-			&& is_array($meta[$property]) === true
-			&& isset($meta[$property]['sourceLanguage']) === true
-			&& is_string($meta[$property]['sourceLanguage']) === true
-			&& $meta[$property]['sourceLanguage'] !== ''
-		) {
-			return (string)$meta[$property]['sourceLanguage'];
-		}
-
-		// Step 2 — schema-property modifier.
-		$properties = $schema->getProperties() ?? [];
-		$definition = $properties[$property] ?? null;
-		if (is_array($definition) === true
-			&& isset($definition['sourceLanguage']) === true
-			&& is_string($definition['sourceLanguage']) === true
-			&& $definition['sourceLanguage'] !== ''
-		) {
-			return (string)$definition['sourceLanguage'];
-		}
-
-		// Step 3 — register default; Step 4 — hardcoded fallback.
-		if ($registerDefault !== '') {
-			return $registerDefault;
-		}
-
-		return 'nl';
+		$rule = new PropertySourceLanguage(schema: $schema, registerDefault: $registerDefault);
+		return $rule->forProperty(body: (array)($object->getObject() ?? []), property: $property);
 	}//end resolveSourceLanguage()
 
 	/**

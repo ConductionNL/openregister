@@ -66,7 +66,6 @@ class SettingsControllerSearchIndexStatusTest extends TestCase {
 			config: $this->createMock(originalClassName: IAppConfig::class),
 			db: $this->createMock(originalClassName: IDBConnection::class),
 			container: $container,
-			appManager: $this->createMock(originalClassName: IAppManager::class),
 			settingsService: $this->createMock(originalClassName: SettingsService::class),
 			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);

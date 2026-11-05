@@ -298,18 +298,6 @@ class ActivityProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-4
 	 */
 	public function health(): array {
-		$available = $this->isEnabled();
-		$status = 'unavailable';
-		$message = 'NC Activity app is not installed';
-		if ($available === true) {
-			$status = 'ok';
-			$message = null;
-		}
-
-		return [
-			'status' => $status,
-			'authStatus' => 'configured',
-			'message' => $message,
-		];
+		return $this->installedHealth(available: $this->isEnabled(), missing: 'NC Activity app is not installed');
 	}//end health()
 }//end class

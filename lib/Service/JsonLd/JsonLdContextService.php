@@ -94,22 +94,6 @@ class JsonLdContextService {
 	}//end getSchemaContextUrl()
 
 	/**
-	 * Build the absolute URL of the register-wide context document.
-	 *
-	 * @param Register $register The register.
-	 *
-	 * @return string The absolute context-document URL.
-	 *
-	 * @spec openspec/specs/json-ld-output/spec.md
-	 */
-	public function getRegisterContextUrl(Register $register): string {
-		return $this->urlGenerator->linkToRouteAbsolute(
-			'openregister.contexts.register',
-			['register' => $this->slugOf(entity: $register)]
-		);
-	}//end getRegisterContextUrl()
-
-	/**
 	 * Resolve the class IRI used as a serialized object's `@type` for a schema.
 	 *
 	 * Defaults to the schema slug (a term resolvable in the schema context),

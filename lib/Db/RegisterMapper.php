@@ -76,6 +76,8 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class RegisterMapper extends QBMapper implements RegisterMapperInterface {
+
+	use ColumnFiltersTrait;
 	use MultiTenancyTrait;
 	use SlugIdLookupTrait;
 
@@ -559,19 +561,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			->setMaxResults($limit)
 			->setFirstResult($offset ?? 0);
 
-		foreach ($filters ?? [] as $filter => $value) {
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull($filter));
-				continue;
-			}
-
-			if ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-				continue;
-			}
-
-			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-		}
+		$this->applyColumnFilters(qb: $qb, filters: $filters);
 
 		if (empty($searchConditions) === false) {
 			$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
@@ -967,25 +957,4 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 
 		return $matches;
 	}//end getAllRegisterIdsWithSchema()
-
-	/**
-	 * Check if a register has a schema with a specific title
-	 *
-	 * @param int $registerId The ID of the register
-	 * @param string $schemaTitle The title of the schema to look for
-	 *
-	 * @return Schema|null The schema if found, multi: null otherwise
-	 */
-	public function hasSchemaWithTitle(int $registerId, string $schemaTitle): ?Schema {
-		$schemas = $this->getSchemasByRegisterId(registerId: $registerId);
-
-		// Check each schema for a matching title.
-		foreach ($schemas as $schema) {
-			if ($schema->getTitle() === $schemaTitle) {
-				return $schema;
-			}
-		}
-
-		return null;
-	}//end hasSchemaWithTitle()
 }//end class

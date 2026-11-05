@@ -56,6 +56,28 @@ class EndpointLogMapperFindByEndpointsTest extends TestCase {
 		$this->assertSame(self::expectedLog('[3]', false), $this->queryLog);
 	}
 
+	public function testAPageWithinVisibleEndpointsCoversAllOfThem(): void {
+		$this->queuedRows = [[['id' => 4]], [['id' => 4], ['id' => 5]]];
+
+		[$logs, $total] = $this->mapper()->findPageWithin([3, 7], null, 5, 10);
+
+		$this->assertCount(1, $logs);
+		$this->assertSame(2, $total);
+		$this->assertContains('#1 param :p1 = [3,7], 101', $this->queryLog);
+		$this->assertContains('#2 param :p2 = [3,7], 101', $this->queryLog);
+	}
+
+	public function testAPageOfAVisibleEndpointNarrowsToIt(): void {
+		$this->mapper()->findPageWithin([3, 7], 7, 5, 10);
+
+		$this->assertContains('#1 param :p1 = [7], 101', $this->queryLog);
+	}
+
+	public function testAPageOfAnEndpointThatIsNotVisibleIsEmptyWithoutAQuery(): void {
+		$this->assertSame([[], 0], $this->mapper()->findPageWithin([3, 7], 99, 5, 10));
+		$this->assertSame([], $this->queryLog);
+	}
+
 	/**
 	 * @param string $ids   The rendered id list.
 	 * @param bool   $paged Whether limit 5 / offset 10 were given.

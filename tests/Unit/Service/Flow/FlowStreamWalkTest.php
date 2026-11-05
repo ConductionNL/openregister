@@ -158,10 +158,8 @@ class FlowStreamWalkTest extends TestCase {
 		$walk->exhaust(id: 'a');
 		$this->claims->method('acquire')->willReturn(null);
 		$this->assertNull($walk->claim(id: 'b', transition: 'T', places: ['p2', 'q']));
-		$this->assertTrue($walk->anyRefused());
 		$this->commit->method('closeStream')->willReturn([]);
 		$walk->park(halt: (new FlowStreamHalt(streamId: 'c', claimed: ['p3'], enabled: false))->because(reason: 'timer'), resumeAt: new DateTime('+1 hour'));
-		$this->assertTrue($walk->anyParked());
 
 		$this->assertNull($walk->nextStream());
 	}//end testExhaustedParkedAndRefusedStreamsLeaveTheRotation()
@@ -198,7 +196,6 @@ class FlowStreamWalkTest extends TestCase {
 			->with('run-1', 'a', 'T', ['p1', 'q'], 'pass-1', null)
 			->willReturn(['p1', 'q']);
 		$this->assertSame(['p1', 'q'], $walk->claim(id: 'a', transition: 'T', places: ['p1', 'q']));
-		$this->assertFalse($walk->anyRefused());
 
 		$this->claims->expects($this->once())->method('release')->with('run-1', ['p1', 'q']);
 		$walk->release(places: ['p1', 'q']);

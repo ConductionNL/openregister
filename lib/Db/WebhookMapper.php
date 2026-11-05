@@ -69,6 +69,8 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Webhook dispatching requires event and HTTP dependencies
  */
 class WebhookMapper extends QBMapper {
+
+	use ColumnFiltersTrait;
 	use MultiTenancyTrait;
 
 	/**
@@ -189,19 +191,7 @@ class WebhookMapper extends QBMapper {
 		}
 
 		// Step 4: Apply filters if provided.
-		foreach ($filters ?? [] as $filter => $value) {
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull($filter));
-				continue;
-			}
-
-			if ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-				continue;
-			}
-
-			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-		}
+		$this->applyColumnFilters(qb: $qb, filters: $filters);
 
 		// Step 5: Apply organisation filter for multi-tenancy.
 		// This ensures users only see webhooks from their organisation.

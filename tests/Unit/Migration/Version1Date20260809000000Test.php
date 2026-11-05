@@ -175,12 +175,11 @@ class Version1Date20260809000000Test extends TestCase {
 	}//end testCreatesSchemaCacheTableWithEveryColumnTheHandlerWrites()
 
 	/**
-	 * The facet cache table must carry every column setCachedFacetData() writes.
+	 * The facet cache table must carry every column a facet cache row holds.
 	 *
-	 * Source of truth: FacetCacheHandler::setCachedFacetData(), whose insert
-	 * names schema_id, facet_type, field_name, facet_config, cache_data,
-	 * created, updated and expires; its update arm keys on
-	 * (schema_id, field_name) and getCacheStatistics() groups by facet_type.
+	 * A row names schema_id, facet_type, field_name, facet_config, cache_data,
+	 * created, updated and expires; rows are keyed on (schema_id, field_name)
+	 * and FacetCacheHandler::getCacheStatistics() groups by facet_type.
 	 *
 	 * @return void
 	 */
@@ -213,7 +212,7 @@ class Version1Date20260809000000Test extends TestCase {
 		$this->assertContains(
 			'or_facet_cache_field_uniq',
 			$this->uniqueIndexes['openregister_schema_facet_cache'],
-			'setCachedFacetData() updates on (schema_id, field_name); without a UNIQUE index its upsert can duplicate.'
+			'Facet cache rows are keyed on (schema_id, field_name); without a UNIQUE index an upsert can duplicate.'
 		);
 		$this->assertContains('or_facet_cache_type_idx', $this->indexes['openregister_schema_facet_cache']);
 	}//end testCreatesFacetCacheTableWithEveryColumnTheHandlerWrites()

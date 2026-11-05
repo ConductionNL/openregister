@@ -40,6 +40,8 @@ use Throwable;
  * Read-only object-source provider backed by a remote OpenRegister instance.
  */
 class FederatedObjectSourceProvider implements ObjectSourceProvider {
+
+	use CountsThroughFindAll;
 	/**
 	 * Constructor.
 	 *
@@ -147,20 +149,6 @@ class FederatedObjectSourceProvider implements ObjectSourceProvider {
 
 		return $results;
 	}//end findAll()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @param Register $register The local shadow register.
-	 * @param Schema $schema The local shadow schema.
-	 * @param array<string, mixed> $query Query (search honoured).
-	 * @param array<string, mixed> $config Object-source config `{remoteUrl, shareToken}`.
-	 *
-	 * @return int The number of matching virtual objects.
-	 */
-	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
-		return count($this->findAll(register: $register, schema: $schema, query: $query, config: $config));
-	}//end count()
 
 	/**
 	 * Build the remote federation base URL from the source config.

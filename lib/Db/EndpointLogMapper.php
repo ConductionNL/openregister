@@ -145,6 +145,30 @@ class EndpointLogMapper extends QBMapper {
 	}//end findByEndpoints()
 
 	/**
+	 * One page of logs, and their total, of the given visible endpoints or of one of them
+	 *
+	 * @param int[]    $visibleIds The endpoints the caller can see
+	 * @param int|null $endpointId One endpoint to narrow to, or null for all visible ones
+	 * @param int|null $limit      Maximum number of results to return (null = no limit)
+	 * @param int|null $offset     Starting offset for pagination (null = no offset)
+	 *
+	 * @return array{0: list<EndpointLog>, 1: int<0, max>} The page and the total; empty when the endpoint is not visible
+	 *
+	 * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
+	 */
+	public function findPageWithin(array $visibleIds, ?int $endpointId, ?int $limit = null, ?int $offset = null): array {
+		$endpointIds = $visibleIds;
+		if ($endpointId !== null) {
+			$endpointIds = array_values(array_intersect([$endpointId], $visibleIds));
+		}
+
+		return [
+			$this->findByEndpoints(endpointIds: $endpointIds, limit: $limit, offset: $offset),
+			count($this->findByEndpoints(endpointIds: $endpointIds)),
+		];
+	}//end findPageWithin()
+
+	/**
 	 * Find a single log by ID
 	 *
 	 * Retrieves endpoint log entry by ID. Throws exception if log not found.

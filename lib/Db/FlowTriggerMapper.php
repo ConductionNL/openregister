@@ -134,39 +134,9 @@ class FlowTriggerMapper {
 	}//end findBySchema()
 
 	/**
-	 * Whether a flow has any derived trigger rows at all.
-	 *
-	 * This is what the column fallback turns on: a flow with NO rows has not
-	 * been converted (or cannot be), and its columns still decide. Asking
-	 * "are there rows" rather than "did the match succeed" is deliberate —
-	 * a converted flow that simply does not want THIS event must not fall back
-	 * to its columns and fire anyway.
-	 *
-	 * @param string $flowUuid The flow's UUID.
-	 *
-	 * @return bool Whether the flow is represented in the index.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-the-cutover-from-trigger-columns-to-trigger-nodes-must-be-proven-per-flow
-	 */
-	public function hasTriggers(string $flowUuid): bool {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('flow_uuid')
-			->from(self::TABLE)
-			->where($qb->expr()->eq('flow_uuid', $qb->createNamedParameter($flowUuid)))
-			->setMaxResults(1);
-
-		$result = $qb->executeQuery();
-		$row = $result->fetch();
-		$result->closeCursor();
-
-		return ($row !== false);
-	}//end hasTriggers()
-
-	/**
 	 * The UUIDs of every flow represented in the index.
 	 *
-	 * Used to decide, in ONE read, which flows the column fallback still owns —
-	 * rather than asking `hasTriggers()` per candidate flow.
+	 * Used to decide, in one read, which flows the column fallback still owns.
 	 *
 	 * @return array<int, string> The flow UUIDs.
 	 *

@@ -475,18 +475,6 @@ class TalkProvider extends AbstractIntegrationProvider {
 	 *              behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
 	 */
 	public function health(): array {
-		$installed = $this->appManager->isInstalled(self::REQUIRED_APP);
-		$status = 'unavailable';
-		$message = 'NC Talk (spreed) is not installed';
-		if ($installed === true) {
-			$status = 'ok';
-			$message = null;
-		}
-
-		return [
-			'status' => $status,
-			'authStatus' => 'configured',
-			'message' => $message,
-		];
+		return $this->installedHealth(available: $this->appManager->isInstalled(self::REQUIRED_APP) === true, missing: 'NC Talk (spreed) is not installed');
 	}//end health()
 }//end class
