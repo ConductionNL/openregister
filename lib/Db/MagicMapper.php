@@ -12226,10 +12226,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return array Array of complete objects with object_status field
 	 *
 	 * @throws \OCP\DB\Exception If a database error occurs
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	public function ultraFastBulkSave(
 		array $insertObjects = [],
@@ -12253,56 +12249,23 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// MIXED SCHEMA SUPPORT: If schema is null and we have objects with different schemas,
 		// group them by register+schema and process each group separately.
 		if ($schema === null && count($insertObjects) > 0) {
-			$schemaGroups = [];
-			foreach ($insertObjects as $obj) {
-				$objSchemaId = $obj['@self']['schema'] ?? null;
-				$objRegisterId = $obj['@self']['register'] ?? ($register?->getId());
-				if ($objSchemaId !== null) {
-					$groupKey = "{$objRegisterId}_{$objSchemaId}";
-					$schemaGroups[$groupKey][] = $obj;
-				}
-			}
+			$schemaGroups = $this->groupBulkInsertsBySchema(insertObjects: $insertObjects, register: $register);
 
 			if (count($schemaGroups) > 1) {
 				$allResults = [];
 				foreach ($schemaGroups as $groupKey => $groupObjects) {
 					[$groupRegisterId, $groupSchemaId] = explode('_', $groupKey);
 
-					$groupRegister = $register;
-					$groupSchema = null;
-
-					if ($groupRegister === null) {
-						try {
-							$groupRegister = $this->registerMapper->find(id: (int)$groupRegisterId, _multitenancy: false);
-						} catch (\Exception $e) {
-							$this->logger->warning(
-								message: '[MagicMapper] Failed to resolve register for group',
-								context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $groupRegisterId]
-							);
-						}
-					}
-
-					// $groupSchemaId comes from explode() on the group key, so it is
-					// always a string — the null guard here could never skip.
-					try {
-						$groupSchema = $this->schemaMapper->find(id: (int)$groupSchemaId, _multitenancy: false);
-					} catch (\Exception $e) {
-						$this->logger->warning(
-							message: '[MagicMapper] Failed to resolve schema for group',
-							context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $groupSchemaId]
-						);
-					}
-
 					$groupResults = $this->ultraFastBulkSaveSingleSchema(
 						insertObjects: $groupObjects,
 						updateObjects: [],
-						register: $groupRegister,
-						schema: $groupSchema,
+						register: $this->bulkGroupRegister(register: $register, registerId: $groupRegisterId),
+						schema: $this->bulkGroupSchema(schemaId: $groupSchemaId),
 						needsPreUpdateState: $needsPreUpdateState
 					);
 
 					$allResults = array_merge($allResults, $groupResults);
-				}//end foreach
+				}
 
 				return $allResults;
 			}//end if
@@ -12316,6 +12279,71 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			needsPreUpdateState: $needsPreUpdateState
 		);
 	}//end ultraFastBulkSave()
+
+	/**
+	 * Group bulk inserts by their register and schema; objects without a schema are left out.
+	 *
+	 * @param array         $insertObjects The objects to insert.
+	 * @param Register|null $register      The register an object without its own falls back to.
+	 *
+	 * @return array<string, array> The objects per "registerId_schemaId" key, in first-seen order.
+	 */
+	private function groupBulkInsertsBySchema(array $insertObjects, ?Register $register): array {
+		$schemaGroups = [];
+		foreach ($insertObjects as $obj) {
+			$objSchemaId = $obj['@self']['schema'] ?? null;
+			$objRegisterId = $obj['@self']['register'] ?? ($register?->getId());
+			if ($objSchemaId !== null) {
+				$groupKey = "{$objRegisterId}_{$objSchemaId}";
+				$schemaGroups[$groupKey][] = $obj;
+			}
+		}
+
+		return $schemaGroups;
+	}//end groupBulkInsertsBySchema()
+
+	/**
+	 * The register one schema group of a bulk save writes to.
+	 *
+	 * @param Register|null $register   The register given for the whole save, if any.
+	 * @param string        $registerId The group's register id.
+	 *
+	 * @return Register|null The register, or null when it cannot be found.
+	 */
+	private function bulkGroupRegister(?Register $register, string $registerId): ?Register {
+		if ($register !== null) {
+			return $register;
+		}
+
+		try {
+			return $this->registerMapper->find(id: (int)$registerId, _multitenancy: false);
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[MagicMapper] Failed to resolve register for group',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $registerId]
+			);
+			return null;
+		}
+	}//end bulkGroupRegister()
+
+	/**
+	 * The schema one schema group of a bulk save writes to.
+	 *
+	 * @param string $schemaId The group's schema id.
+	 *
+	 * @return Schema|null The schema, or null when it cannot be found.
+	 */
+	private function bulkGroupSchema(string $schemaId): ?Schema {
+		try {
+			return $this->schemaMapper->find(id: (int)$schemaId, _multitenancy: false);
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[MagicMapper] Failed to resolve schema for group',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $schemaId]
+			);
+			return null;
+		}
+	}//end bulkGroupSchema()
 
 	/**
 	 * Ultra-fast bulk save for a single schema (internal method).
