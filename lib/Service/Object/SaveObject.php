@@ -5021,7 +5021,7 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-an-object-slug-once-set-must-not-be-changed-by-a-later-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-an-object-slug-once-set-must-not-be-changed-by-a-later-save
 	 */
 	private function decideSlug(ObjectEntity $entity, Schema $schema, ?string $stored, array $sent): void {
 		[$selfData, $data] = $sent;
@@ -5038,7 +5038,7 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @return ObjectSlugHandler The handler.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function getSlugHandler(): ObjectSlugHandler {
 		return $this->slugHandler;
@@ -5052,7 +5052,7 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @return string|null The non-empty string, or null.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
 	 */
 	private function clientSlug(array $selfData, array $data): ?string {
 		// Keep in step with BulkObjectSlugs::apply(), which reads the

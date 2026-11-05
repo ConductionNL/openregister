@@ -33,7 +33,7 @@ use Throwable;
 /**
  * Slug holders on the magic tables, and registers resolved once per request.
  *
- * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
  */
 class ObjectSlugStore {
 
@@ -67,7 +67,7 @@ class ObjectSlugStore {
 	 *
 	 * @return string|null The holder's uuid, or null when the slug is free.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function holderOf(ObjectSlugScope $scope, string $slug, string $excludeUuid): ?string {
 		if ($scope->register === null) {
@@ -86,7 +86,7 @@ class ObjectSlugStore {
 	 *
 	 * @return array{holders: array<string, list<string>>, stored: array<string, string|null>}
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function state(ObjectSlugScope $scope, array $slugs, array $uuids): array {
 		if ($scope->register === null) {
@@ -103,7 +103,7 @@ class ObjectSlugStore {
 	 *
 	 * @return Register|null Null when it does not resolve (the slug is then left empty).
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function register(int|string|null $registerId): ?Register {
 		if ($registerId === null || $registerId === '') {

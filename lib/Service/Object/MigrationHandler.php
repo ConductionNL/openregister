@@ -217,7 +217,7 @@ class MigrationHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	private function keepSlugFreeAtTarget(ObjectEntity $sourceObject, MigrationRun $run): void {
 		$register = $run->target->registerEntity;
