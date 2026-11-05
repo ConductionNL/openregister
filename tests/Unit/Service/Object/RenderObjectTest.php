@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\RenderContext;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\SystemTag\ISystemTag;
@@ -3543,7 +3544,7 @@ class RenderObjectTest extends TestCase {
 		$extend = ['@self.register', '@self.schema'];
 
 		$result = $this->invokePrivate('extendObject', [
-			$entity, $extend, $objectData, 0, [], [], [], [],
+			$entity, $objectData, new RenderContext($extend, 0, [], [], [], null, null, null, [], true),
 		]);
 
 		$this->assertArrayHasKey('@self', $result);
@@ -3571,7 +3572,7 @@ class RenderObjectTest extends TestCase {
 		$extend = ['ref'];
 
 		$result = $this->invokePrivate('extendObject', [
-			$entity, $extend, $objectData, 0, [], [], [], [],
+			$entity, $objectData, new RenderContext($extend, 0, [], [], [], null, null, null, [], true),
 		]);
 
 		// ref should be extended to the full object.
@@ -3599,7 +3600,7 @@ class RenderObjectTest extends TestCase {
 		$extend = ['all'];
 
 		$result = $this->invokePrivate('extendObject', [
-			$entity, $extend, $objectData, 0, [], [], [], [],
+			$entity, $objectData, new RenderContext($extend, 0, [], [], [], null, null, null, [], true),
 		]);
 
 		$this->assertIsArray($result);
@@ -6572,4 +6573,537 @@ class RenderObjectTest extends TestCase {
 		);
 	}//end testResolveTranslationsForRowsKeepsRawMapWhenTranslationsAll()
 
+	// =========================================================================
+	// handleInversedProperties — uncached fallback path
+	// =========================================================================
+
+	/**
+	 * The objects of the fallback path: the referencing rows for an entity, plus the extra-field match.
+	 *
+	 * @param string $uuid The rendered entity's UUID.
+	 *
+	 * @return array{0: ObjectEntity[], 1: ObjectEntity}
+	 */
+	private function inverseFallbackRows(string $uuid): array {
+		$row = function (int $id, string $rowUuid, string $schema, array $data): ObjectEntity {
+			$entity = $this->createObjectEntity($id, $rowUuid, $data);
+			$entity->setSchema($schema);
+			$entity->setRegister(1);
+			return $entity;
+		};
+		$rows = [
+			$row(11, 'c1000000-0000-0000-0000-000000000001', '2', ['org' => $uuid]),
+			$row(12, 'c1000000-0000-0000-0000-000000000002', '2', ['org' => ['x', $uuid]]),
+			$row(13, 'c1000000-0000-0000-0000-000000000003', '3', ['org' => $uuid]),
+			$row(14, 'c1000000-0000-0000-0000-000000000004', '2', ['lead' => 'https://h/objects/' . $uuid]),
+			$row(15, 'c1000000-0000-0000-0000-000000000005', '2', ['lead' => ['value' => $uuid]]),
+			$row(16, 'c1000000-0000-0000-0000-000000000006', '2', ['lead' => 'other']),
+			$row(17, 'c1000000-0000-0000-0000-000000000007', '2', ['org' => ['value' => ['y', $uuid]]]),
+		];
+		$nameless = $row(19, 'c1000000-0000-0000-0000-000000000009', '2', ['org' => 'none']);
+		$nameless->setUuid(null);
+		$rows[] = $nameless;
+		$extra = $row(18, 'c1000000-0000-0000-0000-000000000008', '2', ['alsoOrg' => ['value' => $uuid]]);
+		return [$rows, $extra];
+	}
+
+	/**
+	 * With a cold cache and a failing batch preload, inverse properties come from the cross-table lookup.
+	 *
+	 * @return void
+	 */
+	public function testHandleInversedPropertiesFallsBackToTheCrossTableLookup(): void {
+		$uuid = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+		$entity = $this->createBasicEntity(1, $uuid, ['name' => 'Test']);
+		$schema = $this->createSchema(1, 'org-schema');
+		$schema->setProperties([
+			'contacts' => ['type' => 'array', 'items' => ['inversedBy' => ['org', 'alsoOrg'], '$ref' => '2']],
+			'lead' => ['type' => 'object', 'inversedBy' => 'lead', '$ref' => '2'],
+			'leads' => ['type' => 'array', 'inversedBy' => 'lead', '$ref' => '2'],
+			'own' => ['type' => 'object', 'inversedBy' => 'org'],
+			'plain' => ['type' => 'string'],
+		]);
+		$target = $this->createSchema(2, 'contact-schema');
+		$this->schemaMapper->method('find')->willReturnCallback(
+			static fn ($id) => ((string)$id === '2') ? $target : $schema
+		);
+
+		[$rows, $extra] = $this->inverseFallbackRows($uuid);
+		$crossTableCalls = 0;
+		$this->objectMapper->method('findByRelation')->willReturnCallback(
+			function (string $search) use ($uuid, $rows, &$crossTableCalls): array {
+				$this->assertSame($uuid, $search);
+				$crossTableCalls++;
+				return $rows;
+			}
+		);
+		$extraCalls = [];
+		$this->objectMapper->method('findByRelationBatchInSchema')->willReturnCallback(
+			function (...$args) use (&$crossTableCalls, &$extraCalls, $extra, $rows): array {
+				if ($crossTableCalls === 0) {
+					throw new Exception('batch preload down');
+				}
+
+				$extraCalls[] = $args;
+				return [$extra, $rows[0]];
+			}
+		);
+
+		$result = $this->invokePrivate('handleInversedProperties', [$entity, ['name' => 'Test', 'own' => 'kept'], 0]);
+
+		$ids = static fn (array $rendered): array => array_map(static fn (array $one) => $one['@self']['id'] ?? $one['id'] ?? null, $rendered);
+		$this->assertSame(1, $crossTableCalls);
+		$this->assertSame([[[$uuid], 2, 1, 'org', ['alsoOrg']]], $extraCalls);
+		$this->assertSame('Test', $result['name']);
+		$this->assertSame(
+			[
+				'c1000000-0000-0000-0000-000000000001', 'c1000000-0000-0000-0000-000000000002',
+				'c1000000-0000-0000-0000-000000000007', 'c1000000-0000-0000-0000-000000000008',
+			],
+			$ids($result['contacts'])
+		);
+		$this->assertSame('c1000000-0000-0000-0000-000000000005', $result['lead']['@self']['id'] ?? $result['lead']['id'] ?? null);
+		$this->assertSame(
+			['c1000000-0000-0000-0000-000000000004', 'c1000000-0000-0000-0000-000000000005'],
+			$ids($result['leads'])
+		);
+		$this->assertNull($result['own']);
+		$this->assertArrayNotHasKey('plain', $result);
+
+		$cache = (new ReflectionClass($this->handler))->getProperty('objectsCache');
+		$cache->setAccessible(true);
+		$cached = array_keys($cache->getValue($this->handler));
+		$this->assertSame(
+			[
+				'c1000000-0000-0000-0000-000000000001', 'c1000000-0000-0000-0000-000000000002',
+				'c1000000-0000-0000-0000-000000000003', 'c1000000-0000-0000-0000-000000000004',
+				'c1000000-0000-0000-0000-000000000005', 'c1000000-0000-0000-0000-000000000006',
+				'c1000000-0000-0000-0000-000000000007', 'c1000000-0000-0000-0000-000000000008',
+			],
+			array_slice($cached, 0, 8)
+		);
+		$this->assertNotContains('', $cached);
+	}
+
+	/**
+	 * An entity whose schema has no inverse properties keeps its data and asks nothing.
+	 *
+	 * @return void
+	 */
+	public function testHandleInversedPropertiesWithoutInverseConfigurationAsksNothing(): void {
+		$entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', ['name' => 'Test']);
+		$schema = $this->createSchema(1, 'plain-schema');
+		$schema->setProperties(['name' => ['type' => 'string']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->objectMapper->expects($this->never())->method('findByRelation');
+
+		$this->assertSame(['name' => 'Test'], $this->invokePrivate('handleInversedProperties', [$entity, ['name' => 'Test'], 0]));
+	}
+
+	// =========================================================================
+	// batchPreloadFileObjects — page-wide file and tag prefetch
+	// =========================================================================
+
+	/**
+	 * A tag double with an id and a name.
+	 *
+	 * @param string $id   The tag id.
+	 * @param string $name The tag name.
+	 *
+	 * @return ISystemTag
+	 */
+	private function preloadTag(string $id, string $name): ISystemTag {
+		$tag = $this->createMock(ISystemTag::class);
+		$tag->method('getId')->willReturn($id);
+		$tag->method('getName')->willReturn($name);
+		return $tag;
+	}
+
+	/**
+	 * The private request caches the prefetch fills.
+	 *
+	 * @param string $name The cache property.
+	 *
+	 * @return array
+	 */
+	private function preloadCache(string $name): array {
+		$prop = (new ReflectionClass($this->handler))->getProperty($name);
+		$prop->setAccessible(true);
+		return $prop->getValue($this->handler);
+	}
+
+	/**
+	 * The prefetch loads every numeric file id of every file property of the page once, with tags, skipping base64.
+	 *
+	 * @return void
+	 */
+	public function testBatchPreloadFileObjectsCachesFilesAndTagsForThePage(): void {
+		$schema = $this->createSchema(1, 'files-schema');
+		$schema->setProperties([
+			'doc' => ['type' => 'file'],
+			'docs' => ['type' => 'array', 'items' => ['type' => 'file']],
+			'raw' => ['type' => 'file', 'format' => 'base64'],
+			'raws' => ['type' => 'array', 'items' => ['type' => 'file', 'format' => 'base64']],
+			'name' => ['type' => 'string'],
+			'odd' => 'not-a-config',
+		]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$one = $this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001', ['doc' => 5, 'docs' => ['7', 'x', 5, 9.0], 'raw' => 11, 'raws' => [12], 'name' => '13', 'odd' => 14]);
+		$two = $this->createBasicEntity(2, 'aaaaaaaa-0000-0000-0000-000000000002', ['doc' => '3', 'docs' => null]);
+		$three = $this->createBasicEntity(3, 'aaaaaaaa-0000-0000-0000-000000000003', ['doc' => (object)['id' => 4]]);
+
+		$this->fileMapper->expects($this->once())->method('getFilesByIds')->with([5, 7, 9, 3])->willReturn([
+			'5' => ['fileid' => 5, 'path' => '/a/five.pdf', 'name' => 'five.pdf', 'size' => '10'],
+			'3' => ['fileid' => 3, 'path' => '/a/three.txt', 'name' => 'three.txt', 'size' => 3, 'mimetype' => 'text/plain'],
+		]);
+		$this->systemTagMapper->expects($this->once())->method('getTagIdsForObjects')
+			->with(['5', '7', '9', '3'], 'files')
+			->willReturn([5 => ['t1', 't2'], 3 => ['t2', 't3'], 9 => []]);
+		$this->systemTagManager->expects($this->once())->method('getTagsByIds')->with(['t1', 't2', 't3'])->willReturn([
+			$this->preloadTag('t1', 'invoice'),
+			$this->preloadTag('t2', 'object:internal'),
+			$this->preloadTag('t3', 'public'),
+		]);
+
+		$this->invokePrivate('batchPreloadFileObjects', [[$one, 'not-an-entity', $two, $three]]);
+
+		$this->assertSame(['5' => ['invoice'], '7' => [], '9' => [], '3' => ['public']], $this->preloadCache('fileTagsCache'));
+		$files = $this->preloadCache('fileObjectCache');
+		$this->assertSame(['5', '7', '9', '3'], array_map('strval', array_keys($files)));
+		$this->assertNull($files['7']);
+		$this->assertNull($files['9']);
+		$this->assertSame(['5', 'five.pdf', 'pdf', 10, ['invoice']], [$files['5']['id'], $files['5']['title'], $files['5']['extension'], $files['5']['size'], $files['5']['labels']]);
+		$this->assertSame(['3', 'text/plain', ['public']], [$files['3']['id'], $files['3']['type'], $files['3']['labels']]);
+	}
+
+	/**
+	 * A page without file ids asks nothing, and a failing prefetch leaves the caches for per-row lookups.
+	 *
+	 * @return void
+	 */
+	public function testBatchPreloadFileObjectsAsksNothingWithoutFileIdsAndSurvivesAFailure(): void {
+		$schema = $this->createSchema(1, 'files-schema');
+		$schema->setProperties(['doc' => ['type' => 'file']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->fileMapper->expects($this->once())->method('getFilesByIds')->willThrowException(new Exception('db down'));
+		$this->systemTagMapper->expects($this->never())->method('getTagIdsForObjects');
+
+		$this->invokePrivate('batchPreloadFileObjects', [[]]);
+		$this->invokePrivate('batchPreloadFileObjects', [[$this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001', ['doc' => null])]]);
+		$this->invokePrivate('batchPreloadFileObjects', [[$this->createBasicEntity(2, 'aaaaaaaa-0000-0000-0000-000000000002', ['doc' => 8])]]);
+
+		$this->assertSame([], $this->preloadCache('fileTagsCache'));
+		$this->assertSame([], $this->preloadCache('fileObjectCache'));
+	}
+
+	/**
+	 * Files without tags never ask the tag manager.
+	 *
+	 * @return void
+	 */
+	public function testBatchPreloadFileObjectsSkipsTheTagLookupWhenNoFileHasTags(): void {
+		$schema = $this->createSchema(1, 'files-schema');
+		$schema->setProperties(['doc' => ['type' => 'file']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->fileMapper->method('getFilesByIds')->willReturn([]);
+		$this->systemTagMapper->method('getTagIdsForObjects')->willReturn([]);
+		$this->systemTagManager->expects($this->never())->method('getTagsByIds');
+
+		$this->invokePrivate('batchPreloadFileObjects', [[$this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001', ['doc' => 8])]]);
+
+		$this->assertSame(['8' => []], $this->preloadCache('fileTagsCache'));
+		$this->assertSame(['8' => null], $this->preloadCache('fileObjectCache'));
+	}
+
+	// =========================================================================
+	// handleExtendDot — lists, single references, cycles and link exposure
+	// =========================================================================
+
+	/**
+	 * The rendered references reduced to what the extend decided: id, name and the exposed secret.
+	 *
+	 * @param mixed $value A rendered value.
+	 *
+	 * @return mixed
+	 */
+	private function extendView(mixed $value): mixed {
+		if (is_array($value) === false) {
+			return $value;
+		}
+
+		if (isset($value['@circular']) === true) {
+			return 'circular:' . $value['id'];
+		}
+
+		if (array_key_exists('name', $value) === true || isset($value['@self']) === true || isset($value['id']) === true) {
+			return [($value['@self']['id'] ?? $value['id'] ?? null), ($value['name'] ?? null), ($value['secret'] ?? null), $this->extendView($value['friend'] ?? null)];
+		}
+
+		return array_map(fn ($one) => $this->extendView($one), $value);
+	}
+
+	/**
+	 * Run handleExtendDot over one fixture page with the given flag and visited ids.
+	 *
+	 * @param bool $allFlag Whether everything is extended.
+	 *
+	 * @return array
+	 */
+	private function runExtendDot(bool $allFlag): array {
+		$this->setupBasicMocks();
+		$cache = [];
+		foreach (['u1' => 'One', 'u2' => 'Two', 'u3' => 'Three'] as $uuid => $name) {
+			$entity = $this->createBasicEntity(1, $uuid, ['name' => $name, 'secret' => 's-' . $uuid, 'friend' => 'u2']);
+			$cache[$uuid] = $entity;
+		}
+
+		$prop = (new ReflectionClass($this->handler))->getProperty('objectsCache');
+		$prop->setAccessible(true);
+		$prop->setValue($this->handler, $cache);
+
+		$data = [
+			'list' => ['u1', null, '@skip', 'missing', ['id' => 'pre', 'name' => 'Pre', 'secret' => 'x'], ['other' => 1], 'u3'],
+			'single' => 'https://h/api/objects/u2',
+			'under' => '_u1',
+			'at' => '@u1',
+			'circ' => 'u3',
+			'gone' => 'nowhere',
+			'dotted' => new \Adbar\Dot(['u1']),
+			'plain' => 'u1',
+		];
+		$extend = ['list', 'single', 'under', 'at', 'circ', 'gone', 'named' => 'plain', 'dotted', 'list.friend'];
+		$exposures = ['list' => ['exposes' => ['name']], 'single' => ['exposes' => ['name']]];
+
+		return $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, $allFlag, ['u3'], $exposures]);
+	}
+
+	/**
+	 * handleExtendDot renders references where the extend list asks, applies the link exposure and marks cycles.
+	 *
+	 * @return void
+	 */
+	public function testHandleExtendDotRendersListsSinglesCyclesAndExposures(): void {
+		$plain = '{"list":[["u1","One","__withheld__","__withheld__"],"missing",["pre","Pre","__withheld__",null],"circular:u3"],'
+			. '"single":["u2","Two","__withheld__","__withheld__"],"under":"_u1","at":"@u1","circ":"circular:u3","gone":"nowhere",'
+			. '"dotted":[["u1","One","s-u1",["u2","Two","s-u2","u2"]]],"plain":"u1","named":["u1","One","s-u1",["u2","Two","s-u2","u2"]]}';
+		$this->assertSame(json_decode($plain, true), $this->extendView($this->runExtendDot(false)));
+	}
+
+	/**
+	 * With the all flag, extended references extend everything below them too.
+	 *
+	 * @return void
+	 */
+	public function testHandleExtendDotWithTheAllFlagExtendsBelowTheReference(): void {
+		$deep = '[["u2","Two","s-u2","u2"],"Two","s-u2",["u2","Two","s-u2","u2"],["u2","u2",null,null]]';
+		$all = '{"list":[["u1","One","__withheld__","__withheld__"],"missing",["pre","Pre","__withheld__",null],"circular:u3"],'
+			. '"single":["u2","Two","__withheld__","__withheld__"],"under":"_u1","at":"@u1","circ":"circular:u3","gone":"nowhere",'
+			. '"dotted":[["u1","One","s-u1",' . $deep . ']],"plain":"u1","named":["u1","One","s-u1",' . $deep . ']}';
+		$this->assertSame(json_decode($all, true), $this->extendView($this->runExtendDot(true)));
+	}
+
+	// =========================================================================
+	// renderEntities — what every row is rendered with
+	// =========================================================================
+
+	/**
+	 * A RenderObject whose renderEntity() records its arguments, with the state of the real handler.
+	 *
+	 * @param array $calls Receives each renderEntity() call.
+	 *
+	 * @return RenderObject
+	 */
+	private function renderEntitySpy(array &$calls): RenderObject {
+		$spy = $this->getMockBuilder(RenderObject::class)->disableOriginalConstructor()->onlyMethods(['renderEntity'])->getMock();
+		$values = [];
+		foreach ((new ReflectionClass(RenderObject::class))->getProperties() as $prop) {
+			if ($prop->isStatic() === false && $prop->isInitialized($this->handler) === true) {
+				$values[$prop->getName()] = $prop->getValue($this->handler);
+			}
+		}
+
+		\Closure::bind(function (array $values): void {
+			foreach ($values as $name => $value) {
+				$this->$name = $value;
+			}
+		}, $spy, RenderObject::class)($values);
+
+		$spy->method('renderEntity')->willReturnCallback(
+			function (ObjectEntity $entity, ...$args) use (&$calls, $spy): ObjectEntity {
+				$state = \Closure::bind(fn (): array => [$this->batchFileIdsCache, $this->pageRenderActive], $spy, RenderObject::class)();
+				$calls[] = ['uuid' => $entity->getUuid(), 'args' => $args, 'fileIds' => $state[0], 'pageRender' => $state[1]];
+				return $entity;
+			}
+		);
+
+		return $spy;
+	}
+
+	/**
+	 * Every row gets the page's options as lists, the page caches are set during and cleared after, and no row keeps its source.
+	 *
+	 * @return void
+	 */
+	public function testRenderEntitiesRendersEveryRowWithThePageOptions(): void {
+		$this->setupBasicMocks();
+		$one = $this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001', ['name' => 'One']);
+		$one->setSource('src');
+		$two = $this->createBasicEntity(2, 'aaaaaaaa-0000-0000-0000-000000000002', ['name' => 'Two']);
+		$this->fileMapper->expects($this->once())->method('getFileIdsForObjects')
+			->with(['aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000002'])
+			->willReturn(['aaaaaaaa-0000-0000-0000-000000000001' => [7]]);
+
+		$calls = [];
+		$spy = $this->renderEntitySpy($calls);
+		$rendered = $spy->renderEntities([$one, $two], 'owner,lead', ' f1 , ,f2', 'name, ,title ', ' secret ', false, false);
+
+		// Positional: extend, depth, filter, fields, unset, registers, schemas, objects, visitedIds, rbac, multitenancy.
+		$expectedArgs = [['owner', 'lead'], 0, [0 => 'f1', 2 => 'f2'], [0 => 'name', 2 => 'title'], ['secret'], [], [], [], [], false, false];
+		$this->assertCount(2, $calls);
+		foreach ($calls as $call) {
+			$this->assertSame($expectedArgs, $call['args']);
+			$this->assertSame(['aaaaaaaa-0000-0000-0000-000000000001' => [7]], $call['fileIds']);
+			$this->assertTrue($call['pageRender']);
+		}
+
+		$this->assertSame([$one, $two], $rendered);
+		$this->assertNull($one->getSource());
+		$state = \Closure::bind(fn (): array => [$this->batchFileIdsCache, $this->pageRenderActive], $spy, RenderObject::class)();
+		$this->assertSame([null, false], $state);
+	}
+
+	/**
+	 * A page that extends @self.files does not prefetch the lightweight file ids; array options pass unchanged.
+	 *
+	 * @return void
+	 */
+	public function testRenderEntitiesSkipsTheFileIdPrefetchWhenFilesAreExtended(): void {
+		$this->setupBasicMocks();
+		$this->fileMapper->expects($this->never())->method('getFileIdsForObjects');
+		$calls = [];
+		$this->renderEntitySpy($calls)->renderEntities(
+			[$this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001')],
+			['@self.files'],
+			['a' => ' b '],
+			[' c '],
+			null
+		);
+
+		$this->assertSame(
+			[['@self.files'], 0, ['a' => ' b '], [' c '], null, [], [], [], [], true, true],
+			$calls[0]['args']
+		);
+	}
+
+	// =========================================================================
+	// extendObjectSourceRefs — references into object-source schemas
+	// =========================================================================
+
+	/**
+	 * Extended references into an object-source schema resolve through its provider and leave the extend list.
+	 *
+	 * @return void
+	 */
+	public function testExtendObjectSourceRefsResolvesThroughTheProvider(): void {
+		[$objectData, $extend, $asked] = $this->runSourceRefExtend();
+		$name = static fn ($rendered) => is_array($rendered) ? ($rendered['name'] ?? $rendered) : $rendered;
+		$this->assertSame('Org 1', $name($objectData['org']));
+		$this->assertSame(['Org 2', 9, ['x' => 1]], array_map($name, $objectData['orgs']));
+		$this->assertSame(['id' => 'kept', 'name' => 'Embedded'], $objectData['emb']);
+		$this->assertSame('p-1', $objectData['plain']);
+		$this->assertSame(['plain', 'blank', 'other'], $extend);
+		$this->assertSame([[1, 38, '1', ['table' => 't']], [1, 38, '2', ['table' => 't']], [1, 38, '9', ['table' => 't']]], $asked);
+	}
+
+	/**
+	 * A disabled provider resolves nothing and leaves the extend list alone.
+	 *
+	 * @return void
+	 */
+	public function testExtendObjectSourceRefsSkipsADisabledProvider(): void {
+		$this->sourceEnabled = false;
+		[$objectData, $extend, $asked] = $this->runSourceRefExtend();
+		$this->assertSame(1, $objectData['org']);
+		$this->assertSame(['org', 'orgs', 'emb', 'org.sub', 'plain', 'blank', 'other'], $extend);
+		$this->assertSame([], $asked);
+	}
+
+	/** Whether the object-source provider of the source-ref fixture is enabled. */
+	private bool $sourceEnabled = true;
+
+	/**
+	 * Run extendObjectSourceRefs() over the source-ref fixture.
+	 *
+	 * @return array{0: array, 1: array, 2: array} The object data, the remaining extends and the provider calls.
+	 */
+	private function runSourceRefExtend(): array {
+		$own = $this->createSchema(1, 'people');
+		$own->setProperties([
+			'org' => ['type' => 'object', '$ref' => 38],
+			'orgs' => ['type' => 'array', 'items' => ['$ref' => 'orgs-slug']],
+			'emb' => ['type' => 'object', '$ref' => 38],
+			'plain' => ['type' => 'object', '$ref' => 2],
+			'blank' => ['type' => 'object', '$ref' => ''],
+			'odd' => 'not-a-definition',
+		]);
+		$source = $this->createSchema(38, 'orgs-slug');
+		$source->setConfiguration(['x-openregister-object-source' => ['provider' => 'org-source', 'config' => ['table' => 't']]]);
+		$native = $this->createSchema(2, 'native');
+		$this->schemaMapper->method('find')->willReturnCallback(
+			static fn ($id) => match ((string)$id) { '1' => $own, '38', 'orgs-slug' => $source, '2' => $native, default => throw new Exception('none') }
+		);
+		$register = $this->createRegister(1, 'reg');
+		$this->registerMapper->method('find')->willReturn($register);
+
+		$asked = [];
+		$provider = $this->createMock(\OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider::class);
+		$provider->method('isEnabled')->willReturn($this->sourceEnabled);
+		$provider->method('find')->willReturnCallback(function ($reg, $schema, string $id, array $config = []) use (&$asked): ?ObjectEntity {
+			$asked[] = [$reg->getId(), $schema->getId(), $id, $config];
+			if ($id === '9') {
+				return null;
+			}
+
+			$row = $this->createObjectEntity((int)$id, 'row-' . $id, ['name' => 'Org ' . $id]);
+			$row->setSchema(38);
+			$row->setRegister(1);
+			return $row;
+		});
+		$registry = $this->createMock(\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry::class);
+		$registry->method('get')->willReturnCallback(static fn (string $name) => ($name === 'org-source') ? $provider : null);
+		$handler = (new ReflectionClass(RenderObject::class))->newInstanceWithoutConstructor();
+		$values = ['objectSourceRegistry' => $registry];
+		foreach ((new ReflectionClass(RenderObject::class))->getProperties() as $prop) {
+			if ($prop->isStatic() === false && $prop->isInitialized($this->handler) === true && $prop->getName() !== 'objectSourceRegistry') {
+				$values[$prop->getName()] = $prop->getValue($this->handler);
+			}
+		}
+
+		\Closure::bind(function (array $values): void {
+			foreach ($values as $name => $value) {
+				$this->$name = $value;
+			}
+		}, $handler, RenderObject::class)($values);
+		$this->handler = $handler;
+
+		$entity = $this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001');
+		$data = ['org' => 1, 'orgs' => [2, 9, ['x' => 1]], 'emb' => ['id' => 'kept', 'name' => 'Embedded'], 'plain' => 'p-1', 'blank' => 'b'];
+		[$objectData, $extend] = $this->invokePrivate(
+			'extendObjectSourceRefs',
+			[$entity, ['org', 'orgs', 'emb', 'org.sub', 'plain', 'blank', 'other'], $data, 0, ['visited']]
+		);
+
+		return [$objectData, $extend, $asked];
+	}
+
+	/**
+	 * Without a registry, or with nothing to extend, the data and extend list pass unchanged.
+	 *
+	 * @return void
+	 */
+	public function testExtendObjectSourceRefsWithoutARegistryChangesNothing(): void {
+		$entity = $this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001');
+		$this->assertSame([['org' => 1], ['org']], $this->invokePrivate('extendObjectSourceRefs', [$entity, ['org'], ['org' => 1], 0, []]));
+	}
 }

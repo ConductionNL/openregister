@@ -22,35 +22,35 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Vocabulary;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\IRequest;
 use Throwable;
 
 /**
  * Resolves the coded declaration a vocabulary-options read is about.
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 class VocabularyDeclarationResolver {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Reads the schema a coded property is declared on.
+	 * @param SchemaMapperInterface $schemaMapper Reads the schema a coded property is declared on.
 	 * @param CodedPropertyDeclarationFactory $declarationFactory Builds a declaration off a schema property.
 	 * @param IRequest $request Current request (the unsaved path reads its knobs off the query).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly CodedPropertyDeclarationFactory $declarationFactory,
 		private readonly IRequest $request,
 	) {
@@ -71,7 +71,7 @@ class VocabularyDeclarationResolver {
 	 *
 	 * @return CodedPropertyDeclaration|null The declaration, or null when neither source yields one.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function resolveDeclaration(string $schemaRef, string $property, string $schemeUri): ?CodedPropertyDeclaration {
 		if ($schemaRef !== '' && $property !== '') {
@@ -106,7 +106,7 @@ class VocabularyDeclarationResolver {
 	 *
 	 * @return array<string,mixed> The declaration.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	private function declarationFromQuery(string $scheme): array {
 		$declaration = ['scheme' => $scheme];

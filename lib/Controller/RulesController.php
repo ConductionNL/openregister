@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use DateTime;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rules\RuleEnablementService;
 use OCA\OpenRegister\Service\Rules\RuleCeilingException;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
@@ -62,7 +62,7 @@ use Throwable;
  *   the run log, the trial, the replay and the switch, which are the surfaces this change
  *   exists to add.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class RulesController extends Controller {
 
@@ -71,7 +71,7 @@ class RulesController extends Controller {
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
-	 * @param SchemaMapper $schemaMapper Resolves the schema a rule is declared on.
+	 * @param SchemaMapperInterface $schemaMapper Resolves the schema a rule is declared on.
 	 * @param RuleInventoryService $inventory Derives the rule list.
 	 * @param RuleRunMapper $runs Reads the run log.
 	 * @param RuleTrialService $trials Evaluates a rule without committing.
@@ -90,7 +90,7 @@ class RulesController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RuleInventoryService $inventory,
 		private readonly RuleRunMapper $runs,
 		private readonly RuleTrialService $trials,
@@ -118,7 +118,7 @@ class RulesController extends Controller {
 	 *
 	 * @contract tests/e2e/ci/rules-engine-operability.spec.ts
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function vocabulary(): JSONResponse {
 		return new JSONResponse($this->vocabulary->all());
@@ -130,9 +130,10 @@ class RulesController extends Controller {
 	 *
 	 * @param string $schema Schema id, uuid or slug.
 	 *
-	 * @return JSONResponse The inventory rows.
+	 * @return JSONResponse The inventory rows, narrowed by `scope[<property>]=<value>` when given.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function index(string $schema): JSONResponse {
@@ -142,11 +143,15 @@ class RulesController extends Controller {
 		}
 
 		$window = (int)($this->request->getParam('idleDays') ?? RuleInventoryService::DEFAULT_IDLE_DAYS);
+		$scope = $this->request->getParam('scope', []);
+		if (is_array($scope) === false) {
+			$scope = [];
+		}
 
 		return new JSONResponse(
 			[
 				'schema' => (string)($entity->getSlug() ?? ''),
-				'rules' => $this->inventory->inventory(schema: $entity, idleDays: $window),
+				'rules' => $this->inventory->inventory(schema: $entity, idleDays: $window, scope: $scope),
 			]
 		);
 
@@ -160,7 +165,7 @@ class RulesController extends Controller {
 	 *
 	 * @return JSONResponse The rule as it now stands, with the audit entry.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function setEnabled(string $schema, string $ruleId): JSONResponse {
@@ -207,7 +212,7 @@ class RulesController extends Controller {
 	 *
 	 * @return JSONResponse The verdict, the deciding operand and the writes it would make.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function evaluate(string $schema, string $ruleId): JSONResponse {
@@ -265,7 +270,7 @@ class RulesController extends Controller {
 	 *
 	 * @return JSONResponse The previewed job, or the refusal with the count behind it.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function replay(string $schema, string $ruleId): JSONResponse {
@@ -351,7 +356,7 @@ class RulesController extends Controller {
 	 *
 	 * @return JSONResponse The runs and how many matched.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function runs(string $ruleId): JSONResponse {
@@ -407,7 +412,7 @@ class RulesController extends Controller {
 	 *
 	 * @return Schema|null The schema, or null.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function resolveSchema(string $reference): ?Schema {
 		try {
@@ -425,7 +430,7 @@ class RulesController extends Controller {
 	 *
 	 * @return DateTime|null The moment, or null.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function moment(mixed $value): ?DateTime {
 		if (is_string($value) === false || trim($value) === '') {
@@ -447,7 +452,7 @@ class RulesController extends Controller {
 	 *
 	 * @return JSONResponse The 404.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function notFound(string $reference): JSONResponse {
 		return new JSONResponse(
@@ -470,7 +475,7 @@ class RulesController extends Controller {
 	 *
 	 * @return int The status code.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function statusFor(array $result): int {
 		if (($result['ok'] ?? false) === true) {

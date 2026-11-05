@@ -31,12 +31,13 @@ use JsonException;
 use OCA\OpenRegister\Db\Chunk;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
-use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\GdprEntityMapper;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\TextExtraction\EmlParser;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Service\TextExtraction\ObjectHandler;
@@ -109,7 +110,7 @@ class TextExtractionService {
 	 *
 	 * @var int
 	 */
-	private const MIN_CHUNK_SIZE = 100;
+	private const MIN_CHUNK_SIZE = TextSplitPass::MIN_CHUNK_SIZE;
 
 	/**
 	 * Shortest shared run read as chunk overlap when text is stitched back.
@@ -135,18 +136,18 @@ class TextExtractionService {
 	/**
 	 * Constructor
 	 *
-	 * @param FileMapper $fileMapper Mapper for Nextcloud files
+	 * @param FileMapperInterface $fileMapper Mapper for Nextcloud files
 	 * @param ChunkMapper $chunkMapper Mapper for chunks
 	 * @param IRootFolder $rootFolder Nextcloud root folder
 	 * @param IDBConnection $db Database connection
 	 * @param LoggerInterface $logger Logger
-	 * @param MagicMapper $objectEntityMapper Mapper for object entities
-	 * @param SchemaMapper $schemaMapper Mapper for schemas
-	 * @param RegisterMapper $registerMapper Mapper for registers
+	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entities
+	 * @param SchemaMapperInterface $schemaMapper Mapper for schemas
+	 * @param RegisterMapperInterface $registerMapper Mapper for registers
 	 * @param EntityRecognitionHandler $entityHandler Handler for entity recognition
 	 * @param GdprEntityMapper $entityMapper Mapper for GDPR entities
-	 * @param EntityRelationMapper $entityRelationMapper Mapper for entity relations
-	 * @param SettingsService $settingsService Settings service
+	 * @param EntityRelationMapperInterface $entityRelationMapper Mapper for entity relations
+	 * @param SettingsServiceInterface $settingsService Settings service
 	 * @param RiskLevelService $riskLevelService Risk level computation service
 	 * @param EmlParser $emlParser EML message-parser (used for message/rfc822
 	 *                             inputs and for the public `parseEmlStructured`
@@ -160,18 +161,18 @@ class TextExtractionService {
 	 * @SuppressWarnings(PHPMD.ShortVariable)          $db is a well-known PHP idiom for a database connection parameter.
 	 */
 	public function __construct(
-		private readonly FileMapper $fileMapper,
+		private readonly FileMapperInterface $fileMapper,
 		private readonly ChunkMapper $chunkMapper,
 		private readonly IRootFolder $rootFolder,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
-		private readonly MagicMapper $objectEntityMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly EntityRecognitionHandler $entityHandler,
 		private readonly GdprEntityMapper $entityMapper,
-		private readonly EntityRelationMapper $entityRelationMapper,
-		private readonly SettingsService $settingsService,
+		private readonly EntityRelationMapperInterface $entityRelationMapper,
+		private readonly SettingsServiceInterface $settingsService,
 		private readonly RiskLevelService $riskLevelService,
 		private readonly EmlParser $emlParser,
 		private readonly SpreadsheetExtractor $spreadsheetExtractor,
@@ -299,6 +300,31 @@ class TextExtractionService {
 			payload: $payload
 		);
 
+		if ($this->extractFileEntities(fileId: $fileId, entityTypes: $entityTypes) === false) {
+			return;
+		}
+
+		$this->logger->debug(
+			message: '[TextExtractionService] File extraction complete',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'fileId' => $fileId,
+				'chunkCount' => count($chunks) + 1,
+			]
+		);
+	}//end indexFilePayload()
+
+	/**
+	 * Run entity recognition over a file's stored chunks when it is enabled, then update the
+	 * file's risk level. A failure is logged, not thrown.
+	 *
+	 * @param int        $fileId      The file id.
+	 * @param array|null $entityTypes Entity types to detect, or null for all.
+	 *
+	 * @return bool False when entity recognition is disabled.
+	 */
+	private function extractFileEntities(int $fileId, ?array $entityTypes): bool {
 		// Extract entities from chunks.
 		try {
 			// Get entity recognition settings.
@@ -311,7 +337,7 @@ class TextExtractionService {
 					message: '[TextExtractionService] Entity recognition disabled, skipping',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
 				);
-				return;
+				return false;
 			}
 
 			$entityOptions = [
@@ -340,20 +366,7 @@ class TextExtractionService {
 			);
 
 			// Compute and persist risk level based on detected entities.
-			try {
-				$riskLevel = $this->riskLevelService->updateRiskLevel(fileId: $fileId);
-				// Info: a risk level changing is a compliance-relevant state
-				// change on the document, not a step in extracting it.
-				$this->logger->info(
-					'[TextExtractionService] Risk level updated',
-					['fileId' => $fileId, 'riskLevel' => $riskLevel]
-				);
-			} catch (Exception $e) {
-				$this->logger->warning(
-					'[TextExtractionService] Failed to update risk level',
-					['fileId' => $fileId, 'error' => $e->getMessage()]
-				);
-			}
+			$this->updateFileRiskLevel(fileId: $fileId);
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[TextExtractionService] Entity extraction failed',
@@ -366,16 +379,32 @@ class TextExtractionService {
 			);
 		}//end try
 
-		$this->logger->debug(
-			message: '[TextExtractionService] File extraction complete',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'fileId' => $fileId,
-				'chunkCount' => count($chunks) + 1,
-			]
-		);
-	}//end indexFilePayload()
+		return true;
+	}//end extractFileEntities()
+
+	/**
+	 * Compute and store a file's risk level from its detected entities; a failure is logged as a warning.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return void
+	 */
+	private function updateFileRiskLevel(int $fileId): void {
+		try {
+			$riskLevel = $this->riskLevelService->updateRiskLevel(fileId: $fileId);
+			// Info: a risk level changing is a compliance-relevant state
+			// change on the document, not a step in extracting it.
+			$this->logger->info(
+				'[TextExtractionService] Risk level updated',
+				['fileId' => $fileId, 'riskLevel' => $riskLevel]
+			);
+		} catch (Exception $e) {
+			$this->logger->warning(
+				'[TextExtractionService] Failed to update risk level',
+				['fileId' => $fileId, 'error' => $e->getMessage()]
+			);
+		}
+	}//end updateFileRiskLevel()
 
 	/**
 	 * The text extracted from a file, read back from its stored chunks.
@@ -459,7 +488,6 @@ class TextExtractionService {
 	 * @throws Exception If extraction fails
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for force re-extraction behavior
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive object extraction requires detailed processing
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -469,29 +497,12 @@ class TextExtractionService {
 			context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $objectId]
 		);
 
-		// Get object to check timestamp.
-		// Handle case where object was deleted between job scheduling and execution.
-		try {
-			$object = $this->objectEntityMapper->find($objectId);
-		} catch (DoesNotExistException $e) {
-			// Info, deliberately: this explains why queued work did NOT happen
-			// — the object was deleted between queueing and extraction. Silence
-			// there looks like the job never ran. TextExtractionServiceDeepTest
-			// asserts the level, so the intent is recorded rather than assumed.
-			$this->logger->info(
-				message: '[TextExtractionService] Object no longer exists, skipping extraction',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'objectId' => $objectId,
-				]
-			);
+		$object = $this->findObjectToExtract(objectId: $objectId);
+		if ($object === null) {
 			return;
 		}
 
 		$sourceTimestamp = $object->getUpdated()?->getTimestamp() ?? time();
-
-		// Check if chunks are up-to-date.
 		$isUpToDate = $this->isSourceUpToDate(
 			sourceId: $objectId,
 			sourceType: 'object',
@@ -499,42 +510,77 @@ class TextExtractionService {
 			forceReExtract: $forceReExtract
 		);
 		if ($forceReExtract === false && $isUpToDate === true) {
-			// Object is up-to-date and all chunks are still valid.
 			$this->logger->debug(
 				message: '[TextExtractionService] Object already processed and up-to-date',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'objectId' => $objectId,
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $objectId]
 			);
 			return;
 		}
 
-		// Create ObjectHandler and extract text.
-		$objectHandler = new ObjectHandler(
+		$objectHandler = $this->newObjectHandler();
+		$sourceMeta = $objectHandler->getSourceMetadata($objectId);
+		$extractedData = $objectHandler->extractText(sourceId: $objectId, sourceMeta: $sourceMeta, force: $forceReExtract);
+		$payload = $this->objectPayload(objectId: $objectId, extractedData: $extractedData);
+		$this->indexObjectPayload(payload: $payload, sourceTimestamp: $sourceTimestamp);
+	}//end extractObject()
+
+	/**
+	 * Load the object to extract, or null when it was deleted after the job was queued.
+	 *
+	 * @param int $objectId Object ID.
+	 *
+	 * @return ObjectEntity|null The object, or null when it no longer exists.
+	 */
+	private function findObjectToExtract(int $objectId): ?ObjectEntity {
+		try {
+			return $this->objectEntityMapper->find($objectId);
+		} catch (DoesNotExistException $e) {
+			// Info, deliberately: this explains why queued work did NOT happen
+			// — the object was deleted between queueing and extraction. Silence
+			// there looks like the job never ran. TextExtractionServiceDeepTest
+			// asserts the level, so the intent is recorded rather than assumed.
+			$this->logger->info(
+				message: '[TextExtractionService] Object no longer exists, skipping extraction',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $objectId]
+			);
+			return null;
+		}
+	}//end findObjectToExtract()
+
+	/**
+	 * A text handler for objects, over this service's mappers.
+	 *
+	 * @return ObjectHandler The handler.
+	 */
+	private function newObjectHandler(): ObjectHandler {
+		return new ObjectHandler(
 			objectMapper: $this->objectEntityMapper,
 			chunkMapper: $this->chunkMapper,
 			schemaMapper: $this->schemaMapper,
 			registerMapper: $this->registerMapper,
 			logger: $this->logger
 		);
+	}//end newObjectHandler()
 
-		// Get object metadata.
-		$sourceMeta = $objectHandler->getSourceMetadata($objectId);
-
-		// Extract text using ObjectHandler.
-		$extractedData = $objectHandler->extractText(sourceId: $objectId, sourceMeta: $sourceMeta, force: $forceReExtract);
+	/**
+	 * Build the chunk payload for an object's extracted text: sanitized, with language metadata.
+	 *
+	 * @param int   $objectId      Object ID.
+	 * @param array $extractedData ObjectHandler's extraction result.
+	 *
+	 * @return array The payload.
+	 *
+	 * @throws Exception If the sanitized text is empty.
+	 */
+	private function objectPayload(int $objectId, array $extractedData): array {
 		$cleanText = $this->sanitizeText(text: $extractedData['text']);
-
 		if ($cleanText === '') {
 			throw new Exception('Text extraction resulted in an empty payload for object.');
 		}
 
-		// Collect lightweight language metadata to enrich chunk storage.
 		$languageSignals = $this->detectLanguageSignals(text: $cleanText);
 
-		$payload = [
+		return [
 			'source_type' => 'object',
 			'source_id' => $objectId,
 			'text' => $cleanText,
@@ -549,16 +595,23 @@ class TextExtractionService {
 			'detection_method' => $languageSignals['detection_method'],
 			'metadata' => $extractedData['metadata'] ?? [],
 		];
+	}//end objectPayload()
 
+	/**
+	 * Chunk and store an object's payload, then run entity recognition over the chunks.
+	 *
+	 * @param array $payload         The object's text payload.
+	 * @param int   $sourceTimestamp The object's modification time.
+	 *
+	 * @return void
+	 */
+	private function indexObjectPayload(array $payload, int $sourceTimestamp): void {
+		$objectId = $payload['source_id'];
 		$chunks = $this->textToChunks(
 			payload: $payload,
-			options: [
-				'source_type' => $payload['source_type'],
-				'source_id' => $payload['source_id'],
-			]
+			options: ['source_type' => $payload['source_type'], 'source_id' => $objectId]
 		);
 
-		// Persist chunks to database.
 		$this->persistChunksForSource(
 			sourceType: 'object',
 			sourceId: $objectId,
@@ -569,15 +622,27 @@ class TextExtractionService {
 			payload: $payload
 		);
 
-		// Extract entities from chunks.
+		$this->extractObjectEntities(objectId: $objectId);
+
+		$this->logger->debug(
+			message: '[TextExtractionService] Object extraction completed',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $objectId, 'chunkCount' => count($chunks) + 1]
+		);
+	}//end indexObjectPayload()
+
+	/**
+	 * Run entity recognition over an object's stored chunks; a failure is logged, not thrown.
+	 *
+	 * @param int $objectId Object ID.
+	 *
+	 * @return void
+	 */
+	private function extractObjectEntities(int $objectId): void {
 		try {
 			$entityResult = $this->entityHandler->processSourceChunks(
 				sourceType: 'object',
 				sourceId: $objectId,
-				options: [
-					'method' => 'hybrid',
-					'confidence_threshold' => 0.5,
-				]
+				options: ['method' => 'hybrid', 'confidence_threshold' => 0.5]
 			);
 
 			$this->logger->debug(
@@ -593,25 +658,10 @@ class TextExtractionService {
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[TextExtractionService] Entity extraction failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'objectId' => $objectId,
-					'error' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $objectId, 'error' => $e->getMessage()]
 			);
-		}//end try
-
-		$this->logger->debug(
-			message: '[TextExtractionService] Object extraction completed',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'objectId' => $objectId,
-				'chunkCount' => count($chunks) + 1,
-			]
-		);
-	}//end extractObject()
+		}
+	}//end extractObjectEntities()
 
 	/**
 	 * Determine whether the latest chunks already reflect the current source state.
@@ -1124,7 +1174,7 @@ class TextExtractionService {
 				// Extract text from PDF using Smalot PdfParser.
 				$extractedText = $this->extractPdf(file: $file);
 			} elseif ($this->isWordDocument(mimeType: $mimeType) === true) {
-				// Extract text from DOCX/DOC using PhpWord.
+				// Extract text from DOCX/ODT.
 				$extractedText = $this->extractWord(file: $file);
 			} elseif ($this->isSpreadsheet(mimeType: $mimeType) === true) {
 				// Extract text from XLSX/XLS using PhpSpreadsheet.
@@ -1372,10 +1422,6 @@ class TextExtractionService {
 	 *
 	 * @psalm-return array{processed: int<0, max>, failed: int<0, max>, total: int<0, max>, truncated: bool}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) The windowed walk is a loop plus
-	 *   four single-line guards — budget reached, window empty, row without a usable
-	 *   fileid, pool exhausted. Each is a guard clause, not nested logic.
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function extractPendingFiles(int $limit = 100): array {
@@ -1384,123 +1430,125 @@ class TextExtractionService {
 			context: ['file' => __FILE__, 'line' => __LINE__, 'limit' => $limit]
 		);
 
-		$processed = 0;
-		$failed = 0;
-		$seen = 0;
-		$offset = 0;
-		$windows = 0;
-		$untrackedFiles = [];
-
-		// A file that fails keeps matching findUntrackedFiles(): nothing records the
-		// failure, and the query orders by fileid ASC with a fixed window. So a
-		// handful of permanently unreadable files with low fileids sit at the head
-		// of every window forever and the backfill never reaches the real
-		// attachments behind them (WOO-576). Successful files drop out of the query
-		// by themselves once they have chunks, so stepping the offset past the
-		// failures of the previous window is enough to move on.
-		while ($processed < $limit && $windows < self::MAX_PENDING_WINDOWS) {
-			$untrackedFiles = $this->fileMapper->findUntrackedFiles(limit: $limit, offset: $offset);
-			$windows++;
-
-			if (empty($untrackedFiles) === true) {
+		$walk = new PendingExtractionWalk(limit: $limit);
+		while ($walk->hasBudget() === true && $walk->windows < self::MAX_PENDING_WINDOWS) {
+			if ($this->extractPendingWindow(walk: $walk) === false) {
 				break;
 			}
-
-			$this->logger->debug(
-				message: '[TextExtractionService] Found files without chunks',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'count' => count($untrackedFiles),
-					'limit' => $limit,
-					'offset' => $offset,
-					'window' => $windows,
-				]
-			);
-
-			$seen += count($untrackedFiles);
-			$failedInWindow = 0;
-
-			foreach ($untrackedFiles as $ncFile) {
-				if ($processed >= $limit) {
-					break;
-				}
-
-				// A row without a usable fileid is skipped rather than passed on. The
-				// cron job used to carry this guard and lost it when its own loop moved
-				// here; `fc.fileid` is a NOT NULL primary key so it should not fire, but
-				// a safety net someone wrote deliberately is not worth dropping silently.
-				$fileId = (int) ($ncFile['fileid'] ?? 0);
-				if ($fileId === 0) {
-					continue;
-				}
-
-				try {
-					$this->logger->debug(
-						message: '[TextExtractionService] Processing file',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'fileId' => $ncFile['fileid'],
-							'fileName' => $ncFile['name'] ?? 'unknown',
-						]
-					);
-
-					// Trigger extraction for this file.
-					$this->extractFile(fileId: $fileId, forceReExtract: false);
-					$processed++;
-				} catch (Exception $e) {
-					$failed++;
-					$failedInWindow++;
-					$this->logger->error(
-						message: '[TextExtractionService] Failed to extract file',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'fileId' => $ncFile['fileid'] ?? 'unknown',
-							'error' => $e->getMessage(),
-						]
-					);
-				}//end try
-			}//end foreach
-
-			if (count($untrackedFiles) < $limit) {
-				// The pool is exhausted — a shorter window than asked for is the end.
-				break;
-			}
-
-			if ($failedInWindow === 0) {
-				// Everything in this window succeeded, so all of it has chunks now and
-				// drops out of the next query by itself. Keep the offset where it is.
-				continue;
-			}
-
-			// Step over exactly the files that will still be at the head next time.
-			$offset += $failedInWindow;
-		}//end while
+		}
 
 		$this->logger->debug(
 			message: '[TextExtractionService] Extraction complete',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'processed' => $processed,
-				'failed' => $failed,
-				'foundPending' => count($untrackedFiles),
+				'processed' => $walk->processed,
+				'failed' => $walk->failed,
+				'foundPending' => $walk->lastWindowSize,
 			]
 		);
 
-		return [
-			'processed' => $processed,
-			'failed' => $failed,
-			'total' => $seen,
-			// The walk is capped at MAX_PENDING_WINDOWS windows. Hitting that cap
-			// while the budget still had room means files may remain pending that
-			// this run never looked at — indistinguishable from "done" in the
-			// counters alone, which is how a truncated backfill reads as a finished one.
-			'truncated' => ($windows >= self::MAX_PENDING_WINDOWS && $processed < $limit),
-		];
+		return $walk->result(maxWindows: self::MAX_PENDING_WINDOWS);
 	}//end extractPendingFiles()
+
+	/**
+	 * Fetch the next window of pending files and extract them within the walk's budget.
+	 *
+	 * A file that fails keeps matching findUntrackedFiles(): nothing records the failure,
+	 * and the query orders by fileid ASC with a fixed window. So permanently unreadable
+	 * files with low fileids would sit at the head of every window forever and the backfill
+	 * would never reach the files behind them. Successful files drop out of the query by
+	 * themselves once they have chunks, so stepping the offset past the failures of this
+	 * window is enough to move on.
+	 *
+	 * @param PendingExtractionWalk $walk The walk.
+	 *
+	 * @return bool Whether another window may hold pending files.
+	 */
+	private function extractPendingWindow(PendingExtractionWalk $walk): bool {
+		$untrackedFiles = $this->fileMapper->findUntrackedFiles(limit: $walk->limit, offset: $walk->offset);
+		$walk->windows++;
+		$walk->lastWindowSize = count($untrackedFiles);
+
+		if (empty($untrackedFiles) === true) {
+			return false;
+		}
+
+		$this->logger->debug(
+			message: '[TextExtractionService] Found files without chunks',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'count' => count($untrackedFiles),
+				'limit' => $walk->limit,
+				'offset' => $walk->offset,
+				'window' => $walk->windows,
+			]
+		);
+
+		$walk->seen += count($untrackedFiles);
+		$walk->failedInWindow = 0;
+		foreach ($untrackedFiles as $ncFile) {
+			if ($walk->hasBudget() === false) {
+				break;
+			}
+
+			$this->extractPendingFile(ncFile: $ncFile, walk: $walk);
+		}
+
+		// A shorter window than asked for is the end of the pool.
+		if (count($untrackedFiles) < $walk->limit) {
+			return false;
+		}
+
+		// Step over exactly the files that will still be at the head next time.
+		$walk->offset += $walk->failedInWindow;
+		return true;
+	}//end extractPendingWindow()
+
+	/**
+	 * Extract one pending file and count the outcome on the walk.
+	 *
+	 * A row without a usable fileid is skipped. `fc.fileid` is a NOT NULL primary key, so
+	 * this guard should not fire.
+	 *
+	 * @param array                 $ncFile The file row.
+	 * @param PendingExtractionWalk $walk   The walk.
+	 *
+	 * @return void
+	 */
+	private function extractPendingFile(array $ncFile, PendingExtractionWalk $walk): void {
+		$fileId = (int) ($ncFile['fileid'] ?? 0);
+		if ($fileId === 0) {
+			return;
+		}
+
+		try {
+			$this->logger->debug(
+				message: '[TextExtractionService] Processing file',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'fileId' => $ncFile['fileid'],
+					'fileName' => $ncFile['name'] ?? 'unknown',
+				]
+			);
+			$this->extractFile(fileId: $fileId, forceReExtract: false);
+			$walk->processed++;
+		} catch (Exception $e) {
+			$walk->failed++;
+			$walk->failedInWindow++;
+			$this->logger->error(
+				message: '[TextExtractionService] Failed to extract file',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'fileId' => $ncFile['fileid'] ?? 'unknown',
+					'error' => $e->getMessage(),
+				]
+			);
+		}//end try
+	}//end extractPendingFile()
 
 	/**
 	 * Retry file extractions by forcing re-extraction
@@ -1669,24 +1717,15 @@ class TextExtractionService {
 	}//end extractPdf()
 
 	/**
-	 * Extract text from a Word-family document (DOCX/DOC/ODT) using PhpWord
+	 * Extract text from a Word-family document (DOCX/ODT) through WordExtractor
 	 *
-	 * Selects the PhpWord reader from the file's MIME type / extension
-	 * (DOCX → Word2007, DOC → MsDoc, ODT → ODText) and walks the full
-	 * element tree — body, tables (incl. nested tables and in-cell text
-	 * runs / list items), section headers and footers, and document-level
-	 * footnotes/endnotes. On a per-document load/parse failure the method
-	 * logs structural detail (no document content) and returns null rather
-	 * than throwing, so a single un-parseable file does not abort a batch.
+	 * Reads the body, tables (nested too), headers, footers and notes. Legacy
+	 * binary .doc and per-document failures give null rather than throwing,
+	 * so a single unreadable file does not abort a batch.
 	 *
 	 * @param \OCP\Files\File $file Nextcloud file object
 	 *
 	 * @return string|null Extracted text content, or null on empty/failed extraction
-	 *
-	 * @throws Exception If the PhpWord library itself is not installed (deployment error)
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)         IOFactory::load is standard PhpWord pattern
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multi-section header/body/footer/notes traversal
 	 */
 	private function extractWord(\OCP\Files\File $file): ?string {
 		// Delegated to the dedicated WordExtractor handler
@@ -2024,13 +2063,8 @@ class TextExtractionService {
 	 *
 	 * @psalm-return array<int<0, max>, array{text: mixed|string, start_offset: int|mixed, end_offset: int|mixed}>
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex recursive splitting with multiple separator fallbacks
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Complex recursive splitting with multiple separator fallbacks
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive recursive text splitting logic
-	 * Else needed for chunking decision paths
 	 */
 	private function recursiveSplit(string $text, array $separators, int $chunkSize, int $chunkOverlap): array {
-		// If text is small enough, return it.
 		if (strlen($text) <= $chunkSize) {
 			return [
 				[
@@ -2041,100 +2075,35 @@ class TextExtractionService {
 			];
 		}
 
-		// If no separators left, use fixed size chunking.
 		if ($separators === []) {
 			return $this->chunkFixedSize(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
 		}
 
-		// Try splitting with current separator.
 		$separator = array_shift($separators);
-		$splits = explode($separator, $text);
-
-		// Rebuild chunks.
-		$chunks = [];
-		$currentChunk = '';
-		$currentOffset = 0;
-
-		foreach ($splits as $split) {
-			$testChunk = $currentChunk . $separator . $split;
-			if ($currentChunk === '') {
-				$testChunk = $split;
-			}
-
-			if (strlen($testChunk) <= $chunkSize) {
-				// Can add to current chunk.
-				$currentChunk = $testChunk;
+		$pass = new TextSplitPass(separator: $separator, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
+		foreach (explode($separator, $text) as $piece) {
+			if ($pass->append(piece: $piece) === true) {
 				continue;
 			}
 
-			// Current chunk is full — handle non-empty current chunk.
-			if ($currentChunk !== '') {
-				$chunkLength = strlen($currentChunk);
-
-				if (strlen(trim($currentChunk)) >= self::MIN_CHUNK_SIZE) {
-					$chunks[] = [
-						'text' => trim($currentChunk),
-						'start_offset' => $currentOffset,
-						'end_offset' => $currentOffset + $chunkLength,
-					];
-				}
-
-				$currentOffset += $chunkLength;
-
-				// Add overlap from end of previous chunk (save old chunk for overlap extraction).
-				$previousChunk = $currentChunk;
-				$currentChunk = $split;
-				if ($chunkOverlap > 0 && $chunkLength > $chunkOverlap) {
-					$overlapText = substr($previousChunk, -$chunkOverlap);
-					$currentChunk = $overlapText . $separator . $split;
-					$currentOffset -= $chunkOverlap;
-				}
-
+			if ($pass->hasCurrent() === true) {
+				$pass->closeWith(piece: $piece);
 				continue;
-			}//end if
+			}
 
-			// Current chunk is empty and single split is too large — need to split it further.
-			if (strlen($split) > $chunkSize) {
-				$subChunks = $this->recursiveSplit(
-					text: $split,
+			// A single piece larger than a chunk is split on the next separator.
+			$pass->addSplitPiece(
+				piece: $piece,
+				subChunks: $this->recursiveSplit(
+					text: $piece,
 					separators: $separators,
 					chunkSize: $chunkSize,
 					chunkOverlap: $chunkOverlap
-				);
-
-				// Adjust offsets.
-				foreach ($subChunks as $subChunk) {
-					$chunks[] = [
-						'text' => $subChunk['text'],
-						'start_offset' => $currentOffset + $subChunk['start_offset'],
-						'end_offset' => $currentOffset + $subChunk['end_offset'],
-					];
-				}
-
-				$currentOffset += strlen($split);
-				$currentChunk = '';
-				continue;
-			}//end if
-
-			$currentChunk = $split;
-		}//end foreach
-
-		// Don't forget the last chunk.
-		if ($currentChunk !== '' && strlen(trim($currentChunk)) >= self::MIN_CHUNK_SIZE) {
-			$chunks[] = [
-				'text' => trim($currentChunk),
-				'start_offset' => $currentOffset,
-				'end_offset' => $currentOffset + strlen($currentChunk),
-			];
+				)
+			);
 		}
 
-		return array_filter(
-			$chunks,
-			function ($chunk) {
-				$trimmed = trim($chunk['text']);
-				return $trimmed !== '';
-			}
-		);
+		return $pass->chunks();
 	}//end recursiveSplit()
 
 	/**

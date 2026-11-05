@@ -18,7 +18,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -86,7 +86,7 @@ class AuditAggregationService {
 	 *
 	 * @return integer The window, clamped to the seal interval.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function windowSeconds(): int {
 		$stored = $this->appConfig->getValueInt('openregister', self::CONFIG_KEY, 0);
@@ -101,7 +101,7 @@ class AuditAggregationService {
 	 *
 	 * @return integer The window that was stored.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function setWindowSeconds(int $seconds): int {
 		$clamped = $this->clamp(seconds: $seconds);
@@ -117,7 +117,7 @@ class AuditAggregationService {
 	 *
 	 * @return integer A window between zero and the seal interval.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function clamp(int $seconds): int {
 		if ($seconds <= 0) {
@@ -139,7 +139,7 @@ class AuditAggregationService {
 	 *
 	 * @return boolean Whether the two merge.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function isWithinWindow(?DateTimeInterface $previous, DateTimeInterface $now, int $window): bool {
 		if ($window <= 0 || $previous === null) {
@@ -168,7 +168,7 @@ class AuditAggregationService {
 	 *
 	 * @return array The merged `changed` column.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function fold(array $previous, array $incoming): array {
 		$aggregation = ($previous['aggregation'] ?? null);

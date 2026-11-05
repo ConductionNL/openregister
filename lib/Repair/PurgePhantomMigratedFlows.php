@@ -73,7 +73,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+ * @spec openspec/specs/register-descriptor-admin/spec.md
  */
 
 declare(strict_types=1);
@@ -82,9 +82,9 @@ namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
-use OCA\OpenRegister\Db\FlowRunMapper;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -93,7 +93,7 @@ use Throwable;
 /**
  * Removes non-flow rows the mis-scoped flow migration copied into the flow table.
  *
- * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+ * @spec openspec/specs/register-descriptor-admin/spec.md
  *
  * @psalm-suppress UnusedClass Instantiated by the NC repair framework (appinfo/info.xml).
  */
@@ -126,18 +126,18 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 	 * Constructor.
 	 *
 	 * @param FlowMapper      $flowMapper    Reads and removes rows in the flow table.
-	 * @param FlowRunMapper   $flowRunMapper Proves a row has never been dispatched.
-	 * @param MagicMapper     $objectMapper  Resolves a uuid back to the object it was copied from.
-	 * @param SchemaMapper    $schemaMapper  Turns that object's schema reference into a slug.
+	 * @param FlowRunMapperInterface   $flowRunMapper Proves a row has never been dispatched.
+	 * @param MagicMapperInterface     $objectMapper  Resolves a uuid back to the object it was copied from.
+	 * @param SchemaMapperInterface    $schemaMapper  Turns that object's schema reference into a slug.
 	 * @param LoggerInterface $logger        Records every removal and every spared ambiguity.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly FlowMapper $flowMapper,
-		private readonly FlowRunMapper $flowRunMapper,
-		private readonly MagicMapper $objectMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly FlowRunMapperInterface $flowRunMapper,
+		private readonly MagicMapperInterface $objectMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -147,7 +147,7 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 	 *
 	 * @return string The step name.
 	 *
-	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	public function getName(): string {
 		return 'Remove non-flow rows copied into the flow table by the mis-scoped flow migration';
@@ -163,7 +163,7 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	public function run(IOutput $output): void {
 		$removed = 0;

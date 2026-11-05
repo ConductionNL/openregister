@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Contacts;
 
-use OCA\OpenRegister\Service\ContactMatchingService;
+use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCP\Contacts\ContactsMenu\IActionFactory;
 use OCP\Contacts\ContactsMenu\IEntry;
@@ -51,9 +51,9 @@ class ContactsMenuProvider implements IProvider {
 	/**
 	 * The contact matching service.
 	 *
-	 * @var ContactMatchingService
+	 * @var ContactMatcherInterface
 	 */
-	private readonly ContactMatchingService $matchingService;
+	private readonly ContactMatcherInterface $matchingService;
 
 	/**
 	 * The deep link registry service.
@@ -93,7 +93,7 @@ class ContactsMenuProvider implements IProvider {
 	/**
 	 * Constructor for ContactsMenuProvider.
 	 *
-	 * @param ContactMatchingService $matchingService The contact matching service
+	 * @param ContactMatcherInterface $matchingService The contact matching service
 	 * @param DeepLinkRegistryService $deepLinkRegistry The deep link registry
 	 * @param IActionFactory $actionFactory The action factory
 	 * @param IURLGenerator $urlGenerator The URL generator
@@ -105,7 +105,7 @@ class ContactsMenuProvider implements IProvider {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		ContactMatchingService $matchingService,
+		ContactMatcherInterface $matchingService,
 		DeepLinkRegistryService $deepLinkRegistry,
 		IActionFactory $actionFactory,
 		IURLGenerator $urlGenerator,

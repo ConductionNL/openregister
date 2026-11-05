@@ -12,6 +12,7 @@ use OCA\OpenRegister\Controller\RegistersController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
@@ -69,6 +70,11 @@ class RegistersControllerTest extends TestCase {
 	 */
 	private ?\OCP\IUser $currentUser = null;
 
+	/**
+	 * Whether the signed-in user of the mocked session is an administrator.
+	 */
+	private bool $currentUserIsAdmin = true;
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -94,7 +100,7 @@ class RegistersControllerTest extends TestCase {
 		$this->currentUser = $this->createMock(\OCP\IUser::class);
 		$this->currentUser->method('getUID')->willReturn('admin');
 		$this->userSession->method('getUser')->willReturnCallback(fn () => $this->currentUser);
-		$this->groupManager->method('isAdmin')->willReturnCallback(fn () => $this->currentUser !== null);
+		$this->groupManager->method('isAdmin')->willReturnCallback(fn () => $this->currentUser !== null && $this->currentUserIsAdmin === true);
 		$this->groupManager->method('getUserGroupIds')->willReturn(['admin']);
 
 		// checkRegisterManagePermission() resolves IGroupManager via the container
@@ -202,6 +208,18 @@ class RegistersControllerTest extends TestCase {
 		$result = $this->controller->show(1);
 
 		$this->assertSame(200, $result->getStatus());
+	}
+
+	public function testShowAnonymousRegisterWithAMarkedPublicRuleReturns200(): void {
+		// `{"group": "public"}` without match reads like `"public"`, also when marked.
+		$this->currentUser = null;
+		$register = $this->createRealRegister(1, 'Public');
+		$register->setAuthorization(['read' => [['group' => 'public', 'crossOrganisation' => true]]]);
+
+		$this->request->method('getParam')->willReturn([]);
+		$this->registerService->method('find')->willReturn($register);
+
+		$this->assertSame(200, $this->controller->show(1)->getStatus());
 	}
 
 	public function testIndexAnonymousFiltersUnpublishedRegisters(): void {
@@ -671,7 +689,7 @@ class RegistersControllerTest extends TestCase {
 
 		$this->assertInstanceOf(JSONResponse::class, $result);
 		$this->assertSame(400, $result->getStatus());
-		$this->assertStringContainsString('schema', $result->getData()['error']);
+		$this->assertSame('CSV export requires a specific schema to be selected', $result->getData()['error']);
 	}
 
 	// NOTE: publish()/depublish() success tests removed — endpoints retired
@@ -1397,6 +1415,112 @@ class RegistersControllerTest extends TestCase {
 		$this->assertSame(200, $result->getStatus());
 	}
 
+	// ── Import: a bundle is bound to the register it was uploaded to ──
+
+	/**
+	 * A register whose manage rule holds the signed-in user, an upload, and the given params.
+	 *
+	 * @param array<int, array<int, mixed>> $params The request parameter map.
+	 *
+	 * @return Register
+	 */
+	private function registerForBundleUpload(array $params = []): Register {
+		$register = $this->createRealRegister(1, 'Reg');
+		$register->setSlug('reg');
+		$register->setApplication('shipping-app');
+		$register->setAuthorization(['manage' => ['admin']]);
+		$this->setRegisterSchemas($register, [4]);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->registerService->method('find')->willReturn($register);
+
+		$own = new Schema();
+		$own->setSlug('own');
+		$this->schemaMapper->method('findMultiple')->willReturn([$own]);
+
+		$this->request->method('getUploadedFile')->willReturn(['name' => 'config.yaml', 'tmp_name' => '/tmp/config.yaml', 'size' => 1]);
+		$this->request->method('getParam')->willReturnMap($params);
+		$this->request->method('getParams')->willReturn([]);
+
+		return $register;
+	}//end registerForBundleUpload()
+
+	/**
+	 * A manager's bundle that names a schema outside the register reaches no importer.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-a-bundle-uploaded-by-a-register-manager-stays-inside-that-register
+	 */
+	public function testAManagersBundleWithAForeignSchemaIsRefused(): void {
+		$this->currentUserIsAdmin = false;
+		$this->registerForBundleUpload();
+		$this->configurationService->method('getUploadedJson')->willReturn(['components' => ['schemas' => ['foreign' => ['title' => 'F']]]]);
+		$this->configurationService->expects($this->never())->method('importFromJson');
+
+		$this->assertSame(403, $this->controller->import(1)->getStatus());
+	}//end testAManagersBundleWithAForeignSchemaIsRefused()
+
+	/**
+	 * A manager's bundle with a new marker reaches no importer.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-a-bundle-uploaded-by-a-register-manager-stays-inside-that-register
+	 */
+	public function testAManagersBundleWithANewMarkerIsRefused(): void {
+		$this->currentUserIsAdmin = false;
+		$this->registerForBundleUpload();
+		$this->configurationService->method('getUploadedJson')->willReturn(
+			['components' => ['schemas' => ['own' => ['authorization' => ['read' => [['group' => 'public', 'crossOrganisation' => true]]]]]]]
+		);
+		$this->configurationService->expects($this->never())->method('importFromJson');
+
+		$this->assertSame(403, $this->controller->import(1)->getStatus());
+	}//end testAManagersBundleWithANewMarkerIsRefused()
+
+	/**
+	 * The importer gets the register's application and the session's user, whatever was sent.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-a-bundle-uploaded-by-a-register-manager-stays-inside-that-register
+	 */
+	public function testABundleImportTakesAppIdAndOwnerFromTheServer(): void {
+		$this->currentUserIsAdmin = false;
+		$this->currentUser = $this->createMock(\OCP\IUser::class);
+		$this->currentUser->method('getUID')->willReturn('alice');
+		$this->registerForBundleUpload(
+			params: [
+				['type', null, null],
+				['appId', null, 'victim-app'],
+				['owner', null, 'mallory'],
+				['version', null, '1.2.3'],
+			]
+		);
+		$bundle = ['appId' => 'victim-app', 'components' => ['schemas' => ['own' => ['title' => 'Own']]]];
+		$this->configurationService->method('getUploadedJson')->willReturn($bundle);
+		$this->configurationService->expects($this->once())
+			->method('importFromJson')
+			->with(
+				data: ['components' => ['schemas' => ['own' => ['title' => 'Own']]]],
+				configuration: null,
+				owner: 'alice',
+				appId: 'shipping-app',
+				version: '1.2.3',
+				force: false
+			)
+			->willReturn(['registers' => ['r'], 'schemas' => [], 'objects' => []]);
+
+		$this->assertSame(200, $this->controller->import(1)->getStatus());
+	}//end testABundleImportTakesAppIdAndOwnerFromTheServer()
+
+	/**
+	 * An administrator's bundle is not bound to the register.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-a-bundle-uploaded-by-a-register-manager-stays-inside-that-register
+	 */
+	public function testAnAdministratorsBundleIsNotBound(): void {
+		$this->registerForBundleUpload();
+		$this->configurationService->method('getUploadedJson')->willReturn(['components' => ['schemas' => ['foreign' => ['title' => 'F']]]]);
+		$this->configurationService->expects($this->once())->method('importFromJson')->willReturn(['registers' => ['r'], 'schemas' => [], 'objects' => []]);
+
+		$this->assertSame(200, $this->controller->import(1)->getStatus());
+	}//end testAnAdministratorsBundleIsNotBound()
+
 	// ── Import: register-bundle auto-create (register-import-auto-create, #1487) ──
 
 	/**
@@ -1571,6 +1695,7 @@ class RegistersControllerTest extends TestCase {
 		$this->assertStringContainsString('main', $data['message']);
 		$this->assertSame('develop', $data['branch']);
 		$this->assertSame('main', $data['default_branch']);
+		$this->assertSame("Published to non-default branch. For discovery, publish to 'main' branch.", $data['indexing_note']);
 	}
 
 	public function testPublishToGitHubGetRepositoryInfoFails(): void {
@@ -2124,6 +2249,56 @@ class RegistersControllerTest extends TestCase {
 		$this->assertSame(409, $result->getStatus());
 		$this->assertSame('learniq.demo', $result->getData()['app']);
 		$this->assertStringContainsString('occ openregister:objects:purge --import-job job-demo', $result->getData()['error']);
+	}
+
+	public function testANonAdminListingRegistersIsNotGivenTheTrailCount(): void {
+		$this->currentUserIsAdmin = false;
+		$this->auditTrailMapper->expects($this->never())->method('getStatistics');
+		$this->request->method('getParams')->willReturn(['_extend' => ['@self.stats']]);
+		$this->registerService->method('findAll')->willReturn([$this->createRealRegister(1, 'Test')]);
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 5]);
+
+		$data = $this->controller->index()->getData();
+
+		$this->assertSame(['total' => 0, 'size' => 0], $data['results'][0]['stats']['logs']);
+		$this->assertSame(['total' => 5], $data['results'][0]['stats']['objects']);
+	}
+
+	public function testAnAdminListingRegistersIsGivenTheTrailCount(): void {
+		$this->auditTrailMapper->expects($this->once())->method('getStatistics')
+			->with(1, null)->willReturn(['total' => 3, 'size' => 30]);
+		$this->request->method('getParams')->willReturn(['_extend' => ['@self.stats']]);
+		$this->registerService->method('findAll')->willReturn([$this->createRealRegister(1, 'Test')]);
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 5]);
+
+		$data = $this->controller->index()->getData();
+
+		$this->assertSame(['total' => 3, 'size' => 30], $data['results'][0]['stats']['logs']);
+	}
+
+	public function testANonAdminReadingARegisterIsNotGivenTheTrailCount(): void {
+		$this->currentUserIsAdmin = false;
+		$this->auditTrailMapper->expects($this->never())->method('getStatistics');
+		$this->request->method('getParam')->willReturn('@self.stats');
+		$this->registerService->method('find')->willReturn($this->createRealRegister(1, 'Test'));
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 10]);
+
+		$data = $this->controller->show(1)->getData();
+
+		$this->assertSame(['total' => 0, 'size' => 0], $data['stats']['logs']);
+		$this->assertSame(['total' => 10], $data['stats']['objects']);
+	}
+
+	public function testAnAdminReadingARegisterIsGivenTheTrailCount(): void {
+		$this->auditTrailMapper->expects($this->once())->method('getStatistics')
+			->with(1, null)->willReturn(['total' => 5, 'size' => 50]);
+		$this->request->method('getParam')->willReturn('@self.stats');
+		$this->registerService->method('find')->willReturn($this->createRealRegister(1, 'Test'));
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 10]);
+
+		$data = $this->controller->show(1)->getData();
+
+		$this->assertSame(['total' => 5, 'size' => 50], $data['stats']['logs']);
 	}
 
 }

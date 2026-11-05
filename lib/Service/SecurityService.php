@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
+use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -166,41 +167,15 @@ class SecurityService {
 			throw new InvalidArgumentException('Only http and https URLs are allowed.');
 		}
 
-		$host = $parts['host'];
-
-		// Collect every IP the host resolves to (IPv4 + IPv6). If the host is
-		// already a literal IP, validate it directly.
-		$ips = [];
-		if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
-			$ips[] = $host;
-		} else {
-			$v4 = gethostbynamel($host);
-			if (is_array($v4) === true) {
-				$ips = array_merge($ips, $v4);
-			}
-
-			$aaaa = @dns_get_record($host, DNS_AAAA);
-			if (is_array($aaaa) === true) {
-				foreach ($aaaa as $record) {
-					if (isset($record['ipv6']) === true) {
-						$ips[] = $record['ipv6'];
-					}
-				}
-			}
-		}
-
+		$guard = new OutboundAddressGuard();
+		$ips   = $guard->addressesOf(host: $parts['host']);
 		if (empty($ips) === true) {
 			// Fail closed: a host we cannot resolve must not be fetched.
 			throw new InvalidArgumentException('URL host could not be resolved.');
 		}
 
 		foreach ($ips as $ip) {
-			$isPublic = filter_var(
-				$ip,
-				FILTER_VALIDATE_IP,
-				(FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)
-			);
-			if ($isPublic === false) {
+			if ($guard->isInternal(ipAddress: $ip) === true) {
 				throw new InvalidArgumentException('URL resolves to a non-public address and cannot be fetched.');
 			}
 		}
@@ -515,7 +490,7 @@ class SecurityService {
 	 *
 	 * @return array<string, int> The attempt ceilings, window and lockout, in seconds.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function describeAuthRateLimit(): array {
 		return $this->authCeiling();

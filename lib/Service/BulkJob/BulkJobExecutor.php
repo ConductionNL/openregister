@@ -32,13 +32,13 @@ use DateTime;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\BulkActionResult;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Db\BulkJobMemberMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -73,8 +73,8 @@ class BulkJobExecutor {
 	 * @param BulkSelectionResolver $resolver Selection resolution.
 	 * @param BulkActionRegistry $registry The catalogue of registered actions.
 	 * @param PermissionHandler $permissionHandler Per-object access checks.
-	 * @param SchemaMapper $schemaMapper Schema lookup for the access check.
-	 * @param AuditTrailMapper $auditTrailMapper Audit entries per member.
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup for the access check.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit entries per member.
 	 * @param IUserManager $userManager Actor lookup.
 	 * @param LoggerInterface $logger Logger.
 	 */
@@ -84,8 +84,8 @@ class BulkJobExecutor {
 		private readonly BulkSelectionResolver $resolver,
 		private readonly BulkActionRegistry $registry,
 		private readonly PermissionHandler $permissionHandler,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IUserManager $userManager,
 		private readonly LoggerInterface $logger,
 	) {
@@ -101,7 +101,7 @@ class BulkJobExecutor {
 	 *
 	 * @throws BulkJobRefusedException When the guard refuses the selection.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function assertGuards(BulkActionInterface $action, array $objects): void {
 		if (in_array(BulkActionInterface::GUARD_HOMOGENEITY, $action->getGuards(), true) === false) {
@@ -147,7 +147,7 @@ class BulkJobExecutor {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag marks the member
 	 * rows a grown query selection added, which the report has to name.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function writePreviewMembers(
 		BulkJob $job,
@@ -191,7 +191,7 @@ class BulkJobExecutor {
 	 *
 	 * @return bool True when members remain.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function processBatch(BulkJob $job, int $batchSize): bool {
 		$action = null;
@@ -242,7 +242,7 @@ class BulkJobExecutor {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function refreshCounts(BulkJob $job): void {
 		$counts = $this->memberMapper->countByOutcome(jobId: (int)$job->getId());

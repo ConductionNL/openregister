@@ -166,7 +166,7 @@ export default {
 		 *
 		 * @return {string} The sentence, or an empty string.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		kindSentence() {
 			const found = this.kinds.find((row) => row.kind === this.rule.kind)
@@ -178,7 +178,7 @@ export default {
 		 *
 		 * @return {Array<string>} The categories, in the catalogue's order.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		categories() {
 			const seen = []
@@ -195,7 +195,7 @@ export default {
 		 *
 		 * @return {boolean} True when the author has changed something.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		dirty() {
 			return this.draftText.trim() !== this.declaredText.trim()
@@ -206,7 +206,7 @@ export default {
 		 *
 		 * @return {string} The JSON.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		declaredText() {
 			if (this.rule.condition === null || this.rule.condition === undefined) {
@@ -233,7 +233,7 @@ export default {
 		 *
 		 * @return {string} The sentence, or an empty string.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		actionSentence(action) {
 			const found = this.actions.find((row) => row.action === action)
@@ -247,7 +247,7 @@ export default {
 		 *
 		 * @return {Array<object>} The rows.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		operatorsIn(category) {
 			return this.operators.filter((row) => row.category === category)
@@ -258,7 +258,7 @@ export default {
 		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		reset() {
 			this.draftText = this.declaredText
@@ -276,7 +276,7 @@ export default {
 		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		validate() {
 			this.parseError = ''
@@ -320,7 +320,7 @@ export default {
 		 *
 		 * @return {string} The operator, or an empty string when all are known.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		firstUnknownOperator(node) {
 			if (node === null || typeof node !== 'object') {
@@ -362,7 +362,7 @@ export default {
 		 *
 		 * @return {boolean} True when the catalogue holds it.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		isAstSpelling(op) {
 			return this.operators.some((row) => row.op === op)

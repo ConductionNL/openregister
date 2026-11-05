@@ -67,6 +67,12 @@ test.describe('Federated configuration sharing', () => {
 	let installedForRun = ''
 
 	test.beforeAll(async ({ request }) => {
+		// These bundles are unsigned, which an administrator has to allow.
+		await request.put(`${API}/federated-config/trust`, {
+			headers: JSON_HEADERS,
+			data: { field: 'allowUnverifiedBundles', value: 'true' },
+		})
+
 		// The `flows` register is still a precondition — 'a register bundles into
 		// a portable OpenAPI document' bundles it BY SLUG — but nothing here needs
 		// its numeric ids any more, now that makeFlow() authors through
@@ -79,6 +85,11 @@ test.describe('Federated configuration sharing', () => {
 	})
 
 	test.afterAll(async ({ request }) => {
+		await request.put(`${API}/federated-config/trust`, {
+			headers: JSON_HEADERS,
+			data: { field: 'allowUnverifiedBundles', value: '' },
+		})
+
 		for (const id of created) {
 			// Deleted from /api/flows — the store makeFlow() writes to. Deleting
 			// through the objects API would silently leave every fixture behind.

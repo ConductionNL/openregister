@@ -80,7 +80,7 @@ export default {
 				generateUrl('/apps/openregister/api/user/me/notifications'),
 			)
 			this.prefs = { ...this.prefs, ...data }
-		} catch (e) {
+		} catch {
 			// Use defaults.
 		} finally {
 			this.loading = false

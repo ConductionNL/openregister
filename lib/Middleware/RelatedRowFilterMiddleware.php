@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Middleware;
 
 use Exception;
+use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -39,7 +40,7 @@ use OCP\AppFramework\Middleware;
 class RelatedRowFilterMiddleware extends Middleware {
 
 	/**
-	 * Map RelatedRowFilterNotSupportedException onto a 400 response.
+	 * Map RelatedRowFilterNotSupportedException and ExplicitRevealQueryException onto a 400 response.
 	 *
 	 * @param Controller $controller The controller that was executing.
 	 * @param string     $methodName The controller method that was executing.
@@ -54,7 +55,9 @@ class RelatedRowFilterMiddleware extends Middleware {
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function afterException(Controller $controller, string $methodName, Exception $exception): Response {
-		if ($exception instanceof RelatedRowFilterNotSupportedException === false) {
+		if ($exception instanceof RelatedRowFilterNotSupportedException === false
+			&& $exception instanceof ExplicitRevealQueryException === false
+		) {
 			throw $exception;
 		}
 

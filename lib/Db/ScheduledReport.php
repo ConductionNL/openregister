@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\ScheduledReportInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -90,7 +91,7 @@ use OCP\AppFramework\Db\Entity;
  *     their own field; splitting this into sub-objects would just move the
  *     field count, not reduce it.
  */
-class ScheduledReport extends Entity implements JsonSerializable {
+class ScheduledReport extends Entity implements JsonSerializable, ScheduledReportInterface {
 
 	/**
 	 * The owning Nextcloud user id.

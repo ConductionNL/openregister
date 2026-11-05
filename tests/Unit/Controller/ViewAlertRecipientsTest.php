@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 
 declare(strict_types=1);
@@ -31,11 +31,11 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ViewsController;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
-use OCA\OpenRegister\Service\ViewPresentationService;
-use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Search\Service\ViewPresentationService;
+use OCA\OpenRegister\Search\Service\ViewService;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -47,13 +47,14 @@ use Psr\Log\NullLogger;
 /**
  * @covers \OCA\OpenRegister\Controller\ViewsController
  * @covers \OCA\OpenRegister\Service\Rbac\ViewerReachResolver
- * @uses \OCA\OpenRegister\Db\View
+ * @uses \OCA\OpenRegister\Search\Db\View
  * @uses \OCA\OpenRegister\Exception\InvalidViewAlertException
  * @uses \OCA\OpenRegister\Exception\ViewAlertRecipientException
  * @uses \OCA\OpenRegister\Service\Rbac\ViewShareListValidator
  * @uses \OCA\OpenRegister\Service\Rbac\ViewShareResolver
- * @uses \OCA\OpenRegister\Service\ViewService
+ * @uses \OCA\OpenRegister\Search\Service\ViewService
  * @uses \OCA\OpenRegister\Service\View\ViewAlert
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
  */
 class ViewAlertRecipientsTest extends TestCase {
 

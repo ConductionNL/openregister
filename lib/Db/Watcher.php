@@ -116,7 +116,7 @@ class Watcher extends Entity implements JsonSerializable {
 	 *
 	 * @return boolean True when the follower hears about changes.
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	public function notifies(): bool {
 		return ($this->notify !== false);

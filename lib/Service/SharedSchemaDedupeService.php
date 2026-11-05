@@ -28,9 +28,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\SharedSchema\RegisterConfigurationLocator;
 use OCA\OpenRegister\Service\SharedSchema\SchemaAttribution;
@@ -58,7 +58,7 @@ use Throwable;
  * repair REFUSES and asks for an explicit `--keep`: guessing an owner is what
  * produced the damage in the first place.
  *
- * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+ * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
  */
 class SharedSchemaDedupeService {
 
@@ -66,8 +66,8 @@ class SharedSchemaDedupeService {
 	 * Constructor.
 	 *
 	 * @param IDBConnection                $db             Database connection, for the split transaction.
-	 * @param RegisterMapper               $registerMapper Register lookups and persistence.
-	 * @param SchemaMapper                 $schemaMapper   Schema lookups and the clone fallback.
+	 * @param RegisterMapperInterface               $registerMapper Register lookups and persistence.
+	 * @param SchemaMapperInterface                 $schemaMapper   Schema lookups and the clone fallback.
 	 * @param ImportHandler                $importHandler  The configuration-driven schema create path.
 	 * @param RegisterConfigurationLocator $locator        Reads a register's own app configuration.
 	 * @param SchemaAttribution            $attribution    The pure detection and ownership rules.
@@ -78,8 +78,8 @@ class SharedSchemaDedupeService {
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ImportHandler $importHandler,
 		private readonly RegisterConfigurationLocator $locator,
 		private readonly SchemaAttribution $attribution,
@@ -97,7 +97,7 @@ class SharedSchemaDedupeService {
 	 *
 	 * @throws RuntimeException When a value is not a positive id or id pair.
 	 *
-	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function parseKeep(array $raw): array {
 		return $this->attribution->parseKeep(raw: $raw);
@@ -114,7 +114,7 @@ class SharedSchemaDedupeService {
 	 *
 	 * @return array<int, array<string, mixed>> One entry per shared schema.
 	 *
-	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function inspect(?int $registerId, array $keep): array {
 		$registers = $this->loadRegisters();
@@ -159,7 +159,7 @@ class SharedSchemaDedupeService {
 	 *
 	 * @throws RuntimeException When the plan is unattributed, or strict mode refuses.
 	 *
-	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function applySplit(array $entry, int $target, bool $strict): array {
 		$split = ($entry['splits'][$target] ?? null);

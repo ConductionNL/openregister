@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rules;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use Throwable;
@@ -50,7 +50,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Switching a rule reaches the four
  *   places a rule is declared plus the audit entry; each collaborator owns one of them.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 final class RuleEnablementService {
 
@@ -72,7 +72,7 @@ final class RuleEnablementService {
 	 * Constructor.
 	 *
 	 * @param RuleInventoryService $inventory Finds the rule as declared.
-	 * @param SchemaMapper $schemaMapper Saves the schema carrying the switch.
+	 * @param SchemaMapperInterface $schemaMapper Saves the schema carrying the switch.
 	 * @param FlowService $flows Saves a flow's own enabled flag and reindexes it.
 	 * @param RuleAuditService $audit Records who switched what.
 	 *
@@ -80,7 +80,7 @@ final class RuleEnablementService {
 	 */
 	public function __construct(
 		private readonly RuleInventoryService $inventory,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly FlowService $flows,
 		private readonly RuleAuditService $audit,
 	) {
@@ -95,7 +95,7 @@ final class RuleEnablementService {
 	 *
 	 * @return array{ok: bool, rule?: array<string, mixed>, audit?: array<string, mixed>, error?: array{code: string, message: string}} The outcome.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function setEnabled(Schema $schema, string $ruleId, bool $enabled): array {
 		$rule = $this->inventory->find(schema: $schema, ruleId: $ruleId);
@@ -138,7 +138,7 @@ final class RuleEnablementService {
 	 *
 	 * @return Schema The schema as it now stands.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function write(Schema $schema, RuleDescriptor $rule, bool $enabled): Schema {
 		if ($rule->getKind() === RuleVocabulary::KIND_FLOW) {

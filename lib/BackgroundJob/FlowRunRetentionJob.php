@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -74,7 +74,7 @@ class FlowRunRetentionJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time The clock.
-	 * @param FlowRunMapper $runs Deletes expired runs.
+	 * @param FlowRunMapperInterface $runs Deletes expired runs.
 	 * @param FlowRunStepMapper $steps Deletes those runs' step rows.
 	 * @param FlowMapper $flows Finds the flows declaring an override.
 	 * @param IAppConfig $config Reads the retention period.
@@ -82,7 +82,7 @@ class FlowRunRetentionJob extends TimedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly FlowRunMapper $runs,
+		private readonly FlowRunMapperInterface $runs,
 		private readonly FlowRunStepMapper $steps,
 		private readonly FlowMapper $flows,
 		private readonly IAppConfig $config,

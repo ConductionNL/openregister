@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -64,7 +64,7 @@ class ConceptShapeGuard {
 	 *
 	 * @return boolean True when the object is a concept.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function isConcept(Schema $schema): bool {
 		return ((string)$schema->getSlug() === VocabularyImportService::SCHEMA_CONCEPT);
@@ -78,7 +78,7 @@ class ConceptShapeGuard {
 	 *
 	 * @return array<string,string> The refusals keyed by field name, empty when the concept is valid.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function violations(array $object, Schema $schema): array {
 		if ($this->isConcept(schema: $schema) === false) {
@@ -121,7 +121,7 @@ class ConceptShapeGuard {
 	 *
 	 * @return array<string,array<int,string>> The failed field names, keyed by concept uri.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function invalidInBatch(array $concepts, string $schemeUri): array {
 		$shape = $this->concepts->conceptShape(schemeUri: $schemeUri);

@@ -29,6 +29,8 @@ use Exception;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCA\OpenRegister\Service\DeckLinkService;
+use OCA\OpenRegister\Service\CardDraft;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -173,6 +175,54 @@ class DeckLinkServiceTest extends TestCase {
 		$this->assertSame([], $rows[0]['assignees']);
 	}
 
+	/**
+	 * A linked card carries the titles of the board and list Deck's card
+	 * lookup put on it, so a row can read "Bord … · lijst … · assignee".
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/deck-integration/spec.md
+	 */
+	public function testACardCarriesItsBoardAndListTitles(): void {
+		$titled = static fn (string $title): object => new class ($title) {
+			public function __construct(private string $title) {
+			}
+
+			public function getTitle(): string {
+				return $this->title;
+			}
+		};
+		$card = new class ($titled('Woo en informatie'), $titled('Deze week')) {
+			public function __construct(private object $board, private object $stack) {
+			}
+
+			public function getRelatedBoard(): object {
+				return $this->board;
+			}
+
+			public function getRelatedStack(): object {
+				return $this->stack;
+			}
+		};
+
+		$fields = (new \ReflectionMethod(DeckLinkService::class, 'extractCardFields'))->invoke($this->service, $card);
+
+		$this->assertSame('Woo en informatie', $fields['boardTitle']);
+		$this->assertSame('Deze week', $fields['stackTitle']);
+	}
+
+	/**
+	 * A card without them reads empty titles, not an error.
+	 *
+	 * @return void
+	 */
+	public function testACardWithoutBoardOrListReadsEmptyTitles(): void {
+		$fields = (new \ReflectionMethod(DeckLinkService::class, 'extractCardFields'))->invoke($this->service, new \stdClass());
+
+		$this->assertSame('', $fields['boardTitle']);
+		$this->assertSame('', $fields['stackTitle']);
+	}
+
 	public function testGetLinkedCardsEmpty(): void {
 		$this->mapper->method('findByObjectUuid')->willReturn([]);
 
@@ -185,7 +235,7 @@ class DeckLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('No user logged in');
 
-		$this->service->createAndLinkCard('abc-123', 1, 2, 10, 20, 'Test', null, null);
+		$this->service->createAndLinkCard((new LinkTarget('abc-123', 1))->inSchema(2), (new CardDraft('Test', 20))->onBoard(10)->withDetails(null, null));
 	}
 
 	public function testCreateAndLinkCardThrowsWhenDeckOperationFails(): void {
@@ -198,7 +248,7 @@ class DeckLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 
 		try {
-			$this->service->createAndLinkCard('abc-123', 1, 2, 10, 20, 'Test', null, null);
+			$this->service->createAndLinkCard((new LinkTarget('abc-123', 1))->inSchema(2), (new CardDraft('Test', 20))->onBoard(10)->withDetails(null, null));
 			$this->fail('Expected exception was not thrown');
 		} catch (Exception $exception) {
 			$this->assertContains($exception->getCode(), [500, 503]);

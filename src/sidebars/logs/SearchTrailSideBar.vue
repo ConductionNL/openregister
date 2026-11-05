@@ -479,6 +479,63 @@ import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 import Monitor from 'vue-material-design-icons/Monitor.vue'
 import TrendingUp from 'vue-material-design-icons/TrendingUp.vue'
 import eventBus from '../../eventBus.js'
+import { addDateRange, addStrings } from '../../services/routeQuery.js'
+import {
+	addJoinedValues,
+	addPresent,
+	addScopeIds,
+} from '../../services/trailFilters.js'
+
+/**
+ * Leave a statistic as the API reports it.
+ *
+ * @param {number} value The statistic
+ * @return {number} The same value
+ */
+const asIs = (value) => value
+
+// Shown statistics: field, statistics key, and how to show the value.
+const SEARCH_STATISTICS = [
+	['totalSearchTrails', 'total', asIs],
+	['totalResults', 'totalResults', asIs],
+	['averageResultsPerSearch', 'averageResultsPerSearch', Math.round],
+	['averageExecutionTime', 'averageExecutionTime', Math.round],
+	['successRate', 'successRate', asIs],
+	['uniqueSearchTerms', 'uniqueSearchTerms', asIs],
+	['uniqueUsers', 'uniqueUsers', asIs],
+	['uniqueOrganizations', 'uniqueOrganizations', asIs],
+	['avgSearchesPerSession', 'avgSearchesPerSession', asIs],
+	['avgObjectViewsPerSession', 'avgObjectViewsPerSession', asIs],
+]
+
+/**
+ * The search trail statistics to show, 0 where one is missing.
+ *
+ * @param {object} stats The statistics from the store
+ * @return {object} The shown statistics
+ */
+function searchStatisticsOf(stats) {
+	const shown = Object.fromEntries(
+		SEARCH_STATISTICS.map(([field, key, show]) => [
+			field,
+			show(stats[key] || 0),
+		]),
+	)
+	shown.queryComplexity = stats.queryComplexity || {
+		simple: 0,
+		medium: 0,
+		complex: 0,
+	}
+	return shown
+}
+
+const ACTIVITY_PERIOD_FORMATS = {
+	hourly: (date) => date.toLocaleString(),
+	daily: (date) => date.toLocaleDateString(),
+	weekly: (date) => `Week of ${date.toLocaleDateString()}`,
+	monthly: (date) =>
+		date.toLocaleDateString(undefined, { year: 'numeric', month: 'long' }),
+}
 
 export default {
 	name: 'SearchTrailSideBar',
@@ -778,7 +835,7 @@ export default {
 			try {
 				await searchTrailStore.refreshSearchTrailList()
 				this.updateFilteredCount()
-			} catch (error) {
+			} catch {
 				// Handle error silently
 			}
 		},
@@ -865,58 +922,23 @@ export default {
 		 */
 		applyFilters() {
 			const filters = {}
-
-			// Build success filter
 			if (this.selectedSuccessStatus) {
 				filters.success = this.selectedSuccessStatus.value
 			}
-
-			// Build register filter
-			if (registerStore.registerItem) {
-				filters.register = registerStore.registerItem.id.toString()
-			}
-
-			// Build schema filter
-			if (schemaStore.schemaItem) {
-				filters.schema = schemaStore.schemaItem.id.toString()
-			}
-
-			// Build user filter
-			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) {
-				const users = this.selectedUsers.slice()
-				if (users.length > 0) {
-					filters.user = users.map((u) => u.value).join(',')
-				}
-			}
-
-			// Date filters
-			if (this.dateFrom) {
-				filters.dateFrom = this.dateFrom
-			}
-			if (this.dateTo) {
-				filters.dateTo = this.dateTo
-			}
-
-			// Search term filter
-			if (this.searchTermFilter) {
-				filters.searchTerm = this.searchTermFilter
-			}
-
-			// Execution time filters
-			if (this.executionTimeFrom) {
-				filters.executionTimeFrom = this.executionTimeFrom
-			}
-			if (this.executionTimeTo) {
-				filters.executionTimeTo = this.executionTimeTo
-			}
-
-			// Result count filters
-			if (this.resultCountFrom) {
-				filters.resultCountFrom = this.resultCountFrom
-			}
-			if (this.resultCountTo) {
-				filters.resultCountTo = this.resultCountTo
-			}
+			addScopeIds(filters, {
+				register: registerStore.registerItem,
+				schema: schemaStore.schemaItem,
+			})
+			addJoinedValues(filters, ['user', this.selectedUsers])
+			addPresent(filters, [
+				['dateFrom', this.dateFrom],
+				['dateTo', this.dateTo],
+				['searchTerm', this.searchTermFilter],
+				['executionTimeFrom', this.executionTimeFrom],
+				['executionTimeTo', this.executionTimeTo],
+				['resultCountFrom', this.resultCountFrom],
+				['resultCountTo', this.resultCountTo],
+			])
 
 			// Set filters in store and refresh data
 			searchTrailStore.setSearchTrailFilters(filters)
@@ -961,39 +983,11 @@ export default {
 		async loadStatistics() {
 			try {
 				const stats = await searchTrailStore.getStatistics()
-				this.totalSearchTrails = stats.total || 0
-				this.totalResults = stats.totalResults || 0
-				this.averageResultsPerSearch = Math.round(
-					stats.averageResultsPerSearch || 0,
-				)
-				this.averageExecutionTime = Math.round(
-					stats.averageExecutionTime || 0,
-				)
-				this.successRate = stats.successRate || 0
-				this.uniqueSearchTerms = stats.uniqueSearchTerms || 0
-				this.uniqueUsers = stats.uniqueUsers || 0
-				this.uniqueOrganizations = stats.uniqueOrganizations || 0
-				this.avgSearchesPerSession = stats.avgSearchesPerSession || 0
-				this.avgObjectViewsPerSession = stats.avgObjectViewsPerSession || 0
-				this.queryComplexity = stats.queryComplexity || {
-					simple: 0,
-					medium: 0,
-					complex: 0,
-				}
+				Object.assign(this, searchStatisticsOf(stats))
 			} catch (error) {
 				console.error('Error loading statistics:', error)
 				// Set default values on error
-				this.totalSearchTrails = 0
-				this.totalResults = 0
-				this.averageResultsPerSearch = 0
-				this.averageExecutionTime = 0
-				this.successRate = 0
-				this.uniqueSearchTerms = 0
-				this.uniqueUsers = 0
-				this.uniqueOrganizations = 0
-				this.avgSearchesPerSession = 0
-				this.avgObjectViewsPerSession = 0
-				this.queryComplexity = { simple: 0, medium: 0, complex: 0 }
+				Object.assign(this, searchStatisticsOf({}))
 			}
 		},
 
@@ -1088,24 +1082,11 @@ export default {
 		 * @return {string} Formatted period
 		 */
 		formatActivityPeriod(period) {
-			// Format based on the selected period type
 			const periodType = this.selectedActivityPeriod.value
-
-			switch (periodType) {
-				case 'hourly':
-					return new Date(period).toLocaleString()
-				case 'daily':
-					return new Date(period).toLocaleDateString()
-				case 'weekly':
-					return `Week of ${new Date(period).toLocaleDateString()}`
-				case 'monthly':
-					return new Date(period).toLocaleDateString(undefined, {
-						year: 'numeric',
-						month: 'long',
-					})
-				default:
-					return period
+			if (!Object.hasOwn(ACTIVITY_PERIOD_FORMATS, periodType)) {
+				return period
 			}
+			return ACTIVITY_PERIOD_FORMATS[periodType](new Date(period))
 		},
 
 		/**
@@ -1185,23 +1166,14 @@ export default {
 				query.success = String(this.selectedSuccessStatus.value)
 			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0)
 				query.user = this.selectedUsers.map((u) => u.value || u).join(',')
-			// JS dates are awful, so we first check if its a valid date and then get the ISO string.
-			if (this.dateFrom)
-				query.dateFrom = new Date(this.dateFrom).getDate()
-					? new Date(this.dateFrom).toISOString()
-					: null
-			if (this.dateTo)
-				query.dateTo = new Date(this.dateTo).getDate()
-					? new Date(this.dateTo).toISOString()
-					: null
+			addDateRange(query, this)
 			if (this.searchTermFilter) query.searchTerm = this.searchTermFilter
-			if (this.executionTimeFrom)
-				query.executionTimeFrom = String(this.executionTimeFrom)
-			if (this.executionTimeTo)
-				query.executionTimeTo = String(this.executionTimeTo)
-			if (this.resultCountFrom)
-				query.resultCountFrom = String(this.resultCountFrom)
-			if (this.resultCountTo) query.resultCountTo = String(this.resultCountTo)
+			addStrings(query, [
+				['executionTimeFrom', this.executionTimeFrom],
+				['executionTimeTo', this.executionTimeTo],
+				['resultCountFrom', this.resultCountFrom],
+				['resultCountTo', this.resultCountTo],
+			])
 			return query
 		},
 

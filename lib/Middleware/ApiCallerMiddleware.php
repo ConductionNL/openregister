@@ -34,7 +34,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -116,7 +116,7 @@ class ApiCallerMiddleware extends Middleware {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Fixed by the Middleware contract.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
 	public function beforeController($controller, $methodName): void {
 		$this->servedVersion = null;
@@ -162,7 +162,7 @@ class ApiCallerMiddleware extends Middleware {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Fixed by the Middleware contract.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
 	public function afterController($controller, $methodName, Response $response): Response {
 		if ($this->servedVersion === null) {
@@ -196,7 +196,7 @@ class ApiCallerMiddleware extends Middleware {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Fixed by the Middleware contract.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function afterException($controller, $methodName, Exception $exception): Response {
 		if ($exception instanceof CallerRefusedException) {

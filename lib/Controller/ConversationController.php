@@ -26,13 +26,14 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Controller\Support\ConversationControllerServices;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Db\MessageMapper;
 use OCA\OpenRegister\Service\ChatService;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -88,9 +89,9 @@ class ConversationController extends Controller {
 	/**
 	 * Organisation service
 	 *
-	 * @var OrganisationService
+	 * @var OrganisationServiceInterface
 	 */
-	private OrganisationService $organisationService;
+	private OrganisationServiceInterface $organisationService;
 
 	/**
 	 * Chat service
@@ -118,37 +119,23 @@ class ConversationController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request Request object
-	 * @param ConversationMapper $conversationMapper Conversation mapper
-	 * @param MessageMapper $messageMapper Message mapper
-	 * @param FeedbackMapper $feedbackMapper Feedback mapper
-	 * @param AgentMapper $agentMapper Agent mapper
-	 * @param OrganisationService $organisationService Organisation service
-	 * @param ChatService $chatService Chat service
-	 * @param LoggerInterface $logger Logger
+	 * @param ConversationControllerServices $services The conversation controller services.
 	 * @param string $userId User ID
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		ConversationMapper $conversationMapper,
-		MessageMapper $messageMapper,
-		FeedbackMapper $feedbackMapper,
-		AgentMapper $agentMapper,
-		OrganisationService $organisationService,
-		ChatService $chatService,
-		LoggerInterface $logger,
+		ConversationControllerServices $services,
 		string $userId,
 	) {
 		parent::__construct(appName: $appName, request: $request);
-		$this->conversationMapper = $conversationMapper;
-		$this->messageMapper = $messageMapper;
-		$this->feedbackMapper = $feedbackMapper;
-		$this->agentMapper = $agentMapper;
-		$this->organisationService = $organisationService;
-		$this->chatService = $chatService;
-		$this->logger = $logger;
+		$this->conversationMapper = $services->mappers->conversationMapper;
+		$this->messageMapper = $services->mappers->messageMapper;
+		$this->feedbackMapper = $services->mappers->feedbackMapper;
+		$this->agentMapper = $services->mappers->agentMapper;
+		$this->organisationService = $services->domain->organisationService;
+		$this->chatService = $services->domain->chatService;
+		$this->logger = $services->platform->logger;
 		$this->userId = $userId;
 	}//end __construct()
 
@@ -681,8 +668,6 @@ class ConversationController extends Controller {
 	 *     'Failed to delete conversation', message: string, uuid?: string,
 	 *     archived?: true}, array<never, never>>
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function destroy(string $uuid): JSONResponse {
@@ -696,82 +681,17 @@ class ConversationController extends Controller {
 				userId: $this->userId
 			);
 			if ($canModify === false) {
-				return new JSONResponse(
-					data: [
-						'error' => 'Access denied',
-						'message' => 'You do not have permission to delete this conversation',
-					],
-					statusCode: 403
-				);
+				return $this->accessDenied(message: 'You do not have permission to delete this conversation');
 			}
 
-			// Check if already soft-deleted (archived).
+			// An already archived (soft-deleted) conversation is deleted permanently.
 			if ($conversation->getDeletedAt() !== null) {
-				// Already archived - perform permanent delete.
-				$this->logger->info(
-					message: '[ConversationController] Permanently deleting archived conversation',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $uuid,
-					]
-				);
+				return $this->purgeArchived(conversation: $conversation, uuid: $uuid);
+			}
 
-				// Delete feedback first.
-				$this->feedbackMapper->deleteByConversation($conversation->getId());
-
-				// Delete messages.
-				$this->messageMapper->deleteByConversation($conversation->getId());
-
-				// Delete conversation.
-				$this->conversationMapper->delete($conversation);
-
-				$this->logger->info(
-					message: '[ConversationController] Conversation permanently deleted',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $uuid,
-					]
-				);
-
-				return new JSONResponse(
-					data: [
-						'message' => 'Conversation permanently deleted',
-						'uuid' => $uuid,
-					],
-					statusCode: 200
-				);
-			}//end if
-
-			// First delete - perform soft delete (archive).
-			$this->conversationMapper->softDelete($conversation->getId());
-
-			$this->logger->info(
-				message: '[ConversationController] Conversation archived (soft deleted)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'message' => 'Conversation archived successfully',
-					'uuid' => $uuid,
-					'archived' => true,
-				],
-				statusCode: 200
-			);
+			return $this->archive(conversation: $conversation, uuid: $uuid);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Conversation not found',
-					'message' => 'The requested conversation does not exist',
-				],
-				statusCode: 404
-			);
+			return $this->conversationNotFound();
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ConversationController] Failed to delete conversation',
@@ -828,13 +748,7 @@ class ConversationController extends Controller {
 				userId: $this->userId
 			);
 			if ($canModify === false) {
-				return new JSONResponse(
-					data: [
-						'error' => 'Access denied',
-						'message' => 'You do not have permission to restore this conversation',
-					],
-					statusCode: 403
-				);
+				return $this->accessDenied(message: 'You do not have permission to restore this conversation');
 			}
 
 			// Restore.
@@ -851,13 +765,7 @@ class ConversationController extends Controller {
 
 			return new JSONResponse(data: $conversation->jsonSerialize(), statusCode: 200);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Conversation not found',
-					'message' => 'The requested conversation does not exist',
-				],
-				statusCode: 404
-			);
+			return $this->conversationNotFound();
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ConversationController] Failed to restore conversation',
@@ -911,16 +819,13 @@ class ConversationController extends Controller {
 				userId: $this->userId
 			);
 			if ($canModify === false) {
-				return new JSONResponse(
-					data: [
-						'error' => 'Access denied',
-						'message' => 'You do not have permission to delete this conversation',
-					],
-					statusCode: 403
-				);
+				return $this->accessDenied(message: 'You do not have permission to delete this conversation');
 			}
 
-			// Delete messages first.
+			// Delete feedback first.
+			$this->feedbackMapper->deleteByConversation($conversation->getId());
+
+			// Delete messages.
 			$this->messageMapper->deleteByConversation($conversation->getId());
 
 			// Delete conversation.
@@ -943,13 +848,7 @@ class ConversationController extends Controller {
 				statusCode: 200
 			);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Conversation not found',
-					'message' => 'The requested conversation does not exist',
-				],
-				statusCode: 404
-			);
+			return $this->conversationNotFound();
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ConversationController] Failed to permanently delete conversation',
@@ -971,4 +870,106 @@ class ConversationController extends Controller {
 			);
 		}//end try
 	}//end destroyPermanent()
+
+	/**
+	 * Permanently delete an archived conversation with its feedback and messages.
+	 *
+	 * @param Conversation $conversation The archived conversation.
+	 * @param string       $uuid         The requested conversation UUID.
+	 *
+	 * @return JSONResponse The deletion confirmation.
+	 */
+	private function purgeArchived(Conversation $conversation, string $uuid): JSONResponse {
+		$this->logger->info(
+			message: '[ConversationController] Permanently deleting archived conversation',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+			]
+		);
+
+		$this->feedbackMapper->deleteByConversation($conversation->getId());
+		$this->messageMapper->deleteByConversation($conversation->getId());
+		$this->conversationMapper->delete($conversation);
+
+		$this->logger->info(
+			message: '[ConversationController] Conversation permanently deleted',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+			]
+		);
+
+		return new JSONResponse(
+			data: [
+				'message' => 'Conversation permanently deleted',
+				'uuid' => $uuid,
+			],
+			statusCode: 200
+		);
+	}//end purgeArchived()
+
+	/**
+	 * Archive (soft delete) a conversation.
+	 *
+	 * @param Conversation $conversation The conversation to archive.
+	 * @param string       $uuid         The requested conversation UUID.
+	 *
+	 * @return JSONResponse The archive confirmation.
+	 */
+	private function archive(Conversation $conversation, string $uuid): JSONResponse {
+		$this->conversationMapper->softDelete($conversation->getId());
+
+		$this->logger->info(
+			message: '[ConversationController] Conversation archived (soft deleted)',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+			]
+		);
+
+		return new JSONResponse(
+			data: [
+				'message' => 'Conversation archived successfully',
+				'uuid' => $uuid,
+				'archived' => true,
+			],
+			statusCode: 200
+		);
+	}//end archive()
+
+	/**
+	 * 403 response for a user without modify rights on the conversation.
+	 *
+	 * @param string $message The explanation for the caller.
+	 *
+	 * @return JSONResponse The 403 response.
+	 */
+	private function accessDenied(string $message): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => 'Access denied',
+				'message' => $message,
+			],
+			statusCode: 403
+		);
+	}//end accessDenied()
+
+	/**
+	 * 404 response for an unknown conversation.
+	 *
+	 * @return JSONResponse The 404 response.
+	 */
+	private function conversationNotFound(): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => 'Conversation not found',
+				'message' => 'The requested conversation does not exist',
+			],
+			statusCode: 404
+		);
+	}//end conversationNotFound()
 }//end class

@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\ObjectActionsControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
@@ -44,11 +45,12 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Flow\FlowNextHint;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -56,6 +58,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 
 /**
  * Lists and runs declared actions on objects and selections.
@@ -75,30 +78,82 @@ class ObjectActionsController extends Controller {
 	public const SELECTION_LIMIT = 100;
 
 	/**
+	 * Loads the subject.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objects;
+
+	/**
+	 * Loads a schema; the `next` hint after a selection.
+	 *
+	 * @var MacroActionResolver
+	 */
+	private readonly MacroActionResolver $macros;
+
+	/**
+	 * The schema's actions, for the selection surface rule.
+	 *
+	 * @var ObjectActionDefinitions
+	 */
+	private readonly ObjectActionDefinitions $definitions;
+
+	/**
+	 * Lists the actions.
+	 *
+	 * @var ObjectActionList
+	 */
+	private readonly ObjectActionList $list;
+
+	/**
+	 * Runs one action on one object.
+	 *
+	 * @var ObjectActionRunner
+	 */
+	private readonly ObjectActionRunner $runner;
+
+	/**
+	 * Reads the runs recorded on an object.
+	 *
+	 * @var ObjectActionHistory
+	 */
+	private readonly ObjectActionHistory $history;
+
+	/**
+	 * Hands a large selection to a bulk job.
+	 *
+	 * @var ObjectActionBulk
+	 */
+	private readonly ObjectActionBulk $bulk;
+
+	/**
+	 * Records a declaration that cannot be read.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                  $appName     The app name.
 	 * @param IRequest                $request     The request.
-	 * @param ObjectService           $objects     Loads the subject.
-	 * @param MacroActionResolver     $macros      Loads a schema; the `next` hint after a selection.
-	 * @param ObjectActionDefinitions $definitions The schema's actions, for the selection surface rule.
-	 * @param ObjectActionList        $list        Lists the actions.
-	 * @param ObjectActionRunner      $runner      Runs one action on one object.
-	 * @param ObjectActionHistory     $history     Reads the runs recorded on an object.
-	 * @param ObjectActionBulk        $bulk        Hands a large selection to a bulk job.
+	 * @param ObjectActionsControllerServices $services The object actions controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objects,
-		private readonly MacroActionResolver $macros,
-		private readonly ObjectActionDefinitions $definitions,
-		private readonly ObjectActionList $list,
-		private readonly ObjectActionRunner $runner,
-		private readonly ObjectActionHistory $history,
-		private readonly ObjectActionBulk $bulk,
+		ObjectActionsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->objects = $services->catalogue->objects;
+		$this->macros = $services->catalogue->macros;
+		$this->definitions = $services->catalogue->definitions;
+		$this->list = $services->catalogue->list;
+		$this->runner = $services->execution->runner;
+		$this->history = $services->execution->history;
+		$this->bulk = $services->execution->bulk;
+		$this->logger = $services->platform->logger;
 	}//end __construct()
 
 	/**
@@ -178,6 +233,16 @@ class ObjectActionsController extends Controller {
 	 * @param string $schema   The schema slug or id.
 	 *
 	 * @return JSONResponse `{actions: [...]}`.
+	 *
+	 * @no-admin-idor-exempt Takes no object id: it lists the schema's bulk actions.
+	 *   ObjectActionList::forSelection() keeps an entry only when ObjectActionGate::may()
+	 *   grants the caller its right at schema level with RBAC on; each object is
+	 *   checked again when the action runs on it. The schema itself is loaded without
+	 *   RBAC or multitenancy (MacroActionResolver::loadSchema()), so where neither the
+	 *   schema nor its register declares authorization (default-open unless default-closed
+	 *   is enforced) any signed-in user sees that schema's action declarations (key,
+	 *   label, description, inputs and the rest of ObjectActionList's shape), also for a
+	 *   schema of another organisation. No object data is returned.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
 	 */
@@ -263,7 +328,7 @@ class ObjectActionsController extends Controller {
 		$selectionSchema = $this->macros->loadSchema(schema: $schema);
 		$definition = null;
 		if ($selectionSchema !== null) {
-			$definition = $this->definitions->find(schema: $selectionSchema, key: $action, register: $register);
+			$definition = $this->findDefinition(schema: $selectionSchema, action: $action, register: $register);
 		}
 
 		if ($definition === null || $definition->isRunnable() === false || $definition->offersBulk() === false) {
@@ -365,6 +430,32 @@ class ObjectActionsController extends Controller {
 
 		return ['id' => $id, 'status' => 'failed', 'reason' => (string)($one['body']['message'] ?? ($one['body']['error'] ?? 'refused'))];
 	}//end runOnSelected()
+
+	/**
+	 * The schema's declaration of an action, or null when it cannot be read.
+	 *
+	 * A declaration that cannot be resolved reads as "not offered", the same
+	 * answer findObject() and loadSchema() give, so a broken schema
+	 * configuration is a 400 on the selection and never a 500. The cause is
+	 * logged, so a defect behind the 400 still leaves a trace.
+	 *
+	 * @param Schema $schema   The selection's schema.
+	 * @param string $action   The action key.
+	 * @param string $register The register as the caller named it.
+	 *
+	 * @return ObjectActionDefinition|null The declaration.
+	 */
+	private function findDefinition(Schema $schema, string $action, string $register): ?ObjectActionDefinition {
+		try {
+			return $this->definitions->find(schema: $schema, key: $action, register: $register);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'Object action "{action}" of schema {schema} could not be read: {message}',
+				['action' => $action, 'schema' => (string)($schema->getSlug() ?? $schema->getId()), 'message' => $e->getMessage(), 'exception' => $e]
+			);
+			return null;
+		}
+	}//end findDefinition()
 
 	/**
 	 * The object, or null when there is none the caller can reach.

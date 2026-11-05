@@ -53,10 +53,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\File\CreateFileHandler;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
@@ -117,9 +117,9 @@ class FileService {
 	/**
 	 * File mapper
 	 *
-	 * @var FileMapper
+	 * @var FileMapperInterface
 	 */
-	private FileMapper $fileMapper;
+	private FileMapperInterface $fileMapper;
 
 	/**
 	 * Group manager
@@ -138,7 +138,7 @@ class FileService {
 	/**
 	 * REMOVED: Register mapper (unused, caused circular dependency)
 	 *
-	 * @var RegisterMapper|null
+	 * @var RegisterMapperInterface|null
 	 */
 	// Private ?RegisterMapper $registerMapper;.
 
@@ -366,9 +366,25 @@ class FileService {
 	private const FILE_TAG_TYPE = 'files';
 
 	/**
+	 * The handlers, by property name, that get this service through setFileService() as
+	 * it is constructed, in order.
+	 *
+	 * @var array<int, string>
+	 */
+	private const HANDLERS_NEEDING_SERVICE = [
+		'folderManagementHandler',
+		'updateFileHandler',
+		'createFileHandler',
+		'readFileHandler',
+		'fileFormattingHandler',
+		'documentProcessingHandler',
+		'filePublishingHandler',
+	];
+
+	/**
 	 * Constructor
 	 *
-	 * @param FileMapper $fileMapper File mapper
+	 * @param FileMapperInterface $fileMapper File mapper
 	 * @param IGroupManager $groupManager Group manager
 	 * @param LoggerInterface $logger Logger
 	 * @param IRootFolder $rootFolder Root folder
@@ -399,7 +415,7 @@ class FileService {
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
-		FileMapper $fileMapper,
+		FileMapperInterface $fileMapper,
 		IGroupManager $groupManager,
 		LoggerInterface $logger,
 		IRootFolder $rootFolder,
@@ -460,84 +476,13 @@ class FileService {
 		$this->filePreviewHandler = $filePreviewHandler;
 		$this->fileAuditHandler = $fileAuditHandler;
 
-		// Break circular dependency: FolderManagementHandler needs FileService for cross-handler coordination.
-		$this->logger->debug(
-			message: '[FileService] About to call folderManagementHandler->setFileService.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-		$this->folderManagementHandler->setFileService($this);
-		$this->logger->debug(
-			message: '[FileService] Called folderManagementHandler->setFileService.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
+		// Break circular dependencies: these handlers need FileService back for cross-handler
+		// coordination and utilities (sharing, tagging, path extraction, file operations).
+		foreach (self::HANDLERS_NEEDING_SERVICE as $handlerName) {
+			$this->attachServiceTo(handlerName: $handlerName);
+		}
 
-		// Break circular dependency: UpdateFileHandler needs FileService for utility methods (tags, path extraction).
-		$this->logger->debug(
-			message: '[FileService] About to call updateFileHandler->setFileService.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-		$this->updateFileHandler->setFileService($this);
-		$this->logger->debug(
-			message: '[FileService] Called updateFileHandler->setFileService.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-
-		// Break circular dependency: CreateFileHandler needs FileService for sharing and tagging.
-		$this->logger->debug(
-			message: '[FileService] About to call createFileHandler->setFileService.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-		$this->createFileHandler->setFileService($this);
-		$this->logger->debug(
-			message: '[FileService] Called createFileHandler->setFileService.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-
-		// Break circular dependency: ReadFileHandler needs FileService for utility methods.
-		$this->logger->debug(
-			message: '[FileService] About to call readFileHandler->setFileService.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-		$this->readFileHandler->setFileService($this);
-		$this->logger->debug(
-			message: '[FileService] Called readFileHandler->setFileService.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-
-		// Break circular dependency: FileFormattingHandler needs FileService for utility methods (shares, tags, etc.).
-		$this->logger->debug(
-			message: '[FileService] About to call fileFormattingHandler->setFileService.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-		$this->fileFormattingHandler->setFileService($this);
-		$this->logger->debug(
-			message: '[FileService] Called fileFormattingHandler->setFileService.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-
-		// Break circular dependency: DocumentProcessingHandler needs FileService for cross-handler coordination.
-		$this->logger->debug(
-			message: '[FileService] About to call documentProcessingHandler->setFileService.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-		$this->documentProcessingHandler->setFileService($this);
-		$this->logger->debug(
-			message: '[FileService] Called documentProcessingHandler->setFileService.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-
-		// Break circular dependency: FilePublishingHandler needs FileService for file operations and utilities.
-		$this->logger->debug(
-			message: '[FileService] About to call filePublishingHandler->setFileService.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-		$this->filePublishingHandler->setFileService($this);
-		$this->logger->debug(
-			message: '[FileService] Called filePublishingHandler->setFileService.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-
-		// Break circular dependency: FileBatchHandler needs FileService for action delegation.
+		// FileBatchHandler needs FileService for action delegation.
 		$this->fileBatchHandler->setFileService($this);
 		$this->logger->debug(
 			message: '[FileService] Called fileBatchHandler->setFileService.',
@@ -549,6 +494,25 @@ class FileService {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 	}//end __construct()
+
+	/**
+	 * Hand this service to one handler through its setFileService(), logged before and after.
+	 *
+	 * @param string $handlerName The name of the handler property
+	 *
+	 * @return void
+	 */
+	private function attachServiceTo(string $handlerName): void {
+		$this->logger->debug(
+			message: '[FileService] About to call ' . $handlerName . '->setFileService.',
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+		$this->$handlerName->setFileService($this);
+		$this->logger->debug(
+			message: '[FileService] Called ' . $handlerName . '->setFileService.',
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end attachServiceTo()
 
 	/**
 	 * Clean and extract filename from a file path that may contain folder ID prefixes.
@@ -960,7 +924,7 @@ class FileService {
 	 *
 	 * @return string The share link needed to get the file or folder for the given IShare object
 	 *
-	 * @spec openspec/changes/share-links-use-the-request-host/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
 	 */
 	public function getShareLink(IShare $share): string {
 		return $this->shareUrls->shareLink(token: $share->getToken());

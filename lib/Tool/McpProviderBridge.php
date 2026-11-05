@@ -74,9 +74,11 @@ class McpProviderBridge implements ToolInterface {
 	 * never read here; the LLM never sees it, because the chat path builds its
 	 * function payload from name, description and parameters only.
 	 *
+	 * `title` is the MCP tool's human-readable name, for a picker or a grant UI.
+	 *
 	 * @var array<int, string>
 	 */
-	private const PASSTHROUGH_KEYS = ['scope', 'reach', 'app', 'subject', 'action', 'annotations'];
+	private const PASSTHROUGH_KEYS = ['scope', 'reach', 'app', 'subject', 'action', 'annotations', 'title'];
 
 	/**
 	 * Optional agent context attached by the registry.

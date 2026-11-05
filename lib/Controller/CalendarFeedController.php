@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+ * @spec openspec/specs/calendar-provider/spec.md
  */
 
 declare(strict_types=1);
@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\CalendarFeedControllerServices;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
 use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenService;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
@@ -67,28 +68,66 @@ class CalendarFeedController extends Controller {
 	public const THROTTLE_ACTION = ThrottledSurfaces::CALENDAR_FEED;
 
 	/**
+	 * The feed-token lifecycle.
+	 *
+	 * @var CalendarFeedTokenService
+	 */
+	private readonly CalendarFeedTokenService $tokens;
+
+	/**
+	 * The feed generator.
+	 *
+	 * @var ObjectCalendarFeedService
+	 */
+	private readonly ObjectCalendarFeedService $feed;
+
+	/**
+	 * The attendee-response store.
+	 *
+	 * @var AppointmentAttendeeService
+	 */
+	private readonly AppointmentAttendeeService $attendees;
+
+	/**
+	 * The current session, which names the principal.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Brute-force throttler for rejected tokens.
+	 *
+	 * @var IThrottler
+	 */
+	private readonly IThrottler $throttler;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name (injected by Nextcloud).
 	 * @param IRequest $request Current request.
-	 * @param CalendarFeedTokenService $tokens The feed-token lifecycle.
-	 * @param ObjectCalendarFeedService $feed The feed generator.
-	 * @param AppointmentAttendeeService $attendees The attendee-response store.
-	 * @param IUserSession $userSession The current session, which names the principal.
-	 * @param IThrottler $throttler Brute-force throttler for rejected tokens.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param CalendarFeedControllerServices $services The calendar feed controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly CalendarFeedTokenService $tokens,
-		private readonly ObjectCalendarFeedService $feed,
-		private readonly AppointmentAttendeeService $attendees,
-		private readonly IUserSession $userSession,
-		private readonly IThrottler $throttler,
-		private readonly LoggerInterface $logger,
+		CalendarFeedControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->tokens = $services->domain->tokens;
+		$this->feed = $services->domain->feed;
+		$this->attendees = $services->domain->attendees;
+		$this->userSession = $services->domain->userSession;
+		$this->throttler = $services->platform->throttler;
+		$this->logger = $services->platform->logger;
 	}//end __construct()
 
 	/**
@@ -103,7 +142,7 @@ class CalendarFeedController extends Controller {
 	 *
 	 * @return DataDisplayResponse|JSONResponse The calendar, or 404.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -143,7 +182,7 @@ class CalendarFeedController extends Controller {
 	 *
 	 * @return JSONResponse The minted token and its URL, or 400.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	#[NoAdminRequired]
 	public function mint(): JSONResponse {
@@ -174,7 +213,7 @@ class CalendarFeedController extends Controller {
 	 *
 	 * @return JSONResponse The tokens.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	#[NoAdminRequired]
 	public function index(): JSONResponse {
@@ -196,7 +235,7 @@ class CalendarFeedController extends Controller {
 	 *
 	 * @return JSONResponse Empty on success, 404 when there is nothing to revoke.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	#[NoAdminRequired]
 	public function revoke(int $id): JSONResponse {
@@ -225,7 +264,7 @@ class CalendarFeedController extends Controller {
 	 *
 	 * @return JSONResponse The responses, or 404 when the object is unknown or denied.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	#[NoAdminRequired]
 	public function attendeeResponses(string $id): JSONResponse {
@@ -253,7 +292,7 @@ class CalendarFeedController extends Controller {
 	 *
 	 * @return JSONResponse The full response list, 400 on a refused answer, or 404.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	#[NoAdminRequired]
 	public function recordAttendeeResponse(string $id): JSONResponse {
@@ -288,7 +327,7 @@ class CalendarFeedController extends Controller {
 	 *
 	 * @return JSONResponse|null The 404 to return, or null when the read is allowed.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	private function requireReadableObject(string $objectUuid): ?JSONResponse {
 		if ($this->attendees->mayRead(objectUuid: $objectUuid) === false) {

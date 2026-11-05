@@ -42,8 +42,9 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
+use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService;
-use OCA\OpenRegister\Service\Task\TaskService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -89,12 +90,12 @@ class PortalTaskReminderListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param PortalTaskDeliveryService $delivery Records the reminder for the portal.
-	 * @param TaskService $tasks Reads the timer's subject task.
+	 * @param TaskManagerInterface $tasks Reads the timer's subject task.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
 		private readonly PortalTaskDeliveryService $delivery,
-		private readonly TaskService $tasks,
+		private readonly TaskManagerInterface $tasks,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -243,9 +244,9 @@ class PortalTaskReminderListener implements IEventListener {
 	 *
 	 * @param Event $event The timer fire.
 	 *
-	 * @return Task|null The subject task.
+	 * @return TaskInterface|null The subject task.
 	 */
-	private function subjectTask(Event $event): ?Task {
+	private function subjectTask(Event $event): ?TaskInterface {
 		$timer = $this->read(source: $event, method: 'getTimer');
 		// Is_callable, not method_exists: FlowTimer's getters are Entity::__call
 		// magic, so method_exists() said no on every real timer and no reminder

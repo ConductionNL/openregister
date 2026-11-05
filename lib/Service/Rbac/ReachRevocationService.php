@@ -38,7 +38,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\DelegationGrantMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -53,7 +53,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One collaborator per source
  * the act can remove, plus the audit that records what it removed.
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
 class ReachRevocationService {
 	/**
@@ -67,7 +67,7 @@ class ReachRevocationService {
 	 * Wire the act.
 	 *
 	 * @param PrincipalReachService     $reach        The listing the act runs from.
-	 * @param SchemaMapper              $schemaMapper Schema authorization blocks.
+	 * @param SchemaMapperInterface              $schemaMapper Schema authorization blocks.
 	 * @param DerivedGrantStore         $derived      Grants derived from sign-in claims.
 	 * @param DelegationGrantMapper     $delegations  Delegations held.
 	 * @param AuthorizationAuditService $audit        The record of what was removed.
@@ -78,7 +78,7 @@ class ReachRevocationService {
 	 */
 	public function __construct(
 		private readonly PrincipalReachService $reach,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly DerivedGrantStore $derived,
 		private readonly DelegationGrantMapper $delegations,
 		private readonly AuthorizationAuditService $audit,
@@ -95,7 +95,7 @@ class ReachRevocationService {
 	 *
 	 * @return array<string, mixed> One record naming every grant removed and every one retained.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function revokeAll(string $principal, string $reason = ''): array {
 		$principal = trim($principal);

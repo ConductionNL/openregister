@@ -36,7 +36,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use Throwable;
 
 /**
@@ -50,7 +50,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Export
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 class ExportProfileWriter {
 	/**
@@ -63,13 +63,13 @@ class ExportProfileWriter {
 	/**
 	 * Wire the name resolver and the value renderer.
 	 *
-	 * @param CacheHandler        $cacheHandler Uuid to name resolution for rendered relations.
+	 * @param CacheHandlerInterface        $cacheHandler Uuid to name resolution for rendered relations.
 	 * @param ExportValueRenderer $renderer     What a single cell says, in the profile's mode.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly CacheHandler $cacheHandler,
+		private readonly CacheHandlerInterface $cacheHandler,
 		private readonly ExportValueRenderer $renderer,
 	) {
 	}//end __construct()
@@ -83,7 +83,7 @@ class ExportProfileWriter {
 	 *
 	 * @return array{bytes: string, rowCount: int, metadata: array<string, mixed>} The file and what it is.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function write(ExportProfile $profile, array $objects, ?Schema $schema = null): array {
 		$fields = $profile->getFieldsArray();
@@ -127,7 +127,7 @@ class ExportProfileWriter {
 	 *
 	 * @return string The CSV line, newline terminated.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function csvLineFor(ExportProfile $profile, ObjectEntity $object, ?Schema $schema = null): string {
 		$fields = $profile->getFieldsArray();
@@ -146,7 +146,7 @@ class ExportProfileWriter {
 	 *
 	 * @return string The two opening lines of a whole-set file.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function csvOpeningFor(ExportProfile $profile): string {
 		$fields = $profile->getFieldsArray();

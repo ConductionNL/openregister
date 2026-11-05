@@ -24,7 +24,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -333,4 +333,69 @@ class DenyResolverTest extends TestCase {
 		$this->assertIsInt($jsonAt);
 		$this->assertLessThan($jsonAt, $guardAt);
 	}//end testTheCheapGuardComesBeforeTheJsonWork()
+
+	/**
+	 * Principal names that json_encode writes with a backslash.
+	 *
+	 * @return array<string, array{0: string}> The names.
+	 */
+	public static function escapedPrincipals(): array {
+		return [
+			'non-ASCII'    => ['Gémeente'],
+			'slash'        => ['a/b'],
+			'double quote' => ['q"x'],
+			'backslash'    => ['b\\s'],
+		];
+	}
+
+	/**
+	 * On MySQL and MariaDB the deny candidate reads back as the JSON that was meant,
+	 * so a principal deny with such a name still matches its own row.
+	 *
+	 * @param string $principal The principal name.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('escapedPrincipals')]
+	public function testACandidateReadsBackAsItsJsonOnMysql(string $principal): void {
+		$sql = $this->resolver->notDeniedRowSql('t._authorization', 'read', false, [$principal]);
+
+		preg_match_all("/JSON_ARRAY\\(\\)\\), '((?:[^'\\\\]|\\\\.|'')*)'\\)/", $sql, $literals);
+		$this->assertNotSame([], $literals[1]);
+
+		$read = array_map(fn (string $literal): mixed => json_decode($this->readAsMysql(literal: $literal), true), $literals[1]);
+		$this->assertContains([$principal], $read);
+	}
+
+	/**
+	 * On PostgreSQL a backslash is an ordinary character, so the candidate is not doubled.
+	 *
+	 * @return void
+	 */
+	public function testACandidateIsNotDoubledOnPostgres(): void {
+		$sql = $this->resolver->notDeniedRowSql('t._authorization', 'read', true, ['Gémeente']);
+
+		$this->assertStringContainsString('\u00e9', $sql);
+		$this->assertStringNotContainsString('\\\\u00e9', $sql);
+	}
+
+	/**
+	 * A string literal's body as MySQL reads it: `\x` gives x, `''` gives one quote.
+	 *
+	 * @param string $literal The body between the quotes.
+	 *
+	 * @return string The text the server sees.
+	 */
+	private function readAsMysql(string $literal): string {
+		$read = '';
+		for ($i = 0, $end = strlen($literal); $i < $end; $i++) {
+			if ($literal[$i] === '\\' || ($literal[$i] === "'" && ($literal[$i + 1] ?? '') === "'")) {
+				$i++;
+			}
+
+			$read .= $literal[$i];
+		}
+
+		return $read;
+	}
 }//end class

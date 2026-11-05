@@ -30,7 +30,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
 
 declare(strict_types=1);
@@ -38,10 +38,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
@@ -75,14 +75,14 @@ class UniqueConstraintListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param UniqueConstraintEvaluator $evaluator Reads and describes the constraints.
-	 * @param SchemaMapper $schemas Resolves the schema an object belongs to.
-	 * @param MagicMapper $objects Finds the objects already holding a combination.
+	 * @param SchemaMapperInterface $schemas Resolves the schema an object belongs to.
+	 * @param MagicMapperInterface $objects Finds the objects already holding a combination.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		private readonly UniqueConstraintEvaluator $evaluator,
-		private readonly SchemaMapper $schemas,
-		private readonly MagicMapper $objects,
+		private readonly SchemaMapperInterface $schemas,
+		private readonly MagicMapperInterface $objects,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -95,7 +95,7 @@ class UniqueConstraintListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof ObjectCreatingEvent) {
@@ -120,7 +120,7 @@ class UniqueConstraintListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function evaluate(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $object): void {
 		try {

@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ use OCP\AppFramework\Db\Entity;
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 class ProcessingPurpose extends Entity implements JsonSerializable {
 	/**
@@ -175,7 +175,7 @@ class ProcessingPurpose extends Entity implements JsonSerializable {
 	 *
 	 * @return bool True when the status is one this entity recognises.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public static function isValidStatus(?string $status): bool {
 		if ($status === null || $status === '') {
@@ -194,7 +194,7 @@ class ProcessingPurpose extends Entity implements JsonSerializable {
 	 *
 	 * @return bool True when the purpose is active AND bound to an activity.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function isUsable(): bool {
 		return $this->status === self::STATUS_ACTIVE && $this->isBound() === true;
@@ -205,7 +205,7 @@ class ProcessingPurpose extends Entity implements JsonSerializable {
 	 *
 	 * @return bool True when an activity uuid is present.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function isBound(): bool {
 		return $this->activityUuid !== null && $this->activityUuid !== '';
@@ -216,7 +216,7 @@ class ProcessingPurpose extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The serialized purpose.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function jsonSerialize(): array {
 		return [

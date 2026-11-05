@@ -1089,6 +1089,10 @@ import Check from 'vue-material-design-icons/Check.vue'
 import DatabaseSearch from 'vue-material-design-icons/DatabaseSearch.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import {
+	selectedPropertyConfig,
+	suggestedPropertyConfig,
+} from '../../services/schemaExploration.js'
 
 export default {
 	name: 'ExploreSchema',
@@ -1361,6 +1365,33 @@ export default {
 		},
 
 		/**
+		 * Run the schema-explore endpoint and return its analysis.
+		 *
+		 * @param {number|string} schemaId The schema to explore.
+		 * @return {Promise<object>} The exploration data.
+		 * @spec exclude Modal action plumbing — calls the schema-explore endpoint.
+		 */
+		async fetchExploration(schemaId) {
+			const response = await fetch(
+				`/index.php/apps/openregister/api/schemas/${schemaId}/explore`,
+				{
+					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				},
+			)
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`)
+			}
+			const data = await response.json()
+			if (data.error) {
+				throw new Error(data.error)
+			}
+			return data
+		},
+
+		/**
 		 * @spec exclude Modal action plumbing — runs the schema-explore endpoint and seeds suggestion config.
 		 */
 		async startAnalysis() {
@@ -1369,63 +1400,14 @@ export default {
 			this.error = null
 
 			try {
-				const endpoint = `/index.php/apps/openregister/api/schemas/${schemaStore.schemaItem.id}/explore`
-
-				const response = await fetch(endpoint, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-				})
-
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const data = await response.json()
-
-				if (data.error) {
-					throw new Error(data.error)
-				}
-
+				const data = await this.fetchExploration(schemaStore.schemaItem.id)
 				this.explorationData = data
 
 				// Initialize configuration for suggestions
 				data.suggestions?.forEach((suggestion) => {
 					if (!this.selectedPropertiesConfig[suggestion.property_name]) {
-						this.selectedPropertiesConfig[suggestion.property_name] = {
-							type: suggestion.recommended_type,
-							title: suggestion.property_name,
-							displayTitle: suggestion.property_name,
-							format: suggestion.detected_format || '',
-							maxLength:
-								suggestion.max_length > 0
-									? suggestion.max_length
-									: null,
-							minLength:
-								suggestion.min_length !== null
-								&& suggestion.min_length < Number.MAX_SAFE_INTEGER
-									? suggestion.min_length
-									: null,
-							description: suggestion.description || '',
-							example: '',
-							order: 0,
-							required: false, // Default to not required
-
-							immutable: false, // Default to not immutable
-							deprecated: false, // Default to not deprecated
-							visible: true, // Default to visible
-							hideOnCollection: false, // Default to show in collection view
-							hideOnForm: false, // Default to show in form view
-							facetable: false, // Default to not facetable
-							// Constraint fields
-							pattern: '',
-							minimum: null,
-							maximum: null,
-							multipleOf: null,
-							exclusiveMin: false,
-							exclusiveMax: false,
-						}
+						this.selectedPropertiesConfig[suggestion.property_name] =
+							suggestedPropertyConfig(suggestion)
 					}
 				})
 			} catch (error) {
@@ -1440,7 +1422,7 @@ export default {
 		},
 
 		/**
-		 * @param propertyName
+		 * @param {string} propertyName
 		 * @spec exclude UI selection plumbing — toggles a suggested property in the selection.
 		 */
 		togglePropertySelection(propertyName) {
@@ -1455,34 +1437,8 @@ export default {
 					const suggestion = this.explorationData.suggestions.find(
 						(s) => s.property_name === propertyName,
 					)
-					this.selectedPropertiesConfig[propertyName] = {
-						selected: true,
-						type: suggestion?.recommended_type || 'string',
-						title: propertyName,
-						description: suggestion?.description || '',
-						format: suggestion?.detected_format || '',
-						required: false,
-						immutable: false,
-						deprecated: false,
-						visible: true,
-						facetable: false,
-						hideOnCollection: false,
-						hideOnForm: false,
-						displayTitle: propertyName,
-						userDescription: '',
-						example: '',
-						order: 100,
-						technicalDescription: '',
-						// Constraint fields
-						pattern: '',
-						minimum: null,
-						maximum: null,
-						multipleOf: null,
-						exclusiveMin: false,
-						exclusiveMax: false,
-						maxLength: suggestion?.max_length || null,
-						minLength: suggestion?.min_length || null,
-					}
+					this.selectedPropertiesConfig[propertyName] =
+						selectedPropertyConfig(propertyName, suggestion)
 				}
 			}
 		},
@@ -1588,7 +1544,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {unknown} value
 		 * @spec exclude UI display helper — truncates/normalizes an example value for display.
 		 */
 		formatExample(value) {
@@ -1608,7 +1564,7 @@ export default {
 		},
 
 		/**
-		 * @param page
+		 * @param {number} page
 		 * @spec exclude UI pagination handler — sets the current page and scrolls to top.
 		 */
 		onPageChanged(page) {
@@ -1622,7 +1578,7 @@ export default {
 		},
 
 		/**
-		 * @param pageSize
+		 * @param {number} pageSize
 		 * @spec exclude UI pagination handler — sets page size and resets to page one.
 		 */
 		onPageSizeChanged(pageSize) {
@@ -1639,7 +1595,7 @@ export default {
 		},
 
 		/**
-		 * @param issues
+		 * @param {Array<string>} issues
 		 * @spec exclude UI display helper — maps issue-type strings to display objects.
 		 */
 		getIssueDetails(issues) {
@@ -1653,7 +1609,7 @@ export default {
 		},
 
 		/**
-		 * @param issueType
+		 * @param {string} issueType
 		 * @spec exclude UI display helper — maps an issue type to a UI category.
 		 */
 		getIssueType(issueType) {
@@ -1675,7 +1631,7 @@ export default {
 		},
 
 		/**
-		 * @param issueType
+		 * @param {string} issueType
 		 * @spec exclude UI display helper — maps an issue category to a translated label.
 		 */
 		getIssueLabel(issueType) {
@@ -1693,7 +1649,7 @@ export default {
 		},
 
 		/**
-		 * @param issueType
+		 * @param {string} issueType
 		 * @spec exclude UI display helper — maps an issue type to a translated description.
 		 */
 		getIssueDescription(issueType) {

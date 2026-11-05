@@ -27,6 +27,9 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\ConditionMatcher
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class Wave12ConditionMatcherDotSyntaxTest extends TestCase {
 
@@ -186,7 +189,7 @@ class Wave12ConditionMatcherDotSyntaxTest extends TestCase {
 			->method('get')
 			->willReturnCallback(
 				function (string $class) use ($orgService) {
-					if ($class === 'OCA\OpenRegister\Service\OrganisationService') {
+					if ($class === 'OCA\OpenRegister\Service\OrganisationServiceInterface') {
 						return $orgService;
 					}
 

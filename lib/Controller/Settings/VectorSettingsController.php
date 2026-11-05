@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Settings;
 
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -29,7 +29,7 @@ use Psr\Log\LoggerInterface;
  *
  * Handles:
  * - Semantic search
- * - Hybrid search (SOLR + vectors)
+ * - Hybrid search (keyword + vectors)
  * - Vector statistics
  *
  * @category Controller
@@ -41,13 +41,13 @@ class VectorSettingsController extends Controller {
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param VectorizationService $vectorizationService Vectorization service.
+	 * @param VectorizationServiceInterface $vectorizationService Vectorization service.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly VectorizationService $vectorizationService,
+		private readonly VectorizationServiceInterface $vectorizationService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);

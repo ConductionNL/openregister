@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRegisters;
@@ -53,7 +54,7 @@ class ExampleSetRegistersTest extends TestCase {
 	 * The job is the one the import reports under the id it ran under, and the instance's other jobs are never read:
 	 * a job another process records meanwhile cannot be taken for the set's.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function testTheImportClaimsExactlyTheJobItReports(): void {
 		$descriptors = $this->createMock(RegisterDescriptorService::class);
@@ -71,7 +72,7 @@ class ExampleSetRegistersTest extends TestCase {
 	/**
 	 * An import that recorded no job claims none, and a failed one says why.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function testAnImportWithoutAJobClaimsNothingAndAFailureIsNamed(): void {
 		$descriptors = $this->createMock(RegisterDescriptorService::class);
@@ -88,7 +89,7 @@ class ExampleSetRegistersTest extends TestCase {
 	/**
 	 * Remove soft-deletes the objects of the recorded job and forgets it only when all of them went.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function testRemoveImportForgetsTheJobOnlyWhenEveryObjectWent(): void {
 		$audit = $this->createMock(AuditTrailMapper::class);
@@ -104,7 +105,7 @@ class ExampleSetRegistersTest extends TestCase {
 		});
 		$recorder = $this->createMock(AppImportJobRecorder::class);
 		$recorder->expects($this->once())->method('forget')->with('openregister.vocabulary', 'job-mine');
-		$registers = $this->registersOver([AuditTrailMapper::class => $audit, ObjectService::class => $objects, AppImportJobRecorder::class => $recorder]);
+		$registers = $this->registersOver([AuditTrailMapperInterface::class => $audit, \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class => $objects, AppImportJobRecorder::class => $recorder]);
 
 		$this->assertFalse($registers->removeImport(appId: 'openregister.vocabulary', jobId: 'job-mine'), 'a refused object leaves the job in place');
 		$refuse = false;

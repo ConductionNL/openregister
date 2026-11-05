@@ -120,12 +120,12 @@ export default {
 		 */
 		hasActiveFilters() {
 			return (
-				auditTrailStore.filters
-				&& Object.keys(auditTrailStore.filters).some(
+				auditTrailStore.auditTrailFilters
+				&& Object.keys(auditTrailStore.auditTrailFilters).some(
 					(key) =>
-						auditTrailStore.filters[key] !== null
-						&& auditTrailStore.filters[key] !== undefined
-						&& auditTrailStore.filters[key] !== '',
+						auditTrailStore.auditTrailFilters[key] !== null
+						&& auditTrailStore.auditTrailFilters[key] !== undefined
+						&& auditTrailStore.auditTrailFilters[key] !== '',
 				)
 			)
 		},
@@ -134,9 +134,9 @@ export default {
 		 * @spec exclude UI display helper — returns only the non-empty filters for display.
 		 */
 		displayFilters() {
-			if (!auditTrailStore.filters) return {}
+			if (!auditTrailStore.auditTrailFilters) return {}
 			return Object.fromEntries(
-				Object.entries(auditTrailStore.filters).filter(
+				Object.entries(auditTrailStore.auditTrailFilters).filter(
 					([_key, value]) =>
 						value !== null && value !== undefined && value !== '',
 				),
@@ -148,7 +148,7 @@ export default {
 		'navigationStore.dialog': function (newVal) {
 			if (newVal === 'clearAuditTrails') {
 				// Update filtered count when dialog opens
-				this.filteredCount = auditTrailStore.auditTrailCount
+				this.filteredCount = auditTrailStore.auditTrailPagination.total
 			}
 		},
 	},
@@ -181,56 +181,18 @@ export default {
 			this.loading = true
 
 			try {
-				// Build query parameters for deletion
-				const params = new URLSearchParams()
-
-				// Add current filters to determine which logs to delete
-				if (auditTrailStore.filters) {
-					Object.entries(auditTrailStore.filters).forEach(
-						([key, value]) => {
-							if (
-								value !== null
-								&& value !== undefined
-								&& value !== ''
-							) {
-								params.append(key, value)
-							}
-						},
+				const result = await this.requestClear()
+				this.success = true
+				this.error = false
+				this.successMessage =
+					result.message
+					|| this.t(
+						'openregister',
+						'{count} audit trails cleared successfully',
+						{ count: this.filteredCount },
 					)
-				}
-
-				// Make the API request
-				const response = await fetch(
-					`/index.php/apps/openregister/api/audit-trails?${params.toString()}`,
-					{
-						method: 'DELETE',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-					},
-				)
-
-				const result = await response.json()
-
-				if (result.success) {
-					this.success = true
-					this.error = false
-					this.successMessage =
-						result.message
-						|| this.t(
-							'openregister',
-							'{count} audit trails cleared successfully',
-							{ count: this.filteredCount },
-						)
-
-					// Refresh the audit trail list
-					await auditTrailStore.refreshAuditTrailList()
-
-					// Auto-close after 3 seconds
-					this.closeModalTimeout = setTimeout(this.closeDialog, 3000)
-				} else {
-					throw new Error(result.error || 'Deletion failed')
-				}
+				await auditTrailStore.refreshAuditTrailList()
+				this.closeModalTimeout = setTimeout(this.closeDialog, 3000)
 			} catch (error) {
 				console.error('Error clearing audit trails:', error)
 				this.success = false
@@ -243,6 +205,31 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Ask the server to delete the audit trails that match the active
+		 * filters.
+		 *
+		 * @return {Promise<object>} The server's answer when it reports success
+		 * @throws {Error} When the server reports a failure
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-audit-trail-immutable/tasks.md#task-3
+		 */
+		async requestClear() {
+			const params = new URLSearchParams(Object.entries(this.displayFilters))
+			const response = await fetch(
+				`/index.php/apps/openregister/api/audit-trails?${params.toString()}`,
+				{
+					method: 'DELETE',
+					headers: { 'Content-Type': 'application/json' },
+				},
+			)
+			const result = await response.json()
+			if (!result.success) {
+				throw new Error(result.error || 'Deletion failed')
+			}
+			return result
 		},
 
 		/**

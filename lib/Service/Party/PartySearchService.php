@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md
+ * @spec openspec/specs/party-model/spec.md
  */
 
 declare(strict_types=1);
@@ -28,15 +28,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Party;
 
 use Exception;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IAppConfig;
 use Throwable;
 
 /**
  * Runs a party query against the cap.
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+ * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
  */
 class PartySearchService {
 
@@ -53,15 +53,15 @@ class PartySearchService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects The object layer party records live in.
+	 * @param ObjectOperationsInterface $objects The object layer party records live in.
 	 * @param PartyService $parties The party schemas.
-	 * @param AuditTrailMapper $audit The audit trail, for a refused attempt.
+	 * @param AuditTrailMapperInterface $audit The audit trail, for a refused attempt.
 	 * @param IAppConfig $config The administered cap.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly PartyService $parties,
-		private readonly AuditTrailMapper $audit,
+		private readonly AuditTrailMapperInterface $audit,
 		private readonly IAppConfig $config,
 	) {
 	}//end __construct()
@@ -71,7 +71,7 @@ class PartySearchService {
 	 *
 	 * @return int The cap, at least one.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function cap(): int {
 		$cap = $this->config->getValueInt('openregister', self::CAP_KEY, self::DEFAULT_CAP);
@@ -95,7 +95,7 @@ class PartySearchService {
 	 *
 	 * @throws Exception 400 when the query is empty, 403 naming the cap when it is exceeded.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function search(string $query, int|string|null $schemaId = null): array {
 		$term = trim($query);

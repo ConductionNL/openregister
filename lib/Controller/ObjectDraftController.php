@@ -34,11 +34,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Service\Object\DraftActivation;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -66,9 +66,9 @@ class ObjectDraftController extends Controller {
 	 *
 	 * @param string          $appName    App name.
 	 * @param IRequest        $request    Request.
-	 * @param ObjectService   $objects    Resolves the record through the RBAC boundary.
-	 * @param RegisterMapper  $registers  Resolves the register.
-	 * @param SchemaMapper    $schemas    Resolves the schema.
+	 * @param ObjectOperationsInterface   $objects    Resolves the record through the RBAC boundary.
+	 * @param RegisterMapperInterface  $registers  Resolves the register.
+	 * @param SchemaMapperInterface    $schemas    Resolves the schema.
 	 * @param DraftActivation $activation Makes the draft definitive.
 	 * @param IUserSession    $session    The acting user, who is the asserted owner.
 	 * @param IL10N           $l10n       Translations.
@@ -77,9 +77,9 @@ class ObjectDraftController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objects,
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
+		private readonly ObjectOperationsInterface $objects,
+		private readonly RegisterMapperInterface $registers,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly DraftActivation $activation,
 		private readonly IUserSession $session,
 		private readonly IL10N $l10n,

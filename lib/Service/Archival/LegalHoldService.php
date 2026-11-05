@@ -28,8 +28,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\BackgroundJob\IJobList;
 use OCP\IUserSession;
@@ -50,16 +50,16 @@ class LegalHoldService {
 	/**
 	 * Object entity mapper.
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface
 	 */
-	private MagicMapper $objectMapper;
+	private MagicMapperInterface $objectMapper;
 
 	/**
 	 * Audit trail mapper for logging hold operations.
 	 *
-	 * @var AuditTrailMapper
+	 * @var AuditTrailMapperInterface
 	 */
-	private AuditTrailMapper $auditTrailMapper;
+	private AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * User session for identifying who placed the hold.
@@ -85,18 +85,20 @@ class LegalHoldService {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $objectMapper Object entity data mapper.
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for logging.
+	 * @param MagicMapperInterface $objectMapper Object entity data mapper.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for logging.
 	 * @param IUserSession $userSession User session service.
 	 * @param IJobList $jobList Background job list for bulk operations.
 	 * @param LoggerInterface $logger Logger for error and info messages.
+	 * @param RetentionRowScanner|null $scanner Walks every table a retention decision can live in, for the list of held records.
 	 */
 	public function __construct(
-		MagicMapper $objectMapper,
-		AuditTrailMapper $auditTrailMapper,
+		MagicMapperInterface $objectMapper,
+		AuditTrailMapperInterface $auditTrailMapper,
 		IUserSession $userSession,
 		IJobList $jobList,
 		LoggerInterface $logger,
+		private readonly ?RetentionRowScanner $scanner=null,
 	) {
 		$this->objectMapper = $objectMapper;
 		$this->auditTrailMapper = $auditTrailMapper;
@@ -257,6 +259,39 @@ class LegalHoldService {
 			]
 		);
 	}//end bulkPlaceHold()
+
+	/**
+	 * The records that carry an active legal hold, with their active holds.
+	 *
+	 * Walks every retention source (the magic tables and the legacy blob
+	 * table) and keeps the records whose hold is active; a released hold is
+	 * not listed. A scan stopped at its cap says so in `truncated`.
+	 *
+	 * @return array{results: array<int, array<string, mixed>>, total: int, truncated: bool}
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function listActiveHolds(): array {
+		if ($this->scanner === null) {
+			return ['results' => [], 'total' => 0, 'truncated' => false];
+		}
+
+		$scan   = $this->scanner->scan(accept: static fn (ObjectEntity $object): bool => $object->hasActiveLegalHold());
+		$ledger = new LegalHoldLedger();
+
+		$results = [];
+		foreach ($scan['objects'] as $object) {
+			$results[] = [
+				'id'       => $object->getUuid(),
+				'register' => $object->getRegister(),
+				'schema'   => $object->getSchema(),
+				'name'     => $object->getName(),
+				'holds'    => $ledger->activeHolds(retention: ($object->getRetention() ?? [])),
+			];
+		}
+
+		return ['results' => $results, 'total' => count($results), 'truncated' => $scan['truncated']];
+	}//end listActiveHolds()
 
 	/**
 	 * Get the current authenticated user ID.

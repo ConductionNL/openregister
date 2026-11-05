@@ -87,7 +87,7 @@ export default {
 			this.username = userRes.data?.uid || ''
 			this.status = statusRes.data?.status || 'active'
 			this.requestedAt = statusRes.data?.pendingRequest?.requestedAt || null
-		} catch (e) {
+		} catch {
 			// Default to active.
 		}
 	},

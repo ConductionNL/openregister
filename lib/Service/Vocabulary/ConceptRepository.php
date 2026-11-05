@@ -32,17 +32,17 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Vocabulary;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\VocabularyImportService;
 use Throwable;
 
@@ -93,14 +93,14 @@ class ConceptRepository {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $objects Reads objects out of a register/schema table.
-	 * @param RegisterMapper $registers Resolves the vocabulary register.
-	 * @param SchemaMapper $schemas Resolves the conceptScheme and concept schemas.
+	 * @param MagicMapperInterface $objects Reads objects out of a register/schema table.
+	 * @param RegisterMapperInterface $registers Resolves the vocabulary register.
+	 * @param SchemaMapperInterface $schemas Resolves the conceptScheme and concept schemas.
 	 */
 	public function __construct(
-		private readonly MagicMapper $objects,
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
+		private readonly MagicMapperInterface $objects,
+		private readonly RegisterMapperInterface $registers,
+		private readonly SchemaMapperInterface $schemas,
 	) {
 
 	}//end __construct()
@@ -194,7 +194,7 @@ class ConceptRepository {
 	 *
 	 * @return array<string,mixed>|null The scheme's decoded object data.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function scheme(string $schemeUri): ?array {
 		if (array_key_exists($schemeUri, $this->schemeCache) === true) {
@@ -242,7 +242,7 @@ class ConceptRepository {
 	 *
 	 * @return array<string,mixed>|null The scheme's decoded object data.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function schemeByReference(string $reference): ?array {
 		foreach ($this->schemeCache as $cached) {
@@ -290,7 +290,7 @@ class ConceptRepository {
 	 *
 	 * @return array<string,mixed> The declared concept shape.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function conceptShape(string $schemeUri): array {
 		$scheme = $this->scheme(schemeUri: $schemeUri);
@@ -318,7 +318,7 @@ class ConceptRepository {
 	 *
 	 * @return array<string,array<string,mixed>> The concepts, keyed by uri.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function conceptsOf(string $schemeUri): array {
 		if (array_key_exists($schemeUri, $this->conceptCache) === true) {
@@ -388,7 +388,7 @@ class ConceptRepository {
 	 *
 	 * @return array<string,mixed>|null The concept, or null when the scheme does not hold it.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function resolve(string $value, string $schemeUri, string $store = 'uri'): ?array {
 		$concepts = $this->conceptsOf(schemeUri: $schemeUri);
@@ -410,7 +410,7 @@ class ConceptRepository {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function clearCache(): void {
 		$this->conceptCache = [];

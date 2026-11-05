@@ -33,16 +33,16 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -56,7 +56,7 @@ use Throwable;
  * tables, and each question is a short method; splitting them would put the
  * memo in two places, which is how a stale answer reaches an authorization verdict.
  *
- * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class HierarchyDescender {
 
@@ -101,14 +101,14 @@ class HierarchyDescender {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db The database.
-	 * @param SchemaMapper $schemaMapper Reads the schemas.
-	 * @param RegisterMapper $registerMapper Reads the registers a schema belongs to.
+	 * @param SchemaMapperInterface $schemaMapper Reads the schemas.
+	 * @param RegisterMapperInterface $registerMapper Reads the registers a schema belongs to.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -119,7 +119,7 @@ class HierarchyDescender {
 	 * @return array<int, array{table: string, parentColumn: string, maxDepth: int, verbs: string[], schemaId: int}>
 	 *         One entry per register the hierarchical schema belongs to.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function hierarchicalTables(): array {
 		if ($this->memoised !== null) {
@@ -160,7 +160,7 @@ class HierarchyDescender {
 				// carrying the parent column says the same thing the list was
 				// being asked to say, and says it from the storage rather than
 				// from bookkeeping beside it.
-				$table = MagicMapper::TABLE_PREFIX . (int)$register->getId() . '_' . $schemaId;
+				$table = MagicMapperInterface::TABLE_PREFIX . (int)$register->getId() . '_' . $schemaId;
 				if ($this->tableHasColumn(table: $table, column: $parentColumn) === false) {
 					// Only worth saying when the register DOES claim the
 					// schema: a table that is simply not there is the ordinary
@@ -213,7 +213,7 @@ class HierarchyDescender {
 	 *
 	 * @return array<string, string> Child UUID => parent UUID.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function childrenOf(string $table, string $parentColumn, array $parentUuids, ?int $limit = null): array {
 		if (empty($parentUuids) === true || ($limit !== null && $limit < 1)) {
@@ -305,7 +305,7 @@ class HierarchyDescender {
 	 *
 	 * @return string[] The ancestor UUIDs, nearest first, empty when the schema declares no hierarchy.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function ancestorsOf(int $registerId, int $schemaId, string $objectUuid): array {
 		if ($objectUuid === '') {
@@ -352,10 +352,10 @@ class HierarchyDescender {
 	 *
 	 * @return array{table: string, parentColumn: string, maxDepth: int, verbs: string[], schemaId: int}|null The declaration, or null.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function hierarchyFor(int $registerId, int $schemaId): ?array {
-		$table = (MagicMapper::TABLE_PREFIX . $registerId . '_' . $schemaId);
+		$table = (MagicMapperInterface::TABLE_PREFIX . $registerId . '_' . $schemaId);
 
 		foreach ($this->hierarchicalTables() as $candidate) {
 			if ($candidate['schemaId'] === $schemaId && $candidate['table'] === $table) {
@@ -419,7 +419,7 @@ class HierarchyDescender {
 	 *
 	 * @return string The column name.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function columnFor(string $property): string {
 		return strtolower((string)preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $property));
@@ -430,7 +430,7 @@ class HierarchyDescender {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function forget(): void {
 		$this->memoised = null;

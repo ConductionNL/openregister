@@ -53,14 +53,14 @@ final class CalculationTrialService {
 	 * Wire the validator, the evaluator and the payload builder.
 	 *
 	 * @param CalculationAnnotationValidator $validator Declaration validator.
-	 * @param CalculationEvaluator $evaluator Pure expression evaluator.
+	 * @param CalculationEvaluatorInterface $evaluator Pure expression evaluator.
 	 * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly CalculationAnnotationValidator $validator,
-		private readonly CalculationEvaluator $evaluator,
+		private readonly CalculationEvaluatorInterface $evaluator,
 		private readonly CalculationPayloadBuilder $payloadBuilder,
 	) {
 	}//end __construct()
@@ -73,7 +73,7 @@ final class CalculationTrialService {
 	 *
 	 * @return array{ok: bool, value?: mixed, dependencies: array<int, string>, error?: array{code: string, message: string}} The trial result.
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function trySample(array $declaration, array $sample): array {
 		$errors = $this->validateAgainst(declaration: $declaration, availableProperties: array_keys($sample));
@@ -97,7 +97,7 @@ final class CalculationTrialService {
 	 *
 	 * @return array{ok: bool, value?: mixed, dependencies: array<int, string>, error?: array{code: string, message: string}} The trial result.
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function tryObject(array $declaration, ObjectEntity $object, Schema $schema): array {
 		$properties = ($schema->getProperties() ?? []);
@@ -123,7 +123,7 @@ final class CalculationTrialService {
 	 *
 	 * @return array{ok: bool, dependencies: array<int, string>, error: array{code: string, message: string}} The trial result.
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function objectNotFound(array $declaration, string $objectId, string $reason): array {
 		return $this->failure(

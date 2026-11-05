@@ -26,10 +26,10 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
-use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Search\Service\ViewService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -473,7 +473,7 @@ class ViewServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/saved-view-delete-owner-only/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-delete-owner-only/tasks.md#task-1
 	 */
 	public function testDeleteThrowsForPublicViewOfOtherUser(): void {
 		$view = $this->createView(id: 1, owner: 'user1', isPublic: true);
@@ -486,11 +486,29 @@ class ViewServiceTest extends TestCase {
 	}//end testDeleteThrowsForPublicViewOfOtherUser()
 
 	/**
+	 * Test that a member of a group the view is shared with in write mode cannot delete it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function testDeleteThrowsForWriteMemberOfSharedView(): void {
+		$view = $this->createView(id: 1, owner: 'user1', isPublic: false);
+		$view->setSharedWith([['group' => 'desk', 'mode' => 'write']]);
+		$this->viewMapper->method('find')->willReturn(value: $view);
+		$this->viewMapper->expects($this->never())->method('delete');
+
+		$this->expectException(exception: DoesNotExistException::class);
+
+		$this->service->delete(id: 1, reach: new ViewerReach(userId: 'user2', groups: ['desk'], isAdmin: false));
+	}//end testDeleteThrowsForWriteMemberOfSharedView()
+
+	/**
 	 * Test that an administrator deletes a view of another owner.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/saved-view-delete-owner-only/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-delete-owner-only/tasks.md#task-1
 	 */
 	public function testDeleteByAdministratorRemovesViewOfOtherUser(): void {
 		$view = $this->createView(id: 1, owner: 'user1', isPublic: false);

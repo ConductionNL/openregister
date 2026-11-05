@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Export;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -41,7 +41,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Export
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 class ExportAuditRecorder {
 	/**
@@ -61,13 +61,13 @@ class ExportAuditRecorder {
 	/**
 	 * Wire the ledger.
 	 *
-	 * @param AuditTrailMapper $auditTrailMapper The hash-chained audit trail.
+	 * @param AuditTrailMapperInterface $auditTrailMapper The hash-chained audit trail.
 	 * @param LoggerInterface  $logger           PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -85,7 +85,7 @@ class ExportAuditRecorder {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function recordCompleted(
 		string $profile,
@@ -122,7 +122,7 @@ class ExportAuditRecorder {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function recordRefused(
 		string $profile,

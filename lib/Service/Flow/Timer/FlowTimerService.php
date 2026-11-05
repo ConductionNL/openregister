@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerEvent;
 use OCA\OpenRegister\Db\FlowTimerEventMapper;
@@ -55,7 +56,7 @@ use OCA\OpenRegister\Event\FlowTimerFiredEvent;
 use OCA\OpenRegister\Exception\FlowTimerStateException;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Exception\TaskConflictException;
-use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -87,7 +88,7 @@ use Throwable;
  * the logger. Each is a distinct collaborator the lifecycle needs; bundling
  * them into a holder object would hide the coupling, not remove it.
  */
-class FlowTimerService {
+class FlowTimerService implements FlowTimerControlInterface {
 
 	/**
 	 * The actor recorded for sweep-originated writes.
@@ -103,7 +104,7 @@ class FlowTimerService {
 	 * @param FlowTimerFireMapper $fires The rung dedup ledger.
 	 * @param FlowTimerEventMapper $events The append-only history.
 	 * @param TaskMapper $tasks The task table, for the projection and the subject read.
-	 * @param TaskService $taskService Applies enforcing outcomes as named task actions.
+	 * @param TaskServiceInterface $taskService Applies enforcing outcomes as named task actions.
 	 * @param WorkingCalendarService $calendars Calendar resolution.
 	 * @param SlaCalculator $calculator Business-time arithmetic.
 	 * @param EscalationLadderService $ladder Rung resolution and validation.
@@ -116,7 +117,7 @@ class FlowTimerService {
 		private readonly FlowTimerFireMapper $fires,
 		private readonly FlowTimerEventMapper $events,
 		private readonly TaskMapper $tasks,
-		private readonly TaskService $taskService,
+		private readonly TaskServiceInterface $taskService,
 		private readonly WorkingCalendarService $calendars,
 		private readonly SlaCalculator $calculator,
 		private readonly EscalationLadderService $ladder,

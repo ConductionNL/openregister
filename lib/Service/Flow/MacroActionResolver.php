@@ -22,12 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -50,16 +50,16 @@ class MacroActionResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper     $schemas    Loads a schema by id or slug.
+	 * @param SchemaMapperInterface     $schemas    Loads a schema by id or slug.
 	 * @param FlowService      $flows      Reads the bound flow, for its `next` hint.
-	 * @param AuditTrailMapper $auditTrail Writes the entry that names the action and the run.
+	 * @param AuditTrailMapperInterface $auditTrail Writes the entry that names the action and the run.
 	 * @param LoggerInterface  $logger     Diagnostics.
 	 * @param FlowMapper|null  $flowStore  Finds a flow a schema declares by name.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly FlowService $flows,
-		private readonly AuditTrailMapper $auditTrail,
+		private readonly AuditTrailMapperInterface $auditTrail,
 		private readonly LoggerInterface $logger,
 		private readonly ?FlowMapper $flowStore = null,
 	) {
@@ -97,7 +97,7 @@ class MacroActionResolver {
 	 *
 	 * @return array<int, array{step: string, kind: string}> The changes.
 	 *
-	 * @spec openspec/changes/macro-run-changes/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
+	 * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
 	 */
 	public function changesOf(FlowRun $run, string $flowUuid): array {
 		return (new MacroRunChanges())->fromLog(log: ($run->getLog() ?? []), nodes: $this->nodesOf(flowUuid: $flowUuid));
@@ -110,7 +110,7 @@ class MacroActionResolver {
 	 *
 	 * @return array<int, mixed> The nodes.
 	 *
-	 * @spec openspec/changes/macro-run-changes/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
+	 * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
 	 */
 	public function nodesOf(string $flowUuid): array {
 		try {
@@ -132,7 +132,7 @@ class MacroActionResolver {
 	 *
 	 * @return MacroActionBinding The binding, its flow a uuid when it could be resolved.
 	 *
-	 * @spec openspec/changes/macro-flow-by-name/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
+	 * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
 	 */
 	private function resolveDeclared(Schema $schema, MacroActionBinding $binding): MacroActionBinding {
 		if (MacroActionBinding::namesUuid(flow: $binding->flow) === true) {
@@ -156,7 +156,7 @@ class MacroActionResolver {
 	 *
 	 * @return string|null The uuid.
 	 *
-	 * @spec openspec/changes/macro-flow-by-name/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
+	 * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
 	 */
 	public function declaredFlowUuid(Schema $schema, string $name): ?string {
 		if ($this->flowStore === null) {

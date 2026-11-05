@@ -25,12 +25,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hinge;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -62,19 +62,19 @@ class ReferencedByService {
 	/**
 	 * Wire the mappers the reverse view reads through.
 	 *
-	 * @param MagicMapper     $magicMapper    Object storage, one table per register+schema.
-	 * @param RegisterMapper  $registerMapper Register lookup for each candidate table.
-	 * @param SchemaMapper    $schemaMapper   Schema lookup for each candidate table.
+	 * @param MagicMapperInterface     $magicMapper    Object storage, one table per register+schema.
+	 * @param RegisterMapperInterface  $registerMapper Register lookup for each candidate table.
+	 * @param SchemaMapperInterface    $schemaMapper   Schema lookup for each candidate table.
 	 * @param LoggerInterface $logger         PSR logger for per-table failures.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly MagicMapperInterface $magicMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -94,7 +94,7 @@ class ReferencedByService {
 	 *   PermissionHandler, ObjectService all take it); splitting this one method
 	 *   in two would make it the exception rather than the rule.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getReferencingGroups(ObjectEntity $object, array $query = [], bool $_rbac = true): array {
 		$targetUuid = (string)$object->getUuid();

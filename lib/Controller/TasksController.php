@@ -28,11 +28,11 @@ use Exception;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Exception\TaskValidationException;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskState;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
-use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -62,24 +62,24 @@ class TasksController extends Controller {
 	/**
 	 * Task service for CalDAV VTODO operations.
 	 *
-	 * @var TaskService
+	 * @var ObjectCalendarTasksInterface
 	 */
-	private readonly TaskService $taskService;
+	private readonly ObjectCalendarTasksInterface $taskService;
 
 	/**
 	 * Object service for object validation.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param TaskService $taskService Task service for VTODO operations
-	 * @param ObjectService $objectService Object service for object validation
+	 * @param ObjectCalendarTasksInterface $taskService Task service for VTODO operations
+	 * @param ObjectOperationsInterface $objectService Object service for object validation
 	 * @param TaskInboxService|null $inbox The engine inbox the aggregate answers from;
 	 *                                     without it the aggregate refuses (401), never
 	 *                                     falls back to walking calendars
@@ -94,8 +94,8 @@ class TasksController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		TaskService $taskService,
-		ObjectService $objectService,
+		ObjectCalendarTasksInterface $taskService,
+		ObjectOperationsInterface $objectService,
 		private readonly ?TaskInboxService $inbox = null,
 		private readonly ?IUserSession $userSession = null,
 		private readonly ?TaskTemporalProjection $temporal = null,

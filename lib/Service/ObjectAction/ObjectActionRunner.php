@@ -40,11 +40,11 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\PropertyAlreadySetException;
 use OCA\OpenRegister\Service\Flow\FlowNextHint;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\MacroActionBinding;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
-use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\AppFramework\Http;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -76,7 +76,7 @@ class ObjectActionRunner {
 	 * @param ObjectActionInputs      $inputs      Defaults, validation and digest.
 	 * @param ObjectActionStepsFlow   $steps       The stored flow inline steps run as.
 	 * @param ObjectActionAudit       $audit       Writes the `action.run` entry.
-	 * @param TransitionEngine        $transitions Runs a transition body.
+	 * @param ObjectActionWriters     $writers     Runs a transition or a self-assign body.
 	 * @param FlowService             $flows       Runs a flow or steps body.
 	 * @param MacroActionResolver     $macros      Resolves a flow by name, its `next` and its changes.
 	 * @param LoggerInterface         $logger      Diagnostics.
@@ -87,7 +87,7 @@ class ObjectActionRunner {
 		private readonly ObjectActionInputs $inputs,
 		private readonly ObjectActionStepsFlow $steps,
 		private readonly ObjectActionAudit $audit,
-		private readonly TransitionEngine $transitions,
+		private readonly ObjectActionWriters $writers,
 		private readonly FlowService $flows,
 		private readonly MacroActionResolver $macros,
 		private readonly LoggerInterface $logger,
@@ -147,6 +147,10 @@ class ObjectActionRunner {
 				return $this->runTransition(object: $object, definition: $definition, inputs: $checked['inputs']);
 			}
 
+			if ($definition->kind === ObjectActionDefinition::KIND_SELF_ASSIGN) {
+				return $this->runSelfAssign(object: $object, definition: $definition);
+			}
+
 			return $this->runFlow(object: $object, schema: $schema, definition: $definition, inputs: $checked['inputs'], subject: $subject);
 		};
 
@@ -192,8 +196,15 @@ class ObjectActionRunner {
 			$right = 'update';
 		}
 
-		if ($this->gate->may(schema: $schema, right: $right, object: $object) === false) {
+		if ($this->gate->mayRun(schema: $schema, right: $right, definition: $definition, object: $object) === false) {
 			return $refused(Http::STATUS_FORBIDDEN, ['error' => sprintf('You may not perform "%s" on this object.', $key)]);
+		}
+
+		if ($this->gate->selfAssignOpen(definition: $definition, object: $object) === false) {
+			return $refused(
+				Http::STATUS_CONFLICT,
+				['error' => self::PRECONDITION_UNMET, 'message' => 'This object is already assigned.', 'action' => $key]
+			);
 		}
 
 		$inputs = $this->inputs->withDefaults(schema: $definition->inputs, given: $given, object: $object, userId: $this->gate->userId());
@@ -245,7 +256,7 @@ class ObjectActionRunner {
 	 */
 	private function runTransition(ObjectEntity $object, ObjectActionDefinition $definition, array $inputs): array {
 		try {
-			$saved = $this->transitions->transition(objectId: (string)$object->getUuid(), action: (string)$definition->body, data: $inputs);
+			$saved = $this->writers->transitions->transition(objectId: (string)$object->getUuid(), action: (string)$definition->body, data: $inputs);
 		} catch (NotAuthorizedException $e) {
 			return $this->answer(status: Http::STATUS_FORBIDDEN, body: ['error' => $e->getMessage(), 'action' => $definition->key]);
 		} catch (Throwable $e) {
@@ -254,18 +265,58 @@ class ObjectActionRunner {
 
 		$this->recordRun(object: $saved, definition: $definition, run: null, inputs: $inputs, changes: [], outcome: FlowRun::STATUS_COMPLETED);
 
+		return $this->savedAnswer(definition: $definition, saved: $saved);
+	}//end runTransition()
+
+	/**
+	 * Run a `selfAssign` body: the caller's uid into the one declared property.
+	 *
+	 * @param ObjectEntity           $object     The object, its property checked empty.
+	 * @param ObjectActionDefinition $definition The action.
+	 *
+	 * @return array{status: int, body: array<string, mixed>} The answer.
+	 *
+	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 */
+	private function runSelfAssign(ObjectEntity $object, ObjectActionDefinition $definition): array {
+		try {
+			$saved = $this->writers->selfAssign->assign(object: $object, definition: $definition);
+		} catch (PropertyAlreadySetException $e) {
+			return $this->answer(
+				status: Http::STATUS_CONFLICT,
+				body: ['error' => self::PRECONDITION_UNMET, 'message' => $e->getMessage(), 'action' => $definition->key]
+			);
+		} catch (Throwable $e) {
+			return $this->answer(status: Http::STATUS_UNPROCESSABLE_ENTITY, body: ['error' => $e->getMessage(), 'action' => $definition->key]);
+		}
+
+		$changes = [['step' => (string)$definition->selfAssignField(), 'kind' => ObjectActionDefinition::KIND_SELF_ASSIGN]];
+		$this->recordRun(object: $saved, definition: $definition, run: null, inputs: [], changes: $changes, outcome: FlowRun::STATUS_COMPLETED);
+
+		return $this->savedAnswer(definition: $definition, saved: $saved);
+	}//end runSelfAssign()
+
+	/**
+	 * The answer to a run that wrote the object itself, a transition or a self-assign.
+	 *
+	 * @param ObjectActionDefinition $definition The action.
+	 * @param ObjectEntity           $saved      The saved object.
+	 *
+	 * @return array{status: int, body: array<string, mixed>} The answer.
+	 */
+	private function savedAnswer(ObjectActionDefinition $definition, ObjectEntity $saved): array {
 		return $this->answer(
 			status: Http::STATUS_OK,
 			body: [
 				'run' => null,
 				'outcome' => FlowRun::STATUS_COMPLETED,
 				'action' => $definition->key,
-				'kind' => ObjectActionDefinition::KIND_TRANSITION,
+				'kind' => (string)$definition->kind,
 				'next' => ($definition->next ?? FlowNextHint::STAY),
 				'object' => $saved->jsonSerialize(),
 			]
 		);
-	}//end runTransition()
+	}//end savedAnswer()
 
 	/**
 	 * Run a flow or steps body through the one flow engine.
@@ -437,12 +488,12 @@ class ObjectActionRunner {
 	 * @return bool True when it does.
 	 */
 	private function isTransition(Schema $schema, ObjectEntity $object, string $key): bool {
-		if ($this->transitions->declaredInputs(schema: $schema, action: $key) !== null) {
+		if ($this->writers->transitions->declaredInputs(schema: $schema, action: $key) !== null) {
 			return true;
 		}
 
 		try {
-			foreach ($this->transitions->availableActions((string)$object->getUuid()) as $move) {
+			foreach ($this->writers->transitions->availableActions((string)$object->getUuid()) as $move) {
 				if ((string)($move['action'] ?? '') === $key) {
 					return true;
 				}

@@ -69,6 +69,7 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class SubjectExport extends Entity implements JsonSerializable {
+	use HydrateBySettersTrait;
 	/**
 	 * Requested, waiting for the job to pick it up.
 	 *
@@ -221,29 +222,6 @@ class SubjectExport extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
-	 * Hydrate the entity from an array.
-	 *
-	 * @param array<string, mixed> $object The source data.
-	 *
-	 * @return static This entity, hydrated.
-	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
-	 */
-	public function hydrate(array $object): static {
-		foreach ($object as $key => $value) {
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
-
-		return $this;
-	}//end hydrate()
-
-	/**
 	 * Whether the delivery still works at this moment.
 	 *
 	 * Both halves are asked. A ready export past its expiry is refused, and so
@@ -254,7 +232,7 @@ class SubjectExport extends Entity implements JsonSerializable {
 	 *
 	 * @return bool True when it may still be downloaded.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function isDownloadableAt(?DateTime $now = null): bool {
 		if ($this->status !== self::STATUS_READY) {

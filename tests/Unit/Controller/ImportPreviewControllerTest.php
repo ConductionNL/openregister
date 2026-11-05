@@ -29,6 +29,7 @@ namespace Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ImportPreviewControllerFactory;
 use OCA\OpenRegister\Controller\ImportPreviewController;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapper;
@@ -153,7 +154,7 @@ final class ImportPreviewControllerTest extends TestCase {
 	}
 
 	private function controller(): ImportPreviewController {
-		return new ImportPreviewController(
+		return ImportPreviewControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,

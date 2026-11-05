@@ -17,7 +17,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+ * @spec openspec/specs/calendar-provider/spec.md
  */
 
 declare(strict_types=1);
@@ -62,7 +62,7 @@ class CalendarFeedTokenMapper extends QBMapper {
 	 *
 	 * @return CalendarFeedToken|null The token row, or null when unknown.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function findByToken(string $token): ?CalendarFeedToken {
 		$qb = $this->db->getQueryBuilder();
@@ -84,7 +84,7 @@ class CalendarFeedTokenMapper extends QBMapper {
 	 *
 	 * @return CalendarFeedToken|null The token, or null when unknown.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function findById(int $id): ?CalendarFeedToken {
 		$qb = $this->db->getQueryBuilder();
@@ -106,7 +106,7 @@ class CalendarFeedTokenMapper extends QBMapper {
 	 *
 	 * @return array<int, CalendarFeedToken> The token rows.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function findByUser(string $userId): array {
 		$qb = $this->db->getQueryBuilder();

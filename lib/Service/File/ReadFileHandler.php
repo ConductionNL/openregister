@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -65,9 +65,9 @@ class ReadFileHandler {
 	 * @param FolderManagementHandler $folderMgmtHandler Folder management handler.
 	 * @param FileValidationHandler $fileValidHandler File validation handler.
 	 * @param FileOwnershipHandler $fileOwnershipHandler File ownership handler.
-	 * @param MagicMapper $objectMapper Object mapper for magic table operations.
+	 * @param MagicMapperInterface $objectMapper Object mapper for magic table operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param \OCA\OpenRegister\Db\FileMapper|null $fileMapper Optional OR-side metadata mapper for
+	 * @param \OCA\OpenRegister\Db\FileMapperInterface|null $fileMapper Optional OR-side metadata mapper for
 	 *                                                         category-based filtering. Null-safe so legacy
 	 *                                                         fixtures keep working.
 	 */
@@ -76,9 +76,9 @@ class ReadFileHandler {
 		private readonly FolderManagementHandler $folderMgmtHandler,
 		private readonly FileValidationHandler $fileValidHandler,
 		private readonly FileOwnershipHandler $fileOwnershipHandler,
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly LoggerInterface $logger,
-		private readonly ?\OCA\OpenRegister\Db\FileMapper $fileMapper = null,
+		private readonly ?\OCA\OpenRegister\Db\FileMapperInterface $fileMapper = null,
 	) {
 	}//end __construct()
 

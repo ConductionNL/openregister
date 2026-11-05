@@ -723,7 +723,7 @@ export default {
 		 *
 		 * @spec exclude list-view export stub (not yet implemented)
 		 * @param {object} options - Export options
-		 * @param _options
+		 * @param {object} _options
 		 * @return {void}
 		 */
 		exportFilteredItems(_options) {
@@ -745,7 +745,7 @@ export default {
 				})
 				// Clear selection when page changes
 				this.selectedItems = []
-			} catch (error) {
+			} catch {
 				// Handle error silently
 			}
 		},
@@ -853,7 +853,7 @@ export default {
 		 * Falls back to the raw purge date so a row deleted before the window
 		 * was published still shows the only date it has.
 		 *
-		 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+		 * @spec openspec/specs/deletion-audit-trail/spec.md
 		 * @param {object} item - The trash row.
 		 * @return {string|null} The ISO date, or null when the row carries none.
 		 */
@@ -873,7 +873,7 @@ export default {
 		 * subtraction, and the answer they most need is the one they are
 		 * worst at computing under pressure.
 		 *
-		 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+		 * @spec openspec/specs/deletion-audit-trail/spec.md
 		 * @param {object} item - The trash row.
 		 * @return {string} The label to render.
 		 */

@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditTrailControllerFactory;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -34,6 +35,7 @@ use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
+use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\LogService;
@@ -41,6 +43,7 @@ use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 use OCP\BackgroundJob\IJobList;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -71,6 +74,8 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->request->method('getParams')->willReturn([]);
 		$this->logService = $this->createMock(LogService::class);
+		// Explicit-reveal masking has its own test; here it passes the entries through.
+		$this->logService->method('maskExplicitReveal')->willReturnArgument(0);
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
 		$this->readAccess = $this->createMock(ObjectReadAccess::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
@@ -99,12 +104,22 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 		]);
 	}
 
+	/**
+	 * The groups `audit.readEventsVisibleTo` names, as JSON.
+	 */
+	private string $readEventGroups = '[]';
+
 	private function controllerFor(string $uid, bool $isAdmin, array $groups = []): AuditTrailController {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn($uid);
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('isAdmin')->willReturn($isAdmin);
 		$this->groupManager->method('getUserGroupIds')->willReturn($groups);
+		$this->groupManager->method('isInGroup')->willReturnCallback(static fn (string $user, string $group): bool => in_array($group, $groups, true));
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturnCallback(
+			fn (string $app, string $key, string $default = ''): string => $key === ReadEventVisibility::CONFIG_KEY ? $this->readEventGroups : $default
+		);
 
 		$properties = new PropertyRbacHandler(
 			$this->userSession,
@@ -114,7 +129,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 			self::stateFieldRuleResolver($this->userSession, $this->groupManager)
 		);
 
-		return new AuditTrailController(
+		return AuditTrailControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->logService,
@@ -133,7 +148,8 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 				$this->auditTrailMapper,
 				new HistoryEntryRedactor($properties),
 				$this->registerMapper,
-				$this->purposeGuard
+				$this->purposeGuard,
+				new ReadEventVisibility($appConfig, $this->groupManager, $this->userSession)
 			)
 		);
 	}
@@ -145,7 +161,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 		$object->setSchema('7');
 		$object->setObject(['titel' => 'Nieuw', 'interneAantekening' => 'geheim-nu']);
 
-		$this->readAccess->method('readable')->willReturn($object);
+		$this->readAccess->method('readableOrAmbiguous')->willReturn($object);
 		$this->readAccess->method('schemaOf')->willReturn($this->schema);
 
 		return $object;
@@ -279,13 +295,25 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 	}
 
 	public function testAUserWhoMayNotReadTheObjectGets404AndNoEntryIsRead(): void {
-		$this->readAccess->method('readable')->willReturn(null);
+		$this->readAccess->method('readableOrAmbiguous')->willReturn(null);
 		$this->auditTrailMapper->expects($this->never())->method('findAll');
 		$this->logService->expects($this->never())->method('getLogs');
 
 		$result = $this->controllerFor('buitenstaander', false, ['users'])->objects('dossiq', 'zaak', self::OBJECT_UUID);
 
 		$this->assertSame(404, $result->getStatus());
+	}
+
+	public function testAReaderGetsTheSame409ForAnAmbiguousSlug(): void {
+		// #4037: a slug two objects of the register and schema hold is ambiguous for a
+		// reader too, not "not found", and neither object's history is read.
+		$this->readAccess->method('readableOrAmbiguous')->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('two'));
+		$this->auditTrailMapper->expects($this->never())->method('findAll');
+
+		$response = $this->controllerFor('alice', false, ['users'])->objects('dossiq', 'zaak', 'dubbel');
+
+		$this->assertSame(409, $response->getStatus());
+		$this->assertSame('ambiguous-identifier', $response->getData()['error']);
 	}
 
 	public function testTheDoelbindingRefusalOfTheObjectGetAppliesToItsHistory(): void {
@@ -300,23 +328,73 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 		$this->assertSame('PURPOSE_REFUSED', $result->getData()['error']);
 	}
 
+	/**
+	 * A read entry and a change on the object, newest first.
+	 *
+	 * @return array<int, AuditTrail>
+	 */
+	private function readAndUpdate(): array {
+		$read = new AuditTrail();
+		$read->setUuid('r1');
+		$read->setObjectUuid(self::OBJECT_UUID);
+		$read->setAction('read');
+		$read->setUser('fatma');
+		$read->setChanged([]);
+
+		return [$read, $this->updateEntry()];
+	}
+
+	public function testAReaderOutsideTheNamedGroupsDoesNotSeeWhoReadTheObject(): void {
+		$this->readableObject();
+		$this->readEventGroups = '["dossiq-sensitive"]';
+		$this->auditTrailMapper->method('findAll')->willReturn($this->readAndUpdate());
+
+		$data = $this->controllerFor('behandelaar', false, ['behandelaars'])->objects('dossiq', 'zaak', self::OBJECT_UUID)->getData();
+
+		$this->assertSame(['update'], array_column($data['results'], 'action'), 'a read entry reaches a reader outside the named groups');
+		$this->assertSame(1, $data['total'], 'the total counts a read entry the reader is not given');
+		$this->assertFalse($data['readEventsVisible']);
+	}
+
+	public function testNoGroupNamedMeansNoNonAdminSeesReads(): void {
+		$this->readableObject();
+		$this->auditTrailMapper->method('findAll')->willReturn($this->readAndUpdate());
+
+		$data = $this->controllerFor('behandelaar', false, ['behandelaars', 'dossiq-sensitive'])->objects('dossiq', 'zaak', self::OBJECT_UUID)->getData();
+
+		$this->assertSame(['update'], array_column($data['results'], 'action'));
+		$this->assertFalse($data['readEventsVisible']);
+	}
+
+	public function testAMemberOfANamedGroupSeesWhoReadTheObject(): void {
+		$this->readableObject();
+		$this->readEventGroups = '["dossiq-sensitive"]';
+		$this->auditTrailMapper->method('findAll')->willReturn($this->readAndUpdate());
+
+		$data = $this->controllerFor('pieter', false, ['dossiq-sensitive'])->objects('dossiq', 'zaak', self::OBJECT_UUID)->getData();
+
+		$this->assertSame(['read', 'update'], array_column($data['results'], 'action'));
+		$this->assertTrue($data['readEventsVisible']);
+	}
+
 	public function testAnAdministratorReadsTheHistoryAsBefore(): void {
 		$entry = $this->updateEntry();
 		$this->logService->expects($this->once())->method('getLogs')->willReturn([$entry]);
 		$this->logService->method('count')->willReturn(1);
-		$this->readAccess->expects($this->never())->method('readable');
+		$this->readAccess->expects($this->never())->method('readableOrAmbiguous');
 
 		$result = $this->controllerFor('admin', true, ['admin'])->objects('dossiq', 'zaak', self::OBJECT_UUID);
 
 		$this->assertSame(200, $result->getStatus());
 		$this->assertSame([$entry], $result->getData()['results'], 'the admin path returns the entries unfiltered');
+		$this->assertTrue($result->getData()['readEventsVisible'], 'an administrator always sees read entries');
 	}
 
 	public function testAnAnonymousCallerGets401(): void {
 		$this->userSession->method('getUser')->willReturn(null);
-		$this->readAccess->expects($this->never())->method('readable');
+		$this->readAccess->expects($this->never())->method('readableOrAmbiguous');
 
-		$controller = new AuditTrailController(
+		$controller = AuditTrailControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->logService,

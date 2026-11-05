@@ -39,7 +39,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+ * @spec openspec/specs/register-descriptor-admin/spec.md
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
-use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -88,14 +88,14 @@ class ImportMergeOperationRegister implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConfigurationService $configurationService The OR configuration importer.
+	 * @param ConfigurationServiceInterface $configurationService The OR configuration importer.
 	 * @param IAppManager          $appManager           Resolves the openregister app path on disk.
 	 * @param LoggerInterface      $logger               Logger for import diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ConfigurationService $configurationService,
+		private readonly ConfigurationServiceInterface $configurationService,
 		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
 	) {
@@ -106,7 +106,7 @@ class ImportMergeOperationRegister implements IRepairStep {
 	 *
 	 * @return string The step name.
 	 *
-	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	public function getName(): string {
 		return 'Import OpenRegister merge-operation register (merge audit + reversal snapshots)';
@@ -125,7 +125,7 @@ class ImportMergeOperationRegister implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	public function run(IOutput $output): void {
 		try {

@@ -17,7 +17,7 @@
  * it, it is pruned on its own retention, and only the FG/admin surface reads
  * it. Folding it into the audit trail would weaken at least the first of
  * those, so both are written through this class and neither changes shape.
- * See `openspec/changes/read-history-on-audit-trail/design.md`.
+ * See `openspec/changes/archive/2026-10-30-read-history-on-audit-trail/design.md`.
  *
  * The read side ("recently opened", the `_recent` lens) reads ONLY the audit
  * trail. The processing log is kept for accountability and is never read to
@@ -40,7 +40,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -48,17 +48,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Interaction;
 
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ProcessingLogService;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\SettingsServiceInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
  * Register object reads and read one user's read history back.
  *
- * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
+ * @spec openspec/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
  */
 class ReadHistoryService {
 
@@ -103,14 +103,14 @@ class ReadHistoryService {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapper   $auditTrails The audit trail, which holds the read rows.
-	 * @param SettingsService    $settings    Reads `retention.auditTrailsEnabled`.
+	 * @param AuditTrailMapperInterface   $auditTrails The audit trail, which holds the read rows.
+	 * @param SettingsServiceInterface    $settings    Reads `retention.auditTrailsEnabled`.
 	 * @param ContainerInterface $container   Resolves the processing log lazily.
 	 * @param LoggerInterface    $logger      Logger.
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $auditTrails,
-		private readonly SettingsService $settings,
+		private readonly AuditTrailMapperInterface $auditTrails,
+		private readonly SettingsServiceInterface $settings,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
 	) {
@@ -125,7 +125,7 @@ class ReadHistoryService {
 	 *
 	 * @return boolean True when audit trails are enabled.
 	 *
-	 * @spec openspec/changes/read-history-on-audit-trail/specs/audit-trail-immutable/spec.md#requirement-every-user-facing-read-of-an-object-is-logged-as-a-read
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-every-user-facing-read-of-an-object-is-logged-as-a-read
 	 */
 	public function isAuditTrailEnabled(): bool {
 		try {
@@ -152,7 +152,7 @@ class ReadHistoryService {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors the `$_audit` flag of GetObject::find().
 	 *
-	 * @spec openspec/changes/read-history-on-audit-trail/specs/audit-trail-immutable/spec.md#requirement-every-user-facing-read-of-an-object-is-logged-as-a-read
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-every-user-facing-read-of-an-object-is-logged-as-a-read
 	 */
 	public function registerAuditRead(ObjectEntity $object, bool $audit = true): ?AuditTrail {
 		if ($audit === false || $this->isAuditTrailEnabled() === false) {
@@ -180,7 +180,7 @@ class ReadHistoryService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/read-history-on-audit-trail/specs/avg-verwerkingsregister/spec.md#requirement-reads-of-personal-data-are-registered-through-the-one-read-registration
+	 * @spec openspec/specs/avg-verwerkingsregister/spec.md#requirement-reads-of-personal-data-are-registered-through-the-one-read-registration
 	 */
 	public function registerProcessingRead(ObjectEntity $object, string $action = self::READ_ACTION): void {
 		try {
@@ -207,8 +207,8 @@ class ReadHistoryService {
 	 *
 	 * @return array{available: bool, reason: string|null, views: array<string, string>}
 	 *
-	 * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-the-recent-lens-says-why-it-is-empty
-	 * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-the-recent-lens-says-why-it-is-empty
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
 	 */
 	public function resolveRecentLens(?string $userId): array {
 		if ($userId === null || $userId === '') {

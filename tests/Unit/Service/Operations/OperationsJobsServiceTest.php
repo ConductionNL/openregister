@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -135,7 +135,7 @@ final class OperationsJobsServiceTest extends TestCase {
 	/**
 	 * Starting a job by hand runs it once and records who asked.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
@@ -152,7 +152,7 @@ final class OperationsJobsServiceTest extends TestCase {
 	 * A job already running is refused, the job is not started, and the
 	 * refusal names the run that holds it.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
@@ -182,7 +182,7 @@ final class OperationsJobsServiceTest extends TestCase {
 	 * A job this instance does not have is refused rather than built from a
 	 * class name the browser supplied.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
@@ -207,7 +207,7 @@ final class OperationsJobsServiceTest extends TestCase {
 	 * A maintenance action is startable by its own slug, and only by a slug
 	 * this app ships.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-actions-run-as-observable-jobs-req-aoc-004
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-actions-run-as-observable-jobs-req-aoc-004
 	 *
 	 * @return void
 	 */
@@ -228,7 +228,7 @@ final class OperationsJobsServiceTest extends TestCase {
 	 * The run history carries the filters it was asked for, so a reader can
 	 * tell a narrowed list from the whole one.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 *
 	 * @return void
 	 */

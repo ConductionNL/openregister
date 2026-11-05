@@ -25,10 +25,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Mcp;
 
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -48,15 +49,15 @@ class McpResourcesService {
 	/**
 	 * McpResourcesService constructor
 	 *
-	 * @param RegisterMapper $registerMapper Register database mapper
-	 * @param SchemaMapper $schemaMapper Schema database mapper
-	 * @param ObjectService $objectService Object service facade
+	 * @param RegisterMapperInterface $registerMapper Register database mapper
+	 * @param SchemaMapperInterface $schemaMapper Schema database mapper
+	 * @param ObjectOperationsInterface $objectService Object service facade
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly ObjectService $objectService,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -304,22 +305,26 @@ class McpResourcesService {
 	 * @param string|null $objectId Optional object UUID for single fetch
 	 *
 	 * @return array Object data (single or list)
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject;
+	 * ExplicitReveal::maskAll() is a pure function.
 	 */
 	private function readObjects(int $registerId, int $schemaId, ?string $objectId = null): array {
 		$this->objectService->setRegister($registerId);
 		$this->objectService->setSchema($schemaId);
 
+		// An MCP resource never reveals an explicit-reveal value: it reads masked.
+		$schema = $this->schemaMapper->find($schemaId);
+
 		if ($objectId !== null) {
 			$object = WriteCause::asLookup(fn () => $this->objectService->find($objectId));
-			return $object->jsonSerialize();
+			return ExplicitReveal::maskAll(schema: $schema, object: $object->jsonSerialize());
 		}
 
 		$result = $this->objectService->findAll();
 		return array_map(
-			callback: static fn ($obj) => $obj->jsonSerialize(),
+			callback: static fn ($obj) => ExplicitReveal::maskAll(schema: $schema, object: $obj->jsonSerialize()),
 			array: $result
 		);
 	}//end readObjects()

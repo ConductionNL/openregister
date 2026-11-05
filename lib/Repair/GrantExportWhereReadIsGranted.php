@@ -16,7 +16,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
 
 declare(strict_types=1);
@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -45,20 +45,20 @@ use Throwable;
  * including one an administrator has already narrowed. Never throws, because a
  * single unreadable schema must not abort an app upgrade.
  *
- * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
 class GrantExportWhereReadIsGranted implements IRepairStep {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper    $schemaMapper Schema lookups and writes.
+	 * @param SchemaMapperInterface    $schemaMapper Schema lookups and writes.
 	 * @param LoggerInterface $logger       Logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -68,7 +68,7 @@ class GrantExportWhereReadIsGranted implements IRepairStep {
 	 *
 	 * @return string The step name.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function getName(): string {
 		return 'Grant the export right wherever the read right is granted';
@@ -81,7 +81,7 @@ class GrantExportWhereReadIsGranted implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function run(IOutput $output): void {
 		try {

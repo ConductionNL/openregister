@@ -1,0 +1,829 @@
+{
+    "create-rich": {
+        "created": [
+            {
+                "slug": "thing",
+                "title": "Thing",
+                "version": "1.0.0",
+                "properties": {
+                    "p_object": {
+                        "type": "string",
+                        "title": "p_object"
+                    },
+                    "p_notitle": {
+                        "type": "string",
+                        "title": "p_notitle"
+                    },
+                    "p_emptytitle": {
+                        "title": "p_emptytitle",
+                        "type": "string"
+                    },
+                    "p_keeptitle": {
+                        "title": "Keep",
+                        "type": "string"
+                    },
+                    "p_notype": {
+                        "title": "p_notype",
+                        "type": "string"
+                    },
+                    "p_null": {
+                        "title": "p_null",
+                        "type": "string"
+                    },
+                    "0": {
+                        "type": "integer",
+                        "title": 0
+                    },
+                    "p_emptycfg": {
+                        "type": "object",
+                        "objectConfiguration": [],
+                        "fileConfiguration": {
+                            "@object": []
+                        },
+                        "title": "p_emptycfg"
+                    },
+                    "p_cfg_nonempty": {
+                        "type": "file",
+                        "fileConfiguration": {
+                            "maxSize": 1
+                        },
+                        "title": "p_cfg_nonempty"
+                    },
+                    "p_items_obj": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "title": "p_items_obj"
+                    },
+                    "p_items_emptycfg": {
+                        "type": "array",
+                        "items": {
+                            "objectConfiguration": [],
+                            "fileConfiguration": {
+                                "@object": []
+                            }
+                        },
+                        "title": "p_items_emptycfg"
+                    },
+                    "p_items_string": {
+                        "type": "array",
+                        "items": "string",
+                        "title": "p_items_string"
+                    },
+                    "p_format_byte": {
+                        "type": "string",
+                        "title": "p_format_byte"
+                    },
+                    "p_format_binary": {
+                        "type": "string",
+                        "title": "p_format_binary"
+                    },
+                    "p_format_string": {
+                        "type": "string",
+                        "title": "p_format_string"
+                    },
+                    "p_format_date": {
+                        "type": "string",
+                        "format": "date",
+                        "title": "p_format_date"
+                    },
+                    "p_items_format_byte": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "title": "p_items_format_byte"
+                    },
+                    "p_items_format_uri": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uri"
+                        },
+                        "title": "p_items_format_uri"
+                    },
+                    "p_ref_map": {
+                        "type": "object",
+                        "$ref": 55,
+                        "title": "p_ref_map"
+                    },
+                    "p_ref_schemasmap": {
+                        "type": "object",
+                        "$ref": 7,
+                        "title": "p_ref_schemasmap"
+                    },
+                    "p_ref_unknown": {
+                        "type": "object",
+                        "$ref": "nowhere",
+                        "title": "p_ref_unknown"
+                    },
+                    "p_items_ref_map": {
+                        "type": "array",
+                        "items": {
+                            "$ref": 55
+                        },
+                        "title": "p_items_ref_map"
+                    },
+                    "p_items_ref_schemasmap": {
+                        "type": "array",
+                        "items": {
+                            "$ref": 7
+                        },
+                        "title": "p_items_ref_schemasmap"
+                    },
+                    "p_items_ref_unknown": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "nowhere"
+                        },
+                        "title": "p_items_ref_unknown"
+                    },
+                    "p_cfg_obj_reg_mapped": {
+                        "type": "object",
+                        "objectConfiguration": {
+                            "register": 3
+                        },
+                        "title": "p_cfg_obj_reg_mapped"
+                    },
+                    "p_cfg_reg_db": {
+                        "type": "object",
+                        "objectConfiguration": {
+                            "register": 21
+                        },
+                        "title": "p_cfg_reg_db"
+                    },
+                    "p_cfg_reg_missing": {
+                        "type": "object",
+                        "objectConfiguration": {
+                            "handling": "related"
+                        },
+                        "title": "p_cfg_reg_missing"
+                    },
+                    "p_cfg_reg_empty": {
+                        "type": "object",
+                        "objectConfiguration": {
+                            "register": ""
+                        },
+                        "title": "p_cfg_reg_empty"
+                    },
+                    "p_cfg_schema_mapped": {
+                        "type": "object",
+                        "objectConfiguration": {
+                            "schema": 7
+                        },
+                        "title": "p_cfg_schema_mapped"
+                    },
+                    "p_cfg_schema_db": {
+                        "type": "object",
+                        "objectConfiguration": {
+                            "schema": 42
+                        },
+                        "title": "p_cfg_schema_db"
+                    },
+                    "p_cfg_schema_missing": {
+                        "type": "object",
+                        "objectConfiguration": [],
+                        "title": "p_cfg_schema_missing"
+                    },
+                    "p_cfg_schema_empty": {
+                        "type": "object",
+                        "objectConfiguration": {
+                            "schema": ""
+                        },
+                        "title": "p_cfg_schema_empty"
+                    },
+                    "p_cfg_both_cached": {
+                        "type": "object",
+                        "objectConfiguration": {
+                            "register": 21,
+                            "schema": 42
+                        },
+                        "title": "p_cfg_both_cached"
+                    },
+                    "p_cfg_both_missing": {
+                        "type": "object",
+                        "objectConfiguration": [],
+                        "title": "p_cfg_both_missing"
+                    },
+                    "p_items_cfg_obj": {
+                        "type": "array",
+                        "items": {
+                            "objectConfiguration": {
+                                "register": 3,
+                                "schema": 7
+                            }
+                        },
+                        "title": "p_items_cfg_obj"
+                    },
+                    "p_items_cfg_db": {
+                        "type": "array",
+                        "items": {
+                            "objectConfiguration": {
+                                "register": 22,
+                                "schema": 43
+                            }
+                        },
+                        "title": "p_items_cfg_db"
+                    },
+                    "p_items_cfg_missing": {
+                        "type": "array",
+                        "items": {
+                            "objectConfiguration": []
+                        },
+                        "title": "p_items_cfg_missing"
+                    },
+                    "p_items_cfg_empty": {
+                        "type": "array",
+                        "items": {
+                            "objectConfiguration": {
+                                "register": "",
+                                "schema": ""
+                            }
+                        },
+                        "title": "p_items_cfg_empty"
+                    },
+                    "p_legacy_reg_map": {
+                        "type": "object",
+                        "register": 66,
+                        "title": "p_legacy_reg_map"
+                    },
+                    "p_legacy_reg_mapped": {
+                        "type": "object",
+                        "register": 3,
+                        "title": "p_legacy_reg_mapped"
+                    },
+                    "p_legacy_reg_unknown": {
+                        "type": "object",
+                        "register": "zzz",
+                        "title": "p_legacy_reg_unknown"
+                    },
+                    "p_items_legacy_reg_map": {
+                        "type": "array",
+                        "items": {
+                            "register": 66
+                        },
+                        "title": "p_items_legacy_reg_map"
+                    },
+                    "p_items_legacy_reg_mapped": {
+                        "type": "array",
+                        "items": {
+                            "register": 3
+                        },
+                        "title": "p_items_legacy_reg_mapped"
+                    },
+                    "p_items_legacy_reg_none": {
+                        "type": "array",
+                        "items": {
+                            "register": "zzz"
+                        },
+                        "title": "p_items_legacy_reg_none"
+                    }
+                }
+            }
+        ],
+        "updated": [],
+        "registerFinds": [
+            "db-reg",
+            "missing-reg",
+            "missing-reg",
+            "db-reg-2",
+            "missing-reg"
+        ],
+        "schemaFinds": [
+            "db-schema",
+            "missing-schema",
+            "missing-schema",
+            "db-schema-2",
+            "missing-schema",
+            "thing"
+        ],
+        "logs": [
+            [
+                "debug",
+                "[ImportHandler] Register with slug missing-reg not found during schema property import (will be resolved after registers are imported).",
+                []
+            ],
+            [
+                "debug",
+                "[ImportHandler] Schema with slug missing-schema not found during schema property import (will be resolved after schemas are imported).",
+                []
+            ],
+            [
+                "debug",
+                "[ImportHandler] Register with slug missing-reg not found during schema property import (will be resolved after registers are imported).",
+                []
+            ],
+            [
+                "debug",
+                "[ImportHandler] Schema with slug missing-schema not found during schema property import (will be resolved after schemas are imported).",
+                []
+            ],
+            [
+                "debug",
+                "[ImportHandler] Register with slug missing-reg not found during array items schema property import (will be resolved after registers are imported).",
+                []
+            ],
+            [
+                "debug",
+                "[ImportHandler] Schema with slug missing-schema not found during array items schema property import (will be resolved after schemas are imported).",
+                []
+            ]
+        ],
+        "result": {
+            "id": 100,
+            "slug": "thing",
+            "version": null,
+            "owner": "alice",
+            "application": "myapp"
+        },
+        "schemasMap": {
+            "mapped-schema": 7,
+            "db-schema": 42,
+            "db-schema-2": 43
+        },
+        "registersMap": {
+            "mapped-reg": 3,
+            "db-reg": 21,
+            "db-reg-2": 22
+        }
+    },
+    "create-bare": {
+        "created": [
+            {
+                "slug": "bare"
+            }
+        ],
+        "updated": [],
+        "registerFinds": [],
+        "schemaFinds": [
+            "bare"
+        ],
+        "logs": [
+            [
+                "debug",
+                "[ImportHandler] Schema 'bare' not found, will create new one",
+                []
+            ]
+        ],
+        "result": {
+            "id": 100,
+            "slug": "bare",
+            "version": null,
+            "owner": null,
+            "application": null
+        },
+        "schemasMap": {
+            "mapped-schema": 7
+        },
+        "registersMap": {
+            "mapped-reg": 3
+        }
+    },
+    "create-null-properties": {
+        "created": [
+            {
+                "slug": "nullprops",
+                "properties": null
+            }
+        ],
+        "updated": [],
+        "registerFinds": [],
+        "schemaFinds": [
+            "nullprops"
+        ],
+        "logs": [
+            [
+                "debug",
+                "[ImportHandler] Schema 'nullprops' not found, will create new one",
+                []
+            ]
+        ],
+        "result": {
+            "id": 100,
+            "slug": "nullprops",
+            "version": null,
+            "owner": null,
+            "application": null
+        },
+        "schemasMap": {
+            "mapped-schema": 7
+        },
+        "registersMap": {
+            "mapped-reg": 3
+        }
+    },
+    "no-slug": {
+        "created": [],
+        "updated": [],
+        "registerFinds": [],
+        "schemaFinds": [],
+        "logs": [
+            [
+                "error",
+                "[ImportHandler] imported schema fragment is missing a 'slug' (title 'Nameless'); skipping fragment",
+                []
+            ]
+        ],
+        "result": {
+            "exception": "RuntimeException",
+            "message": "imported schema fragment is missing a 'slug' (title 'Nameless'); skipping fragment",
+            "code": 0,
+            "previous": null
+        },
+        "schemasMap": {
+            "mapped-schema": 7
+        },
+        "registersMap": {
+            "mapped-reg": 3
+        }
+    },
+    "blank-slug-no-title": {
+        "created": [],
+        "updated": [],
+        "registerFinds": [],
+        "schemaFinds": [],
+        "logs": [
+            [
+                "error",
+                "[ImportHandler] imported schema fragment is missing a 'slug' (no title); skipping fragment",
+                []
+            ]
+        ],
+        "result": {
+            "exception": "RuntimeException",
+            "message": "imported schema fragment is missing a 'slug' (no title); skipping fragment",
+            "code": 0,
+            "previous": null
+        },
+        "schemasMap": {
+            "mapped-schema": 7
+        },
+        "registersMap": {
+            "mapped-reg": 3
+        }
+    },
+    "create-fails": {
+        "created": [
+            {
+                "slug": "thing",
+                "properties": {
+                    "a": {
+                        "type": "string",
+                        "title": "a"
+                    }
+                }
+            }
+        ],
+        "updated": [],
+        "registerFinds": [],
+        "schemaFinds": [
+            "thing"
+        ],
+        "logs": [
+            [
+                "debug",
+                "[ImportHandler] Schema 'thing' not found, will create new one",
+                []
+            ],
+            [
+                "error",
+                "[ImportHandler] Failed to import schema: mapper refused",
+                []
+            ]
+        ],
+        "result": {
+            "exception": "Exception",
+            "message": "Failed to import schema: mapper refused",
+            "code": 7,
+            "previous": "RuntimeException"
+        },
+        "schemasMap": {
+            "mapped-schema": 7
+        },
+        "registersMap": {
+            "mapped-reg": 3
+        }
+    },
+    "update-newer": {
+        "created": [],
+        "updated": [
+            {
+                "id": 9,
+                "object": {
+                    "slug": "existing",
+                    "version": "2.0.0",
+                    "properties": {
+                        "a": {
+                            "type": "string",
+                            "title": "a"
+                        }
+                    }
+                }
+            }
+        ],
+        "registerFinds": [],
+        "schemaFinds": [],
+        "logs": [],
+        "result": {
+            "id": 9,
+            "slug": "existing",
+            "version": "2.0.0",
+            "owner": "bob",
+            "application": "app2"
+        },
+        "schemasMap": {
+            "mapped-schema": 7
+        },
+        "registersMap": {
+            "mapped-reg": 3
+        }
+    },
+    "update-same-differs": {
+        "created": [],
+        "updated": [
+            {
+                "id": 9,
+                "object": {
+                    "slug": "existing",
+                    "version": "1.0.0",
+                    "properties": {
+                        "b": {
+                            "type": "integer",
+                            "title": "b"
+                        }
+                    }
+                }
+            }
+        ],
+        "registerFinds": [],
+        "schemaFinds": [
+            "existing"
+        ],
+        "logs": [
+            [
+                "info",
+                "[ImportHandler] Schema version not newer but content differs; applying update anyway.",
+                {
+                    "schema_slug": "existing",
+                    "schema_id": 9
+                }
+            ]
+        ],
+        "result": {
+            "id": 9,
+            "slug": "existing",
+            "version": "1.0.0",
+            "owner": null,
+            "application": null
+        },
+        "schemasMap": {
+            "mapped-schema": 7
+        },
+        "registersMap": {
+            "mapped-reg": 3
+        }
+    },
+    "update-same-unchanged": {
+        "created": [],
+        "updated": [],
+        "registerFinds": [],
+        "schemaFinds": [
+            "existing"
+        ],
+        "logs": [
+            [
+                "debug",
+                "[ImportHandler] Skipping schema import: version not newer and content unchanged.",
+                []
+            ]
+        ],
+        "result": {
+            "id": 9,
+            "slug": "existing",
+            "version": "1.0.0",
+            "owner": "old",
+            "application": "oldapp"
+        },
+        "schemasMap": {
+            "mapped-schema": 7
+        },
+        "registersMap": {
+            "mapped-reg": 3
+        }
+    },
+    "update-older-forced": {
+        "created": [],
+        "updated": [
+            {
+                "id": 9,
+                "object": {
+                    "slug": "existing",
+                    "version": "1.0.0",
+                    "properties": {
+                        "a": {
+                            "type": "string",
+                            "title": "a"
+                        }
+                    }
+                }
+            }
+        ],
+        "registerFinds": [],
+        "schemaFinds": [
+            "existing"
+        ],
+        "logs": [],
+        "result": {
+            "id": 9,
+            "slug": "existing",
+            "version": "1.0.0",
+            "owner": null,
+            "application": null
+        },
+        "schemasMap": {
+            "mapped-schema": 7
+        },
+        "registersMap": {
+            "mapped-reg": 3
+        }
+    },
+    "update-no-version-forced": {
+        "created": [],
+        "updated": [
+            {
+                "id": 9,
+                "object": {
+                    "slug": "existing",
+                    "properties": {
+                        "c": {
+                            "type": "string",
+                            "title": "c"
+                        }
+                    },
+                    "version": "1.0.0"
+                }
+            }
+        ],
+        "registerFinds": [],
+        "schemaFinds": [
+            "existing"
+        ],
+        "logs": [],
+        "result": {
+            "id": 9,
+            "slug": "existing",
+            "version": "1.0.0",
+            "owner": null,
+            "application": null
+        },
+        "schemasMap": {
+            "mapped-schema": 7
+        },
+        "registersMap": {
+            "mapped-reg": 3
+        }
+    },
+    "update-versioned": {
+        "created": [],
+        "updated": [
+            {
+                "id": 9,
+                "object": {
+                    "slug": "existing",
+                    "version": "1.1.0",
+                    "properties": {
+                        "z": {
+                            "type": "string",
+                            "title": "z"
+                        }
+                    }
+                }
+            }
+        ],
+        "registerFinds": [],
+        "schemaFinds": [
+            "existing"
+        ],
+        "logs": [],
+        "result": {
+            "id": 9,
+            "slug": "existing",
+            "version": "1.1.0",
+            "owner": null,
+            "application": null
+        },
+        "schemasMap": {
+            "mapped-schema": 7
+        },
+        "registersMap": {
+            "mapped-reg": 3
+        }
+    },
+    "update-versioned-newer": {
+        "created": [],
+        "updated": [
+            {
+                "id": 9,
+                "object": {
+                    "slug": "existing",
+                    "version": "3.0.0",
+                    "properties": {
+                        "z": {
+                            "type": "string",
+                            "title": "z"
+                        }
+                    }
+                }
+            }
+        ],
+        "registerFinds": [],
+        "schemaFinds": [
+            "existing"
+        ],
+        "logs": [],
+        "result": {
+            "id": 9,
+            "slug": "existing",
+            "version": "3.0.0",
+            "owner": null,
+            "application": null
+        },
+        "schemasMap": {
+            "mapped-schema": 7
+        },
+        "registersMap": {
+            "mapped-reg": 3
+        }
+    },
+    "update-unversioned-existing": {
+        "created": [],
+        "updated": [
+            {
+                "id": 10,
+                "object": {
+                    "slug": "unversioned",
+                    "properties": {
+                        "z": {
+                            "type": "string",
+                            "title": "z"
+                        }
+                    },
+                    "version": "1.1.0"
+                }
+            }
+        ],
+        "registerFinds": [],
+        "schemaFinds": [
+            "unversioned"
+        ],
+        "logs": [],
+        "result": {
+            "id": 10,
+            "slug": "unversioned",
+            "version": "1.1.0",
+            "owner": null,
+            "application": null
+        },
+        "schemasMap": {
+            "mapped-schema": 7
+        },
+        "registersMap": {
+            "mapped-reg": 3
+        }
+    },
+    "register-scoped": {
+        "created": [
+            {
+                "slug": "thing",
+                "properties": []
+            }
+        ],
+        "updated": [],
+        "registerFinds": [],
+        "schemaFinds": [
+            {
+                "inIds": "thing",
+                "ids": [
+                    1,
+                    2
+                ]
+            },
+            "thing"
+        ],
+        "logs": [],
+        "result": {
+            "id": 100,
+            "slug": "thing",
+            "version": null,
+            "owner": null,
+            "application": null
+        },
+        "schemasMap": {
+            "mapped-schema": 7
+        },
+        "registersMap": {
+            "mapped-reg": 3
+        }
+    }
+}

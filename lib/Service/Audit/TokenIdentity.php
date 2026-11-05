@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Service\Audit;
  * file sink in this same change), and it is retained for years. A trail that
  * carries live credentials is a breach waiting for somebody to grep it.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class TokenIdentity {
 	/**
@@ -67,7 +67,7 @@ class TokenIdentity {
 	 *
 	 * @return string The mechanism name.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function mechanism(): string {
 		return $this->mechanism;
@@ -78,7 +78,7 @@ class TokenIdentity {
 	 *
 	 * @return string|null The reference, or null when the mechanism has none.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function reference(): ?string {
 		return $this->reference;
@@ -89,7 +89,7 @@ class TokenIdentity {
 	 *
 	 * @return string|null The name, or null when it has none.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function name(): ?string {
 		return $this->name;
@@ -100,7 +100,7 @@ class TokenIdentity {
 	 *
 	 * @return string|null The owner's uid, or null when unresolved.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function ownerUid(): ?string {
 		return $this->ownerUid;
@@ -111,7 +111,7 @@ class TokenIdentity {
 	 *
 	 * @return string|null The owner's display name, or null when unresolved.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function ownerName(): ?string {
 		return $this->ownerName;
@@ -122,7 +122,7 @@ class TokenIdentity {
 	 *
 	 * @return string|null The consumer uuid, or null when the token belongs to no consumer.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function consumerUuid(): ?string {
 		return $this->consumerUuid;
@@ -138,7 +138,7 @@ class TokenIdentity {
 	 *
 	 * @return string|null The consumer name, or null when the token belongs to no consumer.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function consumerName(): ?string {
 		return $this->consumerName;
@@ -154,7 +154,7 @@ class TokenIdentity {
 	 *
 	 * @return bool True when at least the token or the consumer is known.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function isAttributable(): bool {
 		$hasToken = ($this->reference !== null && $this->reference !== '');
@@ -168,7 +168,7 @@ class TokenIdentity {
 	 *
 	 * @return array<string, string|null> The token, its owner and its consumer.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function toArray(): array {
 		return [

@@ -32,6 +32,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<MapLink>
  */
 class MapLinkMapper extends QBMapper {
+	use FindLinksByObjectUuidTrait;
+	use DeleteLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -40,23 +42,6 @@ class MapLinkMapper extends QBMapper {
 	public function __construct(IDBConnection $db) {
 		parent::__construct(db: $db, tableName: 'openregister_map_links', entityClass: MapLink::class);
 	}//end __construct()
-
-	/**
-	 * Find map links by object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return MapLink[] Array of map links.
-	 */
-	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
 
 	/**
 	 * Find map links by favorite id.
@@ -96,21 +81,6 @@ class MapLinkMapper extends QBMapper {
 			return null;
 		}
 	}//end findByObjectAndFavorite()
-
-	/**
-	 * Delete all map links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 
 	/**
 	 * Delete a map link by object UUID + favorite id (Tier-2 unlink path).

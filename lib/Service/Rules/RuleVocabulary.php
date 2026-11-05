@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Service\Rules;
  * {@see \OCA\OpenRegister\Service\Calculation\OperatorCatalogue}, and a second
  * copy of it here is the drift this class exists to avoid.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 final class RuleVocabulary {
 
@@ -205,7 +205,7 @@ final class RuleVocabulary {
 	 * @return array<string, array<int, array<string, mixed>>> The three closed sets,
 	 *   keyed `kinds`, `verdicts` and `actions`.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function all(): array {
 		$kinds = [];
@@ -243,7 +243,7 @@ final class RuleVocabulary {
 	 *
 	 * @return int The sort position.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function orderOf(string $kind): int {
 		return (self::KINDS[$kind]['order'] ?? 99);
@@ -256,7 +256,7 @@ final class RuleVocabulary {
 	 *
 	 * @return bool True when the verdict is in the published set.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function hasVerdict(string $verdict): bool {
 		return array_key_exists($verdict, self::VERDICTS);

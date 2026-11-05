@@ -26,11 +26,10 @@ use Exception;
 /**
  * Exception thrown when a PDF export's row count exceeds the configured cap.
  *
- * PDF rendering builds a full in-memory box-tree per row (Dompdf), unlike the
- * streaming CSV writer or PhpSpreadsheet's XLSX writer, making it meaningfully
- * more memory-heavy per row. `ExportService::exportToPdf()` throws this
- * exception before any HTML construction or Dompdf rendering begins, so no
- * wasted render work happens once the cap is exceeded.
+ * A PDF is laid out from one document holding every row, unlike the
+ * streaming CSV writer, so its cost grows with the row count.
+ * `ExportService::exportToPdf()` throws this exception before any document is
+ * built, so no wasted work happens once the cap is exceeded.
  *
  * Controllers exposing PDF export MUST catch this exception specifically and
  * map it to HTTP 400 with a structured body identifying the actual row count

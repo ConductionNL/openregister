@@ -24,25 +24,25 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
 /**
  * Imports and removes the registers a set requires.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
  */
 class ExampleSetRegisters {
 	/**
@@ -71,11 +71,11 @@ class ExampleSetRegisters {
 	 *
 	 * @phpstan-impure It reads the instance, which an import changes.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function exists(string $slug): bool {
 		try {
-			$this->container->get(RegisterMapper::class)->find(id: $slug, _rbac: false, _multitenancy: false);
+			$this->container->get(RegisterMapperInterface::class)->find(id: $slug, _rbac: false, _multitenancy: false);
 		} catch (Throwable) {
 			return false;
 		}
@@ -97,7 +97,7 @@ class ExampleSetRegisters {
 	 * @return array{error: string, jobs: array<int, array{appId: string, jobId: string}>} Why it failed, or ''; and
 	 *                                                                                     the import job it ran under.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function import(string $slug): array {
 		return $this->recordedImport(
@@ -117,7 +117,7 @@ class ExampleSetRegisters {
 	 * @return array{error: string, jobs: array<int, array{appId: string, jobId: string}>} Why it failed, or ''; and
 	 *                                                                                     the import job it ran under.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function importMock(string $slug): array {
 		return $this->recordedImport(
@@ -126,13 +126,35 @@ class ExampleSetRegisters {
 	}//end importMock()
 
 	/**
+	 * Whether the instance holds an older version of the register than
+	 * OpenRegister's descriptor ships, so the set imports it again. A
+	 * descriptor that cannot be read counts as not behind.
+	 *
+	 * @param string $slug The register slug.
+	 * @param bool   $mock True when the set requires the mock descriptor.
+	 *
+	 * @return bool
+	 *
+	 * @phpstan-impure It reads the instance, which an import changes.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 */
+	public function isBehind(string $slug, bool $mock): bool {
+		try {
+			return $this->container->get(RegisterDescriptorService::class)->isBehind(appId: self::APP, slug: $slug, mock: $mock);
+		} catch (Throwable) {
+			return false;
+		}
+	}//end isBehind()
+
+	/**
 	 * Run one descriptor import and return why it failed and the import job it reports.
 	 *
 	 * @param callable(RegisterDescriptorService): array<string, mixed> $import The import.
 	 *
 	 * @return array{error: string, jobs: array<int, array{appId: string, jobId: string}>}
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	private function recordedImport(callable $import): array {
 		try {
@@ -166,12 +188,12 @@ class ExampleSetRegisters {
 	 *
 	 * @return bool True when nothing of the job is left.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function removeImport(string $appId, string $jobId): bool {
 		try {
-			$uuids   = $this->container->get(AuditTrailMapper::class)->objectUuidsByImportJobId(importJobId: $jobId);
-			$objects = $this->container->get(ObjectService::class);
+			$uuids   = $this->container->get(AuditTrailMapperInterface::class)->objectUuidsByImportJobId(importJobId: $jobId);
+			$objects = $this->container->get(ObjectOperationsInterface::class);
 		} catch (Throwable) {
 			return false;
 		}

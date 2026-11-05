@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Throwable;
  * The probes ship as a default list so the service is usable without wiring,
  * and are injectable so a test can hand in one that misbehaves.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+ * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
  */
 class ConsistencyCheckService {
 
@@ -85,7 +85,7 @@ class ConsistencyCheckService {
 	 *
 	 * @return array<string, mixed> The findings, and what was checked.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 */
 	public function check(): array {
 		$findings = [];
@@ -109,7 +109,7 @@ class ConsistencyCheckService {
 	 *
 	 * @return array<string, mixed>|null The finding, or null when no such probe.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 */
 	public function checkOne(string $slug): ?array {
 		if (array_key_exists($slug, $this->probes) === false) {
@@ -125,7 +125,7 @@ class ConsistencyCheckService {
 	 *
 	 * @return array<int, string> The probe slugs.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	public function slugs(): array {
 		return array_keys($this->probes);
@@ -290,7 +290,7 @@ class ConsistencyCheckService {
 	 *
 	 * @return array<string, mixed>|null The repair plan, or null when no such probe.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	public function repairPlan(string $slug): ?array {
 		if (array_key_exists($slug, $this->probes) === false) {

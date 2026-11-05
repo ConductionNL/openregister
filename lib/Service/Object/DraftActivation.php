@@ -48,7 +48,7 @@ use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Form\FormPayloadFindings;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IL10N;
@@ -71,16 +71,16 @@ class DraftActivation {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService       $objects   Reads and saves objects.
-	 * @param ValidateObject      $validator The schema's full validator.
+	 * @param ObjectOperationsInterface       $objects   Reads and saves objects.
+	 * @param ValidateObjectInterface      $validator The schema's full validator.
 	 * @param FormPayloadFindings $findings  Turns a refusal into per-property findings.
 	 * @param IEventDispatcher    $events    Announces the object that left draft.
 	 * @param ITimeFactory        $time      The clock, for the moment of receipt.
 	 * @param IL10N               $l10n      Translations.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
-		private readonly ValidateObject $validator,
+		private readonly ObjectOperationsInterface $objects,
+		private readonly ValidateObjectInterface $validator,
 		private readonly FormPayloadFindings $findings,
 		private readonly IEventDispatcher $events,
 		private readonly ITimeFactory $time,

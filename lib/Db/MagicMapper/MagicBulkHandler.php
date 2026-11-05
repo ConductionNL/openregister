@@ -81,6 +81,9 @@ class MagicBulkHandler {
 	 */
 	private array $tableColumnsCache = [];
 
+	/** @var array<string, bool> Tables whose schema has managed slugs (#4037): the upsert keeps a stored `_slug`. */
+	private array $managedSlugTables = [];
+
 	/**
 	 * Decides the version an inserted row starts on.
 	 *
@@ -140,7 +143,9 @@ class MagicBulkHandler {
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Bulk preparation requires handling multiple data type scenarios
 	 *
-	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) MagicBulkUpsertSql is a stateless helper of pure functions.
 	 */
 	private function prepareObjectsForDynamicTable(array $objects, Register $register, Schema $schema): array {
 		$prepared = [];
@@ -191,7 +196,8 @@ class MagicBulkHandler {
 			$preparedObject = $this->withDisplayColumns(
 				prepared: $preparedObject,
 				selfData: $selfData,
-				object: $object
+				object: $object,
+				managedSlug: MagicBulkUpsertSql::hasManagedSlugs(schema: $schema)
 			);
 
 			$preparedObject['_version'] = $this->versionHandler->initialVersionFor(candidate: ($selfData['version'] ?? $object['version'] ?? null));
@@ -252,17 +258,21 @@ class MagicBulkHandler {
 	 * @param array<string, mixed> $prepared The row being built.
 	 * @param array<string, mixed> $selfData The object's `@self` metadata.
 	 * @param array<string, mixed> $object The raw object payload.
+	 * @param bool $managedSlug Whether the schema has managed slugs; only then is a slug carried onto the row.
 	 *
 	 * @return array<string, mixed> The row with the display columns set.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `managedSlug` is a fact about the schema, carried to the one column that varies on it.
+	 * @SuppressWarnings(PHPMD.StaticAccess) MagicBulkUpsertSql is a stateless helper of pure functions.
 	 */
-	private function withDisplayColumns(array $prepared, array $selfData, array $object): array {
+	private function withDisplayColumns(array $prepared, array $selfData, array $object, bool $managedSlug=false): array {
 		$prepared['_name'] = $selfData['name'] ?? $object['name'] ?? null;
 		$prepared['_description'] = $selfData['description'] ?? $object['description'] ?? null;
 		$prepared['_summary'] = $selfData['summary'] ?? $object['summary'] ?? null;
 		$prepared['_image'] = $selfData['image'] ?? $object['image'] ?? null;
-		$prepared['_slug'] = $selfData['slug'] ?? $object['slug'] ?? null;
+		$prepared['_slug'] = MagicBulkUpsertSql::rowSlug(selfData: $selfData, object: $object, managedSlug: $managedSlug);
 		$prepared['_uri'] = $selfData['uri'] ?? $object['uri'] ?? null;
 
 		return $prepared;
@@ -455,6 +465,8 @@ class MagicBulkHandler {
 	 * reads only the uuid, and this is how that reaches the query. Inverting it
 	 * into two methods would duplicate the whole chunk path to vary one column
 	 * list.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) MagicBulkUpsertSql is a stateless helper of pure functions.
 	 */
 	public function bulkUpsert(
 		array $objects,
@@ -478,9 +490,15 @@ class MagicBulkHandler {
 			return [];
 		}
 
+		$numberColumnSizes = (new MagicNumberColumnSizes(db: $this->db, tablePrefix: $this->getFullTableName(tableName: '')))->sizes(tableName: $tableName);
+		foreach ($preparedObjects as $preparedObject) {
+			(new MagicNumberColumn())->assertRowFits(row: $preparedObject, columnSizes: $numberColumnSizes);
+		}
+
 		// Determine optimal chunk size.
 		$chunkSize = $this->calculateOptimalChunkSize(objects: $preparedObjects);
 		$chunks = array_chunk($preparedObjects, $chunkSize);
+		$this->managedSlugTables[$tableName] = MagicBulkUpsertSql::hasManagedSlugs(schema: $schema);
 
 		$allResults = [];
 
@@ -540,12 +558,10 @@ class MagicBulkHandler {
 	 *
 	 * @psalm-return list<array<string, mixed>>
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Bulk upsert requires complex data transformation logic
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) See bulkUpsert(): a fact about
 	 * the caller, carried to the one statement that varies on it.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	private function executeUpsertChunk(
 		array $chunk,
@@ -557,13 +573,52 @@ class MagicBulkHandler {
 			return [];
 		}
 
+		$run = new MagicUpsertChunkRun(tableName: $tableName, chunkNumber: $chunkNumber);
+		$run->needsPreUpdateState = $needsPreUpdateState;
+		$run->objectCount = count($chunk);
 		// Record operation start time for precise created/updated detection.
-		$operationStartTime = (new DateTime())->format('Y-m-d H:i:s');
+		$run->operationStartTime = (new DateTime())->format('Y-m-d H:i:s');
 
-		// Get table columns to filter out non-existent columns.
+		$filteredChunk = $this->filterToTableColumns(chunk: $chunk, tableName: $tableName);
+		if (empty($filteredChunk) === true) {
+			return [];
+		}
+
+		$run->rows = $this->deduplicateByUuid(rows: $filteredChunk);
+		if (empty($run->rows) === true) {
+			return [];
+		}
+
+		$run->collectColumnsAndUuids();
+		$run->isPostgres = $this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+		$run->fullTableName = $this->getFullTableName(tableName: $tableName);
+
+		if (empty($run->uuids) === false) {
+			$this->loadExistingRows(run: $run);
+		}
+
+		$this->executeUpsertStatement(run: $run);
+
+		if (empty($run->uuids) === true) {
+			return [];
+		}
+
+		return $this->readBackClassified(run: $run);
+	}//end executeUpsertChunk()
+
+	/**
+	 * Keep only the columns the table has, dropping objects left without any.
+	 *
+	 * @param array  $chunk     Chunk of prepared objects.
+	 * @param string $tableName Target table name.
+	 *
+	 * @return array<int, array<string, mixed>> The filtered objects.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function filterToTableColumns(array $chunk, string $tableName): array {
 		$tableColumns = $this->getTableColumns(tableName: $tableName);
 
-		// Filter chunk data to only include columns that exist in the table.
 		$filteredChunk = [];
 		foreach ($chunk as $objectData) {
 			$filteredObject = [];
@@ -573,7 +628,6 @@ class MagicBulkHandler {
 					continue;
 				}
 
-				// Log dropped columns for debugging purposes.
 				$this->logger->debug(
 					message: '[MagicBulkHandler] Dropping column not in table',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'column' => $columnName, 'table' => $tableName]
@@ -585,20 +639,29 @@ class MagicBulkHandler {
 			}
 		}
 
-		if (empty($filteredChunk) === true) {
-			return [];
-		}
+		return $filteredChunk;
+	}//end filterToTableColumns()
 
-		// Deduplicate chunk by UUID (keep last occurrence).
-		// This prevents "cannot affect row a second time" PostgreSQL errors.
-		$deduplicatedChunk = [];
+	/**
+	 * Deduplicate rows by `_uuid`, keeping the last occurrence in the place of
+	 * the first, and give a row without a uuid a new one.
+	 *
+	 * Duplicates would make PostgreSQL refuse the upsert ("cannot affect row a
+	 * second time"). BUG-DB-6: a row without a `_uuid` is persisted under a
+	 * generated uuid instead of being dropped.
+	 *
+	 * @param array<int, array<string, mixed>> $rows The filtered rows.
+	 *
+	 * @return array<int, array<string, mixed>> The deduplicated rows, re-indexed.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function deduplicateByUuid(array $rows): array {
+		$deduplicated = [];
 		$seenUuids = [];
-		foreach ($filteredChunk as $objectData) {
+		foreach ($rows as $objectData) {
 			$uuid = $objectData['_uuid'] ?? null;
 			if ($uuid === null || $uuid === '') {
-				// BUG-DB-6: previously objects without a _uuid were silently
-				// dropped. Generate a UUID so the row is persisted instead of
-				// disappearing without trace.
 				$uuid = Uuid::v4()->toRfc4122();
 				$objectData['_uuid'] = $uuid;
 				$this->logger->debug(
@@ -607,213 +670,97 @@ class MagicBulkHandler {
 				);
 			}
 
-			// Keep track of the position to allow overwriting.
 			if (isset($seenUuids[$uuid]) === true) {
-				// Replace previous occurrence with this one (keep last).
-				$deduplicatedChunk[$seenUuids[$uuid]] = $objectData;
+				$deduplicated[$seenUuids[$uuid]] = $objectData;
 				continue;
 			}
 
-			// Add new object.
-			$index = count($deduplicatedChunk);
-			$deduplicatedChunk[$index] = $objectData;
-			$seenUuids[$uuid] = $index;
+			$seenUuids[$uuid] = count($deduplicated);
+			$deduplicated[] = $objectData;
 		}//end foreach
 
-		// Re-index array after deduplication.
-		$filteredChunk = array_values($deduplicatedChunk);
+		return array_values($deduplicated);
+	}//end deduplicateByUuid()
 
-		if (empty($filteredChunk) === true) {
-			return [];
+	/**
+	 * Find which uuids exist before the upsert, so created and updated rows are
+	 * told apart whatever their timestamps (CSV imports keep historical
+	 * `_created` dates), and keep the full pre-update rows when the caller
+	 * records an old-vs-new changeset.
+	 *
+	 * Only `_uuid` is selected when nothing reads the pre-update state: that
+	 * read is answered from the `_uuid` index alone (Index Only Scan, measured
+	 * 0.537 ms against 1.574 ms per 100 rows for `SELECT *` on 2.3 KB rows).
+	 * A failed check is logged and leaves classification to the timestamps.
+	 *
+	 * @param MagicUpsertChunkRun $run The chunk being upserted.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function loadExistingRows(MagicUpsertChunkRun $run): void {
+		$needsPreUpdateState = $run->needsPreUpdateState;
+		$existsColumns = '*';
+		if ($needsPreUpdateState === false) {
+			$existsColumns = ['`_uuid`', '"_uuid"'][(int)$run->isPostgres];
 		}
 
-		// Get ALL unique columns from ALL objects in the chunk (not just the first one).
-		// This ensures that properties present in some objects but not others are included.
-		$columns = [];
-		foreach ($filteredChunk as $objectData) {
-			foreach (array_keys($objectData) as $column) {
-				if (in_array($column, $columns, true) === false) {
-					$columns[] = $column;
+		try {
+			$existsStmt = $this->db->prepare($run->selectByUuidSql(columns: $existsColumns));
+			$existsStmt->execute(array_values($run->uuids));
+			foreach ($existsStmt->fetchAll() as $row) {
+				$run->existingUuids[$row['_uuid']] = true;
+				if ($needsPreUpdateState === true) {
+					// Left empty on the narrow path: a changeset built from
+					// uuid-only rows would read as "every field became null".
+					$run->preUpdateRows[$row['_uuid']] = $row;
 				}
 			}
-		}
 
-		$uuids = array_column($filteredChunk, '_uuid');
-		$platform = $this->db->getDatabasePlatform();
-		$isPostgres = $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+			$this->logger->debug(
+				message: '[MagicBulkHandler] Pre-upsert UUID check',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'chunk' => $run->chunkNumber,
+					'total_uuids' => count($run->uuids),
+					'existing_uuids' => count($run->existingUuids),
+					'new_uuids' => count($run->uuids) - count($run->existingUuids),
+				]
+			);
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[MagicBulkHandler] Failed to check existing UUIDs, will use timestamp-based classification',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+		}//end try
+	}//end loadExistingRows()
 
-		// Get full table name with the configured database prefix.
-		$fullTableName = $this->getFullTableName(tableName: $tableName);
+	/**
+	 * Build and run the INSERT ... ON DUPLICATE KEY UPDATE (MySQL/MariaDB) or
+	 * INSERT ... ON CONFLICT DO UPDATE (PostgreSQL) statement of the chunk.
+	 *
+	 * @param MagicUpsertChunkRun $run The chunk being upserted.
+	 *
+	 * @return void
+	 *
+	 * @throws \Exception When the statement fails; the failure is logged first.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 */
+	private function executeUpsertStatement(MagicUpsertChunkRun $run): void {
+		[$valuesClause, $parameters] = $run->valuesAndParameters();
 
-		// ACCURATE CLASSIFICATION: Query which UUIDs already exist BEFORE the upsert.
-		// This allows us to correctly classify created vs updated regardless of timestamp values.
-		// Important for CSV imports that preserve historical _created dates.
-		// The FULL pre-update rows are fetched (not just `_uuid`) so callers can
-		// record a real old-vs-new changeset in the audit trail for updates.
-		$existingUuids = [];
-		$preUpdateRows = [];
-		if (empty($uuids) === false) {
-			$placeholders = implode(',', array_fill(0, count($uuids), '?'));
-
-			// SELECT ONLY WHAT IS READ. The full rows exist to give an audit trail
-			// or an update event its old-vs-new changeset. A caller that has both
-			// switched off — which every synchronisation does, and which is why
-			// `sideEffects` measures 0 ms on that path — reads nothing but the
-			// presence of the uuid, and `SELECT *` then drags every column of
-			// every existing row across for nothing.
-			//
-			// It is not a marginal saving, because it changes the PLAN. Measured
-			// 2026-08-14 on this instance:
-			//
-			//     SELECT *      Seq Scan,          width 2347   1.574 ms / 100 rows
-			//     SELECT _uuid  Index Only Scan,   width    6   0.537 ms / 100 rows
-			//
-			// The narrow form never touches the heap — it is answered entirely
-			// from the `_uuid` index that already exists. And the ratio grows with
-			// row width: this benchmark table is 2.3 KB a row, while real ones on
-			// this instance run to 4.2 KB (84 MB / 19,822 rows).
-			// NOT named `$columns`: that name is already the table's column list,
-			// built above and consumed by the INSERT further down. Shadowing it
-			// with a string turned `implode()` into a TypeError — a 500 on every
-			// bulk save, from a variable name.
-			$existsColumns = '*';
-			if ($needsPreUpdateState === false) {
-				// Four rules meet on this one line, and three of the obvious
-				// forms break one of them — each measured, not guessed:
-				//   ternary          -> phpcs "Inline IF statements are not allowed"
-				//   if/else          -> phpmd "ElseExpression"
-				//   if-then-override -> +2 statements (344 -> 346), ratchet fails
-				//   match (2 arms)   -> +3 statements (344 -> 347), ratchet fails
-				// Clover counts each executable LINE, so any multi-line form
-				// adds uncovered statements to a formatting-only change. A
-				// single-expression lookup keyed on the boolean is one
-				// statement, exactly like the ternary it replaces.
-				$existsColumns = ['`_uuid`', '"_uuid"'][(int)$isPostgres];
-			}
-
-			$existsSql = "SELECT {$existsColumns} FROM `{$fullTableName}` WHERE `_uuid` IN ({$placeholders})";
-			if ($isPostgres === true) {
-				$existsSql = "SELECT {$existsColumns} FROM \"{$fullTableName}\" WHERE \"_uuid\" IN ({$placeholders})";
-			}
-
-			try {
-				$existsStmt = $this->db->prepare($existsSql);
-				$existsStmt->execute(array_values($uuids));
-				$existingRows = $existsStmt->fetchAll();
-				foreach ($existingRows as $row) {
-					$existingUuids[$row['_uuid']] = true;
-					if ($needsPreUpdateState === true) {
-						// Left EMPTY on the narrow path rather than filled with
-						// uuid-only rows: a changeset built from those would read
-						// as "every field became null", which is worse than having
-						// no changeset at all.
-						$preUpdateRows[$row['_uuid']] = $row;
-					}
-				}
-
-				$this->logger->debug(
-					message: '[MagicBulkHandler] Pre-upsert UUID check',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'chunk' => $chunkNumber,
-						'total_uuids' => count($uuids),
-						'existing_uuids' => count($existingUuids),
-						'new_uuids' => count($uuids) - count($existingUuids),
-					]
-				);
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					message: '[MagicBulkHandler] Failed to check existing UUIDs, will use timestamp-based classification',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-				);
-			}//end try
-		}//end if
-
-		// Build column list with proper quoting.
-		$columnList = '`' . implode('`, `', $columns) . '`';
-		if ($isPostgres === true) {
-			$columnList = '"' . implode('", "', $columns) . '"';
-		}
-
-		// Build VALUES clause with parameters.
-		$valuesClause = [];
-		$parameters = [];
-		$paramIndex = 0;
-
-		foreach ($filteredChunk as $objectData) {
-			$rowValues = [];
-			foreach ($columns as $column) {
-				$paramName = 'p' . $paramIndex;
-				$rowValues[] = ':' . $paramName;
-
-				$value = $objectData[$column] ?? null;
-				// The execute() call binds every parameter as PARAM_STR, which
-				// turns PHP `false` into '' — PostgreSQL then rejects '' for
-				// boolean columns (e.g. a dedicated per-schema table's
-				// `pass_through`), 500ing the whole bulk save. Normalise
-				// booleans to 0/1, which both PostgreSQL and MySQL accept for
-				// boolean columns.
-				if (is_bool($value) === true) {
-					$value = 0;
-					if ($objectData[$column] === true) {
-						$value = 1;
-					}
-				}
-
-				$parameters[$paramName] = $value;
-				$paramIndex++;
-			}//end foreach
-
-			$valuesClause[] = '(' . implode(',', $rowValues) . ')';
-		}//end foreach
-
-		// Build UPSERT SQL ($fullTableName already defined above for pre-upsert UUID check).
-		// MySQL/MariaDB: INSERT...ON DUPLICATE KEY UPDATE.
-		$sql = "INSERT INTO `{$fullTableName}` ({$columnList}) VALUES " . implode(',', $valuesClause);
+		$sql = "INSERT INTO `{$run->fullTableName}` ({$run->quotedColumnList()}) VALUES " . $valuesClause;
 		$sql .= ' ON DUPLICATE KEY UPDATE ';
-		if ($isPostgres === true) {
-			// PostgreSQL: INSERT...ON CONFLICT DO UPDATE.
-			$sql = "INSERT INTO \"{$fullTableName}\" ({$columnList}) VALUES " . implode(',', $valuesClause);
+		if ($run->isPostgres === true) {
+			$sql = "INSERT INTO \"{$run->fullTableName}\" ({$run->quotedColumnList()}) VALUES " . $valuesClause;
 			$sql .= ' ON CONFLICT (_uuid) DO UPDATE SET ';
 		}
 
-		// Build UPDATE clauses.
-		$updateClauses = [];
+		$sql .= implode(', ', $this->buildUpsertUpdateClauses(run: $run));
 
-		foreach ($columns as $column) {
-			if ($column === '_uuid' || $column === '_created' || $column === '_version') {
-				// Never update UUID or created timestamp.
-				//
-				// `_version` joins them: the INSERT half stamps a starting
-				// version on a genuinely new row, and an existing row must keep
-				// the version it already reached. Letting the incoming value win
-				// here would walk every re-imported object back to `0.0.1` on
-				// every sync pass, which is worse than the NULL this change
-				// exists to end.
-				continue;
-			}
-
-			if ($column === '_updated') {
-				// Always update the updated timestamp.
-				$updateClauses[] = '`_updated` = NOW()';
-				if ($isPostgres === true) {
-					$updateClauses[count($updateClauses) - 1] = '"_updated" = NOW()';
-				}
-
-				continue;
-			}
-
-			// Update all other columns.
-			$updateClauses[] = "`{$column}` = VALUES(`{$column}`)";
-			if ($isPostgres === true) {
-				$updateClauses[count($updateClauses) - 1] = "\"{$column}\" = EXCLUDED.\"{$column}\"";
-			}
-		}//end foreach
-
-		$sql .= implode(', ', $updateClauses);
-
-		// Execute UPSERT.
 		try {
 			$stmt = $this->db->prepare($sql);
 			$stmt->execute($parameters);
@@ -823,9 +770,9 @@ class MagicBulkHandler {
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'chunk' => $chunkNumber,
-					'objects' => count($chunk),
-					'table' => $tableName,
+					'chunk' => $run->chunkNumber,
+					'objects' => $run->objectCount,
+					'table' => $run->tableName,
 					'sql_size_kb' => round(strlen($sql) / 1024, 2),
 					'sql_preview' => substr($sql, 0, 150),
 				]
@@ -836,86 +783,87 @@ class MagicBulkHandler {
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'chunk' => $chunkNumber,
-					'table' => $tableName,
+					'chunk' => $run->chunkNumber,
+					'table' => $run->tableName,
 					'error' => $e->getMessage(),
 				]
 			);
 			throw $e;
 		}//end try
+	}//end executeUpsertStatement()
 
-		// Query back complete objects and apply classification based on pre-upsert UUID check.
-		$completeObjects = [];
-
-		if (empty($uuids) === false) {
-			$placeholders = implode(',', array_fill(0, count($uuids), '?'));
-
-			// Simple SELECT - classification will be done in PHP using $existingUuids.
-			$selectSql = "SELECT * FROM `{$fullTableName}` WHERE `_uuid` IN ({$placeholders})";
-			if ($isPostgres === true) {
-				$selectSql = "SELECT * FROM \"{$fullTableName}\" WHERE \"_uuid\" IN ({$placeholders})";
+	/**
+	 * The SET clauses of the upsert's update half.
+	 *
+	 * `_uuid`, `_created` and `_version` are never updated: an existing row
+	 * keeps the version it reached, so a re-import does not walk it back to
+	 * the starting version the INSERT half stamps on a new row.
+	 *
+	 * @param MagicUpsertChunkRun $run The chunk being upserted.
+	 *
+	 * @return array<int, string> The clauses.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) MagicBulkUpsertSql is a stateless helper of pure functions.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 */
+	private function buildUpsertUpdateClauses(MagicUpsertChunkRun $run): array {
+		$updateClauses = [];
+		foreach ($run->columns as $column) {
+			if (in_array($column, ['_uuid', '_created', '_version'], true) === true) {
+				continue;
 			}
 
-			$stmt = $this->db->prepare($selectSql);
-			$stmt->execute(array_values($uuids));
-			$rawObjects = $stmt->fetchAll();
-
-			// Apply accurate classification based on pre-upsert UUID check.
-			// - 'created': UUID was NOT in existingUuids (new record inserted)
-			// - 'updated': UUID WAS in existingUuids AND _updated changed (record modified)
-			// - 'unchanged': UUID WAS in existingUuids AND _updated didn't change (no modification).
-			$createdCount = 0;
-			$updatedCount = 0;
-			$unchangedCount = 0;
-
-			foreach ($rawObjects as $obj) {
-				$objUuid = $obj['_uuid'] ?? null;
-
-				if (isset($existingUuids[$objUuid]) === false) {
-					// UUID didn't exist before upsert - this is a newly created record.
-					$obj['object_status'] = 'created';
-					$createdCount++;
-				}
-
-				if (isset($existingUuids[$objUuid]) === true) {
-					// UUID existed before - check if it was actually updated.
-					// Compare _updated timestamp with operation start time.
-					$updatedTime = $obj['_updated'] ?? null;
-					$obj['object_status'] = 'unchanged';
-					$unchangedCount++;
-					if ($updatedTime !== null && $updatedTime >= $operationStartTime) {
-						$obj['object_status'] = 'updated';
-						$unchangedCount--;
-						$updatedCount++;
-						// Retain the pre-update row so the caller can write a
-						// real old-vs-new changeset into the audit trail.
-						if (isset($preUpdateRows[$objUuid]) === true) {
-							$obj['_pre_update_row'] = $preUpdateRows[$objUuid];
-						}
-					}
-				}
-
-				$obj['operation_start_time'] = $operationStartTime;
-				$completeObjects[] = $obj;
-			}//end foreach
-
-			$this->logger->info(
-				message: '[MagicBulkHandler] Classification complete (using pre-upsert UUID check)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'chunk' => $chunkNumber,
-					'uuids_requested' => count($uuids),
-					'objects_returned' => count($completeObjects),
-					'created' => $createdCount,
-					'updated' => $updatedCount,
-					'unchanged' => $unchangedCount,
-				]
+			$updateClauses[] = MagicBulkUpsertSql::updateClause(
+				column: $column,
+				isPostgres: $run->isPostgres,
+				fullTableName: $run->fullTableName,
+				freezeSlug: ($this->managedSlugTables[$run->tableName] ?? false)
 			);
-		}//end if
+		}
+
+		return $updateClauses;
+	}//end buildUpsertUpdateClauses()
+
+	/**
+	 * Read the written rows back and classify each one.
+	 *
+	 * A uuid that did not exist before is `created`; one that did is `updated`
+	 * when its `_updated` is at or after the operation start, else `unchanged`.
+	 * An updated row carries its pre-update row for the audit changeset.
+	 *
+	 * @param MagicUpsertChunkRun $run The chunk being upserted.
+	 *
+	 * @return array<int, array<string, mixed>> The classified rows.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function readBackClassified(MagicUpsertChunkRun $run): array {
+		$stmt = $this->db->prepare($run->selectByUuidSql(columns: '*'));
+		$stmt->execute(array_values($run->uuids));
+
+		$completeObjects = [];
+		foreach ($stmt->fetchAll() as $obj) {
+			$completeObjects[] = $run->classify(obj: $obj);
+		}
+
+		$counts = array_count_values(array_column($completeObjects, 'object_status'));
+		$this->logger->info(
+			message: '[MagicBulkHandler] Classification complete (using pre-upsert UUID check)',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'chunk' => $run->chunkNumber,
+				'uuids_requested' => count($run->uuids),
+				'objects_returned' => count($completeObjects),
+				'created' => $counts['created'] ?? 0,
+				'updated' => $counts['updated'] ?? 0,
+				'unchanged' => $counts['unchanged'] ?? 0,
+			]
+		);
 
 		return $completeObjects;
-	}//end executeUpsertChunk()
+	}//end readBackClassified()
 
 	/**
 	 * Get list of columns that exist in a table

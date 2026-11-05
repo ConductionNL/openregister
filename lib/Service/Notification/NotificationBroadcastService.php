@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
+ * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
  */
 
 declare(strict_types=1);
@@ -73,7 +73,7 @@ class NotificationBroadcastService {
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The broadcast's own fields.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
 	 */
 	public function send(
 		string $subject,
@@ -122,7 +122,7 @@ class NotificationBroadcastService {
 	 *
 	 * @return array<int, NotificationBroadcast> The rows, oldest first.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
 	 */
 	public function activeFor(string $userId, ?DateTime $asOf = null): array {
 		return $this->broadcasts->findUnseenFor(userId: $userId, asOf: $asOf);
@@ -136,7 +136,7 @@ class NotificationBroadcastService {
 	 *
 	 * @return boolean True when the broadcast exists and the receipt stands.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
 	 */
 	public function acknowledge(string $broadcastUuid, string $userId): bool {
 		if ($this->broadcasts->findByUuid(uuid: $broadcastUuid) === null) {
@@ -158,7 +158,7 @@ class NotificationBroadcastService {
 	 *
 	 * @return array<int, array<string, mixed>> The rows.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
 	 */
 	public function listAll(?int $limit = null, ?int $offset = null): array {
 		$rows = [];
@@ -178,7 +178,7 @@ class NotificationBroadcastService {
 	 *
 	 * @return boolean True when it was there and is now gone.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
 	 */
 	public function withdraw(string $broadcastUuid): bool {
 		return $this->broadcasts->deleteByUuid(uuid: $broadcastUuid);

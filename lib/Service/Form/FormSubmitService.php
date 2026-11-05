@@ -43,9 +43,9 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
@@ -54,8 +54,8 @@ use OCA\OpenRegister\Service\Object\DraftFinder;
 use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
-use OCA\OpenRegister\Service\Object\ValidateObject;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IL10N;
@@ -113,10 +113,10 @@ class FormSubmitService {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper       $registers Resolves a destination's register.
-	 * @param SchemaMapper         $schemas   Resolves a destination's schema.
-	 * @param ValidateObject       $validator The destination schema's full validator.
-	 * @param ObjectService        $objects   Creates, re-reads and (to compensate) deletes objects.
+	 * @param RegisterMapperInterface       $registers Resolves a destination's register.
+	 * @param SchemaMapperInterface         $schemas   Resolves a destination's schema.
+	 * @param ValidateObjectInterface       $validator The destination schema's full validator.
+	 * @param ObjectOperationsInterface        $objects   Creates, re-reads and (to compensate) deletes objects.
 	 * @param FormPayloadFindings  $findings  Turns a refusal into per-property findings.
 	 * @param FormIdempotencyStore $keys      Repeats the first answer for a retried key.
 	 * @param FormUploadStore      $uploads   Holds and releases upload tokens.
@@ -129,10 +129,10 @@ class FormSubmitService {
 	 * (resolve, validate, save, find, findings, keys, uploads, receipt) plus translations and logging.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
-		private readonly ValidateObject $validator,
-		private readonly ObjectService $objects,
+		private readonly RegisterMapperInterface $registers,
+		private readonly SchemaMapperInterface $schemas,
+		private readonly ValidateObjectInterface $validator,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly FormPayloadFindings $findings,
 		private readonly FormIdempotencyStore $keys,
 		private readonly FormUploadStore $uploads,

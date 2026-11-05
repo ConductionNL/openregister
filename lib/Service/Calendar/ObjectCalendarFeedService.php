@@ -29,7 +29,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+ * @spec openspec/specs/calendar-provider/spec.md
  */
 
 declare(strict_types=1);
@@ -40,9 +40,9 @@ use DateTimeZone;
 use OCA\OpenRegister\Db\CalendarFeedToken;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Search\Db\ViewMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IDateTimeZone;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -75,9 +75,9 @@ class ObjectCalendarFeedService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects The object search path, RBAC included.
-	 * @param SchemaMapper $schemas The schema store.
-	 * @param ViewMapper $views The saved-view store.
+	 * @param ObjectOperationsInterface $objects The object search path, RBAC included.
+	 * @param SchemaMapperInterface $schemas The schema store.
+	 * @param ViewMapperInterface $views The saved-view store.
 	 * @param IUserManager $userManager Resolves the principal a token names.
 	 * @param IDateTimeZone $dateTimeZone The tenant time zone.
 	 * @param ObjectDateEventBuilder $eventBuilder Builds one VEVENT per declared date.
@@ -85,9 +85,9 @@ class ObjectCalendarFeedService {
 	 * @param LoggerInterface $logger PSR logger.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
-		private readonly SchemaMapper $schemas,
-		private readonly ViewMapper $views,
+		private readonly ObjectOperationsInterface $objects,
+		private readonly SchemaMapperInterface $schemas,
+		private readonly ViewMapperInterface $views,
 		private readonly IUserManager $userManager,
 		private readonly IDateTimeZone $dateTimeZone,
 		private readonly ObjectDateEventBuilder $eventBuilder,
@@ -107,7 +107,7 @@ class ObjectCalendarFeedService {
 	 *
 	 * @return string|null The iCalendar body, or null.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function render(CalendarFeedToken $token): ?string {
 		$user = $this->userManager->get((string)$token->getUserId());
@@ -143,7 +143,7 @@ class ObjectCalendarFeedService {
 	 *
 	 * @return string|null The iCalendar body, or null when the scope is gone.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	private function renderAsCurrentUser(CalendarFeedToken $token): ?string {
 		$scope = $this->resolveScope(token: $token);
@@ -250,7 +250,7 @@ class ObjectCalendarFeedService {
 	 *
 	 * @return array<int, mixed> The objects.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	private function listObjects(CalendarFeedToken $token, array $scope): array {
 		unset($token);
@@ -306,7 +306,7 @@ class ObjectCalendarFeedService {
 	 *
 	 * @return array<int, ObjectDateDeclaration> The declarations, possibly empty.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	private function declarationsFor(ObjectEntity $object): array {
 		$schemaId = (string)$object->getSchema();
@@ -337,7 +337,7 @@ class ObjectCalendarFeedService {
 	 *
 	 * @return array<int, ObjectDateDeclaration> The declarations.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectDateDeclaration::allFromConfig
 	 * is a named constructor; a factory for one parse would add a class to hide a
@@ -358,7 +358,7 @@ class ObjectCalendarFeedService {
 	 *
 	 * @return DateTimeZone The tenant zone, falling back to UTC.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	private function tenantTimeZone(): DateTimeZone {
 		try {

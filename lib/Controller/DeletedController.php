@@ -28,11 +28,11 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
 use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
 use OCA\OpenRegister\Service\Deletion\DeletionWindow;
@@ -65,10 +65,10 @@ class DeletedController extends Controller {
 	 *
 	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
-	 * @param MagicMapper $objectEntityMapper The object entity mapper
-	 * @param RegisterMapper $registerMapper The register mapper
+	 * @param MagicMapperInterface $objectEntityMapper The object entity mapper
+	 * @param RegisterMapperInterface $registerMapper The register mapper
 	 * @param IUserSession $userSession The user session
-	 * @param AuditTrailMapper $auditTrailMapper Reads back a destruction record and records a restore
+	 * @param AuditTrailMapperInterface $auditTrailMapper Reads back a destruction record and records a restore
 	 * @param DeletionServiceBundle $deletion The destruction-pipeline collaborators (window, right, scope, recorder, clock)
 	 * @param DeletedObjectAuthorizer $authorizer Answers the authorization and schema-resolution questions
 	 * @param RenderObject $renderObject Strips write-only and unreadable properties before a trashed row is served
@@ -78,10 +78,10 @@ class DeletedController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly MagicMapper $objectEntityMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly IUserSession $userSession,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly DeletionServiceBundle $deletion,
 		private readonly DeletedObjectAuthorizer $authorizer,
 		private readonly RenderObject $renderObject,
@@ -187,7 +187,7 @@ class DeletedController extends Controller {
 	 *
 	 * @return array<int, array<string, mixed>> The rows with their window.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	private function withWindows(array $objects): array {
 		$rows = [];
@@ -383,7 +383,7 @@ class DeletedController extends Controller {
 	 * @return JSONResponse JSON response with restore result
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function restore(string $id): JSONResponse {
 		if ($this->userSession->getUser() === null) {
@@ -465,7 +465,7 @@ class DeletedController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	private function recordRestore(ObjectEntity $object, mixed $window): void {
 		$user = $this->userSession->getUser();
@@ -816,7 +816,7 @@ class DeletedController extends Controller {
 	 *
 	 * @return JSONResponse The preview, the window and both clocks.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function destructionPreview(string $id): JSONResponse {
 		if ($this->userSession->getUser() === null) {
@@ -876,7 +876,7 @@ class DeletedController extends Controller {
 	 *
 	 * @return JSONResponse The destruction records, newest first.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function destructionRecord(string $id): JSONResponse {
 		if ($this->userSession->getUser() === null) {

@@ -30,7 +30,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -84,7 +84,7 @@ class ConceptHierarchy {
 	 *
 	 * @return array<int,string> The branch's uris, root first.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function branchUris(string $rootUri, array $conceptsByUri, ?int $maxDepth = null): array {
 		$limit = ($maxDepth ?? self::DEFAULT_MAX_DEPTH);
@@ -132,7 +132,7 @@ class ConceptHierarchy {
 	 *
 	 * @return boolean True when nothing sits under it.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function isLeaf(string $uri, array $conceptsByUri): bool {
 		return $this->narrowerUrisOf(uri: $uri, conceptsByUri: $conceptsByUri) === [];
@@ -155,7 +155,7 @@ class ConceptHierarchy {
 	 *
 	 * @return array<string,mixed> The tree node for the root.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function tree(
 		string $rootUri,
@@ -186,7 +186,7 @@ class ConceptHierarchy {
 	 *
 	 * @return string The label.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function labelOf(array $concept, string $language): string {
 		$labels = ($concept['prefLabel'] ?? null);

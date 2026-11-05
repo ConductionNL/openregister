@@ -30,6 +30,7 @@ use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Service\File\Pdf\PdfStructureInspector;
 use OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Service\File\Pdf\StructurePreservation;
+use OCA\OpenRegister\Service\TextExtraction\PdfExtractor;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -228,10 +229,9 @@ class PdfTextReplacerTest extends TestCase {
 		$this->assertStringStartsWith(prefix: '%PDF-', string: $output);
 		$this->assertStringEndsWith(suffix: "%%EOF\n", string: $output);
 
-		// Re-extract via smalot/pdfparser and assert the placeholder is
-		// present and the original entity text is gone.
-		$parser = new \Smalot\PdfParser\Parser();
-		$extracted = $parser->parseContent($output)->getText();
+		// Re-extract and assert the placeholder is present and the original
+		// entity text is gone.
+		$extracted = (new PdfExtractor(logger: $this->logger))->extractText(pdfBytes: $output);
 
 		$this->assertStringContainsString(needle: '[PERSON: 1]', haystack: $extracted);
 		$this->assertStringNotContainsString(needle: 'Jan Jansen', haystack: $extracted);
@@ -303,6 +303,59 @@ class PdfTextReplacerTest extends TestCase {
 		// The unredacted needle is reported back (no exception thrown).
 		self::assertContains(needle: 'Jansen', haystack: $residuals);
 	}//end testValidateOutputReturnsResidualsWhenStrict()
+
+	/**
+	 * A strict run refuses an output the parser cannot re-read: the residual
+	 * check cannot run, so no unchecked file may be written. The refusal
+	 * carries counts only, never document text.
+	 *
+	 * @return void
+	 */
+	public function testValidateOutputRefusesUnreadableOutputWhenStrict(): void {
+		$unreadable = 'Jan Jansen is not a PDF';
+
+		try {
+			$this->replacer->validateOutput(
+				outputBytes: $unreadable,
+				substitutions: ['Jan Jansen' => '[PERSON: 1]'],
+				replaceStats: [],
+				strict: true
+			);
+			self::fail(message: 'A strict run must refuse an output it cannot re-read.');
+		} catch (PdfAnonymisationException $e) {
+			self::assertSame(expected: PdfAnonymisationException::REASON_VALIDATION_FAILED, actual: $e->getReason());
+			self::assertSame(
+				expected: ['stage' => 'validate.extract', 'output_bytes' => strlen($unreadable)],
+				actual: $e->getDiagnostic()
+			);
+			self::assertStringNotContainsString(needle: 'Jansen', haystack: $e->getMessage());
+		}
+	}//end testValidateOutputRefusesUnreadableOutputWhenStrict()
+
+	/**
+	 * A lenient run returns an unreadable output unchecked, with a PII-free warning.
+	 *
+	 * @return void
+	 */
+	public function testValidateOutputSkipsUnreadableOutputWhenLenient(): void {
+		$this->logger
+			->expects(matcher: self::once())
+			->method(constraint: 'warning')
+			->with(
+				self::matchesRegularExpression(pattern: '/re-extraction skipped/i'),
+				self::callback(callback: static function (array $context): bool {
+					return strpos((string)json_encode($context), 'Jansen') === false
+						&& ($context['stage'] ?? null) === 'validate.extract';
+				})
+			);
+
+		$residuals = $this->replacer->validateOutput(
+			outputBytes: 'Jan Jansen is not a PDF',
+			substitutions: ['Jan Jansen' => '[PERSON: 1]']
+		);
+
+		self::assertSame(expected: [], actual: $residuals);
+	}//end testValidateOutputSkipsUnreadableOutputWhenLenient()
 
 	/**
 	 * Validation gate passes silently when the PDF contains only the

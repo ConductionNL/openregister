@@ -32,10 +32,10 @@
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
 use OCA\OpenRegister\Service\Archival\DestructionListCreator;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
@@ -102,9 +102,9 @@ class ArchivalController extends Controller {
 	/**
 	 * Object mapper.
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface
 	 */
-	private MagicMapper $objectMapper;
+	private MagicMapperInterface $objectMapper;
 
 	/**
 	 * User session.
@@ -134,16 +134,16 @@ class ArchivalController extends Controller {
 	 * @param IRequest $request The request object.
 	 * @param DestructionService $destructionService Destruction service.
 	 * @param LegalHoldService $legalHoldService Legal hold service.
-	 * @param MagicMapper $objectMapper Object mapper.
+	 * @param MagicMapperInterface $objectMapper Object mapper.
 	 * @param IUserSession $userSession User session.
 	 * @param IGroupManager $groupManager Group manager.
 	 * @param LoggerInterface $logger Logger.
 	 * @param DestructionListRepository $lists Finds the destruction lists this instance holds.
 	 * @param DestructionReviewService $reviews Assignment, sign-off and the decision history.
 	 * @param ReviewOutcomeService $outcomes Carries an answer out against the record.
-	 * @param AuditTrailMapper $auditMapper Records who signed off what.
+	 * @param AuditTrailMapperInterface $auditMapper Records who signed off what.
 	 * @param ArchivalNominationService $nominations Derives and writes an archival nomination.
-	 * @param SchemaMapper $schemaMapper Loads the schema a nomination is derived from.
+	 * @param SchemaMapperInterface $schemaMapper Loads the schema a nomination is derived from.
 	 * @param DestructionListCreator $creator Creates a destruction list for the objects an app names.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A DI constructor; every parameter is a
@@ -155,16 +155,16 @@ class ArchivalController extends Controller {
 		IRequest $request,
 		DestructionService $destructionService,
 		LegalHoldService $legalHoldService,
-		MagicMapper $objectMapper,
+		MagicMapperInterface $objectMapper,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 		LoggerInterface $logger,
 		private readonly DestructionListRepository $lists,
 		private readonly DestructionReviewService $reviews,
 		private readonly ReviewOutcomeService $outcomes,
-		private readonly AuditTrailMapper $auditMapper,
+		private readonly AuditTrailMapperInterface $auditMapper,
 		private readonly ArchivalNominationService $nominations,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly DestructionListCreator $creator,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -591,14 +591,7 @@ class ArchivalController extends Controller {
 			return $authCheck;
 		}
 
-		// In a full implementation, this would query objects with active legal holds.
-		return new JSONResponse(
-			data: [
-				'results' => [],
-				'total' => 0,
-			],
-			statusCode: Http::STATUS_OK
-		);
+		return new JSONResponse(data: $this->legalHoldService->listActiveHolds(), statusCode: Http::STATUS_OK);
 	}//end listLegalHolds()
 
 	/**

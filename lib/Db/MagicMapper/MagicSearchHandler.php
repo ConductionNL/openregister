@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -54,10 +55,11 @@ use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\DraftListLens;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
-use OCA\OpenRegister\Service\Search\PropertySearchProfile;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\Search\SearchTermNode;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\Search\SearchTermSqlCompiler;
@@ -98,6 +100,60 @@ class MagicSearchHandler {
 	private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull', LikeOperator::KEY];
 
 	/**
+	 * Metadata columns a search may order by under their own name.
+	 *
+	 * @var array<int, string>
+	 */
+	private const SORTABLE_METADATA_COLUMNS = [
+		'_created',
+		'_updated',
+		'_name',
+		'_description',
+		'_summary',
+		'_uuid',
+		'_register',
+		'_schema',
+		'_owner',
+		'_organisation',
+	];
+
+	/**
+	 * The metadata columns a row sets on its entity, in the order they are set, with how
+	 * each is stored: a scalar, a datetime, the deleted marker, a float, or JSON whose
+	 * fallback is an empty array (`json`) or null (`json-or-null`).
+	 *
+	 * @var array<string, string>
+	 */
+	private const ROW_METADATA_KINDS = [
+		'uuid'               => 'scalar',
+		'name'               => 'scalar',
+		'description'        => 'scalar',
+		'summary'            => 'scalar',
+		'image'              => 'scalar',
+		'slug'               => 'scalar',
+		'uri'                => 'scalar',
+		'owner'              => 'scalar',
+		'organisation'       => 'scalar',
+		'created'            => 'datetime',
+		'updated'            => 'datetime',
+		'last_user_activity' => 'datetime',
+		'deleted'            => 'deleted',
+		'relevance'          => 'float',
+		'relations'          => 'json',
+		'files'              => 'json',
+		'locked'             => 'json-or-null',
+		'groups'             => 'json',
+		'authorization'      => 'json',
+		'validation'         => 'json',
+		'geo'                => 'json',
+		'retention'          => 'json',
+		'version'            => 'scalar',
+		'folder'             => 'scalar',
+		'application'        => 'scalar',
+		'size'               => 'scalar',
+	];
+
+	/**
 	 * The working set: archived rows are left out. The default.
 	 *
 	 * @var string
@@ -118,6 +174,14 @@ class MagicSearchHandler {
 	 * @var string
 	 */
 	public const ARCHIVED_ANY = 'any';
+
+	/**
+	 * The deleted lens alone, for a consumer that checks whether this
+	 * OpenRegister offers `_deleted` (dossiq's Deleted cases page does).
+	 *
+	 * @var string
+	 */
+	public const DELETED_ONLY = DeletedLens::ONLY;
 
 	/**
 	 * Metadata columns every magic table carries.
@@ -238,6 +302,10 @@ class MagicSearchHandler {
 	 * @param MagicMetadataColumnHealer|null $metadataColumns Knows which metadata columns a table that could not
 	 *                                                        be healed still lacks, so the lifecycle predicates
 	 *                                                        leave them out
+	 * @param ExplicitReveal|null $explicitReveal The request's reveal state; a filter or sort on an explicit-reveal
+	 *                                            property is refused unless the code is trusted
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
@@ -249,6 +317,7 @@ class MagicSearchHandler {
 		private readonly RelatedRowQueryApplier $relatedRows,
 		private readonly ?LanguageService $languageService = null,
 		private readonly ?MagicMetadataColumnHealer $metadataColumns = null,
+		private readonly ?ExplicitReveal $explicitReveal = null,
 	) {
 		$this->termParser = new SearchTermParser();
 		$this->termCompiler = new SearchTermSqlCompiler();
@@ -413,12 +482,10 @@ class MagicSearchHandler {
 		// indexes for ORDER BY … LIMIT instead of sorting the full result set.
 		$this->applyResultOrder(
 			qb: $queryBuilder,
-			order: $order,
-			schema: $schema,
-			searchTerm: $searchTerm,
-			recentViews: ($query['_recentViews'] ?? null),
-			dateTimeColumns: $dateTimeColumns,
-			sortLanguages: $this->sortLanguageChain(register: $register)
+			sort: new SortRequest(
+				order: $order, schema: $schema, searchTerm: $searchTerm, recentViews: ($query['_recentViews'] ?? null),
+				dateTimeColumns: $dateTimeColumns, sortLanguages: $this->sortLanguageChain(register: $register)
+			)
 		);
 
 		$queryBuilder->setMaxResults($limit)
@@ -513,12 +580,10 @@ class MagicSearchHandler {
 	 * @return IQueryBuilder QueryBuilder with all filters applied.
 	 */
 	public function buildFilteredQuery(array $query, Schema $schema, string $tableName, ?int $registerId = null): IQueryBuilder {
+		// A filter or sort on a value that is only shown masked would read it without the reveal.
+		$this->explicitReveal?->refuseOracleQuery(query: $query, schema: $schema);
+
 		// Extract options from query (prefixed with _).
-		// Coerce to bool: query-string params arrive as strings (e.g.
-		// "_includeDeleted=true" → "true"). applyBasicFilters() is bool-typed
-		// under strict_types, so passing the raw string raised a TypeError →
-		// HTTP 500 on any list call with _includeDeleted=true.
-		$includeDeleted = filter_var($query['_includeDeleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 		$_rbac = $query['_rbac'] ?? true;
 		$_multitenancy = $query['_multitenancy'] ?? true;
 
@@ -536,7 +601,7 @@ class MagicSearchHandler {
 		// Apply basic filters (deleted, archived).
 		$this->applyBasicFilters(
 			qb: $queryBuilder,
-			includeDeleted: $includeDeleted,
+			deletedMode: (new DeletedLens())->mode(query: $query),
 			archivedMode: $this->resolveArchivedMode(query: $query),
 			query: $query,
 			schema: $schema,
@@ -575,8 +640,61 @@ class MagicSearchHandler {
 			registerId: ($registerId ?? $this->registerIdFromQuery(query: $query))
 		);
 
+		// Narrow by one element of an array property (`_element`).
+		$this->applyArrayElementFilters(qb: $queryBuilder, query: $query, schema: $schema);
+
 		return $queryBuilder;
 	}//end buildFilteredQuery()
+
+	/**
+	 * Narrow the query by `_element` blocks: an object matches when one element
+	 * of the named array property carries every field of a block.
+	 *
+	 * A block on a property the schema does not declare as an array, or one
+	 * the caller may not read, matches nothing and is reported as an ignored
+	 * filter, the way an unknown nested path is. An encrypted property refuses.
+	 *
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param array<mixed>  $query  The request query.
+	 * @param Schema        $schema The schema of the table.
+	 *
+	 * @return void
+	 *
+	 * @throws EncryptedFieldFilterException When the array property is encrypted.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-match-one-element-of-an-array-property
+	 */
+	private function applyArrayElementFilters(IQueryBuilder $qb, array $query, Schema $schema): void {
+		$elements   = new ArrayElementFilter();
+		$properties = ($schema->getProperties() ?? []);
+		$isPostgres = $this->isPostgresPlatform();
+		foreach ($elements->blocks(query: $query) as $block) {
+			$root = $block['root'];
+			if (($properties[$root]['x-openregister-encrypted'] ?? false) === true) {
+				throw new EncryptedFieldFilterException(property: $root);
+			}
+
+			$condition = null;
+			if (($properties[$root]['type'] ?? null) === 'array'
+				&& $this->relatedRows->mayReadProperty(schema: $schema, property: $root) === true
+			) {
+				$condition = $elements->condition(
+					column: 't.'.$this->sanitizeColumnName(name: $root),
+					fields: $block['fields'],
+					bind: static fn (string $value): string => (string)$qb->createNamedParameter($value),
+					isPostgres: $isPostgres
+				);
+			}
+
+			if ($condition === null) {
+				$this->ignoredFilters[] = ArrayElementFilter::KEY.'['.$root.']';
+				$qb->andWhere('1 = 0');
+				continue;
+			}
+
+			$qb->andWhere($condition);
+		}//end foreach
+	}//end applyArrayElementFilters()
 
 	/**
 	 * Narrow the query by `_related` and `_referenced` blocks, or refuse it.
@@ -628,7 +746,7 @@ class MagicSearchHandler {
 	}//end applyRelatedRowFilters()
 
 	/**
-	 * Refuse a query carrying `_related` or `_referenced` where it cannot be honoured.
+	 * Refuse a query carrying `_related`, `_referenced` or `_element` where it cannot be honoured.
 	 *
 	 * 🔴 REFUSE, DO NOT DROP. The related-row filters are written for the
 	 * QueryBuilder path (applyRelatedRowFilters). Underscore keys are skipped by
@@ -645,7 +763,7 @@ class MagicSearchHandler {
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function refuseRelatedRowFilters(array $query): void {
-		foreach (['_related', '_referenced'] as $key) {
+		foreach (['_related', '_referenced', ArrayElementFilter::KEY] as $key) {
 			if (array_key_exists($key, $query) === true) {
 				throw new RelatedRowFilterNotSupportedException(
 					message: sprintf(
@@ -880,7 +998,7 @@ class MagicSearchHandler {
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function buildWhereConditionsSql(
@@ -891,6 +1009,7 @@ class MagicSearchHandler {
 		?string $tableName = null,
 	): array {
 		$this->refuseRelatedRowFilters(query: $query);
+		$this->explicitReveal?->refuseOracleQuery(query: $query, schema: $schema);
 
 		// Get connection for value quoting through QueryBuilder.
 		$qb = $this->db->getQueryBuilder();
@@ -900,15 +1019,11 @@ class MagicSearchHandler {
 
 		// Extract options from query.
 		$search = $query['_search'] ?? null;
-		// Coerce to bool: query-string "true"/"false" must not be compared by
-		// identity against the boolean false (a non-empty string is never
-		// === false, which would silently flip the deleted filter).
-		$includeDeleted = filter_var($query['_includeDeleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 		$_rbac = $query['_rbac'] ?? true;
 
 		$conditions = array_merge(
 			$this->lifecycleConditionsSql(
-				query: $query, includeDeleted: $includeDeleted, schema: $schema,
+				query: $query, schema: $schema,
 				missingColumns: $this->missingMetadataColumns(tableName: $tableName)
 			),
 			$this->boundaryConditionsSql(
@@ -994,7 +1109,7 @@ class MagicSearchHandler {
 	 *
 	 * @return string|null The condition, or null when no `_ids` restriction was asked.
 	 *
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	private function idConditionSql(array $query, mixed $connection): ?string {
 		$ids = ($query['_ids'] ?? null);
@@ -1020,21 +1135,22 @@ class MagicSearchHandler {
 	 * rows is the dangerous direction, and an archived record surfacing in a
 	 * working list is that failure with a record attached.
 	 *
-	 * @param array       $query          The query parameters.
-	 * @param boolean     $includeDeleted Whether deleted rows were asked for.
+	 * @param array       $query          The query parameters, for the deleted, archive and draft lenses.
 	 * @param Schema|null $schema         The schema being listed, for its draft list default (`draftsListed`).
 	 * @param string[]    $missingColumns Metadata columns this table could not be given.
 	 *
 	 * @return string[] The conditions, without leading AND.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
-	private function lifecycleConditionsSql(array $query, bool $includeDeleted, ?Schema $schema = null, array $missingColumns = []): array {
+	private function lifecycleConditionsSql(array $query, ?Schema $schema = null, array $missingColumns = []): array {
 		$conditions = [];
 
-		if ($includeDeleted === false) {
-			$conditions[] = '_deleted IS NULL';
+		$lens = new DeletedLens();
+		$deleted = $lens->condition(mode: $lens->mode(query: $query), columnPrefix: '');
+		if ($deleted !== null) {
+			$conditions[] = $deleted;
 		}
 
 		$archivedMode = $this->resolveArchivedMode(query: $query);
@@ -1092,7 +1208,7 @@ class MagicSearchHandler {
 	 *
 	 * @return string|null The predicate, without a leading AND.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
 	private function archivedConditionSql(string $mode, string $columnPrefix, array $missingColumns): ?string {
 		if ($mode === self::ARCHIVED_ANY) {
@@ -1128,7 +1244,7 @@ class MagicSearchHandler {
 	 *
 	 * @return string|null The predicate, without a leading AND.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-schema-must-be-able-to-keep-the-callers-own-drafts-out-of-its-lists
 	 */
 	private function draftConditionSql(array $query, string $columnPrefix, ?string $owner, array $missingColumns, ?Schema $schema = null): ?string {
@@ -1208,6 +1324,15 @@ class MagicSearchHandler {
 					multitenancyExplicit: $multitenancyExplicit
 				)
 			);
+			$crossBranch = null;
+			if ($multitenancyExplicit === false && $this->rbacHandler->hasCrossOrganisationBranch(schema: $schema) === true) {
+				$crossBranch = $this->rbacHandler->getCrossOrganisationBranchSql(schema: $schema);
+			}
+
+			if ($orgCondition !== null && $crossBranch !== null) {
+				$orgCondition = '(' . $orgCondition . ' OR ' . $crossBranch . ')';
+			}
+
 			if ($orgCondition !== null) {
 				$conditions[] = $orgCondition;
 			}
@@ -1267,6 +1392,7 @@ class MagicSearchHandler {
 	 * @return bool True when the organisation filter must be emitted.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flags are the request posture, mirrored.
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	private function multitenancyApplies(
 		Schema $schema,
@@ -1274,6 +1400,11 @@ class MagicSearchHandler {
 		bool $_multitenancy,
 		bool $multitenancyExplicit,
 	): bool {
+		// Code acting for an organisation always reads inside it.
+		if (OrganisationContext::isActive() === true) {
+			return true;
+		}
+
 		if ($_multitenancy === false) {
 			return false;
 		}
@@ -1310,6 +1441,21 @@ class MagicSearchHandler {
 		// it and let RBAC handle access control.
 		return $multitenancyExplicit;
 	}//end multitenancyApplies()
+
+	/**
+	 * Whether the organisation boundary of a default read carries a branch for
+	 * the rows the caller's conditional `crossOrganisation` rules admit, which a
+	 * renderer of its own (the aggregation fast path) cannot express.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return bool True when the boundary has a cross-organisation branch.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function organisationBoundaryHasCrossOrganisationBranch(Schema $schema): bool {
+		return $this->rbacHandler->hasCrossOrganisationBranch(schema: $schema);
+	}//end organisationBoundaryHasCrossOrganisationBranch()
 
 	/**
 	 * Whether a default read (no `_multi` asked for) waives the organisation
@@ -1419,14 +1565,9 @@ class MagicSearchHandler {
 		IDBConnection $connection,
 		bool $withOrgless = false,
 	): ?string {
-		$scope = $this->organizationHandler->resolveOrganizationScope(
-			adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
-			registerId: $registerId,
-			schemaId: $schema->getId()
+		$scope = $this->organisationScopeFor(
+			table: ['registerId' => $registerId, 'schemaId' => $schema->getId(), 'withOrgless' => $withOrgless]
 		);
-		if ($withOrgless === true) {
-			$scope = MagicOrganizationHandler::admitOrganisationless(scope: $scope);
-		}
 
 		$column = '_organisation';
 
@@ -1821,7 +1962,7 @@ class MagicSearchHandler {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::isNullOperatorAsksForNull() is a pure function shared with the aggregation path.
 	 *
-	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
+	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private function isNullOperatorAsksForNull(mixed $value): bool {
 		return NullFilter::isNullOperatorAsksForNull(value: $value);
@@ -1942,7 +2083,7 @@ class MagicSearchHandler {
 	 * @return string[] The field's conditions, to be ANDed
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function objectFieldConditionsSql(
 		mixed $value,
@@ -2038,7 +2179,7 @@ class MagicSearchHandler {
 	 * @return string[] The conditions, to be ANDed
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function objectOperatorConditionsSql(
 		array $value,
@@ -2234,7 +2375,7 @@ class MagicSearchHandler {
 	 *
 	 * @return string[] Array of SQL conditions
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
 	private function buildMetadataOperatorConditionsSql(string $column, array $value, object $connection): array {
@@ -2499,6 +2640,7 @@ class MagicSearchHandler {
 			'_recentLens',
 			'_count',
 			'_includeDeleted',
+			'_deleted',
 			'_archived',
 			DraftListLens::PARAMETER,
 			'_relations_contains',
@@ -2518,7 +2660,7 @@ class MagicSearchHandler {
 	 * Apply basic filters like deleted status
 	 *
 	 * @param IQueryBuilder $qb Query builder to modify
-	 * @param bool $includeDeleted Whether to include deleted objects
+	 * @param string $deletedMode Which deleted lens to apply, one of the DeletedLens constants
 	 * @param string $archivedMode Which archive lens to apply, one of the ARCHIVED_* constants
 	 * @param array<string, mixed> $query The search query, for the draft lens (`_drafts`, decision 201)
 	 * @param Schema|null $schema The schema being listed, for its draft list default (`draftsListed`)
@@ -2527,19 +2669,19 @@ class MagicSearchHandler {
 	 * @return void
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
 	private function applyBasicFilters(
 		IQueryBuilder $qb,
-		bool $includeDeleted,
+		string $deletedMode = DeletedLens::EXCLUDE,
 		string $archivedMode = self::ARCHIVED_EXCLUDE,
 		array $query = [],
 		?Schema $schema = null,
 		array $missingColumns = [],
 	): void {
-		// Handle deleted filter.
-		if ($includeDeleted === false) {
-			$qb->andWhere($qb->expr()->isNull('t._deleted'));
+		$deleted = (new DeletedLens())->condition(mode: $deletedMode, columnPrefix: 't.');
+		if ($deleted !== null) {
+			$qb->andWhere($qb->createFunction($deleted));
 		}
 
 		// Handle the archive filter. Exclusion is the DEFAULT rather than a
@@ -2635,28 +2777,40 @@ class MagicSearchHandler {
 	/**
 	 * Resolve the multitenancy flag based on public schema access and explicit request
 	 *
-	 * Public schemas bypass multitenancy by default, UNLESS the user explicitly requests
-	 * multitenancy with _multi=true. This allows public data to be visible across orgs
-	 * while still giving users the option to filter by their own organisation.
+	 * A schema with a `public` read rule bypasses multitenancy for an anonymous
+	 * caller and an admin, UNLESS the caller explicitly requests multitenancy with
+	 * _multi=true. A signed-in caller keeps it: they read other organisations'
+	 * rows only through rules marked `crossOrganisation: true`.
 	 *
 	 * @param bool $_multitenancy Current multitenancy flag
 	 * @param bool $multitenancyExplicit Whether multitenancy was explicitly requested
 	 * @param Schema $schema Schema to check for public access
 	 *
 	 * @return bool Resolved multitenancy flag
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-when-inheritfrompublic-is-false-authenticated-users-must-not-qualify-for-public-rules
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	private function resolveMultitenancyFlag(
 		bool $_multitenancy,
 		bool $multitenancyExplicit,
 		Schema $schema,
 	): bool {
+		if (OrganisationContext::isActive() === true) {
+			return true;
+		}
+
 		if ($_multitenancy === true) {
 			$schemaAuth = $schema->getAuthorization();
 			$readGroups = $schemaAuth['read'] ?? [];
 			$hasPublic = $this->hasPublicReadAccess(readRules: $readGroups);
 
-			// Public schemas bypass multitenancy UNLESS user explicitly set _multi=true.
-			if ($hasPublic === true && $multitenancyExplicit === false) {
+			// Public schemas bypass multitenancy for anonymous callers and admins
+			// UNLESS the caller explicitly set _multi=true.
+			if ($hasPublic === true
+				&& $multitenancyExplicit === false
+				&& $this->rbacHandler->publicReadLiftsOrganisationFilter(schema: $schema) === true
+			) {
 				return false;
 			}
 		}
@@ -2692,6 +2846,76 @@ class MagicSearchHandler {
 
 		return null;
 	}//end registerIdFromQuery()
+
+	/**
+	 * Add the organisation boundary, widened by a cross-organisation branch when there is one.
+	 *
+	 * @param IQueryBuilder $qb          The query builder.
+	 * @param array         $table       The table: `registerId`, `schemaId` and `withOrgless`.
+	 * @param mixed         $crossBranch The rows of the caller's conditional `crossOrganisation` rules, or null.
+	 *
+	 * @return void
+	 */
+	private function applyOrganisationBoundary(IQueryBuilder $qb, array $table, mixed $crossBranch): void {
+		if ($crossBranch === null) {
+			$this->organizationHandler->applyOrganizationFilter(
+				qb: $qb,
+				adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
+				registerId: $table['registerId'],
+				schemaId: $table['schemaId'],
+				withOrgless: $table['withOrgless']
+			);
+			return;
+		}
+
+		(new OrganisationScopeCondition())->apply(
+			qb: $qb,
+			scope: $this->organisationScopeFor(table: $table),
+			orAlso: $crossBranch
+		);
+	}//end applyOrganisationBoundary()
+
+	/**
+	 * The organisation scope of one table, widened by the org-less rows when asked.
+	 *
+	 * @param array $table The table: `registerId`, `schemaId` and `withOrgless`.
+	 *
+	 * @return array{mode: string, uuids: array<int, string>} The scope.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) admitOrganisationless() is a pure transform of the decided scope.
+	 */
+	private function organisationScopeFor(array $table): array {
+		$scope = $this->organizationHandler->resolveOrganizationScope(
+			adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
+			registerId: $table['registerId'],
+			schemaId: $table['schemaId']
+		);
+		if ($table['withOrgless'] === true) {
+			$scope = MagicOrganizationHandler::admitOrganisationless(scope: $scope);
+		}
+
+		return $scope;
+	}//end organisationScopeFor()
+
+	/**
+	 * The rows the caller's conditional `crossOrganisation` rules admit, to OR
+	 * into the organisation filter, or null when the filter takes no such branch.
+	 *
+	 * @param IQueryBuilder $qb                   The query builder.
+	 * @param Schema        $schema               The schema being read.
+	 * @param bool          $multitenancyExplicit Whether the caller asked for the strict filter.
+	 *
+	 * @return mixed The branch, or null.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the request posture, mirrored.
+	 */
+	private function crossOrganisationBranch(IQueryBuilder $qb, Schema $schema, bool $multitenancyExplicit): mixed {
+		if ($multitenancyExplicit === true || $this->rbacHandler->hasCrossOrganisationBranch(schema: $schema) === false) {
+			return null;
+		}
+
+		return $this->rbacHandler->getCrossOrganisationBranch(qb: $qb, schema: $schema);
+	}//end crossOrganisationBranch()
 
 	/**
 	 * Apply access control filters (multitenancy and RBAC) to the query
@@ -2744,16 +2968,18 @@ class MagicSearchHandler {
 			// (REQ-SLE-001). Each magic table is exactly one such pair, so
 			// the widening reaches this table and nothing else the holder
 			// owns. A pair that cannot be resolved widens by nothing.
-			$this->organizationHandler->applyOrganizationFilter(
+			$this->applyOrganisationBoundary(
 				qb: $qb,
-				adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
-				registerId: $registerId,
-				schemaId: $schema->getId(),
-				withOrgless: $this->organisationlessRowsAdmitted(
-					schema: $schema,
-					_rbac: $_rbac,
-					multitenancyExplicit: $multitenancyExplicit
-				)
+				table: [
+					'registerId'  => $registerId,
+					'schemaId'    => $schema->getId(),
+					'withOrgless' => $this->organisationlessRowsAdmitted(
+						schema: $schema,
+						_rbac: $_rbac,
+						multitenancyExplicit: $multitenancyExplicit
+					),
+				],
+				crossBranch: $this->crossOrganisationBranch(qb: $qb, schema: $schema, multitenancyExplicit: $multitenancyExplicit)
 			);
 		}
 
@@ -2849,7 +3075,7 @@ class MagicSearchHandler {
 	 * @return void
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
 	private function applyMetadataOperators(IQueryBuilder $qb, string $columnRef, array $value): void {
@@ -3054,7 +3280,7 @@ class MagicSearchHandler {
 	 * @return list<string|\Stringable> The field's predicates, to be ANDed
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function objectFieldPredicates(
 		IQueryBuilder $qb,
@@ -3159,7 +3385,7 @@ class MagicSearchHandler {
 	 * @return list<string|\Stringable> The predicates, to be ANDed
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function objectOperatorPredicates(
 		IQueryBuilder $qb,
@@ -3300,7 +3526,7 @@ class MagicSearchHandler {
 	 *
 	 * @throws EncryptedFieldFilterException When the object property is encrypted.
 	 *
-	 * @spec openspec/changes/nested-property-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
 	private function applyNestedPathFilters(IQueryBuilder $qb, array $nestedFilters, array $properties, bool $isPostgres, Schema $schema): void {
@@ -3501,7 +3727,7 @@ class MagicSearchHandler {
 	 *
 	 * @return boolean True when the recency order was applied.
 	 *
-	 * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
 	 */
 	private function applyRecencyOrder(IQueryBuilder $qb, mixed $recentViews): bool {
 		if (is_array($recentViews) === false || $recentViews === []) {
@@ -3535,7 +3761,7 @@ class MagicSearchHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
 	 */
 	private function applyViewedAt(array $objects, mixed $recentViews): void {
 		if (is_array($recentViews) === false || $recentViews === []) {
@@ -3560,41 +3786,21 @@ class MagicSearchHandler {
 	 * because that method is already at its complexity budget, and because the
 	 * priority is the interesting part and belongs in one place.
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify.
-	 * @param array<int|string, mixed> $order The caller's requested order.
-	 * @param Schema|null $schema The schema being searched.
-	 * @param string|null $searchTerm The search term, for relevance ordering.
-	 * @param mixed $recentViews The read history ordering a `_recent` page (uuid => last read), or null.
-	 * @param array<int, string>|null $dateTimeColumns Columns whose real type is a date or timestamp; null when unknown.
-	 * @param array<int, string> $sortLanguages Language chain a translatable property sorts by.
+	 * @param IQueryBuilder $qb   Query builder to modify.
+	 * @param SortRequest   $sort The requested order and what ordering it needs.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
 	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 */
-	private function applyResultOrder(
-		IQueryBuilder $qb,
-		array $order,
-		?Schema $schema,
-		?string $searchTerm,
-		mixed $recentViews,
-		?array $dateTimeColumns = null,
-		array $sortLanguages = []
-	): void {
-		if (empty($order) === false) {
-			$this->applySorting(
-				qb: $qb,
-				order: $order,
-				schema: $schema,
-				searchTerm: $searchTerm,
-				dateTimeColumns: $dateTimeColumns,
-				sortLanguages: $sortLanguages
-			);
+	private function applyResultOrder(IQueryBuilder $qb, SortRequest $sort): void {
+		if (empty($sort->order) === false) {
+			$this->applySorting(qb: $qb, sort: $sort);
 			return;
 		}
 
-		if ($this->applyRecencyOrder(qb: $qb, recentViews: $recentViews) === true) {
+		if ($this->applyRecencyOrder(qb: $qb, recentViews: $sort->recentViews) === true) {
 			return;
 		}
 
@@ -3991,47 +4197,32 @@ class MagicSearchHandler {
 	/**
 	 * Apply sorting to the query
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify
-	 * @param array $order Sort order configuration
-	 * @param Schema $schema Schema for column mapping
-	 * @param string|null $searchTerm Search term for relevance sorting (optional)
-	 * @param array<int, string>|null $dateTimeColumns Columns whose real type is a date or timestamp; null when unknown
-	 * @param array<int, string> $sortLanguages Language chain a translatable property sorts by, first wins
+	 * @param IQueryBuilder $qb   Query builder to modify
+	 * @param SortRequest   $sort The requested order, its schema, search term, date columns and language chain
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/register-i18n/spec.md#requirement-ordering-by-a-text-property-must-ignore-case
 	 */
-	private function applySorting(
-		IQueryBuilder $qb,
-		array $order,
-		Schema $schema,
-		?string $searchTerm = null,
-		?array $dateTimeColumns = null,
-		array $sortLanguages = [],
-	): void {
-		$properties = $schema->getProperties();
+	private function applySorting(IQueryBuilder $qb, SortRequest $sort): void {
+		$properties = $sort->schema->getProperties();
 
-		foreach ($order as $field => $direction) {
+		foreach ($sort->order as $field => $direction) {
 			$direction = strtoupper($direction);
 			if (in_array($direction, ['ASC', 'DESC']) === false) {
 				$direction = 'ASC';
 			}
 
-			// Special handling for relevance sorting (requires pg_trgm extension and a search term).
-			// This uses PostgreSQL's similarity() function for fuzzy relevance scoring.
+			// Relevance sorting needs a search term and the pg_trgm extension;
+			// without them the field is skipped, as ordering by relevance
+			// without a search makes no sense.
 			if ($field === '_relevance') {
-				if ($searchTerm !== null && $this->hasPgTrgmExtension() === true) {
-					// Use named parameter for safety and proper escaping.
-					$paramName = $qb->createNamedParameter($searchTerm);
-					// Nextcloud's QueryBuilder.addOrderBy() accepts expressions through createFunction().
-					$similarityExpr = "similarity(t._name::text, {$paramName})";
-					$qb->addOrderBy($qb->createFunction($similarityExpr), $direction);
+				$relevance = $this->relevanceSortExpression(qb: $qb, sort: $sort);
+				if ($relevance !== null) {
+					$qb->addOrderBy($relevance, $direction);
 				}
 
-				// Skip _relevance if conditions aren't met (no search term or no pg_trgm).
-				// Silently ignore to avoid errors - relevance ordering without search makes no sense.
 				continue;
 			}
 
@@ -4040,23 +4231,7 @@ class MagicSearchHandler {
 				// @self.lastUserActivity → t._last_user_activity).
 				$metadataField = '_' . $this->sanitizeColumnName(name: str_replace('@self.', '', $field));
 				$qb->addOrderBy($this->metadataSortExpression(qb: $qb, column: $metadataField), $direction);
-			} elseif (in_array(
-				$field,
-				[
-					'_created',
-					'_updated',
-					'_name',
-					'_description',
-					'_summary',
-					'_uuid',
-					'_register',
-					'_schema',
-					'_owner',
-					'_organisation',
-				],
-				true
-			) === true
-			) {
+			} elseif (in_array($field, self::SORTABLE_METADATA_COLUMNS, true) === true) {
 				// Direct metadata column reference (e.g., _created → t._created).
 				$qb->addOrderBy($this->metadataSortExpression(qb: $qb, column: $field), $direction);
 			} elseif (is_array($properties[$field] ?? null) === true
@@ -4068,33 +4243,49 @@ class MagicSearchHandler {
 				// every map row: two sorted runs (dossiq case types, cloud
 				// check 8 October 2026). Order on the value a person sees.
 				// Lower-cased, like every text order (see buildPropertySortExpression()).
-				$columnName = $this->sanitizeColumnName(name: $field);
+				$column = $qb->getColumnName($this->sanitizeColumnName(name: $field), 't');
 				$qb->addOrderBy(
 					$qb->createFunction(
 						$this->lowerSql(
-							expression: $this->buildTranslatableSortSql(
-								column: $qb->getColumnName($columnName, 't'),
-								languages: $sortLanguages
-							)
+							expression: $this->buildTranslatableSortSql(column: $column, languages: $sort->sortLanguages)
 						)
 					),
 					$direction
 				);
 			} elseif (($properties[$field] ?? null) !== null) {
 				// Schema property field sorting.
-				$columnName = $this->sanitizeColumnName(name: $field);
 				$qb->addOrderBy(
 					$this->buildPropertySortExpression(
 						qb: $qb,
-						columnName: $columnName,
+						columnName: $this->sanitizeColumnName(name: $field),
 						propertyConfig: $properties[$field],
-						dateTimeColumns: $dateTimeColumns
+						dateTimeColumns: $sort->dateTimeColumns
 					),
 					$direction
 				);
 			}//end if
 		}//end foreach
 	}//end applySorting()
+
+	/**
+	 * The relevance order of a search: similarity of the name to the search term.
+	 *
+	 * @param IQueryBuilder $qb   Query builder the expression binds its parameter on.
+	 * @param SortRequest   $sort The requested order, carrying the search term.
+	 *
+	 * @return IQueryFunction|null The expression, or null without a search term or pg_trgm.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-multi-field-sorting-with-metadata-and-relevance-support
+	 */
+	private function relevanceSortExpression(IQueryBuilder $qb, SortRequest $sort): ?IQueryFunction {
+		if ($sort->searchTerm === null || $this->hasPgTrgmExtension() === false) {
+			return null;
+		}
+
+		// Nextcloud's QueryBuilder.addOrderBy() accepts expressions through createFunction().
+		$paramName = $qb->createNamedParameter($sort->searchTerm);
+		return $qb->createFunction("similarity(t._name::text, {$paramName})");
+	}//end relevanceSortExpression()
 
 	/**
 	 * The languages a translatable property sorts by, in the order rendering
@@ -4413,11 +4604,7 @@ class MagicSearchHandler {
 	 *
 	 * @return ObjectEntity|null
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Row to entity conversion requires many field mappings
-	 *
-	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	private function convertRowToObjectEntity(
 		array $row,
@@ -4427,254 +4614,12 @@ class MagicSearchHandler {
 	): ?ObjectEntity {
 		try {
 			$objectEntity = new ObjectEntity();
+			$columns      = $this->splitRowColumns(row: $row, schema: $schema);
 
-			// Extract metadata (prefixed with _).
-			$metadataData = [];
-			$objectData = [];
-
-			// Build property type map and column-to-property mapping from schema.
-			// The column-to-property mapping allows us to restore original property names
-			// (e.g., 'e-mailadres') from their sanitized column names (e.g., 'e_mailadres').
-			// PERF-4: memoised per schema id so sanitizeColumnName runs once per
-			// schema rather than once per property per row.
-			$schemaMaps = $this->getSchemaColumnMaps(schema: $schema);
-			$propertyTypes = $schemaMaps['types'];
-			$propertyFormats = ($schemaMaps['formats'] ?? []);
-			$columnToPropertyMap = $schemaMaps['columns'];
-
-			foreach ($row as $column => $value) {
-				$metadataField = $this->columnRoles->field(column: $column, columnToPropertyMap: $columnToPropertyMap);
-				if ($metadataField !== null) {
-					$metadataData[$metadataField] = $value;
-					continue;
-				}
-
-				// Map column name back to original property name using schema mapping.
-				// Falls back to camelCase conversion if not found in mapping.
-				$propertyName = $columnToPropertyMap[$column] ?? $this->columnNameToPropertyName(columnName: $column);
-
-				// Convert value based on schema property type.
-				// Delegates to the shared SchemaTypeConverter so this handler and
-				// MagicStatisticsHandler agree on type semantics across read paths.
-				$propertyType = $propertyTypes[$propertyName] ?? 'string';
-				$value = $this->schemaTypeConverter->convertValue(
-					value: $value,
-					schemaType: $propertyType
-				);
-
-				// Then agree on FORMAT semantics too. A `date`/`date-time` property
-				// lives in a DATETIME column, so the driver returns 'Y-m-d H:i:s' —
-				// which fails the schema's own `date-time` format when the object is
-				// written straight back (every UI edit is a read-modify-write, so any
-				// object with a populated date-time 400'd). MagicStatisticsHandler
-				// already normalises here; this path did not, and this is the path
-				// findAll() actually uses.
-				$propertyFormat = ($propertyFormats[$propertyName] ?? null);
-				if ($value !== null && is_string($value) === true && $propertyFormat !== null) {
-					if ($propertyFormat === 'date') {
-						$normalised = $this->dateTimeNormalizer->normalize($value);
-						$value = null;
-						if ($normalised !== null) {
-							$value = $normalised->format('Y-m-d');
-						}
-					} elseif ($propertyFormat === 'date-time') {
-						// The column is a DATETIME and carries no offset, so the value
-						// must be read back in the timezone the write path stored it
-						// in (UTC) rather than in the server's `date.timezone`
-						// (WOO-567).
-						$value = $this->dateTimeNormalizer->formatDatabaseValueForIso8601($value);
-					}
-				}
-
-				$objectData[$propertyName] = $value;
-			}//end foreach
-
-			// Set metadata properties.
-			if (($metadataData['uuid'] ?? null) !== null) {
-				$objectEntity->setUuid($metadataData['uuid']);
-			}
-
-			if (($metadataData['name'] ?? null) !== null) {
-				$objectEntity->setName($metadataData['name']);
-			}
-
-			if (($metadataData['description'] ?? null) !== null) {
-				$objectEntity->setDescription($metadataData['description']);
-			}
-
-			if (($metadataData['summary'] ?? null) !== null) {
-				$objectEntity->setSummary($metadataData['summary']);
-			}
-
-			if (($metadataData['image'] ?? null) !== null) {
-				$objectEntity->setImage($metadataData['image']);
-			}
-
-			if (($metadataData['slug'] ?? null) !== null) {
-				$objectEntity->setSlug($metadataData['slug']);
-			}
-
-			if (($metadataData['uri'] ?? null) !== null) {
-				$objectEntity->setUri($metadataData['uri']);
-			}
-
-			if (($metadataData['owner'] ?? null) !== null) {
-				$objectEntity->setOwner($metadataData['owner']);
-			}
-
-			if (($metadataData['organisation'] ?? null) !== null) {
-				$objectEntity->setOrganisation($metadataData['organisation']);
-			}
-
-			if (($metadataData['created'] ?? null) !== null) {
-				$objectEntity->setCreated(new DateTime($metadataData['created']));
-			}
-
-			if (($metadataData['updated'] ?? null) !== null) {
-				$objectEntity->setUpdated(new DateTime($metadataData['updated']));
-			}
-
-			if (($metadataData['last_user_activity'] ?? null) !== null) {
-				$objectEntity->setLastUserActivity(new DateTime($metadataData['last_user_activity']));
-			}
-
-			if (($metadataData['deleted'] ?? null) !== null) {
-				// Convert deleted timestamp to array format expected by setDeleted.
-				$deletedDateTime = new DateTime($metadataData['deleted']);
-				$objectEntity->setDeleted(
-					[
-						'deleted' => $deletedDateTime->format('c'),
-						'deletedBy' => $metadataData['deletedBy'] ?? null,
-					]
-				);
-			}
-
-			// Set relevance score if present (from fuzzy search).
-			// The _relevance column contains the similarity score as a percentage (0-100).
-			if (($metadataData['relevance'] ?? null) !== null) {
-				$objectEntity->setRelevance((float)$metadataData['relevance']);
-			}
-
-			// Set JSON metadata fields (stored as JSONB in magic tables).
-			if (($metadataData['relations'] ?? null) !== null) {
-				$relations = $metadataData['relations'];
-				if (is_string($metadataData['relations']) === true) {
-					$relations = json_decode($metadataData['relations'], true);
-				}
-
-				$objectEntity->setRelations([]);
-				if (is_array($relations) === true) {
-					$objectEntity->setRelations($relations);
-				}
-			}
-
-			if (($metadataData['files'] ?? null) !== null) {
-				$files = $metadataData['files'];
-				if (is_string($metadataData['files']) === true) {
-					$files = json_decode($metadataData['files'], true);
-				}
-
-				$objectEntity->setFiles([]);
-				if (is_array($files) === true) {
-					$objectEntity->setFiles($files);
-				}
-			}
-
-			if (($metadataData['locked'] ?? null) !== null) {
-				$locked = $metadataData['locked'];
-				if (is_string($metadataData['locked']) === true) {
-					$locked = json_decode($metadataData['locked'], true);
-				}
-
-				$objectEntity->setLocked(null);
-				if (is_array($locked) === true) {
-					$objectEntity->setLocked($locked);
-				}
-			}
-
-			if (($metadataData['groups'] ?? null) !== null) {
-				$groups = $metadataData['groups'];
-				if (is_string($metadataData['groups']) === true) {
-					$groups = json_decode($metadataData['groups'], true);
-				}
-
-				$objectEntity->setGroups([]);
-				if (is_array($groups) === true) {
-					$objectEntity->setGroups($groups);
-				}
-			}
-
-			if (($metadataData['authorization'] ?? null) !== null) {
-				$auth = $metadataData['authorization'];
-				if (is_string($metadataData['authorization']) === true) {
-					$auth = json_decode($metadataData['authorization'], true);
-				}
-
-				$objectEntity->setAuthorization([]);
-				if (is_array($auth) === true) {
-					$objectEntity->setAuthorization($auth);
-				}
-			}
-
-			if (($metadataData['validation'] ?? null) !== null) {
-				$validation = $metadataData['validation'];
-				if (is_string($metadataData['validation']) === true) {
-					$validation = json_decode($metadataData['validation'], true);
-				}
-
-				$objectEntity->setValidation([]);
-				if (is_array($validation) === true) {
-					$objectEntity->setValidation($validation);
-				}
-			}
-
-			if (($metadataData['geo'] ?? null) !== null) {
-				$geo = $metadataData['geo'];
-				if (is_string($metadataData['geo']) === true) {
-					$geo = json_decode($metadataData['geo'], true);
-				}
-
-				$objectEntity->setGeo([]);
-				if (is_array($geo) === true) {
-					$objectEntity->setGeo($geo);
-				}
-			}
-
-			if (($metadataData['retention'] ?? null) !== null) {
-				$retention = $metadataData['retention'];
-				if (is_string($metadataData['retention']) === true) {
-					$retention = json_decode($metadataData['retention'], true);
-				}
-
-				$objectEntity->setRetention([]);
-				if (is_array($retention) === true) {
-					$objectEntity->setRetention($retention);
-				}
-			}
-
-			// Set scalar metadata fields.
-			if (($metadataData['version'] ?? null) !== null) {
-				$objectEntity->setVersion($metadataData['version']);
-			}
-
-			if (($metadataData['folder'] ?? null) !== null) {
-				$objectEntity->setFolder($metadataData['folder']);
-			}
-
-			if (($metadataData['application'] ?? null) !== null) {
-				$objectEntity->setApplication($metadataData['application']);
-			}
-
-			if (($metadataData['size'] ?? null) !== null) {
-				$objectEntity->setSize($metadataData['size']);
-			}
-
-			// Set register and schema.
+			$this->applyRowMetadata(entity: $objectEntity, metadata: $columns['metadata']);
 			$objectEntity->setRegister((string)$register->getId());
 			$objectEntity->setSchema((string)$schema->getId());
-
-			// Set the object data.
-			$objectEntity->setObject($objectData);
+			$objectEntity->setObject($columns['object']);
 
 			return $objectEntity;
 		} catch (\Exception $e) {
@@ -4692,6 +4637,178 @@ class MagicSearchHandler {
 			return null;
 		}//end try
 	}//end convertRowToObjectEntity()
+
+	/**
+	 * Split a magic-table row into its metadata columns and its typed property values.
+	 *
+	 * A column maps back to its original property name through the schema (`e_mailadres`
+	 * is `e-mailadres`), or to its camelCase form when the schema does not declare it.
+	 *
+	 * @param array  $row    Database row data
+	 * @param Schema $schema Schema context
+	 *
+	 * @return array{metadata: array<string, mixed>, object: array<string, mixed>}
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 */
+	private function splitRowColumns(array $row, Schema $schema): array {
+		$schemaMaps          = $this->getSchemaColumnMaps(schema: $schema);
+		$propertyFormats     = ($schemaMaps['formats'] ?? []);
+		$columnToPropertyMap = $schemaMaps['columns'];
+		$metadata            = [];
+		$object = [];
+
+		foreach ($row as $column => $value) {
+			$metadataField = $this->columnRoles->field(column: $column, columnToPropertyMap: $columnToPropertyMap);
+			if ($metadataField !== null) {
+				$metadata[$metadataField] = $value;
+				continue;
+			}
+
+			$propertyName          = $columnToPropertyMap[$column] ?? $this->columnNameToPropertyName(columnName: $column);
+			$object[$propertyName] = $this->convertRowValue(
+				value: $value,
+				property: [
+					'type'   => ($schemaMaps['types'][$propertyName] ?? 'string'),
+					'format' => ($propertyFormats[$propertyName] ?? null),
+				]
+			);
+		}
+
+		return ['metadata' => $metadata, 'object' => $object];
+	}//end splitRowColumns()
+
+	/**
+	 * A column value as its schema property type and format read it.
+	 *
+	 * A `date` or `date-time` property lives in a DATETIME column, so the driver returns
+	 * 'Y-m-d H:i:s'. That fails the schema's own format when the object is written back,
+	 * so the value is normalised here, as MagicStatisticsHandler does. A `date-time` column
+	 * carries no offset and is read back in UTC, the timezone the write path stored it in.
+	 *
+	 * @param mixed                                     $value    The column value
+	 * @param array{type: string, format: string|null} $property The schema property type and format
+	 *
+	 * @return mixed
+	 */
+	private function convertRowValue(mixed $value, array $property): mixed {
+		$format = $property['format'];
+		$value  = $this->schemaTypeConverter->convertValue(value: $value, schemaType: $property['type']);
+		if ($value === null || is_string($value) === false || $format === null) {
+			return $value;
+		}
+
+		if ($format === 'date') {
+			$normalised = $this->dateTimeNormalizer->normalize($value);
+			if ($normalised === null) {
+				return null;
+			}
+
+			return $normalised->format('Y-m-d');
+		}
+
+		if ($format === 'date-time') {
+			return $this->dateTimeNormalizer->formatDatabaseValueForIso8601($value);
+		}
+
+		return $value;
+	}//end convertRowValue()
+
+	/**
+	 * Set every metadata column the row holds a value for, in the order of {@see self::ROW_METADATA_KINDS}.
+	 *
+	 * @param ObjectEntity         $entity   The entity being hydrated
+	 * @param array<string, mixed> $metadata The row's metadata columns, keyed without their prefix
+	 *
+	 * @return void
+	 */
+	private function applyRowMetadata(ObjectEntity $entity, array $metadata): void {
+		foreach (self::ROW_METADATA_KINDS as $field => $kind) {
+			if (($metadata[$field] ?? null) === null) {
+				continue;
+			}
+
+			$setter = 'set'.str_replace('_', '', ucwords($field, '_'));
+			foreach ($this->rowMetadataValues(kind: $kind, value: $metadata[$field]) as $setterValue) {
+				$entity->$setter($setterValue);
+			}
+		}
+	}//end applyRowMetadata()
+
+	/**
+	 * The values one metadata column sets on the entity, in the order they are set.
+	 *
+	 * A JSON column sets its fallback first, then the decoded array when it is one.
+	 *
+	 * @param string $kind  The field's kind in {@see self::ROW_METADATA_KINDS}
+	 * @param mixed  $value The column value, not null
+	 *
+	 * @return list<mixed>
+	 */
+	private function rowMetadataValues(string $kind, mixed $value): array {
+		switch ($kind) {
+			case 'datetime':
+				return [new DateTime($value)];
+			case 'deleted':
+				return [$this->deletedMarker(raw: $value)];
+			case 'float':
+				return [(float)$value];
+			case 'json':
+				return $this->rowJsonValues(value: $value, fallback: []);
+			case 'json-or-null':
+				return $this->rowJsonValues(value: $value, fallback: null);
+			default:
+				return [$value];
+		}
+	}//end rowMetadataValues()
+
+	/**
+	 * The values a JSON metadata column sets: the fallback, then the decoded array when it is one.
+	 *
+	 * @param mixed      $value    The column value, a JSON string or already decoded
+	 * @param array|null $fallback The value set when the column holds no array
+	 *
+	 * @return list<array|null>
+	 */
+	private function rowJsonValues(mixed $value, ?array $fallback): array {
+		$decoded = $value;
+		if (is_string($value) === true) {
+			$decoded = json_decode($value, true);
+		}
+
+		if (is_array($decoded) === true) {
+			return [$fallback, $decoded];
+		}
+
+		return [$fallback];
+	}//end rowJsonValues()
+
+	/**
+	 * The `_deleted` column as the marker `ObjectEntity::setDeleted()` takes.
+	 *
+	 * The column is JSON (deletedAt, deletedBy, purgeDate, the window); a row
+	 * written before it was JSON holds a bare timestamp. Reading the JSON as a
+	 * timestamp threw, and the row was dropped from every list that asked for
+	 * deleted rows.
+	 *
+	 * @param mixed $raw The column value.
+	 *
+	 * @return array<string, mixed> The marker.
+	 *
+	 * @spec openspec/changes/object-deleted-lens/specs/object-lifecycle/spec.md
+	 */
+	private function deletedMarker(mixed $raw): array {
+		if (is_array($raw) === true) {
+			return $raw;
+		}
+
+		$decoded = json_decode((string)$raw, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return ['deleted' => (new DateTime((string)$raw))->format('c')];
+	}//end deletedMarker()
 
 	/**
 	 * Whether the active database platform is PostgreSQL.

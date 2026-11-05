@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+ * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use OCP\IUserSession;
  * one that writes cannot pick up the others\' `#[NoCSRFRequired]` by being
  * next to them.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+ * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
  */
 class OperationsConsistencyController extends Controller {
 
@@ -72,7 +72,7 @@ class OperationsConsistencyController extends Controller {
 	 *
 	 * @return JSONResponse The findings.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 */
 	#[NoCSRFRequired]
 	public function consistency(): JSONResponse {
@@ -95,7 +95,7 @@ class OperationsConsistencyController extends Controller {
 	 *
 	 * @return JSONResponse The plan.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 */
 	#[NoCSRFRequired]
 	public function repairPlan(): JSONResponse {
@@ -111,7 +111,7 @@ class OperationsConsistencyController extends Controller {
 	 *       middleware refuses a non-administrator before this controller is
 	 *       built, and CSRF stays required on the write.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 */
 	public function repair(): JSONResponse {
 		return $this->repairing(apply: true);

@@ -251,7 +251,7 @@ class ObjectGrantResolver {
 	 *
 	 * @return string|null The ancestor's UUID, or null for a direct grant.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function inheritedFrom(string $objectUuid): ?string {
 		return ($this->inheritedFrom[$objectUuid] ?? null);

@@ -60,7 +60,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -71,6 +71,16 @@ namespace OCA\OpenRegister\Service\Rbac;
  * Resolves the denied verbs of an authorization block and emits the matching SQL.
  */
 class DenyResolver {
+
+	/**
+	 * How a raw SQL string literal escapes its body, keyed by whether the platform is PostgreSQL.
+	 *
+	 * @var array<int, array<string, string>>
+	 */
+	private const LITERAL_ESCAPES = [
+		1 => ["'" => "''"],
+		0 => ['\\' => '\\\\', "'" => "''"],
+	];
 
 	/**
 	 * The authorization-block key carrying the denials.
@@ -131,7 +141,7 @@ class DenyResolver {
 	 *
 	 * @return array<string, array> The deny block, keyed by action; empty when none is declared.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function denyBlock(?array $authorization): array {
 		if (is_array($authorization) === false) {
@@ -158,7 +168,7 @@ class DenyResolver {
 	 *
 	 * @return bool True when at least one action carries a non-empty deny list.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function declaresAnyDeny(?array $authorization): bool {
 		foreach ($this->denyBlock(authorization: $authorization) as $entries) {
@@ -178,7 +188,7 @@ class DenyResolver {
 	 *
 	 * @return array<int, mixed> The entries, in declaration order.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function entriesFor(?array $authorization, string $action): array {
 		$entries = ($this->denyBlock(authorization: $authorization)[$action] ?? null);
@@ -204,7 +214,7 @@ class DenyResolver {
 	 *
 	 * @return array<string, array> The union, keyed by action.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function mergeDeny(?array $baseline, ?array $override): array {
 		$merged = [];
@@ -273,7 +283,7 @@ class DenyResolver {
 	 *
 	 * @return string[] The principal names, deduplicated.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function principalsFor(?string $userId, array $userGroups): array {
 		$principals = [self::PRINCIPAL_PUBLIC];
@@ -302,7 +312,7 @@ class DenyResolver {
 	 *
 	 * @return string|null The principal the entry named, or null when it names none.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function entryNames(mixed $entry, array $principals): ?string {
 		return $this->matcher->entryNames(entry: $entry, principals: $principals);
@@ -322,7 +332,7 @@ class DenyResolver {
 	 *
 	 * @return array<int, array{rule: mixed, principal: string, action: string, conditional: bool}> The matching denials.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function matchingDenials(?array $authorization, string $action, array $principals): array {
 		return $this->matcher->matchingDenials(
@@ -344,7 +354,7 @@ class DenyResolver {
 	 *
 	 * @return array{rule: mixed, principal: string, action: string, conditional: bool}|null The denial, or null.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function unconditionalDenial(?array $authorization, string $action, array $principals): ?array {
 		foreach ($this->matchingDenials(authorization: $authorization, action: $action, principals: $principals) as $denial) {
@@ -365,7 +375,7 @@ class DenyResolver {
 	 *
 	 * @return array<int, array{rule: mixed, principal: string, action: string, conditional: bool}> The conditional denials.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function conditionalDenials(?array $authorization, string $action, array $principals): array {
 		$conditional = [];
@@ -407,7 +417,7 @@ class DenyResolver {
 	 *
 	 * @return string A SQL predicate true for rows this caller is not denied.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function notDeniedRowSql(string $columnName, string $action, bool $isPostgres, array $principals): string {
 		if ($principals === []) {
@@ -470,7 +480,7 @@ class DenyResolver {
 			$asText = "COALESCE({$columnName}::text, '')";
 		}
 
-		$needle = $this->quoteLiteral(value: '%"' . self::DENY_KEY . '"%');
+		$needle = $this->quoteLiteral(value: '%"' . self::DENY_KEY . '"%', isPostgres: $isPostgres);
 
 		return "({$asText} NOT LIKE {$needle})";
 	}//end denyKeyProbeSql()
@@ -526,7 +536,7 @@ class DenyResolver {
 		bool $isPostgres,
 		string $candidateJson,
 	): string {
-		$quotedCandidate = $this->quoteLiteral(value: $candidateJson);
+		$quotedCandidate = $this->quoteLiteral(value: $candidateJson, isPostgres: $isPostgres);
 
 		if ($isPostgres === true) {
 			$subDocument = "COALESCE(COALESCE({$columnName}, '{}')::jsonb -> '" . self::DENY_KEY . "' -> '{$action}', '[]'::jsonb)";
@@ -543,12 +553,17 @@ class DenyResolver {
 	/**
 	 * Quote a string for safe use in raw SQL.
 	 *
-	 * @param string $value The value to quote.
+	 * MySQL and MariaDB read a backslash as an escape inside a string literal,
+	 * which would turn json_encode's `\u00e9`, `\/`, `\"` and `\\` into other
+	 * text, so there the backslash is doubled first.
+	 *
+	 * @param string $value      The value to quote.
+	 * @param bool   $isPostgres Whether the connected platform is PostgreSQL.
 	 *
 	 * @return string The quoted literal.
 	 */
-	private function quoteLiteral(string $value): string {
-		$escaped = str_replace("'", "''", $value);
+	private function quoteLiteral(string $value, bool $isPostgres): string {
+		$escaped = strtr($value, self::LITERAL_ESCAPES[(int)$isPostgres]);
 
 		return "'{$escaped}'";
 	}//end quoteLiteral()

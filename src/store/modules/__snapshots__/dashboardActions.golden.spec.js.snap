@@ -1,0 +1,6011 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`dashboard store golden calculateSizes(["reg-1"]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": true,
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/dashboard/calculate/reg-1",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {
+    "registers": [
+      {
+        "title": "System Totals",
+      },
+    ],
+  },
+  "whileRunning": {},
+}
+`;
+
+exports[`dashboard store golden calculateSizes(["reg-1"]): no scope, no data 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching registers:",
+      "Cannot read properties of null (reading 'registers')",
+    ],
+    [
+      "Error calculating sizes:",
+      "Cannot read properties of null (reading 'registers')",
+    ],
+  ],
+  "outcome": {
+    "threw": "Cannot read properties of null (reading 'registers')",
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/dashboard/calculate/reg-1",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {
+    "error": "Cannot read properties of null (reading 'registers')",
+  },
+  "whileRunning": {},
+}
+`;
+
+exports[`dashboard store golden calculateSizes(["reg-1"]): no scope, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error calculating sizes:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/dashboard/calculate/reg-1",
+    ],
+  ],
+  "state": {},
+  "whileRunning": {},
+}
+`;
+
+exports[`dashboard store golden calculateSizes(["reg-1"]): no scope, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error calculating sizes:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/dashboard/calculate/reg-1",
+    ],
+  ],
+  "state": {},
+  "whileRunning": {},
+}
+`;
+
+exports[`dashboard store golden calculateSizes(["reg-1"]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": true,
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/dashboard/calculate/reg-1",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "registers": [
+      {
+        "title": "System Totals",
+      },
+    ],
+  },
+  "whileRunning": {},
+}
+`;
+
+exports[`dashboard store golden calculateSizes(["reg-1"]): register and schema, no data 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching registers:",
+      "Cannot read properties of null (reading 'registers')",
+    ],
+    [
+      "Error calculating sizes:",
+      "Cannot read properties of null (reading 'registers')",
+    ],
+  ],
+  "outcome": {
+    "threw": "Cannot read properties of null (reading 'registers')",
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/dashboard/calculate/reg-1",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "error": "Cannot read properties of null (reading 'registers')",
+  },
+  "whileRunning": {},
+}
+`;
+
+exports[`dashboard store golden calculateSizes(["reg-1"]): register and schema, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error calculating sizes:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/dashboard/calculate/reg-1",
+    ],
+  ],
+  "state": {},
+  "whileRunning": {},
+}
+`;
+
+exports[`dashboard store golden calculateSizes(["reg-1"]): register and schema, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error calculating sizes:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "post",
+      "url:/apps/openregister/api/dashboard/calculate/reg-1",
+    ],
+  ],
+  "state": {},
+  "whileRunning": {},
+}
+`;
+
+exports[`dashboard store golden fetchActionDistribution([]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 24,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "statisticsData": {
+      "actionDistribution": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "auditTrailStats": null,
+      "mostActiveObjects": null,
+    },
+  },
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": false,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchActionDistribution([]): no scope, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 24,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": false,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchActionDistribution([]): no scope, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching action distribution:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 24,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": false,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchActionDistribution([]): no scope, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching action distribution:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 24,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": false,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchActionDistribution([]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 24,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "statisticsData": {
+      "actionDistribution": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "auditTrailStats": null,
+      "mostActiveObjects": null,
+    },
+  },
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": false,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchActionDistribution([]): register and schema, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 24,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": false,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchActionDistribution([]): register and schema, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching action distribution:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 24,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": false,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchActionDistribution([]): register and schema, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching action distribution:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 24,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": false,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchActionDistribution([6]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 6,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "statisticsData": {
+      "actionDistribution": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "auditTrailStats": null,
+      "mostActiveObjects": null,
+    },
+  },
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": false,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchActionDistribution([6]): no scope, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 6,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": false,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchActionDistribution([6]): no scope, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching action distribution:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 6,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": false,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchActionDistribution([6]): no scope, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching action distribution:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 6,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": false,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchActionDistribution([6]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 6,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "statisticsData": {
+      "actionDistribution": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "auditTrailStats": null,
+      "mostActiveObjects": null,
+    },
+  },
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": false,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchActionDistribution([6]): register and schema, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 6,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": false,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchActionDistribution([6]): register and schema, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching action distribution:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 6,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": false,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchActionDistribution([6]): register and schema, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching action distribution:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 6,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": false,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllChartData([]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "till": null,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
+      {
+        "params": {},
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
+      {
+        "params": {},
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsByRegister": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySchema": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySize": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllChartData([]): no scope, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "till": null,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
+      {
+        "params": {},
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
+      {
+        "params": {},
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllChartData([]): no scope, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail action chart:",
+      "Network",
+    ],
+    [
+      "Error fetching objects by register chart:",
+      "Network",
+    ],
+    [
+      "Error fetching objects by schema chart:",
+      "Network",
+    ],
+    [
+      "Error fetching objects by size chart:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "till": null,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
+      {
+        "params": {},
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
+      {
+        "params": {},
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllChartData([]): no scope, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail action chart:",
+      "",
+    ],
+    [
+      "Error fetching objects by register chart:",
+      "",
+    ],
+    [
+      "Error fetching objects by schema chart:",
+      "",
+    ],
+    [
+      "Error fetching objects by size chart:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "till": null,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
+      {
+        "params": {},
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
+      {
+        "params": {},
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllChartData([]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "registerId": 7,
+          "schemaId": 9,
+          "till": null,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsByRegister": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySchema": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySize": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllChartData([]): register and schema, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "registerId": 7,
+          "schemaId": 9,
+          "till": null,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllChartData([]): register and schema, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail action chart:",
+      "Network",
+    ],
+    [
+      "Error fetching objects by register chart:",
+      "Network",
+    ],
+    [
+      "Error fetching objects by schema chart:",
+      "Network",
+    ],
+    [
+      "Error fetching objects by size chart:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "registerId": 7,
+          "schemaId": 9,
+          "till": null,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllChartData([]): register and schema, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail action chart:",
+      "",
+    ],
+    [
+      "Error fetching objects by register chart:",
+      "",
+    ],
+    [
+      "Error fetching objects by schema chart:",
+      "",
+    ],
+    [
+      "Error fetching objects by size chart:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "registerId": 7,
+          "schemaId": 9,
+          "till": null,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllStatistics([]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 24,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 24,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 24,
+          "limit": 10,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "statisticsData": {
+      "actionDistribution": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "auditTrailStats": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "mostActiveObjects": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+  },
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllStatistics([]): no scope, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 24,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 24,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 24,
+          "limit": 10,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllStatistics([]): no scope, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail statistics:",
+      "Network",
+    ],
+    [
+      "Error fetching action distribution:",
+      "Network",
+    ],
+    [
+      "Error fetching most active objects:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 24,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 24,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 24,
+          "limit": 10,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllStatistics([]): no scope, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail statistics:",
+      "",
+    ],
+    [
+      "Error fetching action distribution:",
+      "",
+    ],
+    [
+      "Error fetching most active objects:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 24,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 24,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 24,
+          "limit": 10,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllStatistics([]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 24,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 24,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 24,
+          "limit": 10,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "statisticsData": {
+      "actionDistribution": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "auditTrailStats": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "mostActiveObjects": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+  },
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllStatistics([]): register and schema, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 24,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 24,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 24,
+          "limit": 10,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllStatistics([]): register and schema, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail statistics:",
+      "Network",
+    ],
+    [
+      "Error fetching action distribution:",
+      "Network",
+    ],
+    [
+      "Error fetching most active objects:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 24,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 24,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 24,
+          "limit": 10,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllStatistics([]): register and schema, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail statistics:",
+      "",
+    ],
+    [
+      "Error fetching action distribution:",
+      "",
+    ],
+    [
+      "Error fetching most active objects:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 24,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 24,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 24,
+          "limit": 10,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllStatistics([6,5]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 6,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 6,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 6,
+          "limit": 5,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "statisticsData": {
+      "actionDistribution": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "auditTrailStats": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "mostActiveObjects": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+  },
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllStatistics([6,5]): no scope, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 6,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 6,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 6,
+          "limit": 5,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllStatistics([6,5]): no scope, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail statistics:",
+      "Network",
+    ],
+    [
+      "Error fetching action distribution:",
+      "Network",
+    ],
+    [
+      "Error fetching most active objects:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 6,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 6,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 6,
+          "limit": 5,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllStatistics([6,5]): no scope, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail statistics:",
+      "",
+    ],
+    [
+      "Error fetching action distribution:",
+      "",
+    ],
+    [
+      "Error fetching most active objects:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 6,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 6,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 6,
+          "limit": 5,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllStatistics([6,5]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 6,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 6,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 6,
+          "limit": 5,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "statisticsData": {
+      "actionDistribution": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "auditTrailStats": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "mostActiveObjects": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+  },
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllStatistics([6,5]): register and schema, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 6,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 6,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 6,
+          "limit": 5,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllStatistics([6,5]): register and schema, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail statistics:",
+      "Network",
+    ],
+    [
+      "Error fetching action distribution:",
+      "Network",
+    ],
+    [
+      "Error fetching most active objects:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 6,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 6,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 6,
+          "limit": 5,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllStatistics([6,5]): register and schema, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail statistics:",
+      "",
+    ],
+    [
+      "Error fetching action distribution:",
+      "",
+    ],
+    [
+      "Error fetching most active objects:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 6,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 6,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 6,
+          "limit": 5,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailActionChart([]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsByRegister": null,
+      "objectsBySchema": null,
+      "objectsBySize": null,
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailActionChart([]): no scope, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailActionChart([]): no scope, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail action chart:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailActionChart([]): no scope, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail action chart:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailActionChart([]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "registerId": 7,
+          "schemaId": 9,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsByRegister": null,
+      "objectsBySchema": null,
+      "objectsBySize": null,
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailActionChart([]): register and schema, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "registerId": 7,
+          "schemaId": 9,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailActionChart([]): register and schema, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail action chart:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "registerId": 7,
+          "schemaId": 9,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailActionChart([]): register and schema, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail action chart:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "registerId": 7,
+          "schemaId": 9,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailStatistics([]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 24,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "statisticsData": {
+      "actionDistribution": null,
+      "auditTrailStats": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "mostActiveObjects": null,
+    },
+  },
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": true,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailStatistics([]): no scope, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 24,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": true,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailStatistics([]): no scope, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail statistics:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 24,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": true,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailStatistics([]): no scope, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail statistics:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 24,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": true,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailStatistics([]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 24,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "statisticsData": {
+      "actionDistribution": null,
+      "auditTrailStats": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "mostActiveObjects": null,
+    },
+  },
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": true,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailStatistics([]): register and schema, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 24,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": true,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailStatistics([]): register and schema, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail statistics:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 24,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": true,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailStatistics([]): register and schema, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail statistics:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 24,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": true,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailStatistics([6]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 6,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "statisticsData": {
+      "actionDistribution": null,
+      "auditTrailStats": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "mostActiveObjects": null,
+    },
+  },
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": true,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailStatistics([6]): no scope, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 6,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": true,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailStatistics([6]): no scope, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail statistics:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 6,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": true,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailStatistics([6]): no scope, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail statistics:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 6,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": true,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailStatistics([6]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 6,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "statisticsData": {
+      "actionDistribution": null,
+      "auditTrailStats": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "mostActiveObjects": null,
+    },
+  },
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": true,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailStatistics([6]): register and schema, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 6,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": true,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailStatistics([6]): register and schema, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail statistics:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 6,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": true,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAuditTrailStatistics([6]): register and schema, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching audit trail statistics:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 6,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": true,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchMostActiveObjects([]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 24,
+          "limit": 10,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "statisticsData": {
+      "actionDistribution": null,
+      "auditTrailStats": null,
+      "mostActiveObjects": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+  },
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": false,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchMostActiveObjects([]): no scope, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 24,
+          "limit": 10,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": false,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchMostActiveObjects([]): no scope, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching most active objects:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 24,
+          "limit": 10,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": false,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchMostActiveObjects([]): no scope, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching most active objects:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 24,
+          "limit": 10,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": false,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchMostActiveObjects([]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 24,
+          "limit": 10,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "statisticsData": {
+      "actionDistribution": null,
+      "auditTrailStats": null,
+      "mostActiveObjects": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+  },
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": false,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchMostActiveObjects([]): register and schema, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 24,
+          "limit": 10,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": false,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchMostActiveObjects([]): register and schema, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching most active objects:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 24,
+          "limit": 10,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": false,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchMostActiveObjects([]): register and schema, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching most active objects:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 24,
+          "limit": 10,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": false,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchMostActiveObjects([5,6]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 6,
+          "limit": 5,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "statisticsData": {
+      "actionDistribution": null,
+      "auditTrailStats": null,
+      "mostActiveObjects": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+  },
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": false,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchMostActiveObjects([5,6]): no scope, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 6,
+          "limit": 5,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": false,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchMostActiveObjects([5,6]): no scope, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching most active objects:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 6,
+          "limit": 5,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": false,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchMostActiveObjects([5,6]): no scope, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching most active objects:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 6,
+          "limit": 5,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": false,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchMostActiveObjects([5,6]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 6,
+          "limit": 5,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "statisticsData": {
+      "actionDistribution": null,
+      "auditTrailStats": null,
+      "mostActiveObjects": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+  },
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": false,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchMostActiveObjects([5,6]): register and schema, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 6,
+          "limit": 5,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": false,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchMostActiveObjects([5,6]): register and schema, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching most active objects:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 6,
+          "limit": 5,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": false,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchMostActiveObjects([5,6]): register and schema, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching most active objects:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 6,
+          "limit": 5,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": false,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsByRegisterChart([]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": null,
+      "objectsByRegister": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySchema": null,
+      "objectsBySize": null,
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": true,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsByRegisterChart([]): no scope, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": true,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsByRegisterChart([]): no scope, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching objects by register chart:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": true,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsByRegisterChart([]): no scope, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching objects by register chart:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": true,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsByRegisterChart([]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": null,
+      "objectsByRegister": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySchema": null,
+      "objectsBySize": null,
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": true,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsByRegisterChart([]): register and schema, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": true,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsByRegisterChart([]): register and schema, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching objects by register chart:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": true,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsByRegisterChart([]): register and schema, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching objects by register chart:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": true,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsBySchemaChart([]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": null,
+      "objectsByRegister": null,
+      "objectsBySchema": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySize": null,
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": false,
+      "objectsBySchema": true,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsBySchemaChart([]): no scope, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": false,
+      "objectsBySchema": true,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsBySchemaChart([]): no scope, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching objects by schema chart:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": false,
+      "objectsBySchema": true,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsBySchemaChart([]): no scope, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching objects by schema chart:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": false,
+      "objectsBySchema": true,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsBySchemaChart([]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": null,
+      "objectsByRegister": null,
+      "objectsBySchema": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySize": null,
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": false,
+      "objectsBySchema": true,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsBySchemaChart([]): register and schema, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": false,
+      "objectsBySchema": true,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsBySchemaChart([]): register and schema, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching objects by schema chart:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": false,
+      "objectsBySchema": true,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsBySchemaChart([]): register and schema, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching objects by schema chart:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": false,
+      "objectsBySchema": true,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsBySizeChart([]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": null,
+      "objectsByRegister": null,
+      "objectsBySchema": null,
+      "objectsBySize": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsBySizeChart([]): no scope, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsBySizeChart([]): no scope, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching objects by size chart:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsBySizeChart([]): no scope, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching objects by size chart:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsBySizeChart([]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": null,
+      "objectsByRegister": null,
+      "objectsBySchema": null,
+      "objectsBySize": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsBySizeChart([]): register and schema, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsBySizeChart([]): register and schema, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching objects by size chart:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchObjectsBySizeChart([]): register and schema, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching objects by size chart:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchRegisters([]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": [
+      {
+        "title": "System Totals",
+      },
+    ],
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {
+    "registers": [
+      {
+        "title": "System Totals",
+      },
+    ],
+  },
+  "whileRunning": {
+    "loading": true,
+  },
+}
+`;
+
+exports[`dashboard store golden fetchRegisters([]): no scope, no data 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching registers:",
+      "Cannot read properties of null (reading 'registers')",
+    ],
+  ],
+  "outcome": {
+    "threw": "Cannot read properties of null (reading 'registers')",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {
+    "error": "Cannot read properties of null (reading 'registers')",
+  },
+  "whileRunning": {
+    "loading": true,
+  },
+}
+`;
+
+exports[`dashboard store golden fetchRegisters([]): no scope, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching registers:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {
+    "error": "Network",
+  },
+  "whileRunning": {
+    "loading": true,
+  },
+}
+`;
+
+exports[`dashboard store golden fetchRegisters([]): no scope, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching registers:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {
+    "error": "Failed to fetch registers",
+  },
+  "whileRunning": {
+    "loading": true,
+  },
+}
+`;
+
+exports[`dashboard store golden fetchRegisters([]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": [
+      {
+        "title": "System Totals",
+      },
+    ],
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "registers": [
+      {
+        "title": "System Totals",
+      },
+    ],
+  },
+  "whileRunning": {
+    "loading": true,
+  },
+}
+`;
+
+exports[`dashboard store golden fetchRegisters([]): register and schema, no data 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching registers:",
+      "Cannot read properties of null (reading 'registers')",
+    ],
+  ],
+  "outcome": {
+    "threw": "Cannot read properties of null (reading 'registers')",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "error": "Cannot read properties of null (reading 'registers')",
+  },
+  "whileRunning": {
+    "loading": true,
+  },
+}
+`;
+
+exports[`dashboard store golden fetchRegisters([]): register and schema, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching registers:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "error": "Network",
+  },
+  "whileRunning": {
+    "loading": true,
+  },
+}
+`;
+
+exports[`dashboard store golden fetchRegisters([]): register and schema, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching registers:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "error": "Failed to fetch registers",
+  },
+  "whileRunning": {
+    "loading": true,
+  },
+}
+`;
+
+exports[`dashboard store golden preload([]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": [
+      {
+        "title": "System Totals",
+      },
+    ],
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {},
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "till": null,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
+      {
+        "params": {},
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
+      {
+        "params": {},
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
+      {
+        "params": {},
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 24,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 24,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 24,
+          "limit": 10,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsByRegister": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySchema": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySize": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+    "isInitialized": true,
+    "registers": [
+      {
+        "title": "System Totals",
+      },
+    ],
+    "statisticsData": {
+      "actionDistribution": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "auditTrailStats": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "mostActiveObjects": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+  },
+  "whileRunning": {
+    "loading": true,
+  },
+}
+`;
+
+exports[`dashboard store golden preload([]): no scope, no data 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching registers:",
+      "Cannot read properties of null (reading 'registers')",
+    ],
+  ],
+  "outcome": {
+    "threw": "Cannot read properties of null (reading 'registers')",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {
+    "error": "Cannot read properties of null (reading 'registers')",
+  },
+  "whileRunning": {
+    "loading": true,
+  },
+}
+`;
+
+exports[`dashboard store golden preload([]): no scope, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching registers:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {
+    "error": "Network",
+  },
+  "whileRunning": {
+    "loading": true,
+  },
+}
+`;
+
+exports[`dashboard store golden preload([]): no scope, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching registers:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {},
+      },
+    ],
+  ],
+  "state": {
+    "error": "Failed to fetch registers",
+  },
+  "whileRunning": {
+    "loading": true,
+  },
+}
+`;
+
+exports[`dashboard store golden preload([]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": [
+      {
+        "title": "System Totals",
+      },
+    ],
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "registerId": 7,
+          "schemaId": 9,
+          "till": null,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
+      {
+        "params": {
+          "hours": 24,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
+      {
+        "params": {
+          "hours": 24,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
+      {
+        "params": {
+          "hours": 24,
+          "limit": 10,
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsByRegister": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySchema": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySize": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+    "isInitialized": true,
+    "registers": [
+      {
+        "title": "System Totals",
+      },
+    ],
+    "statisticsData": {
+      "actionDistribution": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "auditTrailStats": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "mostActiveObjects": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+  },
+  "whileRunning": {
+    "loading": true,
+  },
+}
+`;
+
+exports[`dashboard store golden preload([]): register and schema, no data 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching registers:",
+      "Cannot read properties of null (reading 'registers')",
+    ],
+  ],
+  "outcome": {
+    "threw": "Cannot read properties of null (reading 'registers')",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "error": "Cannot read properties of null (reading 'registers')",
+  },
+  "whileRunning": {
+    "loading": true,
+  },
+}
+`;
+
+exports[`dashboard store golden preload([]): register and schema, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching registers:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "error": "Network",
+  },
+  "whileRunning": {
+    "loading": true,
+  },
+}
+`;
+
+exports[`dashboard store golden preload([]): register and schema, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching registers:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard",
+      {
+        "params": {
+          "registerId": 7,
+          "schemaId": 9,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "error": "Failed to fetch registers",
+  },
+  "whileRunning": {
+    "loading": true,
+  },
+}
+`;
+
+exports[`dashboard store golden setDateRange(["2026-01-01","2026-02-01"]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": "2026-01-01",
+          "till": "2026-02-01",
+        },
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsByRegister": null,
+      "objectsBySchema": null,
+      "objectsBySize": null,
+    },
+    "dateRange": {
+      "from": "2026-01-01",
+      "till": "2026-02-01",
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+    "dateRange": {
+      "from": "2026-01-01",
+      "till": "2026-02-01",
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden setDateRange(["2026-01-01","2026-02-01"]): no scope, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": "2026-01-01",
+          "till": "2026-02-01",
+        },
+      },
+    ],
+  ],
+  "state": {
+    "dateRange": {
+      "from": "2026-01-01",
+      "till": "2026-02-01",
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+    "dateRange": {
+      "from": "2026-01-01",
+      "till": "2026-02-01",
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden setDateRange(["2026-01-01","2026-02-01"]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": "2026-01-01",
+          "registerId": 7,
+          "schemaId": 9,
+          "till": "2026-02-01",
+        },
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsByRegister": null,
+      "objectsBySchema": null,
+      "objectsBySize": null,
+    },
+    "dateRange": {
+      "from": "2026-01-01",
+      "till": "2026-02-01",
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+    "dateRange": {
+      "from": "2026-01-01",
+      "till": "2026-02-01",
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden setDateRange(["2026-01-01","2026-02-01"]): register and schema, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": "2026-01-01",
+          "registerId": 7,
+          "schemaId": 9,
+          "till": "2026-02-01",
+        },
+      },
+    ],
+  ],
+  "state": {
+    "dateRange": {
+      "from": "2026-01-01",
+      "till": "2026-02-01",
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+    "dateRange": {
+      "from": "2026-01-01",
+      "till": "2026-02-01",
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden setDateRange([]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsByRegister": null,
+      "objectsBySchema": null,
+      "objectsBySize": null,
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden setDateRange([]): no scope, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden setDateRange([]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "registerId": 7,
+          "schemaId": 9,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsByRegister": null,
+      "objectsBySchema": null,
+      "objectsBySize": null,
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden setDateRange([]): register and schema, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      {
+        "params": {
+          "from": null,
+          "registerId": 7,
+          "schemaId": 9,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden skips a fetch that is already loading 1`] = `
+{
+  "requests": [],
+  "state": {
+    "chartData": {
+      "auditTrailActions": null,
+      "objectsByRegister": null,
+      "objectsBySchema": null,
+      "objectsBySize": null,
+    },
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+    "dateRange": {
+      "from": null,
+      "till": null,
+    },
+    "error": null,
+    "isInitialized": false,
+    "loading": false,
+    "registers": [],
+    "statisticsData": {
+      "actionDistribution": null,
+      "auditTrailStats": null,
+      "mostActiveObjects": null,
+    },
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden starts from the initial state and resets to it 1`] = `
+{
+  "initial": {
+    "chartData": {
+      "auditTrailActions": null,
+      "objectsByRegister": null,
+      "objectsBySchema": null,
+      "objectsBySize": null,
+    },
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+    "dateRange": {
+      "from": null,
+      "till": null,
+    },
+    "error": null,
+    "isInitialized": false,
+    "loading": false,
+    "registers": [],
+    "statisticsData": {
+      "actionDistribution": null,
+      "auditTrailStats": null,
+      "mostActiveObjects": null,
+    },
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": false,
+      "mostActiveObjects": false,
+    },
+  },
+  "reset": {
+    "chartData": {
+      "auditTrailActions": null,
+      "objectsByRegister": null,
+      "objectsBySchema": null,
+      "objectsBySize": null,
+    },
+    "chartLoading": {
+      "auditTrailActions": false,
+      "objectsByRegister": false,
+      "objectsBySchema": false,
+      "objectsBySize": false,
+    },
+    "dateRange": {
+      "from": null,
+      "till": null,
+    },
+    "error": null,
+    "isInitialized": false,
+    "loading": false,
+    "registers": [],
+    "statisticsData": {
+      "actionDistribution": null,
+      "auditTrailStats": null,
+      "mostActiveObjects": null,
+    },
+    "statisticsLoading": {
+      "actionDistribution": false,
+      "auditTrailStats": false,
+      "mostActiveObjects": false,
+    },
+  },
+}
+`;

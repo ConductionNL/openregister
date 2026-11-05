@@ -76,7 +76,7 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -284,9 +284,10 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			throw new RuntimeException('openregister.portal-task needs a node resume slot; without one every heartbeat would create a task.');
 		}
 
+		$round = (new PortalTaskRound(items: $items, config: $config))->atNode(nodeId: $resume->nodeId());
 		$taskUuid = trim((string)$resume->get(key: FlowTaskBridge::SLOT_TASK_UUID, default: ''));
 		if ($taskUuid === '') {
-			$this->ask(items: $items, config: $config, context: $context, resume: $resume, cycle: 1, previousTaskUuid: null, reason: null);
+			$resume->merge(values: $this->ask(round: $round, context: $context));
 
 			throw $this->suspension(config: $config, items: $items);
 		}
@@ -307,7 +308,7 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			// wake never arrived — refused or lost — and the heartbeat is what
 			// recovered it. Recorded before the outcome is applied, which is
 			// identical on both paths; the user-task node makes the same call.
-			if (array_key_exists(FlowRunService::SIGNAL_CONTEXT_KEY, $context) === false) {
+			if (array_key_exists(FlowRunServiceInterface::SIGNAL_CONTEXT_KEY, $context) === false) {
 				$this->bridge->recordHeartbeatRecovery(task: $task);
 			}
 
@@ -332,45 +333,34 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		}
 
 		$cycle = ((int)$resume->get(key: PortalTaskConfig::SLOT_CYCLE, default: 1) + 1);
-		$this->ask(items: $items, config: $config, context: $context, resume: $resume, cycle: $cycle, previousTaskUuid: $taskUuid, reason: $reason);
+		$round = $round->inCycle(cycle: $cycle, previousTaskUuid: $taskUuid)->because(reason: $reason);
+		$resume->merge(values: $this->ask(round: $round, context: $context));
 
 		throw $this->suspension(config: $config, items: $items);
 	}//end execute()
 
 	/**
 	 * One ask: match the party on the case, create the external task, record
-	 * the match in its audit, request delivery, and remember it in the slot.
+	 * the match in its audit, and request delivery.
 	 *
-	 * @param array $items The input items; the first is the representative.
-	 * @param array $config The step configuration.
+	 * @param PortalTaskRound $round The ask: items, configuration, node, cycle
+	 *                               and, on a re-ask, previous task and reason.
 	 * @param array $context Run-level metadata.
-	 * @param FlowNodeResumeState $resume This node's slot.
-	 * @param int $cycle This ask's cycle number.
-	 * @param string|null $previousTaskUuid The previous cycle's task, on a re-ask.
-	 * @param string|null $reason The re-ask reason, on a re-ask.
 	 *
-	 * @return void
+	 * @return array<string, mixed> The values this node's slot remembers.
 	 *
 	 * @throws RuntimeException When the run has no uuid, the item names no
 	 *                          case, or the case names nobody for the role.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-matched-party-comes-from-the-case-and-is-frozen-at-creation
 	 */
-	private function ask(
-		array $items,
-		array $config,
-		array $context,
-		FlowNodeResumeState $resume,
-		int $cycle,
-		?string $previousTaskUuid,
-		?string $reason,
-	): void {
+	private function ask(PortalTaskRound $round, array $context): array {
 		$runUuid = trim((string)($context[FlowRunContext::CONTEXT_RUN] ?? ($context['runUuid'] ?? '')));
 		if ($runUuid === '') {
 			throw new RuntimeException('openregister.portal-task cannot create a task outside a persisted run: the task must carry the run uuid.');
 		}
 
-		$caseUuid = $this->config->subjectObjectUuid(items: $items);
+		$caseUuid = $this->config->subjectObjectUuid(items: $round->items);
 		if ($caseUuid === '') {
 			throw new RuntimeException(
 				'openregister.portal-task needs the item to be about a case object (@self.uuid); there is no case to match a party on.'
@@ -380,23 +370,14 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		// Matched ONCE, here. PortalPartyNotFoundException is a RuntimeException
 		// naming the role and the case, and it fails the firing: an ask nobody
 		// can perform must not be parked in a suspended run.
-		$role = $this->config->partyRole(config: $config);
-		$party = $this->parties->resolveFromObject(objectUuid: $caseUuid, role: $role);
+		$role = $this->config->partyRole(config: $round->config);
+		$round = $round->withParty(partyReference: $this->parties->resolveFromObject(objectUuid: $caseUuid, role: $role));
 
 		$actor = $this->actingIdentity(context: $context);
 		$task = $this->bridge->createTask(
-			data: $this->config->taskData(
-				config: $config,
-				items: $items,
-				nodeId: $resume->nodeId(),
-				nodeType: $this->getId(),
-				partyReference: $party,
-				cycle: $cycle,
-				previousTaskUuid: $previousTaskUuid,
-				reason: $reason
-			),
+			data: $this->config->taskData(round: $round, nodeType: $this->getId()),
 			runUuid: $runUuid,
-			nodeId: $resume->nodeId(),
+			nodeId: $round->nodeId(),
 			actor: $actor
 		);
 
@@ -404,30 +385,35 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			uuid: (string)$task->getUuid(),
 			action: 'match',
 			actor: $actor,
-			reason: sprintf("Matched party role '%s' on case '%s' to '%s' (cycle %d).", $role, $caseUuid, $party, $cycle)
+			reason: sprintf("Matched party role '%s' on case '%s' to '%s' (cycle %d).", $role, $caseUuid, $round->partyReference(), $round->cycle())
 		);
 
+		$this->deliver(round: $round, task: $task);
+
+		return $this->config->slotValues(round: $round, taskUuid: (string)$task->getUuid());
+	}//end ask()
+
+	/**
+	 * Request delivery of a new task: an ask on the first cycle, a re-ask after.
+	 *
+	 * Never throws: a delivery that cannot be recorded leaves the task and the
+	 * suspension standing, and its state reads not-recorded.
+	 *
+	 * @param PortalTaskRound $round The ask.
+	 * @param Task $task The created task.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-portal-task-step-creates-one-external-task-and-suspends-the-run
+	 */
+	private function deliver(PortalTaskRound $round, Task $task): void {
 		$kind = PortalTaskDelivery::KIND_ASK;
-		if ($cycle > 1) {
+		if ($round->cycle() > 1) {
 			$kind = PortalTaskDelivery::KIND_RE_ASK;
 		}
 
-		// Never throws: a delivery that cannot be recorded leaves the task and
-		// the suspension standing, and its state reads not-recorded.
-		$this->delivery->request(task: $task, kind: $kind, message: $this->delivery->messageFor(task: $task, reason: $reason));
-
-		$resume->merge(
-			values: $this->config->slotValues(
-				config: $config,
-				items: $items,
-				taskUuid: (string)$task->getUuid(),
-				partyReference: $party,
-				cycle: $cycle,
-				previousTaskUuid: $previousTaskUuid
-			)
-		);
-
-	}//end ask()
+		$this->delivery->request(task: $task, kind: $kind, message: $this->delivery->messageFor(task: $task, reason: $round->reason()));
+	}//end deliver()
 
 	/**
 	 * Write the outcome bag onto every item, under the configured key.

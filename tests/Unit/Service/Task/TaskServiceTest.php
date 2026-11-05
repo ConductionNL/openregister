@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
+use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskAudit;
 use OCA\OpenRegister\Db\TaskAuditMapper;
@@ -286,6 +287,43 @@ class TaskServiceTest extends TestCase {
 		$this->assertTrue($created->getIsTerminal());
 		$this->assertSame('done', $created->getOutcome());
 	}//end testCreateMapsALegacyStatusAndPreservesTheOutcome()
+
+	/**
+	 * An imported task given its creation moment carries it, and so does its create audit entry.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-task-may-carry-the-moment-it-was-created
+	 */
+	public function testAnImportDatesTheTaskAndItsCreateAuditEntry(): void {
+		$audited = [];
+		$this->setUpAuditRecorder(audited: $audited);
+		$at = new DateTime('2026-10-05T14:20:00+00:00');
+
+		$created = $this->service()->import(data: ['title' => 'Hoorzitting inplannen'], actor: 'rita', createdAt: $at);
+
+		$this->assertSame(expected: $at, actual: $created->getCreated());
+		$this->assertCount(expectedCount: 1, haystack: $audited);
+		$this->assertSame(expected: 'create', actual: $audited[0]->getAction());
+		$this->assertSame(expected: $at, actual: $audited[0]->getCreated());
+	}//end testAnImportDatesTheTaskAndItsCreateAuditEntry()
+
+	/**
+	 * Without a creation moment, the import leaves both stamps to the mappers.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
+	 */
+	public function testAnImportWithoutAMomentLeavesTheStampsToTheMappers(): void {
+		$audited = [];
+		$this->setUpAuditRecorder(audited: $audited);
+
+		$created = $this->service()->import(data: ['title' => 'Taak'], actor: 'rita');
+
+		$this->assertNull(actual: $created->getCreated());
+		$this->assertNull(actual: $audited[0]->getCreated());
+	}//end testAnImportWithoutAMomentLeavesTheStampsToTheMappers()
 
 	/**
 	 * A checklist arriving as a STRING is refused — the procest shape.
@@ -761,6 +799,74 @@ class TaskServiceTest extends TestCase {
 
 		$this->assertSame('director', $created->getRequester());
 	}//end testAnAdministratorMayNameARequesterOnCreate()
+
+	/**
+	 * Sequence fields a caller of create() may not set, per caller kind.
+	 *
+	 * @return array<string, array{0: string, 1: mixed, 2: bool, 3: string}>
+	 */
+	public static function sequenceFields(): array {
+		return [
+			'sequence uuid, user' => ['sequenceUuid', 'seq-1', false, 'sequenceUuid'],
+			'sequence position, user' => ['sequencePosition', 2, false, 'sequencePosition'],
+			'legacy step, user' => ['legacyStepId', 7, false, 'legacyStepId'],
+			'approving set in the snapshot, user' => ['templateSnapshot', ['approvingOutcomes' => ['anything']], false, 'templateSnapshot.approvingOutcomes'],
+			'sequence uuid, administrator' => ['sequenceUuid', 'seq-1', true, 'sequenceUuid'],
+			'sequence position, administrator' => ['sequencePosition', 0, true, 'sequencePosition'],
+			'approving set in the snapshot, administrator' => ['templateSnapshot', ['approvingOutcomes' => []], true, 'templateSnapshot.approvingOutcomes'],
+		];
+	}//end sequenceFields()
+
+	/**
+	 * A sequence field is set by the task sequence only: create() refuses it,
+	 * naming the field, before anything is written.
+	 *
+	 * @param string $key   The payload key.
+	 * @param mixed  $value Its value.
+	 * @param bool   $admin Whether the caller is an administrator.
+	 * @param string $named The field the refusal names.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider sequenceFields
+	 */
+	public function testCreateRefusesASequenceField(string $key, mixed $value, bool $admin, string $named): void {
+		$this->authorization->method('isAdministrator')->willReturn($admin);
+		$this->tasks->expects($this->never())->method('insert');
+
+		$this->expectException(TaskValidationException::class);
+		$this->expectExceptionMessage("'".$named."'");
+		$this->service()->create(data: ['title' => 'forged step', 'state' => 'enabled', $key => $value], actor: 'mallory');
+	}//end testCreateRefusesASequenceField()
+
+	/**
+	 * A sequence field sent as null sets nothing and is not refused.
+	 *
+	 * @return void
+	 */
+	public function testCreateAcceptsANullSequenceField(): void {
+		$this->authorization->method('isAdministrator')->willReturn(false);
+
+		$created = $this->service()->create(data: ['title' => 't', 'sequenceUuid' => null, 'sequencePosition' => null], actor: 'mallory');
+
+		$this->assertNull($created->getSequenceUuid());
+	}//end testCreateAcceptsANullSequenceField()
+
+	/**
+	 * The trusted path the task sequence uses still carries sequence fields.
+	 *
+	 * @return void
+	 */
+	public function testImportStillCarriesSequenceFields(): void {
+		$created = $this->service()->import(
+			data: ['title' => 'step', 'sequenceUuid' => 'seq-1', 'sequencePosition' => 2, 'templateSnapshot' => ['order' => 2]],
+			actor: 'task-sequence:seq-1'
+		);
+
+		$this->assertSame('seq-1', $created->getSequenceUuid());
+		$this->assertSame(2, $created->getSequencePosition());
+		$this->assertSame(['order' => 2], $created->getTemplateSnapshot());
+	}//end testImportStillCarriesSequenceFields()
 
 	/**
 	 * A delegation needs a delegate, not only a mandate.
@@ -1245,4 +1351,18 @@ class TaskServiceTest extends TestCase {
 			}
 		);
 	}//end setUpAuditRecorder()
+	/**
+	 * A task is found by its external key; a blank key asks nothing.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md
+	 */
+	public function testATaskIsFoundByItsKey(): void {
+		$task = $this->openTask();
+		$this->tasks->expects($this->once())->method('findByKey')->with('dossiq:once:rule:t:r:case-1')->willReturn([$task]);
+
+		$this->assertSame([$task], $this->service()->findByKey(key: ' dossiq:once:rule:t:r:case-1 '));
+		$this->assertSame([], $this->service()->findByKey(key: '  '));
+	}//end testATaskIsFoundByItsKey()
 }//end class

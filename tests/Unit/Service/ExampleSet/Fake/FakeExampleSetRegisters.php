@@ -45,6 +45,25 @@ class FakeExampleSetRegisters extends ExampleSetRegisters {
 	private int $next = 1;
 
 	/**
+	 * Slugs whose descriptor ships a newer version than the instance holds.
+	 *
+	 * @var array<string, true>
+	 */
+	public array $behind = [];
+
+	/**
+	 * Whether the slug is in `behind`.
+	 *
+	 * @param string $slug The register slug.
+	 * @param bool   $mock Whether the mock descriptor is meant.
+	 *
+	 * @return bool
+	 */
+	public function isBehind(string $slug, bool $mock): bool {
+		return isset($this->behind[$slug]);
+	}
+
+	/**
 	 * No container.
 	 */
 	public function __construct() {

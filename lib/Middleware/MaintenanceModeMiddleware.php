@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Throwable;
  * The refusal carries the administered message, so a user who runs into a
  * closed instance is told why rather than shown a bare 503.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+ * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
  */
 class MaintenanceModeMiddleware extends Middleware {
 
@@ -77,7 +77,7 @@ class MaintenanceModeMiddleware extends Middleware {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The method is part of the
 	 * Middleware contract; the mode closes a controller, not a verb.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 */
 	public function beforeController(Controller|string $controller, string $methodName): void {
 		if ($this->reachableAnyway(controller: $controller) === true) {
@@ -114,7 +114,7 @@ class MaintenanceModeMiddleware extends Middleware {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Part of the contract.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 */
 	public function afterException(Controller|string $controller, string $methodName, \Exception $exception): JSONResponse {
 		if (($exception instanceof MaintenanceModeHeldException) === false) {

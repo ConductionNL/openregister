@@ -29,14 +29,14 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Service\Audit\ContentReportService;
 use OCP\EventDispatcher\Event;
@@ -49,19 +49,19 @@ use Throwable;
  *
  * @template-implements IEventListener<ObjectDeletedEvent>
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class ContentReportRemovalListener implements IEventListener {
 	/**
 	 * Wire collaborators.
 	 *
 	 * @param ContentReportService $reports The reports and their copies.
-	 * @param AuditTrailMapper $auditTrail Records the removal against the copy.
+	 * @param AuditTrailMapperInterface $auditTrail Records the removal against the copy.
 	 * @param LoggerInterface $logger PSR logger for warnings.
 	 */
 	public function __construct(
 		private readonly ContentReportService $reports,
-		private readonly AuditTrailMapper $auditTrail,
+		private readonly AuditTrailMapperInterface $auditTrail,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -73,7 +73,7 @@ class ContentReportRemovalListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectDeletedEvent) === false) {

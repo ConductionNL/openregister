@@ -5,11 +5,10 @@
  *
  * Tests for uncovered methods and branches in the SaveObject service,
  * focusing on: isReference, isEffectivelyEmptyObject, isValueNotEmpty,
- * isAuditTrailsEnabled, generateSlug, createSlug, removeQueryParameters,
+ * isAuditTrailsEnabled, removeQueryParameters,
  * resolveRegisterReference, sanitizeEmptyStringsForObjectProperties,
  * shouldApplyDefault, resolveDefaultTemplateValue, applyAlwaysDefaults,
- * applyPropertyDefaults, hydrateObjectMetadata branches, setSelfMetadata,
- * and getValueFromPath.
+ * applyPropertyDefaults, hydrateObjectMetadata branches and setSelfMetadata.
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers
@@ -57,7 +56,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use stdClass;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
  * Testable Schema subclass to avoid mocking Entity __call magic methods.
@@ -160,6 +159,9 @@ class SaveObjectAdditionalTest extends TestCase {
 	/** @var MockObject&PropertyRbacHandler */
 	private $propertyRbacHandler;
 
+	/** @var TranslationHandler&MockObject */
+	private $translationHandler;
+
 	/** @var MockObject&LoggerInterface */
 	private $logger;
 
@@ -209,6 +211,8 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($this->mockUser);
 		$this->organisationService->method('getOrganisationForNewEntity')->willReturn('org-123');
 
+		$this->translationHandler = $this->createMock(TranslationHandler::class);
+
 		$this->saveObject = new SaveObject(
 			$this->objectEntityMapper,
 			$this->unifiedObjectMapper,
@@ -225,13 +229,13 @@ class SaveObjectAdditionalTest extends TestCase {
 			$this->settingsService,
 			$this->propertyRbacHandler,
 			$this->createMock(ComputedFieldHandler::class),
-			$this->createMock(TranslationHandler::class),
+			$this->translationHandler,
 			$this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
 			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
 			$this->logger,
 			$this->createMock(TmloService::class),
 			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			new ArrayLoader([])
+			$this->createMock(PermissionHandler::class)
 		);
 
 		$this->reflection = new ReflectionClass(SaveObject::class);
@@ -511,55 +515,8 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->assertSame('schema', $result);
 	}
 
-	// =================================================================
-	// generateSlug() + createSlug() tests
-	// =================================================================
-
-	public function testGenerateSlugReturnsNullWhenNoConfig(): void {
-		$this->mockSchema->testConfiguration = null;
-		$result = $this->invokePrivate('generateSlug', [['name' => 'Test'], $this->mockSchema]);
-		$this->assertNull($result);
-	}
-
-	public function testGenerateSlugReturnsNullWhenNoSlugField(): void {
-		$this->mockSchema->testConfiguration = [];
-		$result = $this->invokePrivate('generateSlug', [['name' => 'Test'], $this->mockSchema]);
-		$this->assertNull($result);
-	}
-
-	public function testGenerateSlugReturnsNullWhenFieldValueIsEmpty(): void {
-		$this->mockSchema->testConfiguration = ['objectSlugField' => 'name'];
-		$result = $this->invokePrivate('generateSlug', [['name' => ''], $this->mockSchema]);
-		$this->assertNull($result);
-	}
-
-	public function testGenerateSlugReturnsSlugWithTimestamp(): void {
-		$this->mockSchema->testConfiguration = ['objectSlugField' => 'name'];
-		$result = $this->invokePrivate('generateSlug', [['name' => 'My Test Object'], $this->mockSchema]);
-		$this->assertNotNull($result);
-		$this->assertMatchesRegularExpression('/^my-test-object-\d+$/', $result);
-	}
-
-	public function testCreateSlugConvertsToLowercase(): void {
-		$result = $this->invokePrivate('createSlug', ['Hello World']);
-		$this->assertSame('hello-world', $result);
-	}
-
-	public function testCreateSlugReplacesSpecialCharacters(): void {
-		$result = $this->invokePrivate('createSlug', ['Hello & World! @2024']);
-		$this->assertSame('hello-world-2024', $result);
-	}
-
-	public function testCreateSlugTrimsHyphens(): void {
-		$result = $this->invokePrivate('createSlug', ['---test---']);
-		$this->assertSame('test', $result);
-	}
-
-	public function testCreateSlugTruncatesLongStrings(): void {
-		$longString = str_repeat('a', 60);
-		$result = $this->invokePrivate('createSlug', [$longString]);
-		$this->assertLessThanOrEqual(50, strlen($result));
-	}
+	// generateSlug() + createSlug() were removed (#4037); slug decisions are
+	// covered by ObjectSlugHandlerTest.
 
 	// =================================================================
 	// shouldApplyDefault() tests
@@ -791,33 +748,6 @@ class SaveObjectAdditionalTest extends TestCase {
 		$data = ['status' => ''];
 		$result = $this->saveObject->applyPropertyDefaults($this->mockSchema, $data);
 		$this->assertSame('active', $result['status']);
-	}
-
-	// =================================================================
-	// getValueFromPath() tests
-	// =================================================================
-
-	public function testGetValueFromPathSimple(): void {
-		$result = $this->invokePrivate('getValueFromPath', [['name' => 'Test'], 'name']);
-		$this->assertSame('Test', $result);
-	}
-
-	public function testGetValueFromPathNested(): void {
-		$result = $this->invokePrivate('getValueFromPath', [
-			['contact' => ['email' => 'test@test.com']],
-			'contact.email',
-		]);
-		$this->assertSame('test@test.com', $result);
-	}
-
-	public function testGetValueFromPathReturnsNullForMissingKey(): void {
-		$result = $this->invokePrivate('getValueFromPath', [['name' => 'Test'], 'missing']);
-		$this->assertNull($result);
-	}
-
-	public function testGetValueFromPathConvertIntToString(): void {
-		$result = $this->invokePrivate('getValueFromPath', [['count' => 42], 'count']);
-		$this->assertSame('42', $result);
 	}
 
 	// =================================================================
@@ -1300,6 +1230,58 @@ class SaveObjectAdditionalTest extends TestCase {
 	}
 
 	/**
+	 * The property update check reads the stored record with `@self` from its own metadata.
+	 */
+	public function testSaveObjectWithRbacChecksPropertiesOnTheRecordsMetadata(): void {
+		$schema = new AdditionalTestableSchema();
+		$schema->setId(1);
+		$schema->setSlug('rbac-schema');
+		$schema->setTestHasPropertyAuth(true);
+		$schema->testSchemaObject = (object)['properties' => new stdClass()];
+		$schema->testProperties = ['name' => ['type' => 'string']];
+
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$uuid = 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4';
+		$existingObject = $this->createEntity(1, $uuid);
+		$existingObject->setOrganisation('org-b');
+		$existingObject->setOwner('bob');
+		$existingObject->setObject(['name' => 'Original', '_organisation' => 'org-a', '@self' => ['organisation' => 'org-a']]);
+
+		$this->unifiedObjectMapper->method('find')->willReturn($existingObject);
+		$this->translationHandler->method('normalizeTranslationsForSave')->willReturnCallback(
+			static fn (...$args): array => $args[0]
+		);
+
+		$seen = null;
+		$this->propertyRbacHandler->method('getUnauthorizedProperties')->willReturnCallback(
+			static function (Schema $schema, array $object, array $incomingData, bool $isCreate = false) use (&$seen): array {
+				$seen = $object;
+
+				return ['name'];
+			}
+		);
+
+		try {
+			$this->saveObject->saveObject(
+				register: $this->mockRegister,
+				schema: $schema,
+				data: ['name' => 'Updated'],
+				uuid: $uuid,
+				_rbac: true
+			);
+			$this->fail('the refused property was written');
+		} catch (Exception $e) {
+			$this->assertStringContainsString('not authorized to modify', $e->getMessage());
+		}
+
+		$this->assertSame('org-b', $seen['@self']['organisation']);
+		$this->assertSame('bob', $seen['@self']['owner']);
+		$this->assertSame('Original', $seen['name']);
+		$this->assertArrayNotHasKey('_organisation', $seen);
+	}
+
+	/**
 	 * Note: testSaveObjectWithRbacNoUnauthorizedProperties was removed because
 	 * the full saveObject -> handleObjectUpdate -> updateObject chain requires
 	 * MagicMapper->update() to return a proper ObjectEntity (not a mock).
@@ -1531,7 +1513,7 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->assertSame('{{ invalid }} {{ template }}', $result['computed']);
 	}
 
-	public function testSetDefaultValuesWithSlugGeneration(): void {
+	public function testSetDefaultValuesAddsNoSlug(): void {
 		$this->mockSchema->testSchemaObject = (object)[
 			'properties' => (object)[
 				'name' => ['type' => 'string'],
@@ -1546,9 +1528,8 @@ class SaveObjectAdditionalTest extends TestCase {
 			$entity, $this->mockSchema, ['name' => 'My Object'],
 		]);
 
-		// Slug should be generated.
-		$this->assertArrayHasKey('slug', $result);
-		$this->assertMatchesRegularExpression('/^my-object-\d+$/', $result['slug']);
+		// No slug in the data: ObjectSlugHandler decides it as metadata (#4037).
+		$this->assertArrayNotHasKey('slug', $result);
 	}
 
 	// =================================================================
@@ -1571,7 +1552,7 @@ class SaveObjectAdditionalTest extends TestCase {
 	// setSelfMetadata — published/depublished fields
 	// =================================================================
 
-	public function testSetSelfMetadataWithSlug(): void {
+	public function testSetSelfMetadataLeavesTheSlugAlone(): void {
 		$entity = $this->createEntity(1, 'test-uuid');
 
 		$this->invokePrivate('setSelfMetadata', [
@@ -1580,7 +1561,8 @@ class SaveObjectAdditionalTest extends TestCase {
 			[],
 		]);
 
-		$this->assertSame('my-slug', $entity->getSlug());
+		// The slug is decided after hydration by ObjectSlugHandler (#4037).
+		$this->assertNull($entity->getSlug());
 	}
 
 	public function testSetSelfMetadataWithPublished(): void {

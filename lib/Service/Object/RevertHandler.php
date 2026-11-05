@@ -22,8 +22,8 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -33,6 +33,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Container\ContainerInterface;
@@ -52,9 +53,9 @@ class RevertHandler {
 	/**
 	 * Audit trail mapper
 	 *
-	 * @var AuditTrailMapper
+	 * @var AuditTrailMapperInterface
 	 */
-	private AuditTrailMapper $auditTrailMapper;
+	private AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * Container
@@ -73,9 +74,9 @@ class RevertHandler {
 	/**
 	 * Object entity mapper
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface
 	 */
-	private MagicMapper $objectEntityMapper;
+	private MagicMapperInterface $objectEntityMapper;
 
 	/**
 	 * Permission handler for RBAC enforcement
@@ -87,27 +88,27 @@ class RevertHandler {
 	/**
 	 * Validator the save path uses, so a revert meets the same schema.
 	 *
-	 * @var ValidateObject
+	 * @var ValidateObjectInterface
 	 */
-	private ValidateObject $validateHandler;
+	private ValidateObjectInterface $validateHandler;
 
 	/**
 	 * RevertHandler constructor.
 	 *
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper.
 	 * @param ContainerInterface $container DI container.
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher.
-	 * @param MagicMapper $objectEntityMapper Object entity mapper.
+	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper.
 	 * @param PermissionHandler $permissionHandler Permission handler for RBAC.
-	 * @param ValidateObject $validateHandler Schema validator of the save path.
+	 * @param ValidateObjectInterface $validateHandler Schema validator of the save path.
 	 */
 	public function __construct(
-		AuditTrailMapper $auditTrailMapper,
+		AuditTrailMapperInterface $auditTrailMapper,
 		ContainerInterface $container,
 		IEventDispatcher $eventDispatcher,
-		MagicMapper $objectEntityMapper,
+		MagicMapperInterface $objectEntityMapper,
 		PermissionHandler $permissionHandler,
-		ValidateObject $validateHandler,
+		ValidateObjectInterface $validateHandler,
 	) {
 		$this->auditTrailMapper = $auditTrailMapper;
 		$this->container = $container;
@@ -192,9 +193,10 @@ class RevertHandler {
 			throw ObjectStateWriteException::frozen($object);
 		}
 
-		// Get the reverted object using AuditTrailMapper.
+		// Get the reverted object using AuditTrailMapper, from the object just checked:
+		// looked up again, the URL id could name another row.
 		$revertedObject = $this->auditTrailMapper->revertObject(
-			identifier: $id,
+			identifier: $object,
 			until: $until,
 			overwriteVersion: $overwriteVersion
 		);
@@ -293,7 +295,7 @@ class RevertHandler {
 	 */
 	private function isAuditTrailsEnabled(): bool {
 		try {
-			$settings = $this->container->get(SettingsService::class);
+			$settings = $this->container->get(SettingsServiceInterface::class);
 			if (($settings instanceof SettingsService) === false) {
 				return true;
 			}

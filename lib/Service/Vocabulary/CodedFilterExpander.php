@@ -30,7 +30,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Vocabulary;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Throwable;
 
 /**
@@ -65,13 +65,13 @@ class CodedFilterExpander {
 	 *
 	 * @param ConceptRepository $concepts Reads the scheme's concepts.
 	 * @param ConceptHierarchy $hierarchy Walks broader and narrower.
-	 * @param SchemaMapper $schemas Resolves the schema being queried.
+	 * @param SchemaMapperInterface $schemas Resolves the schema being queried.
 	 * @param CodedPropertyDeclarationFactory $declarationFactory Reads a schema's coded declarations.
 	 */
 	public function __construct(
 		private readonly ConceptRepository $concepts,
 		private readonly ConceptHierarchy $hierarchy,
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly CodedPropertyDeclarationFactory $declarationFactory,
 	) {
 
@@ -85,7 +85,7 @@ class CodedFilterExpander {
 	 *
 	 * @return array<string,mixed> The filters with branch filters expanded.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function expand(array $filters, int|string|array|null $schemaRef): array {
 		if ($this->carriesBranchFilter(filters: $filters) === false) {
@@ -137,7 +137,7 @@ class CodedFilterExpander {
 	 *
 	 * @return array<int,string> The stored values, empty when the branch is unresolvable.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function valuesForBranch(
 		string $branch,

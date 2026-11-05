@@ -1,0 +1,4022 @@
+{
+    "array-empty-registers": {
+        "out": {
+            "openapi": "3.0.0",
+            "components": {
+                "registers": [],
+                "schemas": [],
+                "endpoints": [],
+                "sources": [],
+                "mappings": [],
+                "jobs": [],
+                "synchronizations": [],
+                "rules": [],
+                "workflows": [],
+                "objects": [],
+                "securitySchemes": {
+                    "oauth2": {
+                        "flows": {
+                            "authorizationCode": {
+                                "scopes": {
+                                    "admin": "Full administrative access"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "info": {
+                "title": "Default Title",
+                "description": "Default Description",
+                "version": "1.0.0"
+            },
+            "x-openregister": {
+                "title": null,
+                "description": null,
+                "type": null,
+                "app": null,
+                "version": "1.0.0"
+            }
+        },
+        "calls": [
+            [
+                "configuration.find",
+                7
+            ]
+        ]
+    },
+    "array-plain": {
+        "out": {
+            "openapi": "3.0.0",
+            "components": {
+                "registers": {
+                    "reg-one": {
+                        "slug": "reg-one",
+                        "title": "Register 1",
+                        "version": "1.1.0",
+                        "description": "Description 1",
+                        "schemas": [
+                            "item",
+                            "person"
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "authorization": {
+                            "read": [
+                                "group-1"
+                            ],
+                            "create": [
+                                "public"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    "reg-two": {
+                        "slug": "reg-two",
+                        "title": "Register 2",
+                        "version": "1.2.0",
+                        "description": "Description 2",
+                        "schemas": [
+                            "person"
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "authorization": {
+                            "read": [
+                                "group-2"
+                            ],
+                            "create": [
+                                "public"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    }
+                },
+                "schemas": {
+                    "item": {
+                        "uri": null,
+                        "slug": "item",
+                        "title": "Schema 11",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "plain": {
+                                "type": "string"
+                            },
+                            "ref-numeric": {
+                                "type": "object",
+                                "$ref": "person"
+                            },
+                            "ref-trailing-slash": {
+                                "$ref": "item"
+                            },
+                            "ref-unknown": {
+                                "$ref": "https://host/api/schemas/77"
+                            },
+                            "ref-slug": {
+                                "$ref": "person"
+                            },
+                            "ref-and-oc": {
+                                "$ref": "item",
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "items-ref": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "item"
+                                }
+                            },
+                            "items-ref-and-register": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "person",
+                                    "register": "reg-two"
+                                }
+                            },
+                            "oc-numeric": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "person"
+                                }
+                            },
+                            "oc-strings": {
+                                "objectConfiguration": {
+                                    "register": "reg-two",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-unknown": {
+                                "objectConfiguration": {
+                                    "register": 9,
+                                    "schema": 99
+                                }
+                            },
+                            "oc-slugs": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-register-only": {
+                                "objectConfiguration": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-oc": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "register": "reg-one",
+                                        "schema": "item"
+                                    }
+                                }
+                            },
+                            "items-oc-schema-only": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "schema": "person"
+                                    }
+                                }
+                            },
+                            "legacy-register": {
+                                "register": "reg-one"
+                            },
+                            "legacy-register-unknown": {
+                                "register": "https://host/api/registers/8"
+                            },
+                            "legacy-register-int": {
+                                "register": 2
+                            },
+                            "legacy-register-slug": {
+                                "register": "reg-two"
+                            },
+                            "items-legacy-register": {
+                                "type": "array",
+                                "items": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-legacy-register-int": {
+                                "type": "array",
+                                "items": {
+                                    "register": 1
+                                }
+                            },
+                            "null-values": {
+                                "$ref": null,
+                                "register": null,
+                                "objectConfiguration": null,
+                                "items": null
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": {
+                            "update": [
+                                "editors"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    "person": {
+                        "uri": null,
+                        "slug": "person",
+                        "title": "Schema 12",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": [],
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    }
+                },
+                "endpoints": [],
+                "sources": [],
+                "mappings": {
+                    "mapping-42": {
+                        "name": "Mapping 42",
+                        "description": null,
+                        "version": "0.0.0",
+                        "reference": null,
+                        "mapping": [],
+                        "unset": [],
+                        "cast": [],
+                        "passThrough": null,
+                        "slug": "mapping-42"
+                    },
+                    "mapping-43": {
+                        "name": "Mapping 43",
+                        "description": null,
+                        "version": "0.0.0",
+                        "reference": null,
+                        "mapping": [],
+                        "unset": [],
+                        "cast": [],
+                        "passThrough": null,
+                        "slug": "mapping-43"
+                    }
+                },
+                "jobs": [],
+                "synchronizations": [],
+                "rules": [],
+                "workflows": [],
+                "objects": [],
+                "securitySchemes": {
+                    "oauth2": {
+                        "flows": {
+                            "authorizationCode": {
+                                "scopes": {
+                                    "admin": "Full administrative access",
+                                    "group-1": "Access for group-1 group",
+                                    "group-2": "Access for group-2 group",
+                                    "editors": "Access for editors group",
+                                    "public": "Public (unauthenticated) access"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "info": {
+                "title": "Arr",
+                "description": "D",
+                "version": "4.0.0"
+            },
+            "x-openregister": {
+                "title": "Arr",
+                "description": "D",
+                "type": "app",
+                "app": "b",
+                "version": "4.0.0"
+            }
+        },
+        "calls": [
+            [
+                "configuration.find",
+                6
+            ],
+            [
+                "register.find",
+                1
+            ],
+            [
+                "register.getSchemasByRegisterId",
+                1
+            ],
+            [
+                "schema.getIdToSlugMap"
+            ],
+            [
+                "register.getIdToSlugMap"
+            ],
+            [
+                "register.find",
+                2
+            ],
+            [
+                "register.getSchemasByRegisterId",
+                2
+            ],
+            [
+                "schema.getIdToSlugMap"
+            ],
+            [
+                "register.getIdToSlugMap"
+            ],
+            [
+                "mapping.find",
+                42
+            ],
+            [
+                "mapping.find",
+                404
+            ],
+            [
+                "warning",
+                "[ExportHandler] Failed to export mapping",
+                {
+                    "mappingId": 404,
+                    "error": "mapping gone"
+                }
+            ],
+            [
+                "mapping.find",
+                43
+            ]
+        ]
+    },
+    "array-with-extension": {
+        "out": {
+            "openapi": "3.0.0",
+            "components": {
+                "registers": {
+                    "reg-one": {
+                        "slug": "reg-one",
+                        "title": "Register 1",
+                        "version": "1.1.0",
+                        "description": "Description 1",
+                        "schemas": [
+                            "item",
+                            "person"
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "authorization": {
+                            "read": [
+                                "group-1"
+                            ],
+                            "create": [
+                                "public"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    "reg-two": {
+                        "slug": "reg-two",
+                        "title": "Register 2",
+                        "version": "1.2.0",
+                        "description": "Description 2",
+                        "schemas": [
+                            "person"
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "authorization": {
+                            "read": [
+                                "group-2"
+                            ],
+                            "create": [
+                                "public"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    }
+                },
+                "schemas": {
+                    "item": {
+                        "uri": null,
+                        "slug": "item",
+                        "title": "Schema 11",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "plain": {
+                                "type": "string"
+                            },
+                            "ref-numeric": {
+                                "type": "object",
+                                "$ref": "person"
+                            },
+                            "ref-trailing-slash": {
+                                "$ref": "item"
+                            },
+                            "ref-unknown": {
+                                "$ref": "https://host/api/schemas/77"
+                            },
+                            "ref-slug": {
+                                "$ref": "person"
+                            },
+                            "ref-and-oc": {
+                                "$ref": "item",
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "items-ref": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "item"
+                                }
+                            },
+                            "items-ref-and-register": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "person",
+                                    "register": "reg-two"
+                                }
+                            },
+                            "oc-numeric": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "person"
+                                }
+                            },
+                            "oc-strings": {
+                                "objectConfiguration": {
+                                    "register": "reg-two",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-unknown": {
+                                "objectConfiguration": {
+                                    "register": 9,
+                                    "schema": 99
+                                }
+                            },
+                            "oc-slugs": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-register-only": {
+                                "objectConfiguration": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-oc": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "register": "reg-one",
+                                        "schema": "item"
+                                    }
+                                }
+                            },
+                            "items-oc-schema-only": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "schema": "person"
+                                    }
+                                }
+                            },
+                            "legacy-register": {
+                                "register": "reg-one"
+                            },
+                            "legacy-register-unknown": {
+                                "register": "https://host/api/registers/8"
+                            },
+                            "legacy-register-int": {
+                                "register": 2
+                            },
+                            "legacy-register-slug": {
+                                "register": "reg-two"
+                            },
+                            "items-legacy-register": {
+                                "type": "array",
+                                "items": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-legacy-register-int": {
+                                "type": "array",
+                                "items": {
+                                    "register": 1
+                                }
+                            },
+                            "null-values": {
+                                "$ref": null,
+                                "register": null,
+                                "objectConfiguration": null,
+                                "items": null
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": {
+                            "update": [
+                                "editors"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    "person": {
+                        "uri": null,
+                        "slug": "person",
+                        "title": "Schema 12",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": [],
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    }
+                },
+                "endpoints": [],
+                "sources": [],
+                "mappings": [],
+                "jobs": [],
+                "synchronizations": [],
+                "rules": [],
+                "workflows": [],
+                "objects": [],
+                "securitySchemes": {
+                    "oauth2": {
+                        "flows": {
+                            "authorizationCode": {
+                                "scopes": {
+                                    "admin": "Full administrative access",
+                                    "group-1": "Access for group-1 group",
+                                    "group-2": "Access for group-2 group",
+                                    "editors": "Access for editors group",
+                                    "public": "Public (unauthenticated) access"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "info": {
+                "title": "Arr",
+                "description": "Default Description",
+                "version": "1.0.0"
+            },
+            "x-openregister": {
+                "type": "custom",
+                "app": "a"
+            }
+        },
+        "calls": [
+            [
+                "configuration.find",
+                5
+            ],
+            [
+                "register.find",
+                1
+            ],
+            [
+                "register.getSchemasByRegisterId",
+                1
+            ],
+            [
+                "schema.getIdToSlugMap"
+            ],
+            [
+                "register.getIdToSlugMap"
+            ],
+            [
+                "register.find",
+                2
+            ],
+            [
+                "register.getSchemasByRegisterId",
+                2
+            ],
+            [
+                "schema.getIdToSlugMap"
+            ],
+            [
+                "register.getIdToSlugMap"
+            ]
+        ]
+    },
+    "configuration": {
+        "out": {
+            "openapi": "3.0.0",
+            "components": {
+                "registers": {
+                    "reg-one": {
+                        "slug": "reg-one",
+                        "title": "Register 1",
+                        "version": "1.1.0",
+                        "description": "Description 1",
+                        "schemas": [
+                            "item",
+                            "person"
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "authorization": {
+                            "read": [
+                                "group-1"
+                            ],
+                            "create": [
+                                "public"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    "reg-two": {
+                        "slug": "reg-two",
+                        "title": "Register 2",
+                        "version": "1.2.0",
+                        "description": "Description 2",
+                        "schemas": [
+                            "person"
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "authorization": {
+                            "read": [
+                                "group-2"
+                            ],
+                            "create": [
+                                "public"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    }
+                },
+                "schemas": {
+                    "item": {
+                        "uri": null,
+                        "slug": "item",
+                        "title": "Schema 11",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "plain": {
+                                "type": "string"
+                            },
+                            "ref-numeric": {
+                                "type": "object",
+                                "$ref": "person"
+                            },
+                            "ref-trailing-slash": {
+                                "$ref": "item"
+                            },
+                            "ref-unknown": {
+                                "$ref": "https://host/api/schemas/77"
+                            },
+                            "ref-slug": {
+                                "$ref": "person"
+                            },
+                            "ref-and-oc": {
+                                "$ref": "item",
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "items-ref": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "item"
+                                }
+                            },
+                            "items-ref-and-register": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "person",
+                                    "register": "reg-two"
+                                }
+                            },
+                            "oc-numeric": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "person"
+                                }
+                            },
+                            "oc-strings": {
+                                "objectConfiguration": {
+                                    "register": "reg-two",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-unknown": {
+                                "objectConfiguration": {
+                                    "register": 9,
+                                    "schema": 99
+                                }
+                            },
+                            "oc-slugs": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-register-only": {
+                                "objectConfiguration": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-oc": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "register": "reg-one",
+                                        "schema": "item"
+                                    }
+                                }
+                            },
+                            "items-oc-schema-only": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "schema": "person"
+                                    }
+                                }
+                            },
+                            "legacy-register": {
+                                "register": "reg-one"
+                            },
+                            "legacy-register-unknown": {
+                                "register": "https://host/api/registers/8"
+                            },
+                            "legacy-register-int": {
+                                "register": 2
+                            },
+                            "legacy-register-slug": {
+                                "register": "reg-two"
+                            },
+                            "items-legacy-register": {
+                                "type": "array",
+                                "items": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-legacy-register-int": {
+                                "type": "array",
+                                "items": {
+                                    "register": 1
+                                }
+                            },
+                            "null-values": {
+                                "$ref": null,
+                                "register": null,
+                                "objectConfiguration": null,
+                                "items": null
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": {
+                            "update": [
+                                "editors"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    "person": {
+                        "uri": null,
+                        "slug": "person",
+                        "title": "Schema 12",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": [],
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    }
+                },
+                "endpoints": [],
+                "sources": [],
+                "mappings": [],
+                "jobs": [],
+                "synchronizations": [],
+                "rules": [],
+                "workflows": [],
+                "objects": [],
+                "securitySchemes": {
+                    "oauth2": {
+                        "flows": {
+                            "authorizationCode": {
+                                "scopes": {
+                                    "admin": "Full administrative access",
+                                    "group-1": "Access for group-1 group",
+                                    "group-2": "Access for group-2 group",
+                                    "editors": "Access for editors group",
+                                    "public": "Public (unauthenticated) access"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "info": {
+                "title": "Config",
+                "description": "Config description",
+                "version": "2.0.0"
+            },
+            "x-openregister": {
+                "type": "app",
+                "app": "myapp",
+                "sourceType": "github",
+                "sourceUrl": "https://example.org/c.json",
+                "openregister": null,
+                "github": {
+                    "repo": "org/repo",
+                    "branch": "main",
+                    "path": "lib/Settings/c.json"
+                }
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                1
+            ],
+            [
+                "register.getSchemasByRegisterId",
+                1
+            ],
+            [
+                "schema.getIdToSlugMap"
+            ],
+            [
+                "register.getIdToSlugMap"
+            ],
+            [
+                "register.find",
+                2
+            ],
+            [
+                "register.getSchemasByRegisterId",
+                2
+            ],
+            [
+                "schema.getIdToSlugMap"
+            ],
+            [
+                "register.getIdToSlugMap"
+            ]
+        ]
+    },
+    "configuration-mappings": {
+        "out": {
+            "openapi": "3.0.0",
+            "components": {
+                "registers": {
+                    "reg-one": {
+                        "slug": "reg-one",
+                        "title": "Register 1",
+                        "version": "1.1.0",
+                        "description": "Description 1",
+                        "schemas": [
+                            "item",
+                            "person"
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "authorization": {
+                            "read": [
+                                "group-1"
+                            ],
+                            "create": [
+                                "public"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    "reg-two": {
+                        "slug": "reg-two",
+                        "title": "Register 2",
+                        "version": "1.2.0",
+                        "description": "Description 2",
+                        "schemas": [
+                            "person"
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "authorization": {
+                            "read": [
+                                "group-2"
+                            ],
+                            "create": [
+                                "public"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    }
+                },
+                "schemas": {
+                    "item": {
+                        "uri": null,
+                        "slug": "item",
+                        "title": "Schema 11",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "plain": {
+                                "type": "string"
+                            },
+                            "ref-numeric": {
+                                "type": "object",
+                                "$ref": "person"
+                            },
+                            "ref-trailing-slash": {
+                                "$ref": "item"
+                            },
+                            "ref-unknown": {
+                                "$ref": "https://host/api/schemas/77"
+                            },
+                            "ref-slug": {
+                                "$ref": "person"
+                            },
+                            "ref-and-oc": {
+                                "$ref": "item",
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "items-ref": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "item"
+                                }
+                            },
+                            "items-ref-and-register": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "person",
+                                    "register": "reg-two"
+                                }
+                            },
+                            "oc-numeric": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "person"
+                                }
+                            },
+                            "oc-strings": {
+                                "objectConfiguration": {
+                                    "register": "reg-two",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-unknown": {
+                                "objectConfiguration": {
+                                    "register": 9,
+                                    "schema": 99
+                                }
+                            },
+                            "oc-slugs": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-register-only": {
+                                "objectConfiguration": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-oc": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "register": "reg-one",
+                                        "schema": "item"
+                                    }
+                                }
+                            },
+                            "items-oc-schema-only": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "schema": "person"
+                                    }
+                                }
+                            },
+                            "legacy-register": {
+                                "register": "reg-one"
+                            },
+                            "legacy-register-unknown": {
+                                "register": "https://host/api/registers/8"
+                            },
+                            "legacy-register-int": {
+                                "register": 2
+                            },
+                            "legacy-register-slug": {
+                                "register": "reg-two"
+                            },
+                            "items-legacy-register": {
+                                "type": "array",
+                                "items": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-legacy-register-int": {
+                                "type": "array",
+                                "items": {
+                                    "register": 1
+                                }
+                            },
+                            "null-values": {
+                                "$ref": null,
+                                "register": null,
+                                "objectConfiguration": null,
+                                "items": null
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": {
+                            "update": [
+                                "editors"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    "person": {
+                        "uri": null,
+                        "slug": "person",
+                        "title": "Schema 12",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": [],
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    }
+                },
+                "endpoints": [],
+                "sources": [],
+                "mappings": {
+                    "mapping-42": {
+                        "name": "Mapping 42",
+                        "description": null,
+                        "version": "0.0.0",
+                        "reference": null,
+                        "mapping": [],
+                        "unset": [],
+                        "cast": [],
+                        "passThrough": null,
+                        "slug": "mapping-42"
+                    },
+                    "mapping-43": {
+                        "name": "Mapping 43",
+                        "description": null,
+                        "version": "0.0.0",
+                        "reference": null,
+                        "mapping": [],
+                        "unset": [],
+                        "cast": [],
+                        "passThrough": null,
+                        "slug": "mapping-43"
+                    }
+                },
+                "jobs": [],
+                "synchronizations": [],
+                "rules": [],
+                "workflows": [],
+                "objects": [],
+                "securitySchemes": {
+                    "oauth2": {
+                        "flows": {
+                            "authorizationCode": {
+                                "scopes": {
+                                    "admin": "Full administrative access",
+                                    "group-1": "Access for group-1 group",
+                                    "group-2": "Access for group-2 group",
+                                    "editors": "Access for editors group",
+                                    "public": "Public (unauthenticated) access"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "info": {
+                "title": "Config",
+                "description": "Config description",
+                "version": "2.0.0"
+            },
+            "x-openregister": {
+                "type": "app",
+                "app": "myapp",
+                "sourceType": "github",
+                "sourceUrl": "https://example.org/c.json",
+                "openregister": null,
+                "github": {
+                    "repo": "org/repo",
+                    "branch": "main",
+                    "path": "lib/Settings/c.json"
+                }
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                1
+            ],
+            [
+                "register.getSchemasByRegisterId",
+                1
+            ],
+            [
+                "schema.getIdToSlugMap"
+            ],
+            [
+                "register.getIdToSlugMap"
+            ],
+            [
+                "register.find",
+                2
+            ],
+            [
+                "register.getSchemasByRegisterId",
+                2
+            ],
+            [
+                "schema.getIdToSlugMap"
+            ],
+            [
+                "register.getIdToSlugMap"
+            ],
+            [
+                "mapping.find",
+                42
+            ],
+            [
+                "mapping.find",
+                404
+            ],
+            [
+                "warning",
+                "[ExportHandler] Failed to export mapping",
+                {
+                    "mappingId": 404,
+                    "error": "mapping gone"
+                }
+            ],
+            [
+                "mapping.find",
+                43
+            ]
+        ]
+    },
+    "configuration-null-registers": {
+        "out": {
+            "openapi": "3.0.0",
+            "components": {
+                "registers": [],
+                "schemas": [],
+                "endpoints": [],
+                "sources": [],
+                "mappings": [],
+                "jobs": [],
+                "synchronizations": [],
+                "rules": [],
+                "workflows": [],
+                "objects": [],
+                "securitySchemes": {
+                    "oauth2": {
+                        "flows": {
+                            "authorizationCode": {
+                                "scopes": {
+                                    "admin": "Full administrative access"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "info": {
+                "title": "Config",
+                "description": "Config description",
+                "version": "2.0.0"
+            },
+            "x-openregister": {
+                "type": "app",
+                "app": "myapp",
+                "sourceType": "github",
+                "sourceUrl": "https://example.org/c.json",
+                "openregister": null,
+                "github": {
+                    "repo": "org/repo",
+                    "branch": "main",
+                    "path": "lib/Settings/c.json"
+                }
+            }
+        },
+        "calls": []
+    },
+    "configuration-open-connector": {
+        "out": {
+            "openapi": "3.0.0",
+            "components": {
+                "sources": {
+                    "src-2": {
+                        "title": "Source 2"
+                    },
+                    "src-1": {
+                        "title": "Source 1"
+                    }
+                },
+                "objects": {
+                    "5": {
+                        "kept": 1
+                    }
+                },
+                "mappings": {
+                    "oc-map": []
+                },
+                "registers": {
+                    "reg-one": {
+                        "slug": "reg-one",
+                        "title": "Register 1",
+                        "version": "1.1.0",
+                        "description": "Description 1",
+                        "schemas": [
+                            "item",
+                            "person"
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "authorization": {
+                            "read": [
+                                "group-1"
+                            ],
+                            "create": [
+                                "public"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    "reg-two": {
+                        "slug": "reg-two",
+                        "title": "Register 2",
+                        "version": "1.2.0",
+                        "description": "Description 2",
+                        "schemas": [
+                            "person"
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "authorization": {
+                            "read": [
+                                "group-2"
+                            ],
+                            "create": [
+                                "public"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    }
+                },
+                "schemas": {
+                    "item": {
+                        "uri": null,
+                        "slug": "item",
+                        "title": "Schema 11",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "plain": {
+                                "type": "string"
+                            },
+                            "ref-numeric": {
+                                "type": "object",
+                                "$ref": "person"
+                            },
+                            "ref-trailing-slash": {
+                                "$ref": "item"
+                            },
+                            "ref-unknown": {
+                                "$ref": "https://host/api/schemas/77"
+                            },
+                            "ref-slug": {
+                                "$ref": "person"
+                            },
+                            "ref-and-oc": {
+                                "$ref": "item",
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "items-ref": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "item"
+                                }
+                            },
+                            "items-ref-and-register": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "person",
+                                    "register": "reg-two"
+                                }
+                            },
+                            "oc-numeric": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "person"
+                                }
+                            },
+                            "oc-strings": {
+                                "objectConfiguration": {
+                                    "register": "reg-two",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-unknown": {
+                                "objectConfiguration": {
+                                    "register": 9,
+                                    "schema": 99
+                                }
+                            },
+                            "oc-slugs": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-register-only": {
+                                "objectConfiguration": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-oc": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "register": "reg-one",
+                                        "schema": "item"
+                                    }
+                                }
+                            },
+                            "items-oc-schema-only": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "schema": "person"
+                                    }
+                                }
+                            },
+                            "legacy-register": {
+                                "register": "reg-one"
+                            },
+                            "legacy-register-unknown": {
+                                "register": "https://host/api/registers/8"
+                            },
+                            "legacy-register-int": {
+                                "register": 2
+                            },
+                            "legacy-register-slug": {
+                                "register": "reg-two"
+                            },
+                            "items-legacy-register": {
+                                "type": "array",
+                                "items": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-legacy-register-int": {
+                                "type": "array",
+                                "items": {
+                                    "register": 1
+                                }
+                            },
+                            "null-values": {
+                                "$ref": null,
+                                "register": null,
+                                "objectConfiguration": null,
+                                "items": null
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": {
+                            "update": [
+                                "editors"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    "person": {
+                        "uri": null,
+                        "slug": "person",
+                        "title": "Schema 12",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": [],
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    }
+                },
+                "endpoints": [],
+                "jobs": [],
+                "synchronizations": [],
+                "rules": [],
+                "workflows": [],
+                "securitySchemes": {
+                    "oauth2": {
+                        "flows": {
+                            "authorizationCode": {
+                                "scopes": {
+                                    "admin": "Full administrative access",
+                                    "group-1": "Access for group-1 group",
+                                    "group-2": "Access for group-2 group",
+                                    "editors": "Access for editors group",
+                                    "public": "Public (unauthenticated) access"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "x-openconnector": {
+                "register": 1
+            },
+            "info": {
+                "title": "Config",
+                "description": "Config description",
+                "version": "2.0.0"
+            },
+            "x-openregister": {
+                "type": "app",
+                "app": "myapp",
+                "sourceType": "github",
+                "sourceUrl": "https://example.org/c.json",
+                "openregister": null,
+                "github": {
+                    "repo": "org/repo",
+                    "branch": "main",
+                    "path": "lib/Settings/c.json"
+                }
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                1
+            ],
+            [
+                "register.getSchemasByRegisterId",
+                1
+            ],
+            [
+                "schema.getIdToSlugMap"
+            ],
+            [
+                "register.getIdToSlugMap"
+            ],
+            [
+                "openConnector.exportRegister",
+                1
+            ],
+            [
+                "register.find",
+                2
+            ],
+            [
+                "register.getSchemasByRegisterId",
+                2
+            ],
+            [
+                "schema.getIdToSlugMap"
+            ],
+            [
+                "register.getIdToSlugMap"
+            ],
+            [
+                "openConnector.exportRegister",
+                2
+            ]
+        ]
+    },
+    "configuration-with-objects": {
+        "out": {
+            "openapi": "3.0.0",
+            "components": {
+                "registers": {
+                    "reg-one": {
+                        "slug": "reg-one",
+                        "title": "Register 1",
+                        "version": "1.1.0",
+                        "description": "Description 1",
+                        "schemas": [
+                            "item",
+                            "person"
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "authorization": {
+                            "read": [
+                                "group-1"
+                            ],
+                            "create": [
+                                "public"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    "reg-two": {
+                        "slug": "reg-two",
+                        "title": "Register 2",
+                        "version": "1.2.0",
+                        "description": "Description 2",
+                        "schemas": [
+                            "person"
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "authorization": {
+                            "read": [
+                                "group-2"
+                            ],
+                            "create": [
+                                "public"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    }
+                },
+                "schemas": {
+                    "item": {
+                        "uri": null,
+                        "slug": "item",
+                        "title": "Schema 11",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "plain": {
+                                "type": "string"
+                            },
+                            "ref-numeric": {
+                                "type": "object",
+                                "$ref": "person"
+                            },
+                            "ref-trailing-slash": {
+                                "$ref": "item"
+                            },
+                            "ref-unknown": {
+                                "$ref": "https://host/api/schemas/77"
+                            },
+                            "ref-slug": {
+                                "$ref": "person"
+                            },
+                            "ref-and-oc": {
+                                "$ref": "item",
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "items-ref": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "item"
+                                }
+                            },
+                            "items-ref-and-register": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "person",
+                                    "register": "reg-two"
+                                }
+                            },
+                            "oc-numeric": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "person"
+                                }
+                            },
+                            "oc-strings": {
+                                "objectConfiguration": {
+                                    "register": "reg-two",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-unknown": {
+                                "objectConfiguration": {
+                                    "register": 9,
+                                    "schema": 99
+                                }
+                            },
+                            "oc-slugs": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-register-only": {
+                                "objectConfiguration": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-oc": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "register": "reg-one",
+                                        "schema": "item"
+                                    }
+                                }
+                            },
+                            "items-oc-schema-only": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "schema": "person"
+                                    }
+                                }
+                            },
+                            "legacy-register": {
+                                "register": "reg-one"
+                            },
+                            "legacy-register-unknown": {
+                                "register": "https://host/api/registers/8"
+                            },
+                            "legacy-register-int": {
+                                "register": 2
+                            },
+                            "legacy-register-slug": {
+                                "register": "reg-two"
+                            },
+                            "items-legacy-register": {
+                                "type": "array",
+                                "items": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-legacy-register-int": {
+                                "type": "array",
+                                "items": {
+                                    "register": 1
+                                }
+                            },
+                            "null-values": {
+                                "$ref": null,
+                                "register": null,
+                                "objectConfiguration": null,
+                                "items": null
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": {
+                            "update": [
+                                "editors"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    "person": {
+                        "uri": null,
+                        "slug": "person",
+                        "title": "Schema 12",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": [],
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    }
+                },
+                "endpoints": [],
+                "sources": [],
+                "mappings": [],
+                "jobs": [],
+                "synchronizations": [],
+                "rules": [],
+                "workflows": [],
+                "objects": [
+                    {
+                        "@self": {
+                            "id": "o0",
+                            "register": "reg-one",
+                            "schema": "item"
+                        },
+                        "name": "n0"
+                    },
+                    {
+                        "@self": {
+                            "id": "o1",
+                            "register": "reg-one",
+                            "schema": "person"
+                        },
+                        "name": "n1"
+                    },
+                    {
+                        "@self": {
+                            "id": "o2",
+                            "register": "7",
+                            "schema": 99
+                        },
+                        "name": "n2"
+                    },
+                    {
+                        "@self": {
+                            "id": "o0",
+                            "register": "reg-two",
+                            "schema": "item"
+                        },
+                        "name": "n0"
+                    },
+                    {
+                        "@self": {
+                            "id": "o1",
+                            "register": "reg-two",
+                            "schema": "person"
+                        },
+                        "name": "n1"
+                    },
+                    {
+                        "@self": {
+                            "id": "o2",
+                            "register": "7",
+                            "schema": 99
+                        },
+                        "name": "n2"
+                    }
+                ],
+                "securitySchemes": {
+                    "oauth2": {
+                        "flows": {
+                            "authorizationCode": {
+                                "scopes": {
+                                    "admin": "Full administrative access",
+                                    "group-1": "Access for group-1 group",
+                                    "group-2": "Access for group-2 group",
+                                    "editors": "Access for editors group",
+                                    "public": "Public (unauthenticated) access"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "info": {
+                "title": "Config",
+                "description": "Config description",
+                "version": "2.0.0"
+            },
+            "x-openregister": {
+                "type": "app",
+                "app": "myapp",
+                "sourceType": "github",
+                "sourceUrl": "https://example.org/c.json",
+                "openregister": null,
+                "github": {
+                    "repo": "org/repo",
+                    "branch": "main",
+                    "path": "lib/Settings/c.json"
+                }
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                1
+            ],
+            [
+                "register.getSchemasByRegisterId",
+                1
+            ],
+            [
+                "schema.getIdToSlugMap"
+            ],
+            [
+                "register.getIdToSlugMap"
+            ],
+            [
+                "objects.findAll",
+                [
+                    null,
+                    null,
+                    {
+                        "register": 1
+                    },
+                    null,
+                    null,
+                    [],
+                    null,
+                    null,
+                    null,
+                    false,
+                    null,
+                    null
+                ]
+            ],
+            [
+                "register.find",
+                2
+            ],
+            [
+                "register.getSchemasByRegisterId",
+                2
+            ],
+            [
+                "schema.getIdToSlugMap"
+            ],
+            [
+                "register.getIdToSlugMap"
+            ],
+            [
+                "objects.findAll",
+                [
+                    null,
+                    null,
+                    {
+                        "register": 2
+                    },
+                    null,
+                    null,
+                    [],
+                    null,
+                    null,
+                    null,
+                    false,
+                    null,
+                    null
+                ]
+            ]
+        ]
+    },
+    "register": {
+        "out": {
+            "openapi": "3.0.0",
+            "components": {
+                "registers": {
+                    "reg-one": {
+                        "slug": "reg-one",
+                        "title": "Register 1",
+                        "version": "1.1.0",
+                        "description": "Description 1",
+                        "schemas": [
+                            "item",
+                            "person"
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "authorization": {
+                            "read": [
+                                "group-1"
+                            ],
+                            "create": [
+                                "public"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    }
+                },
+                "schemas": {
+                    "item": {
+                        "uri": null,
+                        "slug": "item",
+                        "title": "Schema 11",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "plain": {
+                                "type": "string"
+                            },
+                            "ref-numeric": {
+                                "type": "object",
+                                "$ref": "person"
+                            },
+                            "ref-trailing-slash": {
+                                "$ref": "item"
+                            },
+                            "ref-unknown": {
+                                "$ref": "https://host/api/schemas/77"
+                            },
+                            "ref-slug": {
+                                "$ref": "person"
+                            },
+                            "ref-and-oc": {
+                                "$ref": "item",
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "items-ref": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "item"
+                                }
+                            },
+                            "items-ref-and-register": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "person",
+                                    "register": "reg-two"
+                                }
+                            },
+                            "oc-numeric": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "person"
+                                }
+                            },
+                            "oc-strings": {
+                                "objectConfiguration": {
+                                    "register": "reg-two",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-unknown": {
+                                "objectConfiguration": {
+                                    "register": 9,
+                                    "schema": 99
+                                }
+                            },
+                            "oc-slugs": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-register-only": {
+                                "objectConfiguration": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-oc": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "register": "reg-one",
+                                        "schema": "item"
+                                    }
+                                }
+                            },
+                            "items-oc-schema-only": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "schema": "person"
+                                    }
+                                }
+                            },
+                            "legacy-register": {
+                                "register": "reg-one"
+                            },
+                            "legacy-register-unknown": {
+                                "register": "https://host/api/registers/8"
+                            },
+                            "legacy-register-int": {
+                                "register": 2
+                            },
+                            "legacy-register-slug": {
+                                "register": "reg-two"
+                            },
+                            "items-legacy-register": {
+                                "type": "array",
+                                "items": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-legacy-register-int": {
+                                "type": "array",
+                                "items": {
+                                    "register": 1
+                                }
+                            },
+                            "null-values": {
+                                "$ref": null,
+                                "register": null,
+                                "objectConfiguration": null,
+                                "items": null
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": {
+                            "update": [
+                                "editors"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    "person": {
+                        "uri": null,
+                        "slug": "person",
+                        "title": "Schema 12",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": [],
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    }
+                },
+                "endpoints": [],
+                "sources": [],
+                "mappings": [],
+                "jobs": [],
+                "synchronizations": [],
+                "rules": [],
+                "workflows": [],
+                "objects": [],
+                "securitySchemes": {
+                    "oauth2": {
+                        "flows": {
+                            "authorizationCode": {
+                                "scopes": {
+                                    "admin": "Full administrative access",
+                                    "group-1": "Access for group-1 group",
+                                    "editors": "Access for editors group",
+                                    "public": "Public (unauthenticated) access"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "info": {
+                "title": "Register 1",
+                "description": "Description 1",
+                "version": "1.1.0"
+            },
+            "x-openregister": {
+                "type": "register"
+            }
+        },
+        "calls": [
+            [
+                "register.getSchemasByRegisterId",
+                1
+            ],
+            [
+                "schema.getIdToSlugMap"
+            ],
+            [
+                "register.getIdToSlugMap"
+            ]
+        ]
+    },
+    "register-with-objects": {
+        "out": {
+            "openapi": "3.0.0",
+            "components": {
+                "registers": {
+                    "reg-one": {
+                        "slug": "reg-one",
+                        "title": "Register 1",
+                        "version": "1.1.0",
+                        "description": "Description 1",
+                        "schemas": [
+                            "item",
+                            "person"
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "authorization": {
+                            "read": [
+                                "group-1"
+                            ],
+                            "create": [
+                                "public"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    }
+                },
+                "schemas": {
+                    "item": {
+                        "uri": null,
+                        "slug": "item",
+                        "title": "Schema 11",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "plain": {
+                                "type": "string"
+                            },
+                            "ref-numeric": {
+                                "type": "object",
+                                "$ref": "person"
+                            },
+                            "ref-trailing-slash": {
+                                "$ref": "item"
+                            },
+                            "ref-unknown": {
+                                "$ref": "https://host/api/schemas/77"
+                            },
+                            "ref-slug": {
+                                "$ref": "person"
+                            },
+                            "ref-and-oc": {
+                                "$ref": "item",
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "items-ref": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "item"
+                                }
+                            },
+                            "items-ref-and-register": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "person",
+                                    "register": "reg-two"
+                                }
+                            },
+                            "oc-numeric": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "person"
+                                }
+                            },
+                            "oc-strings": {
+                                "objectConfiguration": {
+                                    "register": "reg-two",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-unknown": {
+                                "objectConfiguration": {
+                                    "register": 9,
+                                    "schema": 99
+                                }
+                            },
+                            "oc-slugs": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-register-only": {
+                                "objectConfiguration": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-oc": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "register": "reg-one",
+                                        "schema": "item"
+                                    }
+                                }
+                            },
+                            "items-oc-schema-only": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "schema": "person"
+                                    }
+                                }
+                            },
+                            "legacy-register": {
+                                "register": "reg-one"
+                            },
+                            "legacy-register-unknown": {
+                                "register": "https://host/api/registers/8"
+                            },
+                            "legacy-register-int": {
+                                "register": 2
+                            },
+                            "legacy-register-slug": {
+                                "register": "reg-two"
+                            },
+                            "items-legacy-register": {
+                                "type": "array",
+                                "items": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-legacy-register-int": {
+                                "type": "array",
+                                "items": {
+                                    "register": 1
+                                }
+                            },
+                            "null-values": {
+                                "$ref": null,
+                                "register": null,
+                                "objectConfiguration": null,
+                                "items": null
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": {
+                            "update": [
+                                "editors"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    "person": {
+                        "uri": null,
+                        "slug": "person",
+                        "title": "Schema 12",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": [],
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    }
+                },
+                "endpoints": [],
+                "sources": [],
+                "mappings": [],
+                "jobs": [],
+                "synchronizations": [],
+                "rules": [],
+                "workflows": [],
+                "objects": [
+                    {
+                        "@self": {
+                            "id": "o0",
+                            "register": "reg-one",
+                            "schema": "item"
+                        },
+                        "name": "n0"
+                    },
+                    {
+                        "@self": {
+                            "id": "o1",
+                            "register": "reg-one",
+                            "schema": "person"
+                        },
+                        "name": "n1"
+                    },
+                    {
+                        "@self": {
+                            "id": "o2",
+                            "register": "7",
+                            "schema": 99
+                        },
+                        "name": "n2"
+                    }
+                ],
+                "securitySchemes": {
+                    "oauth2": {
+                        "flows": {
+                            "authorizationCode": {
+                                "scopes": {
+                                    "admin": "Full administrative access",
+                                    "group-1": "Access for group-1 group",
+                                    "editors": "Access for editors group",
+                                    "public": "Public (unauthenticated) access"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "info": {
+                "title": "Register 1",
+                "description": "Description 1",
+                "version": "1.1.0"
+            },
+            "x-openregister": {
+                "type": "register"
+            }
+        },
+        "calls": [
+            [
+                "register.getSchemasByRegisterId",
+                1
+            ],
+            [
+                "schema.getIdToSlugMap"
+            ],
+            [
+                "register.getIdToSlugMap"
+            ],
+            [
+                "objects.findAll",
+                [
+                    null,
+                    null,
+                    {
+                        "register": 1
+                    },
+                    null,
+                    null,
+                    [],
+                    null,
+                    null,
+                    null,
+                    false,
+                    null,
+                    null
+                ]
+            ]
+        ]
+    },
+    "stdclass-items": {
+        "out": {
+            "openapi": "3.0.0",
+            "components": {
+                "registers": {
+                    "reg-one": {
+                        "slug": "reg-one",
+                        "title": "Register 1",
+                        "version": "1.1.0",
+                        "description": "Description 1",
+                        "schemas": [
+                            "item",
+                            "person"
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "authorization": {
+                            "read": [
+                                "group-1"
+                            ],
+                            "create": [
+                                "public"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    "reg-two": {
+                        "slug": "reg-two",
+                        "title": "Register 2",
+                        "version": "1.2.0",
+                        "description": "Description 2",
+                        "schemas": [
+                            "person"
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "authorization": {
+                            "read": [
+                                "group-2"
+                            ],
+                            "create": [
+                                "public"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    }
+                },
+                "schemas": {
+                    "item": {
+                        "uri": null,
+                        "slug": "item",
+                        "title": "Schema 11",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "plain": {
+                                "type": "string"
+                            },
+                            "ref-numeric": {
+                                "type": "object",
+                                "$ref": "person"
+                            },
+                            "ref-trailing-slash": {
+                                "$ref": "item"
+                            },
+                            "ref-unknown": {
+                                "$ref": "https://host/api/schemas/77"
+                            },
+                            "ref-slug": {
+                                "$ref": "person"
+                            },
+                            "ref-and-oc": {
+                                "$ref": "item",
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "items-ref": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "item"
+                                }
+                            },
+                            "items-ref-and-register": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "person",
+                                    "register": "reg-two"
+                                }
+                            },
+                            "oc-numeric": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "person"
+                                }
+                            },
+                            "oc-strings": {
+                                "objectConfiguration": {
+                                    "register": "reg-two",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-unknown": {
+                                "objectConfiguration": {
+                                    "register": 9,
+                                    "schema": 99
+                                }
+                            },
+                            "oc-slugs": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-register-only": {
+                                "objectConfiguration": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-oc": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "register": "reg-one",
+                                        "schema": "item"
+                                    }
+                                }
+                            },
+                            "items-oc-schema-only": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "schema": "person"
+                                    }
+                                }
+                            },
+                            "legacy-register": {
+                                "register": "reg-one"
+                            },
+                            "legacy-register-unknown": {
+                                "register": "https://host/api/registers/8"
+                            },
+                            "legacy-register-int": {
+                                "register": 2
+                            },
+                            "legacy-register-slug": {
+                                "register": "reg-two"
+                            },
+                            "items-legacy-register": {
+                                "type": "array",
+                                "items": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-legacy-register-int": {
+                                "type": "array",
+                                "items": {
+                                    "register": 1
+                                }
+                            },
+                            "null-values": {
+                                "$ref": null,
+                                "register": null,
+                                "objectConfiguration": null,
+                                "items": null
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": {
+                            "update": [
+                                "editors"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    "person": {
+                        "uri": null,
+                        "slug": "person",
+                        "title": "Schema 12",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": [],
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    }
+                },
+                "endpoints": [],
+                "sources": [],
+                "mappings": [],
+                "jobs": [],
+                "synchronizations": [],
+                "rules": [],
+                "workflows": [],
+                "objects": [],
+                "securitySchemes": {
+                    "oauth2": {
+                        "flows": {
+                            "authorizationCode": {
+                                "scopes": {
+                                    "admin": "Full administrative access",
+                                    "group-1": "Access for group-1 group",
+                                    "group-2": "Access for group-2 group",
+                                    "editors": "Access for editors group",
+                                    "public": "Public (unauthenticated) access"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "info": {
+                "title": "Config",
+                "description": "Config description",
+                "version": "2.0.0"
+            },
+            "x-openregister": {
+                "type": "app",
+                "app": "myapp",
+                "sourceType": "github",
+                "sourceUrl": "https://example.org/c.json",
+                "openregister": null,
+                "github": {
+                    "repo": "org/repo",
+                    "branch": "main",
+                    "path": "lib/Settings/c.json"
+                }
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                1
+            ],
+            [
+                "register.getSchemasByRegisterId",
+                1
+            ],
+            [
+                "schema.getIdToSlugMap"
+            ],
+            [
+                "register.getIdToSlugMap"
+            ],
+            [
+                "register.find",
+                2
+            ],
+            [
+                "register.getSchemasByRegisterId",
+                2
+            ],
+            [
+                "schema.getIdToSlugMap"
+            ],
+            [
+                "register.getIdToSlugMap"
+            ]
+        ]
+    },
+    "stdclass-object-configuration": {
+        "out": {
+            "openapi": "3.0.0",
+            "components": {
+                "registers": {
+                    "reg-one": {
+                        "slug": "reg-one",
+                        "title": "Register 1",
+                        "version": "1.1.0",
+                        "description": "Description 1",
+                        "schemas": [
+                            "item",
+                            "person"
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "authorization": {
+                            "read": [
+                                "group-1"
+                            ],
+                            "create": [
+                                "public"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    "reg-two": {
+                        "slug": "reg-two",
+                        "title": "Register 2",
+                        "version": "1.2.0",
+                        "description": "Description 2",
+                        "schemas": [
+                            "person"
+                        ],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "authorization": {
+                            "read": [
+                                "group-2"
+                            ],
+                            "create": [
+                                "public"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    }
+                },
+                "schemas": {
+                    "item": {
+                        "uri": null,
+                        "slug": "item",
+                        "title": "Schema 11",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "plain": {
+                                "type": "string"
+                            },
+                            "ref-numeric": {
+                                "type": "object",
+                                "$ref": "person"
+                            },
+                            "ref-trailing-slash": {
+                                "$ref": "item"
+                            },
+                            "ref-unknown": {
+                                "$ref": "https://host/api/schemas/77"
+                            },
+                            "ref-slug": {
+                                "$ref": "person"
+                            },
+                            "ref-and-oc": {
+                                "$ref": "item",
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "items-ref": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "item"
+                                }
+                            },
+                            "items-ref-and-register": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "person",
+                                    "register": "reg-two"
+                                }
+                            },
+                            "oc-numeric": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "person"
+                                }
+                            },
+                            "oc-strings": {
+                                "objectConfiguration": {
+                                    "register": "reg-two",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-unknown": {
+                                "objectConfiguration": {
+                                    "register": 9,
+                                    "schema": 99
+                                }
+                            },
+                            "oc-slugs": {
+                                "objectConfiguration": {
+                                    "register": "reg-one",
+                                    "schema": "item"
+                                }
+                            },
+                            "oc-register-only": {
+                                "objectConfiguration": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-oc": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "register": "reg-one",
+                                        "schema": "item"
+                                    }
+                                }
+                            },
+                            "items-oc-schema-only": {
+                                "type": "array",
+                                "items": {
+                                    "objectConfiguration": {
+                                        "schema": "person"
+                                    }
+                                }
+                            },
+                            "legacy-register": {
+                                "register": "reg-one"
+                            },
+                            "legacy-register-unknown": {
+                                "register": "https://host/api/registers/8"
+                            },
+                            "legacy-register-int": {
+                                "register": 2
+                            },
+                            "legacy-register-slug": {
+                                "register": "reg-two"
+                            },
+                            "items-legacy-register": {
+                                "type": "array",
+                                "items": {
+                                    "register": "reg-two"
+                                }
+                            },
+                            "items-legacy-register-int": {
+                                "type": "array",
+                                "items": {
+                                    "register": 1
+                                }
+                            },
+                            "null-values": {
+                                "$ref": null,
+                                "register": null,
+                                "objectConfiguration": null,
+                                "items": null
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": {
+                            "update": [
+                                "editors"
+                            ]
+                        },
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    "person": {
+                        "uri": null,
+                        "slug": "person",
+                        "title": "Schema 12",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": [],
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    }
+                },
+                "endpoints": [],
+                "sources": [],
+                "mappings": [],
+                "jobs": [],
+                "synchronizations": [],
+                "rules": [],
+                "workflows": [],
+                "objects": [],
+                "securitySchemes": {
+                    "oauth2": {
+                        "flows": {
+                            "authorizationCode": {
+                                "scopes": {
+                                    "admin": "Full administrative access",
+                                    "group-1": "Access for group-1 group",
+                                    "group-2": "Access for group-2 group",
+                                    "editors": "Access for editors group",
+                                    "public": "Public (unauthenticated) access"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "info": {
+                "title": "Config",
+                "description": "Config description",
+                "version": "2.0.0"
+            },
+            "x-openregister": {
+                "type": "app",
+                "app": "myapp",
+                "sourceType": "github",
+                "sourceUrl": "https://example.org/c.json",
+                "openregister": null,
+                "github": {
+                    "repo": "org/repo",
+                    "branch": "main",
+                    "path": "lib/Settings/c.json"
+                }
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                1
+            ],
+            [
+                "register.getSchemasByRegisterId",
+                1
+            ],
+            [
+                "schema.getIdToSlugMap"
+            ],
+            [
+                "register.getIdToSlugMap"
+            ],
+            [
+                "register.find",
+                2
+            ],
+            [
+                "register.getSchemasByRegisterId",
+                2
+            ],
+            [
+                "schema.getIdToSlugMap"
+            ],
+            [
+                "register.getIdToSlugMap"
+            ]
+        ]
+    }
+}

@@ -44,13 +44,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Sharing;
 
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Timeline\PublicTimeline;
 use OCA\OpenRegister\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Service\File\FileRestrictionStore;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -101,20 +103,22 @@ class AccessLinkReader {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects The object read path.
-	 * @param SchemaMapper $schemas Resolves the schema whose rules apply.
+	 * @param ObjectOperationsInterface $objects The object read path.
+	 * @param SchemaMapperInterface $schemas Resolves the schema whose rules apply.
 	 * @param PropertyRbacHandler $properties Strips write-only and unreadable properties.
 	 * @param PublicTimeline $timeline Reads and projects the public half of the timeline.
 	 * @param AccessLinkSubject $subjects Reads which object a subject names.
 	 * @param LoggerInterface $logger PSR logger.
+	 * @param FileRestrictionStore|null $restrictions Refuses a restricted file to a link. Null only in legacy fixtures.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
-		private readonly SchemaMapper $schemas,
+		private readonly ObjectOperationsInterface $objects,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly PropertyRbacHandler $properties,
 		private readonly PublicTimeline $timeline,
 		private readonly AccessLinkSubject $subjects,
 		private readonly LoggerInterface $logger,
+		private readonly ?FileRestrictionStore $restrictions = null,
 	) {
 
 	}//end __construct()
@@ -345,6 +349,8 @@ class AccessLinkReader {
 	 * @return array<string, mixed> The readable properties.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-never-sees-past-the-objects-own-rules-req-abl-004
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
 	private function filteredProperties(ObjectEntity $object): array {
 		$data = $object->getObject();
@@ -364,7 +370,13 @@ class AccessLinkReader {
 			return [];
 		}
 
-		return $this->properties->filterReadableProperties(schema: $schema, object: $data);
+		$readable = $object->filterAsRecord(
+			data: $data,
+			filter: fn (array $probe): array => $this->properties->filterReadableProperties(schema: $schema, object: $probe)
+		);
+
+		// A link never reveals an explicit-reveal value: it reads masked.
+		return ExplicitReveal::maskAll(schema: $schema, object: $readable);
 	}//end filteredProperties()
 
 	/**
@@ -408,6 +420,11 @@ class AccessLinkReader {
 	private function fileDescriptor(ObjectEntity $object, string $fileId): ?array {
 		$wanted = trim($fileId);
 		if ($wanted === '') {
+			return null;
+		}
+
+		// A link admits whoever holds it, and a restricted file admits only the people it names.
+		if (ctype_digit($wanted) === true && $this->restrictions?->find(fileId: (int)$wanted) !== null) {
 			return null;
 		}
 

@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -39,6 +40,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
@@ -138,11 +140,11 @@ class Wave12PermissionHandlerDefaultClosedTest extends TestCase {
 		$this->container->method('get')
 			->willReturnCallback(
 				function (string $class) use ($register) {
-					if ($class === RegisterMapper::class) {
+					if ($class === RegisterMapperInterface::class) {
 						return $this->registerMapper;
 					}
 
-					if ($class === 'OCA\OpenRegister\Service\OrganisationService') {
+					if ($class === 'OCA\OpenRegister\Service\OrganisationServiceInterface') {
 						throw new \RuntimeException('Not available');
 					}
 

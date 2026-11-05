@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
@@ -138,8 +138,8 @@ class CacheWarmupJob extends TimedJob {
 		);
 
 		try {
-			// @var CacheHandler $cacheHandler
-			$cacheHandler = $this->container->get(CacheHandler::class);
+			// @var ObjectNameCacheInterface $cacheHandler
+			$cacheHandler = $this->container->get(ObjectNameCacheInterface::class);
 
 			// Warm up the UUID-to-name cache.
 			$namesLoaded = $cacheHandler->warmupNameCache();

@@ -31,9 +31,8 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\SettingsController;
-use OCA\OpenRegister\Service\Search\SearchIndexMaintenance;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\VectorizationService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -68,7 +67,6 @@ class SettingsControllerSearchIndexStatusTest extends TestCase {
 			container: $container,
 			appManager: $this->createMock(originalClassName: IAppManager::class),
 			settingsService: $this->createMock(originalClassName: SettingsService::class),
-			vectorizationService: $this->createMock(originalClassName: VectorizationService::class),
 			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 	}//end controllerWith()
@@ -84,10 +82,10 @@ class SettingsControllerSearchIndexStatusTest extends TestCase {
 		$maintenance = $this->createMock(originalClassName: SearchIndexMaintenance::class);
 		$maintenance->method('supportsConcurrentRebuild')->willReturn(true);
 		$maintenance->method('tablesInScope')->willReturn(['oc_openregister_table_1_2', 'oc_openregister_table_1_3']);
-		$maintenance->method('indexesFor')->willReturnMap(
+		$maintenance->method('indexNamesFor')->willReturn(
 			[
-				['oc_openregister_table_1_2', ['idx_a' => 'CREATE INDEX idx_a', 'idx_b' => 'CREATE INDEX idx_b']],
-				['oc_openregister_table_1_3', ['idx_c' => 'CREATE INDEX idx_c']],
+				'oc_openregister_table_1_2' => ['idx_a', 'idx_b'],
+				'oc_openregister_table_1_3' => ['idx_c'],
 			]
 		);
 		$maintenance->method('lastRun')->willReturn($lastRun);
@@ -111,6 +109,27 @@ class SettingsControllerSearchIndexStatusTest extends TestCase {
 	}//end testTheStatusCarriesTheInventoryAndTheLastRun()
 
 	/**
+	 * The row counts arrive beside the inventory, under their own names.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-the-search-index-status-names-how-many-rows-it-covers
+	 */
+	public function testTheStatusCarriesTheRowCounts(): void {
+		$maintenance = $this->createMock(originalClassName: SearchIndexMaintenance::class);
+		$maintenance->method('tablesInScope')->willReturn([]);
+		$maintenance->method('indexNamesFor')->willReturn([]);
+		$maintenance->method('lastRun')->willReturn([]);
+		$maintenance->method('rowCounts')->willReturn(['rowsInTables' => 44320, 'indexed' => ['cases' => 12418, 'documents' => 31902]]);
+
+		$data = $this->controllerWith(maintenance: $maintenance)->getSearchIndexStatus()->getData();
+
+		$this->assertSame(expected: 44320, actual: $data['rowsInTables']);
+		$this->assertSame(expected: ['cases' => 12418, 'documents' => 31902], actual: $data['indexed']);
+		$this->assertSame(expected: [], actual: $data['lastRun']);
+	}//end testTheStatusCarriesTheRowCounts()
+
+	/**
 	 * Before the first rebuild the counts are zero and lastRun is empty, not missing.
 	 *
 	 * A caller that reads `lastRun` must find the key on a fresh instance too.
@@ -121,6 +140,7 @@ class SettingsControllerSearchIndexStatusTest extends TestCase {
 		$maintenance = $this->createMock(originalClassName: SearchIndexMaintenance::class);
 		$maintenance->method('supportsConcurrentRebuild')->willReturn(false);
 		$maintenance->method('tablesInScope')->willReturn([]);
+		$maintenance->method('indexNamesFor')->willReturn([]);
 		$maintenance->method('lastRun')->willReturn([]);
 
 		$data = $this->controllerWith(maintenance: $maintenance)->getSearchIndexStatus()->getData();

@@ -8,7 +8,7 @@
  * UX surface area:
  *
  *   - linkCard(uuid, registerId, schemaId, cardId)         — link existing card
- *   - createAndLinkCard(uuid, ..., boardId, stackId, ...) — create + link new
+ *   - createAndLinkCard(target, card)                     — create + link new
  *   - unlinkCard(uuid, cardId)
  *   - getLinkedCards(uuid)                                — list, enriched
  *   - getAvailableBoards()
@@ -240,6 +240,8 @@ class DeckLinkService {
 						$row['dueDate'] = $widened['dueDate'] ?? $row['dueDate'];
 						$row['labels'] = $widened['labels'];
 						$row['assignees'] = $widened['assignees'];
+						$row['boardTitle'] = $widened['boardTitle'];
+						$row['stackTitle'] = $widened['stackTitle'];
 					}
 				} catch (Throwable $e) {
 					// Stale link — keep cached row as-is.
@@ -260,16 +262,10 @@ class DeckLinkService {
 	 * from commit 3cdbfe71a) then persists the link row carrying the
 	 * new card's id + cached title + due date.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
-	 * @param int $boardId Deck board id (resolved server-side
-	 *                     via CardMapper::findBoardId after
-	 *                     create — accepted for symmetry).
-	 * @param int $stackId Deck stack id (target column).
-	 * @param string $title Card title (required).
-	 * @param string|null $description Card description (optional).
-	 * @param string|null $duedate ISO 8601 due date (optional).
+	 * @param LinkTarget $target The object to link to.
+	 * @param CardDraft  $card   Title, list (stack), board (used when Deck cannot
+	 *                           resolve the card's board after create), and
+	 *                           optional description and ISO 8601 due date.
 	 *
 	 * @return DeckLink The persisted link row.
 	 *
@@ -277,16 +273,7 @@ class DeckLinkService {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function createAndLinkCard(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		int $boardId,
-		int $stackId,
-		string $title,
-		?string $description,
-		?string $duedate,
-	): DeckLink {
+	public function createAndLinkCard(LinkTarget $target, CardDraft $card): DeckLink {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
@@ -297,63 +284,47 @@ class DeckLinkService {
 			throw new Exception('Deck is not available', 503);
 		}
 
-		$fullDescription = (string)$description;
-		if ($fullDescription !== '') {
-			$fullDescription .= "\n\n";
-		}
-
-		$fullDescription .= '[Object: ' . $objectUuid . '](/apps/openregister/objects/' . $objectUuid . ')';
-
 		$userUid = $user->getUID();
 
 		try {
-			$card = $cardService->create($title, $stackId, 'plain', 0, $userUid);
+			$created = $cardService->create($card->title, $card->stackId, 'plain', 0, $userUid);
 			// Deck CardService::update signature:
 			// update($id, $title, $stackId, $type, $owner, $description='', $order=0, $duedate=null, ...)
-			// The owner argument must be a string user UID (Phase A fix).
+			// The owner argument must be a string user UID.
 			$cardService->update(
-				$card->getId(),
-				$title,
-				$stackId,
+				$created->getId(),
+				$card->title,
+				$card->stackId,
 				'plain',
 				$userUid,
-				$fullDescription,
+				$card->descriptionFor(objectUuid: $target->objectUuid),
 				0,
-				$duedate
+				$card->duedate()
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Failed to create Deck card: ' . $e->getMessage());
 			throw new Exception('Failed to create Deck card: ' . $e->getMessage(), 500);
 		}
 
-		$cardId = (int)$card->getId();
+		$cardId = (int)$created->getId();
 
 		// Resolve board id authoritatively from the persisted card so we
 		// don't trust the (caller-supplied) value in case the stack was
 		// moved between boards.
 		$resolvedBoard = $this->resolveBoardId(cardId: $cardId);
 		if ($resolvedBoard === 0) {
-			$resolvedBoard = $boardId;
-		}
-
-		$dueDateObj = null;
-		if ($duedate !== null && $duedate !== '') {
-			try {
-				$dueDateObj = new DateTime($duedate);
-			} catch (Throwable $e) {
-				$dueDateObj = null;
-			}
+			$resolvedBoard = $card->boardId();
 		}
 
 		$link = new DeckLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
+		$link->setObjectUuid($target->objectUuid);
+		$link->setRegisterId($target->registerId);
+		$link->setSchemaId($target->schemaId());
 		$link->setBoardId($resolvedBoard);
-		$link->setStackId($stackId);
+		$link->setStackId($card->stackId);
 		$link->setCardId($cardId);
-		$link->setCardTitle($title);
-		$link->setDueDate($dueDateObj);
+		$link->setCardTitle($card->title);
+		$link->setDueDate($card->dueDateTime());
 		$link->setLabels(null);
 		$link->setAssignees(null);
 		$link->setLinkedBy($userUid);
@@ -566,7 +537,7 @@ class DeckLinkService {
 	 *
 	 * @param object $card Deck Card entity.
 	 *
-	 * @return array{dueDate:?string,dueDateRaw:?DateTime,labels:array,assignees:array}
+	 * @return array{dueDate:?string,dueDateRaw:?DateTime,labels:array,assignees:array,boardTitle:string,stackTitle:string}
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
@@ -612,8 +583,33 @@ class DeckLinkService {
 			'dueDateRaw' => $dueDateRaw,
 			'labels' => $labels,
 			'assignees' => $assignees,
+			'boardTitle' => $this->relatedTitle(card: $card, getter: 'getRelatedBoard'),
+			'stackTitle' => $this->relatedTitle(card: $card, getter: 'getRelatedStack'),
 		];
 	}//end extractCardFields()
+
+	/**
+	 * The title of the board or list Deck's card lookup put on the card, or ''.
+	 *
+	 * @param object $card   The card as Deck's card service returned it.
+	 * @param string $getter `getRelatedBoard` or `getRelatedStack`.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/deck-integration/spec.md
+	 */
+	private function relatedTitle(object $card, string $getter): string {
+		try {
+			$related = $card->{$getter}();
+			if (is_object($related) === true) {
+				return (string)$related->getTitle();
+			}
+		} catch (Throwable $e) {
+			// Leave the title empty.
+		}
+
+		return '';
+	}//end relatedTitle()
 
 	/**
 	 * Map a Deck Label entity to the leaf-row shape.

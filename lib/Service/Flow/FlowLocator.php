@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -66,14 +66,14 @@ class FlowLocator {
 	 *
 	 * @param FlowMapper $mapper Reads flow definitions.
 	 * @param FlowTriggerMapper $triggerMapper The node-derived trigger index.
-	 * @param ObjectService $objectService Loads the object a run is about.
+	 * @param ObjectOperationsInterface $objectService Loads the object a run is about.
 	 * @param LoggerInterface $logger Records refusals and failures.
 	 * @param FlowVersionMapper $versions Answers whether a fallback-matched flow has a published version.
 	 */
 	public function __construct(
 		private readonly FlowMapper $mapper,
 		private readonly FlowTriggerMapper $triggerMapper,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 		private readonly FlowVersionMapper $versions,
 	) {
@@ -371,11 +371,12 @@ class FlowLocator {
 	/**
 	 * The flows that run on a cron schedule.
 	 *
-	 * Shape is unchanged from the registry so `FlowScheduleService` is
-	 * untouched by this refactor.
+	 * `since` is when the flow was last saved (its creation time when it was
+	 * never updated), so the scheduler measures a never-fired flow's first
+	 * occurrence from there.
 	 *
-	 * @return array<int, array{id: string, enabled: bool, trigger: string, cron: string, owner: string|null}>
-	 *                                                                                                         The candidate flows.
+	 * @return array<int, array{id: string, enabled: bool, trigger: string, cron: string, owner: string|null, since: string}>
+	 *                                                                                                                        The candidate flows.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
@@ -409,9 +410,26 @@ class FlowLocator {
 				'trigger' => (string)($flow->getTrigger() ?? ''),
 				'cron' => (string)($flow->getCron() ?? ''),
 				'owner' => $flow->getOwner(),
+				'since' => $this->savedAt(flow: $flow),
 			];
 		}//end foreach
 
 		return $candidates;
 	}//end scheduledFlows()
+
+	/**
+	 * When a flow was last saved, as an ATOM timestamp, or the empty string.
+	 *
+	 * @param Flow $flow The flow.
+	 *
+	 * @return string The timestamp.
+	 */
+	private function savedAt(Flow $flow): string {
+		$saved = ($flow->getUpdated() ?? $flow->getCreated());
+		if ($saved === null) {
+			return '';
+		}
+
+		return $saved->format(DATE_ATOM);
+	}//end savedAt()
 }//end class

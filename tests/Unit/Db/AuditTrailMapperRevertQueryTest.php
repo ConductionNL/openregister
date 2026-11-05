@@ -39,6 +39,9 @@ use Psr\Log\NullLogger;
 /**
  * @covers \OCA\OpenRegister\Db\AuditTrailMapper
  * @covers \OCA\OpenRegister\Db\AuditTrailPayloadHelper
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
  */
 class AuditTrailMapperRevertQueryTest extends TestCase {
 	private const OBJECT = '11111111-1111-4111-8111-111111111111';
@@ -57,7 +60,7 @@ class AuditTrailMapperRevertQueryTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			fn (string $id) => $id === MagicMapper::class ? $this->magicMapper : null
+			fn (string $id) => $id === \OCA\OpenRegister\Db\MagicMapperInterface::class ? $this->magicMapper : null
 		);
 
 		$this->mapper = new AuditTrailMapper(

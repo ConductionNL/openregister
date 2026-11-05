@@ -30,12 +30,12 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\DestructionService;
-use OCA\OpenRegister\Service\Object\SaveObject;
-use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\Object\SaveObjectInterface;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -60,12 +60,12 @@ class RetentionController extends Controller {
 	 *
 	 * @param string $appName App name
 	 * @param IRequest $request Request
-	 * @param RetentionService $retentionService Retention service
+	 * @param RetentionServiceInterface $retentionService Retention service
 	 * @param ObjectRetentionHandler $settingsHandler Settings handler
-	 * @param SaveObject $saveObject Save object service
-	 * @param MagicMapper $objectMapper Object mapper
-	 * @param SchemaMapper $schemaMapper Schema mapper
-	 * @param AuditTrailMapper $auditMapper Audit trail mapper
+	 * @param SaveObjectInterface $saveObject Save object service
+	 * @param MagicMapperInterface $objectMapper Object mapper
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper
+	 * @param AuditTrailMapperInterface $auditMapper Audit trail mapper
 	 * @param DestructionService $destructionService Withholds entries a reviewer decided against
 	 * @param IJobList $jobList Background job list
 	 * @param IUserSession $userSession User session
@@ -76,12 +76,12 @@ class RetentionController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly RetentionService $retentionService,
+		private readonly RetentionServiceInterface $retentionService,
 		private readonly ObjectRetentionHandler $settingsHandler,
-		private readonly SaveObject $saveObject,
-		private readonly MagicMapper $objectMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly AuditTrailMapper $auditMapper,
+		private readonly SaveObjectInterface $saveObject,
+		private readonly MagicMapperInterface $objectMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly AuditTrailMapperInterface $auditMapper,
 		private readonly DestructionService $destructionService,
 		private readonly IJobList $jobList,
 		private readonly IUserSession $userSession,

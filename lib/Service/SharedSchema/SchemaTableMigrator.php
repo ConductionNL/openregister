@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\SharedSchema;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\IConfig;
@@ -47,7 +47,7 @@ use Throwable;
  * entity had overwritten away, and lacks the ones that belonged to the other app.
  * The move therefore has to be a column-mapped INSERT-SELECT.
  *
- * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+ * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
  */
 class SchemaTableMigrator {
 
@@ -79,7 +79,7 @@ class SchemaTableMigrator {
 	 *
 	 * @param IDBConnection   $db          Database connection for the row move.
 	 * @param IConfig         $config      System config, read for `dbtableprefix`.
-	 * @param MagicMapper     $magicMapper Magic-table DDL and introspection.
+	 * @param MagicMapperInterface     $magicMapper Magic-table DDL and introspection.
 	 * @param LoggerInterface $logger      Audit trail for every mutation.
 	 *
 	 * @return void
@@ -87,7 +87,7 @@ class SchemaTableMigrator {
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly IConfig $config,
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -111,7 +111,7 @@ class SchemaTableMigrator {
 	 * @return array{mapped: string[], unmapped: string[]} Columns that move, and source
 	 *         columns with no destination.
 	 *
-	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public static function planColumnMapping(array $sourceColumns, array $targetColumns): array {
 		$target  = array_map('strtolower', array_map('strval', $targetColumns));
@@ -155,7 +155,7 @@ class SchemaTableMigrator {
 	 *
 	 * @throws RuntimeException When there are no columns, or an identifier is unsafe.
 	 *
-	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public static function buildCopySql(
 		string $sourceTable,
@@ -191,7 +191,7 @@ class SchemaTableMigrator {
 	 *
 	 * @return string The unprefixed table name.
 	 *
-	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function tableNameFor(int $registerId, int $schemaId): string {
 		return self::TABLE_STEM . $registerId . '_' . $schemaId;
@@ -213,7 +213,7 @@ class SchemaTableMigrator {
 	 *
 	 * @return string[] Source columns with no destination.
 	 *
-	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function planUnmapped(string $table, ?array $definition, array $content): array {
 		$source = $this->columnsOf(table: $table);
@@ -284,7 +284,7 @@ class SchemaTableMigrator {
 	 *
 	 * @return int The row count, or -1 when the table is absent or unreadable.
 	 *
-	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function countRows(string $table): int {
 		$full = ($this->prefix() . $table);
@@ -311,7 +311,7 @@ class SchemaTableMigrator {
 	 * @return array{rows: int, unmapped: string[], backup: string|null} How many rows moved,
 	 *         which source columns had no destination, and where the source table went.
 	 *
-	 * @spec openspec/changes/dedupe-shared-schemas/proposal.md
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function migrate(Register $register, Schema $schema, int $oldId): array {
 		$registerId = (int)$register->getId();

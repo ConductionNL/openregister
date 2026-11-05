@@ -40,6 +40,9 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
  * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
+ * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
  */
 class MagicRbacDraftVisibilityTest extends TestCase {
 
@@ -109,7 +112,7 @@ class MagicRbacDraftVisibilityTest extends TestCase {
 	/**
 	 * A table that could not be given its `_status` column cannot hold a draft: the predicate leaves it out, and keeps it for a healthy table.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
 	public function testADegradedTableGetsNoDraftPredicate(): void {
 		$healer = $this->createMock(MagicMetadataColumnHealer::class);

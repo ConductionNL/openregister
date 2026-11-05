@@ -28,10 +28,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -55,29 +56,42 @@ class ScopesController extends Controller {
 	public const ACTIONS = ['read', 'create', 'update', 'delete', 'list'];
 
 	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * The group manager.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application identifier.
 	 * @param IRequest $request Active HTTP request.
-	 * @param IUserSession $userSession Current user session.
-	 * @param IGroupManager $groupManager Group manager for admin
-	 *                                    detection.
-	 * @param RegisterMapper $registerMapper Register lookup.
-	 * @param SchemaMapper $schemaMapper Schema lookup.
+	 * @param ControllerSession $session Session, group manager and logger.
+	 * @param RegisterMapperInterface $registerMapper Register lookup.
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
 	 * @param PermissionHandler $permissionHandler RBAC evaluator that
 	 *                                             owns the rule chain.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		ControllerSession $session,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PermissionHandler $permissionHandler,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
+		$this->userSession = $session->userSession;
+		$this->groupManager = $session->groupManager;
 	}//end __construct()
 
 	/**
@@ -285,7 +299,7 @@ class ScopesController extends Controller {
 	 *
 	 * @return array<string, array<string, mixed>> The provenance, keyed by action.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function provenanceFor(Schema $schema, ?string $userId, bool $isAdmin): array {
 		// An administrator holds everything by bypass, not by rule, and saying
@@ -324,7 +338,7 @@ class ScopesController extends Controller {
 	 *
 	 * @return array<int, string> Permitted action vocabulary.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function collectActionsForUser(Schema $schema, ?string $userId, bool $isAdmin): array {
 		if ($isAdmin === true) {

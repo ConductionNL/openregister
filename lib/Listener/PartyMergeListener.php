@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md
+ * @spec openspec/specs/mdm-merge/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use JsonException;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCP\EventDispatcher\Event;
@@ -51,7 +51,7 @@ use Throwable;
  *
  * @template-implements IEventListener<ObjectsMergedEvent>
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+ * @spec openspec/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
  *
  * @SuppressWarnings(PHPMD.StaticAccess) `ContactLink::partyUid()` is the entity's
  *   named constructor for the uid a party link is stored under. Spelling
@@ -70,13 +70,13 @@ class PartyMergeListener implements IEventListener {
 	 *
 	 * @param ContactLinkMapper $links The link rows.
 	 * @param PartyService $parties The party records.
-	 * @param ObjectService $objects The object layer, for the address union.
+	 * @param ObjectOperationsInterface $objects The object layer, for the address union.
 	 * @param LoggerInterface $logger Diagnostics; a party that will not carry over never fails the merge.
 	 */
 	public function __construct(
 		private readonly ContactLinkMapper $links,
 		private readonly PartyService $parties,
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -88,7 +88,7 @@ class PartyMergeListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof ObjectsMergedEvent === false) {

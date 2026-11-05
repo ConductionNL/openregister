@@ -56,8 +56,10 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\FlowRun
  * @uses \OCA\OpenRegister\Db\FlowVersion
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunMigrationValidator
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunMigration
  *
  * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md
+ * @uses \OCA\OpenRegister\Db\FlowTimer
  */
 final class FlowRunMigrationServiceTest extends TestCase {
 

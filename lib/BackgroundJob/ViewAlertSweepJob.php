@@ -41,10 +41,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCA\OpenRegister\Service\View\ViewObjectQuery;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -85,16 +85,16 @@ class ViewAlertSweepJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory      $time       Time factory for TimedJob.
-	 * @param ViewMapper        $views      The saved views.
-	 * @param ObjectService     $objects    Counts a view's query.
+	 * @param ViewMapperInterface        $views      The saved views.
+	 * @param ObjectOperationsInterface     $objects    Counts a view's query.
 	 * @param IUserManager      $users      Resolves the owner to count as.
 	 * @param IEventDispatcher  $dispatcher Announces a crossing.
 	 * @param LoggerInterface   $logger     Diagnostics.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly ViewMapper $views,
-		private readonly ObjectService $objects,
+		private readonly ViewMapperInterface $views,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly IUserManager $users,
 		private readonly IEventDispatcher $dispatcher,
 		private readonly LoggerInterface $logger,

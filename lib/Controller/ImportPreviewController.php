@@ -34,11 +34,12 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\BackgroundJob\ImportPreviewRunner;
+use OCA\OpenRegister\Controller\Support\ImportPreviewControllerServices;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapper;
 use OCA\OpenRegister\Db\ImportPreviewRowMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Import\ConflictPolicy;
 use OCA\OpenRegister\Service\Import\ImportPreviewRefusedException;
 use OCA\OpenRegister\Service\Import\ImportPreviewService;
@@ -78,32 +79,82 @@ class ImportPreviewController extends Controller {
 	private const MAX_PAGE = 500;
 
 	/**
+	 * The preview lifecycle.
+	 *
+	 * @var ImportPreviewService
+	 */
+	private readonly ImportPreviewService $service;
+
+	/**
+	 * Preview persistence.
+	 *
+	 * @var ImportPreviewMapper
+	 */
+	private readonly ImportPreviewMapper $previewMapper;
+
+	/**
+	 * Per-row decision persistence.
+	 *
+	 * @var ImportPreviewRowMapper
+	 */
+	private readonly ImportPreviewRowMapper $rowMapper;
+
+	/**
+	 * The file reader, for hashing and staging.
+	 *
+	 * @var SourceRowReader
+	 */
+	private readonly SourceRowReader $reader;
+
+	/**
+	 * Register lookup.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * The background queue.
+	 *
+	 * @var IJobList
+	 */
+	private readonly IJobList $jobList;
+
+	/**
+	 * Current-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
-	 * @param ImportPreviewService $service The preview lifecycle.
-	 * @param ImportPreviewMapper $previewMapper Preview persistence.
-	 * @param ImportPreviewRowMapper $rowMapper Per-row decision persistence.
-	 * @param SourceRowReader $reader The file reader, for hashing and staging.
-	 * @param RegisterMapper $registerMapper Register lookup.
-	 * @param IJobList $jobList The background queue.
-	 * @param IUserSession $userSession Current-user session.
-	 * @param IGroupManager $groupManager Group manager.
+	 * @param ImportPreviewControllerServices $services The import preview controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ImportPreviewService $service,
-		private readonly ImportPreviewMapper $previewMapper,
-		private readonly ImportPreviewRowMapper $rowMapper,
-		private readonly SourceRowReader $reader,
-		private readonly RegisterMapper $registerMapper,
-		private readonly IJobList $jobList,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		ImportPreviewControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->service = $services->domain->service;
+		$this->previewMapper = $services->mappers->previewMapper;
+		$this->rowMapper = $services->mappers->rowMapper;
+		$this->reader = $services->domain->reader;
+		$this->registerMapper = $services->mappers->registerMapper;
+		$this->jobList = $services->platform->jobList;
+		$this->userSession = $services->platform->userSession;
+		$this->groupManager = $services->platform->groupManager;
 	}//end __construct()
 
 	/**

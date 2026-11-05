@@ -19,7 +19,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md
+ * @spec openspec/specs/party-model/spec.md
  */
 
 declare(strict_types=1);
@@ -27,8 +27,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\PartyControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartySearchService;
@@ -51,26 +54,66 @@ use OCP\IRequest;
 class PartyController extends Controller {
 
 	/**
+	 * Object service, to resolve the object a party sits on.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objects;
+
+	/**
+	 * The parties on an object.
+	 *
+	 * @var PartyRoleService
+	 */
+	private readonly PartyRoleService $roles;
+
+	/**
+	 * The party records.
+	 *
+	 * @var PartyService
+	 */
+	private readonly PartyService $parties;
+
+	/**
+	 * The declared effects.
+	 *
+	 * @var PartyIndicatorGuard
+	 */
+	private readonly PartyIndicatorGuard $indicators;
+
+	/**
+	 * The capped party query.
+	 *
+	 * @var PartySearchService
+	 */
+	private readonly PartySearchService $search;
+
+	/**
+	 * The object-level permission check a party write asks.
+	 *
+	 * @var PermissionHandler
+	 */
+	private readonly PermissionHandler $permissions;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
-	 * @param ObjectService $objects Object service, to resolve the object a party sits on.
-	 * @param PartyRoleService $roles The parties on an object.
-	 * @param PartyService $parties The party records.
-	 * @param PartyIndicatorGuard $indicators The declared effects.
-	 * @param PartySearchService $search The capped party query.
+	 * @param PartyControllerServices $services The party controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objects,
-		private readonly PartyRoleService $roles,
-		private readonly PartyService $parties,
-		private readonly PartyIndicatorGuard $indicators,
-		private readonly PartySearchService $search,
+		PartyControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->objects = $services->domain->objects;
+		$this->roles = $services->domain->roles;
+		$this->parties = $services->domain->parties;
+		$this->indicators = $services->domain->indicators;
+		$this->search = $services->search->search;
+		$this->permissions = $services->search->permissions;
 	}//end __construct()
 
 	/**
@@ -85,7 +128,7 @@ class PartyController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
 		return $this->withObject(
@@ -113,10 +156,10 @@ class PartyController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function create(string $register, string $schema, string $id): JSONResponse {
-		return $this->withObject(
+		return $this->withWritableObject(
 			register: $register,
 			schema: $schema,
 			id: $id,
@@ -145,10 +188,10 @@ class PartyController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function replacePrimary(string $register, string $schema, string $id): JSONResponse {
-		return $this->withObject(
+		return $this->withWritableObject(
 			register: $register,
 			schema: $schema,
 			id: $id,
@@ -183,10 +226,10 @@ class PartyController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function destroy(string $register, string $schema, string $id, string $partyUuid): JSONResponse {
-		return $this->withObject(
+		return $this->withWritableObject(
 			register: $register,
 			schema: $schema,
 			id: $id,
@@ -224,7 +267,7 @@ class PartyController extends Controller {
 	 *   the party record goes through ObjectService (RBAC, tenant scoped), and
 	 *   an unreadable party answers 404 rather than its link rows.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	public function show(string $partyUuid): JSONResponse {
 		try {
@@ -264,7 +307,7 @@ class PartyController extends Controller {
 	 *   object id. Every result goes through ObjectService, which is RBAC and
 	 *   tenant scoped, and the cap is the proportionality control.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function search(): JSONResponse {
 		try {
@@ -290,7 +333,7 @@ class PartyController extends Controller {
 	 * @no-admin-idor-exempt Takes an address, not an object id, and answers
 	 *   only with parties the acting user may read through ObjectService.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function resolve(): JSONResponse {
 		$address = trim((string)$this->request->getParam('address', ''));
@@ -340,6 +383,47 @@ class PartyController extends Controller {
 			return $this->errorResponse(exception: $e);
 		}//end try
 	}//end withObject()
+
+	/**
+	 * Run a handler against a resolved object the caller may update.
+	 *
+	 * Who holds a role on an object is part of the object, so a party write
+	 * asks the same `update` verdict as any other write on it, before anything
+	 * is written. A refusal is a 403.
+	 *
+	 * @param string $register The register slug.
+	 * @param string $schema The schema slug.
+	 * @param string $id The object id.
+	 * @param callable $handler What to do with the object.
+	 *
+	 * @return JSONResponse The handler's response, or the error.
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
+	 */
+	private function withWritableObject(string $register, string $schema, string $id, callable $handler): JSONResponse {
+		return $this->withObject(
+			register: $register,
+			schema: $schema,
+			id: $id,
+			handler: function (ObjectEntity $object) use ($handler): JSONResponse {
+				$schemaEntity = $this->objects->getCurrentSchemaEntity();
+				if ($schemaEntity === null) {
+					throw new NotAuthorizedException(message: 'The object\'s schema could not be read, so its update right cannot be asked');
+				}
+
+				$this->permissions->checkPermission(
+					schema: $schemaEntity,
+					action: 'update',
+					userId: null,
+					objectOwner: $object->getOwner(),
+					_rbac: true,
+					object: $object
+				);
+
+				return $handler($object);
+			}
+		);
+	}//end withWritableObject()
 
 	/**
 	 * A trimmed request parameter, or null when it carries nothing.

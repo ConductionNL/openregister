@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\BulkJob;
 
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -57,11 +57,11 @@ class BulkSelectionResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService The object read path.
+	 * @param ObjectOperationsInterface $objectService The object read path.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -77,7 +77,7 @@ class BulkSelectionResolver {
 	 *
 	 * @return array<int, string> The selected uuids.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function resolveUuids(
 		string $selectionType,
@@ -116,7 +116,7 @@ class BulkSelectionResolver {
 	 *
 	 * @return array<string, ObjectEntity> The objects, keyed by uuid.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function hydrate(array $uuids, ?int $registerId, ?int $schemaId): array {
 		$objects = [];

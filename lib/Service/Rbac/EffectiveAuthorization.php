@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 
 /**
  * Resolves a schema's effective authorization block.
@@ -42,10 +42,10 @@ class EffectiveAuthorization {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registerMapper Resolves the register a schema falls back to.
+	 * @param RegisterMapperInterface $registerMapper Resolves the register a schema falls back to.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 	) {
 	}//end __construct()
 
@@ -175,7 +175,7 @@ class EffectiveAuthorization {
 	 *
 	 * @return array<string, mixed> The block, or one granting nobody when it is empty.
 	 *
-	 * @spec openspec/changes/roles-block-that-resolves-to-nothing-grants-nothing/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function grantNothingWhenEmpty(array $authorization): array {
 		if ($authorization !== []) {

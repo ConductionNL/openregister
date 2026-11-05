@@ -31,8 +31,8 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -86,16 +86,16 @@ class EmailService {
 	/**
 	 * Schema mapper for iterating over schemas with `_mail` linked-type column.
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Magic mapper for cross-table _mail JSONB containment queries.
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface
 	 */
-	private readonly MagicMapper $magicMapper;
+	private readonly MagicMapperInterface $magicMapper;
 
 	/**
 	 * Constructor.
@@ -105,8 +105,8 @@ class EmailService {
 	 * @param IDBConnection $db Database connection.
 	 * @param IUserSession $userSession User session.
 	 * @param LoggerInterface $logger Logger.
-	 * @param SchemaMapper $schemaMapper Schema mapper.
-	 * @param MagicMapper $magicMapper Magic mapper.
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper.
+	 * @param MagicMapperInterface $magicMapper Magic mapper.
 	 */
 	public function __construct(
 		EmailLinkMapper $emailLinkMapper,
@@ -114,8 +114,8 @@ class EmailService {
 		IDBConnection $db,
 		IUserSession $userSession,
 		LoggerInterface $logger,
-		SchemaMapper $schemaMapper,
-		MagicMapper $magicMapper,
+		SchemaMapperInterface $schemaMapper,
+		MagicMapperInterface $magicMapper,
 	) {
 		$this->emailLinkMapper = $emailLinkMapper;
 		$this->appManager = $appManager;
@@ -205,6 +205,7 @@ class EmailService {
 		$link->setMailMessageUid($messageData['uid'] ?? null);
 		$link->setSubject($messageData['subject'] ?? null);
 		$link->setSender($messageData['sender'] ?? null);
+		$link->setSenderName($messageData['senderName'] ?? null);
 		$link->setLinkedBy($user->getUID());
 		$link->setLinkedAt(new DateTime());
 
@@ -377,7 +378,7 @@ class EmailService {
 		try {
 			$qb = $this->db->getQueryBuilder();
 			$qb->select('m.id', 'm.uid', 'm.subject', 'm.sent_at')
-				->addSelect('r.email as sender_email')
+				->addSelect('r.email as sender_email', 'r.label as sender_label')
 				->from('mail_messages', 'm')
 				->leftJoin(
 					'm',
@@ -416,6 +417,7 @@ class EmailService {
 				'uid' => (string)($row['uid'] ?? ''),
 				'subject' => $row['subject'] ?? null,
 				'sender' => $row['sender_email'] ?? null,
+				'senderName' => $row['sender_label'] ?? null,
 				'date' => $sentAt,
 			];
 		} catch (Exception $e) {

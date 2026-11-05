@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Exception\FlowRunRefused;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Db\FlowVersionMapper;
@@ -59,6 +59,10 @@ use Throwable;
  * itself depends on all of them.
  * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every constructor parameter is
  * an injected collaborator; Nextcloud's container wires them by type.
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) delete() and deleteStored() are
+ * one cascade with and without the caller check; an example set removing the
+ * flow it wrote has no caller to check. Moving the cascade out would split one
+ * flow's delete over two classes.
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
@@ -82,9 +86,9 @@ class FlowService {
 	 *
 	 * @param FlowMapper $mapper Reads and writes flow definitions.
 	 * @param FlowTriggerIndex $triggerIndex Keeps the trigger index derived from the nodes.
-	 * @param FlowRunService $runner Queues and executes runs.
+	 * @param FlowRunServiceInterface $runner Queues and executes runs.
 	 * @param FlowRunAdvancer $advancer Advances a run inline for a synchronous caller.
-	 * @param FlowRunMapper $runs Sweeps a deleted flow's runs.
+	 * @param FlowRunMapperInterface $runs Sweeps a deleted flow's runs.
 	 * @param FlowRunStepMapper $steps Sweeps those runs' step rows.
 	 * @param FlowStateMapper $state Sweeps a deleted flow's carried state.
 	 * @param IUserSession $userSession Identifies the acting user.
@@ -97,9 +101,9 @@ class FlowService {
 	public function __construct(
 		private readonly FlowMapper $mapper,
 		private readonly FlowTriggerIndex $triggerIndex,
-		private readonly FlowRunService $runner,
+		private readonly FlowRunServiceInterface $runner,
 		private readonly FlowRunAdvancer $advancer,
-		private readonly FlowRunMapper $runs,
+		private readonly FlowRunMapperInterface $runs,
 		private readonly FlowRunStepMapper $steps,
 		private readonly FlowStateMapper $state,
 		private readonly IUserSession $userSession,
@@ -611,7 +615,24 @@ class FlowService {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	public function delete(string $uuid): void {
-		$this->mapper->delete($this->find(uuid: $uuid));
+		$this->deleteStored(flow: $this->find(uuid: $uuid));
+
+	}//end delete()
+
+	/**
+	 * Delete a stored flow with its trigger rows, runs, state and versions,
+	 * without asking whose it is. For callers that already decided they may,
+	 * such as an example set removing the flow it wrote.
+	 *
+	 * @param Flow $flow The stored flow.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+	 */
+	public function deleteStored(Flow $flow): void {
+		$uuid = (string)$flow->getUuid();
+		$this->mapper->delete($flow);
 
 		// Drop the flow's trigger rows too. An orphaned row is read on every
 		// matching object event and names a flow that can no longer be loaded,
@@ -662,7 +683,7 @@ class FlowService {
 			);
 		}
 
-	}//end delete()
+	}//end deleteStored()
 
 	/**
 	 * Queue a manual run of a flow the caller owns.

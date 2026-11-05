@@ -8,7 +8,7 @@
  *
  *   - linkPoi(uuid, registerId, schemaId, favoriteId)
  *       — link an existing favorite (POI)
- *   - createAndLinkPoi(uuid, registerId, schemaId, name, lat, lng, ...)
+ *   - createAndLinkPoi(target, poi)
  *       — create a new NC Maps favorite and link it
  *   - unlinkPoi(uuid, favoriteId)
  *       — remove a link (the favorite itself stays in NC Maps)
@@ -200,14 +200,8 @@ class MapLinkService {
 	/**
 	 * Create a new NC Maps favorite (POI) and link it to an OR object.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
-	 * @param string $name New POI name.
-	 * @param float $lat Latitude.
-	 * @param float $lng Longitude.
-	 * @param string|null $category Optional category.
-	 * @param string|null $comment Optional comment.
+	 * @param LinkTarget $target The object to link to.
+	 * @param PoiDraft   $poi    Name, position and optional category and comment.
 	 *
 	 * @return MapLink The persisted link row.
 	 *
@@ -216,19 +210,10 @@ class MapLinkService {
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link-POI contract is owned by the integration-maps capability.
 	 */
-	public function createAndLinkPoi(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		string $name,
-		float $lat,
-		float $lng,
-		?string $category = null,
-		?string $comment = null,
-	): MapLink {
+	public function createAndLinkPoi(LinkTarget $target, PoiDraft $poi): MapLink {
 		$uid = $this->requireUid();
 
-		$name = trim($name);
+		$name = trim($poi->name);
 		if ($name === '') {
 			throw new Exception('POI name is required', 400);
 		}
@@ -239,7 +224,7 @@ class MapLinkService {
 		}
 
 		try {
-			$favoriteId = (int)$service->addFavoriteToDB($uid, $name, $lat, $lng, $category, $comment, null);
+			$favoriteId = (int)$service->addFavoriteToDB($uid, $name, $poi->lat(), $poi->lng(), $poi->category(), $poi->comment(), null);
 		} catch (Throwable $e) {
 			$this->logger->warning('MapLinkService::createAndLinkPoi failed: ' . $e->getMessage());
 			throw new Exception('Failed to create Maps POI', 500);
@@ -250,15 +235,15 @@ class MapLinkService {
 		}
 
 		$link = new MapLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
+		$link->setObjectUuid($target->objectUuid);
+		$link->setRegisterId($target->registerId);
+		$link->setSchemaId($target->schemaId());
 		$link->setFavoriteId($favoriteId);
 		$link->setName($name);
-		$link->setCategory($category);
-		$link->setLat($lat);
-		$link->setLng($lng);
-		$link->setComment($comment);
+		$link->setCategory($poi->category());
+		$link->setLat($poi->lat());
+		$link->setLng($poi->lng());
+		$link->setComment($poi->comment());
 		$link->setLinkedBy($uid);
 		$link->setLinkedAt(new DateTime());
 

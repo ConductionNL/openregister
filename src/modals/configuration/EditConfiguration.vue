@@ -743,6 +743,69 @@ import Database from 'vue-material-design-icons/Database.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 
+/**
+ * The entities a configuration links to: its key and API path, the selection
+ * it fills and the loading flag shown while it is fetched.
+ */
+const LINKED_ENTITY_SELECTIONS = [
+	{ key: 'registers', target: 'selectedRegisters', loading: 'loadingRegisters' },
+	{ key: 'schemas', target: 'selectedSchemas', loading: 'loadingSchemas' },
+	{ key: 'objects', target: 'selectedObjects', loading: 'loadingObjects' },
+	{ key: 'sources', target: 'selectedSources', loading: 'loadingSources' },
+	{ key: 'agents', target: 'selectedAgents', loading: 'loadingAgents' },
+	{ key: 'views', target: 'selectedViews', loading: 'loadingViews' },
+	{
+		key: 'applications',
+		target: 'selectedManagedApplications',
+		loading: 'loadingApplications',
+	},
+]
+
+/**
+ * Whether a store list is missing or empty.
+ *
+ * @param {Array|null} list The list
+ * @return {boolean} True when there is nothing in it
+ */
+function isEmptyList(list) {
+	return !list || list.length === 0
+}
+
+/**
+ * A blank configuration with the defaults a new one starts from.
+ *
+ * @return {object} The configuration
+ */
+function newConfiguration() {
+	return {
+		title: '',
+		description: null,
+		type: 'default',
+		app: '',
+		version: '1.0.0', // Default semantic version
+		application: '',
+		owner: '',
+		organisation: null,
+		registers: [],
+		schemas: [],
+		objects: [],
+		sources: [],
+		agents: [],
+		views: [],
+		// Management tab defaults
+		sourceType: 'local',
+		isLocal: true, // New configurations are local by default
+		sourceUrl: null,
+		localVersion: '1.0.0',
+		remoteVersion: null,
+		autoUpdate: false,
+		notificationGroups: [],
+		githubRepo: null,
+		githubBranch: 'main',
+		githubPath: null,
+	}
+}
+
 export default {
 	name: 'EditConfiguration',
 	components: {
@@ -887,16 +950,10 @@ export default {
 	async created() {
 		// Organisations and applications are now hot-loaded at app startup
 		// Only refresh if somehow they're empty (shouldn't happen in normal flow)
-		if (
-			!organisationStore.organisationList
-			|| organisationStore.organisationList.length === 0
-		) {
+		if (isEmptyList(organisationStore.organisationList)) {
 			organisationStore.refreshOrganisationList()
 		}
-		if (
-			!applicationStore.applicationList
-			|| applicationStore.applicationList.length === 0
-		) {
+		if (isEmptyList(applicationStore.applicationList)) {
 			applicationStore.refreshApplicationList()
 		}
 
@@ -910,44 +967,8 @@ export default {
 
 		// Initialize configurationItem if it doesn't exist
 		if (!configurationStore.configurationItem) {
-			configurationStore.configurationItem = {
-				title: '',
-				description: null,
-				type: 'default',
-				app: '',
-				version: '1.0.0', // Default semantic version
-				application: '',
-				owner: '',
-				organisation: null,
-				registers: [],
-				schemas: [],
-				objects: [],
-				sources: [],
-				agents: [],
-				views: [],
-				// Management tab defaults
-				sourceType: 'local',
-				isLocal: true, // New configurations are local by default
-				sourceUrl: null,
-				localVersion: '1.0.0',
-				remoteVersion: null,
-				autoUpdate: false,
-				notificationGroups: [],
-				githubRepo: null,
-				githubBranch: 'main',
-				githubPath: null,
-			}
-			this.selectedRegisters = []
-			this.selectedSchemas = []
-			this.selectedObjects = []
-			this.selectedSources = []
-			this.selectedAgents = []
-			this.selectedViews = []
-			this.selectedApplication = null
-			this.selectedType = this.typeOptions[0] // 'default'
-			// Management tab defaults
-			this.selectedSourceType = this.sourceTypeOptions[0] // 'local'
-			this.selectedNotificationGroups = []
+			configurationStore.configurationItem = newConfiguration()
+			this.resetSelections()
 		} else {
 			// Load existing selections
 			this.loadExistingSelections()
@@ -956,7 +977,7 @@ export default {
 
 	methods: {
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		updateTitle(value) {
@@ -967,7 +988,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateDescription(value) {
@@ -978,7 +999,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateVersion(value) {
@@ -989,7 +1010,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {object|null} value
 		 * @spec exclude Reactive form-field setter binding select value to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateType(value) {
@@ -1003,7 +1024,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateApp(value) {
@@ -1014,7 +1035,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {object|null} value
 		 * @spec exclude Reactive form-field setter binding selected application to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateApplication(value) {
@@ -1029,7 +1050,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping selected registers to IDs on configurationItem; UI plumbing.
 		 */
 		updateRegisters(value) {
@@ -1044,7 +1065,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping selected schemas to IDs on configurationItem; UI plumbing.
 		 */
 		updateSchemas(value) {
@@ -1059,7 +1080,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping selected objects to IDs on configurationItem; UI plumbing.
 		 */
 		updateObjects(value) {
@@ -1074,7 +1095,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping selected sources to IDs on configurationItem; UI plumbing.
 		 */
 		updateSources(value) {
@@ -1089,7 +1110,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping selected agents to IDs on configurationItem; UI plumbing.
 		 */
 		updateAgents(value) {
@@ -1104,7 +1125,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping selected views to IDs on configurationItem; UI plumbing.
 		 */
 		updateViews(value) {
@@ -1119,7 +1140,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping managed applications to IDs on configurationItem; UI plumbing.
 		 */
 		updateManagedApplications(value) {
@@ -1135,7 +1156,7 @@ export default {
 
 		// Management tab update methods
 		/**
-		 * @param value
+		 * @param {object|null} value
 		 * @spec exclude Reactive form-field setter binding source-type select to configurationItem; UI plumbing.
 		 */
 		updateSourceType(value) {
@@ -1149,7 +1170,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateSourceUrl(value) {
@@ -1160,7 +1181,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateLocalVersion(value) {
@@ -1171,7 +1192,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {boolean} value
 		 * @spec exclude Reactive form-field setter binding toggle to configurationItem; UI plumbing.
 		 */
 		updateAutoUpdate(value) {
@@ -1182,7 +1203,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping notification groups to values on configurationItem; UI plumbing.
 		 */
 		updateNotificationGroups(value) {
@@ -1196,7 +1217,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateGithubRepo(value) {
@@ -1207,7 +1228,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateGithubBranch(value) {
@@ -1218,7 +1239,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateGithubPath(value) {
@@ -1229,202 +1250,102 @@ export default {
 		},
 
 		/**
+		 * Empty every selection for a new configuration.
+		 *
+		 * @spec exclude Resets local select-model refs when the modal opens on a new configuration; modal init plumbing.
+		 * @return {void}
+		 */
+		resetSelections() {
+			this.selectedRegisters = []
+			this.selectedSchemas = []
+			this.selectedObjects = []
+			this.selectedSources = []
+			this.selectedAgents = []
+			this.selectedViews = []
+			this.selectedApplication = null
+			this.selectedType = this.typeOptions[0] // 'default'
+			// Management tab defaults
+			this.selectedSourceType = this.sourceTypeOptions[0] // 'local'
+			this.selectedNotificationGroups = []
+		},
+
+		/**
 		 * @spec exclude Hydrates local select-model refs from an existing configurationItem on edit-open; modal init plumbing.
 		 */
 		async loadExistingSelections() {
 			const item = configurationStore.configurationItem
-			if (item) {
-				// Load selected application (from already loaded list)
-				if (item.application) {
-					this.selectedApplication =
-						applicationStore.applicationList.find(
-							(a) => a.uuid === item.application,
-						) || null
-				}
-				// Organisation is automatically set by backend based on active organisation
+			if (!item) {
+				return
+			}
+			this.loadSettingsSelections(item)
+			for (const link of LINKED_ENTITY_SELECTIONS) {
+				await this.loadLinkedSelection(item, link)
+			}
+		},
 
-				// Load Settings tab selections
-				if (item.type) {
-					this.selectedType =
-						this.typeOptions.find((t) => t.value === item.type)
-						|| this.typeOptions[0] // Default to 'default'
-				} else {
-					this.selectedType = this.typeOptions[0] // Default to 'default'
-				}
+		/**
+		 * @param {object} item The configuration being edited.
+		 * @spec exclude Hydrates the settings and management select-models from a configurationItem; modal init plumbing.
+		 */
+		loadSettingsSelections(item) {
+			if (item.application) {
+				this.selectedApplication =
+					applicationStore.applicationList.find(
+						(a) => a.uuid === item.application,
+					) || null
+			}
+			// Organisation is automatically set by backend based on active organisation
 
-				// Load Management tab selections
-				if (item.sourceType) {
-					this.selectedSourceType =
-						this.sourceTypeOptions.find(
-							(st) => st.value === item.sourceType,
-						) || null
-				}
-				if (
-					item.notificationGroups
-					&& Array.isArray(item.notificationGroups)
-				) {
-					this.selectedNotificationGroups = item.notificationGroups
-						.map((groupValue) =>
-							this.notificationGroupOptions.find(
-								(g) => g.value === groupValue,
-							),
-						)
-						.filter(Boolean)
-				}
+			this.selectedType =
+				(item.type && this.typeOptions.find((t) => t.value === item.type))
+				|| this.typeOptions[0] // Default to 'default'
 
-				// Load selected registers by fetching them individually
-				if (
-					item.registers
-					&& Array.isArray(item.registers)
-					&& item.registers.length > 0
-				) {
-					this.loadingRegisters = true
-					try {
-						const promises = item.registers.map((id) =>
-							fetch(
-								`/index.php/apps/openregister/api/registers/${id}`,
-							).then((r) => r.json()),
-						)
-						this.selectedRegisters = await Promise.all(promises)
-					} catch (error) {
-						console.error('Error loading selected registers:', error)
-					} finally {
-						this.loadingRegisters = false
-					}
-				}
+			if (item.sourceType) {
+				this.selectedSourceType =
+					this.sourceTypeOptions.find((st) => st.value === item.sourceType)
+					|| null
+			}
+			if (Array.isArray(item.notificationGroups)) {
+				this.selectedNotificationGroups = item.notificationGroups
+					.map((groupValue) =>
+						this.notificationGroupOptions.find(
+							(g) => g.value === groupValue,
+						),
+					)
+					.filter(Boolean)
+			}
+		},
 
-				// Load selected schemas by fetching them individually
-				if (
-					item.schemas
-					&& Array.isArray(item.schemas)
-					&& item.schemas.length > 0
-				) {
-					this.loadingSchemas = true
-					try {
-						const promises = item.schemas.map((id) =>
-							fetch(
-								`/index.php/apps/openregister/api/schemas/${id}`,
-							).then((r) => r.json()),
-						)
-						this.selectedSchemas = await Promise.all(promises)
-					} catch (error) {
-						console.error('Error loading selected schemas:', error)
-					} finally {
-						this.loadingSchemas = false
-					}
-				}
-
-				// Load selected objects by fetching them individually
-				if (
-					item.objects
-					&& Array.isArray(item.objects)
-					&& item.objects.length > 0
-				) {
-					this.loadingObjects = true
-					try {
-						const promises = item.objects.map((id) =>
-							fetch(
-								`/index.php/apps/openregister/api/objects/${id}`,
-							).then((r) => r.json()),
-						)
-						this.selectedObjects = await Promise.all(promises)
-					} catch (error) {
-						console.error('Error loading selected objects:', error)
-					} finally {
-						this.loadingObjects = false
-					}
-				}
-
-				// Load selected sources by fetching them individually
-				if (
-					item.sources
-					&& Array.isArray(item.sources)
-					&& item.sources.length > 0
-				) {
-					this.loadingSources = true
-					try {
-						const promises = item.sources.map((id) =>
-							fetch(
-								`/index.php/apps/openregister/api/sources/${id}`,
-							).then((r) => r.json()),
-						)
-						this.selectedSources = await Promise.all(promises)
-					} catch (error) {
-						console.error('Error loading selected sources:', error)
-					} finally {
-						this.loadingSources = false
-					}
-				}
-
-				// Load selected agents by fetching them individually
-				if (
-					item.agents
-					&& Array.isArray(item.agents)
-					&& item.agents.length > 0
-				) {
-					this.loadingAgents = true
-					try {
-						const promises = item.agents.map((id) =>
-							fetch(
-								`/index.php/apps/openregister/api/agents/${id}`,
-							).then((r) => r.json()),
-						)
-						this.selectedAgents = await Promise.all(promises)
-					} catch (error) {
-						console.error('Error loading selected agents:', error)
-					} finally {
-						this.loadingAgents = false
-					}
-				}
-
-				// Load selected views by fetching them individually
-				if (
-					item.views
-					&& Array.isArray(item.views)
-					&& item.views.length > 0
-				) {
-					this.loadingViews = true
-					try {
-						const promises = item.views.map((id) =>
-							fetch(
-								`/index.php/apps/openregister/api/views/${id}`,
-							).then((r) => r.json()),
-						)
-						this.selectedViews = await Promise.all(promises)
-					} catch (error) {
-						console.error('Error loading selected views:', error)
-					} finally {
-						this.loadingViews = false
-					}
-				}
-
-				// Load selected managed applications by fetching them individually
-				if (
-					item.applications
-					&& Array.isArray(item.applications)
-					&& item.applications.length > 0
-				) {
-					this.loadingApplications = true
-					try {
-						const promises = item.applications.map((id) =>
-							fetch(
-								`/index.php/apps/openregister/api/applications/${id}`,
-							).then((r) => r.json()),
-						)
-						this.selectedManagedApplications =
-							await Promise.all(promises)
-					} catch (error) {
-						console.error('Error loading selected applications:', error)
-					} finally {
-						this.loadingApplications = false
-					}
-				}
+		/**
+		 * Fetch the entities a configuration links to, one by one, into their selection.
+		 *
+		 * @param {object} item The configuration being edited.
+		 * @param {object} link An entry of LINKED_ENTITY_SELECTIONS.
+		 * @spec exclude Hydrates one linked-entity select-model from a configurationItem; modal init plumbing.
+		 */
+		async loadLinkedSelection(item, link) {
+			const ids = item[link.key]
+			if (!Array.isArray(ids) || ids.length === 0) {
+				return
+			}
+			this[link.loading] = true
+			try {
+				const promises = ids.map((id) =>
+					fetch(`/index.php/apps/openregister/api/${link.key}/${id}`).then(
+						(r) => r.json(),
+					),
+				)
+				this[link.target] = await Promise.all(promises)
+			} catch (error) {
+				console.error(`Error loading selected ${link.key}:`, error)
+			} finally {
+				this[link.loading] = false
 			}
 		},
 
 		// Search methods with debouncing
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchRegisters(query) {
@@ -1455,7 +1376,7 @@ export default {
 		},
 
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchSchemas(query) {
@@ -1484,7 +1405,7 @@ export default {
 		},
 
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch (register/schema-filtered) populating select options; UI search plumbing.
 		 */
 		searchObjects(query) {
@@ -1532,7 +1453,7 @@ export default {
 		},
 
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchSources(query) {
@@ -1561,7 +1482,7 @@ export default {
 		},
 
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchAgents(query) {
@@ -1590,7 +1511,7 @@ export default {
 		},
 
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchViews(query) {
@@ -1619,7 +1540,7 @@ export default {
 		},
 
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchApplications(query) {

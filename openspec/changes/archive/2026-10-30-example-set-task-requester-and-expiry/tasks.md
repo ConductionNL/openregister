@@ -1,0 +1,2 @@
+- [x] T01 ExampleSetTasks accepts requester and expiresAt; requester is checked against the set's accounts, expiresAt as a date not before dueAt
+- [x] T02 PHPUnit: both reach the engine; a stranger, an unknown person, a non-date, a malformed token and an expiry before the due date are refused at check time

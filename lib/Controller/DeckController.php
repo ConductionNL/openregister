@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Service\DeckCardService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -47,9 +47,9 @@ class DeckController extends Controller {
 	/**
 	 * Object service.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Constructor.
@@ -57,7 +57,7 @@ class DeckController extends Controller {
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
 	 * @param DeckCardService $deckCardService Deck card service
-	 * @param ObjectService $objectService Object service
+	 * @param ObjectOperationsInterface $objectService Object service
 	 *
 	 * @return void
 	 */
@@ -65,7 +65,7 @@ class DeckController extends Controller {
 		string $appName,
 		IRequest $request,
 		DeckCardService $deckCardService,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 

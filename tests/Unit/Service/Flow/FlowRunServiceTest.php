@@ -25,6 +25,7 @@ use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\Oversight\KillSwitchCheck;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -221,6 +222,39 @@ class ContextCapturingNode implements IFlowNode {
 	}
 }
 
+class CopyPinNode implements IFlowNode {
+	public function getId(): string {
+		return 'test.copy-pin';
+	}
+
+	public function getDisplayName(): string {
+		return 'Copy pin';
+	}
+
+	public function getDescription(): string {
+		return 'Copies inputs.pin to code.';
+	}
+
+	public function getIcon(): string {
+		return 'i.svg';
+	}
+
+	public function isAvailableForScope(int $scope): bool {
+		return true;
+	}
+
+	public function validateConfig(array $config): void {
+	}
+
+	public function execute(array $items, array $config, array $context): array {
+		foreach ($items as $index => $item) {
+			$items[$index]['json']['code'] = ($item['json']['inputs']['pin'] ?? null);
+		}
+
+		return $items;
+	}
+}
+
 class FlowRunServiceTest extends TestCase {
 
 	private LoggerInterface&\PHPUnit\Framework\MockObject\MockObject $logger;
@@ -260,6 +294,13 @@ class FlowRunServiceTest extends TestCase {
 					$event->registerNode($this->doneBranch);
 					$event->registerNode($this->retryBranch);
 					$event->registerNode($this->asker);
+					$event->registerNode(new CopyPinNode());
+					$event->registerNode(
+						new \OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNode(
+							$this->createMock(\OCP\IL10N::class),
+							$this->createMock(\OCP\IURLGenerator::class)
+						)
+					);
 				}
 			}
 		);
@@ -748,6 +789,103 @@ class FlowRunServiceTest extends TestCase {
 		// Otherwise the due-runs query keeps picking up a finished run.
 		$this->assertNull($run->getResumeAt());
 	}
+
+	/**
+	 * A writeOnly action input reaches the steps but never the stored run:
+	 * not its log of step inputs and outputs, not its final items.
+	 *
+	 * @return void
+	 */
+	public function testAWriteOnlyInputIsNotStoredInTheRunLogOrItems(): void {
+		$ref = ObjectActionSecrets::hold(values: ['pin' => '4321-9876']);
+		try {
+			$run = $this->service->queue(
+				flowId: 'f1',
+				user: 'alice',
+				context: ['action' => 'sign', 'inputs' => ['reason' => 'approved'], ObjectActionSecrets::CONTEXT_KEY => $ref]
+			);
+			$flow = ['id' => 'f1', 'nodes' => [['id' => 'inputs', 'type' => 'openregister.action-inputs']], 'edges' => []];
+			$run = $this->service->execute(run: $run, flow: $flow, subject: new RunSubject());
+		} finally {
+			ObjectActionSecrets::release(ref: $ref);
+		}
+
+		$this->assertSame(expected: FlowRun::STATUS_COMPLETED, actual: $run->getStatus());
+		$this->assertStringNotContainsString(needle: '4321-9876', haystack: (string)json_encode(value: $run->getLog()));
+		$this->assertStringNotContainsString(needle: '4321-9876', haystack: (string)json_encode(value: $run->getItems()));
+		$this->assertStringNotContainsString(needle: '4321-9876', haystack: (string)json_encode(value: $run->getContext()));
+		// The control: the storable input is still there, so the step did run.
+		$this->assertStringContainsString(needle: 'approved', haystack: (string)json_encode(value: $run->getItems()));
+	}//end testAWriteOnlyInputIsNotStoredInTheRunLogOrItems()
+
+	/**
+	 * Redaction is by key: a secret that equals a counter or sits inside the
+	 * subject uuid changes nothing but the named input, and a run that
+	 * suspends resumes on the subject it stored.
+	 *
+	 * @return void
+	 */
+	public function testAShortSecretRedactsOnlyTheInputAndTheResumeKeepsTheSubject(): void {
+		$uuid = '2026aaaa-1111-4111-8111-000000002026';
+		$ref  = ObjectActionSecrets::hold(values: ['pin' => '2026', 'digit' => '1']);
+		$flow = [
+			'id' => 'f1',
+			'nodes' => [['id' => 'inputs', 'type' => 'openregister.action-inputs'], ['id' => 'hop', 'type' => 'test.wait']],
+			'edges' => [['id' => 'e1', 'from' => 'inputs', 'to' => 'hop']],
+		];
+		try {
+			$run = $this->service->queue(
+				flowId: 'f1',
+				subject: ['uuid' => $uuid],
+				user: 'alice',
+				context: ['action' => 'sign', 'inputs' => [], ObjectActionSecrets::CONTEXT_KEY => $ref]
+			);
+			$run = $this->service->execute(run: $run, flow: $flow, subject: new IdentifiedSubject(fields: ['uuid' => $uuid, 'count' => 1]));
+		} finally {
+			ObjectActionSecrets::release(ref: $ref);
+		}
+
+		$this->assertSame(expected: FlowRun::STATUS_SUSPENDED, actual: $run->getStatus());
+		$json = $run->getItems()[0]['json'];
+		$this->assertSame(expected: $uuid, actual: $json['uuid']);
+		$this->assertSame(expected: 1, actual: $json['count']);
+		$this->assertSame(expected: ObjectActionSecrets::REDACTED, actual: $json['inputs']['pin']);
+		$this->assertSame(expected: 1, actual: $run->getLog()[0]['itemsIn']);
+
+		$run = $this->service->execute(run: $run, flow: $flow, subject: new IdentifiedSubject(fields: ['uuid' => $uuid, 'count' => 1]));
+
+		$this->assertSame(expected: FlowRun::STATUS_COMPLETED, actual: $run->getStatus());
+		$this->assertSame(expected: $uuid, actual: $run->getItems()[0]['json']['uuid']);
+	}//end testAShortSecretRedactsOnlyTheInputAndTheResumeKeepsTheSubject()
+
+	/**
+	 * A later step that copies the input to another field does not store it
+	 * either: not in the log, the items or the context.
+	 *
+	 * @return void
+	 */
+	public function testACopiedWriteOnlyInputIsNotStored(): void {
+		$ref = ObjectActionSecrets::hold(values: ['pin' => '4321']);
+		$flow = [
+			'id' => 'f1',
+			'nodes' => [['id' => 'inputs', 'type' => 'openregister.action-inputs'], ['id' => 'copy', 'type' => 'test.copy-pin']],
+			'edges' => [['id' => 'e1', 'from' => 'inputs', 'to' => 'copy']],
+		];
+		try {
+			$run = $this->service->queue(
+				flowId: 'f1',
+				user: 'alice',
+				context: ['action' => 'sign', 'inputs' => [], ObjectActionSecrets::CONTEXT_KEY => $ref]
+			);
+			$run = $this->service->execute(run: $run, flow: $flow, subject: new RunSubject());
+		} finally {
+			ObjectActionSecrets::release(ref: $ref);
+		}
+
+		$this->assertSame(expected: FlowRun::STATUS_COMPLETED, actual: $run->getStatus());
+		$this->assertSame(expected: ObjectActionSecrets::REDACTED, actual: $run->getItems()[0]['json']['code']);
+		$this->assertStringNotContainsString(needle: '"4321"', haystack: (string)json_encode(value: $run->getLog()));
+	}//end testACopiedWriteOnlyInputIsNotStored()
 
 	public function testTheLogAccumulatesAcrossASuspension(): void {
 		$run = $this->service->queue('f1', user: 'alice');

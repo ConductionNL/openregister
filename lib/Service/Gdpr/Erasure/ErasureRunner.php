@@ -41,10 +41,10 @@ namespace OCA\OpenRegister\Service\Gdpr\Erasure;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ErasurePreview;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Deletion\DestroyRightService;
 use OCA\OpenRegister\Service\Deletion\DestructionRecorder;
 use OCA\OpenRegister\Service\Deletion\DestructionRefusedException;
@@ -64,7 +64,7 @@ use Throwable;
  * existing destruction path rather than grow a second one, so it holds the
  * collaborators of that path plus the two that decide what to run over.
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+ * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
 class ErasureRunner {
 	/**
@@ -80,8 +80,8 @@ class ErasureRunner {
 	 * @param ErasurePreviewService     $previewService The preview, recomputed for the digest check.
 	 * @param ErasurePreviewStore       $store          The recorded preview and its approval.
 	 * @param DataSubjectRequestService $subjects       Discovery and the audited pseudonymise write.
-	 * @param MagicMapper               $objectMapper   Object loads and the final delete.
-	 * @param SchemaMapper              $schemaMapper   Schema resolution for the destruction scope.
+	 * @param MagicMapperInterface               $objectMapper   Object loads and the final delete.
+	 * @param SchemaMapperInterface              $schemaMapper   Schema resolution for the destruction scope.
 	 * @param DestroyRightService       $destroyRight   Whether this caller may destroy.
 	 * @param RetentionClockService     $clockService   Whether the clocks allow it.
 	 * @param DestructionScopeService   $scopeService   What goes with the object.
@@ -99,8 +99,8 @@ class ErasureRunner {
 		private readonly ErasurePreviewService $previewService,
 		private readonly ErasurePreviewStore $store,
 		private readonly DataSubjectRequestService $subjects,
-		private readonly MagicMapper $objectMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly MagicMapperInterface $objectMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly DestroyRightService $destroyRight,
 		private readonly RetentionClockService $clockService,
 		private readonly DestructionScopeService $scopeService,
@@ -118,7 +118,7 @@ class ErasureRunner {
 	 *
 	 * @throws ErasureRefusedException When the approved preview no longer describes the world.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function run(ErasurePreview $record): array {
 		$subject = (string)($record->getSubject() ?? '');

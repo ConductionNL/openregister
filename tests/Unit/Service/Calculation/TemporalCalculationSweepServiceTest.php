@@ -42,7 +42,7 @@ use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -222,6 +222,36 @@ class TemporalCalculationSweepServiceTest extends TestCase {
 		$this->assertSame(0, $summary['errors']);
 
 	}//end testSweepRewritesOnlyChangedNonTerminalObjects()
+
+	/**
+	 * The sweep re-saves a row whose `type: string` property the read decoded
+	 * with the stored JSON string, so validation does not refuse it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md
+	 */
+	public function testTheSweepRestoresDecodedStringTypedValues(): void {
+		$schema = $this->dsarSchema();
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
+		$this->registerMapper->method('findAll')->willReturn([$this->register()]);
+
+		$crossing = $this->caseObject(uuid: 'case-crossing', status: 'in-progress', dueInDays: 5, storedTier: 'on-track', storedDaysRemaining: 12);
+		$crossing->setObject([...$crossing->getObject(), 'subjectId' => ['bsn' => '999994001']]);
+		$this->objectMapper->method('findAllInRegisterSchemaTable')->willReturn([$crossing]);
+
+		$saved = [];
+		$this->objectService->method('saveObject')->willReturnCallback(
+			static function ($object) use (&$saved) {
+				$saved[] = $object;
+				return new ObjectEntity();
+			}
+		);
+
+		$this->service->runSweep();
+
+		$this->assertSame('{"bsn":"999994001"}', $saved[0]['subjectId']);
+	}//end testTheSweepRestoresDecodedStringTypedValues()
 
 	/**
 	 * The recompute produces the tier the write path will persist — including

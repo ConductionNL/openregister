@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use Throwable;
  * the credential in a table and a mailbox, so for a secret the old and new
  * values are simply never handed over.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class SecuritySettingAnnouncer {
 	/**
@@ -87,7 +87,7 @@ class SecuritySettingAnnouncer {
 	 *
 	 * @return array<string, mixed> Path to value.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function snapshot(): array {
 		try {
@@ -109,7 +109,7 @@ class SecuritySettingAnnouncer {
 	 *
 	 * @return int The number of notifications delivered.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function announce(array $before, array $after): int {
 		$changes = $this->changes(before: $before, after: $after);
@@ -153,7 +153,7 @@ class SecuritySettingAnnouncer {
 	 *
 	 * @return array<string, array{old: mixed, new: mixed}> Path to change.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function changes(array $before, array $after): array {
 		$changes = [];
@@ -186,7 +186,7 @@ class SecuritySettingAnnouncer {
 	 *
 	 * @return array<string, string|bool> The parameters, with no values for a secret.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function parameters(string $path, array $change, string $actor): array {
 		$parameters = [
@@ -213,7 +213,7 @@ class SecuritySettingAnnouncer {
 	 *
 	 * @return string The display form.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public static function render(mixed $value): string {
 		if (is_bool($value) === true) {
@@ -240,7 +240,7 @@ class SecuritySettingAnnouncer {
 	 *
 	 * @return string[] The recipients.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function administrators(): array {
 		$group = $this->groupManager->get(self::ADMIN_GROUP);
@@ -261,7 +261,7 @@ class SecuritySettingAnnouncer {
 	 *
 	 * @return string The display name, or `system` for a change with no session.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function actor(): string {
 		try {
@@ -291,7 +291,7 @@ class SecuritySettingAnnouncer {
 	 *
 	 * @return int 1 when delivered, 0 when not.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function deliver(string $uid, string $path, array $parameters): int {
 		try {

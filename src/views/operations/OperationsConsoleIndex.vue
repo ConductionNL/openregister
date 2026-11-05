@@ -411,7 +411,7 @@ import CogOutline from 'vue-material-design-icons/CogOutline.vue'
  * says it allows. The verbs are the bulk job resource's own endpoints, not a
  * second copy on the console: one ownership rule, in one place.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 export default {
 	name: 'OperationsConsoleIndex',
@@ -568,7 +568,7 @@ export default {
 		 * Load the panes and the job rows.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+		 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 		 */
 		async load() {
 			this.loading = true
@@ -615,7 +615,7 @@ export default {
 		 * @param {object} job The job row.
 		 * @param {string} verb One of pause, resume, retry.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+		 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 		 */
 		async act(job, verb) {
 			this.acting = job.id
@@ -641,7 +641,7 @@ export default {
 		 * The run history, under the filters the reader chose.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+		 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 		 */
 		async loadRuns() {
 			const query = new URLSearchParams({
@@ -666,7 +666,7 @@ export default {
 		 * Whether the instance is closed, and what readers are told.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+		 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 		 */
 		async loadMaintenance() {
 			const answer = await axios.get(
@@ -680,7 +680,7 @@ export default {
 		 * The version, build and licence a support call opens with.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
+		 * @spec openspec/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
 		 */
 		async loadFacts() {
 			const answer = await axios.get(
@@ -699,7 +699,7 @@ export default {
 		 *
 		 * @param {string} slug The job or maintenance action.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+		 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 		 */
 		async runNow(slug) {
 			this.acting = slug
@@ -724,7 +724,7 @@ export default {
 		 * Close the instance, with the message readers are given.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+		 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 		 */
 		async enterMaintenance() {
 			this.acting = 'maintenance'
@@ -749,7 +749,7 @@ export default {
 		 * Open the instance again.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+		 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 		 */
 		async leaveMaintenance() {
 			this.acting = 'maintenance'

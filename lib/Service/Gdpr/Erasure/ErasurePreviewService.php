@@ -43,11 +43,11 @@ namespace OCA\OpenRegister\Service\Gdpr\Erasure;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
-use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -63,7 +63,7 @@ use Throwable;
  * ask every existing authority its own question rather than re-derive any of
  * them, so it holds one collaborator per authority.
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+ * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
 class ErasurePreviewService {
 	/**
@@ -71,9 +71,9 @@ class ErasurePreviewService {
 	 *
 	 * @param DataSubjectRequestService $subjects       Cross-register discovery.
 	 * @param ArchivalRetentionGuard    $archivalGuard  Retention and legal-hold refusal, with its wording.
-	 * @param RetentionService          $retention      Immutable archival status.
+	 * @param RetentionServiceInterface          $retention      Immutable archival status.
 	 * @param DestructionScopeService   $scopeService   What goes with an object.
-	 * @param SchemaMapper              $schemaMapper   Schema resolution for the scope.
+	 * @param SchemaMapperInterface              $schemaMapper   Schema resolution for the scope.
 	 * @param SubjectPartyCounter       $parties        Party records naming the subject.
 	 * @param IDBConnection             $db             The PII index, for other subjects on a record.
 	 * @param LoggerInterface           $logger         PSR logger.
@@ -83,9 +83,9 @@ class ErasurePreviewService {
 	public function __construct(
 		private readonly DataSubjectRequestService $subjects,
 		private readonly ArchivalRetentionGuard $archivalGuard,
-		private readonly RetentionService $retention,
+		private readonly RetentionServiceInterface $retention,
 		private readonly DestructionScopeService $scopeService,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly SubjectPartyCounter $parties,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
@@ -111,7 +111,7 @@ class ErasurePreviewService {
 	 * and emptyCounts() derives the zeroed block from them, so injecting it would
 	 * add a collaborator that can never vary.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function preview(
 		string $subjectId,
@@ -174,7 +174,7 @@ class ErasurePreviewService {
 	 *
 	 * @return string A hex sha256.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function digest(array $preview): string {
 		$material = [

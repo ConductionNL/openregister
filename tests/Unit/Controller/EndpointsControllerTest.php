@@ -47,10 +47,7 @@ class EndpointsControllerTest extends TestCase {
 			$this->endpointMapper,
 			$this->endpointLogMapper,
 			$this->endpointService,
-			$this->logger,
-			$userSession,
-			$groupManager
-		);
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($userSession, $groupManager, $this->logger));
 	}
 
 	// ──────────────────────────────────────────────

@@ -32,6 +32,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Notification\EmailSender
+ * @uses \OCA\OpenRegister\Service\Notification\UnsubscribeHeaders
  */
 class EmailSenderTest extends TestCase {
 

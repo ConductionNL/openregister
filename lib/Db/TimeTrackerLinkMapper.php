@@ -32,6 +32,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<TimeTrackerLink>
  */
 class TimeTrackerLinkMapper extends QBMapper {
+	use FindLinksByObjectUuidTrait;
+	use DeleteLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -44,23 +46,6 @@ class TimeTrackerLinkMapper extends QBMapper {
 			entityClass: TimeTrackerLink::class
 		);
 	}//end __construct()
-
-	/**
-	 * Find time-tracker links by object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return TimeTrackerLink[] Array of time-tracker links.
-	 */
-	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
 
 	/**
 	 * Find a specific time-tracker link by object UUID + entry composite.
@@ -133,21 +118,6 @@ class TimeTrackerLinkMapper extends QBMapper {
 			return null;
 		}
 	}//end findByObjectAndEntryId()
-
-	/**
-	 * Delete all time-tracker links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 
 	/**
 	 * Delete a time-tracker link by object UUID + upstream entry id

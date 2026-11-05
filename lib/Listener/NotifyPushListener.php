@@ -21,7 +21,7 @@
  *    Returns user IDs that can read the object (empty array = all users / broadcast).
  *  - IQueue is resolved lazily from the container (OCA\NotifyPush\Queue\IQueue).
  *    If notify_push is not installed the container throws — soft-fail at most once.
- *  - Registration site: registerEventListeners() in Application.php, next to
+ *  - Registration site: ListenerRegistrar::register(), next to
  *    the GraphQLSubscriptionListener registrations.
  *  - IAppConfig key `openregister.push_available` is set to '1' on the first
  *    successful IQueue::push() call (consumed by OpenRegisterAdmin::getPushStatus()).
@@ -48,8 +48,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
@@ -128,8 +128,8 @@ class NotifyPushListener implements IEventListener {
 	 * @param ContainerInterface $container DI container for lazy IQueue resolution.
 	 * @param PermissionHandler $permissionHandler RBAC handler for reader-list resolution.
 	 * @param IAppConfig $appConfig App config for push_available flag.
-	 * @param RegisterMapper $registerMapper Mapper for resolving register slugs.
-	 * @param SchemaMapper $schemaMapper Mapper for resolving schema slugs.
+	 * @param RegisterMapperInterface $registerMapper Mapper for resolving register slugs.
+	 * @param SchemaMapperInterface $schemaMapper Mapper for resolving schema slugs.
 	 *
 	 * @spec openspec/changes/add-live-updates/tasks.md#task-4
 	 */
@@ -139,8 +139,8 @@ class NotifyPushListener implements IEventListener {
 		private readonly ContainerInterface $container,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly IAppConfig $appConfig,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 

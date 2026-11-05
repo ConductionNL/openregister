@@ -29,12 +29,12 @@ namespace OCA\OpenRegister\Listener;
 
 use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
@@ -67,9 +67,9 @@ class CalculationOnSaveListener implements IEventListener {
 	/**
 	 * Wire collaborators used to look up schema calculations.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
-	 * @param RegisterMapper $registerMapper Register lookup mapper (for sequence scope id).
-	 * @param CalculationEvaluator $evaluator Expression evaluator.
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
+	 * @param RegisterMapperInterface $registerMapper Register lookup mapper (for sequence scope id).
+	 * @param CalculationEvaluatorInterface $evaluator Expression evaluator.
 	 * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
 	 * @param SequenceService $sequences Atomic running-number reservation service.
 	 * @param RuleRunRecorder $ruleRuns Records each calculation's verdict for the rule inventory.
@@ -80,12 +80,12 @@ class CalculationOnSaveListener implements IEventListener {
 	 * @spec openspec/specs/computed-fields/spec.md
 	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
 	 * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-2
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly CalculationEvaluator $evaluator,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly CalculationEvaluatorInterface $evaluator,
 		private readonly CalculationPayloadBuilder $payloadBuilder,
 		private readonly SequenceService $sequences,
 		private readonly RuleRunRecorder $ruleRuns,
@@ -280,7 +280,7 @@ class CalculationOnSaveListener implements IEventListener {
 	 *   derivation of a rule id; a descriptor built here would carry a declaration this
 	 *   path has no use for.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function recordRun(ObjectEntity $object, string $slug, string $name, RuleTrace $trace): void {
 		if ($slug === '') {
@@ -393,7 +393,7 @@ class CalculationOnSaveListener implements IEventListener {
 	 * @return array<string, mixed>|null Calculations map, or null when nothing is declared.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	private function getCalculations(Schema $schema): ?array {
 		$config = ($schema->getConfiguration() ?? []);

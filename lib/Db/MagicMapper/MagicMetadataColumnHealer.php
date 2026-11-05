@@ -15,14 +15,14 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCP\ICache;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -62,7 +62,7 @@ use Psr\Log\LoggerInterface;
  * per request, and the search handler leaves the missing column out of the
  * query where that is safe (see missingFor()).
  *
- * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
  */
 class MagicMetadataColumnHealer {
 
@@ -113,7 +113,7 @@ class MagicMetadataColumnHealer {
 	 *
 	 * @param IDBConnection   $db          Connection the ALTER statements run on.
 	 * @param LoggerInterface $logger      Logger.
-	 * @param MagicMapper     $magicMapper Column definitions, column introspection and DDL rendering.
+	 * @param MagicMapperInterface     $magicMapper Column definitions, column introspection and DDL rendering.
 	 * @param ICache|null     $cache       Distributed cache shared across requests, null for none.
 	 *
 	 * @return void
@@ -121,7 +121,7 @@ class MagicMetadataColumnHealer {
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly ?ICache $cache = null,
 	) {
 	}//end __construct()
@@ -136,7 +136,7 @@ class MagicMetadataColumnHealer {
 	 *
 	 * @return list<string> Metadata column names still missing after the attempt.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
 	 */
 	public function ensure(string $tableName): array {
 		if (isset(self::$verified[$tableName]) === true) {
@@ -192,7 +192,7 @@ class MagicMetadataColumnHealer {
 	 *
 	 * @throws \Throwable When the table's columns cannot be read.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
 	 */
 	public function inspect(string $tableName): array {
 		$current = $this->magicMapper->getExistingTableColumns(tableName: $tableName);
@@ -224,7 +224,7 @@ class MagicMetadataColumnHealer {
 	 *
 	 * @throws \Throwable When $missing is null and the table's columns cannot be read.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
 	 */
 	public function heal(string $tableName, ?array $missing = null): array {
 		if ($missing === null) {
@@ -270,7 +270,7 @@ class MagicMetadataColumnHealer {
 	 *
 	 * @return list<string> Missing metadata column names, empty when complete or unknown.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
 	public function missingFor(string $tableName): array {
 		return self::$verified[$tableName] ?? [];
@@ -286,7 +286,7 @@ class MagicMetadataColumnHealer {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
 	 */
 	public function forget(string $tableName): void {
 		unset(self::$verified[$tableName], self::$warned[$tableName]);
@@ -309,7 +309,7 @@ class MagicMetadataColumnHealer {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
 	 */
 	public static function reset(): void {
 		self::$verified = [];
@@ -324,7 +324,7 @@ class MagicMetadataColumnHealer {
 	 *
 	 * @return string A short hash of the metadata column names and types.
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
 	 */
 	public function version(): string {
 		if ($this->version !== null) {

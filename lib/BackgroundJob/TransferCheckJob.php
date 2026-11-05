@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Edepot\TransferListService;
 use OCA\OpenRegister\Service\Edepot\TransferRecordService;
-use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
@@ -57,7 +57,7 @@ class TransferCheckJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time The time factory.
-	 * @param RetentionService $retentionService Owns the retention sweep both archival jobs share.
+	 * @param RetentionServiceInterface $retentionService Owns the retention sweep both archival jobs share.
 	 * @param TransferListService $transferListService The transfer list service.
 	 * @param TransferRecordService $transferRecords Durable transfer-list records.
 	 * @param IAppConfig $appConfig The app configuration.
@@ -67,7 +67,7 @@ class TransferCheckJob extends TimedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly RetentionService $retentionService,
+		private readonly RetentionServiceInterface $retentionService,
 		private readonly TransferListService $transferListService,
 		private readonly TransferRecordService $transferRecords,
 		private readonly IAppConfig $appConfig,

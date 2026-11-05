@@ -42,8 +42,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\Task;
 use DateTime;
+use OCA\OpenRegister\Controller\Support\TaskControllerServices;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
@@ -51,11 +51,12 @@ use OCA\OpenRegister\Exception\TaskFormRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
+use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskFormCompletion;
 use OCA\OpenRegister\Service\Task\TaskFormResolver;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
-use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -97,42 +98,90 @@ use Throwable;
 class TaskController extends Controller {
 
 	/**
+	 * The authorized lifecycle.
+	 *
+	 * @var TaskManagerInterface
+	 */
+	private readonly TaskManagerInterface $tasks;
+
+	/**
+	 * The inbox queries.
+	 *
+	 * @var TaskInboxService
+	 */
+	private readonly TaskInboxService $inbox;
+
+	/**
+	 * Read-visibility decisions.
+	 *
+	 * @var TaskAuthorizationService
+	 */
+	private readonly TaskAuthorizationService $authorization;
+
+	/**
+	 * The one overdue derivation.
+	 *
+	 * @var TaskTemporalProjection
+	 */
+	private readonly TaskTemporalProjection $temporal;
+
+	/**
+	 * Names the acting identity.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Resolves the form a task presents, per read.
+	 *
+	 * @var TaskFormResolver
+	 */
+	private readonly TaskFormResolver $forms;
+
+	/**
+	 * Completes a task with a form payload,
+	 *
+	 * @var TaskFormCompletion
+	 */
+	private readonly TaskFormCompletion $completion;
+
+	/**
+	 * Where an unexpected failure's
+	 *
+	 * @var ?LoggerInterface
+	 */
+	private readonly ?LoggerInterface $logger;
+
+	/**
+	 * Resolves the caller's groups
+	 *
+	 * @var ?IGroupManager
+	 */
+	private readonly ?IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param TaskService $tasks The authorized lifecycle.
-	 * @param TaskInboxService $inbox The inbox queries.
-	 * @param TaskAuthorizationService $authorization Read-visibility decisions.
-	 * @param TaskTemporalProjection $temporal The one overdue derivation.
-	 * @param IUserSession $userSession Names the acting identity.
-	 * @param TaskFormResolver $forms Resolves the form a task presents, per read.
-	 * @param TaskFormCompletion $completion Completes a task with a form payload,
-	 *                                       writing the subject first.
-	 * @param LoggerInterface|null $logger Where an unexpected failure's
-	 *                                     detail goes, INSTEAD of the response.
-	 * @param IGroupManager|null $groupManager Resolves the caller's groups
-	 *                                         and admin status for inbox
-	 *                                         visibility. Nullable so the
-	 *                                         controller stays constructible
-	 *                                         bare; absent means no groups
-	 *                                         and not admin, which SCOPES
-	 *                                         rather than widens.
+	 * @param TaskControllerServices $services The task controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly TaskService $tasks,
-		private readonly TaskInboxService $inbox,
-		private readonly TaskAuthorizationService $authorization,
-		private readonly TaskTemporalProjection $temporal,
-		private readonly IUserSession $userSession,
-		private readonly TaskFormResolver $forms,
-		private readonly TaskFormCompletion $completion,
-		private readonly ?LoggerInterface $logger = null,
-		private readonly ?IGroupManager $groupManager = null,
+		TaskControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->tasks = $services->work->tasks;
+		$this->inbox = $services->work->inbox;
+		$this->authorization = $services->work->authorization;
+		$this->temporal = $services->work->temporal;
+		$this->userSession = $services->platform->userSession;
+		$this->forms = $services->completion->forms;
+		$this->completion = $services->completion->completion;
+		$this->logger = $services->platform->logger;
+		$this->groupManager = $services->platform->groupManager;
 
 	}//end __construct()
 
@@ -214,6 +263,8 @@ class TaskController extends Controller {
 	 * @param string|null $includeBlocked 'true' to list tasks whose blocker is
 	 *                                    still open. An object or run anchor
 	 *                                    lists them regardless.
+	 * @param string|null $openFirst 'true' to list open tasks before finished
+	 *                               ones, each in the order `sort` asks.
 	 *
 	 * @return JSONResponse The page: results, total, limit, offset.
 	 *
@@ -237,6 +288,7 @@ class TaskController extends Controller {
 		int $limit = 25,
 		int $offset = 0,
 		?string $includeBlocked = null,
+		?string $openFirst = null,
 	): JSONResponse {
 		$uid = $this->uid();
 		if ($uid === null) {
@@ -289,6 +341,7 @@ class TaskController extends Controller {
 			sort: $sortKey,
 			sortDescending: $descending,
 			includeBlocked: ($includeBlocked !== null && filter_var($includeBlocked, FILTER_VALIDATE_BOOLEAN) === true),
+			openFirst: ($openFirst !== null && filter_var($openFirst, FILTER_VALIDATE_BOOLEAN) === true),
 		);
 
 		return new JSONResponse($this->inbox->inbox(criteria: $criteria, limit: $limit, offset: $offset));
@@ -327,7 +380,7 @@ class TaskController extends Controller {
 
 		return new JSONResponse(
 			array_merge(
-				$this->inbox->row(task: $task, subjects: [], now: $this->temporal->now()),
+				$this->inbox->enrich(task: $task),
 				$this->forms->describe(task: $task)
 			)
 		);
@@ -378,7 +431,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->create(data: $this->body(), actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->create(data: $this->body(), actor: $this->uid()),
 			successStatus: Http::STATUS_CREATED
 		);
 	}//end create()
@@ -396,7 +449,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function offer(string $uuid): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->offer(uuid: $uuid, pool: $this->body(), actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->offer(uuid: $uuid, pool: $this->body(), actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end offer()
@@ -414,7 +467,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function claim(string $uuid): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->claim(uuid: $uuid, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->claim(uuid: $uuid, actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end claim()
@@ -432,7 +485,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function unclaim(string $uuid): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->unclaim(uuid: $uuid, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->unclaim(uuid: $uuid, actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end unclaim()
@@ -451,7 +504,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function assign(string $uuid, string $assignee = ''): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->assign(uuid: $uuid, assignee: $assignee, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->assign(uuid: $uuid, assignee: $assignee, actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end assign()
@@ -470,7 +523,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function reassign(string $uuid, string $assignee = ''): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->reassign(uuid: $uuid, assignee: $assignee, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->reassign(uuid: $uuid, assignee: $assignee, actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end reassign()
@@ -490,7 +543,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function delegate(string $uuid, string $delegate = '', string $mandate = ''): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->delegate(uuid: $uuid, delegate: $delegate, mandate: $mandate, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->delegate(uuid: $uuid, delegate: $delegate, mandate: $mandate, actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end delegate()
@@ -510,7 +563,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function resolve(string $uuid, ?string $resultText = null, ?string $comment = null): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->resolve(uuid: $uuid, resultText: $resultText, comment: $comment, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->resolve(uuid: $uuid, resultText: $resultText, comment: $comment, actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end resolve()
@@ -548,7 +601,7 @@ class TaskController extends Controller {
 		}
 
 		return $this->respondWith(
-			verb: fn (): Task => $this->completion->complete(
+			verb: fn (): TaskInterface => $this->completion->complete(
 				uuid: $uuid,
 				outcome: $outcome,
 				resultText: $resultText,
@@ -574,10 +627,32 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function cancel(string $uuid, ?string $reason = null): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->cancel(uuid: $uuid, reason: $reason, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->cancel(uuid: $uuid, reason: $reason, actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end cancel()
+
+	/**
+	 * Edit a task's own fields: title, description, due date, priority.
+	 *
+	 * The body is the change. Who may edit (the assignee, a pool member or
+	 * an administrator) is decided in the service before anything is
+	 * written; an unknown or invalid field is a 400.
+	 *
+	 * @param string $uuid The task uuid.
+	 *
+	 * @return JSONResponse The task as it now stands, or a named refusal.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function edit(string $uuid): JSONResponse {
+		return $this->respondWith(
+			verb: fn (): TaskInterface => $this->tasks->edit(uuid: $uuid, changes: $this->body(), actor: $this->uid()),
+			uuid: $uuid
+		);
+	}//end edit()
 
 	/**
 	 * Check or uncheck one checklist item, addressed by id.
@@ -597,7 +672,7 @@ class TaskController extends Controller {
 		$value = filter_var($checked, FILTER_VALIDATE_BOOLEAN);
 
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->checkChecklistItem(uuid: $uuid, itemId: $itemId, checked: $value, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->checkChecklistItem(uuid: $uuid, itemId: $itemId, checked: $value, actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end checkItem()
@@ -615,7 +690,7 @@ class TaskController extends Controller {
 	 * never the exception text, which for a database failure carries SQL and
 	 * bound parameters.
 	 *
-	 * @param callable(): Task $verb The service call.
+	 * @param callable(): TaskInterface $verb The service call.
 	 * @param int $successStatus The status of the happy path.
 	 * @param string|null $uuid The task acted on, for the denial mapping.
 	 *
@@ -629,7 +704,7 @@ class TaskController extends Controller {
 			$task = $verb();
 
 			return new JSONResponse(
-				$this->inbox->row(task: $task, subjects: [], now: $this->temporal->now()),
+				$this->inbox->enrich(task: $task),
 				$successStatus
 			);
 		} catch (TaskFormRefusedException $refused) {
@@ -734,7 +809,7 @@ class TaskController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function parseInstant(?string $value): ?DateTime {
-		$raw = trim((string) ($value ?? ''));
+		$raw = trim((string)($value ?? ''));
 		if ($raw === '') {
 			return null;
 		}
@@ -760,7 +835,7 @@ class TaskController extends Controller {
 	 * than was asked for is exactly the failure this endpoint's scope rules
 	 * exist to prevent.
 	 *
-	 * @param string|null $dueAfter  The raw lower bound.
+	 * @param string|null $dueAfter The raw lower bound.
 	 * @param string|null $dueBefore The raw upper bound.
 	 *
 	 * @return array{after: DateTime|null, before: DateTime|null, error: string|null}

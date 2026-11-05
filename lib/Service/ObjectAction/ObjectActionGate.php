@@ -33,6 +33,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCP\IL10N;
 use OCP\IUserSession;
 
@@ -49,7 +51,7 @@ class ObjectActionGate {
 	/**
 	 * Constructor.
 	 *
-	 * @param PermissionHandler $permissions The authorization block's judge.
+	 * @param PermissionHandler $permissions The authorization block's judge, and its app matrix rows.
 	 * @param IUserSession      $userSession The acting user.
 	 * @param IL10N             $l10n        Picks the reason's language.
 	 * @param ObjectActionElevationEntries $elevation Resolves an action's `elevate` entries.
@@ -94,6 +96,137 @@ class ObjectActionGate {
 			object: $object
 		);
 	}//end may()
+
+	/**
+	 * Whether the caller may run this action on the object.
+	 *
+	 * Every kind but a self-assign is decided by may() on its right. A
+	 * self-assign runs only when the schema grants it by name, in its
+	 * authorization block or in a declared or app-provided matrix row; without
+	 * either nobody may run it, also on a schema whose empty block would
+	 * otherwise default open. Its right is then checked without the object
+	 * owner's bypass: owning an object does not make one its assignee.
+	 *
+	 * @param Schema                 $schema     The object's schema.
+	 * @param string                 $right      The right a non-self-assign action needs.
+	 * @param ObjectActionDefinition $definition The action.
+	 * @param ObjectEntity|null      $object     The object, or null for a selection.
+	 *
+	 * @return bool True when the caller may run it.
+	 *
+	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 */
+	public function mayRun(Schema $schema, string $right, ObjectActionDefinition $definition, ?ObjectEntity $object): bool {
+		if ($definition->selfAssignField() === null) {
+			return $this->may(schema: $schema, right: $right, object: $object);
+		}
+
+		return $this->selfAssignNamed(schema: $schema, key: $definition->key)
+			&& $this->permissions->hasPermission(
+				schema: $schema,
+				action: $definition->key,
+				userId: $this->userId(),
+				objectOwner: null,
+				_rbac: true,
+				object: $this->withoutOwnership(object: $object)
+			);
+	}//end mayRun()
+
+	/**
+	 * The object as the permission check sees it for a self-assign: without its owner or owning group.
+	 *
+	 * A private-scope object admits its owner and its owning group for every
+	 * action; for a self-assign that would let owning the object grant it.
+	 *
+	 * @param ObjectEntity|null $object The object, or null for a selection.
+	 *
+	 * @return ObjectEntity|null A copy without owner and owning group.
+	 */
+	private function withoutOwnership(?ObjectEntity $object): ?ObjectEntity {
+		if ($object === null) {
+			return null;
+		}
+
+		$probe = clone $object;
+		$probe->setOwner(null);
+		$authorization = $probe->getAuthorization();
+		if (is_array($authorization) === true) {
+			unset($authorization[ObjectScopeResolver::OWNER_GROUP_KEY]);
+			$probe->setAuthorization($authorization);
+		}
+
+		return $probe;
+	}//end withoutOwnership()
+
+	/**
+	 * Whether the schema names this self-assign action in a rule or in a matrix row, its app rows included.
+	 *
+	 * @param Schema $schema The schema.
+	 * @param string $key    The action key.
+	 *
+	 * @return bool True when a rule or a row grants it by name.
+	 */
+	private function selfAssignNamed(Schema $schema, string $key): bool {
+		$authorization = ($schema->getAuthorization() ?? []);
+		if (empty($authorization[$key]) === false) {
+			return true;
+		}
+
+		$matrix = ($authorization[DepartmentMatrixCompiler::KEY] ?? null);
+		if (is_array($matrix) === false) {
+			return false;
+		}
+
+		return $this->rowsName(rows: ($this->permissions->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix)['rows'] ?? null), key: $key);
+	}//end selfAssignNamed()
+
+	/**
+	 * Whether a self-assign action's property is still empty on this object.
+	 *
+	 * @param ObjectActionDefinition $definition The action.
+	 * @param ObjectEntity           $object     The object.
+	 *
+	 * @return bool True when the property is empty, or the action is not a self-assign.
+	 *
+	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 */
+	public function selfAssignOpen(ObjectActionDefinition $definition, ObjectEntity $object): bool {
+		$field = $definition->selfAssignField();
+		if ($field === null) {
+			return true;
+		}
+
+		$value = (($object->getObject() ?? [])[$field] ?? null);
+
+		return in_array($value, [null, '', []], true);
+	}//end selfAssignOpen()
+
+	/**
+	 * Whether any declared matrix row grants this action.
+	 *
+	 * @param mixed  $rows The declared rows.
+	 * @param string $key  The action key.
+	 *
+	 * @return bool True when a row names it.
+	 */
+	private function rowsName(mixed $rows, string $key): bool {
+		if (is_array($rows) === false) {
+			return false;
+		}
+
+		foreach ($rows as $row) {
+			if (is_array($row) === false) {
+				continue;
+			}
+
+			$actions = array_map(static fn ($action): string => trim((string)$action), (array)($row['actions'] ?? []));
+			if (in_array($key, $actions, true) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end rowsName()
 
 	/**
 	 * Whether the action's `when` holds for this object and these inputs.

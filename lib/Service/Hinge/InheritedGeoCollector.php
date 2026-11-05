@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hinge;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use Psr\Log\LoggerInterface;
@@ -59,15 +59,15 @@ class InheritedGeoCollector {
 	/**
 	 * Wire the object lookup the collector reads referenced records through.
 	 *
-	 * @param MagicMapper     $magicMapper Object storage.
+	 * @param MagicMapperInterface     $magicMapper Object storage.
 	 * @param LoggerInterface $logger      PSR logger for unreadable references.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -89,7 +89,7 @@ class InheritedGeoCollector {
 	 *   PermissionHandler, ObjectService all take it); splitting this one method
 	 *   in two would make it the exception rather than the rule.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function collect(ObjectEntity $object, ?Schema $schema, bool $_rbac = true): array {
 		$own = $this->featuresOf(source: $object->getGeo());

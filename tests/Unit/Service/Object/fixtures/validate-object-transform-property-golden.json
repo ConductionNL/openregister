@@ -1,0 +1,235 @@
+{
+    "plain string": {
+        "type": "string"
+    },
+    "unusable int ref": {
+        "type": "array",
+        "items": {
+            "type": "string"
+        }
+    },
+    "unusable empty ref": [],
+    "inversedBy array": {
+        "type": "array",
+        "inversedBy": "owner",
+        "items": {
+            "oneOf": [
+                {
+                    "type": "string",
+                    "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                    "description": "UUID reference to a related object"
+                },
+                {
+                    "type": "object",
+                    "description": "Nested object that will be created separately"
+                }
+            ]
+        }
+    },
+    "inversedBy object": {
+        "inversedBy": "owner",
+        "oneOf": [
+            {
+                "type": "null",
+                "description": "No related object (inversedBy - managed by other side)"
+            },
+            {
+                "type": "string",
+                "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                "description": "UUID reference to a related object"
+            },
+            {
+                "type": "object",
+                "description": "Nested object that will be created separately"
+            }
+        ]
+    },
+    "inversedBy string": {
+        "type": "string",
+        "inversedBy": "owner"
+    },
+    "inversedBy empty": {
+        "type": "array",
+        "inversedBy": "",
+        "items": {
+            "type": "string"
+        }
+    },
+    "inversedBy without type": {
+        "inversedBy": "owner"
+    },
+    "array items as array": {
+        "type": "array",
+        "items": {
+            "format": "uuid",
+            "type": "string",
+            "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+            "description": "UUID reference to a related object"
+        }
+    },
+    "array items inversedBy": {
+        "type": "array",
+        "items": {
+            "type": "string",
+            "inversedBy": "parent",
+            "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+            "description": "UUID reference to a related object (inversedBy - should be empty)"
+        }
+    },
+    "array items ref": {
+        "type": "array",
+        "items": {
+            "type": "string",
+            "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+            "description": "UUID reference to a related object"
+        }
+    },
+    "array items unusable ref": {
+        "type": "array",
+        "items": {
+            "type": "string"
+        }
+    },
+    "array items object": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "planId": {
+                    "type": "string"
+                },
+                "free": [],
+                "deep": {
+                    "type": "object",
+                    "properties": {
+                        "z": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "array items scalar": {
+        "type": "array",
+        "items": {
+            "type": "integer"
+        }
+    },
+    "array items string": {
+        "type": "array",
+        "items": "string"
+    },
+    "array without items": {
+        "type": "array"
+    },
+    "object property": {
+        "type": "object",
+        "$ref": "address",
+        "properties": {
+            "street": {
+                "type": "string"
+            }
+        }
+    },
+    "object property, no ref": {
+        "type": "object",
+        "properties": {
+            "n": {
+                "type": "number"
+            }
+        },
+        "required": [
+            "n"
+        ]
+    },
+    "string ref": {
+        "type": "string",
+        "format": "uuid"
+    },
+    "bare slug ref": [],
+    "fragment ref kept": {
+        "$ref": "#/definitions/x"
+    },
+    "uri ref kept": {
+        "$ref": "https://example.org/schema"
+    },
+    "typed number ref kept": {
+        "type": "number",
+        "$ref": "measure"
+    },
+    "nested properties": {
+        "type": "object",
+        "properties": {
+            "inner": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                    "description": "UUID reference to a related object"
+                }
+            },
+            "other": {
+                "type": "string"
+            }
+        }
+    },
+    "inversedBy object, fragment ref": {
+        "inversedBy": "owner",
+        "oneOf": [
+            {
+                "type": "null",
+                "description": "No related object (inversedBy - managed by other side)"
+            },
+            {
+                "type": "string",
+                "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+                "description": "UUID reference to a related object"
+            },
+            {
+                "type": "object",
+                "description": "Nested object that will be created separately"
+            }
+        ]
+    },
+    "fragment-only ref kept": {
+        "$ref": "#anchor"
+    },
+    "object related-object": {
+        "type": "string",
+        "objectConfiguration": {
+            "handling": "related-object"
+        },
+        "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+        "description": "UUID reference to a related object"
+    },
+    "object nested-object": {
+        "type": "object",
+        "objectConfiguration": {
+            "handling": "nested-object"
+        },
+        "properties": {
+            "a": {
+                "type": "string"
+            }
+        }
+    },
+    "array items related-schema": {
+        "type": "array",
+        "items": {
+            "type": "string",
+            "objectConfiguration": {
+                "handling": "related-schema"
+            },
+            "pattern": "^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$",
+            "description": "UUID reference to a related object"
+        }
+    },
+    "untyped with properties": {
+        "properties": {
+            "p": {
+                "type": "string"
+            }
+        }
+    }
+}

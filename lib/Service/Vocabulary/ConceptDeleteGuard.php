@@ -29,16 +29,16 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Vocabulary;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\VocabularyImportService;
 use Throwable;
 
@@ -58,14 +58,14 @@ class ConceptDeleteGuard {
 	 * Constructor.
 	 *
 	 * @param ConceptLifecycle $lifecycle Answers whether a value is system-defined.
-	 * @param SchemaMapper $schemas Finds the schemas whose properties bind to a scheme.
-	 * @param MagicMapper $objects Counts the objects holding a value.
+	 * @param SchemaMapperInterface $schemas Finds the schemas whose properties bind to a scheme.
+	 * @param MagicMapperInterface $objects Counts the objects holding a value.
 	 * @param CodedPropertyDeclarationFactory $declarationFactory Reads a schema's coded declarations.
 	 */
 	public function __construct(
 		private readonly ConceptLifecycle $lifecycle,
-		private readonly SchemaMapper $schemas,
-		private readonly MagicMapper $objects,
+		private readonly SchemaMapperInterface $schemas,
+		private readonly MagicMapperInterface $objects,
 		private readonly CodedPropertyDeclarationFactory $declarationFactory,
 	) {
 
@@ -78,7 +78,7 @@ class ConceptDeleteGuard {
 	 *
 	 * @return boolean True when the object is a concept.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function isConcept(Schema $schema): bool {
 		return ((string)$schema->getSlug() === VocabularyImportService::SCHEMA_CONCEPT);
@@ -91,7 +91,7 @@ class ConceptDeleteGuard {
 	 *
 	 * @return boolean True when the delete must be refused as system-defined.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function isSystemDefined(array $concept): bool {
 		return $this->lifecycle->isSystemDefined(concept: $concept);
@@ -110,7 +110,7 @@ class ConceptDeleteGuard {
 	 *
 	 * @return array{count:int,holders:array<int,array{schema:string,property:string,count:int}>}
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function usage(array $concept, string $schemeUri): array {
 		$uri = trim((string)($concept['uri'] ?? ''));
@@ -197,7 +197,7 @@ class ConceptDeleteGuard {
 	 *
 	 * @return string The message.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function inUseMessage(array $concept, array $usage): string {
 		$label = trim((string)($concept['uri'] ?? 'this value'));
@@ -228,7 +228,7 @@ class ConceptDeleteGuard {
 	 *
 	 * @return string The message.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function systemDefinedMessage(array $concept): string {
 		return sprintf(

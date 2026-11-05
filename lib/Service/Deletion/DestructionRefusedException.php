@@ -62,7 +62,7 @@ class DestructionRefusedException extends Exception {
 	 *
 	 * @return string The rule id.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function getRule(): string {
 		return $this->rule;
@@ -73,7 +73,7 @@ class DestructionRefusedException extends Exception {
 	 *
 	 * @return int The status code.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function getStatusCode(): int {
 		return $this->statusCode;
@@ -84,7 +84,7 @@ class DestructionRefusedException extends Exception {
 	 *
 	 * @return array<string, mixed> The response body.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function toResponseBody(): array {
 		return array_merge(

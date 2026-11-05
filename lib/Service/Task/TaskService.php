@@ -54,6 +54,7 @@ use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -94,7 +95,14 @@ use UnexpectedValueException;
  *
  * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
-class TaskService {
+class TaskService implements TaskServiceInterface, TaskManagerInterface {
+
+	/**
+	 * The fields only the task sequence sets, through {@see import()}.
+	 *
+	 * @var array<int, string>
+	 */
+	private const SEQUENCE_FIELDS = ['sequenceUuid', 'sequencePosition', 'legacyStepId'];
 
 	/**
 	 * Constructor.
@@ -157,6 +165,8 @@ class TaskService {
 	 *                                         not. Nullable for hand-built
 	 *                                         test services; absent, tasks are
 	 *                                         written as given.
+	 * @param TaskEdit|null $editor Validates and applies an edit of a
+	 *                              task's own fields; absent, a plain one.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -173,6 +183,7 @@ class TaskService {
 		private readonly ?TaskSequenceDecisionGuard $sequenceGuard = null,
 		private readonly ?TaskSubjectAccessGuard $subjects = null,
 		private readonly ?TaskSubjectLocator $locator = null,
+		private readonly ?TaskEdit $editor = null,
 	) {
 
 	}//end __construct()
@@ -204,6 +215,8 @@ class TaskService {
 	 * This is the HTTP path: unless the actor is an administrator, the
 	 * requester is pinned to the actor and a terminal creation state is
 	 * refused. In-process callers that need either use {@see import()}.
+	 * Sequence fields are refused for every caller: only the task sequence
+	 * sets them, through {@see import()}.
 	 *
 	 * @param array<string, mixed> $data The task fields, canonical or legacy.
 	 * @param string|null $actor The creating identity.
@@ -219,8 +232,11 @@ class TaskService {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 * @spec openspec/changes/sequence-fields-are-set-by-the-sequence-service-only/specs/flow-approval-consolidation/spec.md#requirement-only-the-task-sequence-sets-a-tasks-sequence-fields
 	 */
 	public function create(array $data, ?string $actor): Task {
+		$this->refuseSequenceFields(data: $data);
+
 		// Located first, so the access guard below reads the subject from its
 		// own table instead of searching every magic table for it. A refusal
 		// reads the same either way: location says where, never whether.
@@ -268,6 +284,37 @@ class TaskService {
 	}//end create()
 
 	/**
+	 * Refuse a sequence field on the create path, naming it.
+	 *
+	 * @param array<string, mixed> $data The task fields.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskValidationException When a sequence field carries a value.
+	 *
+	 * @spec openspec/changes/sequence-fields-are-set-by-the-sequence-service-only/specs/flow-approval-consolidation/spec.md#requirement-only-the-task-sequence-sets-a-tasks-sequence-fields
+	 */
+	private function refuseSequenceFields(array $data): void {
+		$given = [];
+		foreach (self::SEQUENCE_FIELDS as $field) {
+			if (($data[$field] ?? null) !== null) {
+				$given[] = $field;
+			}
+		}
+
+		$snapshot = ($data['templateSnapshot'] ?? null);
+		if (is_array($snapshot) === true && array_key_exists('approvingOutcomes', $snapshot) === true) {
+			$given[] = 'templateSnapshot.approvingOutcomes';
+		}
+
+		if ($given !== []) {
+			throw new TaskValidationException(
+				message: sprintf("Field '%s' is set by the task sequence only and cannot be given when creating a task.", $given[0])
+			);
+		}
+	}//end refuseSequenceFields()
+
+	/**
 	 * Create a task on the TRUSTED path: migrations and in-process callers
 	 * (the user-task node) that may name a requester and may import a task
 	 * that is already closed (a completed approval carried over from a
@@ -277,6 +324,8 @@ class TaskService {
 	 * @param string|null $actor The creating identity.
 	 * @param callable|null $mayReadBlocker Answers whether the creating caller may read a blocker; create() passes
 	 *                                      the caller's own rule for an ordinary user, a trusted caller passes none.
+	 * @param DateTime|null $createdAt The moment the task was created, for a task carried over from elsewhere; it stamps
+	 *                                 the task and its create audit entry. Null stamps both with now.
 	 *
 	 * @return Task The created task, with candidates indexed and creation audited.
 	 *
@@ -285,10 +334,12 @@ class TaskService {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-task-may-carry-the-moment-it-was-created
 	 */
-	public function import(array $data, ?string $actor, ?callable $mayReadBlocker = null): Task {
+	public function import(array $data, ?string $actor, ?callable $mayReadBlocker = null, ?DateTime $createdAt = null): Task {
 		$data = $this->locate(data: $data);
 		$task = $this->builder->fromData(data: $data, actor: $actor);
+		$task->setCreated($createdAt);
 		$this->refuseUnrenderableForm(task: $task);
 		(new TaskBlockerGuard(tasks: $this->tasks))->assertDeclarable(task: $task, mayRead: $mayReadBlocker);
 		$this->authorizeOrRecord(verb: 'create', task: $task, actor: $actor);
@@ -406,6 +457,46 @@ class TaskService {
 			}
 		);
 	}//end offer()
+
+	/**
+	 * Edit a task's own fields: title, description, due date, priority.
+	 *
+	 * Authorization runs first (the assignee, a pool member or an
+	 * administrator; a denial is audited and writes nothing), then the
+	 * values are validated, then the change and its audit entry are written
+	 * in one transaction. An edit that changes nothing writes nothing.
+	 *
+	 * @param string $uuid The task uuid.
+	 * @param array<string, mixed> $changes The new values by field.
+	 * @param string|null $actor The editing identity.
+	 *
+	 * @return Task The task as it now stands.
+	 *
+	 * @throws TaskValidationException When a field is unknown or invalid.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
+	 */
+	public function edit(string $uuid, array $changes, ?string $actor): Task {
+		$task = $this->openTaskFor(verb: 'edit', uuid: $uuid, actor: $actor);
+		$changed = ($this->editor ?? new TaskEdit())->apply(task: $task, changes: $changes);
+		if ($changed === []) {
+			return $task;
+		}
+
+		return $this->transactional(
+			mutation: function () use ($task, $changed, $actor): Task {
+				$persisted = $this->persistOpen(task: $task);
+				$this->appendAudit(
+					task: $persisted,
+					action: 'edit',
+					actor: $actor,
+					reason: sprintf('Changed: %s.', implode(', ', $changed))
+				);
+
+				return $persisted;
+			}
+		);
+	}//end edit()
 
 	/**
 	 * Claim: assign IF still unassigned — the database decides the race.
@@ -801,7 +892,10 @@ class TaskService {
 	 *
 	 * Refused on a task that is not completed with an approving outcome, and
 	 * refused AGAIN on one already consumed — the second refusal is the
-	 * whole point.
+	 * whole point. An outcome approves only when it is in the task's declared
+	 * `approvingOutcomes`, or in {@see TaskState::APPROVING_OUTCOMES} when the
+	 * task declares none; a completion that neither approves nor rejects is
+	 * refused as undecided.
 	 *
 	 * @param string $uuid The decided task's uuid.
 	 * @param string $source The consuming identity recorded as actor.
@@ -812,22 +906,11 @@ class TaskService {
 	 * @throws TaskConflictException When not an unconsumed approving decision.
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
+	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
 	 */
 	public function consume(string $uuid, string $source, string $reason): Task {
 		$task = $this->tasks->findByUuid(uuid: $uuid);
-
-		$approved = ((string)$task->getState() === Task::STATE_COMPLETED
-			&& TaskState::isRejectingOutcome(outcome: $task->getOutcome()) === false);
-		if ($approved === false) {
-			throw new TaskConflictException(
-				message: sprintf(
-					"Verb 'consume' refused: task '%s' is not an approving decision (state '%s', outcome '%s').",
-					$uuid,
-					(string)$task->getState(),
-					(string)$task->getOutcome()
-				)
-			);
-		}
+		$this->assertApprovingDecision(task: $task);
 
 		$metadata = ($task->getMetadata() ?? []);
 		if (trim((string)($metadata['consumedAt'] ?? '')) !== '') {
@@ -861,6 +944,42 @@ class TaskService {
 
 		return $persisted;
 	}//end consume()
+
+	/**
+	 * Refuse anything but a completed task with an approving outcome.
+	 *
+	 * @param Task $task The decided task.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskConflictException When the task is open, rejected or undecided.
+	 *
+	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
+	 */
+	private function assertApprovingDecision(Task $task): void {
+		$completed = ((string)$task->getState() === Task::STATE_COMPLETED);
+		if ($completed === false || TaskState::isRejectingOutcome(outcome: $task->getOutcome()) === true) {
+			throw new TaskConflictException(
+				message: sprintf(
+					"Verb 'consume' refused: task '%s' is not an approving decision (state '%s', outcome '%s').",
+					(string)$task->getUuid(),
+					(string)$task->getState(),
+					(string)$task->getOutcome()
+				)
+			);
+		}
+
+		$approving = TaskState::approvingSetOrDefault(declared: (($task->getTemplateSnapshot() ?? [])['approvingOutcomes'] ?? null));
+		if (TaskState::isApprovingOutcome(outcome: $task->getOutcome(), approving: $approving) === false) {
+			throw new TaskConflictException(
+				message: sprintf(
+					"Verb 'consume' refused: task '%s' is undecided: outcome '%s' neither approves nor rejects.",
+					(string)$task->getUuid(),
+					(string)$task->getOutcome()
+				)
+			);
+		}
+	}//end assertApprovingDecision()
 
 	/**
 	 * Enable a position: the sequence's own promotion verb.
@@ -1015,6 +1134,27 @@ class TaskService {
 	public function get(string $uuid): Task {
 		return $this->tasks->findByUuid(uuid: $uuid);
 	}//end get()
+
+	/**
+	 * Every task carrying this external key, terminal ones included.
+	 *
+	 * A task added once per thing is looked up by its key before it is added
+	 * again; a completed or cancelled one still counts as added.
+	 *
+	 * @param string $key The external key.
+	 *
+	 * @return array<int, Task> The tasks; empty for a blank key.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md
+	 */
+	public function findByKey(string $key): array {
+		$key = trim($key);
+		if ($key === '') {
+			return [];
+		}
+
+		return $this->tasks->findByKey(key: $key);
+	}//end findByKey()
 
 	/**
 	 * Resolve, authorize and audit a verb's task WITHOUT running the verb.
@@ -1472,6 +1612,11 @@ class TaskService {
 		$entry->setMandate($task->getMandate());
 		$entry->setReason($reason);
 		$entry->setAuthorized(true);
+		if ($action === 'create') {
+			// The create entry happened when the task did, which an imported task may date in the past.
+			$entry->setCreated($task->getCreated());
+		}
+
 		$this->audits->insert($entry);
 	}//end appendAudit()
 

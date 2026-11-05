@@ -127,6 +127,8 @@ export function representativePoint(geometry) {
  * @param {Array<object>} rows        Object rows.
  * @param {string|null}   geoProperty Geo property name, or null to auto-detect.
  * @return {Array<object>} The marker list.
+ *
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-003
  */
 export function buildMarkers(rows, geoProperty = null) {
 	if (!Array.isArray(rows)) {
@@ -134,23 +136,62 @@ export function buildMarkers(rows, geoProperty = null) {
 	}
 	const markers = []
 	for (const row of rows) {
-		if (row === null || typeof row !== 'object') {
-			continue
+		const marker = markerFor(row, geoProperty)
+		if (marker !== null) {
+			markers.push(marker)
 		}
-		const geometry = locateGeometry(row, geoProperty)
-		const point = representativePoint(geometry)
-		if (point === null) {
-			continue
-		}
-		markers.push({
-			id: row.id ?? (row['@self'] && row['@self'].id) ?? null,
-			title: String(row.title ?? row.name ?? row.id ?? ''),
-			lon: point[0],
-			lat: point[1],
-			properties: row,
-		})
 	}
 	return markers
+}
+
+/**
+ * The marker for one object row, or null when the row has no point.
+ *
+ * @param {unknown}     row         The object row.
+ * @param {string|null} geoProperty Geo property name, or null to auto-detect.
+ * @return {object|null} The marker.
+ *
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-003
+ */
+function markerFor(row, geoProperty) {
+	if (row === null || typeof row !== 'object') {
+		return null
+	}
+	const point = representativePoint(locateGeometry(row, geoProperty))
+	if (point === null) {
+		return null
+	}
+	return {
+		id: rowId(row),
+		title: rowTitle(row),
+		lon: point[0],
+		lat: point[1],
+		properties: row,
+	}
+}
+
+/**
+ * The id of an object row: its own id, else its `@self` id, else null.
+ *
+ * @param {object} row The object row.
+ * @return {string|number|null} The id.
+ *
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-003
+ */
+function rowId(row) {
+	return row.id ?? (row['@self'] && row['@self'].id) ?? null
+}
+
+/**
+ * The marker title of an object row: title, name or id, as text.
+ *
+ * @param {object} row The object row.
+ * @return {string} The title.
+ *
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-003
+ */
+function rowTitle(row) {
+	return String(row.title ?? row.name ?? row.id ?? '')
 }
 
 /**
@@ -233,25 +274,30 @@ function numericPair(pair) {
  * @return {Array<number>|null} `[lon, lat]` centroid, or null.
  */
 function ringCentroid(ring) {
-	if (!Array.isArray(ring) || ring.length === 0) {
+	const vertices = Array.isArray(ring) ? ring.filter(isLonLat) : []
+	if (vertices.length === 0) {
 		return null
 	}
 	let sumLon = 0
 	let sumLat = 0
-	let n = 0
-	for (const vertex of ring) {
-		if (!Array.isArray(vertex) || vertex.length < 2) {
-			continue
-		}
-		if (typeof vertex[0] !== 'number' || typeof vertex[1] !== 'number') {
-			continue
-		}
+	for (const vertex of vertices) {
 		sumLon += vertex[0]
 		sumLat += vertex[1]
-		n += 1
 	}
-	if (n === 0) {
-		return null
-	}
-	return [sumLon / n, sumLat / n]
+	return [sumLon / vertices.length, sumLat / vertices.length]
+}
+
+/**
+ * Whether a ring vertex holds a numeric longitude and latitude.
+ *
+ * @param {Array|object|string|number|null} vertex The vertex.
+ * @return {boolean} True for `[lon, lat, ...]` with numbers.
+ */
+function isLonLat(vertex) {
+	return (
+		Array.isArray(vertex)
+		&& vertex.length >= 2
+		&& typeof vertex[0] === 'number'
+		&& typeof vertex[1] === 'number'
+	)
 }

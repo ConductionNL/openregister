@@ -115,17 +115,15 @@ class ConditionMatcherTest extends TestCase {
 		$this->assertTrue($result);
 	}
 
-	public function testObjectMatchesConditionsDirectPropertyOverAtSelf(): void {
-		// Direct property takes precedence.
+	public function testObjectMatchesConditionsAtSelfOverDirectProperty(): void {
+		// For an underscore-prefixed property, @self takes precedence over a body key.
 		$object = [
 			'_organisation' => 'direct-value',
 			'@self' => ['organisation' => 'self-value'],
 		];
-		$match = ['_organisation' => 'direct-value'];
 
-		$result = $this->matcher->objectMatchesConditions($object, $match);
-
-		$this->assertTrue($result);
+		$this->assertFalse(condition: $this->matcher->objectMatchesConditions(object: $object, match: ['_organisation' => 'direct-value']));
+		$this->assertTrue(condition: $this->matcher->objectMatchesConditions(object: $object, match: ['_organisation' => 'self-value']));
 	}
 
 	public function testObjectMatchesConditionsWithOperatorArray(): void {
@@ -322,4 +320,27 @@ class ConditionMatcherTest extends TestCase {
 		// under strict comparison — the test documents the semantics explicitly.
 		$this->assertFalse($this->matcher->objectMatchesConditions($object, $match));
 	}
+	/**
+	 * For an underscore-prefixed property `@self` answers before a body key of the same name.
+	 *
+	 * @return void
+	 */
+	public function testSelfAnswersMetadataBeforeTheBody(): void {
+		$object = ['_organisation' => 'org-forged', '_owner' => 'eve', '@self' => ['organisation' => 'org-real', 'owner' => 'alice']];
+
+		$this->assertFalse(condition: $this->matcher->objectMatchesConditions(object: $object, match: ['_organisation' => 'org-forged']));
+		$this->assertTrue(condition: $this->matcher->objectMatchesConditions(object: $object, match: ['_organisation' => 'org-real']));
+		$this->assertFalse(condition: $this->matcher->objectMatchesConditions(object: $object, match: ['_owner' => 'eve']));
+		$this->assertTrue(condition: $this->matcher->objectMatchesConditions(object: $object, match: ['_owner' => 'alice']));
+	}//end testSelfAnswersMetadataBeforeTheBody()
+
+	/**
+	 * A flat row without `@self` still answers an underscore-prefixed property from its own key.
+	 *
+	 * @return void
+	 */
+	public function testAFlatRowStillAnswersMetadata(): void {
+		$this->assertTrue(condition: $this->matcher->objectMatchesConditions(object: ['_organisation' => 'org-a'], match: ['_organisation' => 'org-a']));
+		$this->assertFalse(condition: $this->matcher->objectMatchesConditions(object: ['_organisation' => 'org-a'], match: ['_organisation' => 'org-b']));
+	}//end testAFlatRowStillAnswersMetadata()
 }

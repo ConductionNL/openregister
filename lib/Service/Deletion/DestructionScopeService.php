@@ -35,7 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Deletion;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
@@ -66,7 +66,7 @@ class DestructionScopeService {
 	 * source is missing is reported unavailable and refuses, never silently
 	 * counted as zero.
 	 *
-	 * @param AuditTrailMapper                  $auditTrailMapper Versions and content-bearing audit rows.
+	 * @param AuditTrailMapperInterface                  $auditTrailMapper Versions and content-bearing audit rows.
 	 * @param LoggerInterface                   $logger           PSR logger.
 	 * @param DestructionScopeReader            $reader           Reads the scope a schema declares.
 	 * @param NoteService|null                  $noteService      Notes on the object.
@@ -77,7 +77,7 @@ class DestructionScopeService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 		private readonly DestructionScopeReader $reader,
 		private readonly ?NoteService $noteService = null,
@@ -97,7 +97,7 @@ class DestructionScopeService {
 	 *     total: int, unknown: array<int, string>,
 	 *     unavailable: array<int, string>, destroyable: bool} The preview.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function preview(ObjectEntity $object, ?Schema $schema): array {
 		$declared = $this->reader->declaredOn(schema: $schema);
@@ -141,7 +141,7 @@ class DestructionScopeService {
 	 *
 	 * @throws DestructionRefusedException When the scope cannot be honoured.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function destroy(ObjectEntity $object, ?Schema $schema): array {
 		$preview = $this->preview(object: $object, schema: $schema);

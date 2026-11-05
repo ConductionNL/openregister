@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\CredentialControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
@@ -45,8 +46,8 @@ use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\CredentialUpdateRequest;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
@@ -85,42 +86,36 @@ class CredentialController extends Controller {
 	private const SCOPE_ORGANISATION = 'organisation';
 
 	/**
+	 * OR object CRUD for credential metadata.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * The controller's injected services.
+	 *
+	 * @var CredentialControllerServices
+	 */
+	private readonly CredentialControllerServices $services;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name (injected by NC).
 	 * @param IRequest $request Current request.
-	 * @param IUserSession $userSession Current session (owner identity).
-	 * @param IGroupManager $groupManager Group manager (admin check for app registration).
-	 * @param ObjectService $objectService OR object CRUD for credential metadata.
-	 * @param CredentialStore $credentialStore Secret store leaf (vault).
-	 * @param ProviderCatalogue $catalogue Read-only provider catalogue (validation).
-	 * @param CredentialBrokerService $broker The guarded outbound broker.
-	 * @param CredentialAppTokenService $tokenService Per-app signing-secret registry + token verify.
-	 * @param OrganisationService $organisationService Organisation membership + admin authority resolution.
-	 * @param SharePrincipalDeriver $shareDeriver Validates share lists and derives the principal lists RBAC matches.
-	 * @param LoggerInterface $logger Records a failed update by class, never with its trace.
-	 * @param IL10N|null $l10n Translates the provider titles the picker shows.
+	 * @param CredentialControllerServices $services The credential controller services.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Composes the credential-broker collaborators.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly ObjectService $objectService,
-		private readonly CredentialStore $credentialStore,
-		private readonly ProviderCatalogue $catalogue,
-		private readonly CredentialBrokerService $broker,
-		private readonly CredentialAppTokenService $tokenService,
-		private readonly OrganisationService $organisationService,
-		private readonly SharePrincipalDeriver $shareDeriver,
-		private readonly LoggerInterface $logger,
-		private readonly ?IL10N $l10n=null,
+		CredentialControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->services = $services;
+		$this->objectService = $services->vault->objectService;
 	}//end __construct()
 
 	/**
@@ -181,7 +176,7 @@ class CredentialController extends Controller {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	private function indexOrganisation(): JSONResponse {
-		$activeOrg = $this->organisationService->getActiveOrganisation()?->getUuid();
+		$activeOrg = $this->services->tokens->organisationService->getActiveOrganisation()?->getUuid();
 		if ($activeOrg === null || $activeOrg === '') {
 			return new JSONResponse(['results' => []]);
 		}
@@ -217,7 +212,7 @@ class CredentialController extends Controller {
 	 * @return JSONResponse `{results: Array<{identifier, title}>}`.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
-	 * @spec openspec/changes/credential-provider-labels-in-plain-words/specs/credential-broker/spec.md
+	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	#[NoAdminRequired]
 	public function providers(): JSONResponse {
@@ -226,7 +221,7 @@ class CredentialController extends Controller {
 		}
 
 		$out = [];
-		foreach ($this->catalogue->all() as $entry) {
+		foreach ($this->services->vault->catalogue->all() as $entry) {
 			if (is_array($entry) === false) {
 				continue;
 			}
@@ -271,7 +266,7 @@ class CredentialController extends Controller {
 	 *
 	 * @return string The translated title, or the identifier.
 	 *
-	 * @spec openspec/changes/credential-provider-labels-in-plain-words/specs/credential-broker/spec.md
+	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	private function providerTitle(array $entry, string $identifier): string {
 		$title = trim((string)($entry['title'] ?? ''));
@@ -279,11 +274,11 @@ class CredentialController extends Controller {
 			return $identifier;
 		}
 
-		if ($this->l10n === null) {
+		if ($this->services->platform->l10n === null) {
 			return $title;
 		}
 
-		return $this->l10n->t($title);
+		return $this->services->platform->l10n->t($title);
 	}//end providerTitle()
 
 	/**
@@ -320,7 +315,7 @@ class CredentialController extends Controller {
 		$allowed = $this->normaliseAllowedApps(value: $this->request->getParam('allowedApps', []));
 		$scope = $this->requestedScope();
 
-		if ($name === '' || $this->catalogue->get($provider) === null) {
+		if ($name === '' || $this->services->vault->catalogue->get($provider) === null) {
 			return new JSONResponse(['message' => 'Invalid credential request'], Http::STATUS_BAD_REQUEST);
 		}
 
@@ -341,7 +336,7 @@ class CredentialController extends Controller {
 		try {
 			// The single mint path (metadata object + vault secret) lives in the broker so
 			// an in-process caller can mint identically without an HTTP session.
-			$saved = $this->broker->mint(
+			$saved = $this->services->vault->broker->mint(
 				name: $name,
 				provider: $provider,
 				owner: $uid,
@@ -382,7 +377,9 @@ class CredentialController extends Controller {
 
 		// Raw property bag (no `@self` envelope / `id`) — the update carries only
 		// metadata, never a secret (there is none in the object).
-		$data = $existing->getObject();
+		// The write goes to the row the guard checked, by its uuid, not by the identifier as sent.
+		$uuid  = (string) $existing->getUuid();
+		$data  = $existing->getObject();
 		$scope = $this->scopeOf(data: $data);
 
 		$update = new CredentialUpdateRequest(request: $this->request);
@@ -401,9 +398,9 @@ class CredentialController extends Controller {
 		$rotated = $update->rotatedSecret();
 		if ($rotated !== null) {
 			try {
-				$this->credentialStore->put($id, $rotated, $scope);
+				$this->services->vault->credentialStore->put($uuid, $rotated, $scope);
 			} catch (Throwable $e) {
-				$this->logger->error('[CredentialController] could not rotate a credential secret: ' . $e::class, ['credentialId' => $id]);
+				$this->services->session->logger->error('[CredentialController] could not rotate a credential secret: ' . $e::class, ['credentialId' => $id]);
 
 				return new JSONResponse(['message' => 'Unable to update credential'], Http::STATUS_INTERNAL_SERVER_ERROR);
 			}
@@ -414,10 +411,10 @@ class CredentialController extends Controller {
 				object: $data,
 				register: CredentialBrokerService::REGISTER,
 				schema: CredentialBrokerService::SCHEMA,
-				uuid: $id
+				uuid: $uuid
 			);
 		} catch (Throwable $e) {
-			$this->logger->error('[CredentialController] could not save a credential update: ' . $e::class, ['credentialId' => $id]);
+			$this->services->session->logger->error('[CredentialController] could not save a credential update: ' . $e::class, ['credentialId' => $id]);
 
 			// The secret is already rotated, so say that rather than "nothing changed".
 			$message = 'Unable to update credential';
@@ -451,7 +448,7 @@ class CredentialController extends Controller {
 
 		return new JSONResponse(
 			[
-				'sharedWith' => $this->shareDeriver->validEntries(
+				'sharedWith' => $this->services->tokens->shareDeriver->validEntries(
 					sharedWith: ($data[SharePrincipalDeriver::PROP_SHARED_WITH] ?? null)
 				),
 				'sharedUsers' => ($data[SharePrincipalDeriver::PROP_SHARED_USERS] ?? []),
@@ -497,7 +494,7 @@ class CredentialController extends Controller {
 
 		// Reject rather than silently drop: an owner who mistypes a principal
 		// should be told, not left believing they granted access they did not.
-		$valid = $this->shareDeriver->validEntries(sharedWith: $requested);
+		$valid = $this->services->tokens->shareDeriver->validEntries(sharedWith: $requested);
 		if (count($valid) !== count($requested)) {
 			return new JSONResponse(
 				['message' => 'Every share entry needs a type of user or group and a non-blank id'],
@@ -507,14 +504,14 @@ class CredentialController extends Controller {
 
 		$data = $existing->getObject();
 		$data[SharePrincipalDeriver::PROP_SHARED_WITH] = $valid;
-		$data = $this->shareDeriver->apply(object: $data);
+		$data = $this->services->tokens->shareDeriver->apply(object: $data);
 
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
 				register: CredentialBrokerService::REGISTER,
 				schema: CredentialBrokerService::SCHEMA,
-				uuid: $id
+				uuid: (string) $existing->getUuid()
 			);
 		} catch (Throwable $e) {
 			return new JSONResponse(['message' => 'Unable to update shares'], Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -550,10 +547,10 @@ class CredentialController extends Controller {
 			return new JSONResponse(['message' => 'Unauthorized'], Http::STATUS_UNAUTHORIZED);
 		}
 
-		$user = $this->userSession->getUser();
+		$user = $this->services->session->userSession->getUser();
 		$groups = [];
 		if ($user !== null) {
-			$groups = $this->groupManager->getUserGroupIds($user);
+			$groups = $this->services->session->groupManager->getUserGroupIds($user);
 		}
 
 		try {
@@ -589,7 +586,7 @@ class CredentialController extends Controller {
 				continue;
 			}
 
-			$admits = $this->shareDeriver->grants(
+			$admits = $this->services->tokens->shareDeriver->grants(
 				sharedWith: ($data[SharePrincipalDeriver::PROP_SHARED_WITH] ?? null),
 				userId: $uid,
 				userGroups: $groups,
@@ -623,11 +620,12 @@ class CredentialController extends Controller {
 			return $existing;
 		}
 
+		$uuid  = (string) $existing->getUuid();
 		$scope = $this->scopeOf(data: $existing->getObject());
 
 		try {
 			$this->objectService->deleteObject(
-				uuid: $id,
+				uuid: $uuid,
 				register: CredentialBrokerService::REGISTER,
 				schema: CredentialBrokerService::SCHEMA
 			);
@@ -635,7 +633,7 @@ class CredentialController extends Controller {
 			return new JSONResponse(['message' => 'Unable to delete credential'], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
-		$this->credentialStore->delete($id, $scope);
+		$this->services->vault->credentialStore->delete($uuid, $scope);
 
 		return new JSONResponse(['message' => 'Deleted']);
 	}//end destroy()
@@ -659,7 +657,7 @@ class CredentialController extends Controller {
 	 */
 	public function registerApp(string $appId): JSONResponse {
 		$uid = $this->currentUid();
-		if ($uid === null || $this->groupManager->isAdmin($uid) === false) {
+		if ($uid === null || $this->services->session->groupManager->isAdmin($uid) === false) {
 			return new JSONResponse(['message' => 'Forbidden'], Http::STATUS_FORBIDDEN);
 		}
 
@@ -669,7 +667,7 @@ class CredentialController extends Controller {
 			return new JSONResponse(['message' => 'Invalid app id'], Http::STATUS_BAD_REQUEST);
 		}
 
-		$secret = $this->tokenService->registerApp(appId: $appId);
+		$secret = $this->services->tokens->tokenService->registerApp(appId: $appId);
 
 		return new JSONResponse(['appId' => $appId, 'secret' => $secret], Http::STATUS_CREATED);
 	}//end registerApp()
@@ -708,12 +706,12 @@ class CredentialController extends Controller {
 			// Pass method+path so a request-bound token (harden-credential-token-binding)
 			// is only accepted for the exact call it was minted for. Unbound tokens
 			// ignore these (backward-compatible).
-			$claims = $this->tokenService->verify(token: $token, method: $method, path: $path);
+			$claims = $this->services->tokens->tokenService->verify(token: $token, method: $method, path: $path);
 			if ($claims['credentialId'] !== $id) {
 				throw new CredentialAccessDeniedException(message: 'token/credential mismatch');
 			}
 
-			$result = $this->broker->request(
+			$result = $this->services->vault->broker->request(
 				credentialId: $id,
 				appId: $claims['appId'],
 				method: $method,
@@ -775,7 +773,7 @@ class CredentialController extends Controller {
 		}
 
 		try {
-			$result = $this->broker->request(
+			$result = $this->services->vault->broker->request(
 				credentialId: $id,
 				appId: $appId,
 				method: (string)$this->request->getParam('method', 'GET'),
@@ -830,7 +828,7 @@ class CredentialController extends Controller {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	private function currentUid(): ?string {
-		return $this->userSession->getUser()?->getUID();
+		return $this->services->session->userSession->getUser()?->getUID();
 	}//end currentUid()
 
 	/**
@@ -866,14 +864,15 @@ class CredentialController extends Controller {
 			$object = null;
 		}
 
-		if ($object === null) {
-			// Uniform 403 — never distinguish "missing" from "not yours".
+		// Uniform 403: never distinguish "missing" from "not yours". A row without
+		// a uuid is refused too, since its writes would have nothing to name it by.
+		if ($object === null || (string) $object->getUuid() === '') {
 			return new JSONResponse(['message' => 'Forbidden'], Http::STATUS_FORBIDDEN);
 		}
 
 		if ($this->scopeOf(data: $object->getObject()) === self::SCOPE_ORGANISATION) {
 			$organisation = (string)($object->getObject()['organisation'] ?? '');
-			if ($organisation === '' || $this->organisationService->isOrganisationAdmin($organisation, $uid) === false) {
+			if ($organisation === '' || $this->services->tokens->organisationService->isOrganisationAdmin($organisation, $uid) === false) {
 				return new JSONResponse(['message' => 'Forbidden'], Http::STATUS_FORBIDDEN);
 			}
 
@@ -939,7 +938,7 @@ class CredentialController extends Controller {
 			return $organisation;
 		}
 
-		return (string)($this->organisationService->getActiveOrganisation()?->getUuid() ?? '');
+		return (string)($this->services->tokens->organisationService->getActiveOrganisation()?->getUuid() ?? '');
 	}//end resolveOrganisation()
 
 	/**
@@ -962,7 +961,7 @@ class CredentialController extends Controller {
 			return new JSONResponse(['message' => 'Invalid credential request'], Http::STATUS_BAD_REQUEST);
 		}
 
-		if ($this->organisationService->isOrganisationAdmin($organisation, $uid) === false) {
+		if ($this->services->tokens->organisationService->isOrganisationAdmin($organisation, $uid) === false) {
 			return new JSONResponse(['message' => 'Forbidden'], Http::STATUS_FORBIDDEN);
 		}
 

@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\BulkJobsControllerServices;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
 use OCA\OpenRegister\Db\BulkJobMember;
@@ -63,7 +64,7 @@ use OCP\IUserSession;
  * public method here is one route, and the count is the size of the resource
  * rather than a sign the class does two things.
  *
- * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 class BulkJobsController extends Controller {
 
@@ -75,31 +76,68 @@ class BulkJobsController extends Controller {
 	private const MAX_PAGE = 500;
 
 	/**
+	 * The lifecycle service.
+	 *
+	 * @var BulkJobService
+	 */
+	private readonly BulkJobService $service;
+
+	/**
+	 * The inverse of a reversible job.
+	 *
+	 * @var BulkJobReversal
+	 */
+	private readonly BulkJobReversal $reversal;
+
+	/**
+	 * Job persistence.
+	 *
+	 * @var BulkJobMapper
+	 */
+	private readonly BulkJobMapper $jobMapper;
+
+	/**
+	 * The action catalogue.
+	 *
+	 * @var BulkActionRegistry
+	 */
+	private readonly BulkActionRegistry $registry;
+
+	/**
+	 * Current-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager (admin check).
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
-	 * @param BulkJobService $service The lifecycle service.
-	 * @param BulkJobReversal $reversal The inverse of a reversible job.
-	 * @param BulkJobMapper $jobMapper Job persistence.
-	 * @param BulkActionRegistry $registry The action catalogue.
-	 * @param IUserSession $userSession Current-user session.
-	 * @param IGroupManager $groupManager Group manager (admin check).
+	 * @param BulkJobsControllerServices $services The bulk jobs controller services.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection.
 	 * Each is a collaborator this REST surface genuinely uses.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly BulkJobService $service,
-		private readonly BulkJobReversal $reversal,
-		private readonly BulkJobMapper $jobMapper,
-		private readonly BulkActionRegistry $registry,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		BulkJobsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->service = $services->domain->service;
+		$this->reversal = $services->domain->reversal;
+		$this->jobMapper = $services->domain->jobMapper;
+		$this->registry = $services->domain->registry;
+		$this->userSession = $services->platform->userSession;
+		$this->groupManager = $services->platform->groupManager;
 	}//end __construct()
 
 	/**
@@ -107,7 +145,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The catalogue.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -130,7 +168,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The jobs.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -179,7 +217,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The job.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -198,7 +236,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The previewed job with its counts.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	public function create(): JSONResponse {
@@ -240,7 +278,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The running job.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	public function commit(int $id): JSONResponse {
@@ -278,7 +316,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The job.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	public function cancel(int $id): JSONResponse {
@@ -302,7 +340,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The paused job, or the refusal.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 */
 	#[NoAdminRequired]
 	public function pause(int $id): JSONResponse {
@@ -328,7 +366,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The running job, or the refusal.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 */
 	#[NoAdminRequired]
 	public function resume(int $id): JSONResponse {
@@ -354,7 +392,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The running job.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	public function retry(int $id): JSONResponse {
@@ -421,7 +459,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The members.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -458,7 +496,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return DataDownloadResponse|JSONResponse The outcome report.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

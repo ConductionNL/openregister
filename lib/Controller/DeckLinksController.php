@@ -31,12 +31,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\DeckLinkService;
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\CardDraft;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
@@ -47,21 +49,23 @@ use OCP\IRequest;
  * @package  OCA\OpenRegister\Controller
  */
 class DeckLinksController extends Controller {
+	use ObjectLinkActionsTrait;
+
 	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
 	 * @param DeckLinkService $deckLinkService Backing service.
-	 * @param ObjectService $objectService OR object resolver.
-	 * @param SettingsService $settingsService Settings service for sticky default.
+	 * @param ObjectOperationsInterface $objectService OR object resolver.
+	 * @param AppSettingsInterface $settingsService Settings service for sticky default.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly DeckLinkService $deckLinkService,
-		private readonly ObjectService $objectService,
-		private readonly SettingsService $settingsService,
+		private readonly ObjectOperationsInterface $objectService,
+		private readonly AppSettingsInterface $settingsService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -82,26 +86,13 @@ class DeckLinksController extends Controller {
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
 		if ($this->deckLinkService->isDeckAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Deck app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'Nextcloud Deck');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$results = $this->deckLinkService->getLinkedCards($object->getUuid());
-
-			return new JSONResponse(['results' => $results, 'total' => count($results)]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
-		}//end try
+		return $this->listLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->deckLinkService->getLinkedCards($object->getUuid()))
+		);
 	}//end index()
 
 	/**
@@ -122,36 +113,27 @@ class DeckLinksController extends Controller {
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
 		if ($this->deckLinkService->isDeckAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Deck app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'Nextcloud Deck');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: function (ObjectEntity $object): JSONResponse {
+				$cardId = (int)$this->request->getParam('cardId', 0);
+				if ($cardId === 0) {
+					return new JSONResponse(['error' => 'cardId is required'], 400);
+				}
+
+				$link = $this->deckLinkService->linkCard(
+					$object->getUuid(),
+					(int)$object->getRegister(),
+					(int)$object->getSchema(),
+					$cardId
+				);
+
+				return new JSONResponse($link->jsonSerialize(), 201);
 			}
-
-			$cardId = (int)$this->request->getParam('cardId', 0);
-			if ($cardId === 0) {
-				return new JSONResponse(['error' => 'cardId is required'], 400);
-			}
-
-			$link = $this->deckLinkService->linkCard(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$cardId
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		);
 	}//end link()
 
 	/**
@@ -178,66 +160,53 @@ class DeckLinksController extends Controller {
 	 */
 	public function createNew(string $register, string $schema, string $id): JSONResponse {
 		if ($this->deckLinkService->isDeckAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Deck app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'Nextcloud Deck');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: function (ObjectEntity $object) use ($schema): JSONResponse {
+				$boardId = (int)$this->request->getParam('boardId', 0);
+				$stackId = (int)$this->request->getParam('stackId', 0);
+				$title = (string)$this->request->getParam('title', '');
 
-			$boardId = (int)$this->request->getParam('boardId', 0);
-			$stackId = (int)$this->request->getParam('stackId', 0);
-			$title = (string)$this->request->getParam('title', '');
+				if ($boardId === 0 || $stackId === 0 || $title === '') {
+					return new JSONResponse(
+						['error' => 'boardId, stackId and title are required'],
+						400
+					);
+				}
 
-			if ($boardId === 0 || $stackId === 0 || $title === '') {
-				return new JSONResponse(
-					['error' => 'boardId, stackId and title are required'],
-					400
+				$description = $this->request->getParam('description');
+				$duedate = $this->request->getParam('duedate');
+
+				$descriptionStr = null;
+				if ($description !== null) {
+					$descriptionStr = (string)$description;
+				}
+
+				$duedateStr = null;
+				if ($duedate !== null) {
+					$duedateStr = (string)$duedate;
+				}
+
+				$link = $this->deckLinkService->createAndLinkCard(
+					target: $this->linkTargetOf(object: $object),
+					card: (new CardDraft(title: $title, stackId: $stackId))
+						->onBoard(boardId: $boardId)
+						->withDetails(description: $descriptionStr, duedate: $duedateStr)
 				);
+
+				// AD-1: persist sticky schema-level default after each successful create.
+				$this->settingsService->setDeckDefault(
+					schemaSlug: $schema,
+					boardId: $boardId,
+					stackId: $stackId,
+				);
+
+				return new JSONResponse($link->jsonSerialize(), 201);
 			}
-
-			$description = $this->request->getParam('description');
-			$duedate = $this->request->getParam('duedate');
-
-			$descriptionStr = null;
-			if ($description !== null) {
-				$descriptionStr = (string)$description;
-			}
-
-			$duedateStr = null;
-			if ($duedate !== null) {
-				$duedateStr = (string)$duedate;
-			}
-
-			$link = $this->deckLinkService->createAndLinkCard(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$boardId,
-				$stackId,
-				$title,
-				$descriptionStr,
-				$duedateStr
-			);
-
-			// AD-1: persist sticky schema-level default after each successful create.
-			$this->settingsService->setDeckDefault(
-				schemaSlug: $schema,
-				boardId: $boardId,
-				stackId: $stackId,
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		);
 	}//end createNew()
 
 	/**
@@ -257,26 +226,17 @@ class DeckLinksController extends Controller {
 	 */
 	public function destroy(string $register, string $schema, string $id, string $cardId): JSONResponse {
 		if ($this->deckLinkService->isDeckAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Deck app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'Nextcloud Deck');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: function (ObjectEntity $object) use ($cardId): JSONResponse {
+				$this->deckLinkService->unlinkCard($object->getUuid(), (int)$cardId);
+
+				return new JSONResponse(['success' => true]);
 			}
-
-			$this->deckLinkService->unlinkCard($object->getUuid(), (int)$cardId);
-
-			return new JSONResponse(['success' => true]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		);
 	}//end destroy()
 
 	/**
@@ -292,10 +252,7 @@ class DeckLinksController extends Controller {
 	 */
 	public function boards(): JSONResponse {
 		if ($this->deckLinkService->isDeckAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Deck app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'Nextcloud Deck');
 		}
 
 		$boards = $this->deckLinkService->getAvailableBoards();
@@ -318,10 +275,7 @@ class DeckLinksController extends Controller {
 	 */
 	public function stacks(string $boardId): JSONResponse {
 		if ($this->deckLinkService->isDeckAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Deck app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'Nextcloud Deck');
 		}
 
 		$stacks = $this->deckLinkService->getStacksForBoard((int)$boardId);
@@ -393,28 +347,6 @@ class DeckLinksController extends Controller {
 	}//end setDefault()
 
 	/**
-	 * Resolve an OR object from register/schema/id.
-	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object id.
-	 *
-	 * @return ObjectEntity|null
-	 *
-	 * @throws DoesNotExistException When no such object exists. Deliberately propagated rather
-	 *                               than caught: every call site already wraps this helper and translates it to a 404.
-	 *                               Swallowing it here would collapse "no such object" into the same null this method
-	 *                               returns for other reasons, which the caller could no longer tell apart.
-	 */
-	private function validateObject(string $register, string $schema, string $id): ?ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
-
-		return $this->objectService->getObject();
-	}//end validateObject()
-
-	/**
 	 * Map a service-layer Exception to a JSONResponse.
 	 *
 	 * Exception codes carry HTTP intent:
@@ -427,7 +359,7 @@ class DeckLinksController extends Controller {
 	 *
 	 * @return JSONResponse
 	 */
-	private function mapException(Exception $exception): JSONResponse {
+	protected function mapException(Exception $exception): JSONResponse {
 		$code = $exception->getCode();
 		if ($code === 409) {
 			return new JSONResponse(['error' => $exception->getMessage()], 409);

@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use Exception;
 use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -99,7 +100,8 @@ use OCP\AppFramework\Db\Entity;
  *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
-class Register extends Entity implements JsonSerializable {
+class Register extends Entity implements JsonSerializable, RegisterInterface {
+	use JsonFieldsTrait;
 
 	/**
 	 * Unique identifier for the register
@@ -459,26 +461,6 @@ class Register extends Entity implements JsonSerializable {
 	}//end addSchemaId()
 
 	/**
-	 * Get JSON fields from the entity
-	 *
-	 * Returns all fields that are of type 'json'
-	 *
-	 * @return string[] List of JSON field names
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
-
-	/**
 	 * Hydrate the entity with data from an array
 	 *
 	 * Sets entity properties based on input array values
@@ -494,7 +476,14 @@ class Register extends Entity implements JsonSerializable {
 			$object['metadata'] = [];
 		}
 
-		foreach ($object as $key => $value) {
+		// The setter call resolves `Organisation` to setOrganisation() too, and every
+		// check on a register body reads the exact key, so only exact names are stored.
+		$exactKeys = array_filter(
+			$object,
+			fn (int|string $key): bool => is_string($key) === true && property_exists($this, $key) === true,
+			ARRAY_FILTER_USE_KEY
+		);
+		foreach ($exactKeys as $key => $value) {
 			if (in_array($key, $jsonFields) === true && $value === []) {
 				$value = null;
 			}

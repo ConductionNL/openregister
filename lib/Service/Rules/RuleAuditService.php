@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
  * the change is also diffable against the previous schema version. This entry
  * is what names the ACTOR and the intent.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 final class RuleAuditService {
 
@@ -78,7 +78,7 @@ final class RuleAuditService {
 	 *
 	 * @return array{actor: string, actorName: string, ruleId: string, from: bool, to: bool} The entry, as the response echoes it.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function switched(RuleDescriptor $rule, bool $enabled): array {
 		$user = $this->userSession->getUser();
@@ -122,7 +122,7 @@ final class RuleAuditService {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The argument IS the state being named.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function word(bool $enabled): string {
 		if ($enabled === true) {

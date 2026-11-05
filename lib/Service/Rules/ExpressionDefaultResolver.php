@@ -20,14 +20,14 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use Throwable;
 
 /**
@@ -53,7 +53,7 @@ use Throwable;
  * detect. A value derived from a derived value is a calculation, which is a
  * different annotation with its own dependency graph.
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class ExpressionDefaultResolver {
 
@@ -88,12 +88,12 @@ final class ExpressionDefaultResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param CalculationEvaluator $evaluator The JSON-AST evaluator, the same one calculations use.
+	 * @param CalculationEvaluatorInterface $evaluator The JSON-AST evaluator, the same one calculations use.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly CalculationEvaluator $evaluator,
+		private readonly CalculationEvaluatorInterface $evaluator,
 	) {
 	}//end __construct()
 
@@ -107,7 +107,7 @@ final class ExpressionDefaultResolver {
 	 *
 	 * @return bool True when at least one property declares one.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function declaresAny(array $properties): bool {
 		foreach ($properties as $property) {
@@ -129,7 +129,7 @@ final class ExpressionDefaultResolver {
 	 *
 	 * @throws ExpressionDefaultException When an expression cannot be evaluated.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function apply(array $properties, array $data): array {
 		$derived = [];
@@ -211,7 +211,7 @@ final class ExpressionDefaultResolver {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ConditionDialect's shape check reads one
 	 *   constant table and holds no state; it is the same walk the evaluator dispatches on.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public static function validateDeclarations(array $properties): array {
 		$errors = [];

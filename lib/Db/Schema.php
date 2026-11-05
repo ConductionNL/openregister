@@ -31,11 +31,13 @@ use JsonSerializable;
 use OCA\OpenRegister\Exception\CalendarDateKindException;
 use OCA\OpenRegister\Service\Calendar\ObjectDateDeclaration;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration;
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\Types;
 use OCP\IURLGenerator;
@@ -127,7 +129,8 @@ use stdClass;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class Schema extends Entity implements JsonSerializable {
+class Schema extends Entity implements JsonSerializable, SchemaInterface {
+	use JsonFieldsTrait;
 
 	/**
 	 * Unique identifier for the schema
@@ -1098,26 +1101,6 @@ class Schema extends Entity implements JsonSerializable {
 	}//end getArchive()
 
 	/**
-	 * Get JSON fields from the entity
-	 *
-	 * Returns all fields that are of type 'json'
-	 *
-	 * @return string[] List of JSON field names
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
-
-	/**
 	 * Validate the schema properties
 	 *
 	 * @param PropertyValidatorHandler $validator The schema property validator
@@ -1207,7 +1190,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
 	 */
-	private function declaredActionNames(): array {
+	public function declaredActionNames(): array {
 		$configuration = ($this->configuration ?? []);
 		if (is_array($configuration) === false) {
 			return [];
@@ -1223,7 +1206,7 @@ class Schema extends Entity implements JsonSerializable {
 			// A declaration must NAME and DESCRIBE itself. An entry with no
 			// description is how an action ends up in a permission matrix with
 			// nothing telling the person granting it what they are agreeing to.
-			if (is_string($key) === false || $key === '') {
+			if (is_string($key) === false || $this->isDeclarableName(name: $key) === false) {
 				continue;
 			}
 
@@ -1240,6 +1223,27 @@ class Schema extends Entity implements JsonSerializable {
 
 		return $names;
 	}//end declaredActionNames()
+
+	/**
+	 * Whether a schema may declare an action under this name.
+	 *
+	 * A canonical verb or a control key is never a declared action: declaring
+	 * `deny` would otherwise take the deny block out of the save-time catalogue
+	 * check.
+	 *
+	 * @param string $name The declared key.
+	 *
+	 * @return bool True when the name is free for a declared action.
+	 *
+	 * @spec openspec/specs/declared-actions/spec.md
+	 */
+	private function isDeclarableName(string $name): bool {
+		if ($name === '' || isset(PermissionCatalogue::CANONICAL[$name]) === true) {
+			return false;
+		}
+
+		return in_array($name, PermissionCatalogue::CONTROL_KEYS, true) === false;
+	}//end isDeclarableName()
 
 	/**
 	 * Reject an authorization block that names an action the vocabulary does not know.
@@ -1379,6 +1383,11 @@ class Schema extends Entity implements JsonSerializable {
 			return true;
 		}
 
+		if ($action === ExplicitReveal::KEY) {
+			$this->validateRevealValue(reveal: $value, context: $context);
+			return true;
+		}
+
 		// 🔴 EVERY OTHER CONTROL KEY, taken from the ONE list that already
 		// names them. `PermissionCatalogue::CONTROL_KEYS` exists precisely to
 		// say which keys of an authorization block are settings rather than
@@ -1407,7 +1416,7 @@ class Schema extends Entity implements JsonSerializable {
 		$remaining = array_values(
 			array_diff(
 				PermissionCatalogue::CONTROL_KEYS,
-				[ObjectScopeResolver::SCOPE_KEY, self::ROLES_KEY]
+				[ObjectScopeResolver::SCOPE_KEY, self::ROLES_KEY, ExplicitReveal::KEY]
 			)
 		);
 
@@ -1437,7 +1446,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-a-declared-role-assignment-is-writable-through-the-schema-req-nrg-007
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-declared-role-assignment-is-writable-through-the-schema-req-nrg-007
 	 */
 	private function validateRolesAssignment(mixed $roles, string $context): void {
 		if (is_array($roles) === false) {
@@ -1508,6 +1517,29 @@ class Schema extends Entity implements JsonSerializable {
 			);
 		}
 	}//end validateScopeValue()
+
+	/**
+	 * Validate an authorization `reveal` value.
+	 *
+	 * Masking applies only to `explicit`, so any other value would save as a
+	 * property that is never masked.
+	 *
+	 * @param mixed  $reveal  The value to validate.
+	 * @param string $context Context for error messages.
+	 *
+	 * @throws InvalidAuthorizationRuleException When the value is not `explicit`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
+	 */
+	private function validateRevealValue(mixed $reveal, string $context): void {
+		if ($reveal !== ExplicitReveal::EXPLICIT) {
+			throw new InvalidAuthorizationRuleException(
+				message: "Authorization key '" . ExplicitReveal::KEY . "' in {$context} must be \"" . ExplicitReveal::EXPLICIT . '"'
+			);
+		}
+	}//end validateRevealValue()
 
 	/**
 	 * Validate property-level authorization
@@ -1600,6 +1632,7 @@ class Schema extends Entity implements JsonSerializable {
 				$this->validateMatchOperators(match: $rule['match'], action: $action, context: $context);
 			}
 
+			$this->validateCrossOrganisationMarker(rule: $rule, where: "for action '{$action}' in {$context}");
 			return;
 		}//end if
 
@@ -1608,6 +1641,27 @@ class Schema extends Entity implements JsonSerializable {
 			message: "Authorization rule for action '{$action}' in {$context} must be a string or conditional object"
 		);
 	}//end validateAuthorizationRule()
+
+	/**
+	 * Refuse a `crossOrganisation` value that is not a boolean.
+	 *
+	 * @param array  $rule  The conditional rule.
+	 * @param string $where The action and block, for the message.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the marker is not a boolean.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	private function validateCrossOrganisationMarker(array $rule, string $where): void {
+		if (array_key_exists('crossOrganisation', $rule) === true && is_bool($rule['crossOrganisation']) === false) {
+			throw new InvalidAuthorizationRuleException(
+				message: "Authorization 'crossOrganisation' {$where} must be true or false;"
+					. ' set it to true only on a rule that may read other organisations\' rows'
+			);
+		}
+	}//end validateCrossOrganisationMarker()
 
 	/**
 	 * Refuse a match operator or operand the evaluators cannot handle (openregister#4089).
@@ -1979,56 +2033,8 @@ class Schema extends Entity implements JsonSerializable {
 			$object['hardValidation'] = true;
 		}
 
-		// Fold top-level `x-openregister-*` annotation blocks (e.g. the
-		// OpenAPI seed's sibling-of-properties `x-openregister-lifecycle`
-		// declaration) into the `configuration` array BEFORE the per-key
-		// setter loop runs. Without this the keys fall through to a
-		// non-existent `setXOpenregisterLifecycle()` setter, the silent-
-		// catch below swallows the call, and the annotation is dropped on
-		// the floor — so OR's TransitionEngine never sees a state machine
-		// and every transition 422s ("schema does not declare
-		// x-openregister-lifecycle"; openregister#1520).
-		$existingConfig = ($object['configuration'] ?? []);
-		if (is_array($existingConfig) === false) {
-			$existingConfig = [];
-		}
-
-		$annotationsFolded = false;
-		foreach ($object as $key => $value) {
-			if (is_string($key) === true && str_starts_with($key, 'x-openregister-') === true) {
-				$existingConfig[$key] = $value;
-				$annotationsFolded = true;
-				unset($object[$key]);
-			}
-		}
-
-		// Fold a schema-LEVEL top-level `x-schema-org` marker into
-		// `configuration['x-schema-org']` the same way (ADR-048). Fleet
-		// schemas declare the canonical schema.org CURIE (e.g.
-		// `"x-schema-org": "schema:Organization"`) as a sibling of
-		// `properties`, NOT inside `configuration`; without this fold the
-		// marker falls through to a non-existent `setXSchemaOrg()` setter,
-		// is swallowed by the silent-catch below, and the live schema loses
-		// its semantic type — so SemanticTypeResolver can never discover the
-		// provider. Folding it into the configuration column (which is in the
-		// passThrough allowlist and read by
-		// JsonLdContextService::getImplementedTypes) makes the marker survive
-		// save/import. An explicit `configuration['x-schema-org']` already
-		// supplied by the caller wins over the top-level convenience form.
-		if (array_key_exists('x-schema-org', $object) === true) {
-			if (array_key_exists('x-schema-org', $existingConfig) === false) {
-				$existingConfig['x-schema-org'] = $object['x-schema-org'];
-				$annotationsFolded = true;
-			}
-
-			unset($object['x-schema-org']);
-		}
-
-		if ($annotationsFolded === true) {
-			$object['configuration'] = $existingConfig;
-		}
-
-		$object = $this->foldTopLevelExportable(object: $object);
+		$object = $this->foldTopLevelAnnotations(object: $object);
+		$object = $this->withExactKeysOnly(object: $this->foldTopLevelExportable(object: $object));
 
 		foreach ($object as $key => $value) {
 			// Special handling for 'required' field - must always be an array, never NULL.
@@ -2474,7 +2480,7 @@ class Schema extends Entity implements JsonSerializable {
 	 * @return array<string, array{through: string, property: string, label?: string}>
 	 *                                                                                The declared lenses, keyed by property name.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getLenses(): array {
 		$configuration = $this->getConfiguration();
@@ -2557,7 +2563,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @psalm-return array{columns: array<int, array{property: string, label?: string}>, searchFields: array<int, string>}
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getListPresentation(): array {
 		$configuration = $this->getConfiguration();
@@ -2642,7 +2648,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return array<int, array{through: string, label?: string}> The reference properties to collect from.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getGeoInheritance(): array {
 		$configuration = $this->getConfiguration();
@@ -2750,8 +2756,19 @@ class Schema extends Entity implements JsonSerializable {
 	 *   Example: 'article.abstract'
 	 * - 'objectImageField': (string) A dot-notation path to the field for the object's image.
 	 *   Example: 'profile.avatar' (should contain base64 encoded image data)
+	 * - 'objectSlugField': (string) A dot-notation path or template for the field an
+	 *   object's slug is built from. Example: 'kenmerk'. The reserved value
+	 *   '@schema.name' builds the slug from the schema name and the object's name
+	 *   ('objectNameField') instead: '<schema slug>-<name>'. A slug is unique within
+	 *   the register and schema and does not change once set (#4037).
+	 * - 'objectSlugSuffix': (bool) Append a UTC date-time suffix to a slug that is
+	 *   already taken instead of saving the object without a slug. Default false.
 	 * - 'allowFiles': (bool) Whether this schema allows file attachments
+	 * - 'orphanCleanup': (bool) Soft-delete a child the parent owns through an inverse
+	 *   relation when the parent stops referencing it. Default false: the child stays.
 	 * - 'allowedTags': (array) Array of allowed file tags/types for file filtering
+	 * - 'autoShare': (bool) Create a Nextcloud share for every file uploaded to
+	 *   a file property of this schema, unless the property sets its own.
 	 * - 'defaultAutoShare': (bool) Default value for the "Automatically publish"
 	 *   toggle on the attachment upload dialog. true seeds the toggle on; absent
 	 *   or false keeps it off. Users can always override per upload.
@@ -2816,6 +2833,85 @@ class Schema extends Entity implements JsonSerializable {
 	}//end parseConfigurationInput()
 
 	/**
+	 * Fold top-level annotation blocks into the `configuration` array.
+	 *
+	 * @param array<string, mixed> $object The hydrate input.
+	 *
+	 * @return array<string, mixed> The input with its annotation blocks folded.
+	 */
+	private function foldTopLevelAnnotations(array $object): array {
+		// Fold top-level `x-openregister-*` annotation blocks (e.g. the
+		// OpenAPI seed's sibling-of-properties `x-openregister-lifecycle`
+		// declaration) into the `configuration` array BEFORE the per-key
+		// setter loop runs. Without this the keys fall through to a
+		// non-existent `setXOpenregisterLifecycle()` setter, the silent-
+		// catch below swallows the call, and the annotation is dropped on
+		// the floor — so OR's TransitionEngine never sees a state machine
+		// and every transition 422s ("schema does not declare
+		// x-openregister-lifecycle"; openregister#1520).
+		$existingConfig = ($object['configuration'] ?? []);
+		if (is_array($existingConfig) === false) {
+			$existingConfig = [];
+		}
+
+		$annotationsFolded = false;
+		foreach ($object as $key => $value) {
+			if (is_string($key) === true && str_starts_with($key, 'x-openregister-') === true) {
+				$existingConfig[$key] = $value;
+				$annotationsFolded = true;
+				unset($object[$key]);
+			}
+		}
+
+		// Fold a schema-LEVEL top-level `x-schema-org` marker into
+		// `configuration['x-schema-org']` the same way (ADR-048). Fleet
+		// schemas declare the canonical schema.org CURIE (e.g.
+		// `"x-schema-org": "schema:Organization"`) as a sibling of
+		// `properties`, NOT inside `configuration`; without this fold the
+		// marker falls through to a non-existent `setXSchemaOrg()` setter,
+		// is swallowed by the silent-catch below, and the live schema loses
+		// its semantic type — so SemanticTypeResolver can never discover the
+		// provider. Folding it into the configuration column (which is in the
+		// passThrough allowlist and read by
+		// JsonLdContextService::getImplementedTypes) makes the marker survive
+		// save/import. An explicit `configuration['x-schema-org']` already
+		// supplied by the caller wins over the top-level convenience form.
+		if (array_key_exists('x-schema-org', $object) === true) {
+			if (array_key_exists('x-schema-org', $existingConfig) === false) {
+				$existingConfig['x-schema-org'] = $object['x-schema-org'];
+				$annotationsFolded = true;
+			}
+
+			unset($object['x-schema-org']);
+		}
+
+		if ($annotationsFolded === true) {
+			$object['configuration'] = $existingConfig;
+		}
+
+		return $object;
+	}//end foldTopLevelAnnotations()
+
+	/**
+	 * Drop every key that is not the exact name of a property.
+	 *
+	 * The setter call below resolves `Authorization` to setAuthorization() too,
+	 * and every check on a schema body reads the exact key, so another spelling
+	 * would be stored unchecked.
+	 *
+	 * @param array<int|string, mixed> $object The hydrate input.
+	 *
+	 * @return array<string, mixed> The input with only exact property names as keys.
+	 */
+	private function withExactKeysOnly(array $object): array {
+		return array_filter(
+			$object,
+			fn (int|string $key): bool => is_string($key) === true && property_exists($this, $key) === true,
+			ARRAY_FILTER_USE_KEY
+		);
+	}//end withExactKeysOnly()
+
+	/**
 	 * Fold a top-level `exportable` into `configuration.exportable`.
 	 *
 	 * The entity has no `exportable` field, so a top-level flag used to fall
@@ -2868,10 +2964,14 @@ class Schema extends Entity implements JsonSerializable {
 	 * @return array Validated configuration
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-schema-configuration-must-accept-and-persist-the-object-slug-keys
 	 */
 	private function validateConfigurationArray(array $configuration): array {
 		$validatedConfig = [];
-		$stringFields = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
+		// `objectSlugField` was missing here, so every save and import dropped it
+		// and object slugs could not be switched on outside the database (#4037).
+		$stringFields = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField', 'objectSlugField'];
 		// `exportable` opts the schema into nextcloud-vue's native Export menu
 		// on an index page (or#4103). Off the allowlist it was dropped without
 		// a log line, so `allowExport: true` on every app page was a no-op.
@@ -2882,7 +2982,25 @@ class Schema extends Entity implements JsonSerializable {
 		// ever be declared.
 		// `draftsListed` (decision 216) is read by DraftListLens: false keeps the
 		// caller's own drafts out of the schema's lists by default.
-		$boolFields = ['allowFiles', 'autoPublish', 'defaultAutoShare', 'exportable', 'staging', 'additionalProperties', 'draftsVisible', 'draftsListed'];
+		// `autoShare` is the schema-level default FilePropertyHandler reads for
+		// every file property. `objectSlugSuffix` (#4037) is read by
+		// ObjectSlugHandler: true appends a UTC date-time suffix to a colliding slug.
+		// `fireEventsOnBulkWrites` is read by BulkWriteEvents: whether a bulk write
+		// runs the save events per row. `orphanCleanup` is read by SaveObject: a removed
+		// reference soft-deletes the child the parent owns.
+		$boolFields = [
+			'allowFiles',
+			'autoShare',
+			'defaultAutoShare',
+			'exportable',
+			'staging',
+			'additionalProperties',
+			'draftsVisible',
+			'draftsListed',
+			'fireEventsOnBulkWrites',
+			'objectSlugSuffix',
+			'orphanCleanup',
+		];
 		// `implements` + `x-schema-org` carry the cross-app semantic-type
 		// markers (ADR-048); they must round-trip through the configuration
 		// column so SemanticTypeResolver can discover the schema. Their IRI
@@ -2900,7 +3018,11 @@ class Schema extends Entity implements JsonSerializable {
 		// UniqueConstraintEvaluator and UniqueConstraintListener read (named
 		// refuse/report constraints, beside the legacy `unique`). Off this
 		// list every save dropped it in silence and no constraint ever fired.
+		// `autoPublish` is the retired name of `autoShare`. It is kept unvalidated
+		// and never acted on, so FilePropertyHandler can still log the
+		// deprecation warning that names `autoShare`.
 		$passThrough = [
+			'autoPublish',
 			'unique',
 			'uniqueConstraints',
 			'facetCacheTtl',
@@ -3257,7 +3379,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectDateDeclaration::allFromConfig
 	 * is a named constructor reading a config block; there is no instance to inject.
@@ -3687,19 +3809,24 @@ class Schema extends Entity implements JsonSerializable {
 	 * Validate and normalise `partyKinds`: the kinds of party an object of
 	 * this schema accepts, and per kind the roles it may hold.
 	 *
-	 * Each entry is `{key, label, description?, roles?}`; a bare string reads
-	 * as `{key: s, label: s}`. Keys are unique, non-empty and at most 64
-	 * characters, the width of the link table's `party_kind` column. `roles`
-	 * is an optional list of role keys: naming it binds those roles to that
-	 * kind, leaving it out lets the kind hold any role the schema declares.
+	 * Each entry is `{key, label, description?, roles?, identityShapes?}`; a
+	 * bare string reads as `{key: s, label: s}`. Keys are unique, non-empty and
+	 * at most 64 characters, the width of the link table's `party_kind` column.
+	 * `roles` is an optional list of role keys: naming it binds those roles to
+	 * that kind, leaving it out lets the kind hold any role the schema
+	 * declares. `identityShapes` names the identity shapes a party of this
+	 * kind has in a shared party-kind vocabulary (`naturalPerson`,
+	 * `organization`), so a host can check a party against a vocabulary that
+	 * accepts shapes rather than this schema's kind keys.
 	 *
 	 * @param mixed $value The configured value.
 	 *
-	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The normalised entries.
+	 * @return array<int, array<string, mixed>> The normalised entries, each
+	 *   `{key, label, description?, roles?, identityShapes?}`.
 	 *
 	 * @throws InvalidArgumentException When the value is not a list of valid entries.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	private function validatePartyKindsValue(mixed $value): array {
 		if (is_array($value) === false || array_is_list($value) === false) {
@@ -3726,36 +3853,50 @@ class Schema extends Entity implements JsonSerializable {
 	}//end validatePartyKindsValue()
 
 	/**
-	 * One `partyKinds` entry as `{key, label, description?, roles?}`, or null when it has no usable key.
+	 * One `partyKinds` entry as `{key, label, description?, roles?, identityShapes?}`, or null when it has no usable key.
 	 *
 	 * @param mixed $entry A string or an array.
 	 *
-	 * @return array{key: string, label: string, description?: string, roles?: array<int, string>}|null The entry.
+	 * @return array{key: string, label: string, description?: string, roles?: array<int, string>, identityShapes?: array<int, string>}|null The entry.
 	 */
 	private static function normalisePartyKind(mixed $entry): ?array {
 		$normalised = self::normaliseLinkRole(entry: $entry);
-		if ($normalised === null) {
-			return null;
-		}
-
-		if (is_array($entry) === false || isset($entry['roles']) === false || is_array($entry['roles']) === false) {
+		if ($normalised === null || is_array($entry) === false) {
 			return $normalised;
 		}
 
-		$roles = [];
-		foreach ($entry['roles'] as $role) {
-			$role = trim((string)$role);
-			if ($role !== '' && in_array($role, $roles, true) === false) {
-				$roles[] = $role;
+		foreach (['roles', 'identityShapes'] as $listKey) {
+			$list = self::distinctStrings(value: ($entry[$listKey] ?? null));
+			if ($list !== []) {
+				$normalised[$listKey] = $list;
 			}
-		}
-
-		if ($roles !== []) {
-			$normalised['roles'] = $roles;
 		}
 
 		return $normalised;
 	}//end normalisePartyKind()
+
+	/**
+	 * The distinct, trimmed, non-empty strings of a list, in order; [] for anything else.
+	 *
+	 * @param mixed $value The configured list.
+	 *
+	 * @return array<int, string> The strings.
+	 */
+	private static function distinctStrings(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		$out = [];
+		foreach ($value as $item) {
+			$item = trim((string)$item);
+			if ($item !== '' && in_array($item, $out, true) === false) {
+				$out[] = $item;
+			}
+		}
+
+		return $out;
+	}//end distinctStrings()
 
 	/**
 	 * The kinds of party an object of this schema accepts, [] when it declares none.
@@ -3766,7 +3907,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The vocabulary.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function getPartyKinds(): array {
 		$configured = $this->configuration['partyKinds'] ?? null;
@@ -3790,7 +3931,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The annotation as stored.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function getPartyAnnotation(): array {
 		$configured = $this->configuration['x-openregister-party'] ?? null;
@@ -4109,7 +4250,7 @@ class Schema extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, string> Reason codes mapped to their labels.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function notSuppliedReasons(): array {
 		$configuration = ($this->getConfiguration() ?? []);

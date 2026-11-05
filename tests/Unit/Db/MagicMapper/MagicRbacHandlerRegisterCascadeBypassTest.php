@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -124,7 +125,7 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 					return $permissionHandler;
 				}
 
-				if ($service === RegisterMapper::class) {
+				if ($service === RegisterMapperInterface::class) {
 					return $this->registerMapper;
 				}
 
@@ -395,29 +396,56 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 	}//end testRegisterRoleAdmitsNothingForAnUngrantedAction()
 
 	/**
-	 * A schema with its own block is unchanged: its own grant still lifts the
-	 * organisation filter, the register role neither leaks into it nor admits
-	 * org-less rows on it.
+	 * On a schema with its own block, a plain group grant keeps the
+	 * organisation filter and only a marked grant lifts it. The register role
+	 * neither leaks into it nor admits org-less rows on it.
 	 *
 	 * @return void
 	 */
-	public function testSchemaOwnBlockIsUnchanged(): void {
+	public function testSchemaOwnBlockCrossesOnlyThroughTheMarker(): void {
 		$this->wireLearniqRegister();
-		$schema = $this->createSchema(authorization: ['read' => ['teachers']]);
+		$plain = $this->createSchema(authorization: ['read' => ['teachers']]);
+		$marked = $this->createSchema(authorization: ['read' => [['group' => 'teachers', 'crossOrganisation' => true]]]);
 
 		$this->mockUser(uid: 'juf-01', groups: ['teachers']);
-		$this->assertTrue(
-			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(schema: $schema, action: 'read')
+		$this->assertFalse(
+			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(schema: $plain, action: 'read')
 		);
 		$this->assertFalse(
-			condition: $this->handler->admitsOrganisationlessRowsThroughCascade(schema: $schema, action: 'read')
+			condition: $this->handler->admitsOrganisationlessRowsThroughCascade(schema: $plain, action: 'read')
 		);
-		$this->assertSame(
-			expected: ['no-org', 'other-org', 'own-org'],
-			actual: $this->visibleRows(schema: $schema)
-		);
+		$this->assertSame(expected: ['own-org'], actual: $this->visibleRows(schema: $plain));
 
-	}//end testSchemaOwnBlockIsUnchanged()
+		$this->assertTrue(
+			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(schema: $marked, action: 'read')
+		);
+		$this->assertSame(expected: ['no-org', 'other-org', 'own-org'], actual: $this->visibleRows(schema: $marked));
+
+	}//end testSchemaOwnBlockCrossesOnlyThroughTheMarker()
+
+	/**
+	 * A marked rule on the register's block does not take a caller of a
+	 * schema without a block of its own across organisations.
+	 *
+	 * @return void
+	 */
+	public function testAMarkedRegisterRuleDoesNotCross(): void {
+		$register = new Register();
+		$register->setId(99);
+		$register->setTitle('learniq');
+		$register->setAuthorization(['read' => [['group' => 'instructors', 'crossOrganisation' => true]]]);
+		$this->registerMapper->method('getFirstRegisterWithSchema')->willReturn(99);
+		$this->registerMapper->method('find')->willReturn($register);
+		$schema = $this->createSchema(authorization: null);
+
+		$this->mockUser(uid: 'po-leerkracht-09', groups: ['instructors']);
+		$this->assertFalse(
+			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(schema: $schema, action: 'read')
+		);
+		$this->assertFalse(condition: $this->handler->hasCrossOrganisationBranch(schema: $schema));
+		$this->assertNotContains(needle: 'other-org', haystack: $this->visibleRows(schema: $schema));
+
+	}//end testAMarkedRegisterRuleDoesNotCross()
 
 	/**
 	 * On a schema with its own block, a member of the register's group only is
@@ -564,7 +592,7 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 	/**
 	 * The aggregation fast path asks the search handler the list's question:
 	 * on an inherited schema the boundary is kept and widened, on a schema's
-	 * own block it is waived as before.
+	 * own block it is waived only through a marked grant.
 	 *
 	 * @return void
 	 */
@@ -578,8 +606,11 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 		$this->assertTrue(condition: $search->organisationlessRowsAdmittedByRbac(schema: $inherited));
 
 		$ownBlock = $this->createSchema(authorization: ['read' => ['instructors']]);
-		$this->assertTrue(condition: $search->organisationBoundaryWaivedByRbac(schema: $ownBlock));
+		$this->assertFalse(condition: $search->organisationBoundaryWaivedByRbac(schema: $ownBlock));
 		$this->assertFalse(condition: $search->organisationlessRowsAdmittedByRbac(schema: $ownBlock));
+
+		$markedBlock = $this->createSchema(authorization: ['read' => [['group' => 'instructors', 'crossOrganisation' => true]]]);
+		$this->assertTrue(condition: $search->organisationBoundaryWaivedByRbac(schema: $markedBlock));
 
 	}//end testAggregationQuestionsFollowTheListDecision()
 

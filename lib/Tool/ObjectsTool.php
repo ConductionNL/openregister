@@ -24,7 +24,7 @@
 namespace OCA\OpenRegister\Tool;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -52,21 +52,21 @@ class ObjectsTool extends AbstractTool {
 	/**
 	 * Object service
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private ObjectService $objectService;
+	private ObjectOperationsInterface $objectService;
 
 	/**
 	 * Constructor
 	 *
 	 * @param IUserSession $userSession User session service
 	 * @param LoggerInterface $logger Logger service
-	 * @param ObjectService $objectService Object service
+	 * @param ObjectOperationsInterface $objectService Object service
 	 */
 	public function __construct(
 		IUserSession $userSession,
 		LoggerInterface $logger,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 	) {
 		parent::__construct(userSession: $userSession, logger: $logger);
 		$this->objectService = $objectService;
@@ -99,125 +99,130 @@ class ObjectsTool extends AbstractTool {
 	}//end getDescription()
 
 	/**
+	 * The function definitions, in OpenAI function calling format.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private const FUNCTIONS = [
+		[
+			'name' => 'search_objects',
+			'subject' => 'object',
+			'action' => 'search',
+			'description' => 'Search for objects with optional filters',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'query' => [
+						'type' => 'string',
+						'description' => 'Search query text (optional)',
+					],
+					'register' => [
+						'type' => 'string',
+						'description' => 'Filter by register ID (optional)',
+					],
+					'schema' => [
+						'type' => 'string',
+						'description' => 'Filter by schema ID (optional)',
+					],
+					'limit' => [
+						'type' => 'integer',
+						'description' => 'Maximum number of results (default: 20)',
+					],
+					'offset' => [
+						'type' => 'integer',
+						'description' => 'Number of results to skip (default: 0)',
+					],
+				],
+				'required' => [],
+			],
+		],
+		[
+			'name' => 'get_object',
+			'subject' => 'object',
+			'action' => 'get',
+			'description' => 'Get details about a specific object by ID or UUID',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'id' => [
+						'type' => 'string',
+						'description' => 'The object ID or UUID to retrieve',
+					],
+				],
+				'required' => ['id'],
+			],
+		],
+		[
+			'name' => 'create_object',
+			'subject' => 'object',
+			'action' => 'create',
+			'description' => 'Create a new object with data',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'register' => [
+						'type' => 'string',
+						'description' => 'The register ID where the object should be created',
+					],
+					'schema' => [
+						'type' => 'string',
+						'description' => 'The schema ID that defines the object structure',
+					],
+					'data' => [
+						'type' => 'object',
+						'description' => 'The object data conforming to the schema',
+					],
+				],
+				'required' => ['register', 'schema', 'data'],
+			],
+		],
+		[
+			'name' => 'update_object',
+			'subject' => 'object',
+			'action' => 'update',
+			'description' => 'Update an existing object',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'id' => [
+						'type' => 'string',
+						'description' => 'The object ID to update',
+					],
+					'data' => [
+						'type' => 'object',
+						'description' => 'The updated object data (partial updates supported)',
+					],
+				],
+				'required' => ['id', 'data'],
+			],
+		],
+		[
+			'name' => 'delete_object',
+			'subject' => 'object',
+			'action' => 'delete',
+			'description' => 'Delete an object by ID',
+			'parameters' => [
+				'type' => 'object',
+				'properties' => [
+					'id' => [
+						'type' => 'string',
+						'description' => 'The object ID to delete',
+					],
+				],
+				'required' => ['id'],
+			],
+		],
+	];
+
+	/**
 	 * Get function definitions for LLphant
 	 *
 	 * @return array<int, array<string, mixed>> Array of function definitions
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive function definitions for LLM
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function getFunctions(): array {
-		return [
-			[
-				'name' => 'search_objects',
-				'subject' => 'object',
-				'action' => 'search',
-				'description' => 'Search for objects with optional filters',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'query' => [
-							'type' => 'string',
-							'description' => 'Search query text (optional)',
-						],
-						'register' => [
-							'type' => 'string',
-							'description' => 'Filter by register ID (optional)',
-						],
-						'schema' => [
-							'type' => 'string',
-							'description' => 'Filter by schema ID (optional)',
-						],
-						'limit' => [
-							'type' => 'integer',
-							'description' => 'Maximum number of results (default: 20)',
-						],
-						'offset' => [
-							'type' => 'integer',
-							'description' => 'Number of results to skip (default: 0)',
-						],
-					],
-					'required' => [],
-				],
-			],
-			[
-				'name' => 'get_object',
-				'subject' => 'object',
-				'action' => 'get',
-				'description' => 'Get details about a specific object by ID or UUID',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'id' => [
-							'type' => 'string',
-							'description' => 'The object ID or UUID to retrieve',
-						],
-					],
-					'required' => ['id'],
-				],
-			],
-			[
-				'name' => 'create_object',
-				'subject' => 'object',
-				'action' => 'create',
-				'description' => 'Create a new object with data',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'register' => [
-							'type' => 'string',
-							'description' => 'The register ID where the object should be created',
-						],
-						'schema' => [
-							'type' => 'string',
-							'description' => 'The schema ID that defines the object structure',
-						],
-						'data' => [
-							'type' => 'object',
-							'description' => 'The object data conforming to the schema',
-						],
-					],
-					'required' => ['register', 'schema', 'data'],
-				],
-			],
-			[
-				'name' => 'update_object',
-				'subject' => 'object',
-				'action' => 'update',
-				'description' => 'Update an existing object',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'id' => [
-							'type' => 'string',
-							'description' => 'The object ID to update',
-						],
-						'data' => [
-							'type' => 'object',
-							'description' => 'The updated object data (partial updates supported)',
-						],
-					],
-					'required' => ['id', 'data'],
-				],
-			],
-			[
-				'name' => 'delete_object',
-				'subject' => 'object',
-				'action' => 'delete',
-				'description' => 'Delete an object by ID',
-				'parameters' => [
-					'type' => 'object',
-					'properties' => [
-						'id' => [
-							'type' => 'string',
-							'description' => 'The object ID to delete',
-						],
-					],
-					'required' => ['id'],
-				],
-			],
-		];
+		return self::FUNCTIONS;
 	}//end getFunctions()
 
 	/**

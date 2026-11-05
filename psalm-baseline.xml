@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <files psalm-version="5.26.1@d747f6500b38ac4f7dfc5edbcae6e4b637d7add0">
-  <file src="lib/AppInfo/Application.php">
+  <file src="lib/AppHost/ObservabilityRegistrar.php">
     <UnusedClosureParam>
-      <code><![CDATA[$container]]></code>
-      <code><![CDATA[$container]]></code>
       <code><![CDATA[$container]]></code>
     </UnusedClosureParam>
   </file>
@@ -150,32 +148,16 @@
       <code><![CDATA[$col]]></code>
     </StringIncrement>
   </file>
-  <file src="lib/Service/File/Pdf/PdfTextReplacer.php">
-    <AssignmentToVoid>
-      <code><![CDATA[$residualEntities]]></code>
-    </AssignmentToVoid>
-  </file>
   <file src="lib/Service/GraphQL/GraphQLResolver.php">
     <InvalidPropertyAssignmentValue>
       <code><![CDATA[$this->relationCache]]></code>
     </InvalidPropertyAssignmentValue>
-  </file>
-  <file src="lib/Service/Notification/NotificationAnnotationValidator.php">
-    <InvalidOperand>
-      <code><![CDATA[$defaultLocaleBad]]></code>
-      <code><![CDATA[$defaultLocaleBad]]></code>
-    </InvalidOperand>
   </file>
   <file src="lib/Service/Notification/SystemEntityObjectAdapter.php">
     <ConstructorSignatureMismatch>
       <code><![CDATA[public function __construct(Entity $entity, string $systemSlug) {]]></code>
       <code><![CDATA[public function __construct(Entity $entity, string $systemSlug) {]]></code>
     </ConstructorSignatureMismatch>
-  </file>
-  <file src="lib/Service/OasService.php">
-    <UnsupportedPropertyReferenceUsage>
-      <code><![CDATA[$operation = &$this->oas['paths'][$pathName][$method]]]></code>
-    </UnsupportedPropertyReferenceUsage>
   </file>
   <file src="lib/Service/Object/SaveObjects.php">
     <ImplicitToStringCast>
@@ -199,27 +181,11 @@
       <code><![CDATA[$config]]></code>
     </UnusedParam>
   </file>
-  <file src="lib/Service/OrganisationService.php">
-    <InvalidThrow>
-      <code><![CDATA[throw $e;]]></code>
-      <code><![CDATA[throw $e;]]></code>
-    </InvalidThrow>
-    <UndefinedClass>
-      <code><![CDATA[$e]]></code>
-      <code><![CDATA[$e]]></code>
-      <code><![CDATA[\OC\DB\Exceptions\DbalException]]></code>
-    </UndefinedClass>
-  </file>
   <file src="lib/Service/RegisterResolverService.php">
     <UnusedParam>
       <code><![CDATA[$organisationUuid]]></code>
       <code><![CDATA[$organisationUuid]]></code>
       <code><![CDATA[$organisationUuid]]></code>
-    </UnusedParam>
-  </file>
-  <file src="lib/Service/Schema/SchemaDiffService.php">
-    <UnusedParam>
-      <code><![CDATA[$hasOtherChange]]></code>
     </UnusedParam>
   </file>
   <file src="lib/Service/TaskService.php">

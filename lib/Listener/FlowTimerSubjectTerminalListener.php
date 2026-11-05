@@ -38,9 +38,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Event\FlowRunTerminalEvent;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
-use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -56,11 +56,11 @@ class FlowTimerSubjectTerminalListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTimerService $timers The timer lifecycle.
+	 * @param FlowTimerControlInterface $timers The timer lifecycle.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		private readonly FlowTimerService $timers,
+		private readonly FlowTimerControlInterface $timers,
 		private readonly LoggerInterface $logger,
 	) {
 

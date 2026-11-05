@@ -28,24 +28,30 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use DateTimeZone;
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
+use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Listener\NotifyPushListener;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
-use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use React\Async\PromiseInterface;
@@ -80,21 +86,21 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class ImportService {
+class ImportService implements ObjectImporterInterface {
 
 	/**
 	 * Schema mapper instance
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Object service instance
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Default chunk size for processing
@@ -155,26 +161,26 @@ class ImportService {
 	/**
 	 * Constructor for the ImportService
 	 *
-	 * @param SchemaMapper $schemaMapper The schema mapper
-	 * @param ObjectService $objectService The object service
+	 * @param SchemaMapperInterface $schemaMapper The schema mapper
+	 * @param ObjectOperationsInterface $objectService The object service
 	 * @param LoggerInterface $logger The logger interface
 	 * @param IGroupManager $groupManager The group manager
 	 * @param \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec Translation CSV codec
-	 * @param AuditTrailMapper $auditTrailMapper The audit trail mapper
+	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail mapper
 	 * @param MappingEngine $mappingEngine Migration-pack mapping engine
-	 * @param ValidateObject $validateObjectHandler Schema validator, used for genuinely
+	 * @param ValidateObjectInterface $validateObjectHandler Schema validator, used for genuinely
 	 *                                              side-effect-free dry-run imports
 	 * @param ContainerInterface $container DI container for lazy IQueue resolution
 	 */
 	public function __construct(
-		SchemaMapper $schemaMapper,
-		ObjectService $objectService,
+		SchemaMapperInterface $schemaMapper,
+		ObjectOperationsInterface $objectService,
 		LoggerInterface $logger,
 		IGroupManager $groupManager,
 		\OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly MappingEngine $mappingEngine,
-		private readonly ValidateObject $validateObjectHandler,
+		private readonly ValidateObjectInterface $validateObjectHandler,
 		private readonly ContainerInterface $container,
 	) {
 		$this->schemaMapper = $schemaMapper;
@@ -302,8 +308,8 @@ class ImportService {
 	 * Import data from Excel file.
 	 *
 	 * @param string $filePath The path to the Excel file.
-	 * @param Register|null $register Optional register to associate with imported objects.
-	 * @param Schema|null $schema Optional schema to associate with imported objects.
+	 * @param RegisterInterface|null $register Optional register to associate with imported objects.
+	 * @param SchemaInterface|null $schema Optional schema to associate with imported objects.
 	 * @param bool $validation Whether to validate objects against schema definitions (default: false).
 	 * @param bool $events Whether to dispatch object lifecycle events (default: false).
 	 * @param bool $_rbac Whether to apply RBAC checks (default: true, unused).
@@ -345,13 +351,15 @@ class ImportService {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
 	 *
+	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
+	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function importFromExcel(
 		string $filePath,
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		bool $validation = false,
 		bool $events = false,
 		bool $_rbac = true,
@@ -360,6 +368,9 @@ class ImportService {
 		?IUser $currentUser = null,
 		bool $enrich = true,
 	): array {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		// Clear caches at the start of each import to prevent stale data issues.
 		$this->clearCaches();
 
@@ -378,38 +389,28 @@ class ImportService {
 			$reader = new Xlsx();
 			$reader->setReadDataOnly(true);
 			$spreadsheet = $reader->load($filePath);
+			$import = [
+				'register' => $register,
+				'schema' => $schema,
+				'validation' => $validation,
+				'events' => $events,
+				'_rbac' => $_rbac,
+				'_multitenancy' => $_multitenancy,
+				'publish' => $publish,
+				'currentUser' => $currentUser,
+				'enrich' => $enrich,
+			];
 
 			// If we have a register but no schema, process each sheet as a different schema.
 			if ($register !== null && $schema === null) {
-				$multi = $this->processMultiSchemaSpreadsheetAsync(
-					spreadsheet: $spreadsheet,
-					register: $register,
-					validation: $validation,
-					events: $events,
-					_rbac: $_rbac,
-					_multitenancy: $_multitenancy,
-					publish: $publish,
-					currentUser: $currentUser,
-					enrich: $enrich
-				);
+				$multi = $this->processMultiSchemaSpreadsheetAsync(spreadsheet: $spreadsheet, import: $import);
 				$multi['importJobId'] = $importJobId;
 				return $multi;
 			}
 
 			// Single schema processing - use batch processing for better performance.
 			$sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
-			$sheetSummary = $this->processSpreadsheetBatch(
-				spreadsheet: $spreadsheet,
-				register: $register,
-				schema: $schema,
-				validation: $validation,
-				events: $events,
-				_rbac: $_rbac,
-				_multitenancy: $_multitenancy,
-				publish: $publish,
-				currentUser: $currentUser,
-				enrich: $enrich
-			);
+			$sheetSummary = $this->processSpreadsheetBatch(spreadsheet: $spreadsheet, import: $import);
 
 			// Add schema information to the summary (consistent with multi-sheet Excel import).
 			if ($schema !== null) {
@@ -420,7 +421,6 @@ class ImportService {
 				];
 			}
 
-			// Schedule SOLR warmup job after successful Excel import.
 			$finalResult = [
 				$sheetTitle => $sheetSummary,
 				'importJobId' => $importJobId,
@@ -436,8 +436,8 @@ class ImportService {
 	 * Import data from CSV file.
 	 *
 	 * @param string $filePath The path to the CSV file.
-	 * @param Register|null $register Optional register to associate with imported objects.
-	 * @param Schema|null $schema Optional schema to associate with imported objects.
+	 * @param RegisterInterface|null $register Optional register to associate with imported objects.
+	 * @param SchemaInterface|null $schema Optional schema to associate with imported objects.
 	 * @param bool $validation Whether to validate objects against schema definitions (default: false).
 	 * @param bool $events Whether to dispatch object lifecycle events (default: false).
 	 * @param bool $_rbac Whether to enforce RBAC checks (default: true, unused).
@@ -455,13 +455,15 @@ class ImportService {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags control import behavior options
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Mirrors the existing importFrom* signatures; pack/dryRun extend it.
 	 *
+	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
+	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 * @spec openspec/specs/migration-mapping-packs/spec.md
 	 */
 	public function importFromCsv(
 		string $filePath,
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		bool $validation = false,
 		bool $events = false,
 		bool $_rbac = true,
@@ -472,6 +474,9 @@ class ImportService {
 		?array $pack = null,
 		bool $dryRun = false,
 	): array {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		// Clear caches at the start of each import to prevent stale data issues.
 		$this->clearCaches();
 
@@ -498,16 +503,18 @@ class ImportService {
 			$sheetSummary = $this->processCsvSheet(
 				sheet: $spreadsheet->getActiveSheet(),
 				register: $register,
-				schema: $schema,
-				validation: $validation,
-				events: $events,
-				_rbac: $_rbac,
-				_multitenancy: $_multitenancy,
-				publish: $publish,
-				currentUser: $currentUser,
-				enrich: $enrich,
-				pack: $pack,
-				dryRun: $dryRun
+				import: [
+					'schema' => $schema,
+					'validation' => $validation,
+					'events' => $events,
+					'_rbac' => $_rbac,
+					'_multitenancy' => $_multitenancy,
+					'publish' => $publish,
+					'currentUser' => $currentUser,
+					'enrich' => $enrich,
+					'pack' => $pack,
+					'dryRun' => $dryRun,
+				]
 			);
 
 			// Add schema information to the summary (consistent with Excel import).
@@ -517,7 +524,6 @@ class ImportService {
 				'slug' => $schema->getSlug(),
 			];
 
-			// Schedule SOLR warmup job after successful CSV import.
 			$finalResult = [
 				$sheetTitle => $sheetSummary,
 				'importJobId' => $importJobId,
@@ -552,10 +558,10 @@ class ImportService {
 	 * an opaque exception.
 	 *
 	 * @param string $filePath Path to the uploaded JSON file
-	 * @param Register|null $register Register to import into. When null, the payload is checked for
+	 * @param RegisterInterface|null $register Register to import into. When null, the payload is checked for
 	 *                                a register-bundle envelope to auto-create it; see
 	 *                                `$registerSlug` and `@throws` below.
-	 * @param Schema|null $schema Target schema (required — JSON import is single-schema, like
+	 * @param SchemaInterface|null $schema Target schema (required — JSON import is single-schema, like
 	 *                            CSV — unless resolved from a register-bundle's own schemas)
 	 * @param bool $validation Whether to validate objects against the schema
 	 * @param bool $events Whether to dispatch object lifecycle events
@@ -591,8 +597,8 @@ class ImportService {
 	 */
 	public function importFromJson(
 		string $filePath,
-		?Register $register = null,
-		?Schema $schema = null,
+		?RegisterInterface $register = null,
+		?SchemaInterface $schema = null,
 		bool $validation = false,
 		bool $events = false,
 		bool $_rbac = true,
@@ -604,6 +610,9 @@ class ImportService {
 		bool $dryRun = false,
 		?string $registerSlug = null,
 	): array {
+		$register = StoredEntity::register(register: $register);
+		$schema   = StoredEntity::schema(schema: $schema);
+
 		// Clear caches at the start of each import to prevent stale data issues.
 		$this->clearCaches();
 		$startTime = microtime(true);
@@ -615,6 +624,111 @@ class ImportService {
 			);
 		}
 
+		$decoded = $this->decodeJsonImportFile(filePath: $filePath);
+
+		// A null register could not be resolved by slug: a register bundle
+		// auto-creates it with its schemas (REQ-IMP-AC-01/03), anything else
+		// fails clearly, naming the missing slug (REQ-IMP-AC-02).
+		if ($register === null) {
+			[$register, $schema] = $this->registerFromBundle(
+				decoded: $decoded,
+				target: ['schema' => $schema, 'registerSlug' => $registerSlug]
+			);
+		}
+
+		if ($schema === null) {
+			throw new InvalidArgumentException('JSON import requires a specific schema');
+		}
+
+		return $this->runJsonImportJob(
+			objects: $this->jsonImportObjects(decoded: $decoded),
+			job: [
+				'register' => $register,
+				'schema' => $schema,
+				'_rbac' => $_rbac,
+				'_multitenancy' => $_multitenancy,
+				'currentUser' => $currentUser,
+				'pack' => $pack,
+				'dryRun' => $dryRun,
+				'startTime' => $startTime,
+			]
+		);
+	}//end importFromJson()
+
+	/**
+	 * Run a JSON import as one import job, tagging its audit rows with the job id.
+	 *
+	 * @param array<mixed>         $objects The objects to import
+	 * @param array<string, mixed> $job     The register, schema, RBAC, multitenancy, user, pack, dryRun and startTime
+	 *
+	 * @return array<string, mixed> Sheet-shaped summary (keyed 'JSON') plus importJobId
+	 */
+	private function runJsonImportJob(array $objects, array $job): array {
+		$importJobId = Uuid::v4()->toRfc4122();
+
+		try {
+			$this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
+
+			return [
+				'JSON' => $this->importJsonObjects(objects: $objects, job: $job),
+				'importJobId' => $importJobId,
+			];
+		} finally {
+			$this->auditTrailMapper->setRequestImportJobId(importJobId: null);
+		}
+	}//end runJsonImportJob()
+
+	/**
+	 * Resolve every JSON import row, then validate (dry run) or save them.
+	 *
+	 * @param array<mixed>         $objects The objects to import
+	 * @param array<string, mixed> $job     The register, schema, RBAC, multitenancy, user, pack, dryRun and startTime
+	 *
+	 * @return array<string, mixed> The summary
+	 */
+	private function importJsonObjects(array $objects, array $job): array {
+		$schema = $job['schema'];
+
+		// Phase 1: resolve every row to an (uuid, body) pair.
+		$resolution = $this->resolveJsonImportRows(
+			objects: $objects,
+			run: ['pack' => $job['pack'], 'propertyKeys' => array_flip(array_keys($schema->getProperties()))]
+		);
+
+		// Phase 2: a dry run validates every resolved row and saves nothing.
+		$summary = $resolution['summary'];
+		if ($job['dryRun'] === true) {
+			$summary = $this->buildDryRunSummary(
+				summary: $summary,
+				objects: array_column($resolution['rows'], 'body'),
+				schema: $schema,
+				startTime: $job['startTime']
+			);
+		}
+
+		if ($job['dryRun'] === false) {
+			$summary = $this->saveJsonImportRows(rows: $resolution['rows'], target: ['summary' => $summary] + $job);
+		}
+
+		$summary['schema'] = [
+			'id' => $schema->getId(),
+			'title' => $schema->getTitle(),
+			'slug' => $schema->getSlug(),
+		];
+
+		return $summary;
+	}//end importJsonObjects()
+
+	/**
+	 * Read and decode a JSON import file.
+	 *
+	 * @param string $filePath Path to the JSON file
+	 *
+	 * @return array<mixed> The decoded document
+	 *
+	 * @throws InvalidArgumentException When the file does not hold a JSON array or object
+	 */
+	private function decodeJsonImportFile(string $filePath): array {
 		$raw = file_get_contents($filePath);
 		$decoded = null;
 		if ($raw !== false) {
@@ -625,237 +739,273 @@ class ImportService {
 			throw new InvalidArgumentException('JSON import expects an array of objects');
 		}
 
-		// Register-bundle auto-create-or-fail-clearly (REQ-IMP-AC-01/02/03).
-		// The caller passes $register=null when the target register could not
-		// be resolved by slug. Detect whether the payload is a register-bundle
-		// envelope (an object — not a list — carrying `components.registers`
-		// with the register definition, the same shape the existing
-		// configuration/register-import path understands) versus a plain
-		// object list: a bundle auto-creates its register + schemas; anything
-		// else fails clearly, naming the missing slug.
-		if ($register === null) {
-			$isBundle = array_is_list($decoded) === false
-				&& isset($decoded['components']['registers']) === true
-				&& is_array($decoded['components']['registers']) === true
-				&& count($decoded['components']['registers']) > 0;
+		return $decoded;
+	}//end decodeJsonImportFile()
 
-			if ($isBundle === false) {
-				throw new RegisterNotFoundException(
-					registerSlugOrId: $registerSlug ?? 'unknown',
-					code: 404,
-					remedies: 'Create the register first, or supply a full register bundle '
-						. '(a register definition together with its schemas) to auto-create it.'
-				);
-			}
+	/**
+	 * Resolve the register (and schema) of a JSON import from a register bundle.
+	 *
+	 * A bundle is an object (not a list) carrying a non-empty `components.registers`,
+	 * the shape the configuration import understands.
+	 *
+	 * @param array<mixed>         $decoded The decoded document
+	 * @param array<string, mixed> $target  The schema hint and the register slug the caller asked for
+	 *
+	 * @return array{0: Register, 1: ?Schema} The register and the schema
+	 *
+	 * @throws RegisterNotFoundException When the document is not a register bundle
+	 */
+	private function registerFromBundle(array $decoded, array $target): array {
+		$isBundle = array_is_list($decoded) === false
+			&& isset($decoded['components']['registers']) === true
+			&& is_array($decoded['components']['registers']) === true
+			&& count($decoded['components']['registers']) > 0;
 
-			[$register, $schema] = $this->autoCreateRegisterFromBundle(bundle: $decoded, schemaHint: $schema);
-		}//end if
-
-		if ($schema === null) {
-			throw new InvalidArgumentException('JSON import requires a specific schema');
+		if ($isBundle === false) {
+			throw new RegisterNotFoundException(
+				registerSlugOrId: $target['registerSlug'] ?? 'unknown',
+				code: 404,
+				remedies: 'Create the register first, or supply a full register bundle '
+					. '(a register definition together with its schemas) to auto-create it.'
+			);
 		}
 
-		// Accept a bare array, a `{ "results": [...] }` envelope (the shape
-		// some object-list endpoints return), or — for a register-bundle
-		// import — the bundle's own `components.objects` list.
-		$objects = $decoded;
+		return $this->autoCreateRegisterFromBundle(bundle: $decoded, schemaHint: $target['schema']);
+	}//end registerFromBundle()
+
+	/**
+	 * The object list of a JSON import document.
+	 *
+	 * Accepts a bare list, a `{ "results": [...] }` envelope, or a register
+	 * bundle's own `components.objects` list.
+	 *
+	 * @param array<mixed> $decoded The decoded document
+	 *
+	 * @return array<mixed> The objects to import
+	 */
+	private function jsonImportObjects(array $decoded): array {
 		if (isset($decoded['components']['objects']) === true && is_array($decoded['components']['objects']) === true) {
-			$objects = $decoded['components']['objects'];
-		} elseif (isset($decoded['results']) === true && is_array($decoded['results']) === true) {
-			$objects = $decoded['results'];
+			return $decoded['components']['objects'];
 		}
 
-		// ExportService::exportToJson() emits ObjectEntity::jsonSerialize() —
-		// schema properties at the top level PLUS an `@self` block and
-		// entity-level fields (uuid/version/slug/dates) that are NOT schema
-		// properties. Persist each object through the single-object saveObject()
-		// path — the same one the REST create/update uses — which reliably
-		// upserts by uuid for this register/schema. (The bulk saveObjects()
-		// path silently skips these objects for dedicated-table schemas.) The
-		// body is reduced to the schema's own properties, with empty strings
-		// coerced to null.
-		$propertyKeys = array_flip(array_keys($schema->getProperties()));
+		if (isset($decoded['results']) === true && is_array($decoded['results']) === true) {
+			return $decoded['results'];
+		}
 
-		$importJobId = Uuid::v4()->toRfc4122();
+		return $decoded;
+	}//end jsonImportObjects()
 
-		try {
-			$this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
+	/**
+	 * Resolve every JSON import row to an upsert uuid and a body, and start the summary.
+	 *
+	 * With a pack each object is mapped through it; a row with mapping errors is
+	 * reported and excluded, never partially mapped or saved. Without a pack the
+	 * body is the object reduced to the schema's own properties.
+	 *
+	 * @param array<mixed>         $objects The objects to import
+	 * @param array<string, mixed> $run     The pack (or null) and the schema property keys as a set
+	 *
+	 * @return array{rows: list<array<string, mixed>>, summary: array<string, mixed>} The rows and the summary so far
+	 */
+	private function resolveJsonImportRows(array $objects, array $run): array {
+		$summary = [
+			'found' => count($objects),
+			'created' => [],
+			'updated' => [],
+			'unchanged' => [],
+			'errors' => [],
+			// Non-fatal findings, such as a dropped undeclared property.
+			'warnings' => [],
+		];
 
-			$summary = [
-				'found' => count($objects),
-				'created' => [],
-				'updated' => [],
-				'unchanged' => [],
-				'errors' => [],
-				// Non-fatal findings the caller still needs to see. A dropped
-				// undeclared property is the first of these: the row imports
-				// fine and is quietly missing a field.
-				'warnings' => [],
-			];
-
-			// Phase 1: resolve every row to an (uuid, body) pair. When a pack is
-			// given, each source object is mapped through it first (source
-			// resolved via JSON-Pointer-style paths against the raw decoded
-			// object) — a row with mapping errors (missing required source, or
-			// an unresolved lookup/reference — the literal-leak guard) is
-			// reported and excluded, never partially mapped or saved.
-			$resolved = [];
-			foreach ($objects as $rowIndex => $raw) {
-				if (is_array($raw) === false) {
-					continue;
-				}
-
-				// Keys are list indexes for a JSON array export; cast guards
-				// against a decoded object-with-string-keys envelope.
-				$rowNumber = ((int)$rowIndex + 1);
-				if ($pack !== null && $this->mappingEngine->isRowSkipped(pack: $pack, rowNumber: $rowNumber) === true) {
-					continue;
-				}
-
-				if ($pack !== null) {
-					$mapped = $this->mappingEngine->mapRow(pack: $pack, sourceRow: $raw, rowNumber: $rowNumber);
-					if (empty($mapped['errors']) === false) {
-						foreach ($mapped['errors'] as $mappingError) {
-							$summary['errors'][] = $this->formatMappingError(error: $mappingError);
-						}
-
-						continue;
-					}
-
-					$body = $mapped['data'];
-					$uuid = $body['id'] ?? null;
-					unset($body['id']);
-					if ($uuid !== null) {
-						$uuid = (string)$uuid;
-					}
-				} else {
-					// Upsert key: prefer @self.id, then a top-level id/uuid.
-					$uuid = ($raw['@self']['id'] ?? $raw['id'] ?? $raw['uuid'] ?? null);
-					if ($uuid !== null) {
-						$uuid = (string)$uuid;
-					}
-
-					// Body = schema properties only; empty strings → null.
-					$body = array_intersect_key($raw, $propertyKeys);
-
-					// Report what that intersection just threw away. An import
-					// drops undeclared keys BEFORE the save, so the warning at
-					// the DB write boundary never sees them — an imported field
-					// the schema does not declare would vanish with nothing
-					// anywhere saying so. `@`/`_`/`id` are envelope and metadata,
-					// never user data, so they are not losses.
-					$importDropped = [];
-					foreach (array_keys($raw) as $rawKey) {
-						$rawName = (string)$rawKey;
-						if (array_key_exists($rawName, $propertyKeys) === true) {
-							continue;
-						}
-
-						if ($rawName === '' || $rawName === 'id' || $rawName === 'uuid'
-							|| $rawName[0] === '@' || $rawName[0] === '_'
-						) {
-							continue;
-						}
-
-						$importDropped[] = $rawName;
-					}
-
-					if ($importDropped !== []) {
-						$droppedPlural = 'ies';
-						if (count($importDropped) === 1) {
-							$droppedPlural = 'y';
-						}
-
-						$summary['warnings'][] = sprintf(
-							'Row %d: dropped %d propert%s the schema does not declare: %s.',
-							$rowNumber,
-							count($importDropped),
-							$droppedPlural,
-							implode(', ', $importDropped)
-						);
-					}
-
-					foreach ($body as $key => $value) {
-						if ($value === '') {
-							$body[$key] = null;
-						}
-					}
-				}//end if
-
-				$resolved[] = [
-					'uuid' => $uuid,
-					'body' => $body,
-					'name' => ($raw['name'] ?? $uuid),
-				];
-			}//end foreach
-
-			// Phase 2a: dry-run — validate every resolved row, save NOTHING.
-			if ($dryRun === true) {
-				$summary = $this->buildDryRunSummary(
-					summary: $summary,
-					objects: array_column($resolved, 'body'),
-					schema: $schema,
-					startTime: $startTime
-				);
-
-				$summary['schema'] = [
-					'id' => $schema->getId(),
-					'title' => $schema->getTitle(),
-					'slug' => $schema->getSlug(),
-				];
-
-				return [
-					'JSON' => $summary,
-					'importJobId' => $importJobId,
-				];
+		$rows = [];
+		foreach ($objects as $rowIndex => $raw) {
+			if (is_array($raw) === false) {
+				continue;
 			}
 
-			// Phase 2b: persist each resolved row through the same single-object
-			// saveObject() path the REST create/update uses (unchanged from the
-			// non-pack behaviour — the bulk saveObjects() path silently skips
-			// dedicated-table schemas, see the class-level note above).
-			foreach ($resolved as $row) {
-				try {
-					$saved = $this->objectService->saveObject(
-						object: $row['body'],
-						register: $register,
-						schema: $schema,
-						uuid: $row['uuid'],
-						_rbac: $_rbac,
-						_multitenancy: $_multitenancy,
-						currentUser: $currentUser
-					);
+			// Keys are list indexes for a JSON array export; the cast guards an object-with-string-keys envelope.
+			$run['rowNumber'] = ((int)$rowIndex + 1);
+			$resolved = $this->resolveJsonImportRow(raw: $raw, run: $run);
+			array_push($summary['errors'], ...$resolved['errors']);
+			if ($resolved['warning'] !== null) {
+				$summary['warnings'][] = $resolved['warning'];
+			}
 
-					if ($row['uuid'] !== null) {
-						$summary['updated'][] = $saved->getUuid();
-					} else {
-						$summary['created'][] = $saved->getUuid();
-					}
-				} catch (\Throwable $e) {
-					$summary['errors'][] = [
-						'object' => $row['name'],
-						'error' => $e->getMessage(),
-						'type' => get_class($e),
-					];
-				}//end try
-			}//end foreach
+			if ($resolved['row'] !== null) {
+				$rows[] = $resolved['row'];
+			}
+		}//end foreach
 
-			$summary['schema'] = [
-				'id' => $schema->getId(),
-				'title' => $schema->getTitle(),
-				'slug' => $schema->getSlug(),
-			];
+		return ['rows' => $rows, 'summary' => $summary];
+	}//end resolveJsonImportRows()
 
-			$finalResult = [
-				'JSON' => $summary,
-				'importJobId' => $importJobId,
-			];
+	/**
+	 * Resolve one JSON import row.
+	 *
+	 * @param array<string, mixed> $raw The source object
+	 * @param array<string, mixed> $run The pack, the schema property keys and the row number
+	 *
+	 * @return array{row: array<string, mixed>|null, errors: list<array<string, mixed>>, warning: string|null}
+	 *     The resolved row (null when skipped or refused), its errors and its warning
+	 */
+	private function resolveJsonImportRow(array $raw, array $run): array {
+		$pack = $run['pack'];
+		if ($pack === null) {
+			return $this->resolvePlainJsonImportRow(raw: $raw, run: $run);
+		}
 
-			return $finalResult;
-		} finally {
-			$this->auditTrailMapper->setRequestImportJobId(importJobId: null);
-		}//end try
-	}//end importFromJson()
+		$outcome = ['row' => null, 'errors' => [], 'warning' => null];
+		if ($this->mappingEngine->isRowSkipped(pack: $pack, rowNumber: $run['rowNumber']) === true) {
+			return $outcome;
+		}
+
+		$mapped = $this->mappingEngine->mapRow(pack: $pack, sourceRow: $raw, rowNumber: $run['rowNumber']);
+		if (empty($mapped['errors']) === false) {
+			$outcome['errors'] = array_values(
+				array_map(fn (array $error): array => $this->formatMappingError(error: $error), $mapped['errors'])
+			);
+			return $outcome;
+		}
+
+		$body = $mapped['data'];
+		$uuid = $body['id'] ?? null;
+		unset($body['id']);
+		if ($uuid !== null) {
+			$uuid = (string)$uuid;
+		}
+
+		$outcome['row'] = ['uuid' => $uuid, 'body' => $body, 'name' => ($raw['name'] ?? $uuid)];
+		return $outcome;
+	}//end resolveJsonImportRow()
+
+	/**
+	 * Resolve one JSON import row without a pack.
+	 *
+	 * The upsert key is `@self.id`, then a top-level `id` or `uuid`. The body is
+	 * the object reduced to the schema's properties, with empty strings as null.
+	 *
+	 * @param array<string, mixed> $raw The source object
+	 * @param array<string, mixed> $run The schema property keys and the row number
+	 *
+	 * @return array{row: array<string, mixed>, errors: list<never>, warning: string|null}
+	 *     The resolved row and the dropped-property warning, if any
+	 */
+	private function resolvePlainJsonImportRow(array $raw, array $run): array {
+		$uuid = ($raw['@self']['id'] ?? $raw['id'] ?? $raw['uuid'] ?? null);
+		if ($uuid !== null) {
+			$uuid = (string)$uuid;
+		}
+
+		$body = array_intersect_key($raw, $run['propertyKeys']);
+		foreach ($body as $key => $value) {
+			if ($value === '') {
+				$body[$key] = null;
+			}
+		}
+
+		return [
+			'row' => ['uuid' => $uuid, 'body' => $body, 'name' => ($raw['name'] ?? $uuid)],
+			'errors' => [],
+			'warning' => $this->droppedPropertiesWarning(raw: $raw, run: $run),
+		];
+	}//end resolvePlainJsonImportRow()
+
+	/**
+	 * The warning for properties a row carries that the schema does not declare.
+	 *
+	 * An import drops undeclared keys before the save, so the warning at the
+	 * database write never sees them. `@`/`_` keys, `id` and `uuid` are envelope
+	 * and metadata, never user data, so they are not reported.
+	 *
+	 * @param array<string, mixed> $raw The source object
+	 * @param array<string, mixed> $run The schema property keys and the row number
+	 *
+	 * @return string|null The warning, or null when nothing was dropped
+	 */
+	private function droppedPropertiesWarning(array $raw, array $run): ?string {
+		$dropped = [];
+		foreach (array_keys($raw) as $rawKey) {
+			$rawName = (string)$rawKey;
+			if (array_key_exists($rawName, $run['propertyKeys']) === false && $this->isUserDataKey(key: $rawName) === true) {
+				$dropped[] = $rawName;
+			}
+		}
+
+		if ($dropped === []) {
+			return null;
+		}
+
+		$plural = 'ies';
+		if (count($dropped) === 1) {
+			$plural = 'y';
+		}
+
+		return sprintf(
+			'Row %d: dropped %d propert%s the schema does not declare: %s.',
+			$run['rowNumber'],
+			count($dropped),
+			$plural,
+			implode(', ', $dropped)
+		);
+	}//end droppedPropertiesWarning()
+
+	/**
+	 * Whether an object key holds user data rather than envelope or metadata.
+	 *
+	 * `@`/`_` keys, `id` and `uuid` are envelope and metadata.
+	 *
+	 * @param string $key The object key
+	 *
+	 * @return bool True for a user data key
+	 */
+	private function isUserDataKey(string $key): bool {
+		return $key !== '' && $key !== 'id' && $key !== 'uuid' && $key[0] !== '@' && $key[0] !== '_';
+	}//end isUserDataKey()
+
+	/**
+	 * Save every resolved JSON import row and record the outcome in the summary.
+	 *
+	 * Rows go through the single-object saveObject() path the REST create/update
+	 * uses, which upserts by uuid; the bulk path silently skips dedicated-table
+	 * schemas. A failing row is reported and the import goes on.
+	 *
+	 * @param list<array<string, mixed>> $rows   The resolved rows
+	 * @param array<string, mixed>       $target The summary, register, schema, RBAC, multitenancy and user
+	 *
+	 * @return array<string, mixed> The summary with created, updated and errors filled in
+	 */
+	private function saveJsonImportRows(array $rows, array $target): array {
+		$summary = $target['summary'];
+		foreach ($rows as $row) {
+			try {
+				$saved = $this->objectService->saveObject(
+					object: $row['body'],
+					register: $target['register'],
+					schema: $target['schema'],
+					uuid: $row['uuid'],
+					_rbac: $target['_rbac'],
+					_multitenancy: $target['_multitenancy'],
+					currentUser: $target['currentUser']
+				);
+
+				$outcome = 'created';
+				if ($row['uuid'] !== null) {
+					$outcome = 'updated';
+				}
+
+				$summary[$outcome][] = $saved->getUuid();
+			} catch (\Throwable $e) {
+				$summary['errors'][] = [
+					'object' => $row['name'],
+					'error' => $e->getMessage(),
+					'type' => get_class($e),
+				];
+			}//end try
+		}//end foreach
+
+		return $summary;
+	}//end saveJsonImportRows()
 
 	/**
 	 * Resolve or auto-create a register (and its schemas) from a register-bundle
@@ -936,14 +1086,8 @@ class ImportService {
 	 * Process spreadsheet with multiple schemas using batch saving for better performance
 	 *
 	 * @param Spreadsheet $spreadsheet The spreadsheet to process
-	 * @param Register $register The register to associate with imported objects
-	 * @param bool $validation Whether to validate objects against schema definitions
-	 * @param bool $events Whether to dispatch object lifecycle events
-	 * @param bool $_rbac Whether to apply RBAC permissions
-	 * @param bool $_multitenancy Whether to apply multi-tenancy filtering
-	 * @param bool $publish DEPRECATED: No-op. Object-level publish metadata removed; use RBAC $now rules
-	 * @param IUser|null $currentUser The current user performing the import.
-	 * @param bool $enrich Whether to enrich objects with metadata.
+	 * @param array       $import      The register (required here), the save flags, the deprecated
+	 *                                 no-op publish and currentUser; each sheet sets its own schema
 	 *
 	 * @return array<string, array> Summary of import with sheet-based results
 	 * @phpstan-return array<string, array{
@@ -971,21 +1115,10 @@ class ImportService {
 	 *     schema: array{id: int, slug: null|string, title: null|string}|null
 	 * }>
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function processMultiSchemaSpreadsheetAsync(
-		Spreadsheet $spreadsheet,
-		Register $register,
-		bool $validation = false,
-		bool $events = false,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $publish = false,
-		?IUser $currentUser = null,
-		bool $enrich = true,
-	): array {
+	private function processMultiSchemaSpreadsheetAsync(Spreadsheet $spreadsheet, array $import): array {
+		$register = $import['register'];
 		$summary = [];
 
 		foreach ($spreadsheet->getWorksheetIterator() as $worksheet) {
@@ -1039,18 +1172,8 @@ class ImportService {
 
 			// Set the worksheet as active and process using batch saving for better performance.
 			$spreadsheet->setActiveSheetIndex($spreadsheet->getIndex($worksheet));
-			$sheetSummary = $this->processSpreadsheetBatch(
-				spreadsheet: $spreadsheet,
-				register: $register,
-				schema: $schema,
-				validation: $validation,
-				events: $events,
-				_rbac: $_rbac,
-				_multitenancy: $_multitenancy,
-				publish: $publish,
-				currentUser: $currentUser,
-				enrich: $enrich
-			);
+			$import['schema'] = $schema;
+			$sheetSummary = $this->processSpreadsheetBatch(spreadsheet: $spreadsheet, import: $import);
 
 			// Merge the sheet summary with the existing summary (preserve debug info).
 			$summary[$schemaSlug] = array_merge($summary[$schemaSlug], $sheetSummary);
@@ -1159,304 +1282,222 @@ class ImportService {
 	/**
 	 * Process a single spreadsheet sheet using batch saving for better performance
 	 *
-	 * @param Spreadsheet $spreadsheet The spreadsheet to process
-	 * @param Register|null $register Optional register to associate with imported objects
-	 * @param Schema|null $schema Optional schema to associate with imported objects
-	 * @param bool $validation Whether to validate objects against schema definitions
-	 * @param bool $events Whether to dispatch object lifecycle events
-	 * @param bool $_rbac Whether to apply RBAC permissions
-	 * @param bool $_multitenancy Whether to apply multi-tenancy filtering
-	 * @param bool $publish Whether to publish objects after import
-	 * @param IUser|null $currentUser The current user performing the import
-	 * @param bool $enrich Whether to enrich objects with metadata
+	 * @param Spreadsheet $spreadsheet The spreadsheet to process; its active sheet is read
+	 * @param array       $import      The register and schema (either may be null), the save flags
+	 *                                 (validation, events, _rbac, _multitenancy, enrich), the
+	 *                                 deprecated no-op publish and currentUser
 	 *
 	 * @return array Batch processing results
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags control import behavior options
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Spreadsheet batch processing requires many validation branches
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple row/column validation paths needed for data integrity
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Batch processing consolidates related operations for performance
-	 * @SuppressWarnings(PHPMD.StaticAccess)          NotifyPushListener::setBatchMode/flushBatch are NC idiom static calls
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function processSpreadsheetBatch(
-		Spreadsheet $spreadsheet,
-		?Register $register = null,
-		?Schema $schema = null,
-		bool $validation = false,
-		bool $events = false,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $publish = false,
-		?IUser $currentUser = null,
-		bool $enrich = true,
-	): array {
+	private function processSpreadsheetBatch(Spreadsheet $spreadsheet, array $import): array {
+		$sheet = $spreadsheet->getActiveSheet();
 		$summary = [
 			'found' => 0,
 			'created' => [],
 			'updated' => [],
-			// TODO: Renamed from 'skipped' - more descriptive.
 			'unchanged' => [],
 			'errors' => [],
 		];
 
-		// Get the active sheet.
-		$sheet = $spreadsheet->getActiveSheet();
-		$sheetTitle = $sheet->getTitle();
-
-		// Build column mapping from headers.
 		$columnMapping = $this->buildColumnMapping(sheet: $sheet);
-
-		if (empty($columnMapping) === true) {
-			$summary['errors'][] = [
-				'sheet' => $sheetTitle,
-				'row' => 1,
-				'object' => [],
-				'error' => 'No valid headers found in sheet',
-			];
+		$sheetError = $this->spreadsheetSheetError(sheet: $sheet, columnMapping: $columnMapping);
+		if ($sheetError !== null) {
+			$summary['errors'][] = ['sheet' => $sheet->getTitle(), 'row' => 1, 'object' => [], 'error' => $sheetError];
 			return $summary;
 		}
 
-		// Get total rows in the sheet.
-		$highestRow = $sheet->getHighestRow();
-
-		if ($highestRow <= 1) {
-			$summary['errors'][] = [
-				'sheet' => $sheetTitle,
-				'row' => 1,
-				'object' => [],
-				'error' => 'No data rows found in sheet',
-			];
-			return $summary;
-		}
-
-		// Parse ALL rows into objects array (no chunking here!).
-		$allObjects = [];
-
-		for ($row = 2; $row <= $highestRow; $row++) {
-			// NO ERROR SUPPRESSION: Let row processing errors bubble up immediately!
-			$rowData = $this->extractRowData(sheet: $sheet, columnMapping: $columnMapping, row: $row);
-
-			if (empty($rowData) === true) {
-				continue;
-				// Skip empty rows.
-			}
-
-			// Transform row data to object format.
-			$object = $this->transformExcelRowToObject(
-				rowData: $rowData,
-				register: $register,
-				schema: $schema,
-				currentUser: $currentUser
-			);
-
-			if ($object !== null) {
-				$allObjects[] = $object;
-			}
-		}//end for
-
+		// Row errors are not suppressed: they bubble up.
+		$allObjects = $this->spreadsheetRowObjects(sheet: $sheet, import: $import + ['columnMapping' => $columnMapping]);
 		$summary['found'] = count($allObjects);
 
-		// Call saveObjects ONCE with all objects - NO ERROR SUPPRESSION!
-		// This will reveal the real bulk save problem immediately.
-		if ((empty($allObjects) === false) && $register !== null && $schema !== null) {
-			// DEPRECATED: Object-level published metadata has been removed.
-			// Publication control is now handled via RBAC authorization rules with $now.
-			// The $publish parameter is kept for backward compatibility but is a no-op.
-			if ($publish === true) {
-				$this->logger->warning(
-					message: '[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead.',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-					]
-				);
-			}
-
-			// Suppress per-object notify_push events during the bulk save; on
-			// completion (success OR failure — partial saves still happened)
-			// flush one deduplicated collection event per (register, schema)
-			// pair so connected clients refetch their lists. The hint is
-			// derived from the save RESULT, not from lifecycle events: bulk
-			// saves run with events disabled by default, so the listener
-			// never accumulates on its own.
-			NotifyPushListener::setBatchMode(true);
-			$saveResult = null;
-			try {
-				$saveResult = $this->objectService->saveObjects(
-					objects: $allObjects,
-					register: $register,
-					schema: $schema,
-					_rbac: $_rbac,
-					_multitenancy: $_multitenancy,
-					validation: $validation,
-					events: $events,
-					enrich: $enrich
-				);
-			} finally {
-				// Null result = save threw; partial saves may have landed, so hint conservatively.
-				$collectionChanged = $saveResult === null
-					|| empty($saveResult['saved'] ?? []) === false
-					|| empty($saveResult['updated'] ?? []) === false;
-				if ($collectionChanged === true) {
-					$this->queueNotifyPushCollectionHint(register: $register, schema: $schema);
-				}
-
-				// Flush BEFORE disabling batch mode — setBatchMode(false) clears the accumulator.
-				$this->flushNotifyPushBatch();
-				NotifyPushListener::setBatchMode(false);
-			}//end try
-
-			// Use the structured return from saveObjects with smart deduplication.
-			// SaveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
-			$summary['created'] = array_map(
-				fn (array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
-				$saveResult['saved'] ?? []
+		if (empty($allObjects) === false && $import['register'] !== null && $import['schema'] !== null) {
+			$summary = $this->saveSpreadsheetObjects(
+				objects: $allObjects,
+				import: $import + ['summary' => $summary, 'sheetTitle' => $sheet->getTitle()]
 			);
-			$summary['updated'] = array_map(
-				fn (array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
-				$saveResult['updated'] ?? []
-			);
+		}
 
-			// TODO: Handle unchanged objects from smart deduplication (renamed from 'skipped').
-			$summary['unchanged'] = array_map(
-				fn (array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
-				$saveResult['unchanged'] ?? []
-			);
-
-			// Add efficiency metrics from smart deduplication.
-			$createdCount = count($summary['created']);
-			$updatedCount = count($summary['updated']);
-			$unchangedCount = count($summary['unchanged']);
-			$totalProcessed = $createdCount + $updatedCount + $unchangedCount;
-			if ($totalProcessed > 0 && $unchangedCount > 0) {
-				$efficiency = round(($unchangedCount / $totalProcessed) * 100, 1);
-				$summary['deduplication_efficiency'] = $efficiency . '% operations avoided';
-			}
-
-			// Handle validation errors if validation was enabled.
-			if ($validation === true && empty($saveResult['invalid'] ?? []) === false) {
-				foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
-					$summary['errors'][] = [
-						'sheet' => $sheetTitle,
-						'object' => $invalidItem['object'] ?? $invalidItem,
-						'error' => $invalidItem['error'] ?? 'Validation failed',
-						'type' => $invalidItem['type'] ?? 'ValidationException',
-					];
-				}
-			}
-		}//end if
-
-		// NO ERROR SUPPRESSION: Row parsing errors will bubble up immediately - no need to collect them.
-		// Note: Processing time calculation removed as it was unused.
-		// $processingTime = microtime(true) - $startTime;.
 		return $summary;
 	}//end processSpreadsheetBatch()
 
 	/**
+	 * Why a sheet has nothing to import: no usable headers, or no rows below them.
+	 *
+	 * @param Worksheet $sheet         The sheet
+	 * @param array     $columnMapping The column mapping built from its headers
+	 *
+	 * @return string|null The error for the summary, or null when the sheet has data rows
+	 */
+	private function spreadsheetSheetError(Worksheet $sheet, array $columnMapping): ?string {
+		if (empty($columnMapping) === true) {
+			return 'No valid headers found in sheet';
+		}
+
+		if ($sheet->getHighestRow() <= 1) {
+			return 'No data rows found in sheet';
+		}
+
+		return null;
+	}//end spreadsheetSheetError()
+
+	/**
+	 * Parse every non-empty data row of a sheet into an object.
+	 *
+	 * @param Worksheet $sheet  The sheet
+	 * @param array     $import The register, schema, currentUser and the sheet's columnMapping
+	 *
+	 * @return list<array> The parsed objects
+	 */
+	private function spreadsheetRowObjects(Worksheet $sheet, array $import): array {
+		$objects = [];
+		$highestRow = $sheet->getHighestRow();
+		for ($row = 2; $row <= $highestRow; $row++) {
+			$rowData = $this->extractRowData(sheet: $sheet, columnMapping: $import['columnMapping'], row: $row);
+			if (empty($rowData) === true) {
+				continue;
+			}
+
+			$object = $this->transformExcelRowToObject(
+				rowData: $rowData,
+				register: $import['register'],
+				schema: $import['schema'],
+				currentUser: $import['currentUser']
+			);
+			if ($object !== null) {
+				$objects[] = $object;
+			}
+		}
+
+		return $objects;
+	}//end spreadsheetRowObjects()
+
+	/**
+	 * Save the parsed sheet objects in one bulk save and fill the summary from its result.
+	 *
+	 * The publish flag is a deprecated no-op: publication control is handled via RBAC
+	 * authorization rules.
+	 *
+	 * @param list<array> $objects The parsed objects
+	 * @param array       $import  The import options with the summary so far and the sheetTitle
+	 *
+	 * @return array The summary with created, updated, unchanged and validation errors
+	 */
+	private function saveSpreadsheetObjects(array $objects, array $import): array {
+		if ($import['publish'] === true) {
+			$this->logger->warning(
+				message: '[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead.',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+
+		$saveResult = $this->bulkSaveWithNotifyPush(objects: $objects, import: $import);
+		$summary = $this->withSaveOutcome(summary: $import['summary'], saveResult: $saveResult);
+		if ($import['validation'] === true && empty($saveResult['invalid'] ?? []) === false) {
+			foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
+				$summary['errors'][] = [
+					'sheet' => $import['sheetTitle'],
+					'object' => $invalidItem['object'] ?? $invalidItem,
+					'error' => $invalidItem['error'] ?? 'Validation failed',
+					'type' => $invalidItem['type'] ?? 'ValidationException',
+				];
+			}
+		}
+
+		return $summary;
+	}//end saveSpreadsheetObjects()
+
+	/**
 	 * Process CSV sheet and import all objects in batches
 	 *
-	 * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet The worksheet to process
-	 * @param Register $register The register to associate with imported objects
-	 * @param Schema $schema The schema to associate with imported objects
-	 * @param bool $validation Whether to validate objects
-	 * @param bool $events Whether to dispatch events
-	 * @param bool $_rbac Whether to apply RBAC
-	 * @param bool $_multitenancy Multi-tenancy filtering
-	 * @param bool $publish DEPRECATED: No-op. Publish metadata removed.
-	 * @param IUser|null $currentUser The current user performing the import
-	 * @param bool $enrich Whether to enrich objects with metadata
-	 * @param array|null $pack Optional migration pack definition; each row is mapped through it first
-	 * @param bool $dryRun When true, rows are mapped and validated but nothing is saved
+	 * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet    The worksheet to process
+	 * @param Register                                      $register The register to associate with imported objects
+	 * @param array                                         $import   The schema, save flags (validation,
+	 *                                                              events, _rbac, _multitenancy, enrich), the
+	 *                                                              deprecated no-op publish, currentUser, the
+	 *                                                              optional migration pack and dryRun
 	 *
 	 * @return array CSV sheet processing results
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags control import behavior options
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)   CSV processing requires many conditional branches for data handling
-	 * @SuppressWarnings(PHPMD.NPathComplexity)        CSV processing requires many conditional row/column handling
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  CSV processing consolidates related operations for performance
-	 * @SuppressWarnings(PHPMD.StaticAccess)           NotifyPushListener::setBatchMode/flushBatch are NC idiom static calls
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) pack/dryRun extend the existing signature
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/specs/migration-mapping-packs/spec.md
 	 */
-	private function processCsvSheet(
-		\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
-		Register $register,
-		Schema $schema,
-		bool $validation = false,
-		bool $events = false,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $publish = false,
-		?IUser $currentUser = null,
-		bool $enrich = true,
-		?array $pack = null,
-		bool $dryRun = false,
-	): array {
+	private function processCsvSheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, Register $register, array $import): array {
+		$import['register'] = $register;
 		$summary = [
 			'found' => 0,
 			'created' => [],
 			'updated' => [],
-			// TODO: Renamed from 'skipped' - more descriptive.
 			'unchanged' => [],
 			'errors' => [],
 		];
-
-		// REMOVED ERROR SUPPRESSION: Let CSV bulk save errors bubble up immediately!
 		$startTime = microtime(true);
 
-		// Build column mapping from headers.
 		$columnMapping = $this->buildColumnMapping(sheet: $sheet);
-
 		if (empty($columnMapping) === true) {
-			$summary['errors'][] = [
-				'row' => 1,
-				'object' => [],
-				'error' => 'No valid headers found in CSV file',
-			];
+			$summary['errors'][] = ['row' => 1, 'object' => [], 'error' => 'No valid headers found in CSV file'];
 			return $summary;
 		}
 
-		// Get total rows in the sheet.
 		$highestRow = $sheet->getHighestRow();
-
 		if ($highestRow <= 1) {
-			$summary['errors'][] = [
-				'row' => 1,
-				'object' => [],
-				'error' => 'No data rows found in CSV file',
-			];
+			$summary['errors'][] = ['row' => 1, 'object' => [], 'error' => 'No data rows found in CSV file'];
 			return $summary;
 		}
 
-		// Parse ALL rows into objects array (no chunking here!).
-		$allObjects = [];
+		$parsed = $this->parseCsvRows(sheet: $sheet, parse: $import + ['columnMapping' => $columnMapping, 'highestRow' => $highestRow]);
+		$summary['errors'] = $parsed['errors'];
+		$summary['found'] = count($parsed['objects']);
 
-		for ($row = 2; $row <= $highestRow; $row++) {
+		// Dry-run: map + validate every row, save NOTHING, so an operator can see
+		// exactly what would happen before committing to a real import.
+		// ValidateObject::validateObject() only issues read-only lookups, and no
+		// save is called on this path.
+		if ($import['dryRun'] === true) {
+			return $this->buildDryRunSummary(summary: $summary, objects: $parsed['objects'], schema: $import['schema'], startTime: $startTime);
+		}
+
+		if (empty($parsed['objects']) === false) {
+			$summary = $this->saveCsvObjects(objects: $parsed['objects'], import: $import + ['summary' => $summary]);
+		}
+
+		$summary['performance'] = $this->importPerformance(summary: $summary, startTime: $startTime);
+		return $summary;
+	}//end processCsvSheet()
+
+	/**
+	 * Parse every data row of a CSV sheet into an object, through the migration pack when one is given.
+	 *
+	 * A row the pack skips or that is empty is left out. A row with mapping errors
+	 * (missing required source, or an unresolved lookup/reference) is reported and
+	 * excluded, never partially mapped.
+	 *
+	 * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet The worksheet to parse
+	 * @param array                                         $parse The import options with the column mapping and highest row
+	 *
+	 * @return array{objects: list<array>, errors: list<array>} The objects and the mapping errors
+	 *
+	 * @spec openspec/specs/migration-mapping-packs/spec.md
+	 */
+	private function parseCsvRows(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, array $parse): array {
+		$parsed = ['objects' => [], 'errors' => []];
+		$pack = $parse['pack'];
+		for ($row = 2; $row <= $parse['highestRow']; $row++) {
 			if ($pack !== null && $this->mappingEngine->isRowSkipped(pack: $pack, rowNumber: $row) === true) {
 				continue;
 			}
 
-			// NO ERROR SUPPRESSION: Let CSV row processing errors bubble up immediately!
-			$rowData = $this->extractRowData(sheet: $sheet, columnMapping: $columnMapping, row: $row);
-
+			$rowData = $this->extractRowData(sheet: $sheet, columnMapping: $parse['columnMapping'], row: $row);
 			if (empty($rowData) === true) {
 				continue;
-				// Skip empty rows.
 			}
 
-			// Migration pack mapping: source columns -> target schema properties,
-			// with transforms applied. A row with mapping errors (missing required
-			// source, or an unresolved lookup/reference — the literal-leak guard)
-			// is reported and excluded from the batch, never partially mapped.
 			if ($pack !== null) {
 				$mapped = $this->mappingEngine->mapRow(pack: $pack, sourceRow: $rowData, rowNumber: $row);
 				if (empty($mapped['errors']) === false) {
 					foreach ($mapped['errors'] as $mappingError) {
-						$summary['errors'][] = $this->formatMappingError(error: $mappingError);
+						$parsed['errors'][] = $this->formatMappingError(error: $mappingError);
 					}
 
 					continue;
@@ -1465,151 +1506,171 @@ class ImportService {
 				$rowData = $mapped['data'];
 			}
 
-			// Transform row data to object format.
-			// transformCsvRowToObject() is declared non-nullable, so no guard.
-			$allObjects[] = $this->transformCsvRowToObject(
+			$parsed['objects'][] = $this->transformCsvRowToObject(
 				rowData: $rowData,
-				register: $register,
-				schema: $schema,
-				currentUser: $currentUser
+				register: $parse['register'],
+				schema: $parse['schema'],
+				currentUser: $parse['currentUser']
 			);
 		}//end for
 
-		$summary['found'] = count($allObjects);
+		return $parsed;
+	}//end parseCsvRows()
 
-		// Dry-run: map + validate every row, save NOTHING. This is the killer
-		// feature for migration quoting — an operator can see exactly what
-		// would happen before committing to a real import. Genuinely
-		// side-effect-free: ValidateObject::validateObject() only issues
-		// read-only lookups (schema resolution, uniqueness SELECTs), and
-		// ObjectService::saveObjects()/saveObject() is never called on this path.
-		if ($dryRun === true) {
-			return $this->buildDryRunSummary(summary: $summary, objects: $allObjects, schema: $schema, startTime: $startTime);
-		}
+	/**
+	 * Save the parsed CSV objects in one bulk save and fill the summary from its result.
+	 *
+	 * Deduplication is handled by SaveObjects::saveObjects() (deduplicateIds=true
+	 * by default), the same for every bulk save. The publish flag is a deprecated
+	 * no-op: publication control is handled via RBAC authorization rules.
+	 *
+	 * @param list<array> $objects The parsed objects
+	 * @param array       $import  The import options with the summary so far
+	 *
+	 * @return array The summary with created, updated, unchanged and validation errors
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function saveCsvObjects(array $objects, array $import): array {
+		$this->logger->debug(
+			message: '[ImportService] CSV import processing objects',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'objectCount' => count($objects),
+				'publish' => $import['publish'],
+			]
+		);
 
-		// NOTE: Deduplication is now handled by SaveObjects::saveObjects() (deduplicateIds=true by default).
-		// This ensures consistent deduplication across ALL bulk save operations (CSV, Excel, API, etc.).
-		// Call saveObjects ONCE with all objects - deduplication happens automatically.
-		if (empty($allObjects) === false) {
-			// Log publish processing for debugging.
-			$this->logger->debug(
-				message: '[ImportService] CSV import processing objects',
+		if ($import['publish'] === true) {
+			$this->logger->warning(
+				message: '[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead.',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'objectCount' => count($allObjects),
-					'publish' => $publish,
 				]
 			);
-
-			// DEPRECATED: Object-level published metadata has been removed.
-			// Publication control is now handled via RBAC authorization rules with $now.
-			// The $publish parameter is kept for backward compatibility but is a no-op.
-			if ($publish === true) {
-				$this->logger->warning(
-					message: '[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead.',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-					]
-				);
-			}
-
-			// Suppress per-object notify_push events during the bulk save; on
-			// completion (success OR failure — partial saves still happened)
-			// flush one deduplicated collection event per (register, schema)
-			// pair so connected clients refetch their lists. The hint is
-			// derived from the save RESULT, not from lifecycle events: bulk
-			// saves run with events disabled by default, so the listener
-			// never accumulates on its own.
-			NotifyPushListener::setBatchMode(true);
-			$saveResult = null;
-			try {
-				$saveResult = $this->objectService->saveObjects(
-					objects: $allObjects,
-					register: $register,
-					schema: $schema,
-					_rbac: $_rbac,
-					_multitenancy: $_multitenancy,
-					validation: $validation,
-					events: $events,
-					enrich: $enrich
-				);
-			} finally {
-				// Null result = save threw; partial saves may have landed, so hint conservatively.
-				$collectionChanged = $saveResult === null
-					|| empty($saveResult['saved'] ?? []) === false
-					|| empty($saveResult['updated'] ?? []) === false;
-				if ($collectionChanged === true) {
-					$this->queueNotifyPushCollectionHint(register: $register, schema: $schema);
-				}
-
-				// Flush BEFORE disabling batch mode — setBatchMode(false) clears the accumulator.
-				$this->flushNotifyPushBatch();
-				NotifyPushListener::setBatchMode(false);
-			}//end try
-
-			// Use the structured return from saveObjects with smart deduplication.
-			// SaveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
-			$summary['created'] = array_map(
-				fn (array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
-				$saveResult['saved'] ?? []
-			);
-			$summary['updated'] = array_map(
-				fn (array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
-				$saveResult['updated'] ?? []
-			);
-
-			// TODO: Handle unchanged objects from smart deduplication (renamed from 'skipped').
-			$summary['unchanged'] = array_map(
-				fn (array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
-				$saveResult['unchanged'] ?? []
-			);
-
-			// Add efficiency metrics from smart deduplication.
-			$createdCount = count($summary['created']);
-			$updatedCount = count($summary['updated']);
-			$unchangedCount = count($summary['unchanged']);
-			$totalProcessed = $createdCount + $updatedCount + $unchangedCount;
-			if ($totalProcessed > 0 && $unchangedCount > 0) {
-				$efficiency = round(($unchangedCount / $totalProcessed) * 100, 1);
-				$summary['deduplication_efficiency'] = $efficiency . '% operations avoided';
-			}
-
-			// Handle validation errors if validation was enabled.
-			if ($validation === true && empty($saveResult['invalid'] ?? []) === false) {
-				foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
-					$summary['errors'][] = [
-						'object' => $invalidItem['object'] ?? $invalidItem,
-						'error' => $invalidItem['error'] ?? 'Validation failed',
-						'type' => $invalidItem['type'] ?? 'ValidationException',
-					];
-				}
-			}
-		}//end if
-
-		// NO ERROR SUPPRESSION: Row parsing errors will bubble up immediately - no need to collect them.
-		$totalImportTime = microtime(true) - $startTime;
-		$overallRowsPerSecond = count($allObjects) / max($totalImportTime, 0.001);
-
-		// Calculate efficiency.
-		$efficiency = 0;
-		if ($summary['found'] > 0) {
-			$efficiency = round((count($allObjects) / $summary['found']) * 100, 1);
 		}
 
-		// ADD PERFORMANCE METRICS: Include timing and speed metrics like SaveObjects does.
-		$summary['performance'] = [
+		$saveResult = $this->bulkSaveWithNotifyPush(objects: $objects, import: $import);
+		$summary = $this->withSaveOutcome(summary: $import['summary'], saveResult: $saveResult);
+		if ($import['validation'] === true && empty($saveResult['invalid'] ?? []) === false) {
+			foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
+				$summary['errors'][] = [
+					'object' => $invalidItem['object'] ?? $invalidItem,
+					'error' => $invalidItem['error'] ?? 'Validation failed',
+					'type' => $invalidItem['type'] ?? 'ValidationException',
+				];
+			}
+		}
+
+		return $summary;
+	}//end saveCsvObjects()
+
+	/**
+	 * Bulk-save objects with per-object notify_push events suppressed, then flush one collection event.
+	 *
+	 * On completion (success OR failure, since partial saves still happened)
+	 * one deduplicated collection event per (register, schema) pair is flushed
+	 * so connected clients refetch their lists. The hint is derived from the
+	 * save RESULT, not from lifecycle events: bulk saves run with events
+	 * disabled by default, so the listener never accumulates on its own.
+	 *
+	 * @param list<array> $objects The objects to save
+	 * @param array       $import  The register, schema and save flags
+	 *
+	 * @return array The saveObjects() result: saved, updated, unchanged and invalid
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) NotifyPushListener::setBatchMode is an NC idiom static call
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function bulkSaveWithNotifyPush(array $objects, array $import): array {
+		NotifyPushListener::setBatchMode(true);
+		$saveResult = null;
+		try {
+			$saveResult = $this->objectService->saveObjects(
+				objects: $objects,
+				register: $import['register'],
+				schema: $import['schema'],
+				_rbac: $import['_rbac'],
+				_multitenancy: $import['_multitenancy'],
+				validation: $import['validation'],
+				events: $import['events'],
+				enrich: $import['enrich']
+			);
+		} finally {
+			// Null result = save threw; partial saves may have landed, so hint conservatively.
+			$collectionChanged = $saveResult === null
+				|| empty($saveResult['saved'] ?? []) === false
+				|| empty($saveResult['updated'] ?? []) === false;
+			if ($collectionChanged === true) {
+				$this->queueNotifyPushCollectionHint(register: $import['register'], schema: $import['schema']);
+			}
+
+			// Flush BEFORE disabling batch mode — setBatchMode(false) clears the accumulator.
+			$this->flushNotifyPushBatch();
+			NotifyPushListener::setBatchMode(false);
+		}//end try
+
+		return $saveResult;
+	}//end bulkSaveWithNotifyPush()
+
+	/**
+	 * Fill created, updated and unchanged from a bulk save result, with the deduplication efficiency.
+	 *
+	 * SaveObjects returns ObjectEntity->jsonSerialize() arrays where the UUID is in @self.id.
+	 *
+	 * @param array $summary    The import summary
+	 * @param array $saveResult The saveObjects() result
+	 *
+	 * @return array The summary with the saved ids
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function withSaveOutcome(array $summary, array $saveResult): array {
+		$idOf = fn (array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null;
+		$summary['created'] = array_map($idOf, $saveResult['saved'] ?? []);
+		$summary['updated'] = array_map($idOf, $saveResult['updated'] ?? []);
+		$summary['unchanged'] = array_map($idOf, $saveResult['unchanged'] ?? []);
+
+		$unchangedCount = count($summary['unchanged']);
+		$totalProcessed = count($summary['created']) + count($summary['updated']) + $unchangedCount;
+		if ($totalProcessed > 0 && $unchangedCount > 0) {
+			$efficiency = round(($unchangedCount / $totalProcessed) * 100, 1);
+			$summary['deduplication_efficiency'] = $efficiency . '% operations avoided';
+		}
+
+		return $summary;
+	}//end withSaveOutcome()
+
+	/**
+	 * Timing and speed metrics for an import, like SaveObjects reports.
+	 *
+	 * @param array $summary   The import summary, with the number of objects found
+	 * @param float $startTime When the import started
+	 *
+	 * @return array{totalTime: float, totalTimeMs: float, objectsPerSecond: float, totalProcessed: int, totalFound: int, efficiency: int|float}
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function importPerformance(array $summary, float $startTime): array {
+		$totalImportTime = microtime(true) - $startTime;
+		$processed = $summary['found'];
+		$efficiency = 0;
+		if ($summary['found'] > 0) {
+			$efficiency = round(($processed / $summary['found']) * 100, 1);
+		}
+
+		return [
 			'totalTime' => round($totalImportTime, 3),
 			'totalTimeMs' => round($totalImportTime * 1000, 2),
-			'objectsPerSecond' => round($overallRowsPerSecond, 2),
-			'totalProcessed' => count($allObjects),
+			'objectsPerSecond' => round($processed / max($totalImportTime, 0.001), 2),
+			'totalProcessed' => $processed,
 			'totalFound' => $summary['found'],
 			'efficiency' => $efficiency,
 		];
-
-		return $summary;
-	}//end processCsvSheet()
+	}//end importPerformance()
 
 	/**
 	 * Format one MappingEngine row error into the shape `serializeErrorsToCsv()`
@@ -1713,9 +1774,6 @@ class ImportService {
 	 * something other than what the write does, which is the failure D-1
 	 * exists to prevent.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Row transformation requires many type-specific branches
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple column types and transformations create execution paths
-	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
 	public function transformCsvRowToObject(
@@ -1724,43 +1782,16 @@ class ImportService {
 		Schema $schema,
 		?IUser $currentUser = null,
 	): array {
-		// Use instance cache instead of static to prevent issues between requests.
 		$schemaId = $schema->getId();
-		// Ensure schemaId is string for array key.
-		$schemaIdKey = (string)$schemaId;
+		$schemaProperties = $this->cachedSchemaProperties(schema: $schema);
 
-		if (isset($this->schemaPropertiesCache[$schemaIdKey]) === false) {
-			$properties = $schema->getProperties();
-			$this->schemaPropertiesCache[$schemaIdKey] = $properties ?? [];
-		}
-
-		$schemaProperties = $this->schemaPropertiesCache[$schemaIdKey];
-
-		// Pre-allocate arrays for better performance.
 		$objectData = [];
 		$selfData = [
 			'register' => $register->getId(),
 			'schema' => $schemaId,
 		];
 
-		// Single pass through row data with proper column filtering.
-		$isAdmin = $this->isUserAdmin(user: $currentUser);
-
-		// Debug log to verify admin status.
-		$importUsername = 'null';
-		if ($currentUser !== null) {
-			$importUsername = $currentUser->getUID();
-		}
-
-		$this->logger->debug(
-			message: '[ImportService] Processing CSV row',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'isAdmin' => $isAdmin,
-				'username' => $importUsername,
-			]
-		);
+		$isAdmin = $this->isRowImporterAdmin(user: $currentUser);
 
 		// Translatable-property pre-pass (register-i18n Phase 3 wire-in):
 		// turn flat `field_lang` columns into the nested `field: {lang: value}`
@@ -1769,49 +1800,22 @@ class ImportService {
 		// columns; the rest of this loop sees the un-flattened shape.
 		$rowData = $this->translationCsvCodec->unflattenFromCsv($rowData, $schema);
 
-		foreach ($rowData as $key => $value) {
-			// Skip empty values early.
-			if ($value === null || $value === '') {
+		$cells = array_filter($rowData, static fn ($value): bool => $value !== null && $value !== '');
+		foreach ($cells as $key => $value) {
+			$firstChar = ((string)$key)[0] ?? '';
+
+			// `_` columns are ignored; of the `@` columns only `@self.*`, and only for an admin.
+			$selfPropertyName = $this->selfColumnProperty(key: $key, isAdmin: $isAdmin);
+			if ($selfPropertyName !== null) {
+				$selfData[$selfPropertyName] = $this->transformSelfProperty(propertyName: $selfPropertyName, value: $value);
+			}
+
+			if ($firstChar === '_' || $firstChar === '@') {
 				continue;
 			}
 
-			// Ensure $key is a string before accessing as array.
-			$keyString = (string)$key;
-			if (is_string($key) === true) {
-				$keyString = $key;
-			}
-
-			$firstChar = $keyString[0] ?? '';
-
-			if ($firstChar === '_') {
-				// REQUIREMENT: Columns starting with _ are completely ignored.
-				continue;
-			} elseif ($firstChar === '@') {
-				// REQUIREMENT: @ columns only processed if user is admin.
-				if ($isAdmin === false) {
-					continue;
-					// Skip @ columns for non-admin users.
-				}
-
-				if (str_starts_with($key, '@self.') === true) {
-					// Move properties starting with @self. to @self array and remove the @self. prefix.
-					$selfPropertyName = substr($key, 6);
-
-					// Transform special @self properties.
-					$selfData[$selfPropertyName] = $this->transformSelfProperty(
-						propertyName: $selfPropertyName,
-						value: $value
-					);
-				}
-
-				// Note: Other @ columns that don't start with @self. are ignored.
-				continue;
-			}//end if
-
-			// Regular properties - transform based on schema if needed.
 			$objectData[$key] = $value;
-			$hasSchemaProperty = ($schemaProperties[$key] ?? null) !== null;
-			if (is_array($schemaProperties) === true && $hasSchemaProperty === true) {
+			if (($schemaProperties[$key] ?? null) !== null) {
 				$objectData[$key] = $this->transformValueByType(value: $value, propertyDef: $schemaProperties[$key]);
 			}
 		}//end foreach
@@ -1829,6 +1833,60 @@ class ImportService {
 
 		return $objectData;
 	}//end transformCsvRowToObject()
+
+	/**
+	 * The @self property an `@self.<name>` column sets, for an admin; null for any other column.
+	 *
+	 * @param int|string $key     The column name.
+	 * @param bool       $isAdmin Whether the importing user is an admin.
+	 *
+	 * @return string|null The property name.
+	 */
+	private function selfColumnProperty(int|string $key, bool $isAdmin): ?string {
+		if ($isAdmin === false || is_string($key) === false || str_starts_with($key, '@self.') === false) {
+			return null;
+		}
+
+		return substr($key, 6);
+	}//end selfColumnProperty()
+
+	/**
+	 * A schema's properties, cached per schema id on this instance.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array The property definitions.
+	 */
+	private function cachedSchemaProperties(Schema $schema): array {
+		$schemaIdKey = (string)$schema->getId();
+		if (isset($this->schemaPropertiesCache[$schemaIdKey]) === false) {
+			$this->schemaPropertiesCache[$schemaIdKey] = $schema->getProperties() ?? [];
+		}
+
+		return $this->schemaPropertiesCache[$schemaIdKey];
+	}//end cachedSchemaProperties()
+
+	/**
+	 * Whether the importing user is an admin, logged at debug level per row.
+	 *
+	 * @param IUser|null $user The importing user.
+	 *
+	 * @return bool
+	 */
+	private function isRowImporterAdmin(?IUser $user): bool {
+		$isAdmin = $this->isUserAdmin(user: $user);
+		$this->logger->debug(
+			message: '[ImportService] Processing CSV row',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'isAdmin' => $isAdmin,
+				'username' => $user?->getUID() ?? 'null',
+			]
+		);
+
+		return $isAdmin;
+	}//end isRowImporterAdmin()
 
 	/**
 	 * Transform datetime values from various formats to MySQL datetime format

@@ -25,10 +25,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hinge;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -62,19 +62,19 @@ class LensResolver {
 	/**
 	 * Wire the lookups a lens resolves through.
 	 *
-	 * @param MagicMapper       $magicMapper       Object storage, to read the referenced record.
-	 * @param SchemaMapper      $schemaMapper      Schema lookup for the referenced record.
+	 * @param MagicMapperInterface       $magicMapper       Object storage, to read the referenced record.
+	 * @param SchemaMapperInterface      $schemaMapper      Schema lookup for the referenced record.
 	 * @param PermissionHandler $permissionHandler The read check over the referenced record.
 	 * @param IUserSession      $userSession       The caller, for that check.
 	 * @param LoggerInterface   $logger            PSR logger for unresolvable lenses.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly MagicMapperInterface $magicMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
@@ -99,7 +99,7 @@ class LensResolver {
 	 *   PermissionHandler, ObjectService all take it); splitting this one method
 	 *   in two would make it the exception rather than the rule.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function apply(?Schema $schema, array $data, bool $_rbac = true): array {
 		if ($schema === null) {
@@ -128,7 +128,7 @@ class LensResolver {
 	 *
 	 * @return array<int, string> The lens property names.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public static function lensPropertyNames(?Schema $schema): array {
 		if ($schema === null) {
@@ -150,7 +150,7 @@ class LensResolver {
 	 *
 	 * @return array<int, string> The lens properties the payload names, in declaration order.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public static function refusedLensWrites(?Schema $schema, array $object): array {
 		$named = [];

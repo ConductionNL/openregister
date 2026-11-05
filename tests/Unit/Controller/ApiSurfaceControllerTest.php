@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -35,6 +35,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ApiSurfaceController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersion
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue
  */
@@ -76,8 +77,7 @@ class ApiSurfaceControllerTest extends TestCase {
 			$capabilities,
 			$catalogue,
 			($contracts ?? $this->createMock(ApiContractService::class)),
-			$session,
-			$this->createMock(LoggerInterface::class),
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($session, $this->createMock(\OCP\IGroupManager::class), $this->createMock(LoggerInterface::class)),
 		);
 	}//end controller()
 

@@ -31,7 +31,9 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionInputs;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelfAssign;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriters;
 use OCP\AppFramework\Http;
 use OCP\IL10N;
 use OCP\IUser;
@@ -103,7 +105,7 @@ class ObjectActionRunnerTest extends TestCase {
 			new ObjectActionInputs(new OasRequestValidator()),
 			$this->steps,
 			$this->audit,
-			$this->transitions,
+			new ObjectActionWriters($this->transitions, $this->createMock(ObjectActionSelfAssign::class)),
 			$this->flows,
 			$this->macros,
 			$this->createMock(LoggerInterface::class)

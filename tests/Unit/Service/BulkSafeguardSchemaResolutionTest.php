@@ -54,6 +54,9 @@ use ReflectionMethod;
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\BulkSafeguardRun
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class BulkSafeguardSchemaResolutionTest extends TestCase {
 
@@ -130,7 +133,7 @@ class BulkSafeguardSchemaResolutionTest extends TestCase {
 
 		$passed = $method->invokeArgs(
 			$this->service,
-			[$objects, null, $schema, true, false, &$result]
+			[$objects, null, $schema, ['rbac' => true, 'validation' => false], &$result]
 		);
 
 		return [$passed, $result];

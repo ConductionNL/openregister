@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -41,6 +41,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Controller\CorrectionsController
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
+ * @uses \OCA\OpenRegister\Exception\CorrectionRefusedException
  */
 final class CorrectionsControllerTest extends TestCase {
 

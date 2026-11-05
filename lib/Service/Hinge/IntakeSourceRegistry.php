@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Service\Hinge;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Repair\SeedIntakeSourceRegister;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -43,15 +43,15 @@ class IntakeSourceRegistry {
 	/**
 	 * Wire the object read the registry goes through.
 	 *
-	 * @param ObjectService   $objectService Read side of the object layer.
+	 * @param ObjectOperationsInterface   $objectService Read side of the object layer.
 	 * @param LoggerInterface $logger        PSR logger for an absent register.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -63,7 +63,7 @@ class IntakeSourceRegistry {
 	 *
 	 * @return array<int, array> The sources, each as its object data.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function all(?string $kind = null): array {
 		$filters = [];
@@ -85,7 +85,7 @@ class IntakeSourceRegistry {
 	 *
 	 * @return array<int, array> The enabled sources.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function enabled(?string $kind = null): array {
 		return array_values(

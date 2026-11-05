@@ -35,13 +35,14 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesService;
 use OCA\OpenRegister\Service\ApiVersion\ApiContractService;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
@@ -71,6 +72,20 @@ use Throwable;
 class ApiSurfaceController extends Controller {
 
 	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * The logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app name.
@@ -78,8 +93,7 @@ class ApiSurfaceController extends Controller {
 	 * @param ApiCapabilitiesService $capabilities Builds the capabilities answer.
 	 * @param ApiVersionCatalogue $catalogue The declared contract versions.
 	 * @param ApiContractService $contracts Builds one description per version.
-	 * @param IUserSession $userSession Decides which half of the answer is returned.
-	 * @param LoggerInterface $logger Records a description that could not be generated.
+	 * @param ControllerSession $session Session, group manager and logger.
 	 *
 	 * @return void
 	 */
@@ -89,11 +103,12 @@ class ApiSurfaceController extends Controller {
 		private readonly ApiCapabilitiesService $capabilities,
 		private readonly ApiVersionCatalogue $catalogue,
 		private readonly ApiContractService $contracts,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		ControllerSession $session,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
+		$this->userSession = $session->userSession;
+		$this->logger = $session->logger;
 	}//end __construct()
 
 	/**
@@ -107,7 +122,7 @@ class ApiSurfaceController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200, array<string, mixed>, array<never, never>>
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-publishes-its-capabilities-and-its-limits-req-avs-002
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-publishes-its-capabilities-and-its-limits-req-avs-002
 	 *
 	 * @contract tests/Unit/Controller/ApiSurfaceControllerTest.php
 	 */
@@ -135,7 +150,7 @@ class ApiSurfaceController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200, array<string, mixed>, array<never, never>>
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
+	 * @spec openspec/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
 	 *
 	 * @contract tests/Unit/Controller/ApiSurfaceControllerTest.php
 	 */
@@ -171,7 +186,7 @@ class ApiSurfaceController extends Controller {
 	 *
 	 * @psalm-return JSONResponse<200|404|410|500, array<string, mixed>, array<never, never>>
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
+	 * @spec openspec/specs/openapi-generation/spec.md#requirement-two-contract-versions-are-served-at-once-with-a-declared-lifecycle-req-avs-005
 	 *
 	 * @contract tests/Unit/Controller/ApiSurfaceControllerTest.php
 	 *

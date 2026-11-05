@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectActionsControllerFactory;
 use OCA\OpenRegister\Controller\ObjectActionsController;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -32,6 +33,7 @@ use OCP\AppFramework\Http;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class ObjectActionsControllerTest extends TestCase {
 
@@ -49,6 +51,8 @@ class ObjectActionsControllerTest extends TestCase {
 
 	private IRequest&MockObject $request;
 
+	private LoggerInterface&MockObject $logger;
+
 	private ObjectActionsController $controller;
 
 	protected function setUp(): void {
@@ -61,8 +65,9 @@ class ObjectActionsControllerTest extends TestCase {
 		$this->history = $this->createMock(ObjectActionHistory::class);
 		$this->bulk = $this->createMock(ObjectActionBulk::class);
 		$this->request = $this->createMock(IRequest::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new ObjectActionsController(
+		$this->controller = ObjectActionsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objects,
@@ -71,7 +76,8 @@ class ObjectActionsControllerTest extends TestCase {
 			$this->list,
 			$this->runner,
 			$this->history,
-			$this->bulk
+			$this->bulk,
+			$this->logger
 		);
 	}//end setUp()
 
@@ -180,6 +186,22 @@ class ObjectActionsControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 		$this->assertStringContainsString('"publish"', $response->getData()['error']);
 	}//end testAnActionNotOfferedOnBulkIsRefusedForASelection()
+
+	public function testASchemaWhoseDeclarationsCannotBeReadIsNotOfferedOnASelection(): void {
+		$this->params(['ids' => ['a']]);
+		$broken = $this->createMock(Schema::class);
+		$broken->method('getConfiguration')->willThrowException(new \RuntimeException('unreadable configuration'));
+		$this->macros->method('loadSchema')->willReturn($broken);
+		$this->runner->expects($this->never())->method('run');
+		$this->logger->expects($this->once())->method('warning')->with(
+			$this->anything(),
+			$this->callback(static fn (array $context): bool => ($context['message'] ?? null) === 'unreadable configuration')
+		);
+
+		$response = $this->controller->invokeOnSelection('r', 'ticket', 'assign-to-me');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+	}//end testASchemaWhoseDeclarationsCannotBeReadIsNotOfferedOnASelection()
 
 	public function testASelectionRunsEachObjectThroughTheSinglePath(): void {
 		$this->params(['ids' => ['a', 'b', 'a'], 'inputs' => []]);

@@ -26,6 +26,7 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCP\Http\Client\IClient;
 use OCP\IAppConfig;
 use OCP\ICache;
@@ -48,7 +49,7 @@ use RuntimeException;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-class GitHubHandler {
+class GitHubHandler implements GitHubClientInterface {
 	/**
 	 * GitHub API base URL
 	 */
@@ -189,17 +190,13 @@ class GitHubHandler {
 	 *     sha: null|string, stars: 0|mixed, url: mixed}>,
 	 *     page: int, per_page: int}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  GitHub API search has many response conditions
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Search involves many conditional data extractions
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full search implementation requires comprehensive handling
-	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function searchConfigurations(string $search = '', int $page = 1, int $perPage = 30): array {
 		try {
-			// Simplified single-phase search strategy to minimize API calls.
-			// Search directly for x-openregister content in JSON files.
-			// This targets actual config files immediately, avoiding multi-phase searches.
+			// One Code Search call per request: search directly for the
+			// `x-openregister` property in JSON files, so the results are
+			// actual configuration files.
 			$this->logger->info(
 				message: '[GitHubHandler] Searching for OpenRegister configurations',
 				context: [
@@ -211,103 +208,19 @@ class GitHubHandler {
 				]
 			);
 
-			// Build search query targeting actual configuration files.
-			// Search for "x-openregister" content in JSON files.
-			// GitHub Code Search looks for exact text matches in file content.
-			// We search for the exact property name that should appear in JSON files.
-			$searchQuery = '"x-openregister" extension:json';
-			if (empty($search) === false) {
-				// If search term is provided, add it to the query.
-				// GitHub Code Search supports searching in specific repos: repo:owner/repo.
-				// Or we can add the search term as additional filter.
-				$searchQuery .= ' ' . $search;
-			}
-
-			$this->logger->debug(
-				message: '[GitHubHandler] GitHub Code Search query',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'query' => $searchQuery,
+			$data = $this->codeSearchPage(
+				query: [
+					'q' => self::configurationSearchQuery(search: $search),
 					'page' => $page,
+					// GitHub max is 100.
 					'per_page' => min($perPage, 100),
 				]
 			);
 
-			// Use GitHub pagination directly (max 100 per page, 1000 results total).
-			// This uses only 1 Code Search API call per search request.
-			$response = $this->client->request(
-				'GET',
-				self::API_BASE . '/search/code',
-				[
-					'query' => [
-						'q' => $searchQuery,
-						'page' => $page,
-						'per_page' => min($perPage, 100),
-						// GitHub max is 100.
-						'sort' => 'stars',
-						// Sort by repository stars for quality.
-						'order' => 'desc',
-					],
-					'headers' => $this->getHeaders(),
-				]
-			);
-
-			$data = json_decode($response->getBody(), true);
-
-			$this->logger->debug(
-				message: '[GitHubHandler] GitHub Code Search response',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'total_count' => $data['total_count'] ?? 0,
-					'items_count' => count($data['items'] ?? []),
-					'incomplete_results' => $data['incomplete_results'] ?? false,
-				]
-			);
 			$allResults = [];
-
-			// Process and format results.
 			foreach ($data['items'] ?? [] as $item) {
-				$owner = $item['repository']['owner']['login'];
-				$repo = $item['repository']['name'];
-				$defaultBranch = $item['repository']['default_branch'] ?? 'main';
-				$path = $item['path'];
-				$fileSha = $item['sha'] ?? null;
-
-				// Get enriched config details (from cache or by fetching from raw.githubusercontent.com).
-				// This doesn't count against API rate limit.
-				$configDetails = $this->getEnrichedConfigDetails(
-					owner: $owner,
-					repo: $repo,
-					path: $path,
-					branch: $defaultBranch,
-					fileSha: $fileSha
-				);
-
-				$allResults[] = [
-					'repository' => $item['repository']['full_name'],
-					'owner' => $owner,
-					'repo' => $repo,
-					'path' => $path,
-					'url' => $item['html_url'],
-					'stars' => $item['repository']['stargazers_count'] ?? 0,
-					'description' => $item['repository']['description'] ?? '',
-					'name' => basename($path, '.json'),
-					'branch' => $defaultBranch,
-					'raw_url' => "https://raw.githubusercontent.com/{$owner}/{$repo}/{$defaultBranch}/{$path}",
-					'sha' => $fileSha,
-					// Repository owner/organization info.
-					'organization' => [
-						'name' => $owner,
-						'avatar_url' => $item['repository']['owner']['avatar_url'] ?? '',
-						'type' => $item['repository']['owner']['type'] ?? 'User',
-						'url' => $item['repository']['owner']['html_url'] ?? '',
-					],
-					// Config details - enriched from actual file content.
-					'config' => $configDetails,
-				];
-			}//end foreach
+				$allResults[] = $this->configurationSearchResult(item: $item);
+			}
 
 			$this->logger->info(
 				message: '[GitHubHandler] Search complete',
@@ -317,42 +230,169 @@ class GitHubHandler {
 					'total_found' => $data['total_count'] ?? 0,
 					'returned_in_page' => count($allResults),
 					'api_calls_used' => 1,
-					// Only 1 Code Search API call.
 				]
 			);
 
 			return [
 				'total_count' => $data['total_count'] ?? 0,
-				// GitHub's total count.
 				'results' => $allResults,
 				'page' => $page,
 				'per_page' => $perPage,
 			];
 		} catch (GuzzleException $e) {
-			$errorMessage = $e->getMessage();
-			$statusCode = null;
-
-			// Extract HTTP status code if available.
-			if ($e instanceof RequestException && $e->hasResponse() === true) {
-				$statusCode = $e->getResponse()->getStatusCode();
-			}
-
-			$this->logger->error(
-				message: '[GitHubHandler] GitHub API search failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $errorMessage,
-					'status_code' => $statusCode,
-					'_search' => $search ?? '',
-				]
-			);
-
-			// Provide user-friendly error messages based on status code.
-			$userMessage = $this->getGitHubErrorMessage(statusCode: $statusCode, rawError: $errorMessage);
-			throw new Exception($userMessage);
+			throw $this->searchFailure(exception: $e, search: $search);
 		}//end try
 	}//end searchConfigurations()
+
+	/**
+	 * The Code Search query for configuration files, narrowed by the user's terms.
+	 *
+	 * GitHub Code Search matches exact text, so the query looks for the
+	 * `x-openregister` property name; terms such as `repo:owner/repo` are appended.
+	 *
+	 * @param string $search The user's search terms, possibly empty.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private static function configurationSearchQuery(string $search): string {
+		$searchQuery = '"x-openregister" extension:json';
+		if (empty($search) === false) {
+			$searchQuery .= ' '.$search;
+		}
+
+		return $searchQuery;
+	}//end configurationSearchQuery()
+
+	/**
+	 * Fetch one page of GitHub Code Search results, sorted by repository stars.
+	 *
+	 * @param array{q: string, page: int, per_page: int} $query The query, page and page size.
+	 *
+	 * @return array<string, mixed> The decoded response.
+	 *
+	 * @throws GuzzleException If the request fails.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function codeSearchPage(array $query): array {
+		$this->logger->debug(
+			message: '[GitHubHandler] GitHub Code Search query',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'query' => $query['q'],
+				'page' => $query['page'],
+				'per_page' => $query['per_page'],
+			]
+		);
+
+		$response = $this->client->request(
+			'GET',
+			self::API_BASE.'/search/code',
+			[
+				'query' => $query + ['sort' => 'stars', 'order' => 'desc'],
+				'headers' => $this->getHeaders(),
+			]
+		);
+
+		$data = json_decode($response->getBody(), true);
+
+		$this->logger->debug(
+			message: '[GitHubHandler] GitHub Code Search response',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'total_count' => $data['total_count'] ?? 0,
+				'items_count' => count($data['items'] ?? []),
+				'incomplete_results' => $data['incomplete_results'] ?? false,
+			]
+		);
+
+		return $data;
+	}//end codeSearchPage()
+
+	/**
+	 * One search hit as a configuration result, with details read from the file.
+	 *
+	 * The details come from the cache or from raw.githubusercontent.com, which
+	 * does not count against the API rate limit.
+	 *
+	 * @param array<string, mixed> $item The Code Search item.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function configurationSearchResult(array $item): array {
+		$repository = $item['repository'];
+		$owner = $repository['owner']['login'];
+		$repo = $repository['name'];
+		$defaultBranch = $repository['default_branch'] ?? 'main';
+		$path = $item['path'];
+		$fileSha = $item['sha'] ?? null;
+
+		$configDetails = $this->getEnrichedConfigDetails(
+			owner: $owner,
+			repo: $repo,
+			path: $path,
+			branch: $defaultBranch,
+			fileSha: $fileSha
+		);
+
+		return [
+			'repository' => $repository['full_name'],
+			'owner' => $owner,
+			'repo' => $repo,
+			'path' => $path,
+			'url' => $item['html_url'],
+			'stars' => $repository['stargazers_count'] ?? 0,
+			'description' => $repository['description'] ?? '',
+			'name' => basename($path, '.json'),
+			'branch' => $defaultBranch,
+			'raw_url' => "https://raw.githubusercontent.com/{$owner}/{$repo}/{$defaultBranch}/{$path}",
+			'sha' => $fileSha,
+			'organization' => [
+				'name' => $owner,
+				'avatar_url' => $repository['owner']['avatar_url'] ?? '',
+				'type' => $repository['owner']['type'] ?? 'User',
+				'url' => $repository['owner']['html_url'] ?? '',
+			],
+			'config' => $configDetails,
+		];
+	}//end configurationSearchResult()
+
+	/**
+	 * Log a failed search and turn it into an exception with a user-facing message.
+	 *
+	 * @param GuzzleException $exception The request failure.
+	 * @param string          $search    The user's search terms.
+	 *
+	 * @return Exception
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function searchFailure(GuzzleException $exception, string $search): Exception {
+		$errorMessage = $exception->getMessage();
+		$statusCode = null;
+		if ($exception instanceof RequestException && $exception->hasResponse() === true) {
+			$statusCode = $exception->getResponse()->getStatusCode();
+		}
+
+		$this->logger->error(
+			message: '[GitHubHandler] GitHub API search failed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $errorMessage,
+				'status_code' => $statusCode,
+				'_search' => $search,
+			]
+		);
+
+		return new Exception($this->getGitHubErrorMessage(statusCode: $statusCode, rawError: $errorMessage));
+	}//end searchFailure()
 
 	/**
 	 * Get user-friendly error message based on GitHub API error
@@ -514,69 +554,10 @@ class GitHubHandler {
 	 */
 	public function enrichConfigurationDetails(string $owner, string $repo, string $path, string $branch = 'main'): ?array {
 		try {
-			// SEC-SVC-8: percent-encode each path segment so a crafted owner/
-			// repo/branch/path cannot inject extra path traversal, query, or
-			// host components into the raw.githubusercontent.com URL. Reject
-			// any segment containing '..' or control characters outright.
-			$encodeSegments = static function (string $value): string {
-				$segments = explode('/', $value);
-				$encoded = [];
-				foreach ($segments as $segment) {
-					if ($segment === '') {
-						continue;
-					}
-
-					if ($segment === '..' || preg_match('/[\x00-\x1f\x7f]/', $segment) === 1) {
-						throw new InvalidArgumentException('Invalid path segment.');
-					}
-
-					$encoded[] = rawurlencode($segment);
-				}
-
-				return implode('/', $encoded);
-			};
-
-			$safeOwner = $encodeSegments($owner);
-			$safeRepo = $encodeSegments($repo);
-			$safeBranch = $encodeSegments($branch);
-			$safePath = $encodeSegments($path);
-
-			// Use raw.githubusercontent.com - doesn't count against API rate limit.
-			$rawUrl = "https://raw.githubusercontent.com/{$safeOwner}/{$safeRepo}/{$safeBranch}/{$safePath}";
-
-			$this->logger->debug(
-				message: '[GitHubHandler] Enriching configuration details from raw URL',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'url' => $rawUrl,
-				]
+			$data = $this->getRawConfiguration(
+				location: new GitHubFileLocation(owner: $owner, repo: $repo, path: $path, branch: $branch)
 			);
-
-			$response = $this->client->request(
-				'GET',
-				$rawUrl,
-				[
-					'headers' => [
-						'Accept' => 'application/json',
-					],
-					'allow_redirects' => false,
-				]
-			);
-
-			$content = $response->getBody();
-			$data = json_decode($content, true);
-
-			if (json_last_error() !== JSON_ERROR_NONE) {
-				$this->logger->warning(
-					message: '[GitHubHandler] Failed to parse configuration JSON',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'url' => $rawUrl,
-						'error' => json_last_error_msg(),
-					]
-				);
+			if ($data === null) {
 				return null;
 			}
 
@@ -604,6 +585,62 @@ class GitHubHandler {
 			return null;
 		}//end try
 	}//end enrichConfigurationDetails()
+
+	/**
+	 * Fetch and decode a JSON file from raw.githubusercontent.com.
+	 *
+	 * The raw host does not count against the API rate limit.
+	 *
+	 * @param GitHubFileLocation $location The file.
+	 *
+	 * @return array|null The decoded document (empty for a JSON scalar), or null when it is not valid JSON.
+	 *
+	 * @throws Exception When a segment is unsafe or the request fails.
+	 */
+	private function getRawConfiguration(GitHubFileLocation $location): ?array {
+		$rawUrl = $location->rawUrl();
+
+		$this->logger->debug(
+			message: '[GitHubHandler] Enriching configuration details from raw URL',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'url' => $rawUrl,
+			]
+		);
+
+		$response = $this->client->request(
+			'GET',
+			$rawUrl,
+			[
+				'headers' => [
+					'Accept' => 'application/json',
+				],
+				'allow_redirects' => false,
+			]
+		);
+
+		$data = json_decode($response->getBody(), true);
+		if (json_last_error() !== JSON_ERROR_NONE) {
+			$this->logger->warning(
+				message: '[GitHubHandler] Failed to parse configuration JSON',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'url' => $rawUrl,
+					'error' => json_last_error_msg(),
+				]
+			);
+			return null;
+		}
+
+		if (is_array($data) === false) {
+			return [];
+		}
+
+		return $data;
+	}//end getRawConfiguration()
+
 
 	/**
 	 * Get list of branches for a repository
@@ -913,9 +950,6 @@ class GitHubHandler {
 	 *     }
 	 * >
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Repository fetch has multiple auth and error conditions
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Auth check and error handling create multiple paths
-	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function getRepositories(int $page = 1, int $perPage = 100): array {
@@ -959,17 +993,15 @@ class GitHubHandler {
 
 			$repos = json_decode($response->getBody(), true);
 
-			// Format repository data for return.
 			return array_map(
-				// Map repository data to standardized format.
-				function (array $repo): array {
+				static function (array $repo): array {
 					return [
 						'id' => $repo['id'],
 						'name' => $repo['name'],
 						'full_name' => $repo['full_name'],
 						'owner' => $repo['owner']['login'],
-						'owner_type' => $repo['owner']['type'],
 						// User or Organization.
+						'owner_type' => $repo['owner']['type'],
 						'private' => $repo['private'],
 						'description' => $repo['description'] ?? '',
 						'default_branch' => $repo['default_branch'] ?? 'main',
@@ -980,39 +1012,54 @@ class GitHubHandler {
 				$repos
 			);
 		} catch (GuzzleException $e) {
-			$statusCode = null;
-			if ($e instanceof RequestException && $e->hasResponse() === true) {
-				$statusCode = $e->getResponse()->getStatusCode();
-			}
+			return $this->repositoriesFailure(exception: $e);
+		}//end try
+	}//end getRepositories()
 
-			// If authentication failed (401) or token not configured, return empty array instead of error.
-			if ($statusCode === 401 || empty($token) === true) {
-				$this->logger->info(
-					message: '[GitHubHandler] GitHub API auth failed or not configured - returning empty list',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'status_code' => $statusCode,
-						// Always true: $token is a non-empty-string by this point, so
-						// the only way into this branch is the 401.
-						'has_token' => true,
-					]
-				);
-				return [];
-			}
 
-			$this->logger->error(
-				message: '[GitHubHandler] GitHub API get repositories failed',
+	/**
+	 * Handle a failed repository listing.
+	 *
+	 * A 401 means the configured token is not accepted: logged, and the list is empty
+	 * instead of an error. Anything else is logged and rethrown.
+	 *
+	 * @param GuzzleException $exception The client failure.
+	 *
+	 * @return array An empty list for a 401.
+	 *
+	 * @throws Exception For every other failure.
+	 */
+	private function repositoriesFailure(GuzzleException $exception): array {
+		$statusCode = null;
+		if ($exception instanceof RequestException && $exception->hasResponse() === true) {
+			$statusCode = $exception->getResponse()->getStatusCode();
+		}
+
+		if ($statusCode === 401) {
+			$this->logger->info(
+				message: '[GitHubHandler] GitHub API auth failed or not configured - returning empty list',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'error' => $e->getMessage(),
 					'status_code' => $statusCode,
+					'has_token' => true,
 				]
 			);
-			throw new Exception('Failed to fetch repositories: ' . $e->getMessage());
-		}//end try
-	}//end getRepositories()
+			return [];
+		}
+
+		$this->logger->error(
+			message: '[GitHubHandler] GitHub API get repositories failed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $exception->getMessage(),
+				'status_code' => $statusCode,
+			]
+		);
+		throw new Exception('Failed to fetch repositories: ' . $exception->getMessage());
+	}//end repositoriesFailure()
+
 
 	/**
 	 * Get repository information including default branch
@@ -1099,10 +1146,6 @@ class GitHubHandler {
 	 *     commit_url: mixed|null, file_url: mixed|null
 	 * }
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex error handling for GitHub API responses
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Publish involves multiple error and success paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full publish handling requires comprehensive error logic
-	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function publishConfiguration(
@@ -1114,6 +1157,7 @@ class GitHubHandler {
 		string $commitMessage,
 		?string $fileSha = null,
 	): array {
+		$location = new GitHubFileLocation(owner: $owner, repo: $repo, path: $path, branch: $branch);
 		try {
 			$this->logger->info(
 				message: '[GitHubHandler] Publishing configuration to GitHub',
@@ -1128,51 +1172,17 @@ class GitHubHandler {
 				]
 			);
 
-			// Base64 encode the content (GitHub API requires base64).
-			$encodedContent = base64_encode($content);
-
+			// The Contents API takes base64 content, and the file SHA when it updates a file.
 			$payload = [
 				'message' => $commitMessage,
-				'content' => $encodedContent,
+				'content' => base64_encode($content),
 				'branch' => $branch,
 			];
-
-			// If updating existing file, include SHA.
 			if ($fileSha !== null) {
 				$payload['sha'] = $fileSha;
 			}
 
-			// URL encode the path for the GitHub API (path may contain slashes, spaces, etc.).
-			// GitHub API expects path segments to be encoded, but slashes should remain as slashes.
-			// So we encode each segment separately.
-			$pathSegments = explode('/', $path);
-			$encodedPathSegments = array_map('rawurlencode', $pathSegments);
-			$encodedPath = implode('/', $encodedPathSegments);
-
-			$apiUrl = self::API_BASE . "/repos/{$owner}/{$repo}/contents/{$encodedPath}";
-
-			$this->logger->debug(
-				message: '[GitHubHandler] GitHub API publish request',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'url' => $apiUrl,
-					'path' => $path,
-					'encoded_path' => $encodedPath,
-					'branch' => $branch,
-				]
-			);
-
-			$response = $this->client->request(
-				'PUT',
-				$apiUrl,
-				[
-					'headers' => $this->getHeaders(),
-					'json' => $payload,
-				]
-			);
-
-			$result = json_decode($response->getBody(), true);
+			$result = $this->putContents(location: $location, payload: $payload);
 
 			$this->logger->info(
 				message: '[GitHubHandler] Configuration published successfully',
@@ -1192,50 +1202,114 @@ class GitHubHandler {
 				'file_url' => $result['content']['html_url'] ?? null,
 			];
 		} catch (GuzzleException $e) {
-			$errorMessage = $e->getMessage();
-			$statusCode = null;
-
-			if ($e instanceof RequestException && $e->hasResponse() === true) {
-				$statusCode = $e->getResponse()->getStatusCode();
-				$responseBody = $e->getResponse()->getBody()->getContents();
-				$errorData = json_decode($responseBody, true);
-
-				if (($errorData['message'] ?? null) !== null) {
-					$errorMessage = $errorData['message'];
-
-					// Provide more context for common errors.
-					if ($statusCode === 404) {
-						$repoPath = "{$owner}/{$repo}";
-						$errorMessage = "Not Found - Repository '{$repoPath}', branch ";
-						$errorMessage .= "'{$branch}', or path '{$path}' may not exist or you may not have access";
-					} elseif ($statusCode === 403) {
-						$repoPath = "{$owner}/{$repo}";
-						$errorMessage = 'Forbidden - You may not have write access to repository ';
-						$errorMessage .= "'{$repoPath}' or the branch '{$branch}' is protected";
-					} elseif ($statusCode === 422) {
-						$errorMessage = "Validation Error - {$errorMessage}. Check that the branch ";
-						$errorMessage .= "'{$branch}' exists and the path '{$path}' is valid";
-					}
-				}
-			}//end if
-
-			$this->logger->error(
-				message: '[GitHubHandler] GitHub API publish failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $errorMessage,
-					'status_code' => $statusCode,
-					'owner' => $owner,
-					'repo' => $repo,
-					'path' => $path,
-					'branch' => $branch,
-				]
-			);
-
-			throw new Exception('Failed to publish configuration: ' . $errorMessage);
+			throw $this->publishFailure(exception: $e, location: $location);
 		}//end try
 	}//end publishConfiguration()
+
+	/**
+	 * Create or update a file through the GitHub Contents API.
+	 *
+	 * @param GitHubFileLocation   $location The file.
+	 * @param array<string, mixed> $payload  The request body.
+	 *
+	 * @return mixed The decoded response.
+	 *
+	 * @throws GuzzleException If the request fails.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function putContents(GitHubFileLocation $location, array $payload): mixed {
+		$encodedPath = $location->encodedPath();
+		$apiUrl = self::API_BASE."/repos/{$location->owner}/{$location->repo}/contents/{$encodedPath}";
+
+		$this->logger->debug(
+			message: '[GitHubHandler] GitHub API publish request',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'url' => $apiUrl,
+				'path' => $location->path,
+				'encoded_path' => $encodedPath,
+				'branch' => $location->branch,
+			]
+		);
+
+		$response = $this->client->request(
+			'PUT',
+			$apiUrl,
+			[
+				'headers' => $this->getHeaders(),
+				'json' => $payload,
+			]
+		);
+
+		return json_decode($response->getBody(), true);
+	}//end putContents()
+
+	/**
+	 * Log a failed publish and turn it into an exception with a readable message.
+	 *
+	 * @param GuzzleException    $exception The request failure.
+	 * @param GitHubFileLocation $location  The file that was being published.
+	 *
+	 * @return Exception
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function publishFailure(GuzzleException $exception, GitHubFileLocation $location): Exception {
+		$statusCode = null;
+		$errorMessage = $exception->getMessage();
+		if ($exception instanceof RequestException && $exception->hasResponse() === true) {
+			$statusCode = $exception->getResponse()->getStatusCode();
+			$errorMessage = $this->publishErrorMessage(exception: $exception, location: $location) ?? $errorMessage;
+		}
+
+		$this->logger->error(
+			message: '[GitHubHandler] GitHub API publish failed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $errorMessage,
+				'status_code' => $statusCode,
+				'owner' => $location->owner,
+				'repo' => $location->repo,
+				'path' => $location->path,
+				'branch' => $location->branch,
+			]
+		);
+
+		return new Exception('Failed to publish configuration: '.$errorMessage);
+	}//end publishFailure()
+
+	/**
+	 * GitHub's own error message, with context for the common failures, or null when it sent none.
+	 *
+	 * @param RequestException   $exception The failure, with a response.
+	 * @param GitHubFileLocation $location  The file that was being published.
+	 *
+	 * @return mixed
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	private function publishErrorMessage(RequestException $exception, GitHubFileLocation $location): mixed {
+		$response = $exception->getResponse();
+		$errorData = json_decode($response->getBody()->getContents(), true);
+		$message = ($errorData['message'] ?? null);
+		if ($message === null) {
+			return null;
+		}
+
+		$repoPath = $location->repoPath();
+		return match ($response->getStatusCode()) {
+			404 => "Not Found - Repository '{$repoPath}', branch '{$location->branch}', "
+				."or path '{$location->path}' may not exist or you may not have access",
+			403 => 'Forbidden - You may not have write access to repository '
+				."'{$repoPath}' or the branch '{$location->branch}' is protected",
+			422 => "Validation Error - {$message}. Check that the branch "
+				."'{$location->branch}' exists and the path '{$location->path}' is valid",
+			default => $message,
+		};
+	}//end publishErrorMessage()
 
 	/**
 	 * Get file SHA for a specific file (needed for updates)
@@ -1416,64 +1490,24 @@ class GitHubHandler {
 		// requests at a lower rate limit (60/hr unauth vs 5000/hr authenticated).
 		// Supersedes the original D23 (add-features-roadmap-menu) decision to gate
 		// reads on a configured PAT.
-		$token = $this->appConfig->getValueString('openregister', 'github_api_token', '');
+		$query = (new GitHubIssueQuery(owner: $owner, repo: $repo))
+			->filteredBy(state: $state, sort: $sort)
+			->pagedBy(perPage: $perPage)
+			->withLabels(labels: $labels)
+			->withToken(token: $this->appConfig->getValueString('openregister', 'github_api_token', ''));
+		$labels = $query->labels();
 
-		$effectiveLabels = [];
-		if (is_array($labels) === true) {
-			$effectiveLabels = array_values(array_filter($labels, static fn ($l) => $l !== ''));
-		}//end if
-
-		$labelCount = count($effectiveLabels);
-
-		if ($labelCount >= 2) {
-			// OR semantics: one request per label, merge deduped by issue number, re-sort, truncate.
-			$merged = [];
-			foreach ($effectiveLabels as $label) {
-				$page = $this->fetchIssuesPage(
-					owner: $owner,
-					repo: $repo,
-					state: $state,
-					sort: $sort,
-					perPage: $perPage,
-					label: $label,
-					token: $token
-				);
-				foreach ($page as $item) {
-					$number = (int)($item['number'] ?? 0);
-					if ($number > 0 && isset($merged[$number]) === false) {
-						$merged[$number] = $item;
-					}
-				}
+		if (count($labels) >= 2) {
+			// OR semantics: one request per label, merged by the query.
+			$pages = [];
+			foreach ($labels as $label) {
+				$pages[] = $this->fetchIssuesPage(query: $query, label: $label);
 			}
 
-			$items = array_values($merged);
-			usort(
-				$items,
-				static function (array $a, array $b): int {
-					$aCount = (int)($a['reactions']['total_count'] ?? 0);
-					$bCount = (int)($b['reactions']['total_count'] ?? 0);
-					return $bCount <=> $aCount;
-				}
-			);
-			$items = array_slice($items, 0, $perPage);
-			return ['items' => $items];
-		}//end if
+			return ['items' => $query->merge(pages: $pages)];
+		}
 
-		$singleLabel = null;
-		if ($labelCount === 1) {
-			$singleLabel = $effectiveLabels[0];
-		}//end if
-
-		$items = $this->fetchIssuesPage(
-			owner: $owner,
-			repo: $repo,
-			state: $state,
-			sort: $sort,
-			perPage: $perPage,
-			label: $singleLabel,
-			token: $token
-		);
-		return ['items' => $items];
+		return ['items' => $this->fetchIssuesPage(query: $query, label: ($labels[0] ?? null))];
 	}//end listIssues()
 
 	/**
@@ -1782,13 +1816,8 @@ class GitHubHandler {
 	 * and `labels[].{name,color}` survive. GitHub returns pull requests in the issues endpoint
 	 * with a `pull_request` field — those are filtered out.
 	 *
-	 * @param string $owner Validated owner
-	 * @param string $repo Validated repo
-	 * @param string $state Issue state
-	 * @param string $sort Sort key
-	 * @param int $perPage Page size
+	 * @param GitHubIssueQuery $query The listing
 	 * @param string|null $label Single label filter or null
-	 * @param string $token App-level PAT (verified non-empty by caller)
 	 *
 	 * @return array<int, array> Sanitized issue items
 	 *
@@ -1797,42 +1826,8 @@ class GitHubHandler {
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-1
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-10
 	 */
-	private function fetchIssuesPage(
-		string $owner,
-		string $repo,
-		string $state,
-		string $sort,
-		int $perPage,
-		?string $label,
-		string $token,
-	): array {
-		$query = [
-			'state' => $state,
-			'sort' => $sort,
-			'direction' => 'desc',
-			'per_page' => $perPage,
-		];
-		if ($label !== null && $label !== '') {
-			$query['labels'] = $label;
-		}
-
-		$url = self::API_BASE . '/repos/' . rawurlencode($owner) . '/' . rawurlencode($repo) . '/issues';
-		$headers = [
-			'Accept' => 'application/vnd.github+json',
-			'X-GitHub-Api-Version' => '2022-11-28',
-		];
-		if ($token !== '') {
-			$headers['Authorization'] = 'Bearer ' . $token;
-		}
-
-		$response = $this->client->request(
-			'GET',
-			$url,
-			[
-				'query' => $query,
-				'headers' => $headers,
-			]
-		);
+	private function fetchIssuesPage(GitHubIssueQuery $query, ?string $label): array {
+		$response = $this->client->request('GET', $query->url(apiBase: self::API_BASE), $query->requestOptions(label: $label));
 
 		$raw = json_decode((string)$response->getBody(), true);
 		$items = [];

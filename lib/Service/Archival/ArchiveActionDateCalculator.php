@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Service\Archival;
 use DateInterval;
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use Psr\Log\LoggerInterface;
@@ -116,11 +116,11 @@ class ArchiveActionDateCalculator {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper     $objectMapper Object mapper, for following a relation to another record
+	 * @param MagicMapperInterface     $objectMapper Object mapper, for following a relation to another record
 	 * @param LoggerInterface $logger       Logger
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -182,6 +182,71 @@ class ArchiveActionDateCalculator {
 				return null;
 		}//end switch
 	}//end determineBrondatum()
+
+	/**
+	 * The property on this record whose change moves the source date.
+	 *
+	 * For the relation methods that is the reference itself (`sourceRelation`);
+	 * a change of the date on the related record is followed separately, from
+	 * that record's own save.
+	 *
+	 * @param array $archiveConfig The schema's archive block
+	 *
+	 * @return string|null The property name, or null when the method has none configured
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
+	 */
+	public function sourcePropertyOf(array $archiveConfig): ?string {
+		$afleidingswijze = ($archiveConfig['afleidingswijze'] ?? 'afgehandeld');
+
+		$key = match ($afleidingswijze) {
+			'eigenschap' => 'bronEigenschap',
+			'ander_datumkenmerk' => 'sourceDateProperty',
+			'afgehandeld', 'termijn' => 'closureField',
+			default => null,
+		};
+
+		if ($key === null && $this->isRelationMethod(afleidingswijze: $afleidingswijze) === true) {
+			$key = 'sourceRelation';
+		}
+
+		if ($key === null) {
+			return null;
+		}
+
+		$property = ($archiveConfig[$key] ?? null);
+		if (is_string($property) === false || $property === '') {
+			return null;
+		}
+
+		return $property;
+	}//end sourcePropertyOf()
+
+	/**
+	 * Whether a derivation method reads its date off a related record.
+	 *
+	 * @param string $afleidingswijze The derivation method
+	 *
+	 * @return bool True for the relation methods
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
+	 */
+	public function isRelationMethod(string $afleidingswijze): bool {
+		return in_array($afleidingswijze, self::RELATION_AFLEIDINGSWIJZEN, true);
+	}//end isRelationMethod()
+
+	/**
+	 * The uuid or uri a relation property holds, or null.
+	 *
+	 * @param mixed $value The raw relation value
+	 *
+	 * @return string|null The reference
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
+	 */
+	public function referenceOf(mixed $value): ?string {
+		return $this->firstReference(value: $value);
+	}//end referenceOf()
 
 	/**
 	 * Read a brondatum from a property that the schema need not configure.

@@ -417,6 +417,7 @@ class FlowEngineTest extends TestCase {
 		// Only 'second' ran — 'first' was served from the pin.
 		$this->assertSame(['second'], $dispatcher->dispatched);
 		$this->assertSame('pinned', $result['log'][0]['status']);
+		$this->assertSame(0, $result['log'][0]['durationMs']);
 		$this->assertArrayHasKey('startedAt', $result['log'][0]);
 		// The next step saw the pinned output, not a re-execution.
 		$this->assertTrue($dispatcher->seenItems['second'][0]['json']['pinned']);

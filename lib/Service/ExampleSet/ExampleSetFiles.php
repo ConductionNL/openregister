@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
+ * @spec openspec/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use Throwable;
 /**
  * Checks, attaches, lists and deletes the files of a set's objects.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
+ * @spec openspec/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
  */
 class ExampleSetFiles {
 	/**
@@ -61,7 +61,7 @@ class ExampleSetFiles {
 	 *
 	 * @return array<int, string> Refusals; empty when every file is there.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
 	 */
 	public function refusals(string $dir, array $object): array {
 		$refusals = [];
@@ -83,7 +83,7 @@ class ExampleSetFiles {
 	 *
 	 * @return array{files: array<int, array{id: string, name: string, shared: bool}>, errors: array<int, string>}
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
 	 */
 	public function attach(string $dir, array $object, string $objectId): array {
 		$result = ['files' => [], 'errors' => []];
@@ -120,7 +120,7 @@ class ExampleSetFiles {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	public function names(string $objectId): array {
 		try {
@@ -140,6 +140,32 @@ class ExampleSetFiles {
 	}//end names()
 
 	/**
+	 * Whether a file the set attached is still on the instance.
+	 *
+	 * Found by its name on the object, or by its id anywhere: an app may move an
+	 * object's file into another folder (dossiq homes a document into its case),
+	 * and a moved file keeps its id.
+	 *
+	 * @param array<string, mixed> $file     The record's entry: `id` and `name`.
+	 * @param array<int, string>   $names    The names the object's folder holds.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 */
+	public function present(array $file, array $names): bool {
+		if (in_array((string) ($file['name'] ?? ''), $names, true) === true) {
+			return true;
+		}
+
+		try {
+			return $this->fileService()->getFileById(fileId: (int) ($file['id'] ?? 0)) !== null;
+		} catch (Throwable) {
+			return false;
+		}
+	}//end present()
+
+	/**
 	 * Delete one file the set attached; '' when it is gone, otherwise why not.
 	 *
 	 * The file is found by its id in OpenRegister's own account, where an
@@ -155,8 +181,8 @@ class ExampleSetFiles {
 	 *
 	 * @return string '' when the file is gone; otherwise the reason it stays.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
 	public function delete(string $fileId, string $name, string $objectId): string {
 		try {

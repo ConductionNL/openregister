@@ -1,0 +1,1273 @@
+{
+    "components-scalar": {
+        "out": {
+            "registers": [],
+            "schemas": [],
+            "objects": [],
+            "endpoints": [],
+            "sources": [],
+            "mappings": [],
+            "jobs": [],
+            "synchronizations": [],
+            "rules": [],
+            "metadata": {
+                "configurationId": 1,
+                "configurationTitle": "Config",
+                "sourceUrl": "https://example.org/c.json",
+                "remoteVersion": null,
+                "localVersion": "1.0.0",
+                "previewedAt": "time",
+                "totalChanges": 0
+            }
+        },
+        "calls": []
+    },
+    "empty": {
+        "out": {
+            "registers": [],
+            "schemas": [],
+            "objects": [],
+            "endpoints": [],
+            "sources": [],
+            "mappings": [],
+            "jobs": [],
+            "synchronizations": [],
+            "rules": [],
+            "metadata": {
+                "configurationId": 1,
+                "configurationTitle": "Config",
+                "sourceUrl": "https://example.org/c.json",
+                "remoteVersion": null,
+                "localVersion": "1.0.0",
+                "previewedAt": "time",
+                "totalChanges": 0
+            }
+        },
+        "calls": []
+    },
+    "everything": {
+        "out": {
+            "registers": [
+                {
+                    "type": "register",
+                    "action": "update",
+                    "slug": "zaken",
+                    "title": "Zaken",
+                    "current": {
+                        "id": 4,
+                        "uuid": null,
+                        "slug": "Zaken",
+                        "title": "Zaken",
+                        "version": "1.0.0",
+                        "description": null,
+                        "schemas": [],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "authorization": [],
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    "proposed": {
+                        "title": "Zaken",
+                        "version": "2.0.0"
+                    },
+                    "changes": [
+                        {
+                            "field": "version",
+                            "current": "1.0.0",
+                            "proposed": "2.0.0"
+                        }
+                    ]
+                },
+                {
+                    "type": "register",
+                    "action": "create",
+                    "slug": "nieuw",
+                    "title": "Nieuw",
+                    "current": null,
+                    "proposed": {
+                        "title": "Nieuw",
+                        "version": "1.0.0"
+                    },
+                    "changes": []
+                }
+            ],
+            "schemas": [
+                {
+                    "type": "schema",
+                    "action": "update",
+                    "slug": "zaaktype",
+                    "title": "Zaaktype",
+                    "current": {
+                        "id": 9,
+                        "uuid": null,
+                        "uri": null,
+                        "slug": "zaaktype",
+                        "title": "Zaaktype",
+                        "description": null,
+                        "version": "1.0.0",
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "title": {
+                                "type": "string"
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    "proposed": {
+                        "title": "Zaaktype",
+                        "version": "2.0.0",
+                        "properties": {
+                            "title": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "changes": [
+                        {
+                            "field": "version",
+                            "current": "1.0.0",
+                            "proposed": "2.0.0"
+                        }
+                    ]
+                },
+                {
+                    "type": "schema",
+                    "action": "create",
+                    "slug": "besluit",
+                    "title": "Besluit",
+                    "current": null,
+                    "proposed": {
+                        "title": "Besluit",
+                        "version": "1.0.0"
+                    },
+                    "changes": []
+                }
+            ],
+            "objects": [
+                {
+                    "type": "object",
+                    "action": "update",
+                    "slug": "bestaand",
+                    "title": "Bestaand",
+                    "register": "zaken",
+                    "schema": "zaaktype",
+                    "current": {
+                        "title": "Oud",
+                        "@self": {
+                            "id": "11111111-2222-3333-4444-555555555555",
+                            "slug": "bestaand",
+                            "name": "11111111-2222-3333-4444-555555555555",
+                            "description": null,
+                            "summary": null,
+                            "image": null,
+                            "uri": null,
+                            "version": "1.0.0",
+                            "register": "4",
+                            "schema": "9",
+                            "schemaVersion": null,
+                            "files": [],
+                            "relations": [],
+                            "locked": null,
+                            "owner": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "folder": null,
+                            "application": null,
+                            "validation": [],
+                            "quality": [],
+                            "geo": [],
+                            "retention": [],
+                            "tmlo": [],
+                            "size": null,
+                            "updated": null,
+                            "lastUserActivity": null,
+                            "created": null,
+                            "deleted": [],
+                            "archived": [],
+                            "frozen": [],
+                            "status": null,
+                            "source": null,
+                            "mail": null,
+                            "contacts": null,
+                            "notes": null,
+                            "todos": null,
+                            "calendar": null,
+                            "talk": null,
+                            "deck": null
+                        },
+                        "id": "11111111-2222-3333-4444-555555555555"
+                    },
+                    "proposed": {
+                        "title": "Bestaand",
+                        "@self": {
+                            "register": "zaken",
+                            "schema": "zaaktype",
+                            "slug": "bestaand",
+                            "version": "1.1.0"
+                        }
+                    },
+                    "changes": [
+                        {
+                            "field": "title",
+                            "current": "Oud",
+                            "proposed": "Bestaand"
+                        }
+                    ]
+                },
+                {
+                    "type": "object",
+                    "action": "create",
+                    "slug": "nieuw",
+                    "title": "Nieuw",
+                    "register": "ZAKEN",
+                    "schema": "zaaktype",
+                    "current": null,
+                    "proposed": {
+                        "title": "Nieuw",
+                        "@self": {
+                            "register": "ZAKEN",
+                            "schema": "zaaktype",
+                            "slug": "nieuw",
+                            "version": "1.0.0"
+                        }
+                    },
+                    "changes": []
+                },
+                {
+                    "type": "object",
+                    "action": "create",
+                    "slug": "gepland",
+                    "title": "Gepland",
+                    "register": "nieuw",
+                    "schema": "besluit",
+                    "current": null,
+                    "proposed": {
+                        "title": "Gepland",
+                        "@self": {
+                            "register": "nieuw",
+                            "schema": "besluit",
+                            "slug": "gepland"
+                        }
+                    },
+                    "changes": []
+                },
+                {
+                    "type": "object",
+                    "action": "skip",
+                    "slug": "weg",
+                    "title": "Onbekend",
+                    "register": "elders",
+                    "schema": "niets",
+                    "current": null,
+                    "proposed": {
+                        "title": "Onbekend",
+                        "@self": {
+                            "register": "elders",
+                            "schema": "niets",
+                            "slug": "weg"
+                        }
+                    },
+                    "changes": [],
+                    "reason": "Register or schema not found locally"
+                }
+            ],
+            "endpoints": [],
+            "sources": [],
+            "mappings": [],
+            "jobs": [],
+            "synchronizations": [],
+            "rules": [],
+            "metadata": {
+                "configurationId": 1,
+                "configurationTitle": "Config",
+                "sourceUrl": "https://example.org/c.json",
+                "remoteVersion": "3.0.0",
+                "localVersion": "1.0.0",
+                "previewedAt": "time",
+                "totalChanges": 8
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "zaken"
+            ],
+            [
+                "register.find",
+                "nieuw"
+            ],
+            [
+                "schema.find",
+                "zaaktype"
+            ],
+            [
+                "schema.find",
+                "besluit"
+            ],
+            [
+                "register.findAll"
+            ],
+            [
+                "schema.findAll"
+            ],
+            [
+                "object.find",
+                [
+                    "bestaand",
+                    {
+                        "id": 4,
+                        "uuid": null,
+                        "slug": "Zaken",
+                        "title": "Zaken",
+                        "version": "1.0.0",
+                        "description": null,
+                        "schemas": [],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "authorization": [],
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    {
+                        "id": 9,
+                        "uuid": null,
+                        "uri": null,
+                        "slug": "zaaktype",
+                        "title": "Zaaktype",
+                        "description": null,
+                        "version": "1.0.0",
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "title": {
+                                "type": "string"
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "object.find",
+                [
+                    "nieuw",
+                    {
+                        "id": 4,
+                        "uuid": null,
+                        "slug": "Zaken",
+                        "title": "Zaken",
+                        "version": "1.0.0",
+                        "description": null,
+                        "schemas": [],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "authorization": [],
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    {
+                        "id": 9,
+                        "uuid": null,
+                        "uri": null,
+                        "slug": "zaaktype",
+                        "title": "Zaaktype",
+                        "description": null,
+                        "version": "1.0.0",
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "title": {
+                                "type": "string"
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    false,
+                    false,
+                    false
+                ]
+            ]
+        ]
+    },
+    "fetch-failed": {
+        "out": {
+            "response": {
+                "error": "unreachable"
+            },
+            "status": 502
+        },
+        "calls": []
+    },
+    "info-version": {
+        "out": {
+            "registers": [
+                {
+                    "type": "register",
+                    "action": "update",
+                    "slug": "zaken",
+                    "title": "Zaken",
+                    "current": {
+                        "id": 4,
+                        "uuid": null,
+                        "slug": "Zaken",
+                        "title": "Zaken",
+                        "version": "1.0.0",
+                        "description": null,
+                        "schemas": [],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "authorization": [],
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    "proposed": {
+                        "title": "Zaken",
+                        "version": "2.0.0"
+                    },
+                    "changes": [
+                        {
+                            "field": "version",
+                            "current": "1.0.0",
+                            "proposed": "2.0.0"
+                        }
+                    ]
+                },
+                {
+                    "type": "register",
+                    "action": "create",
+                    "slug": "nieuw",
+                    "title": "Nieuw",
+                    "current": null,
+                    "proposed": {
+                        "title": "Nieuw",
+                        "version": "1.0.0"
+                    },
+                    "changes": []
+                }
+            ],
+            "schemas": [],
+            "objects": [],
+            "endpoints": [],
+            "sources": [],
+            "mappings": [],
+            "jobs": [],
+            "synchronizations": [],
+            "rules": [],
+            "metadata": {
+                "configurationId": 1,
+                "configurationTitle": "Config",
+                "sourceUrl": "https://example.org/c.json",
+                "remoteVersion": "4.0.0",
+                "localVersion": "1.0.0",
+                "previewedAt": "time",
+                "totalChanges": 2
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "zaken"
+            ],
+            [
+                "register.find",
+                "nieuw"
+            ]
+        ]
+    },
+    "not-arrays": {
+        "out": {
+            "registers": [],
+            "schemas": [],
+            "objects": [],
+            "endpoints": [],
+            "sources": [],
+            "mappings": [],
+            "jobs": [],
+            "synchronizations": [],
+            "rules": [],
+            "metadata": {
+                "configurationId": 1,
+                "configurationTitle": "Config",
+                "sourceUrl": "https://example.org/c.json",
+                "remoteVersion": null,
+                "localVersion": "1.0.0",
+                "previewedAt": "time",
+                "totalChanges": 0
+            }
+        },
+        "calls": []
+    },
+    "objects-as-objects": {
+        "out": {
+            "registers": [],
+            "schemas": [],
+            "objects": [
+                {
+                    "type": "object",
+                    "action": "create",
+                    "slug": "obj",
+                    "title": "Obj",
+                    "register": "zaken",
+                    "schema": "zaaktype",
+                    "current": null,
+                    "proposed": {
+                        "title": "Obj",
+                        "@self": {
+                            "register": "zaken",
+                            "schema": "zaaktype",
+                            "slug": "obj"
+                        }
+                    },
+                    "changes": []
+                }
+            ],
+            "endpoints": [],
+            "sources": [],
+            "mappings": [],
+            "jobs": [],
+            "synchronizations": [],
+            "rules": [],
+            "metadata": {
+                "configurationId": 1,
+                "configurationTitle": "Config",
+                "sourceUrl": "https://example.org/c.json",
+                "remoteVersion": null,
+                "localVersion": "1.0.0",
+                "previewedAt": "time",
+                "totalChanges": 1
+            }
+        },
+        "calls": [
+            [
+                "register.findAll"
+            ],
+            [
+                "schema.findAll"
+            ],
+            [
+                "object.find",
+                [
+                    "obj",
+                    {
+                        "id": 4,
+                        "uuid": null,
+                        "slug": "Zaken",
+                        "title": "Zaken",
+                        "version": "1.0.0",
+                        "description": null,
+                        "schemas": [],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "authorization": [],
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    {
+                        "id": 9,
+                        "uuid": null,
+                        "uri": null,
+                        "slug": "zaaktype",
+                        "title": "Zaaktype",
+                        "description": null,
+                        "version": "1.0.0",
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "title": {
+                                "type": "string"
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    false,
+                    false,
+                    false
+                ]
+            ]
+        ]
+    },
+    "objects-empty": {
+        "out": {
+            "registers": [],
+            "schemas": [],
+            "objects": [],
+            "endpoints": [],
+            "sources": [],
+            "mappings": [],
+            "jobs": [],
+            "synchronizations": [],
+            "rules": [],
+            "metadata": {
+                "configurationId": 1,
+                "configurationTitle": "Config",
+                "sourceUrl": "https://example.org/c.json",
+                "remoteVersion": null,
+                "localVersion": "1.0.0",
+                "previewedAt": "time",
+                "totalChanges": 0
+            }
+        },
+        "calls": [
+            [
+                "register.findAll"
+            ],
+            [
+                "schema.findAll"
+            ]
+        ]
+    },
+    "objects-only": {
+        "out": {
+            "registers": [],
+            "schemas": [],
+            "objects": [
+                {
+                    "type": "object",
+                    "action": "update",
+                    "slug": "bestaand",
+                    "title": "Bestaand",
+                    "register": "zaken",
+                    "schema": "zaaktype",
+                    "current": {
+                        "title": "Oud",
+                        "@self": {
+                            "id": "11111111-2222-3333-4444-555555555555",
+                            "slug": "bestaand",
+                            "name": "11111111-2222-3333-4444-555555555555",
+                            "description": null,
+                            "summary": null,
+                            "image": null,
+                            "uri": null,
+                            "version": "1.0.0",
+                            "register": "4",
+                            "schema": "9",
+                            "schemaVersion": null,
+                            "files": [],
+                            "relations": [],
+                            "locked": null,
+                            "owner": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "folder": null,
+                            "application": null,
+                            "validation": [],
+                            "quality": [],
+                            "geo": [],
+                            "retention": [],
+                            "tmlo": [],
+                            "size": null,
+                            "updated": null,
+                            "lastUserActivity": null,
+                            "created": null,
+                            "deleted": [],
+                            "archived": [],
+                            "frozen": [],
+                            "status": null,
+                            "source": null,
+                            "mail": null,
+                            "contacts": null,
+                            "notes": null,
+                            "todos": null,
+                            "calendar": null,
+                            "talk": null,
+                            "deck": null
+                        },
+                        "id": "11111111-2222-3333-4444-555555555555"
+                    },
+                    "proposed": {
+                        "title": "Bestaand",
+                        "@self": {
+                            "register": "zaken",
+                            "schema": "zaaktype",
+                            "slug": "bestaand",
+                            "version": "1.1.0"
+                        }
+                    },
+                    "changes": [
+                        {
+                            "field": "title",
+                            "current": "Oud",
+                            "proposed": "Bestaand"
+                        }
+                    ]
+                },
+                {
+                    "type": "object",
+                    "action": "create",
+                    "slug": "nieuw",
+                    "title": "Nieuw",
+                    "register": "ZAKEN",
+                    "schema": "zaaktype",
+                    "current": null,
+                    "proposed": {
+                        "title": "Nieuw",
+                        "@self": {
+                            "register": "ZAKEN",
+                            "schema": "zaaktype",
+                            "slug": "nieuw",
+                            "version": "1.0.0"
+                        }
+                    },
+                    "changes": []
+                },
+                {
+                    "type": "object",
+                    "action": "skip",
+                    "slug": "gepland",
+                    "title": "Gepland",
+                    "register": "nieuw",
+                    "schema": "besluit",
+                    "current": null,
+                    "proposed": {
+                        "title": "Gepland",
+                        "@self": {
+                            "register": "nieuw",
+                            "schema": "besluit",
+                            "slug": "gepland"
+                        }
+                    },
+                    "changes": [],
+                    "reason": "Register or schema not found locally"
+                },
+                {
+                    "type": "object",
+                    "action": "skip",
+                    "slug": "weg",
+                    "title": "Onbekend",
+                    "register": "elders",
+                    "schema": "niets",
+                    "current": null,
+                    "proposed": {
+                        "title": "Onbekend",
+                        "@self": {
+                            "register": "elders",
+                            "schema": "niets",
+                            "slug": "weg"
+                        }
+                    },
+                    "changes": [],
+                    "reason": "Register or schema not found locally"
+                }
+            ],
+            "endpoints": [],
+            "sources": [],
+            "mappings": [],
+            "jobs": [],
+            "synchronizations": [],
+            "rules": [],
+            "metadata": {
+                "configurationId": 1,
+                "configurationTitle": "Config",
+                "sourceUrl": "https://example.org/c.json",
+                "remoteVersion": null,
+                "localVersion": "1.0.0",
+                "previewedAt": "time",
+                "totalChanges": 4
+            }
+        },
+        "calls": [
+            [
+                "register.findAll"
+            ],
+            [
+                "schema.findAll"
+            ],
+            [
+                "object.find",
+                [
+                    "bestaand",
+                    {
+                        "id": 4,
+                        "uuid": null,
+                        "slug": "Zaken",
+                        "title": "Zaken",
+                        "version": "1.0.0",
+                        "description": null,
+                        "schemas": [],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "authorization": [],
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    {
+                        "id": 9,
+                        "uuid": null,
+                        "uri": null,
+                        "slug": "zaaktype",
+                        "title": "Zaaktype",
+                        "description": null,
+                        "version": "1.0.0",
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "title": {
+                                "type": "string"
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "object.find",
+                [
+                    "nieuw",
+                    {
+                        "id": 4,
+                        "uuid": null,
+                        "slug": "Zaken",
+                        "title": "Zaken",
+                        "version": "1.0.0",
+                        "description": null,
+                        "schemas": [],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "authorization": [],
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    {
+                        "id": 9,
+                        "uuid": null,
+                        "uri": null,
+                        "slug": "zaaktype",
+                        "title": "Zaaktype",
+                        "description": null,
+                        "version": "1.0.0",
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": {
+                            "title": {
+                                "type": "string"
+                            }
+                        },
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    false,
+                    false,
+                    false
+                ]
+            ]
+        ]
+    }
+}

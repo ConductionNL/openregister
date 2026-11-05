@@ -31,7 +31,7 @@ use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
 use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
 use OCA\OpenRegister\Service\Archival\ElementMappingValidator;
@@ -60,7 +60,7 @@ use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
-use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidator;
+use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
@@ -68,7 +68,9 @@ use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
 use OCA\OpenRegister\Service\Rbac\HierarchyAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Rbac\MetadataConditionFindings;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
+use OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
 use OCA\OpenRegister\Service\Relation\LinkExposure;
 use OCA\OpenRegister\Service\Relation\RelationAnnotationValidator;
@@ -136,8 +138,9 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.StaticAccess)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class SchemaMapper extends QBMapper {
+class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	use MultiTenancyTrait;
+	use SlugIdLookupTrait;
 
 	/**
 	 * Maximum number of expressions allowed in a single SQL IN() list.
@@ -174,9 +177,9 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * Used to get active organisation and apply organisation filters.
 	 *
-	 * @var OrganisationMapper Organisation mapper instance
+	 * @var OrganisationMapperInterface Organisation mapper instance
 	 */
-	protected readonly OrganisationMapper $organisationMapper;
+	protected readonly OrganisationMapperInterface $organisationMapper;
 
 	/**
 	 * App configuration for multi-tenancy settings
@@ -255,7 +258,7 @@ class SchemaMapper extends QBMapper {
 	 * @param IDBConnection $db Database connection for queries
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher for schema events
 	 * @param PropertyValidatorHandler $validator Schema property validator for validation
-	 * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy
+	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy
 	 * @param IUserSession $userSession User session for current user context
 	 * @param IGroupManager $groupManager Group manager for RBAC checks
 	 * @param IAppConfig $appConfig App configuration for multitenancy settings
@@ -268,7 +271,7 @@ class SchemaMapper extends QBMapper {
 		IDBConnection $db,
 		IEventDispatcher $eventDispatcher,
 		PropertyValidatorHandler $validator,
-		OrganisationMapper $organisationMapper,
+		OrganisationMapperInterface $organisationMapper,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 		IAppConfig $appConfig,
@@ -380,6 +383,8 @@ class SchemaMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
 	 * @SuppressWarnings(PHPMD.StaticAccess)          Schema::fromRow is a standard entity factory pattern
+	 *
+	 * @spec openspec/specs/register-slug-resolution/spec.md
 	 */
 	public function find(
 		string|int $id,
@@ -387,49 +392,111 @@ class SchemaMapper extends QBMapper {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): Schema {
-		// Check request-scoped cache to avoid redundant DB queries for the same schema.
-		$rbacFlag = '0';
-		if ($_rbac === true) {
-			$rbacFlag = '1';
-		}
-
-		$mtFlag = '0';
-		if ($_multitenancy === true) {
-			$mtFlag = '1';
-		}
-
-		$cacheSuffix = ':' . $rbacFlag . ':' . $mtFlag;
+		// Request-scoped cache, keyed by identifier and both flags.
+		$cacheSuffix = ':' . (int)$_rbac . ':' . (int)$_multitenancy;
 		$cacheKey = strtolower((string)$id) . $cacheSuffix;
 		if (isset($this->findCache[$cacheKey]) === true) {
 			return $this->findCache[$cacheKey];
 		}
 
-		// Verify RBAC permission to read if RBAC is enabled.
-		if ($_rbac === true) {
-			// @todo: remove this hotfix for solr - uncomment when ready
-			// $this->verifyRbacPermission('read', 'schema');
-		}
-
 		$this->traceRead(method: 'find');
 		\OCA\OpenRegister\Service\WritePhaseProbe::count(event: 'schema.db.read');
 
+		$qb = $this->buildFindByIdentifierQuery(id: $id);
+
+		// Set $_multitenancy=false to bypass the organisation filter (e.g. when expanding schemas for registers).
+		$this->applyOrganisationFilter(
+			qb: $qb,
+			columnName: 'organisation',
+			allowNullOrg: true,
+			multiTenancyEnabled: $_multitenancy
+		);
+
+		// Two rows, not one: enough to KNOW the identifier was ambiguous, which
+		// a capped single-row fetch can never tell you.
+		$qb->setMaxResults(2);
+
+		$result = $qb->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+
+		if ($rows === []) {
+			throw new DoesNotExistException(
+				sprintf(
+					'Schema not found (id=%s, multitenancy=%s, rbac=%s)',
+					var_export($id, true),
+					var_export($_multitenancy, true),
+					var_export($_rbac, true)
+				)
+			);
+		}
+
+		$this->warnAboutAmbiguousIdentifier(id: $id, rows: $rows);
+
+		// Resolve schema composition if present (allOf, oneOf, anyOf).
+		$schema = $this->resolveSchemaExtension(schema: Schema::fromRow($rows[0]));
+
+		// BUG-DB-10: cache writes reuse the read-side suffix so they stay consistent.
+		$this->findCache[$cacheKey] = $schema;
+		$this->cacheSchemaByIdentifiers(schema: $schema, cacheSuffix: $cacheSuffix);
+
+		return $schema;
+	}//end find()
+
+	/**
+	 * Cache a found schema under its id, uuid and slug, so a later lookup by
+	 * any of them is answered without a query.
+	 *
+	 * @param Schema $schema      The found schema.
+	 * @param string $cacheSuffix The flag suffix of the lookup.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/register-slug-resolution/spec.md
+	 */
+	private function cacheSchemaByIdentifiers(Schema $schema, string $cacheSuffix): void {
+		$this->findCache[(string)$schema->getId() . $cacheSuffix] = $schema;
+
+		// BUG-DB-10: guard against a null uuid before strtolower().
+		$schemaUuid = $schema->getUuid();
+		if ($schemaUuid !== null) {
+			$this->findCache[strtolower($schemaUuid) . $cacheSuffix] = $schema;
+		}
+
+		if ($schema->getSlug() !== null) {
+			$this->findCache[strtolower($schema->getSlug()) . $cacheSuffix] = $schema;
+		}
+	}//end cacheSchemaByIdentifiers()
+
+	/**
+	 * A query for the schema whose uuid, slug (case-insensitive) or, for a
+	 * numeric identifier, id matches, in tie-break order.
+	 *
+	 * BUG-DB-10: a numeric identifier could be a primary key or a numeric
+	 * uuid/slug, so an exact `id` hit is ordered first; a row whose slug is
+	 * "5" never shadows the row with id 5. The id comparison is left out for
+	 * a non-numeric identifier because PostgreSQL types it strictly.
+	 *
+	 * @param int|string $id The identifier.
+	 *
+	 * @return IQueryBuilder The query, without the organisation filter.
+	 *
+	 * @spec openspec/specs/register-slug-resolution/spec.md
+	 */
+	private function buildFindByIdentifierQuery(string|int $id): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from('openregister_schemas');
 
-		// Build OR conditions for matching against id, uuid, or slug.
-		// Note: Only include id comparison if $id is actually numeric (PostgreSQL strict typing).
-		// Slug comparison is case-insensitive using LOWER() function.
-		$lowerId = strtolower((string)$id);
-		// Default: match by uuid or slug only.
 		$orConditions = $qb->expr()->orX(
 			$qb->expr()->eq('uuid', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR)),
 			$qb->expr()->eq(
 				$qb->func()->lower('slug'),
-				$qb->createNamedParameter(value: $lowerId, type: IQueryBuilder::PARAM_STR)
+				$qb->createNamedParameter(value: strtolower((string)$id), type: IQueryBuilder::PARAM_STR)
 			)
 		);
 
+		$idParam = null;
 		if (is_numeric($id) === true) {
 			$idParam = $qb->createNamedParameter(value: (int)$id, type: IQueryBuilder::PARAM_INT);
 			$orConditions->add(
@@ -439,11 +506,7 @@ class SchemaMapper extends QBMapper {
 
 		$qb->where($orConditions);
 
-		// BUG-DB-10: when the identifier is numeric it is ambiguous (it could be a
-		// primary key id OR a numeric uuid/slug). Prefer the exact primary-key
-		// match by ordering an `id = ?` hit first, so a row whose slug happens to
-		// be "5" never shadows the row with id 5.
-		if (is_numeric($id) === true) {
+		if ($idParam !== null) {
 			$qb->addOrderBy(
 				$qb->createFunction(
 					'CASE WHEN id = ' . $idParam . ' THEN 0 ELSE 1 END'
@@ -487,25 +550,21 @@ class SchemaMapper extends QBMapper {
 		);
 		$qb->addOrderBy('id', 'ASC');
 
-		// Apply organisation filter.
-		// Set $_multitenancy=false to bypass organization filter (e.g., when expanding schemas for registers).
-		$this->applyOrganisationFilter(
-			qb: $qb,
-			columnName: 'organisation',
-			allowNullOrg: true,
-			multiTenancyEnabled: $_multitenancy
-		);
+		return $qb;
+	}//end buildFindByIdentifierQuery()
 
-		// Two rows, not one: enough to KNOW the identifier was ambiguous, which
-		// a capped single-row fetch can never tell you. Silence is what let the
-		// agentflow collision run for as long as it did.
-		$qb->setMaxResults(2);
-
-		$result = $qb->executeQuery();
-		$rows = $result->fetchAll();
-		$result->closeCursor();
-
-		$row = ($rows[0] ?? false);
+	/**
+	 * Warn when an identifier matched more than one schema, naming every
+	 * candidate and the one it resolved to.
+	 *
+	 * @param int|string                      $id   The identifier.
+	 * @param array<int, array<string, mixed>> $rows The matched rows, in tie-break order.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/register-slug-resolution/spec.md
+	 */
+	private function warnAboutAmbiguousIdentifier(string|int $id, array $rows): void {
 		if (count($rows) > 1) {
 			$this->logger->warning(
 				message: sprintf(
@@ -534,41 +593,7 @@ class SchemaMapper extends QBMapper {
 				]
 			);
 		}//end if
-
-		if ($row === false) {
-			// Include diagnostic info in exception message for debugging.
-			$debugInfo = sprintf(
-				'Schema not found (id=%s, multitenancy=%s, rbac=%s)',
-				var_export($id, true),
-				var_export($_multitenancy, true),
-				var_export($_rbac, true)
-			);
-			throw new DoesNotExistException($debugInfo);
-		}
-
-		$schema = Schema::fromRow($row);
-
-		// Resolve schema composition if present (allOf, oneOf, anyOf).
-		$schema = $this->resolveSchemaExtension(schema: $schema);
-
-		// Cache by all possible identifiers to handle lookups by id, uuid, or slug.
-		// BUG-DB-10: reuse the exact same suffix (rbac + multitenancy + published)
-		// as the read-side key so cache writes and reads stay consistent.
-		$this->findCache[$cacheKey] = $schema;
-		$this->findCache[(string)$schema->getId() . $cacheSuffix] = $schema;
-
-		// BUG-DB-10: guard against a null uuid before strtolower().
-		$schemaUuid = $schema->getUuid();
-		if ($schemaUuid !== null) {
-			$this->findCache[strtolower($schemaUuid) . $cacheSuffix] = $schema;
-		}
-
-		if ($schema->getSlug() !== null) {
-			$this->findCache[strtolower($schema->getSlug()) . $cacheSuffix] = $schema;
-		}
-
-		return $schema;
-	}//end find()
+	}//end warnAboutAmbiguousIdentifier()
 
 	/**
 	 * Resolve a schema by slug, scoped to a single owning application.
@@ -755,49 +780,11 @@ class SchemaMapper extends QBMapper {
 
 		$this->traceRead(method: 'findInIds');
 
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from('openregister_schemas');
-
-		// Same identifier forms as find(): uuid, case-insensitive slug, and —
-		// only when numeric (PostgreSQL strict typing) — the primary key id.
-		$orConditions = $qb->expr()->orX(
-			$qb->expr()->eq('uuid', $qb->createNamedParameter(value: (string)$id, type: IQueryBuilder::PARAM_STR)),
-			$qb->expr()->eq(
-				$qb->func()->lower('slug'),
-				$qb->createNamedParameter(value: strtolower((string)$id), type: IQueryBuilder::PARAM_STR)
-			)
+		// Same identifier forms and tie-breaks as find(), narrowed to the id set.
+		$qb = $this->buildFindByIdentifierQuery(id: (string)$id);
+		$qb->andWhere(
+			$qb->expr()->in('id', $qb->createNamedParameter(value: $ids, type: IQueryBuilder::PARAM_INT_ARRAY))
 		);
-
-		$idParam = null;
-		if (is_numeric($id) === true) {
-			$idParam = $qb->createNamedParameter(value: (int)$id, type: IQueryBuilder::PARAM_INT);
-			$orConditions->add(
-				$qb->expr()->eq('id', $idParam)
-			);
-		}
-
-		$qb->where($orConditions)
-			->andWhere(
-				$qb->expr()->in('id', $qb->createNamedParameter(value: $ids, type: IQueryBuilder::PARAM_INT_ARRAY))
-			);
-
-		// Same tie-breaks as find(): an exact primary-key hit first, then rows an
-		// app owns over unattributed leftovers, then the lowest id.
-		if ($idParam !== null) {
-			$qb->addOrderBy(
-				$qb->createFunction(
-					'CASE WHEN id = ' . $idParam . ' THEN 0 ELSE 1 END'
-				),
-				'ASC'
-			);
-		}
-
-		$qb->addOrderBy(
-			$qb->createFunction("CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END"),
-			'ASC'
-		);
-		$qb->addOrderBy('id', 'ASC');
 		$qb->setMaxResults(1);
 
 		$result = $qb->executeQuery();
@@ -1049,7 +1036,6 @@ class SchemaMapper extends QBMapper {
 	): array {
 		// Verify RBAC permission to read if RBAC is enabled.
 		if ($_rbac === true) {
-			// @todo: remove this hotfix for solr - uncomment when ready
 			// $this->verifyRbacPermission('read', 'schema');
 		}
 
@@ -1250,9 +1236,12 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @throws \OCA\OpenRegister\Exception\AuthorizationBlockException When the block contradicts itself.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function validateAuthorizationDeny(Schema $schema): void {
+		(new MetadataConditionFindings(db: $this->db))->assertSchemaSavable(schema: $schema);
+		(new UnknownRuleKeyFindings(db: $this->db))->assertSchemaSavable(schema: $schema);
+
 		$authorization = $schema->getAuthorization();
 		if (is_array($authorization) === false || $authorization === []) {
 			return;
@@ -1265,7 +1254,7 @@ class SchemaMapper extends QBMapper {
 		// nothing, and the block looks correct in every screen that shows it.
 		// Refusing it here is what publishing the set is for.
 		(new PermissionCatalogue(eventDispatcher: $this->eventDispatcher))->assertGrantable(
-			authorization: $authorization,
+			authorization: $this->withoutDeclaredActions(authorization: $authorization, declared: $schema->declaredActionNames()),
 			roleDefinitions: null,
 			subject: $subject
 		);
@@ -1275,6 +1264,29 @@ class SchemaMapper extends QBMapper {
 			subject: $subject
 		);
 	}//end validateAuthorizationDeny()
+
+	/**
+	 * The block without the actions the schema declares itself, at its top level and in its deny.
+	 *
+	 * A schema may grant its own `x-openregister-action` entries
+	 * (declared-actions spec), which the app-wide catalogue does not list.
+	 *
+	 * @param array<string, mixed> $authorization The block as written.
+	 * @param array<int, string>   $declared      The schema's declared action keys.
+	 *
+	 * @return array<string, mixed> The block the catalogue checks.
+	 *
+	 * @spec openspec/specs/declared-actions/spec.md
+	 */
+	private function withoutDeclaredActions(array $authorization, array $declared): array {
+		$names = array_flip($declared);
+		$checked = array_diff_key($authorization, $names);
+		if (is_array($checked[DenyResolver::DENY_KEY] ?? null) === true) {
+			$checked[DenyResolver::DENY_KEY] = array_diff_key($checked[DenyResolver::DENY_KEY], $names);
+		}
+
+		return $checked;
+	}//end withoutDeclaredActions()
 
 	/**
 	 * Refuse a schema that declares an action reversible that cannot be.
@@ -1618,7 +1630,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	private function validateCalculationsAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -1905,7 +1917,7 @@ class SchemaMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.StaticAccess) The expression shape check reads one constant
 	 *   operator table and holds no state; it is the same walk the evaluator dispatches on.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateDependentValueTables(Schema $schema): void {
 		$properties = ($schema->getProperties() ?? []);
@@ -1940,7 +1952,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function validateExtendingFormAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -2059,7 +2071,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function validateHingeAnnotations(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -2215,7 +2227,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	private function validatePartyAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -2454,7 +2466,7 @@ class SchemaMapper extends QBMapper {
 			return;
 		}
 
-		$findings = (new DepartmentMatrixValidator())->validate(
+		$findings = (new DepartmentMatrixValidator(declaredActions: $schema->declaredActionNames()))->validate(
 			properties: ($schema->getProperties() ?? []),
 			authorization: $authorization
 		);
@@ -2489,7 +2501,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @throws Exception When the declaration cannot be honoured.
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function validateHierarchyAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -2554,7 +2566,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @throws Exception When a declaration cannot produce a link.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
 	 */
 	private function validateExternalLinksAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -2840,7 +2852,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
+	 * @spec openspec/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
 	 */
 	private function validateConfigField(string $fieldValue, array $propertyKeys, string $fieldName): void {
 		// Check if it's a Twig-style template (contains {{ ... }}).
@@ -2908,7 +2920,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
+	 * @spec openspec/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
 	 */
 	private function isPropertyPath(string $path, array $propertyKeys): bool {
 		if (in_array($path, $propertyKeys, true) === true) {
@@ -3334,7 +3346,7 @@ class SchemaMapper extends QBMapper {
 		$total = 0;
 
 		foreach ($this->getRegisterIdsWithSchema(schemaId: $schemaId) as $registerId) {
-			$tableName = MagicMapper::TABLE_PREFIX . $registerId . '_' . $schemaId;
+			$tableName = MagicMapperInterface::TABLE_PREFIX . $registerId . '_' . $schemaId;
 
 			if ($this->db->tableExists($tableName) === false) {
 				continue;
@@ -3429,98 +3441,6 @@ class SchemaMapper extends QBMapper {
 
 		return $counts;
 	}//end getRegisterCountPerSchema()
-
-	/**
-	 * Get all schema ID to slug mappings
-	 *
-	 * @return array<string,string> Array mapping schema IDs to their slugs
-	 */
-	public function getIdToSlugMap(): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id', 'slug')
-			->from($this->getTableName());
-
-		$result = $qb->executeQuery();
-		$mappings = [];
-		while (($row = $result->fetch()) !== false) {
-			$mappings[$row['id']] = $row['slug'];
-		}
-
-		return $mappings;
-	}//end getIdToSlugMap()
-
-	/**
-	 * Get all schema slug to ID mappings
-	 *
-	 * @return array<string,string> Array mapping schema slugs to their IDs
-	 */
-	public function getSlugToIdMap(): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id', 'slug')
-			->from($this->getTableName());
-
-		$result = $qb->executeQuery();
-		$mappings = [];
-		while (($row = $result->fetch()) !== false) {
-			$mappings[$row['slug']] = $row['id'];
-		}
-
-		return $mappings;
-	}//end getSlugToIdMap()
-
-	/**
-	 * Resolve a bounded set of schema slugs to their primary-key ids.
-	 *
-	 * Deliberately NOT `getSlugToIdMap()`: that materialises every schema row
-	 * on the instance (1931 on the reference instance) to answer a question
-	 * about a handful of slugs. Filtered event subscription runs this on the
-	 * object write path, so it must be bounded by the caller's declaration
-	 * rather than by the size of the instance.
-	 *
-	 * A slug is not unique across apps — the same `decision` slug can exist in
-	 * two registers — so each slug maps to a LIST of ids and the caller narrows
-	 * further (typically by register). Matching is case-insensitive, mirroring
-	 * {@see find()}; keys come back lower-cased.
-	 *
-	 * @param array<int,string> $slugs Schema slugs to resolve.
-	 *
-	 * @return array<string,array<int,string>> Lower-cased slug => matching ids.
-	 *                                         Empty when $slugs is empty.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 */
-	public function findIdsBySlugs(array $slugs): array {
-		if ($slugs === []) {
-			return [];
-		}
-
-		$lowered = array_values(array_unique(array_map('strtolower', $slugs)));
-
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id', 'slug')
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->in(
-					$qb->func()->lower('slug'),
-					$qb->createNamedParameter(value: $lowered, type: IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			);
-
-		$result = $qb->executeQuery();
-		$map = array_fill_keys($lowered, []);
-		while (($row = $result->fetch()) !== false) {
-			$key = strtolower((string)$row['slug']);
-			if (isset($map[$key]) === false) {
-				$map[$key] = [];
-			}
-
-			$map[$key][] = (string)$row['id'];
-		}
-
-		$result->closeCursor();
-
-		return $map;
-	}//end findIdsBySlugs()
 
 	/**
 	 * Find schemas that have properties referencing the given schema
@@ -3972,10 +3892,9 @@ class SchemaMapper extends QBMapper {
 
 		// Now merge child schema properties on top (child can add constraints).
 		$childProperties = $schema->getProperties();
-		$mergedProperties = $this->mergeSchemaPropertiesWithValidation(
+		$mergedProperties = (new SchemaPropertyInheritance(schemaId: (string)$currentId))->mergeProperties(
 			parentProperties: $mergedProperties,
-			childProperties: $childProperties,
-			schemaId: (string)$currentId
+			childProperties: $childProperties
 		);
 
 		// Merge child required fields (can only add, not remove).
@@ -4233,7 +4152,7 @@ class SchemaMapper extends QBMapper {
 	 * - For nested properties (objects), performs recursive merge
 	 *
 	 * NOTE: This method does NOT enforce Liskov Substitution Principle.
-	 * Use mergeSchemaPropertiesWithValidation() for extension scenarios.
+	 * Use SchemaPropertyInheritance::mergeProperties() for extension scenarios.
 	 *
 	 * @param array $parentProperties Parent schema properties
 	 * @param array $childProperties Child schema properties (overrides)
@@ -4265,83 +4184,13 @@ class SchemaMapper extends QBMapper {
 	}//end mergeSchemaProperties()
 
 	/**
-	 * Merge parent and child schema properties WITH Liskov Substitution validation
-	 *
-	 * This method enforces the Liskov Substitution Principle:
-	 * - Child schemas can ONLY ADD constraints, never relax them
-	 * - Metadata (title, description, order, icon) CAN be overridden
-	 * - Validation rules (type, format, enum, pattern, min/max) CANNOT be relaxed
-	 *
-	 * Examples of ALLOWED changes:
-	 * - Adding new properties
-	 * - Adding more restrictive validation (lower maxLength, higher minLength)
-	 * - Changing title, description, order (metadata)
-	 * - Removing enum values (more restrictive)
-	 *
-	 * Examples of FORBIDDEN changes:
-	 * - Changing property type (string to number)
-	 * - Relaxing validation (higher maxLength, lower minLength)
-	 * - Adding enum values (less restrictive)
-	 * - Removing required constraints
-	 *
-	 * @param array $parentProperties Parent schema properties
-	 * @param array $childProperties Child schema properties
-	 * @param string $schemaId Schema ID for error messages
-	 *
-	 * @throws \Exception If child violates Liskov Substitution Principle
-	 *
-	 * @return array Merged properties array
-	 */
-	private function mergeSchemaPropertiesWithValidation(
-		array $parentProperties,
-		array $childProperties,
-		string $schemaId,
-	): array {
-		// Start with parent properties as the base.
-		$merged = $parentProperties;
-
-		// Apply child properties on top with validation.
-		foreach ($childProperties as $propertyName => $childProperty) {
-			// If property doesn't exist in parent, it's new - allowed.
-			if (isset($merged[$propertyName]) === false) {
-				$merged[$propertyName] = $childProperty;
-				continue;
-			}
-
-			$parentProperty = $merged[$propertyName];
-
-			// If both are arrays, perform deep merge with validation.
-			if (is_array($parentProperty) === false || is_array($childProperty) === false) {
-				// Scalar replacement - validate it doesn't relax constraints.
-				$this->validateConstraintAddition(
-					parentProperty: $parentProperty,
-					childProperty: $childProperty,
-					propertyName: $propertyName,
-					schemaId: $schemaId
-				);
-				$merged[$propertyName] = $childProperty;
-				continue;
-			}
-
-			$merged[$propertyName] = $this->deepMergePropertyWithValidation(
-				parentProperty: $parentProperty,
-				childProperty: $childProperty,
-				propertyName: $propertyName,
-				schemaId: $schemaId
-			);
-		}//end foreach
-
-		return $merged;
-	}//end mergeSchemaPropertiesWithValidation()
-
-	/**
 	 * Perform deep merge of a single property definition (WITHOUT validation)
 	 *
 	 * This method recursively merges property definitions, allowing child schemas
 	 * to override specific aspects of a property while preserving others.
 	 *
 	 * NOTE: This method does NOT enforce Liskov Substitution Principle.
-	 * Use deepMergePropertyWithValidation() for extension scenarios.
+	 * Use SchemaPropertyInheritance for extension scenarios.
 	 *
 	 * Examples:
 	 * - Parent has 'minLength': 5, child has 'maxLength': 100 -> both are preserved
@@ -4379,522 +4228,6 @@ class SchemaMapper extends QBMapper {
 
 		return $merged;
 	}//end deepMergeProperty()
-
-	/**
-	 * Perform deep merge of a single property WITH Liskov Substitution validation
-	 *
-	 * This method enforces that child properties only add constraints, never relax them.
-	 * Metadata fields (title, description, order, icon, etc.) can be freely overridden.
-	 * Validation fields (type, format, enum, pattern, min/max, etc.) cannot be relaxed.
-	 *
-	 * @param array $parentProperty Parent property definition
-	 * @param array $childProperty Child property definition
-	 * @param string $propertyName Property name for error messages
-	 * @param string $schemaId Schema ID for error messages
-	 *
-	 * @throws \Exception If child violates Liskov Substitution Principle
-	 *
-	 * @return array Merged property definition
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 */
-	private function deepMergePropertyWithValidation(
-		array $parentProperty,
-		array $childProperty,
-		string $propertyName,
-		string $schemaId,
-	): array {
-		// List of metadata fields that can be freely overridden.
-		$metadataFields = [
-			'title',
-			'description',
-			'order',
-			'icon',
-			'placeholder',
-			'help',
-			'example',
-			'examples',
-			'$comment',
-			'deprecated',
-			'readOnly',
-			'writeOnly',
-			'default',
-			'x-order',
-			'x-display',
-			'x-tabName',
-			'x-section',
-			'ui:order',
-			'ui:widget',
-			'ui:options',
-		];
-
-		// List of validation fields that require constraint checking.
-		$validationFields = [
-			'type',
-			'format',
-			'pattern',
-			'enum',
-			'const',
-			'minimum',
-			'maximum',
-			'exclusiveMinimum',
-			'exclusiveMaximum',
-			'minLength',
-			'maxLength',
-			'minItems',
-			'maxItems',
-			'minProperties',
-			'maxProperties',
-			'multipleOf',
-			'uniqueItems',
-			'required',
-			'additionalProperties',
-			'patternProperties',
-			'dependencies',
-			'if',
-			'then',
-			'else',
-		];
-
-		$merged = $parentProperty;
-
-		foreach ($childProperty as $key => $childValue) {
-			// If key doesn't exist in parent, it's new - allowed.
-			if (isset($merged[$key]) === false) {
-				$merged[$key] = $childValue;
-				continue;
-			}
-
-			$parentValue = $merged[$key];
-
-			// Metadata fields can be freely overridden.
-			if (in_array($key, $metadataFields) === true) {
-				$merged[$key] = $childValue;
-				continue;
-			}
-
-			// Special handling for nested properties and items.
-			$isNestedKey = ($key === 'properties' || $key === 'items') === true;
-			$bothAreArrays = is_array($childValue) === true && is_array($parentValue) === true;
-			if ($isNestedKey === true && $bothAreArrays === true) {
-				// Recursively validate nested properties.
-				$mergedNested = [];
-				foreach ($childValue as $nestedKey => $nestedChild) {
-					if (($parentValue[$nestedKey] ?? null) === null) {
-						// New nested property - allowed.
-						$mergedNested[$nestedKey] = $nestedChild;
-						continue;
-					}
-
-					$mergedNested[$nestedKey] = $this->deepMergePropertyWithValidation(
-						parentProperty: $parentValue[$nestedKey],
-						childProperty: $nestedChild,
-						propertyName: "{$propertyName}.{$key}.{$nestedKey}",
-						schemaId: $schemaId
-					);
-				}
-
-				// Include parent nested properties not in child.
-				foreach ($parentValue as $nestedKey => $nestedParent) {
-					if (isset($mergedNested[$nestedKey]) === false) {
-						$mergedNested[$nestedKey] = $nestedParent;
-					}
-				}
-
-				$merged[$key] = $mergedNested;
-				continue;
-			}//end if
-
-			// Validation fields require constraint checking.
-			if (in_array($key, $validationFields) === true) {
-				$this->validateConstraintChange(
-					parentValue: $parentValue,
-					childValue: $childValue,
-					constraint: $key,
-					propertyName: $propertyName,
-					schemaId: $schemaId
-				);
-				$merged[$key] = $childValue;
-				continue;
-			}
-
-			// For other fields, perform standard merge.
-			if (is_array($parentValue) === false || is_array($childValue) === false) {
-				$merged[$key] = $childValue;
-				continue;
-			}
-
-			$merged[$key] = $this->deepMergePropertyWithValidation(
-				parentProperty: $parentValue,
-				childProperty: $childValue,
-				propertyName: "{$propertyName}.{$key}",
-				schemaId: $schemaId
-			);
-		}//end foreach
-
-		return $merged;
-	}//end deepMergePropertyWithValidation()
-
-	/**
-	 * Validate that a constraint change does not relax validation
-	 *
-	 * Enforces Liskov Substitution Principle for constraint modifications.
-	 *
-	 * @param mixed $parentValue Parent constraint value
-	 * @param mixed $childValue Child constraint value
-	 * @param string $constraint Constraint name
-	 * @param string $propertyName Property name for error messages
-	 * @param string $schemaId Schema ID for error messages
-	 *
-	 * @throws \Exception If constraint is relaxed
-	 *
-	 * @return void
-	 */
-	private function validateConstraintChange(
-		mixed $parentValue,
-		mixed $childValue,
-		string $constraint,
-		string $propertyName,
-		string $schemaId,
-	): void {
-		if ($constraint === 'type') {
-			$this->validateTypeConstraint(
-				parentValue: $parentValue,
-				childValue: $childValue,
-				propertyName: $propertyName,
-				schemaId: $schemaId
-			);
-			return;
-		}
-
-		if ($constraint === 'format') {
-			$this->validateFormatConstraint(
-				parentValue: $parentValue,
-				childValue: $childValue,
-				propertyName: $propertyName,
-				schemaId: $schemaId
-			);
-			return;
-		}
-
-		if ($constraint === 'enum') {
-			$this->validateEnumConstraint(
-				parentValue: $parentValue,
-				childValue: $childValue,
-				propertyName: $propertyName,
-				schemaId: $schemaId
-			);
-			return;
-		}
-
-		if ($this->isMinimumConstraint(constraint: $constraint) === true) {
-			$this->validateMinimumConstraint(
-				parentValue: $parentValue,
-				childValue: $childValue,
-				constraint: $constraint,
-				propertyName: $propertyName,
-				schemaId: $schemaId
-			);
-			return;
-		}
-
-		if ($this->isMaximumConstraint(constraint: $constraint) === true) {
-			$this->validateMaximumConstraint(
-				parentValue: $parentValue,
-				childValue: $childValue,
-				constraint: $constraint,
-				propertyName: $propertyName,
-				schemaId: $schemaId
-			);
-			return;
-		}
-
-		if ($constraint === 'pattern') {
-			$this->validatePatternConstraint(
-				parentValue: $parentValue,
-				childValue: $childValue,
-				propertyName: $propertyName,
-				schemaId: $schemaId
-			);
-		}
-	}//end validateConstraintChange()
-
-	/**
-	 * Check if constraint is a minimum constraint
-	 *
-	 * @param string $constraint Constraint name
-	 *
-	 * @return bool True if minimum constraint
-	 */
-	private function isMinimumConstraint(string $constraint): bool {
-		return in_array($constraint, ['minimum', 'minLength', 'minItems', 'minProperties'], true);
-	}//end isMinimumConstraint()
-
-	/**
-	 * Check if constraint is a maximum constraint
-	 *
-	 * @param string $constraint Constraint name
-	 *
-	 * @return bool True if maximum constraint
-	 */
-	private function isMaximumConstraint(string $constraint): bool {
-		return in_array($constraint, ['maximum', 'maxLength', 'maxItems', 'maxProperties'], true);
-	}//end isMaximumConstraint()
-
-	/**
-	 * Validate type constraint change
-	 *
-	 * @param mixed $parentValue Parent type value
-	 * @param mixed $childValue Child type value
-	 * @param string $propertyName Property name
-	 * @param string $schemaId Schema ID
-	 *
-	 * @throws \Exception If type change is invalid
-	 *
-	 * @return void
-	 */
-	private function validateTypeConstraint(
-		mixed $parentValue,
-		mixed $childValue,
-		string $propertyName,
-		string $schemaId,
-	): void {
-		if ($parentValue === $childValue) {
-			return;
-		}
-
-		if (is_array($parentValue) === true && is_array($childValue) === true) {
-			$diff = array_diff($childValue, $parentValue);
-			if (count($diff) > 0) {
-				$parentJson = json_encode($parentValue);
-				$childJson = json_encode($childValue);
-				$message = sprintf(
-					"Schema '%s': Property '%s' cannot change type from %s to %s (adds types not in parent)",
-					$schemaId,
-					$propertyName,
-					$parentJson,
-					$childJson
-				);
-				throw new Exception($message);
-			}
-
-			return;
-		}
-
-		if (is_array($parentValue) === false && is_array($childValue) === false) {
-			$msg = sprintf(
-				"Schema '%s': Property '%s' cannot change type from '%s' to '%s'",
-				$schemaId,
-				$propertyName,
-				$parentValue,
-				$childValue
-			);
-			throw new Exception($msg);
-		}
-
-		throw new Exception("Schema '{$schemaId}': Property '{$propertyName}' type change is not compatible");
-	}//end validateTypeConstraint()
-
-	/**
-	 * Validate format constraint change
-	 *
-	 * @param mixed $parentValue Parent format value
-	 * @param mixed $childValue Child format value
-	 * @param string $propertyName Property name
-	 * @param string $schemaId Schema ID
-	 *
-	 * @throws \Exception If format change is invalid
-	 *
-	 * @return void
-	 */
-	private function validateFormatConstraint(
-		mixed $parentValue,
-		mixed $childValue,
-		string $propertyName,
-		string $schemaId,
-	): void {
-		if ($parentValue !== null && $parentValue !== $childValue) {
-			$msg = sprintf(
-				"Schema '%s': Property '%s' cannot change format from '%s' to '%s'",
-				$schemaId,
-				$propertyName,
-				$parentValue,
-				$childValue
-			);
-			throw new Exception($msg);
-		}
-	}//end validateFormatConstraint()
-
-	/**
-	 * Validate enum constraint change
-	 *
-	 * @param mixed $parentValue Parent enum value
-	 * @param mixed $childValue Child enum value
-	 * @param string $propertyName Property name
-	 * @param string $schemaId Schema ID
-	 *
-	 * @throws \Exception If enum change is invalid
-	 *
-	 * @return void
-	 */
-	private function validateEnumConstraint(
-		mixed $parentValue,
-		mixed $childValue,
-		string $propertyName,
-		string $schemaId,
-	): void {
-		if (is_array($parentValue) === false || is_array($childValue) === false) {
-			return;
-		}
-
-		$diff = array_diff($childValue, $parentValue);
-		if (count($diff) > 0) {
-			$msg = sprintf(
-				"Schema '%s': Property '%s' enum cannot add values not in parent (added: %s)",
-				$schemaId,
-				$propertyName,
-				json_encode($diff)
-			);
-			throw new Exception($msg);
-		}
-	}//end validateEnumConstraint()
-
-	/**
-	 * Validate minimum constraint change
-	 *
-	 * @param mixed $parentValue Parent minimum value
-	 * @param mixed $childValue Child minimum value
-	 * @param string $constraint Constraint name
-	 * @param string $propertyName Property name
-	 * @param string $schemaId Schema ID
-	 *
-	 * @throws \Exception If minimum constraint is relaxed
-	 *
-	 * @return void
-	 */
-	private function validateMinimumConstraint(
-		mixed $parentValue,
-		mixed $childValue,
-		string $constraint,
-		string $propertyName,
-		string $schemaId,
-	): void {
-		if (is_numeric($parentValue) === false || is_numeric($childValue) === false) {
-			return;
-		}
-
-		if ($childValue < $parentValue) {
-			$message = sprintf(
-				"Schema '%s': Property '%s' %s cannot be decreased from %s to %s (relaxes constraint)",
-				$schemaId,
-				$propertyName,
-				$constraint,
-				$parentValue,
-				$childValue
-			);
-			throw new Exception($message);
-		}
-	}//end validateMinimumConstraint()
-
-	/**
-	 * Validate maximum constraint change
-	 *
-	 * @param mixed $parentValue Parent maximum value
-	 * @param mixed $childValue Child maximum value
-	 * @param string $constraint Constraint name
-	 * @param string $propertyName Property name
-	 * @param string $schemaId Schema ID
-	 *
-	 * @throws \Exception If maximum constraint is relaxed
-	 *
-	 * @return void
-	 */
-	private function validateMaximumConstraint(
-		mixed $parentValue,
-		mixed $childValue,
-		string $constraint,
-		string $propertyName,
-		string $schemaId,
-	): void {
-		if (is_numeric($parentValue) === false || is_numeric($childValue) === false) {
-			return;
-		}
-
-		if ($childValue > $parentValue) {
-			$message = sprintf(
-				"Schema '%s': Property '%s' %s cannot be increased from %s to %s (relaxes constraint)",
-				$schemaId,
-				$propertyName,
-				$constraint,
-				$parentValue,
-				$childValue
-			);
-			throw new Exception($message);
-		}
-	}//end validateMaximumConstraint()
-
-	/**
-	 * Validate pattern constraint change
-	 *
-	 * @param mixed $parentValue Parent pattern value
-	 * @param mixed $childValue Child pattern value
-	 * @param string $propertyName Property name
-	 * @param string $schemaId Schema ID
-	 *
-	 * @throws \Exception If pattern change is invalid
-	 *
-	 * @return void
-	 */
-	private function validatePatternConstraint(
-		mixed $parentValue,
-		mixed $childValue,
-		string $propertyName,
-		string $schemaId,
-	): void {
-		if ($parentValue !== null && $parentValue !== $childValue) {
-			$msg = sprintf(
-				"Schema '%s': Property '%s' pattern cannot be changed from '%s' to '%s'",
-				$schemaId,
-				$propertyName,
-				$parentValue,
-				$childValue
-			);
-			throw new Exception($msg);
-		}
-	}//end validatePatternConstraint()
-
-	/**
-	 * Validate that replacing a property doesn't relax constraints
-	 *
-	 * Used when entire property is replaced (not merged).
-	 *
-	 * @param mixed $parentProperty Parent property value
-	 * @param mixed $childProperty Child property value
-	 * @param string $propertyName Property name for error messages
-	 * @param string $schemaId Schema ID for error messages
-	 *
-	 * @throws \Exception If constraint is relaxed
-	 *
-	 * @return void
-	 */
-	private function validateConstraintAddition(
-		mixed $parentProperty,
-		mixed $childProperty,
-		string $propertyName,
-		string $schemaId,
-	): void {
-		// If parent had validation and child removes it, that's relaxing.
-		if (empty($parentProperty) === false && empty($childProperty) === true) {
-			$msg = sprintf(
-				"Schema '%s': Property '%s' cannot remove constraints (parent had value, child is empty)",
-				$schemaId,
-				$propertyName
-			);
-			throw new Exception($msg);
-		}
-	}//end validateConstraintAddition()
 
 	/**
 	 * Extract the delta (differences) between parent schemas and child schema properties

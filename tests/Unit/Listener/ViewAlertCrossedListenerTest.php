@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Listener\ViewAlertCrossedListener;
@@ -51,13 +51,17 @@ use Psr\Log\AbstractLogger;
 
 /**
  * @covers \OCA\OpenRegister\Listener\ViewAlertCrossedListener
- * @uses \OCA\OpenRegister\Db\View
+ * @uses \OCA\OpenRegister\Search\Db\View
  * @uses \OCA\OpenRegister\Event\ViewAlertCrossedEvent
  * @uses \OCA\OpenRegister\Service\Notification\EmailSender
  * @uses \OCA\OpenRegister\Service\Notification\NotificationRecipientResolver
  * @uses \OCA\OpenRegister\Service\Rbac\ViewerReachResolver
  * @uses \OCA\OpenRegister\Service\Rbac\ViewShareResolver
  * @uses \OCA\OpenRegister\Service\View\ViewAlert
+ * @uses \OCA\OpenRegister\Service\Notification\RecipientSource
+ * @uses \OCA\OpenRegister\Service\Notification\UnsubscribeHeaders
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
  */
 class ViewAlertCrossedListenerTest extends TestCase {
 
@@ -385,7 +389,7 @@ class ViewAlertCrossedListenerTest extends TestCase {
 	 * The sweep's event reaches this listener: Application subscribes it.
 	 */
 	public function testTheListenerIsSubscribedToTheCrossingEvent(): void {
-		$application = file_get_contents(__DIR__ . '/../../../lib/AppInfo/Application.php');
+		$application = file_get_contents(__DIR__ . '/../../../lib/Listener/Registrar/FlowsListenerRegistrar.php');
 
 		$this->assertIsString($application);
 		$this->assertStringContainsString(

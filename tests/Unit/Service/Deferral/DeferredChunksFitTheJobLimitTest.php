@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+ * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -51,7 +51,7 @@ require_once __DIR__ . '/../../../Support/ShutdownFunctionSpy.php';
 /**
  * Update notifications of large objects reach the job list in chunks it takes.
  *
- * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+ * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
  */
 class DeferredChunksFitTheJobLimitTest extends TestCase {
 
@@ -229,7 +229,7 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 	 *
 	 * @dataProvider limits
 	 *
-	 * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
 	 */
 	public function testAChunkOfLargeUpdatesIsSpreadOverJobsTheListTakes(int $limit, int $length): void {
 		$deferral = $this->deferral(limit: $limit);
@@ -260,7 +260,7 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
 	 */
 	public function testAnOversizedUpdateIsKeptWithoutItsOldData(): void {
 		$deferral = $this->deferral(limit: ListenerDeferralService::ARGUMENT_LENGTH_NC32);
@@ -289,7 +289,7 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
 	 */
 	public function testAnEntryTooLargeForAnyJobIsNamedAndTheRestGo(): void {
 		$deferral = $this->deferral();
@@ -332,7 +332,7 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
 	 */
 	public function testSmallEntriesStayInOneJob(): void {
 		$deferral = $this->deferral();

@@ -1,0 +1,293 @@
+{
+    "inputs: inputs bad spec": [],
+    "inputs: inputs hidden scalar": [],
+    "inputs: inputs no states": [],
+    "inputs: inputs target block scalar": [],
+    "inputs: inputs target without hidden": [],
+    "inputs: inputs transitions scalar": [],
+    "inputs: inputs vs hidden": [
+        {
+            "code": "lifecycle-input-hidden-in-target",
+            "message": "Transition \"close\" asks for input \"title\", which state \"closed\" hides."
+        },
+        {
+            "code": "lifecycle-input-hidden-in-target",
+            "message": "Transition \"close\" asks for input \"owner\", which state \"closed\" hides."
+        },
+        {
+            "code": "lifecycle-input-hidden-in-target",
+            "message": "Transition \"close\" asks for input \"amount\", which state \"closed\" hides."
+        }
+    ],
+    "states: condition alias": [
+        {
+            "code": "lifecycle-state-condition-property-missing",
+            "message": "x-openregister-lifecycle.states.\"open\" fields.\"hidden\" condition reads property \"ghost\", which is not declared in `properties`."
+        }
+    ],
+    "states: entry bad names": [
+        {
+            "code": "lifecycle-state-field-entry-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\".fields.\"hidden\" names a field that is not a string."
+        },
+        {
+            "code": "lifecycle-state-field-entry-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\".fields.\"hidden\" names a field that is not a string."
+        },
+        {
+            "code": "lifecycle-state-field-missing",
+            "message": "x-openregister-lifecycle.states.\"open\".fields.\"hidden\" names field \"nope\", which is not declared in `properties`."
+        },
+        {
+            "code": "lifecycle-state-field-entry-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\".fields.\"hidden\" names a field that is not a string."
+        },
+        {
+            "code": "lifecycle-state-field-missing",
+            "message": "x-openregister-lifecycle.states.\"open\".fields.\"hidden\" names field \"gone\", which is not declared in `properties`."
+        }
+    ],
+    "states: entry empty string field": [
+        {
+            "code": "lifecycle-state-field-entry-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\".fields.\"hidden\" names a field that is not a string."
+        }
+    ],
+    "states: entry exit condition": [
+        {
+            "code": "lifecycle-state-condition-property-missing",
+            "message": "x-openregister-lifecycle.states.\"open\" exit reads property \"ghost\", which is not declared in `properties`."
+        },
+        {
+            "code": "lifecycle-state-condition-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\" condition must be a non-empty condition object. A scalar is refused: it would evaluate as a literal and let every write through."
+        }
+    ],
+    "states: entry field alias string": [],
+    "states: entry fields string": [],
+    "states: entry fields wins over field": [
+        {
+            "code": "lifecycle-state-field-missing",
+            "message": "x-openregister-lifecycle.states.\"open\".fields.\"hidden\" names field \"nope\", which is not declared in `properties`."
+        }
+    ],
+    "states: entry names empty list": [
+        {
+            "code": "lifecycle-state-field-entry-malformed",
+            "message": "An entry of x-openregister-lifecycle.states.\"open\".fields.\"hidden\" must name at least one field."
+        }
+    ],
+    "states: entry names number": [
+        {
+            "code": "lifecycle-state-field-entry-malformed",
+            "message": "An entry of x-openregister-lifecycle.states.\"open\".fields.\"hidden\" must name at least one field."
+        }
+    ],
+    "states: entry null": [
+        {
+            "code": "lifecycle-state-field-entry-malformed",
+            "message": "An entry of x-openregister-lifecycle.states.\"open\".fields.\"hidden\" must be an object with a \"fields\" list."
+        }
+    ],
+    "states: entry scalar": [
+        {
+            "code": "lifecycle-state-field-entry-malformed",
+            "message": "An entry of x-openregister-lifecycle.states.\"open\".fields.\"hidden\" must be an object with a \"fields\" list."
+        }
+    ],
+    "states: entry valid": [],
+    "states: entry without names": [
+        {
+            "code": "lifecycle-state-field-entry-malformed",
+            "message": "An entry of x-openregister-lifecycle.states.\"open\".fields.\"hidden\" must name at least one field."
+        }
+    ],
+    "states: every entry problem": [
+        {
+            "code": "lifecycle-state-field-missing",
+            "message": "x-openregister-lifecycle.states.\"open\".fields.\"hidden\" names field \"nope\", which is not declared in `properties`."
+        },
+        {
+            "code": "lifecycle-state-field-entry-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\".fields.\"hidden\" names a field that is not a string."
+        },
+        {
+            "code": "lifecycle-state-field-groups-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\".fields.\"hidden\" declares `groups` that is neither a group id nor a non-empty list of them. Omit `groups` to apply the rule to everyone."
+        },
+        {
+            "code": "lifecycle-state-condition-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\" fields.\"hidden\" condition must be a non-empty condition object. A scalar is refused: it would evaluate as a literal and let every write through."
+        }
+    ],
+    "states: fields empty": [
+        {
+            "code": "lifecycle-state-fields-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\".fields must be a non-empty object of \"hidden\", \"readOnly\" and/or \"required\" lists."
+        }
+    ],
+    "states: fields scalar": [
+        {
+            "code": "lifecycle-state-fields-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\".fields must be a non-empty object of \"hidden\", \"readOnly\" and/or \"required\" lists."
+        }
+    ],
+    "states: groups bad member": [
+        {
+            "code": "lifecycle-state-field-groups-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\".fields.\"hidden\" lists a group that is not a non-empty string."
+        }
+    ],
+    "states: groups bad member first": [
+        {
+            "code": "lifecycle-state-field-groups-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\".fields.\"hidden\" lists a group that is not a non-empty string."
+        }
+    ],
+    "states: groups empty list": [
+        {
+            "code": "lifecycle-state-field-groups-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\".fields.\"hidden\" declares `groups` that is neither a group id nor a non-empty list of them. Omit `groups` to apply the rule to everyone."
+        }
+    ],
+    "states: groups list": [],
+    "states: groups null": [],
+    "states: groups number": [
+        {
+            "code": "lifecycle-state-field-groups-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\".fields.\"hidden\" declares `groups` that is neither a group id nor a non-empty list of them. Omit `groups` to apply the rule to everyone."
+        }
+    ],
+    "states: groups string": [],
+    "states: kind entries empty": [
+        {
+            "code": "lifecycle-state-fields-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\".fields.\"required\" must be a non-empty list of entries."
+        }
+    ],
+    "states: kind entries scalar": [
+        {
+            "code": "lifecycle-state-fields-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\".fields.\"readOnly\" must be a non-empty list of entries."
+        }
+    ],
+    "states: many entries and kinds": [
+        {
+            "code": "lifecycle-state-field-entry-malformed",
+            "message": "An entry of x-openregister-lifecycle.states.\"open\".fields.\"hidden\" must be an object with a \"fields\" list."
+        },
+        {
+            "code": "lifecycle-state-field-missing",
+            "message": "x-openregister-lifecycle.states.\"open\".fields.\"hidden\" names field \"gone\", which is not declared in `properties`."
+        },
+        {
+            "code": "lifecycle-state-condition-property-missing",
+            "message": "x-openregister-lifecycle.states.\"open\" fields.\"required\" condition reads property \"zip\", which is not declared in `properties`."
+        },
+        {
+            "code": "lifecycle-state-fields-unknown-kind",
+            "message": "x-openregister-lifecycle.states.\"open\".fields declares \"odd\"; only hidden, readOnly, required are rule kinds."
+        },
+        {
+            "code": "lifecycle-state-field-groups-malformed",
+            "message": "x-openregister-lifecycle.states.\"closed\".fields.\"readOnly\" lists a group that is not a non-empty string."
+        },
+        {
+            "code": "lifecycle-state-condition-property-missing",
+            "message": "x-openregister-lifecycle.states.\"closed\" entry reads property \"nope\", which is not declared in `properties`."
+        }
+    ],
+    "states: nested condition": [
+        {
+            "code": "lifecycle-state-condition-property-missing",
+            "message": "x-openregister-lifecycle.states.\"open\" entry reads property \"ghost\", which is not declared in `properties`."
+        },
+        {
+            "code": "lifecycle-state-condition-property-missing",
+            "message": "x-openregister-lifecycle.states.\"open\" exit reads property \"other\", which is not declared in `properties`."
+        }
+    ],
+    "states: nested condition empty": [],
+    "states: no properties": [
+        {
+            "code": "lifecycle-state-field-missing",
+            "message": "x-openregister-lifecycle.states.\"open\".fields.\"hidden\" names field \"title\", which is not declared in `properties`."
+        }
+    ],
+    "states: no states": [],
+    "states: numeric kind": [
+        {
+            "code": "lifecycle-state-fields-unknown-kind",
+            "message": "x-openregister-lifecycle.states.\"open\".fields declares \"0\"; only hidden, readOnly, required are rule kinds."
+        }
+    ],
+    "states: numeric state key": [
+        {
+            "code": "lifecycle-state-field-entry-malformed",
+            "message": "An entry of x-openregister-lifecycle.states.\"5\".fields.\"hidden\" must be an object with a \"fields\" list."
+        }
+    ],
+    "states: properties scalar": [
+        {
+            "code": "lifecycle-state-field-missing",
+            "message": "x-openregister-lifecycle.states.\"open\".fields.\"hidden\" names field \"title\", which is not declared in `properties`."
+        }
+    ],
+    "states: state block scalar": [
+        {
+            "code": "lifecycle-state-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\" must be an object."
+        }
+    ],
+    "states: state outside enum": [
+        {
+            "code": "lifecycle-state-unknown",
+            "message": "x-openregister-lifecycle.states declares state \"gone\" which is not in the field's enum."
+        }
+    ],
+    "states: state outside enum without enum set": [],
+    "states: state without fields": [],
+    "states: states empty": [
+        {
+            "code": "lifecycle-states-malformed",
+            "message": "x-openregister-lifecycle.states must be a non-empty map of state names to blocks."
+        }
+    ],
+    "states: states scalar": [
+        {
+            "code": "lifecycle-states-malformed",
+            "message": "x-openregister-lifecycle.states must be a non-empty map of state names to blocks."
+        }
+    ],
+    "states: unknown kind": [
+        {
+            "code": "lifecycle-state-fields-unknown-kind",
+            "message": "x-openregister-lifecycle.states.\"open\".fields declares \"frozen\"; only hidden, readOnly, required are rule kinds."
+        }
+    ],
+    "states: when built-ins": [],
+    "states: when empty": [
+        {
+            "code": "lifecycle-state-condition-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\" fields.\"hidden\" condition must be a non-empty condition object. A scalar is refused: it would evaluate as a literal and let every write through."
+        }
+    ],
+    "states: when scalar": [
+        {
+            "code": "lifecycle-state-condition-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\" fields.\"hidden\" condition must be a non-empty condition object. A scalar is refused: it would evaluate as a literal and let every write through."
+        }
+    ],
+    "states: when undeclared": [
+        {
+            "code": "lifecycle-state-condition-property-missing",
+            "message": "x-openregister-lifecycle.states.\"open\" fields.\"hidden\" condition reads property \"nope\", which is not declared in `properties`."
+        },
+        {
+            "code": "lifecycle-state-condition-property-missing",
+            "message": "x-openregister-lifecycle.states.\"open\" fields.\"hidden\" condition reads property \"other\", which is not declared in `properties`."
+        }
+    ],
+    "states: when valid": [],
+    "states: when wins over condition": []
+}

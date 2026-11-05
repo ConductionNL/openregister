@@ -151,7 +151,7 @@ The system MUST support a `validateReference` boolean on schema properties. When
 - **AND** the save MUST succeed
 
 ### Requirement 5: Orphan detection and cleanup MUST be supported for inversedBy relations
-When a parent object is updated and sub-objects are removed from an `inversedBy` array property, the system MUST detect and soft-delete orphaned sub-objects. `SaveObject::deleteOrphanedRelatedObjects()` handles this cleanup.
+When a parent object is updated and sub-objects are removed from an `inversedBy` array property, the system MUST detect and soft-delete orphaned sub-objects. `SaveObject::deleteOrphanedRelatedObjects()` handles this cleanup. The cleanup is opt-in per parent schema through `configuration.orphanCleanup` (default false: the child stays and only loses the reference), and it deletes only a row the caller may delete within the caller's organisations.
 
 #### Scenario: Sub-objects removed during update are soft-deleted
 - **GIVEN** an `incident` object with property `notes` (array, `inversedBy: "incident"`, `cascade: true`)

@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use Throwable;
  * non-secret announced as "changed" costs a click, a secret quoted in a
  * notification is a credential stored in somebody's inbox.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class SecuritySettingRegistry {
 	/**
@@ -87,13 +87,11 @@ class SecuritySettingRegistry {
 		],
 		'retention.auditTrailsEnabled' => ['label' => 'Audit trail', 'default' => true, 'secret' => false, 'type' => 'json'],
 		'retention.searchTrailsEnabled' => ['label' => 'Search trail', 'default' => true, 'secret' => false, 'type' => 'json'],
-		'solr.username' => ['label' => 'Search index user name', 'default' => 'solr', 'secret' => false, 'type' => 'json'],
-		'solr.password' => ['label' => 'Search index password', 'default' => 'SolrRocks', 'secret' => true, 'type' => 'json'],
-		'solr.zookeeperPassword' => ['label' => 'Search cluster password', 'default' => '', 'secret' => true, 'type' => 'json'],
 		'@flow_audit_enabled' => ['label' => 'Audit trail for automated flows', 'default' => false, 'secret' => false, 'type' => 'bool'],
 		'@flow_oversight_enabled' => ['label' => 'Oversight of automated flows', 'default' => true, 'secret' => false, 'type' => 'bool'],
 		'@flow_kill_switch' => ['label' => 'Emergency stop for automated flows', 'default' => false, 'secret' => false, 'type' => 'bool'],
 		'@' . AuditSink::CONFIG_PATH => ['label' => 'Audit trail file location', 'default' => '', 'secret' => false, 'type' => 'string'],
+		'@' . ReadEventVisibility::CONFIG_KEY => ['label' => 'Who sees who read a record', 'default' => '[]', 'secret' => false, 'type' => 'string'],
 	];
 
 	/**
@@ -113,7 +111,7 @@ class SecuritySettingRegistry {
 	 *
 	 * @return bool True when a change to it is announced.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function isSecurityRelevant(string $path): bool {
 		return array_key_exists($path, self::SETTINGS);
@@ -126,10 +124,10 @@ class SecuritySettingRegistry {
 	 *
 	 * @return bool True when the flag says so, or the path names a credential.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function isSecret(string $path): bool {
-		if ((self::SETTINGS[$path]['secret'] ?? false) === true) {
+		if (($this->definition(path: $path)['secret'] ?? false) === true) {
 			return true;
 		}
 
@@ -144,13 +142,24 @@ class SecuritySettingRegistry {
 	}//end isSecret()
 
 	/**
+	 * The registry entry of a setting.
+	 *
+	 * @param string $path The setting path.
+	 *
+	 * @return array{label: string, default: mixed, secret: bool, type: string}|null The entry, or null when unregistered.
+	 */
+	private function definition(string $path): ?array {
+		return (self::SETTINGS[$path] ?? null);
+	}//end definition()
+
+	/**
 	 * The label an announcement shows for a setting.
 	 *
 	 * @param string $path The setting path.
 	 *
 	 * @return string The label, or the path itself when none is registered.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function label(string $path): string {
 		return (self::SETTINGS[$path]['label'] ?? $path);
@@ -166,7 +175,7 @@ class SecuritySettingRegistry {
 	 *
 	 * @return array<string, mixed> Path to value.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function snapshot(): array {
 		$blobs = [];
@@ -191,7 +200,7 @@ class SecuritySettingRegistry {
 	 *
 	 * @return mixed The stored value, or the default.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function read(string $path, array $definition, array &$blobs): mixed {
 		$default = $definition['default'];
@@ -225,7 +234,7 @@ class SecuritySettingRegistry {
 	 *
 	 * @return mixed The stored value.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function readKey(string $key, string $type, mixed $default): mixed {
 		if ($type === 'bool') {

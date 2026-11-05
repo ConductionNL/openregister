@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Rules;
 use OCA\OpenRegister\BulkAction\ApplyRuleAction;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Throwable;
 
 /**
@@ -50,7 +50,7 @@ use Throwable;
  * that `bulk-action-jobs` already owns. Writing a second executor here is how
  * the preview and the run drift apart.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 final class RuleReplayService {
 
@@ -81,7 +81,7 @@ final class RuleReplayService {
 	 * @param RuleInventoryService $inventory Finds the rule as declared.
 	 * @param RuleCeilingService $ceiling Refuses a run above the rule's ceiling.
 	 * @param BulkJobService $jobs Creates and previews the background job.
-	 * @param ObjectService $objects Counts the selection before anything is written.
+	 * @param ObjectOperationsInterface $objects Counts the selection before anything is written.
 	 *
 	 * @return void
 	 */
@@ -89,7 +89,7 @@ final class RuleReplayService {
 		private readonly RuleInventoryService $inventory,
 		private readonly RuleCeilingService $ceiling,
 		private readonly BulkJobService $jobs,
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 	) {
 	}//end __construct()
 
@@ -113,7 +113,7 @@ final class RuleReplayService {
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Six facts about one replay, each read.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function preview(
 		Schema $schema,
@@ -183,7 +183,7 @@ final class RuleReplayService {
 	 *
 	 * @return int|null The count, or null when the selection names nothing.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function countOf(array $selection, ?int $registerId, ?int $schemaId): ?int {
 		$ids = ($selection['ids'] ?? null);

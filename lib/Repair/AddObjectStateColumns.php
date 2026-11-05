@@ -17,14 +17,14 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
- * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -55,13 +55,13 @@ class AddObjectStateColumns implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $magicMapper Magic-table discovery and the shared metadata-column healer.
+	 * @param MagicMapperInterface $magicMapper Magic-table discovery and the shared metadata-column healer.
 	 * @param LoggerInterface $logger Logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -84,7 +84,7 @@ class AddObjectStateColumns implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-the-upgrade-step-and-reconcile-share-the-healer-req-mth-004
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-upgrade-step-and-reconcile-share-the-healer-req-mth-004
 	 */
 	public function run(IOutput $output): void {
 		try {

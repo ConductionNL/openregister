@@ -530,4 +530,91 @@ class ImportHandlerPerRegisterSlugUniquenessTest extends TestCase {
 
 	}//end testImportSchemaWithEmptyRegisterScopeCreatesNewSchema()
 
+
+	/**
+	 * Wire findBySlug() and getAllRegisterIdsWithSchema() onto the fake
+	 * tables, for the orphan-adoption tests.
+	 */
+	private function wireOrphanLookups(): void {
+		$this->schemaMapper->method('findBySlug')->willReturnCallback(
+			function (string $slug): array {
+				return array_values(array_filter(
+					$this->schemaStore,
+					static fn (Schema $schema): bool => strtolower((string)$schema->getSlug()) === strtolower($slug)
+				));
+			}
+		);
+		$this->registerMapper->method('getAllRegisterIdsWithSchema')->willReturnCallback(
+			function (int $schemaId): array {
+				$ids = [];
+				foreach ($this->registerStore as $register) {
+					if (in_array($schemaId, array_map('intval', $register->getSchemas()), true) === true) {
+						$ids[] = (int)$register->getId();
+					}
+				}
+
+				return $ids;
+			}
+		);
+
+	}//end wireOrphanLookups()
+
+	/**
+	 * Seed a schema row of an app that no register lists: what an import that
+	 * stopped after creating its schemas, before linking them, leaves behind.
+	 */
+	private function seedOrphan(int $id, string $slug, string $appId): Schema {
+		$schema = new Schema();
+		$schema->setSlug($slug);
+		$schema->setVersion('1.0.0');
+		$schema->setApplication($appId);
+		$this->setEntityId($schema, $id);
+		$this->schemaStore[$id] = $schema;
+		return $schema;
+
+	}//end seedOrphan()
+
+	/**
+	 * An app's own schema row that no register lists is adopted by the app's
+	 * next import of that slug instead of forking a twin. Two dossiq imports
+	 * three minutes apart (29 Sep) left 17 slugs twice: the first run's rows
+	 * were never linked to the register, so the second, scoped to the
+	 * register's list, created every one again.
+	 */
+	public function testAnAppsOwnUnlinkedSchemaIsAdoptedNotForked(): void {
+		$this->wireOrphanLookups();
+		$orphan = $this->seedOrphan(id: 50, slug: 'workDigest', appId: 'dossiq');
+
+		$result = $this->handler->importFromJson(
+			data:          $this->makeImportPayload(appId: 'dossiq', registerSlug: 'dossiq', schemaSlug: 'workDigest', version: '1.0.1'),
+			configuration: $this->makeConfiguration(1, 'dossiq'),
+			version:       '1.0.1',
+			appId:         'dossiq'
+		);
+
+		$this->assertSame($orphan->getId(), $result['schemas'][0]->getId());
+		$this->assertCount(1, $this->schemaStore, 'no twin row');
+		$this->assertSame([50], array_map('intval', $this->registerStore['dossiq']->getSchemas()));
+
+	}//end testAnAppsOwnUnlinkedSchemaIsAdoptedNotForked()
+
+	/**
+	 * Control: another app's unlinked row with the slug is never adopted;
+	 * the per-register uniqueness rule still gives this register its own.
+	 */
+	public function testAnotherAppsUnlinkedSchemaIsNotAdopted(): void {
+		$this->wireOrphanLookups();
+		$this->seedOrphan(id: 60, slug: 'workDigest', appId: 'pipelinq');
+
+		$result = $this->handler->importFromJson(
+			data:          $this->makeImportPayload(appId: 'dossiq', registerSlug: 'dossiq', schemaSlug: 'workDigest'),
+			configuration: $this->makeConfiguration(1, 'dossiq'),
+			version:       '1.0.0',
+			appId:         'dossiq'
+		);
+
+		$this->assertNotSame(60, $result['schemas'][0]->getId());
+		$this->assertCount(2, $this->schemaStore);
+
+	}//end testAnotherAppsUnlinkedSchemaIsNotAdopted()
 }//end class
