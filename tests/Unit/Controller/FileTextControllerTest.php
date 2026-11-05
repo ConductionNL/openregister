@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FileTextControllerFactory;
 use OCA\OpenRegister\Controller\FileTextController;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
@@ -67,7 +68,7 @@ class FileTextControllerTest extends TestCase {
 		$this->rootFolder->method('getUserFolder')->willReturn($userFolder);
 		$this->groupManager->method('isAdmin')->willReturn(true);
 
-		$this->controller = new FileTextController(
+		$this->controller = FileTextControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->textExtractor,
@@ -124,7 +125,7 @@ class FileTextControllerTest extends TestCase {
 
 		$this->textExtractor->expects($this->never())->method('getExtractedText');
 
-		$controller = new FileTextController(
+		$controller = FileTextControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->textExtractor,
@@ -601,7 +602,7 @@ class FileTextControllerTest extends TestCase {
 		$this->fileService->expects($this->never())->method('anonymizeDocument');
 		$this->entityRelationMapper->expects($this->never())->method('findEntitiesForAnonymization');
 
-		$controller = new FileTextController(
+		$controller = FileTextControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->textExtractor,
@@ -638,7 +639,7 @@ class FileTextControllerTest extends TestCase {
 		$this->textExtractor->expects($this->never())
 			->method('extractPendingFiles');
 
-		$controller = new FileTextController(
+		$controller = FileTextControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->textExtractor,
@@ -698,7 +699,7 @@ class FileTextControllerTest extends TestCase {
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('isAdmin')->willReturn(false);
 
-		$controller = new FileTextController(
+		$controller = FileTextControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->textExtractor,

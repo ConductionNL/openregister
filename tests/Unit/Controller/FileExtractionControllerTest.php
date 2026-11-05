@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FileExtractionControllerFactory;
 use OCA\OpenRegister\Controller\FileExtractionController;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
@@ -66,7 +67,7 @@ class FileExtractionControllerTest extends TestCase {
 		IGroupManager $groupManager,
 		IRootFolder $rootFolder,
 	): FileExtractionController {
-		return new FileExtractionController(
+		return FileExtractionControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->textExtractor,

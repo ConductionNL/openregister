@@ -47,6 +47,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\DelegationControllerServices;
 use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\DelegationGrantMapper;
 use OCA\OpenRegister\Service\Delegation\DelegationConsentService;
@@ -81,32 +82,82 @@ use Throwable;
 class DelegationController extends Controller {
 
 	/**
+	 * Reads the grant store.
+	 *
+	 * @var DelegationGrantMapper
+	 */
+	private readonly DelegationGrantMapper $grants;
+
+	/**
+	 * Owns the lifecycle and its rules.
+	 *
+	 * @var DelegationConsentService
+	 */
+	private readonly DelegationConsentService $consent;
+
+	/**
+	 * Tells a person they were asked.
+	 *
+	 * @var DelegationNotifier
+	 */
+	private readonly DelegationNotifier $notifier;
+
+	/**
+	 * Names the caller.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Proves the acted-as account exists.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * Distinguishes an administrator.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Bounds who a caller may ask.
+	 *
+	 * @var OrganisationServiceInterface
+	 */
+	private readonly OrganisationServiceInterface $organisations;
+
+	/**
+	 * Records a tenancy that cannot be read.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                   $appName      The app id.
 	 * @param IRequest                 $request      The request.
-	 * @param DelegationGrantMapper    $grants       Reads the grant store.
-	 * @param DelegationConsentService $consent      Owns the lifecycle and its rules.
-	 * @param DelegationNotifier       $notifier     Tells a person they were asked.
-	 * @param IUserSession             $userSession  Names the caller.
-	 * @param IUserManager             $userManager  Proves the acted-as account exists.
-	 * @param IGroupManager            $groupManager Distinguishes an administrator.
-	 * @param OrganisationServiceInterface      $organisations Bounds who a caller may ask.
-	 * @param LoggerInterface          $logger        Records a tenancy that cannot be read.
+	 * @param DelegationControllerServices $services The delegation controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly DelegationGrantMapper $grants,
-		private readonly DelegationConsentService $consent,
-		private readonly DelegationNotifier $notifier,
-		private readonly IUserSession $userSession,
-		private readonly IUserManager $userManager,
-		private readonly IGroupManager $groupManager,
-		private readonly OrganisationServiceInterface $organisations,
-		private readonly LoggerInterface $logger,
+		DelegationControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->grants = $services->mappers->grants;
+		$this->consent = $services->domain->consent;
+		$this->notifier = $services->domain->notifier;
+		$this->userSession = $services->session->userSession;
+		$this->userManager = $services->platform->userManager;
+		$this->groupManager = $services->session->groupManager;
+		$this->organisations = $services->domain->organisations;
+		$this->logger = $services->session->logger;
 
 	}//end __construct()
 

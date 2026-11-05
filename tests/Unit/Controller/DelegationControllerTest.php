@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\DelegationControllerFactory;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\DelegationController;
@@ -221,7 +222,7 @@ class DelegationControllerTest extends TestCase {
 			}
 		);
 
-		return new DelegationController(
+		return DelegationControllerFactory::create(
 			'openregister',
 			$request,
 			$grants,

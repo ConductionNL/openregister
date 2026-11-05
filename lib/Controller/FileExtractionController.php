@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\FileExtractionControllerServices;
 use OCA\OpenRegister\Controller\Support\FileExtractionListing;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapperInterface;
@@ -60,36 +61,92 @@ use OCP\IUserSession;
  */
 class FileExtractionController extends Controller {
 	/**
+	 * Text extraction service
+	 *
+	 * @var TextExtractionService
+	 */
+	private readonly TextExtractionService $textExtractor;
+
+	/**
+	 * Unified vectorization service
+	 *
+	 * @var VectorizationServiceInterface
+	 */
+	private readonly VectorizationServiceInterface $vectorizationService;
+
+	/**
+	 * Chunk mapper for text chunks
+	 *
+	 * @var ChunkMapper
+	 */
+	private readonly ChunkMapper $chunkMapper;
+
+	/**
+	 * Entity relation mapper
+	 *
+	 * @var EntityRelationMapperInterface
+	 */
+	private readonly EntityRelationMapperInterface $entityRelationMapper;
+
+	/**
+	 * Risk level computation service
+	 *
+	 * @var RiskLevelService
+	 */
+	private readonly RiskLevelService $riskLevelService;
+
+	/**
+	 * Root folder for per-user file access checks
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * Active user session for caller identity
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for admin checks
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * The object read rule for an object's file.
+	 *
+	 * @var ?\OCA\OpenRegister\Service\File\FileReadScope
+	 */
+	private readonly ?\OCA\OpenRegister\Service\File\FileReadScope $fileReadScope;
+
+	/**
 	 * Constructor
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
-	 * @param TextExtractionService $textExtractor Text extraction service
-	 * @param VectorizationServiceInterface $vectorizationService Unified vectorization service
-	 * @param ChunkMapper $chunkMapper Chunk mapper for text chunks
-	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper
-	 * @param RiskLevelService $riskLevelService Risk level computation service
-	 * @param IRootFolder $rootFolder Root folder for per-user file access checks
-	 * @param IUserSession $userSession Active user session for caller identity
-	 * @param IGroupManager $groupManager Group manager for admin checks
-	 * @param \OCA\OpenRegister\Service\File\FileReadScope|null $fileReadScope The object read rule for an object's file.
+	 * @param FileExtractionControllerServices $services The file extraction controller services.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly TextExtractionService $textExtractor,
-		private readonly VectorizationServiceInterface $vectorizationService,
-		private readonly ChunkMapper $chunkMapper,
-		private readonly EntityRelationMapperInterface $entityRelationMapper,
-		private readonly RiskLevelService $riskLevelService,
-		private readonly IRootFolder $rootFolder,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly ?\OCA\OpenRegister\Service\File\FileReadScope $fileReadScope = null,
+		FileExtractionControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->textExtractor = $services->domain->textExtractor;
+		$this->vectorizationService = $services->domain->vectorizationService;
+		$this->chunkMapper = $services->mappers->chunkMapper;
+		$this->entityRelationMapper = $services->mappers->entityRelationMapper;
+		$this->riskLevelService = $services->domain->riskLevelService;
+		$this->rootFolder = $services->platform->rootFolder;
+		$this->userSession = $services->platform->userSession;
+		$this->groupManager = $services->platform->groupManager;
+		$this->fileReadScope = $services->domain->fileReadScope;
 	}//end __construct()
 
 	/**

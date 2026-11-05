@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectActionsControllerFactory;
 use OCA\OpenRegister\Controller\ObjectActionsController;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -66,7 +67,7 @@ class ObjectActionsControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new ObjectActionsController(
+		$this->controller = ObjectActionsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objects,

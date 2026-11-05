@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CredentialOauth2ControllerFactory;
 use OCA\OpenRegister\Controller\CredentialOauth2Controller;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
@@ -54,6 +55,10 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialOauth2Controller
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialOauth2Mappers
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialOauth2Domain
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialOauth2Platform
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialOauth2ControllerServices
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2Endpoints
  */
@@ -678,7 +683,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 			$session->method('getUser')->willReturn(null);
 		}
 
-		return new CredentialOauth2Controller(
+		return CredentialOauth2ControllerFactory::create(
 			'openregister',
 			$request,
 			$connect,
