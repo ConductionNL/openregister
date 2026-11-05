@@ -308,24 +308,7 @@ class SyncConfigurationsJob extends TimedJob {
 			branch: $githubBranch
 		);
 
-		// Get app ID and version.
-		$appId = $configData['x-openregister']['app'] ?? $configuration->getApp() ?? 'unknown';
-		$version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
-
-		// Import the configuration (force update).
-		$this->configurationService->importFromApp(
-			appId: $appId,
-			data: $configData,
-			version: $version,
-			force: true
-		);
-
-		// Update sync status.
-		$this->configurationMapper->updateSyncStatus(
-			id: $configuration->getId(),
-			status: 'success',
-			syncDate: new DateTime()
-		);
+		$this->importFetched(configuration: $configuration, configData: $configData);
 	}//end syncFromGitHub()
 
 	/**
@@ -363,24 +346,7 @@ class SyncConfigurationsJob extends TimedJob {
 		// Fetch file content.
 		$configData = $this->gitlabService->getFileContent(projectId: $projectId, path: $path, ref: $ref);
 
-		// Get app ID and version.
-		$appId = $configData['x-openregister']['app'] ?? $configuration->getApp() ?? 'unknown';
-		$version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
-
-		// Import the configuration (force update).
-		$this->configurationService->importFromApp(
-			appId: $appId,
-			data: $configData,
-			version: $version,
-			force: true
-		);
-
-		// Update sync status.
-		$this->configurationMapper->updateSyncStatus(
-			id: $configuration->getId(),
-			status: 'success',
-			syncDate: new DateTime()
-		);
+		$this->importFetched(configuration: $configuration, configData: $configData);
 	}//end syncFromGitLab()
 
 	/**
@@ -409,24 +375,7 @@ class SyncConfigurationsJob extends TimedJob {
 			throw new Exception('Invalid JSON in URL response: ' . json_last_error_msg());
 		}
 
-		// Get app ID and version.
-		$appId = $configData['x-openregister']['app'] ?? $configuration->getApp() ?? 'unknown';
-		$version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
-
-		// Import the configuration (force update).
-		$this->configurationService->importFromApp(
-			appId: $appId,
-			data: $configData,
-			version: $version,
-			force: true
-		);
-
-		// Update sync status.
-		$this->configurationMapper->updateSyncStatus(
-			id: $configuration->getId(),
-			status: 'success',
-			syncDate: new DateTime()
-		);
+		$this->importFetched(configuration: $configuration, configData: $configData);
 	}//end syncFromUrl()
 
 	/**
@@ -458,11 +407,45 @@ class SyncConfigurationsJob extends TimedJob {
 			force: true
 		);
 
-		// Update sync status.
+		$this->markSynced(configuration: $configuration);
+	}//end syncFromLocal()
+
+	/**
+	 * Import fetched configuration data with a forced update and record the sync.
+	 *
+	 * The app id and version come from the data's `x-openregister` and `info`
+	 * blocks, falling back to the configuration's app and to 1.0.0.
+	 *
+	 * @param Configuration $configuration Configuration being synced
+	 * @param array $configData Decoded configuration document
+	 *
+	 * @return void
+	 */
+	private function importFetched(Configuration $configuration, array $configData): void {
+		$appId = $configData['x-openregister']['app'] ?? $configuration->getApp() ?? 'unknown';
+		$version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
+
+		$this->configurationService->importFromApp(
+			appId: $appId,
+			data: $configData,
+			version: $version,
+			force: true
+		);
+		$this->markSynced(configuration: $configuration);
+	}//end importFetched()
+
+	/**
+	 * Record a successful sync of a configuration now.
+	 *
+	 * @param Configuration $configuration Configuration that was synced
+	 *
+	 * @return void
+	 */
+	private function markSynced(Configuration $configuration): void {
 		$this->configurationMapper->updateSyncStatus(
 			id: $configuration->getId(),
 			status: 'success',
 			syncDate: new DateTime()
 		);
-	}//end syncFromLocal()
+	}//end markSynced()
 }//end class

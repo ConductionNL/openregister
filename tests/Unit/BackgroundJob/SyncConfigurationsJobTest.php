@@ -561,4 +561,38 @@ class SyncConfigurationsJobTest extends TestCase {
 
 		$this->runJob(null);
 	}
+
+	/**
+	 * Every source type records the sync as a success, dated now, on the synced configuration.
+	 *
+	 * @return void
+	 */
+	public function testEachSourceTypeRecordsASuccessfulSync(): void {
+		$this->githubService->method('getFileContent')->willReturn(['info' => ['version' => '1.0.0']]);
+		$this->gitlabService->method('getProjectByPath')->willReturn(['id' => 42]);
+		$this->gitlabService->method('getFileContent')->willReturn(['info' => ['version' => '1.0.0']]);
+		$body = $this->createMock(StreamInterface::class);
+		$body->method('getContents')->willReturn('{"info":{"version":"1.0.0"}}');
+		$response = $this->createMock(ResponseInterface::class);
+		$response->method('getBody')->willReturn($body);
+		$this->httpClient->method('request')->willReturn($response);
+		$this->configurationMapper->method('findBySyncEnabled')->willReturn([
+			$this->createConfigEntity(['id' => 11, 'sourceType' => 'github']),
+			$this->createConfigEntity(['id' => 12, 'sourceType' => 'gitlab', 'sourceUrl' => 'https://gitlab.com/ns/p/-/blob/main/c.json']),
+			$this->createConfigEntity(['id' => 13, 'sourceType' => 'url']),
+			$this->createConfigEntity(['id' => 14, 'sourceType' => 'local', 'sourceUrl' => '/tmp/c.json']),
+		]);
+
+		$recorded = [];
+		$this->configurationMapper->method('updateSyncStatus')->willReturnCallback(
+			function (int $id, string $status, \DateTime $syncDate) use (&$recorded) {
+				$recorded[] = [$id, $status, abs($syncDate->getTimestamp() - time()) <= 5];
+				return $this->createConfigEntity(['id' => $id]);
+			}
+		);
+
+		$this->runJob(null);
+
+		$this->assertSame([[11, 'success', true], [12, 'success', true], [13, 'success', true], [14, 'success', true]], $recorded);
+	}
 }
