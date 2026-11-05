@@ -95,285 +95,179 @@ class AggregationMetricsAnnotationValidator {
 	 */
 	public function validate(string $name, mixed $metrics, array $propKeys): array {
 		if (is_array($metrics) === false || $metrics === [] || array_is_list($metrics) === false) {
-			return [
-				[
-					'code' => 'aggregation-metrics-malformed',
-					'message' => sprintf(
-						'Aggregation "%s" metrics must be a non-empty list of {metric, field?} objects.',
-						$name
-					),
-				],
-			];
+			$message = sprintf('Aggregation "%s" metrics must be a non-empty list of {metric, field?} objects.', $name);
+			return [['code' => 'aggregation-metrics-malformed', 'message' => $message]];
 		}
 
 		$errors = [];
 		foreach ($metrics as $index => $entry) {
-			$entryErrors = $this->validateEntry(
-				name: $name,
-				index: (int)$index,
-				entry: $entry,
-				propKeys: $propKeys
-			);
-			$errors = array_merge($errors, $entryErrors);
+			$site = new MetricEntrySite(name: $name, index: (int)$index, propKeys: $propKeys);
+			$errors = array_merge($errors, $this->validateEntry(site: $site, entry: $entry));
 		}
 
 		return $errors;
 	}//end validate()
 
 	/**
-	 * Validate one `{metric, field?}` entry.
+	 * Validate a single `metrics` entry.
 	 *
-	 * @param string             $name     The aggregation name, for messages.
-	 * @param int                $index    The entry's position in the list.
-	 * @param mixed              $entry    The entry itself.
-	 * @param array<int, string> $propKeys Property names the schema declares.
+	 * @param MetricEntrySite $site   Where the entry sits.
+	 * @param mixed           $entry The declared entry.
 	 *
-	 * @return array<int, array{code: string, message: string}> Validation errors.
+	 * @return array<int, array{code: string, message: string}> Errors for this entry.
 	 */
-	private function validateEntry(string $name, int $index, mixed $entry, array $propKeys): array {
+	private function validateEntry(MetricEntrySite $site, mixed $entry): array {
 		if (is_array($entry) === false) {
-			return [
-				[
-					'code' => 'aggregation-metrics-entry-malformed',
-					'message' => sprintf('Aggregation "%s" metrics[%d] must be an object.', $name, $index),
-				],
-			];
+			return $site->error(code: 'aggregation-metrics-entry-malformed', detail: ' must be an object.');
 		}
 
 		$metric = $this->asString(value: ($entry['metric'] ?? ''));
 		if (in_array($metric, self::VALID_METRICS, true) === false) {
-			return [
-				[
-					'code' => 'aggregation-metrics-bad-metric',
-					'message' => sprintf(
-						'Aggregation "%s" metrics[%d] metric "%s" is not in [%s].',
-						$name,
-						$index,
-						$metric,
-						implode(', ', self::VALID_METRICS)
-					),
-				],
-			];
+			$detail = sprintf(' metric "%s" is not in [%s].', $metric, implode(', ', self::VALID_METRICS));
+			return $site->error(code: 'aggregation-metrics-bad-metric', detail: $detail);
 		}
 
 		if ($metric === self::METRIC_EXPRESSION) {
-			// A derived metric is validated on different terms: it reads the
-			// figures beside it, so it has no field, and without `as` its value
-			// has no response key at all.
-			$expression = $this->asString(value: ($entry['expression'] ?? ''));
-			if (trim($expression) === '') {
-				return [
-					[
-						'code' => 'aggregation-metrics-expression-empty',
-						'message' => sprintf(
-							'Aggregation "%s" metrics[%d] declares metric "expression" with no '
-							.'`expression` to evaluate.',
-							$name,
-							$index
-						),
-					],
-				];
-			}
-
-			$alias = $this->asString(value: ($entry['as'] ?? ''));
-			if (trim($alias) === '') {
-				return [
-					[
-						'code' => 'aggregation-metrics-expression-unnamed',
-						'message' => sprintf(
-							'Aggregation "%s" metrics[%d] is a derived metric and must declare `as`: '
-							.'it has no field or metric name to derive a response key from.',
-							$name,
-							$index
-						),
-					],
-				];
-			}
-
-			if (isset($entry['field']) === true) {
-				return [
-					[
-						'code' => 'aggregation-metrics-expression-has-field',
-						'message' => sprintf(
-							'Aggregation "%s" metrics[%d] is a derived metric and takes no `field`: '
-							.'it reads the aliases of the metrics beside it, not the rows.',
-							$name,
-							$index
-						),
-					],
-				];
-			}
-
-			return [];
+			return $this->validateExpression(site: $site, entry: $entry);
 		}
 
-		$extra = $this->validateConditionAndAlias(
-			name: $name,
-			index: $index,
-			entry: $entry,
-			propKeys: $propKeys
-		);
-		if ($extra !== []) {
-			return $extra;
-		}
-
-		if (in_array($metric, self::REQUIRES_FIELD, true) === false) {
-			return [];
-		}
-
-		return $this->validateField(
-			name: $name,
-			index: $index,
-			metric: $metric,
-			field: $this->asString(value: ($entry['field'] ?? '')),
-			propKeys: $propKeys
-		);
+		return $this->validateMeasured(site: $site, entry: $entry);
 	}//end validateEntry()
 
 	/**
-	 * Validate a metric entry's optional `condition` and `as`.
+	 * Validate a metric over rows: its alias and condition, then its field when it reads one.
 	 *
-	 * `condition` scopes ONE metric to a subset of the grouped rows — the
-	 * debit/credit split. It is a filter object, the same shape as the
-	 * aggregation's own `filter`, and its keys are checked against the schema
-	 * here for the reason every filter needs checking in this stack: a filter
-	 * naming a property the schema does not declare is not an error at run
-	 * time, it matches nothing and returns an empty set with HTTP 200. Caught
-	 * at declaration time it is a typo; caught at run time it is a page showing
-	 * "no data" over live rows.
+	 * @param MetricEntrySite      $site   Where the entry sits.
+	 * @param array<string, mixed> $entry The declared entry, with a known metric.
 	 *
-	 * `as` names the response key. It is required in practice whenever two
-	 * entries share a metric+field pair — two conditional sums over `amount`
-	 * both derive `sum_amount`, and the second would overwrite the first.
-	 *
-	 * @param string             $name     The aggregation name, for messages.
-	 * @param int                $index    The entry's position in the list.
-	 * @param array<mixed>       $entry    The metric entry.
-	 * @param array<int, string> $propKeys Property names the schema declares.
-	 *
-	 * @return array<int, array{code: string, message: string}> Validation errors.
-	 *
-	 * @spec openspec/specs/aggregation-api/spec.md
+	 * @return array<int, array{code: string, message: string}> The first error, or none.
 	 */
-	private function validateConditionAndAlias(
-		string $name,
-		int $index,
-		array $entry,
-		array $propKeys,
-	): array {
-		$alias = ($entry['as'] ?? null);
-		if ($alias !== null && (is_string($alias) === false || $alias === '')) {
-			return [
-				[
-					'code' => 'aggregation-metrics-alias-malformed',
-					'message' => sprintf(
-						'Aggregation "%s" metrics[%d] "as" must be a non-empty string.',
-						$name,
-						$index
-					),
-				],
-			];
+	private function validateMeasured(MetricEntrySite $site, array $entry): array {
+		$extra = [...$this->validateAlias(site: $site, entry: $entry), ...$this->validateCondition(site: $site, entry: $entry)];
+		if ($extra !== [] || in_array($entry['metric'], self::REQUIRES_FIELD, true) === false) {
+			return array_slice($extra, 0, 1);
 		}
 
+		return $this->validateField(site: $site, entry: $entry);
+	}//end validateMeasured()
+
+	/**
+	 * Validate a derived metric: it reads the figures beside it, so it has no
+	 * field, and without `as` its value has no response key at all.
+	 *
+	 * @param MetricEntrySite      $site   Where the entry sits.
+	 * @param array<string, mixed> $entry The declared entry.
+	 *
+	 * @return array<int, array{code: string, message: string}> The first error, or none.
+	 */
+	private function validateExpression(MetricEntrySite $site, array $entry): array {
+		if (trim($this->asString(value: ($entry['expression'] ?? ''))) === '') {
+			$detail = ' declares metric "expression" with no `expression` to evaluate.';
+			return $site->error(code: 'aggregation-metrics-expression-empty', detail: $detail);
+		}
+
+		if (trim($this->asString(value: ($entry['as'] ?? ''))) === '') {
+			$detail = ' is a derived metric and must declare `as`: it has no field or metric name to derive a response key from.';
+			return $site->error(code: 'aggregation-metrics-expression-unnamed', detail: $detail);
+		}
+
+		if (isset($entry['field']) === true) {
+			$detail = ' is a derived metric and takes no `field`: it reads the aliases of the metrics beside it, not the rows.';
+			return $site->error(code: 'aggregation-metrics-expression-has-field', detail: $detail);
+		}
+
+		return [];
+	}//end validateExpression()
+
+	/**
+	 * Validate the optional `as` alias.
+	 *
+	 * @param MetricEntrySite      $site   Where the entry sits.
+	 * @param array<string, mixed> $entry The declared entry.
+	 *
+	 * @return array<int, array{code: string, message: string}> The error, or none.
+	 */
+	private function validateAlias(MetricEntrySite $site, array $entry): array {
+		$alias = ($entry['as'] ?? null);
+		if ($alias !== null && (is_string($alias) === false || $alias === '')) {
+			return $site->error(code: 'aggregation-metrics-alias-malformed', detail: ' "as" must be a non-empty string.');
+		}
+
+		return [];
+	}//end validateAlias()
+
+	/**
+	 * Validate the optional `condition`: a non-empty filter object on declared properties.
+	 *
+	 * @param MetricEntrySite      $site   Where the entry sits.
+	 * @param array<string, mixed> $entry The declared entry.
+	 *
+	 * @return array<int, array{code: string, message: string}> The first error, or none.
+	 */
+	private function validateCondition(MetricEntrySite $site, array $entry): array {
 		$condition = ($entry['condition'] ?? null);
 		if ($condition === null) {
 			return [];
 		}
 
 		if (is_array($condition) === false || $condition === []) {
-			return [
-				[
-					'code' => 'aggregation-metrics-condition-malformed',
-					'message' => sprintf(
-						'Aggregation "%s" metrics[%d] "condition" must be a non-empty filter object, '
-						. 'the same shape as the aggregation\'s own filter — not a string expression.',
-						$name,
-						$index
-					),
-				],
-			];
+			$detail = ' "condition" must be a non-empty filter object, '
+				. 'the same shape as the aggregation\'s own filter — not a string expression.';
+			return $site->error(code: 'aggregation-metrics-condition-malformed', detail: $detail);
 		}
 
+		return $this->validateConditionProperties(site: $site, condition: $condition);
+	}//end validateCondition()
+
+	/**
+	 * Validate that a condition filters only on declared properties.
+	 *
+	 * @param MetricEntrySite      $site       Where the entry sits.
+	 * @param array<string, mixed> $condition The declared condition.
+	 *
+	 * @return array<int, array{code: string, message: string}> The error for the first undeclared property, or none.
+	 */
+	private function validateConditionProperties(MetricEntrySite $site, array $condition): array {
 		foreach (array_keys($condition) as $prop) {
-			if (in_array((string)$prop, $propKeys, true) === false) {
-				return [
-					[
-						'code' => 'aggregation-metrics-condition-not-in-schema',
-						'message' => sprintf(
-							'Aggregation "%s" metrics[%d] condition property "%s" is not declared in the '
-							. 'schema properties. A filter on an undeclared property matches nothing and '
-							. 'returns an empty result rather than an error.',
-							$name,
-							$index,
-							(string)$prop
-						),
-					],
-				];
+			if ($site->declares(prop: (string)$prop) === false) {
+				$detail = sprintf(' condition property "%s" is not declared in the schema properties. ', (string)$prop)
+					. 'A filter on an undeclared property matches nothing and returns an empty result rather than an error.';
+				return $site->error(code: 'aggregation-metrics-condition-not-in-schema', detail: $detail);
 			}
 		}
 
 		return [];
-	}//end validateConditionAndAlias()
+	}//end validateConditionProperties()
 
 	/**
-	 * Validate the field of a metric that requires one.
+	 * Validate the field a field-bound metric reads.
 	 *
-	 * @param string             $name     The aggregation name, for messages.
-	 * @param int                $index    The entry's position in the list.
-	 * @param string             $metric   The entry's metric.
-	 * @param string             $field    The entry's field.
-	 * @param array<int, string> $propKeys Property names the schema declares.
+	 * @param MetricEntrySite      $site   Where the entry sits.
+	 * @param array<string, mixed> $entry The declared entry.
 	 *
-	 * @return array<int, array{code: string, message: string}> Validation errors.
+	 * @return array<int, array{code: string, message: string}> The error, or none.
 	 */
-	private function validateField(
-		string $name,
-		int $index,
-		string $metric,
-		string $field,
-		array $propKeys,
-	): array {
+	private function validateField(MetricEntrySite $site, array $entry): array {
+		$field = $this->asString(value: ($entry['field'] ?? ''));
 		if ($field === '') {
-			return [
-				[
-					'code' => 'aggregation-metrics-field-missing',
-					'message' => sprintf(
-						'Aggregation "%s" metrics[%d] with metric "%s" requires a field.',
-						$name,
-						$index,
-						$metric
-					),
-				],
-			];
+			$detail = sprintf(' with metric "%s" requires a field.', $this->asString(value: $entry['metric']));
+			return $site->error(code: 'aggregation-metrics-field-missing', detail: $detail);
 		}
 
-		if (in_array($field, $propKeys, true) === false) {
-			return [
-				[
-					'code' => 'aggregation-metrics-field-not-in-schema',
-					'message' => sprintf(
-						'Aggregation "%s" metrics[%d] field "%s" is not declared in the schema properties.',
-						$name,
-						$index,
-						$field
-					),
-				],
-			];
+		if ($site->declares(prop: $field) === false) {
+			$detail = sprintf(' field "%s" is not declared in the schema properties.', $field);
+			return $site->error(code: 'aggregation-metrics-field-not-in-schema', detail: $detail);
 		}
 
 		return [];
 	}//end validateField()
 
 	/**
-	 * Coerce a declared value to a string without tripping on arrays.
+	 * Coerce a scalar to string; anything else becomes the empty string.
 	 *
-	 * A schema author passing an array must not reach a bare string cast —
-	 * PHP emits "Array to string conversion" — so it collapses to '' and fails
-	 * the vocabulary check with a proper validation error instead.
+	 * @param mixed $value The value.
 	 *
-	 * @param mixed $value The declared value.
-	 *
-	 * @return string The value as a string, or '' when it is not scalar.
+	 * @return string
 	 */
 	private function asString(mixed $value): string {
 		if (is_scalar($value) === false) {

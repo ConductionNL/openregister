@@ -121,6 +121,22 @@ export function opensWith(dialogName) {
 }
 
 /**
+ * The watcher and mounted hook of a bulk dialog: both take the handed-over
+ * selection, the watcher when the named dialog opens.
+ *
+ * @param {string} dialogName The dialog's name in the navigation store
+ * @return {object} The watch and mounted options
+ */
+export function bulkDialogLifecycle(dialogName) {
+	return {
+		watch: { 'navigationStore.dialog': opensWith(dialogName) },
+		mounted() {
+			this.initializeSelection()
+		},
+	}
+}
+
+/**
  * The selection handling both bulk dialogs share.
  */
 export const bulkDialogMethods = {

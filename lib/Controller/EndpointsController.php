@@ -591,6 +591,8 @@ class EndpointsController extends Controller {
 	 *
 	 * @return JSONResponse The updated endpoint.
 	 *
+	 * @throws DoesNotExistException When no endpoint has this id; the caller answers 404.
+	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
 	private function updateEndpoint(int $id): JSONResponse {
@@ -608,6 +610,8 @@ class EndpointsController extends Controller {
 	 * @param int $id The endpoint.
 	 *
 	 * @return JSONResponse A 204.
+	 *
+	 * @throws DoesNotExistException When no endpoint has this id; the caller answers 404.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */

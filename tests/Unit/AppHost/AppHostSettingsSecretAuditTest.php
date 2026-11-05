@@ -59,7 +59,7 @@ class AppHostSettingsSecretAuditTest extends TestCase {
 	 *
 	 * @return array<string, mixed> The `changed` block of the one row written.
 	 */
-	private function saveRegisterSetting(array $register): array {
+	private function saveRegisterSetting(array $register, array $hookSecrets = []): array {
 		$this->appPath = sys_get_temp_dir() . '/apphost-secret-audit-' . uniqid();
 		mkdir($this->appPath . '/lib/Settings', 0777, true);
 		file_put_contents($this->appPath . '/lib/Settings/myapp_register.json', json_encode($register));
@@ -68,7 +68,7 @@ class AppHostSettingsSecretAuditTest extends TestCase {
 		$appManager->method('isInstalled')->willReturn(true);
 		$appManager->method('getAppPath')->willReturn($this->appPath);
 
-		$stored = ['register' => 'old-token'];
+		$stored = ['register' => 'old-token', 'apiToken' => 'old-key'];
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')->willReturnCallback(
 			static function (string $app, string $key, string $default = '') use (&$stored): string {
@@ -102,20 +102,50 @@ class AppHostSettingsSecretAuditTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($auditor);
 
-		$service = new AppHostSettingsService(
+		$service = new class(
 			'myapp',
 			$appConfig,
 			$appManager,
 			$container,
 			$this->createMock(IGroupManager::class),
 			$this->createMock(IUserSession::class),
-			$this->createMock(LoggerInterface::class)
-		);
+			$this->createMock(LoggerInterface::class),
+			$hookSecrets
+		) extends AppHostSettingsService {
+			/**
+			 * @param array<int, string> $hookSecrets What the secretConfigKeys() hook answers.
+			 */
+			public function __construct(
+				string $appId,
+				IAppConfig $appConfig,
+				IAppManager $appManager,
+				ContainerInterface $container,
+				IGroupManager $groupManager,
+				IUserSession $userSession,
+				LoggerInterface $logger,
+				private readonly array $hookSecrets,
+			) {
+				parent::__construct($appId, $appConfig, $appManager, $container, $groupManager, $userSession, $logger);
+			}
 
-		$service->updateSettings(['register' => 'new-token']);
+			protected function configKeys(): array {
+				return ['register', 'apiToken'];
+			}
 
-		$this->assertCount(1, $this->written, 'one changed key, one row');
-		return $this->written[0]->getChanged();
+			protected function secretConfigKeys(): array {
+				return $this->hookSecrets;
+			}
+		};
+
+		$service->updateSettings(['register' => 'new-token', 'apiToken' => 'new-key']);
+
+		$this->assertCount(2, $this->written, 'two changed keys, two rows');
+		$changed = [];
+		foreach ($this->written as $row) {
+			$changed[$row->getChanged()['key']] = $row->getChanged();
+		}
+
+		return $changed;
 	}
 
 	public function testAKeyDeclaredSecretIsMaskedOnTheTrail(): void {
@@ -124,9 +154,8 @@ class AppHostSettingsSecretAuditTest extends TestCase {
 				'info' => ['version' => '1.0.0'],
 				'register' => [SettingsChangeAuditor::SECRET_KEY => true],
 			]
-		);
+		)['register'];
 
-		$this->assertSame('register', $changed['key']);
 		$this->assertTrue($changed['secret']);
 		$this->assertSame(SettingsChangeAuditor::MASK, $changed['old']);
 		$this->assertSame(SettingsChangeAuditor::MASK, $changed['new']);
@@ -134,10 +163,28 @@ class AppHostSettingsSecretAuditTest extends TestCase {
 	}
 
 	public function testAnUndeclaredKeyKeepsItsValues(): void {
-		$changed = $this->saveRegisterSetting(['info' => ['version' => '1.0.0']]);
+		$changed = $this->saveRegisterSetting(['info' => ['version' => '1.0.0']])['register'];
 
 		$this->assertFalse($changed['secret']);
 		$this->assertSame('old-token', $changed['old']);
 		$this->assertSame('new-token', $changed['new']);
+	}
+
+	public function testTheHookKeysAndTheDeclaredKeysAreBothMasked(): void {
+		$changed = $this->saveRegisterSetting(
+			['register' => [SettingsChangeAuditor::SECRET_KEY => true]],
+			['apiToken']
+		);
+
+		$this->assertSame(SettingsChangeAuditor::MASK, $changed['register']['new'], 'declared in the register document');
+		$this->assertSame(SettingsChangeAuditor::MASK, $changed['apiToken']['new'], 'named by the hook');
+		$this->assertSame(SettingsChangeAuditor::MASK, $changed['apiToken']['old']);
+	}
+
+	public function testWithoutARegisterDocumentTheHookKeysStillApply(): void {
+		$changed = $this->saveRegisterSetting([], ['apiToken']);
+
+		$this->assertSame(SettingsChangeAuditor::MASK, $changed['apiToken']['new']);
+		$this->assertSame('new-token', $changed['register']['new']);
 	}
 }
