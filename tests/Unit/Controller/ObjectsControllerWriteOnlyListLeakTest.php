@@ -38,6 +38,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -66,6 +67,14 @@ use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectsController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectsControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectStore
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectTransfer
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectGovernanceServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectsExtensions
+ * @uses \OCA\OpenRegister\Controller\Support\GeoServices
+ * @uses \OCA\OpenRegister\Controller\Support\LinkedDataServices
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
@@ -293,14 +302,14 @@ class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 		$magicMapper->method('searchObjectsInRegisterSchemaTable')->willReturn([$this->sourceEntity()]);
 		$magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(1);
 		$magicMapper->method('getIgnoredFilters')->willReturn([]);
-		$this->registerService(MagicMapper::class, fn () => $magicMapper);
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, fn () => $magicMapper);
 
 		// The REAL RenderObject — the whole point of this test. Mocking it here is what
 		// let #460 hide behind a green suite.
 		$renderObject = $this->realRenderObject();
 		$this->registerService(RenderObject::class, fn () => $renderObject);
 
-		$controller = new ObjectsController(
+		$controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,

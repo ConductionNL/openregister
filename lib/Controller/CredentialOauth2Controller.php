@@ -48,6 +48,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\CredentialOauth2ControllerServices;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\OAuth2ClientNotConfiguredException;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository;
@@ -109,22 +110,70 @@ class CredentialOauth2Controller extends Controller {
 	public const THROTTLE_ACTION = ThrottledSurfaces::OAUTH2_CALLBACK;
 
 	/**
+	 * Builds authorization URLs and redeems codes.
+	 *
+	 * @var OAuth2ConnectService
+	 */
+	private readonly OAuth2ConnectService $connect;
+
+	/**
+	 * Issues and redeems the signed state.
+	 *
+	 * @var OAuth2StateService
+	 */
+	private readonly OAuth2StateService $states;
+
+	/**
+	 * Decides where a relay may forward.
+	 *
+	 * @var OAuth2RelayGuard
+	 */
+	private readonly OAuth2RelayGuard $relay;
+
+	/**
+	 * Loads, gates and disables a stored connection.
+	 *
+	 * @var OAuth2ConnectionRepository
+	 */
+	private readonly OAuth2ConnectionRepository $connections;
+
+	/**
+	 * This instance's own callback, metadata and return URLs.
+	 *
+	 * @var OAuth2Endpoints
+	 */
+	private readonly OAuth2Endpoints $endpoints;
+
+	/**
+	 * The current session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Registers failed callback attempts (ADR-082).
+	 *
+	 * @var IThrottler
+	 */
+	private readonly IThrottler $throttler;
+
+	/**
+	 * Secret-free diagnostics.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The current request.
-	 * @param OAuth2ConnectService $connect Builds authorization URLs and redeems codes.
-	 * @param OAuth2StateService $states Issues and redeems the signed state.
-	 * @param OAuth2RelayGuard $relay Decides where a relay may forward.
-	 * @param OAuth2ConnectionRepository $connections Loads, gates and disables a stored connection.
-	 * @param OAuth2Endpoints $endpoints This instance's own callback, metadata and return URLs.
-	 * @param IUserSession $userSession The current session.
-	 * @param IThrottler $throttler Registers failed callback attempts (ADR-082).
-	 * @param LoggerInterface $logger Secret-free diagnostics.
+	 * @param CredentialOauth2ControllerServices $services The credential oauth2 controller services.
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Ten, of which two — `$appName`
 	 * and `$request` — are the framework's and cannot be removed from a Nextcloud
 	 * controller. The remaining eight are each a distinct role, and the list is
 	 * already the result of splitting two of them out: the storage and authorization
@@ -137,16 +186,17 @@ class CredentialOauth2Controller extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly OAuth2ConnectService $connect,
-		private readonly OAuth2StateService $states,
-		private readonly OAuth2RelayGuard $relay,
-		private readonly OAuth2ConnectionRepository $connections,
-		private readonly OAuth2Endpoints $endpoints,
-		private readonly IUserSession $userSession,
-		private readonly IThrottler $throttler,
-		private readonly LoggerInterface $logger,
+		CredentialOauth2ControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->connect = $services->domain->connect;
+		$this->states = $services->domain->states;
+		$this->relay = $services->domain->relay;
+		$this->connections = $services->mappers->connections;
+		$this->endpoints = $services->domain->endpoints;
+		$this->userSession = $services->platform->userSession;
+		$this->throttler = $services->platform->throttler;
+		$this->logger = $services->platform->logger;
 	}//end __construct()
 
 	/**

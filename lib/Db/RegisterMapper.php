@@ -77,6 +77,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	use MultiTenancyTrait;
+	use SlugIdLookupTrait;
 
 	/**
 	 * Maximum number of expressions allowed in a single SQL IN() list.
@@ -827,7 +828,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			$registerId = $entity->getId();
 		}
 
-		$objectEntityMapper = $this->container->get(MagicMapper::class);
+		$objectEntityMapper = $this->container->get(MagicMapperInterface::class);
 		$stats = $objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
 		if (($stats['total'] ?? 0) > 0) {
 			throw new ValidationException(message: 'Cannot delete register: objects are still attached.');
@@ -987,89 +988,4 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 
 		return null;
 	}//end hasSchemaWithTitle()
-
-	/**
-	 * Get all register ID to slug mappings
-	 *
-	 * @return array<string,string> Array mapping register IDs to their slugs
-	 */
-	public function getIdToSlugMap(): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id', 'slug')
-			->from($this->getTableName());
-
-		$result = $qb->executeQuery();
-		$mappings = [];
-		while (($row = $result->fetch()) !== false) {
-			$mappings[$row['id']] = $row['slug'];
-		}
-
-		return $mappings;
-	}//end getIdToSlugMap()
-
-	/**
-	 * Get all register slug to ID mappings
-	 *
-	 * @return array<string,string> Array mapping register slugs to their IDs
-	 */
-	public function getSlugToIdMap(): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id', 'slug')
-			->from($this->getTableName());
-
-		$result = $qb->executeQuery();
-		$mappings = [];
-		while (($row = $result->fetch()) !== false) {
-			$mappings[$row['slug']] = $row['id'];
-		}
-
-		return $mappings;
-	}//end getSlugToIdMap()
-
-	/**
-	 * Resolve a bounded set of register slugs to their primary-key ids.
-	 *
-	 * The register twin of {@see SchemaMapper::findIdsBySlugs()}; see that
-	 * docblock for why filtered event subscription must not use
-	 * {@see getSlugToIdMap()} on the write path.
-	 *
-	 * @param array<int,string> $slugs Register slugs to resolve.
-	 *
-	 * @return array<string,array<int,string>> Lower-cased slug => matching ids.
-	 *                                         Empty when $slugs is empty.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 */
-	public function findIdsBySlugs(array $slugs): array {
-		if ($slugs === []) {
-			return [];
-		}
-
-		$lowered = array_values(array_unique(array_map('strtolower', $slugs)));
-
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id', 'slug')
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->in(
-					$qb->func()->lower('slug'),
-					$qb->createNamedParameter(value: $lowered, type: IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			);
-
-		$result = $qb->executeQuery();
-		$map = array_fill_keys($lowered, []);
-		while (($row = $result->fetch()) !== false) {
-			$key = strtolower((string)$row['slug']);
-			if (isset($map[$key]) === false) {
-				$map[$key] = [];
-			}
-
-			$map[$key][] = (string)$row['id'];
-		}
-
-		$result->closeCursor();
-
-		return $map;
-	}//end findIdsBySlugs()
 }//end class

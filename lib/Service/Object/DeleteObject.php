@@ -37,7 +37,7 @@ use DateTimeImmutable;
 use Exception;
 use JsonSerializable;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\Register;
@@ -142,8 +142,8 @@ class DeleteObject {
 	/**
 	 * Constructor for DeleteObject handler.
 	 *
-	 * @param MagicMapper $objectEntityMapper Object entity data mapper.
-	 * @param CacheHandler $cacheHandler Object entity and query cache
+	 * @param MagicMapperInterface $objectEntityMapper Object entity data mapper.
+	 * @param CacheHandlerInterface $cacheHandler Object entity and query cache
 	 * @param IUserSession $userSession User session service
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for logs
 	 * @param SettingsServiceInterface $settingsService Settings service for trail settings
@@ -161,8 +161,8 @@ class DeleteObject {
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI constructor wires all delete-path collaborators
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectEntityMapper,
-		private readonly CacheHandler $cacheHandler,
+		private readonly MagicMapperInterface $objectEntityMapper,
+		private readonly CacheHandlerInterface $cacheHandler,
 		private readonly IUserSession $userSession,
 		AuditTrailMapperInterface $auditTrailMapper,
 		SettingsServiceInterface $settingsService,

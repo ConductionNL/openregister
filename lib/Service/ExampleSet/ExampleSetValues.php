@@ -329,7 +329,7 @@ class ExampleSetValues {
 			'file'   => $this->fileId(files: (array) ($context['files'] ?? []), reference: $rest),
 			'view'   => $this->pathIn(entries: (array) ($context['views'] ?? []), reference: $rest),
 			'task'   => $this->pathIn(entries: (array) ($context['tasks'] ?? []), reference: $rest),
-			'flow'   => $this->pathIn(entries: (array) ($context['flows'] ?? []), reference: $rest),
+			'flow'   => $this->pathIn(entries: (array) ($context['flows'] ?? []), reference: $this->flowReference(rest: $rest)),
 			'accessLink' => $this->pathIn(entries: (array) ($context['accessLinks'] ?? []), reference: $rest),
 			'lookup' => $this->present(value: ($context['lookups'][$rest] ?? null)),
 			'account' => $this->pathIn(entries: (array) ($context['accounts'] ?? []), reference: $rest),
@@ -341,6 +341,23 @@ class ExampleSetValues {
 			default  => null,
 		};
 	}//end valueOf()
+
+	/**
+	 * A flow reference, with `self` read as `self.uuid`.
+	 *
+	 * @param string $rest The reference after `flow:`.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-flow-may-quote-its-own-uuid
+	 */
+	private function flowReference(string $rest): string {
+		if ($rest === 'self') {
+			return 'self.uuid';
+		}
+
+		return $rest;
+	}//end flowReference()
 
 	/**
 	 * The id of one file an object declared earlier in the fragment carries.

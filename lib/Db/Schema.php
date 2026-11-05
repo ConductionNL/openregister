@@ -130,6 +130,7 @@ use stdClass;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class Schema extends Entity implements JsonSerializable, SchemaInterface {
+	use JsonFieldsTrait;
 
 	/**
 	 * Unique identifier for the schema
@@ -1098,26 +1099,6 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	public function getArchive(): array {
 		return ($this->archive ?? []);
 	}//end getArchive()
-
-	/**
-	 * Get JSON fields from the entity
-	 *
-	 * Returns all fields that are of type 'json'
-	 *
-	 * @return string[] List of JSON field names
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
 
 	/**
 	 * Validate the schema properties
@@ -2984,7 +2965,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-schema-configuration-must-accept-and-persist-the-object-slug-keys
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-schema-configuration-must-accept-and-persist-the-object-slug-keys
 	 */
 	private function validateConfigurationArray(array $configuration): array {
 		$validatedConfig = [];

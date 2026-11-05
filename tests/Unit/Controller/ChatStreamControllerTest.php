@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ChatStreamControllerFactory;
+
 use OCA\OpenRegister\Controller\ChatStreamController;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\ConversationMapper;
@@ -130,7 +132,7 @@ class ChatStreamControllerTest extends TestCase {
 	}//end setUp()
 
 	private function makeController(): TestableChatStreamController {
-		return new TestableChatStreamController(
+		return new TestableChatStreamController(...ChatStreamControllerFactory::args(
 			appName: 'openregister',
 			request: $this->request,
 			chatService: $this->chatService,
@@ -139,7 +141,7 @@ class ChatStreamControllerTest extends TestCase {
 			logger: $this->logger,
 			userSession: $this->userSession,
 			db: $this->db
-		);
+		));
 	}//end makeController()
 
 	/**

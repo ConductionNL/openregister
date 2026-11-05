@@ -26,7 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Controller\Support\CalculationsControllerServices;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -44,28 +45,54 @@ use Throwable;
 class CalculationsController extends Controller {
 
 	/**
+	 * The published operator catalogue.
+	 *
+	 * @var OperatorCatalogue
+	 */
+	private readonly OperatorCatalogue $catalogue;
+
+	/**
+	 * Dry-run evaluation of an unsaved declaration.
+	 *
+	 * @var CalculationTrialService
+	 */
+	private readonly CalculationTrialService $trials;
+
+	/**
+	 * Register lookup, scoped to the caller.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema lookup, scoped to the caller.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
-	 * @param OperatorCatalogue $catalogue The published operator catalogue.
-	 * @param CalculationTrialService $trials Dry-run evaluation of an unsaved declaration.
-	 * @param RegisterMapperInterface $registerMapper Register lookup, scoped to the caller.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup, scoped to the caller.
-	 * @param MagicMapper $objectMapper Object lookup, scoped to the caller by RBAC and tenancy.
+	 * @param CalculationsControllerServices $services The calculations controller services.
+	 * @param MagicMapperInterface $objectMapper Object lookup, scoped to the caller by RBAC and tenancy.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly OperatorCatalogue $catalogue,
-		private readonly CalculationTrialService $trials,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapper $objectMapper,
+		CalculationsControllerServices $services,
+		private readonly MagicMapperInterface $objectMapper,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->catalogue = $services->catalogue;
+		$this->trials = $services->trials;
+		$this->registerMapper = $services->registerMapper;
+		$this->schemaMapper = $services->schemaMapper;
 
 	}//end __construct()
 

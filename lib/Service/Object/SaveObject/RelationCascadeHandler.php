@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -59,7 +59,7 @@ class RelationCascadeHandler {
 	/**
 	 * Constructor for RelationCascadeHandler.
 	 *
-	 * @param MagicMapper $objectEntityMapper Object entity data mapper.
+	 * @param MagicMapperInterface $objectEntityMapper Object entity data mapper.
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations.
 	 * @param RegisterMapperInterface $registerMapper Register mapper for register operations.
 	 * @param LoggerInterface $logger Logger interface for logging operations.
@@ -67,7 +67,7 @@ class RelationCascadeHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly LoggerInterface $logger,

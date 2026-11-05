@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Calendar;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\Calendar\ICalendarProvider;
@@ -64,9 +64,9 @@ class RegisterCalendarProvider implements ICalendarProvider {
 	/**
 	 * The MagicMapper for querying objects
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface
 	 */
-	private MagicMapper $magicMapper;
+	private MagicMapperInterface $magicMapper;
 
 	/**
 	 * The user session for authentication context
@@ -101,7 +101,7 @@ class RegisterCalendarProvider implements ICalendarProvider {
 	 *
 	 * @param SchemaMapperInterface $schemaMapper The schema mapper
 	 * @param RegisterMapperInterface $registerMapper The register mapper
-	 * @param MagicMapper $magicMapper The MagicMapper
+	 * @param MagicMapperInterface $magicMapper The MagicMapper
 	 * @param IUserSession $userSession The user session
 	 * @param LoggerInterface $logger Logger instance
 	 * @param CalendarEventTransformer $transformer The event transformer
@@ -109,7 +109,7 @@ class RegisterCalendarProvider implements ICalendarProvider {
 	public function __construct(
 		SchemaMapperInterface $schemaMapper,
 		RegisterMapperInterface $registerMapper,
-		MagicMapper $magicMapper,
+		MagicMapperInterface $magicMapper,
 		IUserSession $userSession,
 		LoggerInterface $logger,
 		CalendarEventTransformer $transformer,

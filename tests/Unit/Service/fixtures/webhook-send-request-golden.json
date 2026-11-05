@@ -1,0 +1,330 @@
+{
+    "cap above timeout": {
+        "result": {
+            "status_code": 200,
+            "body": "ok"
+        },
+        "sent": {
+            "method": "POST",
+            "uri": "https://93.184.216.34/hook",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/json",
+                    "User-Agent": "OpenRegister-Webhooks/1.0"
+                },
+                "timeout": 5,
+                "connect_timeout": 10,
+                "allow_redirects": {
+                    "max": 5,
+                    "strict": true,
+                    "referer": false,
+                    "protocols": [
+                        "http",
+                        "https"
+                    ],
+                    "track_redirects": true
+                },
+                "json": {
+                    "kind": "thing",
+                    "id": 5
+                }
+            },
+            "redirects": {
+                "https://93.184.216.34/next": "allowed",
+                "http://127.0.0.1/next": "RuntimeException"
+            }
+        }
+    },
+    "cap below timeout": {
+        "result": {
+            "status_code": 200,
+            "body": "ok"
+        },
+        "sent": {
+            "method": "POST",
+            "uri": "https://93.184.216.34/hook",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/json",
+                    "User-Agent": "OpenRegister-Webhooks/1.0"
+                },
+                "timeout": 10,
+                "connect_timeout": 10,
+                "allow_redirects": {
+                    "max": 5,
+                    "strict": true,
+                    "referer": false,
+                    "protocols": [
+                        "http",
+                        "https"
+                    ],
+                    "track_redirects": true
+                },
+                "json": {
+                    "kind": "thing",
+                    "id": 5
+                }
+            },
+            "redirects": {
+                "https://93.184.216.34/next": "allowed",
+                "http://127.0.0.1/next": "RuntimeException"
+            }
+        }
+    },
+    "cap equal timeout": {
+        "result": {
+            "status_code": 200,
+            "body": "ok"
+        },
+        "sent": {
+            "method": "POST",
+            "uri": "https://93.184.216.34/hook",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/json",
+                    "User-Agent": "OpenRegister-Webhooks/1.0"
+                },
+                "timeout": 10,
+                "connect_timeout": 10,
+                "allow_redirects": {
+                    "max": 5,
+                    "strict": true,
+                    "referer": false,
+                    "protocols": [
+                        "http",
+                        "https"
+                    ],
+                    "track_redirects": true
+                },
+                "json": {
+                    "kind": "thing",
+                    "id": 5
+                }
+            },
+            "redirects": {
+                "https://93.184.216.34/next": "allowed",
+                "http://127.0.0.1/next": "RuntimeException"
+            }
+        }
+    },
+    "cap with zero timeout": {
+        "result": {
+            "status_code": 200,
+            "body": "ok"
+        },
+        "sent": {
+            "method": "POST",
+            "uri": "https://93.184.216.34/hook",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/json",
+                    "User-Agent": "OpenRegister-Webhooks/1.0"
+                },
+                "timeout": 10,
+                "connect_timeout": 10,
+                "allow_redirects": {
+                    "max": 5,
+                    "strict": true,
+                    "referer": false,
+                    "protocols": [
+                        "http",
+                        "https"
+                    ],
+                    "track_redirects": true
+                },
+                "json": {
+                    "kind": "thing",
+                    "id": 5
+                }
+            },
+            "redirects": {
+                "https://93.184.216.34/next": "allowed",
+                "http://127.0.0.1/next": "RuntimeException"
+            }
+        }
+    },
+    "get": {
+        "result": {
+            "status_code": 200,
+            "body": "ok"
+        },
+        "sent": {
+            "method": "get",
+            "uri": "https://93.184.216.34/hook",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/json",
+                    "User-Agent": "OpenRegister-Webhooks/1.0"
+                },
+                "timeout": 30,
+                "allow_redirects": {
+                    "max": 5,
+                    "strict": true,
+                    "referer": false,
+                    "protocols": [
+                        "http",
+                        "https"
+                    ],
+                    "track_redirects": true
+                },
+                "query": {
+                    "kind": "thing",
+                    "id": 5
+                }
+            },
+            "redirects": {
+                "https://93.184.216.34/next": "allowed",
+                "http://127.0.0.1/next": "RuntimeException"
+            }
+        }
+    },
+    "long body": {
+        "result": {
+            "status_code": 500,
+            "body": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+        },
+        "sent": {
+            "method": "POST",
+            "uri": "https://93.184.216.34/hook",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/json",
+                    "User-Agent": "OpenRegister-Webhooks/1.0"
+                },
+                "timeout": 30,
+                "allow_redirects": {
+                    "max": 5,
+                    "strict": true,
+                    "referer": false,
+                    "protocols": [
+                        "http",
+                        "https"
+                    ],
+                    "track_redirects": true
+                },
+                "json": {
+                    "kind": "thing",
+                    "id": 5
+                }
+            },
+            "redirects": {
+                "https://93.184.216.34/next": "allowed",
+                "http://127.0.0.1/next": "RuntimeException"
+            }
+        }
+    },
+    "post plain": {
+        "result": {
+            "status_code": 200,
+            "body": "ok"
+        },
+        "sent": {
+            "method": "POST",
+            "uri": "https://93.184.216.34/hook",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/json",
+                    "User-Agent": "OpenRegister-Webhooks/1.0"
+                },
+                "timeout": 30,
+                "allow_redirects": {
+                    "max": 5,
+                    "strict": true,
+                    "referer": false,
+                    "protocols": [
+                        "http",
+                        "https"
+                    ],
+                    "track_redirects": true
+                },
+                "json": {
+                    "kind": "thing",
+                    "id": 5
+                }
+            },
+            "redirects": {
+                "https://93.184.216.34/next": "allowed",
+                "http://127.0.0.1/next": "RuntimeException"
+            }
+        }
+    },
+    "private target allowed": {
+        "result": {
+            "status_code": 200,
+            "body": "ok"
+        },
+        "sent": {
+            "method": "POST",
+            "uri": "http://10.0.0.5/hook",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/json",
+                    "User-Agent": "OpenRegister-Webhooks/1.0"
+                },
+                "timeout": 30,
+                "allow_redirects": {
+                    "max": 5,
+                    "strict": true,
+                    "referer": false,
+                    "protocols": [
+                        "http",
+                        "https"
+                    ],
+                    "track_redirects": true
+                },
+                "json": {
+                    "kind": "thing",
+                    "id": 5
+                }
+            },
+            "redirects": {
+                "https://93.184.216.34/next": "allowed",
+                "http://127.0.0.1/next": "allowed"
+            }
+        }
+    },
+    "private target refused": {
+        "error": [
+            "RuntimeException",
+            "Webhook target URL resolves to a blocked IP range (RFC-1918)"
+        ],
+        "sent": []
+    },
+    "secret and headers": {
+        "result": {
+            "status_code": 200,
+            "body": "ok"
+        },
+        "sent": {
+            "method": "POST",
+            "uri": "https://93.184.216.34/hook",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/json",
+                    "User-Agent": "Mine",
+                    "X-A": "1",
+                    "X-Webhook-Signature": "567868b74b67a7d06e0e3db02335add17fb3c1ee38cd7cd174ac7da6038d84be"
+                },
+                "timeout": 30,
+                "allow_redirects": {
+                    "max": 5,
+                    "strict": true,
+                    "referer": false,
+                    "protocols": [
+                        "http",
+                        "https"
+                    ],
+                    "track_redirects": true
+                },
+                "json": {
+                    "kind": "thing",
+                    "id": 5
+                }
+            },
+            "redirects": {
+                "https://93.184.216.34/next": "allowed",
+                "http://127.0.0.1/next": "RuntimeException"
+            }
+        }
+    }
+}

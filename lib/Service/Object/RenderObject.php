@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\Object;
 use Adbar\Dot;
 use Exception;
 use OCA\OpenRegister\Db\FileMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -209,13 +209,13 @@ class RenderObject {
 	 * Constructor for RenderObject handler.
 	 *
 	 * @param FileMapperInterface $fileMapper File mapper for database operations.
-	 * @param MagicMapper $objectEntityMapper Object entity mapper for database operations.
+	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper for database operations.
 	 * @param RegisterMapperInterface $registerMapper Register mapper for database operations.
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for database operations.
 	 * @param ISystemTagManager $systemTagManager System tag manager for file tags.
 	 * @param ISystemTagObjectMapper $systemTagMapper System tag object mapper for file tags.
-	 * @param CacheHandler $cacheHandler Cache service for performance optimization.
-	 * @param CacheHandler $objectCacheService Object cache service for optimized loading.
+	 * @param CacheHandlerInterface $cacheHandler Cache service for performance optimization.
+	 * @param CacheHandlerInterface $objectCacheService Object cache service for optimized loading.
 	 * @param PropertyRbacHandler $propertyRbacHandler Property-level RBAC handler.
 	 * @param LoggerInterface $logger Logger for performance monitoring.
 	 * @param FileService $fileService File service for file operations.
@@ -248,13 +248,13 @@ class RenderObject {
 	 */
 	public function __construct(
 		private readonly FileMapperInterface $fileMapper,
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ISystemTagManager $systemTagManager,
 		private readonly ISystemTagObjectMapper $systemTagMapper,
-		private readonly CacheHandler $cacheHandler,
-		private readonly CacheHandler $objectCacheService,
+		private readonly CacheHandlerInterface $cacheHandler,
+		private readonly CacheHandlerInterface $objectCacheService,
 		private readonly PropertyRbacHandler $propertyRbacHandler,
 		private readonly LoggerInterface $logger,
 		private readonly FileService $fileService,
@@ -2518,16 +2518,7 @@ class RenderObject {
 			return $objectData;
 		}
 
-		return $this->extendObject(
-			entity: $entity,
-			_extend: $context->extend,
-			objectData: $objectData,
-			depth: $context->depth,
-			_filter: $context->filter,
-			_fields: $context->fields,
-			_unset: $context->unset,
-			visitedIds: $context->visitedIds
-		);
+		return $this->extendObject(entity: $entity, objectData: $objectData, context: $context);
 	}//end applyExtensions()
 
 	/**
@@ -2755,13 +2746,13 @@ class RenderObject {
 		}
 
 		try {
-			return $this->attachLanguageMeta(
-				objectData: $objectData,
-				preResolveData: $preResolveData,
+			$subject = new LanguageMetaSubject(
 				entity: $entity,
 				schema: $schema,
-				register: $register
+				registerDefault: ($register?->getDefaultLanguage() ?? 'nl'),
+				preResolveData: $preResolveData
 			);
+			return $this->attachLanguageMeta(objectData: $objectData, subject: $subject);
 		} catch (\Throwable $e) {
 			$this->logRenderFailure(failure: 'languageMeta attach failed for', entity: $entity, error: $e);
 		}
@@ -3399,79 +3390,21 @@ class RenderObject {
 	}//end shouldAttachLanguageMeta()
 
 	/**
-	 * Attach the `_meta.languageMeta` envelope describing per-property
-	 * language metadata for translatable properties.
+	 * Attach the `_meta.languageMeta` envelope, keeping any existing `_meta` keys.
 	 *
-	 * The envelope is OFF by default; this method is only called when
-	 * `?_translationMeta=true` is on the request.
+	 * Each translatable property gets its served language, source language,
+	 * whether the served language is the source, and the workflow status of
+	 * its translation in the served language.
 	 *
-	 * @param array<string, mixed> $objectData Rendered data (post resolveTranslationsForRender).
-	 * @param array<string, mixed> $preResolveData Raw data (pre resolveTranslationsForRender).
-	 * @param ObjectEntity $entity The entity being rendered.
-	 * @param Schema $schema The schema for the entity.
-	 * @param Register|null $register The owning register (for default fallback).
+	 * @param array               $objectData The rendered object data
+	 * @param LanguageMetaSubject $subject    The entity, schema, register default and raw data
 	 *
-	 * @return array<string, mixed> Object data with `_meta.languageMeta` attached.
+	 * @return array The object data with the envelope, or unchanged without translatable properties
 	 *
 	 * @spec openspec/specs/i18n-source-of-truth/spec.md
 	 */
-	private function attachLanguageMeta(
-		array $objectData,
-		array $preResolveData,
-		ObjectEntity $entity,
-		Schema $schema,
-		?Register $register,
-	): array {
-		$translatableProps = $this->translationHandler->getTranslatableProperties($schema);
-		if (count($translatableProps) === 0) {
-			return $objectData;
-		}
-
-		$uuid = (string)($entity->getUuid() ?? '');
-		if ($register !== null) {
-			$registerDefault = $register->getDefaultLanguage();
-		} else {
-			$registerDefault = 'nl';
-		}
-
-		$served = $this->languageService->getPreferredLanguage();
-
-		$languageMeta = [];
-		foreach ($translatableProps as $property) {
-			// Determine source language from object body override → schema
-			// property modifier → register default.
-			$sourceLanguage = $this->resolveSourceLanguageForProperty(
-				schema: $schema,
-				preResolveData: $preResolveData,
-				property: $property,
-				registerDefault: $registerDefault
-			);
-
-			// Look up status from the sidecar for the served language.
-			$status = 'source';
-			if ($uuid !== '' && $served !== $sourceLanguage) {
-				$row = null;
-				try {
-					$row = $this->translationMapper->findOne($uuid, $property, $served);
-				} catch (\Throwable $e) {
-					$row = null;
-				}
-
-				if ($row !== null) {
-					$status = (string)($row->getStatus() ?? Translation::STATUS_DRAFT);
-				} else {
-					$status = 'missing';
-				}
-			}
-
-			$languageMeta[$property] = [
-				'served' => $served,
-				'sourceLanguage' => $sourceLanguage,
-				'isSource' => ($served === $sourceLanguage),
-				'status' => $status,
-			];
-		}//end foreach
-
+	private function attachLanguageMeta(array $objectData, LanguageMetaSubject $subject): array {
+		$languageMeta = $this->languageMetaFor(subject: $subject);
 		if (count($languageMeta) === 0) {
 			return $objectData;
 		}
@@ -3485,6 +3418,103 @@ class RenderObject {
 		$objectData['_meta'] = $existingMeta;
 		return $objectData;
 	}//end attachLanguageMeta()
+
+	/**
+	 * The language meta of every translatable property of the subject.
+	 *
+	 * The source language comes from the object body override, then the schema
+	 * property, then the register default ('nl' without a register).
+	 *
+	 * @param LanguageMetaSubject $subject The entity, schema, register default and raw data
+	 *
+	 * @return array<string, array{served: string, sourceLanguage: string, isSource: bool, status: string}>
+	 *
+	 * @spec openspec/specs/i18n-source-of-truth/spec.md
+	 */
+	private function languageMetaFor(LanguageMetaSubject $subject): array {
+		$translatableProps = $this->translationHandler->getTranslatableProperties($subject->schema);
+		if (count($translatableProps) === 0) {
+			return [];
+		}
+
+		$served = $this->languageService->getPreferredLanguage();
+		$languageMeta = [];
+		foreach ($translatableProps as $property) {
+			$sourceLanguage = $this->resolveSourceLanguageForProperty(
+				schema: $subject->schema,
+				preResolveData: $subject->preResolveData,
+				property: $property,
+				registerDefault: $subject->registerDefault
+			);
+			$languageMeta[$property] = $this->languageEntry(served: $served, sourceLanguage: $sourceLanguage);
+		}
+
+		return $this->withSidecarStatus(languageMeta: $languageMeta, uuid: (string) ($subject->entity->getUuid() ?? ''));
+	}//end languageMetaFor()
+
+	/**
+	 * The language meta of one property before its sidecar status is known.
+	 *
+	 * @param string $served         The served language
+	 * @param string $sourceLanguage The property's source language
+	 *
+	 * @return array{served: string, sourceLanguage: string, isSource: bool, status: string}
+	 *
+	 * @spec openspec/specs/i18n-source-of-truth/spec.md
+	 */
+	private function languageEntry(string $served, string $sourceLanguage): array {
+		return ['served' => $served, 'sourceLanguage' => $sourceLanguage, 'isSource' => ($served === $sourceLanguage), 'status' => 'source'];
+	}//end languageEntry()
+
+	/**
+	 * Set the status of every property served in another language than its
+	 * source from the translation sidecar: the row's status (draft when unset),
+	 * or 'missing' when there is no row or it cannot be read.
+	 *
+	 * Without a uuid every status stays 'source'.
+	 *
+	 * @param array  $languageMeta The language meta per property
+	 * @param string $uuid         The object uuid
+	 *
+	 * @return array The language meta with sidecar statuses
+	 *
+	 * @spec openspec/specs/i18n-source-of-truth/spec.md
+	 */
+	private function withSidecarStatus(array $languageMeta, string $uuid): array {
+		foreach ($languageMeta as $property => $entry) {
+			if ($uuid === '' || $entry['isSource'] === true) {
+				continue;
+			}
+
+			try {
+				$row = $this->translationMapper->findOne($uuid, $property, $entry['served']);
+			} catch (\Throwable $e) {
+				$row = null;
+			}
+
+			$languageMeta[$property]['status'] = $this->translationRowStatus(row: $row);
+		}
+
+		return $languageMeta;
+	}//end withSidecarStatus()
+
+	/**
+	 * The workflow status of a sidecar translation row: its status (draft when
+	 * unset), or 'missing' without a row.
+	 *
+	 * @param Translation|null $row The sidecar row
+	 *
+	 * @return string The status
+	 *
+	 * @spec openspec/specs/i18n-source-of-truth/spec.md
+	 */
+	private function translationRowStatus(?Translation $row): string {
+		if ($row === null) {
+			return 'missing';
+		}
+
+		return (string) ($row->getStatus() ?? Translation::STATUS_DRAFT);
+	}//end translationRowStatus()
 
 	/**
 	 * Resolve the source language for a single property from object override
@@ -4015,47 +4045,22 @@ class RenderObject {
 	/**
 	 * Extends an object with additional data based on the extension configuration
 	 *
-	 * @param ObjectEntity $entity The entity to extend
-	 * @param array $_extend Extension configuration
-	 * @param array $objectData Current object data
-	 * @param int $depth Current depth level
-	 * @param array|null $_filter Filters to apply
-	 * @param array|null $_fields Fields to include
-	 * @param array|null $_unset Properties to remove from the rendered entity
-	 * @param array|null $visitedIds ids of objects already handled
+	 * @param ObjectEntity  $entity     The entity to extend
+	 * @param array         $objectData Current object data
+	 * @param RenderContext $context    The render options: the extend list, the depth and the visited ids
 	 *
 	 * @return array The extended object data
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function extendObject(
-		ObjectEntity $entity,
-		array $_extend,
-		array $objectData,
-		int $depth,
-		?array $_filter = [],
-		?array $_fields = [],
-		?array $_unset = [],
-		?array $visitedIds = [],
-	): array {
+	private function extendObject(ObjectEntity $entity, array $objectData, RenderContext $context): array {
+		$_extend = $context->extend;
+
 		// Add register and schema context to @self if requested.
 		if (in_array('@self.register', $_extend) === true || in_array('@self.schema', $_extend) === true) {
 			$self = $objectData['@self'] ?? [];
-
-			if (in_array('@self.register', $_extend) === true) {
-				$register = $this->getRegister(id: $entity->getRegister());
-				if ($register !== null) {
-					$self['register'] = $register->jsonSerialize();
-				}
-			}
-
-			if (in_array('@self.schema', $_extend) === true) {
-				$schema = $this->getSchema(id: $entity->getSchema());
-				if ($schema !== null) {
-					$self['schema'] = $schema->jsonSerialize();
-				}
+			foreach ($this->extendedSelf(entity: $entity, extend: $_extend) as $key => $value) {
+				$self[$key] = $value;
 			}
 
 			$objectData['@self'] = $self;
@@ -4071,8 +4076,8 @@ class RenderObject {
 			entity: $entity,
 			_extend: $_extend,
 			objectData: $objectData,
-			depth: $depth,
-			visitedIds: ($visitedIds ?? [])
+			depth: $context->depth,
+			visitedIds: ($context->visitedIds ?? [])
 		);
 
 		// **PERFORMANCE OPTIMIZATION**: Batch preload all UUIDs that will be extended.
@@ -4082,45 +4087,87 @@ class RenderObject {
 		// every extend UUID for the whole page into $objectsCache, so re-collecting and
 		// re-preloading per row is wasted CPU. Skip it at depth 0 while a page render is
 		// active; nested (depth > 0) extends still preload their own children.
-		$skipPreload = ($this->pageRenderActive === true && $depth === 0);
-		$uuidsToPreload = [];
-		if ($skipPreload === false) {
-			$uuidsToPreload = $this->collectUuidsForExtend(objectData: $objectData, extend: $_extend);
-		}
-
-		if (empty($uuidsToPreload) === false) {
-			$preloadedObjects = $this->objectCacheService->preloadObjects(
-				identifiers: $uuidsToPreload,
-				registerId: $this->registerIdOf(entity: $entity)
-			);
-			// Add preloaded objects to local cache for immediate access.
-			foreach ($preloadedObjects as $object) {
-				$this->objectsCache[$object->getUuid()] = $object;
-				$this->objectsCache[$object->getId()] = $object;
-			}
-
-			$this->logger->debug(
-				message: '[RenderObject] Batch preloaded objects for extend',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'requestedUuids' => count($uuidsToPreload),
-					'loadedObjects' => count($preloadedObjects),
-				]
+		if (($this->pageRenderActive === true && $context->depth === 0) === false) {
+			$this->preloadExtendTargets(
+				entity: $entity,
+				uuids: $this->collectUuidsForExtend(objectData: $objectData, extend: $_extend)
 			);
 		}
 
-		$objectDataDot = $this->handleExtendDot(
+		return $this->handleExtendDot(
 			data: $objectData,
 			_extend: $_extend,
-			depth: $depth,
+			depth: $context->depth,
 			allFlag: in_array('all', $_extend, true),
-			visitedIds: $visitedIds,
+			visitedIds: $context->visitedIds,
 			exposures: $this->exposuresFor(schema: $this->getSchema(id: $entity->getSchema()))
 		);
-
-		return $objectDataDot;
 	}//end extendObject()
+
+	/**
+	 * The register and schema of an entity that its extend list asks to put on @self.
+	 *
+	 * @param ObjectEntity $entity The entity being extended.
+	 * @param array        $extend The extend list.
+	 *
+	 * @return array<string, array> The serialized register and schema, each only when asked for and found.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function extendedSelf(ObjectEntity $entity, array $extend): array {
+		$self = [];
+		if (in_array('@self.register', $extend) === true) {
+			$register = $this->getRegister(id: $entity->getRegister());
+			if ($register !== null) {
+				$self['register'] = $register->jsonSerialize();
+			}
+		}
+
+		if (in_array('@self.schema', $extend) === true) {
+			$schema = $this->getSchema(id: $entity->getSchema());
+			if ($schema !== null) {
+				$self['schema'] = $schema->jsonSerialize();
+			}
+		}
+
+		return $self;
+	}//end extendedSelf()
+
+	/**
+	 * Load the objects an extend will resolve in one query and keep them in the render's object cache.
+	 *
+	 * @param ObjectEntity $entity The entity being extended; its register scopes the load.
+	 * @param array        $uuids  The identifiers to load.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function preloadExtendTargets(ObjectEntity $entity, array $uuids): void {
+		if (empty($uuids) === true) {
+			return;
+		}
+
+		$preloadedObjects = $this->objectCacheService->preloadObjects(
+			identifiers: $uuids,
+			registerId: $this->registerIdOf(entity: $entity)
+		);
+		// Add preloaded objects to local cache for immediate access.
+		foreach ($preloadedObjects as $object) {
+			$this->objectsCache[$object->getUuid()] = $object;
+			$this->objectsCache[$object->getId()] = $object;
+		}
+
+		$this->logger->debug(
+			message: '[RenderObject] Batch preloaded objects for extend',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'requestedUuids' => count($uuids),
+				'loadedObjects' => count($preloadedObjects),
+			]
+		);
+	}//end preloadExtendTargets()
 
 	/**
 	 * The register id an entity lives in, or null when it has none.

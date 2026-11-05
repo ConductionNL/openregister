@@ -34,7 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -69,10 +69,66 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class FacetHandler {
+
+	/**
+	 * The metadata fields a facet can be built on, with their index field and type.
+	 *
+	 * @var array<string, array{title: string, description: string, data_type: string, index_field: string, index_type: string, enabled: bool}>
+	 */
+	private const METADATA_DEFINITIONS = [
+		'register' => [
+			'title' => 'Register',
+			'description' => 'metadata field: Register',
+			'data_type' => 'integer',
+			'index_field' => 'self_register',
+			'index_type' => 'pint',
+			'enabled' => false,
+		],
+		'schema' => [
+			'title' => 'Type',
+			'description' => 'metadata field: Schema',
+			'data_type' => 'integer',
+			'index_field' => 'self_schema',
+			'index_type' => 'pint',
+			'enabled' => true,
+		],
+		'organisation' => [
+			'title' => 'Leverancier',
+			'description' => 'metadata field: Organisation',
+			'data_type' => 'string',
+			'index_field' => 'self_organisation',
+			'index_type' => 'string',
+			'enabled' => true,
+		],
+		'owner' => [
+			'title' => 'Owner',
+			'description' => 'metadata field: Owner',
+			'data_type' => 'string',
+			'index_field' => 'self_owner',
+			'index_type' => 'string',
+			'enabled' => true,
+		],
+		'created' => [
+			'title' => 'Created',
+			'description' => 'metadata field: Created',
+			'data_type' => 'datetime',
+			'index_field' => 'self_created',
+			'index_type' => 'pdate',
+			'enabled' => false,
+		],
+		'updated' => [
+			'title' => 'Updated',
+			'description' => 'metadata field: Updated',
+			'data_type' => 'datetime',
+			'index_field' => 'self_updated',
+			'index_type' => 'pdate',
+			'enabled' => false,
+		],
+	];
 	/**
 	 * Constructor for FacetHandler.
 	 *
-	 * @param MagicMapper $unifiedObjectMapper Unified object mapper with storage routing.
+	 * @param MagicMapperInterface $unifiedObjectMapper Unified object mapper with storage routing.
 	 * @param SchemaMapperInterface $schemaMapper Schema database mapper.
 	 * @param FacetResponseCache $responseCache The response cache in front of facet computation.
 	 * @param LoggerInterface $logger Logger for debugging and monitoring.
@@ -85,7 +141,7 @@ class FacetHandler {
 	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $unifiedObjectMapper,
+		private readonly MagicMapperInterface $unifiedObjectMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly FacetResponseCache $responseCache,
 		private readonly LoggerInterface $logger,
@@ -587,67 +643,6 @@ class FacetHandler {
 	}//end transformFacetsToStandardFormat()
 
 	/**
-	 * Get the metadata facet definitions for @self fields.
-	 *
-	 * @return array Keyed by field name, each value contains title,
-	 *               description, data_type, index_field, index_type, enabled.
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-type-auto-detection-from-property-definitions
-	 */
-	private function getMetadataDefinitions(): array {
-		return [
-			'register' => [
-				'title' => 'Register',
-				'description' => 'metadata field: Register',
-				'data_type' => 'integer',
-				'index_field' => 'self_register',
-				'index_type' => 'pint',
-				'enabled' => false,
-			],
-			'schema' => [
-				'title' => 'Type',
-				'description' => 'metadata field: Schema',
-				'data_type' => 'integer',
-				'index_field' => 'self_schema',
-				'index_type' => 'pint',
-				'enabled' => true,
-			],
-			'organisation' => [
-				'title' => 'Leverancier',
-				'description' => 'metadata field: Organisation',
-				'data_type' => 'string',
-				'index_field' => 'self_organisation',
-				'index_type' => 'string',
-				'enabled' => true,
-			],
-			'owner' => [
-				'title' => 'Owner',
-				'description' => 'metadata field: Owner',
-				'data_type' => 'string',
-				'index_field' => 'self_owner',
-				'index_type' => 'string',
-				'enabled' => true,
-			],
-			'created' => [
-				'title' => 'Created',
-				'description' => 'metadata field: Created',
-				'data_type' => 'datetime',
-				'index_field' => 'self_created',
-				'index_type' => 'pdate',
-				'enabled' => false,
-			],
-			'updated' => [
-				'title' => 'Updated',
-				'description' => 'metadata field: Updated',
-				'data_type' => 'datetime',
-				'index_field' => 'self_updated',
-				'index_type' => 'pdate',
-				'enabled' => false,
-			],
-		];
-	}//end getMetadataDefinitions()
-
-	/**
 	 * Transform @self metadata facets into the standard format.
 	 *
 	 * @param array $metadataFacets The @self facet data keyed by field name.
@@ -660,7 +655,7 @@ class FacetHandler {
 	 */
 	private function transformMetadataFacets(array $metadataFacets, array &$transformed, int $startOrder): int {
 		$order = $startOrder;
-		$metadataDefinitions = $this->getMetadataDefinitions();
+		$metadataDefinitions = self::METADATA_DEFINITIONS;
 
 		foreach ($metadataFacets as $field => $facetData) {
 			$order++;
@@ -1112,10 +1107,6 @@ class FacetHandler {
 	 * @psalm-return array{'@self': array, object_fields: array, non_aggregated_fields: array}
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) PropertySearchProfile reads a property array and
-	 *                                      holds no state; the search paths read it the same
-	 *                                      way, which is what keeps the declaration single.
 	 */
 	private function getFacetableFieldsFromSchemas(array $schemas): array {
 		$facetableFields = [
@@ -1131,101 +1122,163 @@ class FacetHandler {
 		];
 
 		foreach ($schemas as $schema) {
-			// **TYPE SAFETY**: Ensure we have a Schema object.
 			if (($schema instanceof Schema) === false) {
 				continue;
 			}
 
-			try {
-				$schemaId = $schema->getId();
-				$properties = $schema->getProperties() ?? [];
-				foreach ($properties as $propertyKey => $property) {
-					// 🔴 ADVERTISING A FACETABLE FIELD IS THE FIRST HALF OF THE
-					// LEAK AND THE EASIER HALF TO MISS. Even before any values
-					// are computed, naming a governed property here tells a
-					// caller the field exists and invites them to ask for its
-					// buckets. Withholding it at the source means there is no
-					// second place to remember.
-					if ($this->aggregateVisibility()->maySummarise(
-						schema: $schema,
-						property: (string)$propertyKey
-					) === false
-					) {
-						continue;
-					}
-
-					// Encrypted properties are never facetable, even when a schema
-					// author also sets `facetable: true` on one by mistake — the
-					// magic-table value is ciphertext (or, once
-					// MagicMapper::buildTableColumnsFromSchema() skips it, not even a
-					// real column), so grouping by it would be meaningless at best
-					// and a ciphertext leak into facet option labels at worst.
-					if (($property['x-openregister-encrypted'] ?? false) === true) {
-						continue;
-					}
-
-					$matchType = PropertySearchProfile::matchTypeFor(property: $property);
-					$inputControl = PropertySearchProfile::inputControlFor(property: $property);
-					$facetableFields['searchable_fields'][$propertyKey] = [
-						'matchType' => $matchType,
-						'inputControl' => $inputControl,
-						'declared' => PropertySearchProfile::declaresMatchType(property: $property),
-						'title' => $property['title'] ?? null,
-					];
-
-					$facetConfig = $this->normalizeFacetConfig(facetable: $property['facetable'] ?? false);
-					if ($facetConfig === null) {
-						continue;
-					}
-
-					// Determine facet type based on property type.
-					$facetType = $this->determineFacetTypeFromProperty(property: $property);
-
-					if ($facetConfig['aggregated'] === false) {
-						// Track non-aggregated fields separately with schema context.
-						$facetableFields['non_aggregated_fields'][] = [
-							'field' => $propertyKey,
-							'schemaId' => $schemaId,
-							'facetType' => $facetType,
-							'facetConfig' => $facetConfig,
-							'title' => $property['title'] ?? null,
-							'matchType' => $matchType,
-							'inputControl' => $inputControl,
-						];
-					}
-
-					if ($facetConfig['aggregated'] !== false) {
-						// Aggregated fields: merge across schemas (existing behavior).
-						$facetableFields['object_fields'][$propertyKey] = [
-							'type' => $facetType,
-							'title' => $property['title'] ?? null,
-							'facetConfig' => $facetConfig,
-							'matchType' => $matchType,
-							'inputControl' => $inputControl,
-						];
-					}
-				}//end foreach
-			} catch (\Exception $e) {
-				$schemaId = 'unknown';
-				if (method_exists($schema, 'getId') === true) {
-					$schemaId = $schema->getId();
-				}
-
-				$this->logger->error(
-					message: '[FacetHandler] Failed to get facetable fields from schema properties',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'error' => $e->getMessage(),
-						'schemaId' => $schemaId,
-					]
-				);
-				continue;
-			}//end try
-		}//end foreach
+			$facetableFields = $this->collectSchemaFacetableFields(schema: $schema, fields: $facetableFields);
+		}
 
 		return $facetableFields;
 	}//end getFacetableFieldsFromSchemas()
+
+	/**
+	 * Add the searchable and facetable fields of one schema to the discovered set.
+	 *
+	 * A schema whose properties cannot be read is logged and contributes what it
+	 * added before the failure.
+	 *
+	 * @param Schema $schema The schema.
+	 * @param array  $fields The fields discovered so far.
+	 *
+	 * @return array The fields with this schema's fields added.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
+	 */
+	private function collectSchemaFacetableFields(Schema $schema, array $fields): array {
+		try {
+			$schemaId = $schema->getId();
+			foreach ($schema->getProperties() ?? [] as $propertyKey => $property) {
+				// 🔴 ADVERTISING A FACETABLE FIELD IS THE FIRST HALF OF THE
+				// LEAK AND THE EASIER HALF TO MISS. Even before any values
+				// are computed, naming a governed property here tells a
+				// caller the field exists and invites them to ask for its
+				// buckets. Withholding it at the source means there is no
+				// second place to remember.
+				// Encrypted properties are never facetable, even when a schema
+				// author also sets `facetable: true` on one by mistake — the
+				// magic-table value is ciphertext (or, once
+				// MagicMapper::buildTableColumnsFromSchema() skips it, not even a
+				// real column), so grouping by it would be meaningless at best
+				// and a ciphertext leak into facet option labels at worst.
+				if ($this->aggregateVisibility()->maySummarise(schema: $schema, property: (string)$propertyKey) === false
+					|| ($property['x-openregister-encrypted'] ?? false) === true
+				) {
+					continue;
+				}
+
+				$facet = $this->describeFacetProperty(property: $property);
+				$fields['searchable_fields'][$propertyKey] = $facet['searchable'];
+				$fields = $this->addFacetField(
+					fields: $fields,
+					facet: $facet + ['field' => $propertyKey, 'schemaId' => $schemaId]
+				);
+			}
+		} catch (\Exception $e) {
+			$this->logSchemaFacetFailure(schema: $schema, error: $e);
+		}
+
+		return $fields;
+	}//end collectSchemaFacetableFields()
+
+	/**
+	 * Describe one property for search and faceting.
+	 *
+	 * @param array $property The property definition.
+	 *
+	 * @return array The searchable entry, the facet config (null when not facetable),
+	 *               the facet type, the title, the match type and the input control.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) PropertySearchProfile reads a property array and
+	 *                                      holds no state; the search paths read it the same
+	 *                                      way, which is what keeps the declaration single.
+	 */
+	private function describeFacetProperty(array $property): array {
+		$matchType = PropertySearchProfile::matchTypeFor(property: $property);
+		$inputControl = PropertySearchProfile::inputControlFor(property: $property);
+
+		return [
+			'searchable' => [
+				'matchType' => $matchType,
+				'inputControl' => $inputControl,
+				'declared' => PropertySearchProfile::declaresMatchType(property: $property),
+				'title' => $property['title'] ?? null,
+			],
+			'facetConfig' => $this->normalizeFacetConfig(facetable: $property['facetable'] ?? false),
+			'facetType' => $this->determineFacetTypeFromProperty(property: $property),
+			'title' => $property['title'] ?? null,
+			'matchType' => $matchType,
+			'inputControl' => $inputControl,
+		];
+	}//end describeFacetProperty()
+
+	/**
+	 * Add one facetable property to the aggregated or the non-aggregated fields.
+	 *
+	 * Aggregated fields merge across schemas by name; non-aggregated fields are
+	 * kept per schema.
+	 *
+	 * @param array $fields The fields discovered so far.
+	 * @param array $facet  The property description with its field name and schema id.
+	 *
+	 * @return array The fields with this property added, unchanged when it is not facetable.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
+	 */
+	private function addFacetField(array $fields, array $facet): array {
+		if ($facet['facetConfig'] === null) {
+			return $fields;
+		}
+
+		if ($facet['facetConfig']['aggregated'] === false) {
+			$fields['non_aggregated_fields'][] = [
+				'field' => $facet['field'],
+				'schemaId' => $facet['schemaId'],
+				'facetType' => $facet['facetType'],
+				'facetConfig' => $facet['facetConfig'],
+				'title' => $facet['title'],
+				'matchType' => $facet['matchType'],
+				'inputControl' => $facet['inputControl'],
+			];
+			return $fields;
+		}
+
+		$fields['object_fields'][$facet['field']] = [
+			'type' => $facet['facetType'],
+			'title' => $facet['title'],
+			'facetConfig' => $facet['facetConfig'],
+			'matchType' => $facet['matchType'],
+			'inputControl' => $facet['inputControl'],
+		];
+		return $fields;
+	}//end addFacetField()
+
+	/**
+	 * Log a schema whose facetable fields could not be read.
+	 *
+	 * @param Schema     $schema The schema.
+	 * @param \Exception $error  The failure.
+	 *
+	 * @return void
+	 */
+	private function logSchemaFacetFailure(Schema $schema, \Exception $error): void {
+		$schemaId = 'unknown';
+		if (method_exists($schema, 'getId') === true) {
+			$schemaId = $schema->getId();
+		}
+
+		$this->logger->error(
+			message: '[FacetHandler] Failed to get facetable fields from schema properties',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $error->getMessage(),
+				'schemaId' => $schemaId,
+			]
+		);
+	}//end logSchemaFacetFailure()
 
 	/**
 	 * Get default metadata facets for @self fields.

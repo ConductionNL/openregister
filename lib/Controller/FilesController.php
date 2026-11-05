@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Controller\Support\FilesControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\FileCopiedEvent;
 use OCA\OpenRegister\Event\FileLockedEvent;
@@ -115,6 +116,90 @@ class FilesController extends Controller {
 	private readonly ObjectOperationsInterface $objectService;
 
 	/**
+	 * The root folder.
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * The user manager.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * The event dispatcher.
+	 *
+	 * @var IEventDispatcher
+	 */
+	private readonly IEventDispatcher $eventDispatcher;
+
+	/**
+	 * The file mapper.
+	 *
+	 * @var ?\OCA\OpenRegister\Db\FileMapperInterface
+	 */
+	private readonly ?\OCA\OpenRegister\Db\FileMapperInterface $fileMapper;
+
+	/**
+	 * The file audit handler.
+	 *
+	 * @var ?\OCA\OpenRegister\Service\File\FileAuditHandler
+	 */
+	private readonly ?\OCA\OpenRegister\Service\File\FileAuditHandler $fileAuditHandler;
+
+	/**
+	 * The user session.
+	 *
+	 * @var ?IUserSession
+	 */
+	private readonly ?IUserSession $userSession;
+
+	/**
+	 * The l10n.
+	 *
+	 * @var ?IL10N
+	 */
+	private readonly ?IL10N $l10n;
+
+	/**
+	 * The object file access.
+	 *
+	 * @var ?ObjectFileAccess
+	 */
+	private readonly ?ObjectFileAccess $objectFileAccess;
+
+	/**
+	 * The office session service.
+	 *
+	 * @var ?OfficeSessionService
+	 */
+	private readonly ?OfficeSessionService $officeSessionService;
+
+	/**
+	 * The attach node handler.
+	 *
+	 * @var ?AttachNodeHandler
+	 */
+	private readonly ?AttachNodeHandler $attachNodeHandler;
+
+	/**
+	 * The file write guard.
+	 *
+	 * @var ?FileWriteGuard
+	 */
+	private readonly ?FileWriteGuard $fileWriteGuard;
+
+	/**
+	 * The file restrictions.
+	 *
+	 * @var ?FileRestrictionGuard
+	 */
+	private readonly ?FileRestrictionGuard $fileRestrictions;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes controller with required dependencies for file operations.
@@ -122,52 +207,33 @@ class FilesController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param FileService $fileService File service for file operations
-	 * @param ObjectOperationsInterface $objectService Object service for object validation
-	 * @param IRootFolder $rootFolder Root folder for file access
-	 * @param IUserManager $userManager User manager for user lookups
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher for file events
-	 * @param \OCA\OpenRegister\Db\FileMapperInterface|null $fileMapper OR-side metadata mapper. Null-safe.
-	 * @param \OCA\OpenRegister\Service\File\FileAuditHandler|null $fileAuditHandler Audit-trail writer. Null-safe.
-	 * @param IUserSession|null $userSession Session for auth gating.
-	 * @param IL10N|null $l10n Localization service for error
-	 *                         messages. Null-safe: when absent the
-	 *                         raw English source string is used.
-	 * @param ObjectFileAccess|null $objectFileAccess The object rule for file actions.
-	 *                                                Null only in legacy fixtures.
-	 * @param OfficeSessionService|null $officeSessionService Opens documents in Nextcloud Office.
-	 * @param AttachNodeHandler|null $attachNodeHandler Copies a Files node into an object through the upload pipeline.
-	 * @param FileWriteGuard|null $fileWriteGuard Refuses a file write on a frozen or archived object. Null only in legacy fixtures.
-	 * @param FileRestrictionGuard|null $fileRestrictions Refuses a restricted file to a caller it does not admit. Null only in legacy fixtures.
+	 * @param FilesControllerServices $services The files controller services.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList)
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		FileService $fileService,
-		ObjectOperationsInterface $objectService,
-		private readonly IRootFolder $rootFolder,
-		private readonly IUserManager $userManager,
-		private readonly IEventDispatcher $eventDispatcher,
-		private readonly ?\OCA\OpenRegister\Db\FileMapperInterface $fileMapper = null,
-		private readonly ?\OCA\OpenRegister\Service\File\FileAuditHandler $fileAuditHandler = null,
-		private readonly ?IUserSession $userSession = null,
-		private readonly ?IL10N $l10n = null,
-		private readonly ?ObjectFileAccess $objectFileAccess = null,
-		private readonly ?OfficeSessionService $officeSessionService = null,
-		private readonly ?AttachNodeHandler $attachNodeHandler = null,
-		private readonly ?FileWriteGuard $fileWriteGuard = null,
-		private readonly ?FileRestrictionGuard $fileRestrictions = null,
+		FilesControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
+		$this->rootFolder = $services->store->rootFolder;
+		$this->userManager = $services->platform->userManager;
+		$this->eventDispatcher = $services->platform->eventDispatcher;
+		$this->fileMapper = $services->store->fileMapper;
+		$this->fileAuditHandler = $services->guards->fileAuditHandler;
+		$this->userSession = $services->platform->userSession;
+		$this->l10n = $services->platform->l10n;
+		$this->objectFileAccess = $services->guards->objectFileAccess;
+		$this->officeSessionService = $services->editing->officeSessionService;
+		$this->attachNodeHandler = $services->editing->attachNodeHandler;
+		$this->fileWriteGuard = $services->guards->fileWriteGuard;
+		$this->fileRestrictions = $services->guards->fileRestrictions;
 
 		// Store dependencies for use in controller methods.
-		$this->fileService = $fileService;
-		$this->objectService = $objectService;
+		$this->fileService = $services->store->fileService;
+		$this->objectService = $services->store->objectService;
 	}//end __construct()
 
 	/**
@@ -679,7 +745,7 @@ class FilesController extends Controller {
 	 *
 	 * @throws DoesNotExistException When no object, or more than one, holds the identifier there.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */

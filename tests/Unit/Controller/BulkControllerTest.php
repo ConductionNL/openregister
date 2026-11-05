@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\BulkControllerFactory;
 use OCA\OpenRegister\Controller\BulkController;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -41,7 +42,7 @@ class BulkControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
-		$this->controller = new BulkController(
+		$this->controller = BulkControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objectService,

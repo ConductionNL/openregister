@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\RegistersController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\RegistersControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MigrationPack;
@@ -372,7 +373,7 @@ class RegistersControllerImportGoldenTest extends TestCase {
 			});
 		}
 
-		return new RegistersController(
+		return RegistersControllerFactory::create(
 			'openregister',
 			$request,
 			$registerService,

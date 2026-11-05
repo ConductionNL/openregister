@@ -1754,6 +1754,49 @@ class SearchTrailControllerTest extends TestCase {
 		);
 	}
 
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public static function adminOnlyEndpoints(): array {
+		return [
+			'statistics' => ['statistics'],
+			'popularTerms' => ['popularTerms'],
+			'activity' => ['activity'],
+			'registerSchemaStats' => ['registerSchemaStats'],
+			'userAgentStats' => ['userAgentStats'],
+			'cleanup' => ['cleanup'],
+			'destroy' => ['destroy'],
+			'destroyMultiple' => ['destroyMultiple'],
+			'clearAll' => ['clearAll'],
+		];
+	}
+
+	#[\PHPUnit\Framework\Attributes\DataProvider('adminOnlyEndpoints')]
+	public function testAdminOnlyEndpointReturns403WhenNonAdmin(string $method): void {
+		$bob = $this->createMock(IUser::class);
+		$bob->method('getUID')->willReturn('bob');
+		$controller = $this->makeControllerWithUser($bob, false);
+		$this->searchTrailService->expects($this->never())->method($this->anything());
+		$this->searchTrailMapper->expects($this->never())->method($this->anything());
+
+		$result = $method === 'destroy' ? $controller->destroy(1) : $controller->$method();
+
+		$this->assertEquals(403, $result->getStatus());
+		$this->assertStringContainsString('admin-only', $result->getData()['error']);
+	}
+
+	public function testClearAllWithNothingToClear(): void {
+		$this->searchTrailMapper->method('clearAllLogs')->willReturn(false);
+
+		$result = $this->controller->clearAll();
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame(
+			['success' => true, 'message' => 'No expired search trails found to clear', 'deleted' => 0],
+			$result->getData()
+		);
+	}
+
 	public function testIndexReturns401WhenAnonymous(): void {
 		$controller = $this->makeControllerWithUser(null, false);
 

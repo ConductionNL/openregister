@@ -514,9 +514,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Complex query building requires many conditional paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function findAll(
 		?int $limit = null,
@@ -530,18 +528,50 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$qb->select('*')
 			->from('openregister_audit_trails');
 
-		// Filter out system variables (starting with _).
+		$this->applyFindFilters(qb: $qb, filters: $filters ?? []);
+
+		// Add search on changed field if search term provided.
+		if ($search !== null && $search !== '') {
+			$qb->andWhere(
+				$qb->expr()->like('changed', $qb->createNamedParameter('%' . $search . '%'))
+			);
+		}
+
+		$this->applyFindSort(qb: $qb, sort: $sort ?? []);
+
+		// Apply pagination.
+		if ($limit !== null) {
+			$qb->setMaxResults($limit);
+		}
+
+		if ($offset !== null) {
+			$qb->setFirstResult($offset);
+		}
+
+		return $this->findEntities(query: $qb);
+	}//end findAll()
+
+	/**
+	 * Apply the filters of findAll(): system variables (starting with _) and
+	 * columns outside QUERY_COLUMNS are ignored.
+	 *
+	 * @param IQueryBuilder $qb      The query being built.
+	 * @param array         $filters The filters, keyed by column.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function applyFindFilters(IQueryBuilder $qb, array $filters): void {
 		$filters = array_filter(
-			$filters ?? [],
+			$filters,
 			function ($key) {
 				return !str_starts_with($key, '_');
 			},
 			ARRAY_FILTER_USE_KEY
 		);
 
-		// Apply filters.
 		foreach ($filters as $field => $value) {
-			// Ensure the field is a valid column name.
 			if (in_array(
 				$field,
 				self::QUERY_COLUMNS
@@ -555,49 +585,60 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 				continue;
 			}
 
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull($field));
-				continue;
-			}
+			$qb->andWhere($this->scalarFilterExpression(qb: $qb, term: new AuditTrailFilterTerm(field: $field, value: $value)));
+		}
+	}//end applyFindFilters()
 
-			if ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($field));
-				continue;
-			}
-
-			// Handle comma-separated values (e.g., action=create,update).
-			// Cast to string to handle integer filter values.
-			$valueStr = (string)$value;
-
-			// An action prefix (`action=portaliq.*`) lists every action an app
-			// writes under its own name, such as portaliq's proof records.
-			if ($field === 'action' && str_ends_with($valueStr, '.*') === true) {
-				$prefix = substr($valueStr, 0, -1);
-				$qb->andWhere(
-					$qb->expr()->like('action', $qb->createNamedParameter($this->db->escapeLikeParameter($prefix).'%'))
-				);
-				continue;
-			}
-
-			if (strpos($valueStr, ',') !== false) {
-				$values = array_map('trim', explode(',', $valueStr));
-				$qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)));
-				continue;
-			}
-
-			$qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
-		}//end foreach
-
-		// Add search on changed field if search term provided.
-		if ($search !== null && $search !== '') {
-			$qb->andWhere(
-				$qb->expr()->like('changed', $qb->createNamedParameter('%' . $search . '%'))
-			);
+	/**
+	 * The predicate for one scalar filter: a NULL check, an `action` prefix
+	 * (`action=portaliq.*` lists every action an app writes under its own
+	 * name), a comma-separated list (`action=create,update`), or equality.
+	 *
+	 * @param IQueryBuilder        $qb   The query being built.
+	 * @param AuditTrailFilterTerm $term The column and its value.
+	 *
+	 * @return string The predicate.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function scalarFilterExpression(IQueryBuilder $qb, AuditTrailFilterTerm $term): string {
+		$field = $term->field;
+		if ($term->value === 'IS NOT NULL') {
+			return $qb->expr()->isNotNull($field);
 		}
 
-		// Add sorting.
-		foreach ($sort ?? [] as $field => $direction) {
-			// Ensure the field is a valid column name.
+		if ($term->value === 'IS NULL') {
+			return $qb->expr()->isNull($field);
+		}
+
+		// Cast to string to handle integer filter values.
+		$valueStr = (string)$term->value;
+		if ($field === 'action' && str_ends_with($valueStr, '.*') === true) {
+			$prefix = substr($valueStr, 0, -1);
+			return $qb->expr()->like('action', $qb->createNamedParameter($this->db->escapeLikeParameter($prefix).'%'));
+		}
+
+		if (strpos($valueStr, ',') !== false) {
+			$values = array_map('trim', explode(',', $valueStr));
+			return $qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY));
+		}
+
+		return $qb->expr()->eq($field, $qb->createNamedParameter($term->value));
+	}//end scalarFilterExpression()
+
+	/**
+	 * Apply the sort of findAll(): columns outside QUERY_COLUMNS are ignored,
+	 * and a direction other than DESC (any case) sorts ascending.
+	 *
+	 * @param IQueryBuilder $qb   The query being built.
+	 * @param array         $sort Direction keyed by column.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function applyFindSort(IQueryBuilder $qb, array $sort): void {
+		foreach ($sort as $field => $direction) {
 			if (in_array(
 				$field,
 				self::QUERY_COLUMNS
@@ -619,19 +660,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			}
 
 			$qb->addOrderBy($field, $order);
-		}//end foreach
-
-		// Apply pagination.
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
 		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
-
-		return $this->findEntities(query: $qb);
-	}//end findAll()
+	}//end applyFindSort()
 
 	/**
 	 * Apply a filter whose value is a list: `field[notIn]=a,b` leaves out the
@@ -1718,7 +1748,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$object = $identifier;
 		if ($object instanceof ObjectEntity === false) {
 			// Lazy-resolved to avoid circular DI.
-			$object = $this->container->get(MagicMapper::class)->find($identifier);
+			$object = $this->container->get(MagicMapperInterface::class)->find($identifier);
 		}
 
 		// Get audit trail entries until the specified point.
@@ -1772,19 +1802,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			)
 				->from($this->getTableName());
 
-			// Add register filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($registerId !== null) {
-				$registerParam = $qb->createNamedParameter((string)$registerId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('register', $registerParam));
-			}
-
-			// Add schema filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($schemaId !== null) {
-				$schemaParam = $qb->createNamedParameter((string)$schemaId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('schema', $schemaParam));
-			}
+			$this->filterByIds(qb: $qb, idsByColumn: ['register' => $registerId, 'schema' => $schemaId]);
 
 			// Add exclusions if provided.
 			if (empty($exclude) === false) {
@@ -1903,19 +1921,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 				$qb->andWhere($qb->expr()->lte('created', $tillParam));
 			}
 
-			// Add register filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($registerId !== null) {
-				$registerParam = $qb->createNamedParameter((string)$registerId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('register', $registerParam));
-			}
-
-			// Add schema filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($schemaId !== null) {
-				$schemaParam = $qb->createNamedParameter((string)$schemaId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('schema', $schemaParam));
-			}
+			$this->filterByIds(qb: $qb, idsByColumn: ['register' => $registerId, 'schema' => $schemaId]);
 
 			$results = $qb->executeQuery()->fetchAll();
 
@@ -1989,30 +1995,10 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 				$qb->createFunction('COUNT(*) as count')
 			)
 				->from($this->getTableName())
-				->where(
-					$qb->expr()->gte(
-						'created',
-						$qb->createNamedParameter(
-							(new DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
-							IQueryBuilder::PARAM_STR
-						)
-					)
-				)
+				->where($this->createdWithinHours(qb: $qb, hours: $hours))
 				->groupBy('action');
 
-			// Add register filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($registerId !== null) {
-				$registerParam = $qb->createNamedParameter((string)$registerId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('register', $registerParam));
-			}
-
-			// Add schema filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($schemaId !== null) {
-				$schemaParam = $qb->createNamedParameter((string)$schemaId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('schema', $schemaParam));
-			}
+			$this->filterByIds(qb: $qb, idsByColumn: ['register' => $registerId, 'schema' => $schemaId]);
 
 			$results = $qb->executeQuery()->fetchAll();
 
@@ -2132,19 +2118,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 				->from($this->getTableName())
 				->groupBy('action');
 
-			// Add register filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($registerId !== null) {
-				$registerParam = $qb->createNamedParameter((string)$registerId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('register', $registerParam));
-			}
-
-			// Add schema filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($schemaId !== null) {
-				$schemaParam = $qb->createNamedParameter((string)$schemaId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('schema', $schemaParam));
-			}
+			$this->filterByIds(qb: $qb, idsByColumn: ['register' => $registerId, 'schema' => $schemaId]);
 
 			$result = $qb->executeQuery();
 			$results = $result->fetchAll();
@@ -2197,30 +2171,10 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 				$qb->createFunction('COUNT(*) as count')
 			)
 				->from($this->getTableName())
-				->where(
-					$qb->expr()->gte(
-						'created',
-						$qb->createNamedParameter(
-							(new DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
-							IQueryBuilder::PARAM_STR
-						)
-					)
-				)
+				->where($this->createdWithinHours(qb: $qb, hours: $hours))
 				->groupBy('action');
 
-			// Add register filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($registerId !== null) {
-				$registerParam = $qb->createNamedParameter((string)$registerId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('register', $registerParam));
-			}
-
-			// Add schema filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($schemaId !== null) {
-				$schemaParam = $qb->createNamedParameter((string)$schemaId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('schema', $schemaParam));
-			}
+			$this->filterByIds(qb: $qb, idsByColumn: ['register' => $registerId, 'schema' => $schemaId]);
 
 			$results = $qb->executeQuery()->fetchAll();
 
@@ -2275,31 +2229,11 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 				$qb->createFunction('COUNT(*) as count')
 			)
 				->from($this->getTableName())
-				->where(
-					$qb->expr()->gte(
-						'created',
-						$qb->createNamedParameter(
-							(new DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
-							IQueryBuilder::PARAM_STR
-						)
-					)
-				)
+				->where($this->createdWithinHours(qb: $qb, hours: $hours))
 				->groupBy('object')
 				->orderBy('count', 'DESC');
 
-			// Add register filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($registerId !== null) {
-				$registerParam = $qb->createNamedParameter((string)$registerId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('register', $registerParam));
-			}
-
-			// Add schema filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($schemaId !== null) {
-				$schemaParam = $qb->createNamedParameter((string)$schemaId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('schema', $schemaParam));
-			}
+			$this->filterByIds(qb: $qb, idsByColumn: ['register' => $registerId, 'schema' => $schemaId]);
 
 			// Apply limit.
 			if ($limit !== null) {
@@ -3517,7 +3451,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createExportEntry.
 	 */
@@ -3565,7 +3499,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @return array<string, mixed> The result summary of the entry.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function slugBackfillResultSummary(string $mode, array $changes, array $summary): array {
 		$total = count($changes);
@@ -3642,6 +3576,38 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		return $reads;
 	}//end findLatestReadsByUser()
+
+	/**
+	 * Narrow a query to the given id per column; a null id adds no condition.
+	 *
+	 * The register and schema columns are VARCHAR(255) holding ids as strings.
+	 *
+	 * @param IQueryBuilder            $qb          The query to narrow.
+	 * @param array<string, int|null> $idsByColumn Column name => id or null.
+	 *
+	 * @return void
+	 */
+	private function filterByIds(IQueryBuilder $qb, array $idsByColumn): void {
+		foreach ($idsByColumn as $column => $id) {
+			if ($id !== null) {
+				$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter((string)$id, IQueryBuilder::PARAM_STR)));
+			}
+		}
+	}//end filterByIds()
+
+	/**
+	 * The condition that a row was created within the last $hours hours.
+	 *
+	 * @param IQueryBuilder $qb    The query the condition is for.
+	 * @param int|null      $hours The number of hours to look back.
+	 *
+	 * @return string The condition.
+	 */
+	private function createdWithinHours(IQueryBuilder $qb, ?int $hours): string {
+		$since = (new DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s');
+
+		return $qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_STR));
+	}//end createdWithinHours()
 
 	/**
 	 * Render a stored `created` value as ISO 8601.

@@ -31,6 +31,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<EmailLink>
  */
 class EmailLinkMapper extends QBMapper {
+	use DeleteLinksByObjectUuidTrait;
+	use CountLinksByObjectUuidTrait;
 
 	/**
 	 * Cache for tableExists() result. The schema doesn't change at
@@ -148,26 +150,6 @@ class EmailLinkMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findByObjectUuid()
-
-	/**
-	 * Count email links for an object.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Count of links.
-	 */
-	public function countByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->createFunction('COUNT(*)'))
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		$result = $qb->executeQuery();
-		$count = (int)$result->fetchOne();
-		$result->closeCursor();
-
-		return $count;
-	}//end countByObjectUuid()
 
 	/**
 	 * Find email links by sender address.
@@ -298,19 +280,4 @@ class EmailLinkMapper extends QBMapper {
 
 		return $qb->executeStatement();
 	}//end deleteByObjectAndId()
-
-	/**
-	 * Delete all email links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 }//end class

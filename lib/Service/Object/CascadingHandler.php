@@ -19,6 +19,7 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -44,7 +45,7 @@ class CascadingHandler {
 	/**
 	 * Constructor for CascadingHandler.
 	 *
-	 * @param SaveObject $saveHandler Handler for saving objects.
+	 * @param SaveObjectInterface $saveHandler Handler for saving objects.
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schema entities.
 	 * @param UtilityHandler $utilityHandler Handler for utility operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
@@ -52,7 +53,7 @@ class CascadingHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly SaveObject $saveHandler,
+		private readonly SaveObjectInterface $saveHandler,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly UtilityHandler $utilityHandler,
 		private readonly LoggerInterface $logger,
@@ -74,106 +75,253 @@ class CascadingHandler {
 	 *
 	 * @psalm-return list{array<array|mixed|string>, null|string}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex cascading logic with multiple relationship types
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for handling different relationship configurations
-	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function handlePreValidationCascading(array $object, Schema $schema, ?string $uuid, ?int $currentRegister): array {
-		// Pre-validation cascading to handle nested objects.
-		try {
-			// Get the URL generator from the SaveObject handler.
-			$urlGenerator = new ReflectionClass($this->saveHandler);
-			$urlGeneratorProperty = $urlGenerator->getProperty('urlGenerator');
-			$urlGeneratorInstance = $urlGeneratorProperty->getValue($this->saveHandler);
-
-			$schemaObject = $schema->getSchemaObject($urlGeneratorInstance);
-			$properties = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
-			// Process schema properties for inversedBy relationships.
-		} catch (Exception $e) {
-			// Handle error in schema processing.
-			return [$object, $uuid];
-		}
-
-		// Find properties that have inversedBy configuration.
-		// TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
-		$inversedByProperties = array_filter(
-			$properties,
-			function (array $property) {
-				// Check for inversedBy in array items.
-				if ($property['type'] === 'array' && isset($property['items']['inversedBy']) === true) {
-					return true;
-				}
-
-				// Check for inversedBy in direct object properties.
-				if (isset($property['inversedBy']) === true) {
-					return true;
-				}
-
-				return false;
-			}
-		);
-
-		// Check if we have any inversedBy properties to process.
+		$inversedByProperties = $this->inversedByProperties(schema: $schema);
 		if (count($inversedByProperties) === 0) {
 			return [$object, $uuid];
 		}
 
-		// Generate UUID for parent object if not provided.
-		if ($uuid === null) {
-			$uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
-		}
-
+		$uuid   = $uuid ?? \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+		$parent = new CascadeTarget(parentUuid: $uuid, register: $currentRegister);
 		foreach ($inversedByProperties as $propertyName => $definition) {
-			// Skip if property not present in data or is empty.
 			if (isset($object[$propertyName]) === false || empty($object[$propertyName]) === true) {
 				continue;
 			}
 
-			$propertyValue = $object[$propertyName];
-
-			// Handle array properties. No emptiness re-check: the loop head above
-			// already skipped every empty $object[$propertyName].
-			if ($definition['type'] === 'array' && isset($definition['items']['inversedBy']) === true) {
-				$createdUuids = [];
-				foreach ($propertyValue as $item) {
-					if (is_array($item) === true && $this->utilityHandler->isUuid($item) === false) {
-						// This is a nested object, create it first.
-						$createdUuid = $this->createRelatedObject(
-							objectData: $item,
-							definition: $definition['items'],
-							parentUuid: $uuid,
-							currentRegister: $currentRegister
-						);
-
-						// If creation failed, keep original item to avoid empty array.
-						$createdUuids[] = $createdUuid ?? $item;
-					} elseif (is_string($item) === true && $this->utilityHandler->isUuid($item) === true) {
-						// This is already a UUID, keep it.
-						$createdUuids[] = $item;
-					}
-				}
-
-				$object[$propertyName] = $createdUuids;
-			} elseif (isset($definition['inversedBy']) === true && $definition['type'] !== 'array') {
-				// Handle single object properties.
-				if (is_array($propertyValue) === true && $this->utilityHandler->isUuid($propertyValue) === false) {
-					// This is a nested object, create it first.
-					$createdUuid = $this->createRelatedObject(
-						objectData: $propertyValue,
-						definition: $definition,
-						parentUuid: $uuid,
-						currentRegister: $currentRegister
-					);
-
-					// Only overwrite if creation succeeded.
-					$object[$propertyName] = $createdUuid ?? $propertyValue;
-				}
-			}//end if
-		}//end foreach
+			$object[$propertyName] = $this->cascadeValue(value: $object[$propertyName], target: $parent->with(definition: $definition));
+		}
 
 		return [$object, $uuid];
 	}//end handlePreValidationCascading()
+
+	/**
+	 * The schema's properties that carry an inversedBy, on the property or on its items.
+	 *
+	 * @param Schema $schema The schema of the object.
+	 *
+	 * @return array The inversedBy properties by name; empty when the schema cannot be read.
+	 *
+	 * @todo Move writeBack, removeAfterWriteBack and inversedBy from the items property to a configuration property.
+	 */
+	private function inversedByProperties(Schema $schema): array {
+		try {
+			// The schema object needs the save handler's URL generator.
+			$urlGenerator = (new ReflectionClass($this->saveHandler))->getProperty('urlGenerator')->getValue($this->saveHandler);
+			$schemaObject = $schema->getSchemaObject($urlGenerator);
+			$properties   = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
+		} catch (Exception $e) {
+			return [];
+		}
+
+		return array_filter($properties, self::hasInversedBy(...));
+	}//end inversedByProperties()
+
+	/**
+	 * Whether a property definition carries an inversedBy, on an array's items or on itself.
+	 *
+	 * @param array $property The property definition.
+	 *
+	 * @return bool
+	 */
+	private static function hasInversedBy(array $property): bool {
+		if ($property['type'] === 'array' && isset($property['items']['inversedBy']) === true) {
+			return true;
+		}
+
+		return isset($property['inversedBy']) === true;
+	}//end hasInversedBy()
+
+	/**
+	 * A non-empty property value with its nested objects created and replaced by their uuids.
+	 *
+	 * @param mixed         $value  The property value.
+	 * @param CascadeTarget $target The parent and the property definition.
+	 *
+	 * @return mixed The value to store in the property.
+	 */
+	private function cascadeValue(mixed $value, CascadeTarget $target): mixed {
+		$definition = $target->definition();
+		if ($definition['type'] === 'array' && isset($definition['items']['inversedBy']) === true) {
+			return $this->cascadeItems(items: $value, target: $target->with(definition: $definition['items']));
+		}
+
+		if (isset($definition['inversedBy']) === true && $definition['type'] !== 'array') {
+			return $this->cascadeNested(value: $value, target: $target);
+		}
+
+		return $value;
+	}//end cascadeValue()
+
+	/**
+	 * A list with its nested objects created; uuids are kept and anything else is dropped.
+	 *
+	 * @param mixed         $items  The list value.
+	 * @param CascadeTarget $target The parent and the items definition.
+	 *
+	 * @return array The created uuids, the uuids kept, and the nested objects whose create failed.
+	 */
+	private function cascadeItems(mixed $items, CascadeTarget $target): array {
+		$cascaded = [];
+		foreach ($items as $item) {
+			if (is_array($item) === true && $this->utilityHandler->isUuid($item) === false) {
+				// A failed create keeps the item, so the list does not come out empty.
+				$cascaded[] = $this->createFor(objectData: $item, target: $target) ?? $item;
+			} elseif (is_string($item) === true && $this->utilityHandler->isUuid($item) === true) {
+				$cascaded[] = $item;
+			}
+		}
+
+		return $cascaded;
+	}//end cascadeItems()
+
+	/**
+	 * A single nested object created and replaced by its uuid; any other value as it is.
+	 *
+	 * @param mixed         $value  The property value.
+	 * @param CascadeTarget $target The parent and the property definition.
+	 *
+	 * @return mixed The created uuid, or the value when it is no nested object or its create failed.
+	 */
+	private function cascadeNested(mixed $value, CascadeTarget $target): mixed {
+		if (is_array($value) === true && $this->utilityHandler->isUuid($value) === false) {
+			return $this->createFor(objectData: $value, target: $target) ?? $value;
+		}
+
+		return $value;
+	}//end cascadeNested()
+
+	/**
+	 * Create one nested object under the target's parent.
+	 *
+	 * @param array         $objectData The nested object.
+	 * @param CascadeTarget $target     The parent and the property definition.
+	 *
+	 * @return string|null The created uuid, or null when the create failed.
+	 *
+	 * @throws NotAuthorizedException When the caller may not create objects in the target schema.
+	 */
+	private function createFor(array $objectData, CascadeTarget $target): ?string {
+		return $this->createRelatedObject(
+			objectData: $objectData,
+			definition: $target->definition(),
+			parentUuid: $target->parentUuid,
+			currentRegister: $target->register
+		);
+	}//end createFor()
+
+	/**
+	 * Create one nested object under the target; a failure other than a refused right is logged and answers null.
+	 *
+	 * @param array         $objectData The nested object.
+	 * @param CascadeTarget $target     The parent and the property definition.
+	 *
+	 * @return string|null The created uuid, or null when the create failed.
+	 *
+	 * @throws NotAuthorizedException When the caller may not create objects in the target schema.
+	 */
+	private function createUnder(array $objectData, CascadeTarget $target): ?string {
+		try {
+			return $this->cascadeCreate(objectData: $objectData, target: $target);
+		} catch (NotAuthorizedException $e) {
+			throw $e;
+		} catch (Exception $e) {
+			// Log error but don't expose details.
+			$this->logger->error(
+				message: '[CascadingHandler] Failed to create related object: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+	}//end createUnder()
+
+	/**
+	 * Create one nested object in the schema its definition references, linked
+	 * back to the parent through `inversedBy`, and track it for the parent's
+	 * `@self.objects`.
+	 *
+	 * @param array         $objectData The nested object.
+	 * @param CascadeTarget $target     The parent and the property definition.
+	 *
+	 * @return string|null The created uuid, or null without a target schema.
+	 *
+	 * @throws NotAuthorizedException When the caller may not create objects in the target schema.
+	 * @throws Exception When the save fails.
+	 */
+	private function cascadeCreate(array $objectData, CascadeTarget $target): ?string {
+		$schema = $this->cascadeSchema(definition: $target->definition());
+		if ($schema === null) {
+			return null;
+		}
+
+		$this->saveHandler->assertMayCascadeCreate(schema: $schema);
+
+		// A new uuid is generated; default RBAC and multitenancy apply to the cascade.
+		$createdObject = $this->saveHandler->saveObject(
+			register: $target->register,
+			schema: $schema,
+			data: self::withoutIdentity(objectData: $this->withInverse(objectData: $objectData, target: $target)),
+			_rbac: true,
+			_multitenancy: true
+		);
+
+		return $this->trackCreated(createdObject: $createdObject);
+	}//end cascadeCreate()
+
+	/**
+	 * The schema a `#/components/schemas/<slug>` reference names, or null.
+	 *
+	 * @param array $definition The property definition.
+	 *
+	 * @return Schema|null The referenced schema.
+	 */
+	private function cascadeSchema(array $definition): ?Schema {
+		$schemaRef = $definition['$ref'] ?? null;
+		if ($schemaRef === null || $schemaRef === '' || str_contains($schemaRef, '#/components/schemas/') === false) {
+			return null;
+		}
+
+		$schemaSlug = substr($schemaRef, strrpos($schemaRef, '/') + 1);
+		if ($schemaSlug === '') {
+			return null;
+		}
+
+		return $this->findSchemaBySlug(slug: $schemaSlug);
+	}//end cascadeSchema()
+
+	/**
+	 * The nested object with the parent's uuid under the definition's `inversedBy` property.
+	 *
+	 * @param array         $objectData The nested object.
+	 * @param CascadeTarget $target     The parent and the property definition.
+	 *
+	 * @return array The nested object, linked back when the definition has an inverse.
+	 */
+	private function withInverse(array $objectData, CascadeTarget $target): array {
+		$inversedBy = $target->definition()['inversedBy'] ?? null;
+		if ($inversedBy !== null && $inversedBy !== '') {
+			$objectData[$inversedBy] = $target->parentUuid;
+		}
+
+		return $objectData;
+	}//end withInverse()
+
+	/**
+	 * Track a created nested object for the parent's `@self.objects`.
+	 *
+	 * @param ObjectEntity $createdObject The created object.
+	 *
+	 * @return string|null Its uuid.
+	 */
+	private function trackCreated(ObjectEntity $createdObject): ?string {
+		$createdUuid = $createdObject->getUuid();
+		if ($createdUuid !== null) {
+			$this->saveHandler->trackCreatedSubObject($createdUuid, $createdObject->jsonSerialize());
+		}
+
+		return $createdUuid;
+	}//end trackCreated()
 
 	/**
 	 * Create a related object and return its UUID.
@@ -190,81 +338,12 @@ class CascadingHandler {
 	 *
 	 * @throws NotAuthorizedException When the caller may not create objects in the target schema.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function createRelatedObject(
-		array $objectData,
-		array $definition,
-		string $parentUuid,
-		?int $currentRegister,
-	): ?string {
-		try {
-			// Resolve schema reference to actual schema ID.
-			$schemaRef = $definition['$ref'] ?? null;
-			if ($schemaRef === null || $schemaRef === '') {
-				return null;
-			}
+	public function createRelatedObject(array $objectData, array $definition, string $parentUuid, ?int $currentRegister): ?string {
+		$target = (new CascadeTarget(parentUuid: $parentUuid, register: $currentRegister))->with(definition: $definition);
 
-			// Extract schema slug from reference.
-			$schemaSlug = null;
-			if (str_contains($schemaRef, '#/components/schemas/') === true) {
-				$schemaSlug = substr($schemaRef, strrpos($schemaRef, '/') + 1);
-			}
-
-			if ($schemaSlug === null || $schemaSlug === '') {
-				return null;
-			}
-
-			$targetSchema = $this->findSchemaBySlug(slug: $schemaSlug);
-			if ($targetSchema === null) {
-				return null;
-			}
-
-			$this->saveHandler->assertMayCascadeCreate(schema: $targetSchema);
-
-			// Get the register (use the same register as the parent object).
-			$targetRegister = $currentRegister;
-
-			// Add the inverse relationship to the parent object.
-			$inversedBy = $definition['inversedBy'] ?? null;
-			if ($inversedBy !== null && $inversedBy !== '') {
-				$objectData[$inversedBy] = $parentUuid;
-			}
-
-			// Create the object.
-			$createdObject = $this->saveHandler->saveObject(
-				register: $targetRegister,
-				schema: $targetSchema,
-				data: self::withoutIdentity(objectData: $objectData),
-				uuid: null,
-				// Let it generate a new UUID.
-				folderId: null,
-				_rbac: true,
-				// Use default RBAC for internal cascading operations.
-				_multitenancy: true
-				// Use default multitenancy for internal cascading operations.
-			);
-
-			// Track the created sub-object for inclusion in parent's @self.objects.
-			$createdUuid = $createdObject->getUuid();
-			if ($createdUuid !== null) {
-				$this->saveHandler->trackCreatedSubObject($createdUuid, $createdObject->jsonSerialize());
-			}
-
-			return $createdUuid;
-		} catch (NotAuthorizedException $e) {
-			throw $e;
-		} catch (Exception $e) {
-			// Log error but don't expose details.
-			$this->logger->error(
-				message: '[CascadingHandler] Failed to create related object: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return null;
-		}//end try
+		return $this->createUnder(objectData: $objectData, target: $target);
 	}//end createRelatedObject()
 
 	/**

@@ -30,11 +30,12 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Controller\Support\RetentionControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\DestructionService;
-use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObjectInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Controller;
@@ -56,38 +57,98 @@ use Psr\Log\LoggerInterface;
  */
 class RetentionController extends Controller {
 	/**
+	 * Retention service
+	 *
+	 * @var RetentionServiceInterface
+	 */
+	private readonly RetentionServiceInterface $retentionService;
+
+	/**
+	 * Settings handler
+	 *
+	 * @var ObjectRetentionHandler
+	 */
+	private readonly ObjectRetentionHandler $settingsHandler;
+
+	/**
+	 * Save object service
+	 *
+	 * @var SaveObjectInterface
+	 */
+	private readonly SaveObjectInterface $saveObject;
+
+	/**
+	 * Object mapper
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectMapper;
+
+	/**
+	 * Schema mapper
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Audit trail mapper
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditMapper;
+
+	/**
+	 * Withholds entries a reviewer decided against
+	 *
+	 * @var DestructionService
+	 */
+	private readonly DestructionService $destructionService;
+
+	/**
+	 * Background job list
+	 *
+	 * @var IJobList
+	 */
+	private readonly IJobList $jobList;
+
+	/**
+	 * User session
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name
 	 * @param IRequest $request Request
-	 * @param RetentionServiceInterface $retentionService Retention service
-	 * @param ObjectRetentionHandler $settingsHandler Settings handler
-	 * @param SaveObject $saveObject Save object service
-	 * @param MagicMapper $objectMapper Object mapper
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper
-	 * @param AuditTrailMapperInterface $auditMapper Audit trail mapper
-	 * @param DestructionService $destructionService Withholds entries a reviewer decided against
-	 * @param IJobList $jobList Background job list
-	 * @param IUserSession $userSession User session
-	 * @param LoggerInterface $logger Logger
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+	 * @param RetentionControllerServices $services The retention controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly RetentionServiceInterface $retentionService,
-		private readonly ObjectRetentionHandler $settingsHandler,
-		private readonly SaveObject $saveObject,
-		private readonly MagicMapper $objectMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly AuditTrailMapperInterface $auditMapper,
-		private readonly DestructionService $destructionService,
-		private readonly IJobList $jobList,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		RetentionControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->retentionService = $services->domain->retentionService;
+		$this->settingsHandler = $services->domain->settingsHandler;
+		$this->saveObject = $services->domain->saveObject;
+		$this->objectMapper = $services->mappers->objectMapper;
+		$this->schemaMapper = $services->mappers->schemaMapper;
+		$this->auditMapper = $services->mappers->auditMapper;
+		$this->destructionService = $services->domain->destructionService;
+		$this->jobList = $services->platform->jobList;
+		$this->userSession = $services->platform->userSession;
+		$this->logger = $services->platform->logger;
 	}//end __construct()
 
 	/**

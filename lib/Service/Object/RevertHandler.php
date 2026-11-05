@@ -23,7 +23,7 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -74,9 +74,9 @@ class RevertHandler {
 	/**
 	 * Object entity mapper
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface
 	 */
-	private MagicMapper $objectEntityMapper;
+	private MagicMapperInterface $objectEntityMapper;
 
 	/**
 	 * Permission handler for RBAC enforcement
@@ -88,9 +88,9 @@ class RevertHandler {
 	/**
 	 * Validator the save path uses, so a revert meets the same schema.
 	 *
-	 * @var ValidateObject
+	 * @var ValidateObjectInterface
 	 */
-	private ValidateObject $validateHandler;
+	private ValidateObjectInterface $validateHandler;
 
 	/**
 	 * RevertHandler constructor.
@@ -98,17 +98,17 @@ class RevertHandler {
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper.
 	 * @param ContainerInterface $container DI container.
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher.
-	 * @param MagicMapper $objectEntityMapper Object entity mapper.
+	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper.
 	 * @param PermissionHandler $permissionHandler Permission handler for RBAC.
-	 * @param ValidateObject $validateHandler Schema validator of the save path.
+	 * @param ValidateObjectInterface $validateHandler Schema validator of the save path.
 	 */
 	public function __construct(
 		AuditTrailMapperInterface $auditTrailMapper,
 		ContainerInterface $container,
 		IEventDispatcher $eventDispatcher,
-		MagicMapper $objectEntityMapper,
+		MagicMapperInterface $objectEntityMapper,
 		PermissionHandler $permissionHandler,
-		ValidateObject $validateHandler,
+		ValidateObjectInterface $validateHandler,
 	) {
 		$this->auditTrailMapper = $auditTrailMapper;
 		$this->container = $container;
@@ -137,92 +137,88 @@ class RevertHandler {
 	 * @throws \Exception If reversion fails
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean needed to control version overwrite behavior
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectStateWriteException::frozen() is the one named constructor every write guard refuses with
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
-	public function revert(
-		string $register,
-		string $schema,
-		string $id,
-		mixed $until,
-		bool $overwriteVersion = false,
-	): ObjectEntity {
+	public function revert(string $register, string $schema, string $id, mixed $until, bool $overwriteVersion = false): ObjectEntity {
 		// Get the object with RBAC and multitenancy enforced (tenant-scoped find).
-		$context = $this->objectEntityMapper->findAcrossAllSources(
-			identifier: $id,
-			includeDeleted: false
-		);
-		$object = $context['object'];
-		$registerEntity = $context['register'];
-		$schemaEntity = $context['schema'];
+		$context = $this->objectEntityMapper->findAcrossAllSources(identifier: $id, includeDeleted: false);
 
-		// Verify that the object belongs to the specified register and schema.
-		// The route may name them by id, UUID or slug, as every other object
-		// route allows; a string compare with the numeric id refused every slug (#4161).
-		if ($this->namesEntity(given: $register, stored: (string) $object->getRegister(), entity: $registerEntity) === false
-			|| $this->namesEntity(given: $schema, stored: (string) $object->getSchema(), entity: $schemaEntity) === false
+		// The route may name register and schema by id, UUID or slug, as every
+		// other object route allows (#4161).
+		if ($this->namesEntity(given: $register, stored: (string) $context['object']->getRegister(), entity: $context['register']) === false
+			|| $this->namesEntity(given: $schema, stored: (string) $context['object']->getSchema(), entity: $context['schema']) === false
 		) {
 			throw new DoesNotExistException('Object not found in specified register/schema');
 		}
 
-		// Enforce RBAC: the caller must have 'update' permission on this object.
-		if ($this->permissionHandler->hasPermission(
-			schema: $schemaEntity,
-			action: 'update',
-			object: $object
-		) === false
-		) {
-			throw new NotAuthorizedException(
-				message: 'You do not have permission to revert this object'
-			);
-		}
+		$this->assertMayRevert(context: $context);
 
-		// Check if the object is locked. Ownership is decided by the one
-		// production predicate, so a run-held lock refuses the run's own
-		// runAs user here exactly as it does at every other guard.
-		if ($object->isLockedBySomeoneElse(userId: $this->container->get('userId'), runUuid: $this->callerRunUuid()) === true) {
-			throw new LockedException(
-				message: sprintf('Object is locked by %s', (string)$object->describeLockHolder())
-			);
-		}
+		// Revert from the object just checked: looked up again, the URL id could name another row.
+		$revertedObject = $this->auditTrailMapper->revertObject(identifier: $context['object'], until: $until, overwriteVersion: $overwriteVersion);
+		$savedObject = $this->saveReverted(reverted: $revertedObject, context: $context);
 
-		// A revert is a write, so the permanent freeze refuses it exactly as
-		// SaveObject refuses every other write to a frozen object (#4105).
-		if ($object->isFrozen() === true) {
-			throw ObjectStateWriteException::frozen($object);
-		}
-
-		// Get the reverted object using AuditTrailMapper, from the object just checked:
-		// looked up again, the URL id could name another row.
-		$revertedObject = $this->auditTrailMapper->revertObject(
-			identifier: $object,
-			until: $until,
-			overwriteVersion: $overwriteVersion
-		);
-
-		// Old data can come back in a shape the schema no longer allows, so it
-		// meets the current schema before it is written, as a save does.
-		$this->validateAgainstCurrentSchema(object: $revertedObject, schema: $schemaEntity);
-
-		// Save the reverted object (with register/schema context for magic mapper routing).
-		$savedObject = $this->objectEntityMapper->update(
-			entity: $revertedObject,
-			register: $registerEntity,
-			schema: $schemaEntity
-		);
-
-		// The mapper writes no audit row, so the revert records its own: who
-		// rolled back what is exactly what the audit trail is for.
-		if ($this->isAuditTrailsEnabled() === true) {
-			$this->auditTrailMapper->createAuditTrail(old: $object, new: $savedObject, action: 'revert');
-		}
-
-		// Dispatch revert event.
 		$this->eventDispatcher->dispatchTyped(new ObjectRevertedEvent(object: $savedObject, until: $until));
 
 		return $savedObject;
 	}//end revert()
+
+	/**
+	 * Refuse a revert the caller may not make, in this order: no update
+	 * permission on the object, a lock held by someone else, a frozen object.
+	 *
+	 * Lock ownership is decided by the one production predicate, so a
+	 * run-held lock refuses the run's own runAs user here as at every other
+	 * guard. The freeze refuses a revert as SaveObject refuses every other
+	 * write to a frozen object (#4105).
+	 *
+	 * @param array $context The object, register and schema from the lookup
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException If the caller may not update the object
+	 * @throws LockedException If someone else holds the object's lock
+	 * @throws ObjectStateWriteException If the object is frozen
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectStateWriteException::frozen() is the one named constructor every write guard refuses with
+	 */
+	private function assertMayRevert(array $context): void {
+		$object = $context['object'];
+		if ($this->permissionHandler->hasPermission(schema: $context['schema'], action: 'update', object: $object) === false) {
+			throw new NotAuthorizedException(message: 'You do not have permission to revert this object');
+		}
+
+		if ($object->isLockedBySomeoneElse(userId: $this->container->get('userId'), runUuid: $this->callerRunUuid()) === true) {
+			throw new LockedException(message: sprintf('Object is locked by %s', (string)$object->describeLockHolder()));
+		}
+
+		if ($object->isFrozen() === true) {
+			throw ObjectStateWriteException::frozen($object);
+		}
+	}//end assertMayRevert()
+
+	/**
+	 * Validate the restored state against the current schema, write it, and
+	 * record a `revert` audit row (the mapper writes none) when audit trails are on.
+	 *
+	 * Old data can come back in a shape the schema no longer allows, so it
+	 * meets the current schema before it is written, as a save does.
+	 *
+	 * @param ObjectEntity $reverted The restored state
+	 * @param array        $context  The object, register and schema from the lookup
+	 *
+	 * @return ObjectEntity The saved object
+	 */
+	private function saveReverted(ObjectEntity $reverted, array $context): ObjectEntity {
+		$this->validateAgainstCurrentSchema(object: $reverted, schema: $context['schema']);
+		$savedObject = $this->objectEntityMapper->update(entity: $reverted, register: $context['register'], schema: $context['schema']);
+
+		if ($this->isAuditTrailsEnabled() === true) {
+			$this->auditTrailMapper->createAuditTrail(old: $context['object'], new: $savedObject, action: 'revert');
+		}
+
+		return $savedObject;
+	}//end saveReverted()
 
 	/**
 	 * Whether a route segment names the object's register or schema

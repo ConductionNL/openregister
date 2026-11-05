@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
@@ -53,6 +54,14 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectsController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectsControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectStore
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectTransfer
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectGovernanceServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectsExtensions
+ * @uses \OCA\OpenRegister\Controller\Support\GeoServices
+ * @uses \OCA\OpenRegister\Controller\Support\LinkedDataServices
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
@@ -160,7 +169,7 @@ class ObjectsControllerForgedScopeFlagsTest extends TestCase {
 			}
 		);
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->willReturnCallback(fn (string $id) => ($id === MagicMapper::class ? $magicMapper : $this->createMock($id)));
+		$container->method('get')->willReturnCallback(fn (string $id) => ($id === \OCA\OpenRegister\Db\MagicMapperInterface::class ? $magicMapper : $this->createMock($id)));
 
 		$registerMapper = $this->createMock(RegisterMapper::class);
 		$registerMapper->method('find')->willReturn($register);
@@ -174,7 +183,7 @@ class ObjectsControllerForgedScopeFlagsTest extends TestCase {
 			}
 		);
 
-		$controller = new ObjectsController(
+		$controller = ObjectsControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(IAppConfig::class),

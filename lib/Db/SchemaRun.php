@@ -73,6 +73,8 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class SchemaRun extends Entity implements JsonSerializable {
+	use JsonFieldsTrait;
+	use HydrateEmptyJsonAsNullTrait;
 
 	/**
 	 * Run type constants.
@@ -240,54 +242,6 @@ class SchemaRun extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'updated', type: 'datetime');
 
 	}//end __construct()
-
-	/**
-	 * The field names registered with the 'json' type.
-	 *
-	 * @return array<int, string> The json-typed field names.
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				static function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
-
-	/**
-	 * Hydrate the entity from an array.
-	 *
-	 * Without this, SchemaRunMapper's `$entity->hydrate()` call hit Entity::__call
-	 * and threw "hydrate does not exist", so every migration-run write failed.
-	 *
-	 * @param array<string, mixed> $object The source data.
-	 *
-	 * @return static This entity, hydrated.
-	 *
-	 * @spec openspec/specs/schema-migration/spec.md
-	 */
-	public function hydrate(array $object): static {
-		$jsonFields = $this->getJsonFields();
-
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields, true) === true && $value === []) {
-				$value = null;
-			}
-
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
-
-		return $this;
-	}//end hydrate()
 
 	/**
 	 * Whether the run is in an active (blocking) state.

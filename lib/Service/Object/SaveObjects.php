@@ -64,7 +64,7 @@ use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -73,6 +73,8 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Object\SaveObject\BulkObjectSlugs;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectDefaults;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectOwnership;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -192,10 +194,10 @@ class SaveObjects {
 	/**
 	 * Constructor for SaveObjects handler
 	 *
-	 * @param MagicMapper $objectEntityMapper Mapper for object entity database operations
+	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entity database operations
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schema operations
 	 * @param RegisterMapperInterface $registerMapper Mapper for register operations
-	 * @param SaveObject $saveHandler Handler for individual object operations
+	 * @param SaveObjectInterface $saveHandler Handler for individual object operations
 	 * @param IUserSession $userSession User session for getting current user
 	 * @param OrganisationServiceInterface $organisationService Service for organisation operations
 	 * @param LoggerInterface $logger Logger for error and debug logging
@@ -203,7 +205,7 @@ class SaveObjects {
 	 *                                         wave-12 `_rbac` / `_validation` reserved-keys policy
 	 * @param PermissionHandler|null $permissionHandler Permission handler for per-object RBAC enforcement;
 	 *                                                  wave-12 Fix 3 per-row RBAC + appendOnly gate
-	 * @param ValidateObject|null $validateHandler Validation handler for per-object schema validation;
+	 * @param ValidateObjectInterface|null $validateHandler Validation handler for per-object schema validation;
 	 *                                             wave-12 Fix 3 per-row JSON-Schema validation
 	 * @param IEventDispatcher|null $eventDispatcher Event dispatcher for object lifecycle events
 	 * @param AuditTrailMapperInterface|null $auditTrailMapper Audit trail mapper for logging bulk changes
@@ -213,16 +215,16 @@ class SaveObjects {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SaveObject $saveHandler,
+		private readonly SaveObjectInterface $saveHandler,
 		private readonly IUserSession $userSession,
 		private readonly OrganisationServiceInterface $organisationService,
 		private readonly LoggerInterface $logger,
 		private readonly ?IGroupManager $groupManager = null,
 		private readonly ?PermissionHandler $permissionHandler = null,
-		private readonly ?ValidateObject $validateHandler = null,
+		private readonly ?ValidateObjectInterface $validateHandler = null,
 		private readonly ?IEventDispatcher $eventDispatcher = null,
 		private readonly ?AuditTrailMapperInterface $auditTrailMapper = null,
 		private readonly ?BulkRowRules $rowRules = null,
@@ -583,17 +585,7 @@ class SaveObjects {
 	 */
 	private function saveBulkChunk(BulkSaveRun $run, array $chunk): void {
 		$chunkStart = microtime(true);
-		$chunkResult = $this->processObjectsChunk(
-			objects: $chunk,
-			schemaCache: $run->schemaCache,
-			_rbac: $run->rbac,
-			_multitenancy: $run->multitenancy,
-			_validation: $run->validation,
-			_events: $run->events,
-			register: $run->register,
-			schema: $run->schema,
-			_audit: $run->audit
-		);
+		$chunkResult = $this->processObjectsChunk(run: $run, objects: $chunk);
 
 		foreach (['saved', 'updated', 'invalid', 'errors', 'unchanged'] as $category) {
 			$run->result[$category] = array_merge($run->result[$category], $chunkResult[$category]);
@@ -1834,16 +1826,7 @@ class SaveObjects {
 			$object['@self'] = $selfData;
 		}
 
-		// METADATA HYDRATION: Create temporary entity for metadata extraction.
-		$tempEntity = new ObjectEntity();
-		$tempEntity->setObject($object);
-
-		// CRITICAL FIX: Hydrate @self data into the entity before calling hydrateObjectMetadata.
-		if (isset($object['@self']) === true && is_array($object['@self']) === true) {
-			$tempEntity->hydrate($object['@self']);
-		}
-
-		$this->saveHandler->hydrateObjectMetadata($tempEntity, $schema);
+		$tempEntity = $this->hydratedBulkEntity(object: $object, schema: $schema);
 
 		// Extract hydrated metadata back to object's @self data AND top level (for bulk SQL).
 		$selfData = $object['@self'] ?? [];
@@ -1909,19 +1892,19 @@ class SaveObjects {
 		// NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
 		$defaultOrganisation = $this->organisationService->getOrganisationForNewEntity();
 
+		$defaults = new BulkObjectDefaults(
+			registerId: $registerId,
+			schemaId: $schemaId,
+			schema: $schemaObj,
+			ownership: new BulkObjectOwnership(owner: $defaultOwner, organisation: $defaultOrganisation)
+		);
+
 		// PERFORMANCE OPTIMIZATION: Process all objects with pre-calculated values.
 		$preparedObjects = [];
 		$invalidObjects = [];
 
 		foreach ($objects as $object) {
-			$preparedObjects[] = $this->prepareSingleSchemaObject(
-				object: $object,
-				registerId: $registerId,
-				schemaId: $schemaId,
-				schemaObj: $schemaObj,
-				defaultOwner: $defaultOwner,
-				defaultOrganisation: $defaultOrganisation
-			);
+			$preparedObjects[] = $this->prepareSingleSchemaObject(object: $object, defaults: $defaults);
 		}
 
 		// INVERSE RELATIONS PROCESSING - Handle bulk inverse relations.
@@ -2001,37 +1984,70 @@ class SaveObjects {
 	 * Applies pre-calculated defaults, hydrates metadata, extracts business data,
 	 * and scans for relations. Returns the prepared selfData array.
 	 *
-	 * @param array $object The raw object data
-	 * @param int|string $registerId The register ID
-	 * @param int|string $schemaId The schema ID
-	 * @param Schema $schemaObj The schema object for metadata hydration
-	 * @param string|null $defaultOwner The default owner UID
-	 * @param string|null $defaultOrganisation The default organisation
+	 * @param array              $object   The raw object data
+	 * @param BulkObjectDefaults $defaults Register, schema, owner and organisation of this save
 	 *
 	 * @return array The prepared selfData array ready for database operations
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function prepareSingleSchemaObject(
-		array $object,
-		int|string $registerId,
-		int|string $schemaId,
-		Schema $schemaObj,
-		?string $defaultOwner,
-		?string $defaultOrganisation,
-	): array {
+	private function prepareSingleSchemaObject(array $object, BulkObjectDefaults $defaults): array {
 		// NO ERROR SUPPRESSION: Let single-schema preparation errors bubble up immediately!
+		$object['@self'] = $this->stampBulkSelfData(object: $object, defaults: $defaults);
+		$selfData = $this->hydrateBulkMetadata(object: $object, schema: $defaults->schema);
+		$this->logBulkObjectStructure(object: $object);
+
+		// The schema is passed so a declared `name` / `description` / `summary` /
+		// `image` / `slug` property is not mistaken for the magic-table column of
+		// the same name (openregister#2781).
+		$businessData = $this->extractBusinessData(object: $object, schema: $defaults->schema);
+		$selfData['relations'] = $this->scanForRelations(data: $businessData, prefix: '', schema: $defaults->schema);
+		$this->logBulkRelationScan(selfData: $selfData, businessData: $businessData);
+
+		// Store the clean business data in the database object column.
+		$selfData['object'] = $businessData;
+
+		return $selfData;
+	}//end prepareSingleSchemaObject()
+
+	/**
+	 * The @self data of one bulk object with register, schema, id, owner and
+	 * organisation stamped from the save's defaults.
+	 *
+	 * Owner and organisation are never taken from client-supplied @self data:
+	 * they always come from the session and the active organisation.
+	 *
+	 * @param array              $object   The raw object data
+	 * @param BulkObjectDefaults $defaults Register, schema, owner and organisation of this save
+	 *
+	 * @return array The stamped @self data
+	 */
+	private function stampBulkSelfData(array $object, BulkObjectDefaults $defaults): array {
 		$selfData = $object['@self'] ?? [];
 
-		// The call to extractBusinessData() below drops an undeclared top-level
-		// `slug`. Keep it for the slug decision, which removes this key again (#4037).
+		// The call to extractBusinessData() drops an undeclared top-level `slug`.
+		// Keep it for the slug decision, which removes this key again (#4037).
 		$selfData[BulkObjectSlugs::CLIENT_SLUG_KEY] = $this->bulkSlugs()->clientSlugToCarry(selfData: $selfData, object: $object);
 
-		// PERFORMANCE: Use pre-loaded values instead of per-object lookups.
-		$selfData['register'] = $selfData['register'] ?? $registerId;
-		$selfData['schema'] = $selfData['schema'] ?? $schemaId;
+		$selfData['register'] = $selfData['register'] ?? $defaults->registerId;
+		$selfData['schema'] = $selfData['schema'] ?? $defaults->schemaId;
+		$selfData = $this->withBulkObjectId(selfData: $selfData, object: $object);
+		$selfData['owner'] = $defaults->ownership->owner;
+		$selfData['organisation'] = $defaults->ownership->organisation;
 
-		// PERFORMANCE: Accept any non-empty string as ID, prioritize CSV 'id' column.
+		return $selfData;
+	}//end stampBulkSelfData()
+
+	/**
+	 * Set uuid and id: the provided id (CSV `id` column first, then @self.id)
+	 * when it is a non-blank string, otherwise a new v4 uuid.
+	 *
+	 * @param array $selfData The @self data
+	 * @param array $object   The raw object data
+	 *
+	 * @return array The @self data with uuid and id set
+	 */
+	private function withBulkObjectId(array $selfData, array $object): array {
 		$providedId = $object['id'] ?? $selfData['id'] ?? null;
 		$selfData['uuid'] = Uuid::v4()->toRfc4122();
 		$selfData['id'] = $selfData['uuid'];
@@ -2041,34 +2057,53 @@ class SaveObjects {
 			$selfData['id'] = $providedId;
 		}
 
-		// SECURITY (wave-11 SB2): owner and organisation MUST NOT be accepted from
-		// client-supplied @self data on the bulk path.  The wave-9 fix (#2008) added
-		// stripping for the single-object MagicMapper path but the bulk pipeline
-		// (SaveObjects → MagicBulkHandler::prepareObjectsForDynamicTable) is a
-		// completely separate code path that was not covered.  Always stamp the
-		// authoritative values from the session / active organisation, regardless of
-		// what the client sent in @self.owner or @self.organisation.
-		$selfData['owner'] = $defaultOwner;
-		$selfData['organisation'] = $defaultOrganisation;
+		return $selfData;
+	}//end withBulkObjectId()
 
-		// Update object's @self data before hydration.
-		$object['@self'] = $selfData;
+	/**
+	 * Hydrate schema-driven metadata (name, description, summary, ...) of one
+	 * bulk object and copy it back into its @self data.
+	 *
+	 * @param array  $object The raw object data with its stamped @self data
+	 * @param Schema $schema The schema for metadata hydration
+	 *
+	 * @return array The @self data with the hydrated metadata
+	 */
+	private function hydrateBulkMetadata(array $object, Schema $schema): array {
+		$tempEntity = $this->hydratedBulkEntity(object: $object, schema: $schema);
 
-		// METADATA HYDRATION: Create temporary entity for metadata extraction.
+		return $this->applyHydratedMetadata(selfData: $object['@self'], object: $object, tempEntity: $tempEntity);
+	}//end hydrateBulkMetadata()
+
+	/**
+	 * A temporary entity holding one bulk object, its @self data and the
+	 * metadata the schema derives from it.
+	 *
+	 * @param array  $object The raw object data
+	 * @param Schema $schema The schema for metadata hydration
+	 *
+	 * @return ObjectEntity The hydrated temporary entity
+	 */
+	private function hydratedBulkEntity(array $object, Schema $schema): ObjectEntity {
 		$tempEntity = new ObjectEntity();
 		$tempEntity->setObject($object);
-
-		// CRITICAL FIX: Hydrate @self data into the entity before calling hydrateObjectMetadata.
 		if (isset($object['@self']) === true && is_array($object['@self']) === true) {
 			$tempEntity->hydrate($object['@self']);
 		}
 
-		$this->saveHandler->hydrateObjectMetadata($tempEntity, $schemaObj);
+		$this->saveHandler->hydrateObjectMetadata($tempEntity, $schema);
 
-		// Extract hydrated metadata back to @self data AND top level (for bulk SQL).
-		$selfData = $this->applyHydratedMetadata(selfData: $selfData, object: $object, tempEntity: $tempEntity);
+		return $tempEntity;
+	}//end hydratedBulkEntity()
 
-		// DEBUG: Log actual data structure to understand what we're receiving.
+	/**
+	 * Debug-log the structure of one bulk object.
+	 *
+	 * @param array $object The raw object data
+	 *
+	 * @return void
+	 */
+	private function logBulkObjectStructure(array $object): void {
 		$selfKeys = 'none';
 		if (isset($object['@self']) === true) {
 			$selfKeys = array_keys($object['@self']);
@@ -2084,31 +2119,27 @@ class SaveObjects {
 				'sample_data' => array_slice($object, 0, 3, true),
 			]
 		);
+	}//end logBulkObjectStructure()
 
-		// Extract business data. The schema is passed so a declared `name` /
-		// `description` / `summary` / `image` / `slug` property is not mistaken
-		// for the magic-table column of the same name (openregister#2781).
-		$businessData = $this->extractBusinessData(object: $object, schema: $schemaObj);
-
-		// RELATIONS EXTRACTION: Scan the business data for relations (UUIDs and URLs).
-		$relations = $this->scanForRelations(data: $businessData, prefix: '', schema: $schemaObj);
-		$selfData['relations'] = $relations;
-
+	/**
+	 * Debug-log the relations scanned for one bulk object.
+	 *
+	 * @param array $selfData     The @self data carrying uuid and relations
+	 * @param array $businessData The object's business data
+	 *
+	 * @return void
+	 */
+	private function logBulkRelationScan(array $selfData, array $businessData): void {
 		$this->logger->debug(
 			'[SaveObjects] Relations scanned in preparation (single schema)',
 			[
 				'uuid' => $selfData['uuid'] ?? 'unknown',
-				'relationCount' => count($relations),
+				'relationCount' => count($selfData['relations']),
 				'businessDataKeys' => array_keys($businessData),
-				'relationsPreview' => array_slice($relations, 0, 5, true),
+				'relationsPreview' => array_slice($selfData['relations'], 0, 5, true),
 			]
 		);
-
-		// Store the clean business data in the database object column.
-		$selfData['object'] = $businessData;
-
-		return $selfData;
-	}//end prepareSingleSchemaObject()
+	}//end logBulkRelationScan()
 
 	/**
 	 * Apply hydrated metadata from a temporary entity back to selfData and object arrays
@@ -2155,15 +2186,9 @@ class SaveObjects {
 	 * - Memory-efficient processing
 	 * - Streamlined response format
 	 *
-	 * @param array $objects Array of pre-processed objects ready for database operations
-	 * @param array $schemaCache Pre-built schema cache for performance optimization
-	 * @param bool $_rbac Apply RBAC filtering
-	 * @param bool $_multitenancy Apply multi-tenancy filtering
-	 * @param bool $_validation Apply schema validation
-	 * @param bool $_events Dispatch events
-	 * @param Register|string|int|null $register Caller-supplied register context (forwarded to bulk save)
-	 * @param Schema|string|int|null $schema Caller-supplied schema context (forwarded to bulk save)
-	 * @param bool $_audit Whether to write audit trail rows for the persisted objects
+	 * @param BulkSaveRun $run     The bulk save call: its schema cache, switches and caller-supplied
+	 *                             register and schema (forwarded to bulk save).
+	 * @param array       $objects Array of pre-processed objects ready for database operations
 	 *
 	 * @return array Processing result for this chunk with bulk operation statistics
 	 *
@@ -2172,17 +2197,7 @@ class SaveObjects {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function processObjectsChunk(
-		array $objects,
-		array $schemaCache,
-		bool $_rbac,
-		bool $_multitenancy,
-		bool $_validation,
-		bool $_events,
-		Register|string|int|null $register = null,
-		Schema|string|int|null $schema = null,
-		bool $_audit = true,
-	): array {
+	private function processObjectsChunk(BulkSaveRun $run, array $objects): array {
 		$startTime = microtime(true);
 		$result    = $this->emptyChunkResult();
 
@@ -2194,7 +2209,7 @@ class SaveObjects {
 
 		// STEP 1: Transform objects for database format with metadata hydration.
 		$phaseStart = microtime(true);
-		$transformedObjects = $this->transformChunk(objects: $objects, schemaCache: $schemaCache, result: $result);
+		$transformedObjects = $this->transformChunk(objects: $objects, schemaCache: $run->schemaCache, result: $result);
 		$phaseMs['transform'] = round((microtime(true) - $phaseStart) * 1000, 2);
 
 		if (empty($transformedObjects) === true) {
@@ -2206,13 +2221,8 @@ class SaveObjects {
 		// mirroring the guarantees of the single-object save path. Objects that fail either check
 		// are moved into $result['invalid'] and excluded from persistence.
 		$phaseStart = microtime(true);
-		$transformedObjects = $this->enforceChunkGuards(
-			transformedObjects: $transformedObjects,
-			schemaCache: $schemaCache,
-			_rbac: $_rbac,
-			_validation: $_validation,
-			result: $result
-		);
+		[$transformedObjects, $refused] = $this->enforceChunkGuards(run: $run, transformedObjects: $transformedObjects);
+		$result = $this->withRefusedRows(result: $result, refused: $refused);
 		$phaseMs['guards'] = round((microtime(true) - $phaseStart) * 1000, 2);
 
 		if (empty($transformedObjects) === true) {
@@ -2222,7 +2232,7 @@ class SaveObjects {
 
 		$eventTargets = $this->bulkEventTargets(
 			transformedObjects: $transformedObjects,
-			context: ['events' => $_events, 'schemas' => $schemaCache, 'register' => $register, 'schema' => $schema]
+			context: ['events' => $run->events, 'schemas' => $run->schemaCache, 'register' => $run->register, 'schema' => $run->schema]
 		);
 
 		// STEP 2: Persist transformed objects to database.
@@ -2239,9 +2249,9 @@ class SaveObjects {
 		// and real tables here run to 4.2 KB a row, where the gap is wider.
 		$bulkResult = $this->persistChunk(
 			transformedObjects: $transformedObjects,
-			register: $register,
-			schema: $schema,
-			needsPreUpdateState: ($_events === true || $_audit === true || $eventTargets !== [])
+			register: $run->register,
+			schema: $run->schema,
+			needsPreUpdateState: ($run->events === true || $run->audit === true || $eventTargets !== [])
 		);
 		$phaseMs['persist'] = round((microtime(true) - $phaseStart) * 1000, 2);
 
@@ -2262,7 +2272,7 @@ class SaveObjects {
 		// Audit rows are written with streamed batched multi-row INSERTs (100 rows per
 		// statement) instead of one INSERT (plus hash-chain queries) per object.
 		$phaseStart = microtime(true);
-		$this->emitChunkSideEffects(sideEffects: $sideEffects, _events: $_events, _audit: $_audit);
+		$this->emitChunkSideEffects(sideEffects: $sideEffects, _events: $run->events, _audit: $run->audit);
 		$this->emitTargetedEvents(sideEffects: $sideEffects, targets: $eventTargets);
 		$phaseMs['sideEffects'] = round((microtime(true) - $phaseStart) * 1000, 2);
 
@@ -2428,108 +2438,167 @@ class SaveObjects {
 	 * Enforce per-object RBAC and schema validation before persistence (BUG-OBJ-1).
 	 *
 	 * Mirrors the guarantees of the single-object save path for the bulk path. Each
-	 * transformed object is checked for create permission (when $_rbac is true) and
-	 * validated against its resolved schema (when $_validation is true). Objects that
-	 * fail either check are appended to $result['invalid'] and excluded from the
-	 * returned list so they are never persisted.
+	 * transformed object is checked for create permission (when the run's rbac is on) and
+	 * validated against its resolved schema (when the run's validation is on). Objects that
+	 * fail either check are refused, so they are never persisted.
 	 *
-	 * @param array $transformedObjects Flat transformed objects ready for persistence
-	 * @param array $schemaCache Schema cache keyed by schema id
-	 * @param bool $_rbac Whether to enforce per-object create permission
-	 * @param bool $_validation Whether to validate each object against its schema
-	 * @param array $result The result array (invalid bucket is appended to)
+	 * @param BulkSaveRun $run                The bulk save call: its schema cache and switches.
+	 * @param array       $transformedObjects Flat transformed objects ready for persistence
 	 *
-	 * @return array The transformed objects that passed all enabled guards
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @return array{0: array, 1: list<array{object: array, error: string, type: string}>}
+	 *               The objects that passed all enabled guards, and the refused ones.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function enforceChunkGuards(
-		array $transformedObjects,
-		array $schemaCache,
-		bool $_rbac,
-		bool $_validation,
-		array &$result,
-	): array {
+	private function enforceChunkGuards(BulkSaveRun $run, array $transformedObjects): array {
 		// Nothing to enforce — return untouched.
-		if ($_rbac === false && $_validation === false) {
-			return $transformedObjects;
+		if ($run->rbac === false && $run->validation === false) {
+			return [$transformedObjects, []];
 		}
+
+		$run->userId = $this->userSession->getUser()?->getUID();
 
 		$allowedObjects = [];
-		$currentUserId = null;
-		$currentUser = $this->userSession->getUser();
-		if ($currentUser !== null) {
-			$currentUserId = $currentUser->getUID();
-		}
-
+		$refused = [];
 		foreach ($transformedObjects as $objData) {
-			$schemaId = $objData['schema'] ?? null;
-			$schema = null;
-			if ($schemaId !== null && isset($schemaCache[$schemaId]) === true) {
-				$schema = $schemaCache[$schemaId];
-			}
-
-			// Without a resolvable schema we cannot safely authorize or validate — reject.
-			if ($schema instanceof Schema === false) {
-				$result['invalid'][] = [
-					'object' => $objData,
-					'error' => 'Schema could not be resolved for RBAC/validation enforcement',
-					'type' => 'InvalidSchemaException',
-				];
-				$result['statistics']['invalid']++;
-				$result['statistics']['errors']++;
+			$refusal = $this->chunkGuardRefusal(run: $run, objData: $objData);
+			if ($refusal !== null) {
+				$refused[] = ['object' => $objData] + $refusal;
 				continue;
 			}
 
-			// RBAC: enforce create permission per object (BUG-OBJ-1).
-			if ($_rbac === true && $this->permissionHandler !== null) {
-				$hasPermission = $this->permissionHandler->hasPermission(
-					schema: $schema,
-					action: 'create',
-					userId: $currentUserId,
-					objectOwner: ($objData['owner'] ?? null),
-					_rbac: true
-				);
-
-				if ($hasPermission === false) {
-					$result['invalid'][] = [
-						'object' => $objData,
-						'error' => 'You do not have permission to create objects in this schema',
-						'type' => 'PermissionDeniedException',
-					];
-					$result['statistics']['invalid']++;
-					$result['statistics']['errors']++;
-					continue;
-				}
-			}
-
-			// Validation: validate the business data against the schema (BUG-OBJ-1).
-			if ($_validation === true && $this->validateHandler !== null) {
-				$businessData = $objData['object'] ?? [];
-				$validationResult = $this->validateHandler->validateObject(
-					object: $businessData,
-					schema: $schema
-				);
-
-				if ($validationResult->isValid() === false) {
-					$result['invalid'][] = [
-						'object' => $objData,
-						'error' => $this->validateHandler->generateErrorMessage(result: $validationResult),
-						'type' => 'ValidationException',
-					];
-					$result['statistics']['invalid']++;
-					$result['statistics']['errors']++;
-					continue;
-				}
-			}
-
 			$allowedObjects[] = $objData;
-		}//end foreach
+		}
 
-		return $allowedObjects;
+		return [$allowedObjects, $refused];
 	}//end enforceChunkGuards()
+
+	/**
+	 * Why the guards refuse one chunk row, or null when they admit it.
+	 *
+	 * Without a resolvable schema a row cannot safely be authorized or validated, so it is refused.
+	 *
+	 * @param BulkSaveRun $run     The bulk save call.
+	 * @param array       $objData The transformed row.
+	 *
+	 * @return array{error: string, type: string}|null The refusal.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function chunkGuardRefusal(BulkSaveRun $run, array $objData): ?array {
+		if ($this->guardSchema(run: $run, objData: $objData) === null) {
+			return [
+				'error' => 'Schema could not be resolved for RBAC/validation enforcement',
+				'type' => 'InvalidSchemaException',
+			];
+		}
+
+		return $this->chunkPermissionRefusal(run: $run, objData: $objData)
+			?? $this->chunkValidationRefusal(run: $run, objData: $objData);
+	}//end chunkGuardRefusal()
+
+	/**
+	 * The schema a chunk row names, from the run's schema cache; null when it names none or the cache holds no schema.
+	 *
+	 * @param BulkSaveRun $run     The bulk save call.
+	 * @param array       $objData The transformed row.
+	 *
+	 * @return Schema|null The schema.
+	 */
+	private function guardSchema(BulkSaveRun $run, array $objData): ?Schema {
+		$schemaId = $objData['schema'] ?? null;
+		if ($schemaId === null || isset($run->schemaCache[$schemaId]) === false) {
+			return null;
+		}
+
+		$schema = $run->schemaCache[$schemaId];
+		if ($schema instanceof Schema === false) {
+			return null;
+		}
+
+		return $schema;
+	}//end guardSchema()
+
+	/**
+	 * The refusal of a row the signed-in user may not create (BUG-OBJ-1); null when RBAC is off or the create is allowed.
+	 *
+	 * @param BulkSaveRun $run     The bulk save call.
+	 * @param array       $objData The transformed row.
+	 *
+	 * @return array{error: string, type: string}|null The refusal.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function chunkPermissionRefusal(BulkSaveRun $run, array $objData): ?array {
+		$schema = $this->guardSchema(run: $run, objData: $objData);
+		if ($run->rbac === false || $this->permissionHandler === null || $schema === null) {
+			return null;
+		}
+
+		$hasPermission = $this->permissionHandler->hasPermission(
+			schema: $schema,
+			action: 'create',
+			userId: $run->userId,
+			objectOwner: ($objData['owner'] ?? null),
+			_rbac: true
+		);
+		if ($hasPermission === true) {
+			return null;
+		}
+
+		return [
+			'error' => 'You do not have permission to create objects in this schema',
+			'type' => 'PermissionDeniedException',
+		];
+	}//end chunkPermissionRefusal()
+
+	/**
+	 * The refusal of a row whose business data fails its schema (BUG-OBJ-1); null when validation is off or it passes.
+	 *
+	 * @param BulkSaveRun $run     The bulk save call.
+	 * @param array       $objData The transformed row.
+	 *
+	 * @return array{error: string, type: string}|null The refusal.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function chunkValidationRefusal(BulkSaveRun $run, array $objData): ?array {
+		$schema = $this->guardSchema(run: $run, objData: $objData);
+		if ($run->validation === false || $this->validateHandler === null || $schema === null) {
+			return null;
+		}
+
+		$validationResult = $this->validateHandler->validateObject(
+			object: ($objData['object'] ?? []),
+			schema: $schema
+		);
+		if ($validationResult->isValid() === true) {
+			return null;
+		}
+
+		return [
+			'error' => $this->validateHandler->generateErrorMessage(result: $validationResult),
+			'type' => 'ValidationException',
+		];
+	}//end chunkValidationRefusal()
+
+	/**
+	 * A chunk result with the refused rows added to its invalid rows and counts.
+	 *
+	 * @param array $result  The chunk result.
+	 * @param array $refused The refused rows, as enforceChunkGuards() returns them.
+	 *
+	 * @return array The chunk result.
+	 */
+	private function withRefusedRows(array $result, array $refused): array {
+		foreach ($refused as $entry) {
+			$result['invalid'][] = $entry;
+			$result['statistics']['invalid']++;
+			$result['statistics']['errors']++;
+		}
+
+		return $result;
+	}//end withRefusedRows()
 
 	/**
 	 * Dispatch lifecycle events and write audit trail for persisted objects (BUG-OBJ-1).
@@ -2559,73 +2628,84 @@ class SaveObjects {
 		$createdEntities = ($sideEffects['created'] ?? []);
 		$updatedEntities = ($sideEffects['updated'] ?? []);
 
-		// Batched audit trail: multi-row INSERTs instead of one INSERT (plus
-		// hash-chain queries) per object.
-		//
 		// `$_audit === false` is the bulk mirror of the single-object path's
-		// `silent` flag, which has always skipped this row. Without it a caller
-		// that opts out of auditing per object — a synchronization engine writing
-		// its own bookkeeping, a config import, a repair step — would silently
-		// start auditing again the moment it switched to the bulk path, which is
-		// the opposite of what moving to bulk is for. Defaults to true, so every
-		// existing caller keeps writing audit rows.
+		// `silent` flag: a caller that opts out of auditing per object keeps
+		// that choice when it moves to the bulk path.
 		if ($this->auditTrailMapper !== null && $_audit === true) {
-			$auditEntries = [];
-			foreach ($createdEntities as $entity) {
-				$auditEntries[] = [
-					'old' => null,
-					'new' => $entity,
-					'action' => 'create',
-				];
-			}
-
-			foreach ($updatedEntities as $pair) {
-				// Fall back to the persisted entity as `old` when no pre-update
-				// snapshot could be reconstructed, so the row still records an
-				// 'update' action (a null `old` would be classified as 'create').
-				$auditEntries[] = [
-					'old' => ($pair['old'] ?? $pair['new']),
-					'new' => $pair['new'],
-					'action' => 'update',
-				];
-			}
-
-			// MEMORY: stream the entries in slices of AUDIT_INSERT_CHUNK_SIZE.
-			// A save chunk can hold up to 20k objects (calculateOptimalChunkSize),
-			// and every AuditTrail entity embeds an old+new payload diff — building
-			// them all before inserting would hold the whole chunk's diffs in
-			// memory at once. array_splice() consumes the entry list destructively
-			// so each slice's references are released as soon as it is persisted.
-			while ($auditEntries !== []) {
-				$slice = array_splice($auditEntries, 0, self::AUDIT_INSERT_CHUNK_SIZE);
-				try {
-					$this->auditTrailMapper->insertAuditTrails(entries: $slice);
-				} catch (\Throwable $e) {
-					$this->logger->warning(
-						message: '[SaveObjects] Failed to write batched audit trail for bulk chunk',
-						context: ['error' => $e->getMessage(), 'entries' => count($slice)]
-					);
-				}
-			}
-		}//end if
-
-		if ($_events !== true || $this->eventDispatcher === null) {
-			return;
+			$auditEntries = $this->chunkAuditEntries(created: $createdEntities, updated: $updatedEntities);
+			$this->insertAuditEntries(auditEntries: $auditEntries);
 		}
 
 		// A system operation withholds lifecycle events, exactly as the
 		// single-object path does in MagicMapper::suppressLifecycleEvents().
-		//
-		// This bulk path is the reason the first attempt at that gate did not
-		// work: gating MagicMapper's insert()/update() alone left the BULK
-		// dispatchers untouched, and a configuration import reaches objects
-		// through here too — so the fan-out carried on firing and the "fix"
-		// looked applied while eight apps kept waking per object.
-		if (\OCA\OpenRegister\Service\SystemOperationContext::isActive() === true) {
+		if ($_events !== true || $this->eventDispatcher === null
+			|| \OCA\OpenRegister\Service\SystemOperationContext::isActive() === true
+		) {
 			return;
 		}
 
-		// Created objects → ObjectCreatedEvent.
+		$this->dispatchCreatedEvents(createdEntities: $createdEntities);
+		$this->dispatchUpdatedEvents(updatedEntities: $updatedEntities);
+	}//end emitChunkSideEffects()
+
+	/**
+	 * The audit entries of one bulk chunk: a `create` entry per created object
+	 * and an `update` entry per updated pair.
+	 *
+	 * An update without a reconstructed pre-update snapshot falls back to the
+	 * persisted entity as `old`, so it is still recorded as an update.
+	 *
+	 * @param list<ObjectEntity>                                     $created The created entities
+	 * @param list<array{old: ObjectEntity|null, new: ObjectEntity}> $updated The updated pairs
+	 *
+	 * @return list<array{old: ObjectEntity|null, new: ObjectEntity, action: string}>
+	 */
+	private function chunkAuditEntries(array $created, array $updated): array {
+		$auditEntries = [];
+		foreach ($created as $entity) {
+			$auditEntries[] = ['old' => null, 'new' => $entity, 'action' => 'create'];
+		}
+
+		foreach ($updated as $pair) {
+			$auditEntries[] = ['old' => ($pair['old'] ?? $pair['new']), 'new' => $pair['new'], 'action' => 'update'];
+		}
+
+		return $auditEntries;
+	}//end chunkAuditEntries()
+
+	/**
+	 * Write audit entries in slices of AUDIT_INSERT_CHUNK_SIZE multi-row inserts.
+	 *
+	 * Every AuditTrail entity embeds an old+new payload diff, so the entries
+	 * are consumed slice by slice and each slice is released once persisted.
+	 * A failed slice is logged and the next slice is still written.
+	 *
+	 * @param array $auditEntries The entries from chunkAuditEntries()
+	 *
+	 * @return void
+	 */
+	private function insertAuditEntries(array $auditEntries): void {
+		while ($auditEntries !== []) {
+			$slice = array_splice($auditEntries, 0, self::AUDIT_INSERT_CHUNK_SIZE);
+			try {
+				$this->auditTrailMapper->insertAuditTrails(entries: $slice);
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[SaveObjects] Failed to write batched audit trail for bulk chunk',
+					context: ['error' => $e->getMessage(), 'entries' => count($slice)]
+				);
+			}
+		}
+	}//end insertAuditEntries()
+
+	/**
+	 * Dispatch the creation event of every created object; a failing listener is logged.
+	 *
+	 * @param list<ObjectEntity> $createdEntities The created entities
+	 *
+	 * @return void
+	 */
+	private function dispatchCreatedEvents(array $createdEntities): void {
 		foreach ($createdEntities as $entity) {
 			try {
 				(new ObjectEventGate(events: $this->eventDispatcher))->created(object: $entity);
@@ -2636,9 +2716,17 @@ class SaveObjects {
 				);
 			}
 		}
+	}//end dispatchCreatedEvents()
 
-		// Updated objects → ObjectUpdatedEvent with the real pre-update state
-		// when available so diff-aware listeners see an accurate changeset.
+	/**
+	 * Dispatch the update event of every updated pair, with the real pre-update
+	 * state when available; a failing listener is logged.
+	 *
+	 * @param list<array{old: ObjectEntity|null, new: ObjectEntity}> $updatedEntities The updated pairs
+	 *
+	 * @return void
+	 */
+	private function dispatchUpdatedEvents(array $updatedEntities): void {
 		foreach ($updatedEntities as $pair) {
 			$entity = $pair['new'];
 			try {
@@ -2650,7 +2738,7 @@ class SaveObjects {
 				);
 			}
 		}
-	}//end emitChunkSideEffects()
+	}//end dispatchUpdatedEvents()
 
 	/**
 	 * Convert a raw magic-table result row into an ObjectEntity.
@@ -2864,8 +2952,6 @@ class SaveObjects {
 	 * @return array Side-effect payload: 'created' => list<ObjectEntity>,
 	 *               'updated' => list<array{old: ObjectEntity|null, new: ObjectEntity}>
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Per-status branching plus entity conversion fallbacks
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function classifyDatabaseComputedResults(array $bulkResult, array &$result): array {
@@ -2875,89 +2961,122 @@ class SaveObjects {
 			'created' => [],
 			'updated' => [],
 		];
-
-		$createdCount = 0;
-		$updatedCount = 0;
-		$unchangedCount = 0;
+		$counts = ['created' => 0, 'updated' => 0, 'unchanged' => 0];
+		$buckets = ['created' => 'saved', 'updated' => 'updated', 'unchanged' => 'unchanged'];
 
 		foreach ($bulkResult as $completeObject) {
-			// DATABASE-COMPUTED CLASSIFICATION: Use the object_status calculated by database.
-			$objectStatus = $completeObject['object_status'] ?? 'unknown';
+			$row = $this->splitBulkRow(completeObject: $completeObject);
+			$row['status'] = $this->knownBulkStatus(row: $row);
 
-			// Retain the pre-update row (updates only) for the audit diff, and keep
-			// internal bookkeeping fields out of the raw row before conversion.
-			$preUpdateRow = ($completeObject['_pre_update_row'] ?? null);
-			unset($completeObject['_pre_update_row'], $completeObject['object_status'], $completeObject['operation_start_time']);
-
-			// Convert the raw magic-table row to an ObjectEntity so the response
-			// carries the same serialized shape as the single-object save path.
-			$entity = $this->convertBulkRowToEntity(row: $completeObject);
-			$serialized = $completeObject;
-			if ($entity !== null) {
-				$serialized = $entity->jsonSerialize();
-			}
-
-			switch ($objectStatus) {
-				case 'created':
-					$result['saved'][] = $serialized;
-					$result['statistics']['saved']++;
-					$createdCount++;
-					if ($entity !== null) {
-						$sideEffects['created'][] = $entity;
-					}
-					break;
-
-				case 'updated':
-					$result['updated'][] = $serialized;
-					$result['statistics']['updated']++;
-					$updatedCount++;
-					if ($entity !== null) {
-						$oldEntity = null;
-						if (is_array($preUpdateRow) === true) {
-							$oldEntity = $this->convertBulkRowToEntity(row: $preUpdateRow);
-						}
-
-						$sideEffects['updated'][] = [
-							'old' => $oldEntity,
-							'new' => $entity,
-						];
-					}
-					break;
-
-				case 'unchanged':
-					$result['unchanged'][] = $serialized;
-					$result['statistics']['unchanged']++;
-					$unchangedCount++;
-					break;
-
-				default:
-					// Fallback for unexpected status.
-					$this->logger->warning(
-						"Unexpected object status: {$objectStatus}",
-						[
-							'uuid' => ($completeObject['_uuid'] ?? $completeObject['uuid'] ?? 'unknown'),
-							'object_status' => $objectStatus,
-						]
-					);
-					$result['unchanged'][] = $serialized;
-					$result['statistics']['unchanged']++;
-					$unchangedCount++;
-			}//end switch
-		}//end foreach
+			$result[$buckets[$row['status']]][] = $row['serialized'];
+			$result['statistics'][$buckets[$row['status']]]++;
+			$counts[$row['status']]++;
+			$sideEffects = $this->withBulkSideEffect(sideEffects: $sideEffects, row: $row);
+		}
 
 		$this->logger->debug(
 			'[SaveObjects] Database-computed classification completed',
 			[
 				'total_processed' => count($bulkResult),
-				'created_objects' => $createdCount,
-				'updated_objects' => $updatedCount,
-				'unchanged_objects' => $unchangedCount,
+				'created_objects' => $counts['created'],
+				'updated_objects' => $counts['updated'],
+				'unchanged_objects' => $counts['unchanged'],
 				'classification_method' => 'database_computed_sql',
 			]
 		);
 
 		return $sideEffects;
 	}//end classifyDatabaseComputedResults()
+
+	/**
+	 * Split one database-classified bulk row into its status, pre-update row, entity and response shape.
+	 *
+	 * The pre-update row (updates only) is kept for the audit diff, and internal bookkeeping
+	 * fields are kept out of the raw row before conversion, so the response carries the same
+	 * serialized shape as the single-object save path.
+	 *
+	 * @param array $completeObject The row with object_status as the database returned it.
+	 *
+	 * @return array{status: mixed, preUpdateRow: mixed, row: array, entity: ObjectEntity|null, serialized: array}
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function splitBulkRow(array $completeObject): array {
+		$objectStatus = $completeObject['object_status'] ?? 'unknown';
+		$preUpdateRow = ($completeObject['_pre_update_row'] ?? null);
+		unset($completeObject['_pre_update_row'], $completeObject['object_status'], $completeObject['operation_start_time']);
+
+		$entity = $this->convertBulkRowToEntity(row: $completeObject);
+		$serialized = $completeObject;
+		if ($entity !== null) {
+			$serialized = $entity->jsonSerialize();
+		}
+
+		return [
+			'status' => $objectStatus,
+			'preUpdateRow' => $preUpdateRow,
+			'row' => $completeObject,
+			'entity' => $entity,
+			'serialized' => $serialized,
+		];
+	}//end splitBulkRow()
+
+	/**
+	 * The row's status when the database gave a known one; otherwise a warning and 'unchanged'.
+	 *
+	 * @param array $row The row as splitBulkRow() returns it.
+	 *
+	 * @return string 'created', 'updated' or 'unchanged'.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function knownBulkStatus(array $row): string {
+		$objectStatus = $row['status'];
+		if (in_array($objectStatus, ['created', 'updated', 'unchanged'], true) === true) {
+			return $objectStatus;
+		}
+
+		$this->logger->warning(
+			"Unexpected object status: {$objectStatus}",
+			[
+				'uuid' => ($row['row']['_uuid'] ?? $row['row']['uuid'] ?? 'unknown'),
+				'object_status' => $objectStatus,
+			]
+		);
+		return 'unchanged';
+	}//end knownBulkStatus()
+
+	/**
+	 * The side effects with a created or updated row's entity added; unchanged rows and rows without an entity add nothing.
+	 *
+	 * @param array $sideEffects The side effects so far.
+	 * @param array $row         The row as splitBulkRow() returns it, with its known status.
+	 *
+	 * @return array The side effects.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function withBulkSideEffect(array $sideEffects, array $row): array {
+		if ($row['entity'] === null || $row['status'] === 'unchanged') {
+			return $sideEffects;
+		}
+
+		if ($row['status'] === 'created') {
+			$sideEffects['created'][] = $row['entity'];
+			return $sideEffects;
+		}
+
+		$oldEntity = null;
+		if (is_array($row['preUpdateRow']) === true) {
+			$oldEntity = $this->convertBulkRowToEntity(row: $row['preUpdateRow']);
+		}
+
+		$sideEffects['updated'][] = [
+			'old' => $oldEntity,
+			'new' => $row['entity'],
+		];
+		return $sideEffects;
+	}//end withBulkSideEffect()
 
 	/**
 	 * Classify bulk results using legacy UUID-based approach

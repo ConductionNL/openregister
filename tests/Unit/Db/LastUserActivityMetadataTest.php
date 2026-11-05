@@ -18,6 +18,7 @@ use Doctrine\DBAL\Platforms\PostgreSQL120Platform;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\SortRequest;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -132,14 +133,14 @@ class LastUserActivityMetadataTest extends TestCase {
 
 	public function testItSortsByItsColumn(): void {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applySorting');
-		$method->invoke($this->search, $this->makeQueryBuilder(), ['@self.lastUserActivity' => 'ASC'], $this->makeSchema());
+		$method->invoke($this->search, $this->makeQueryBuilder(), new SortRequest(order: ['@self.lastUserActivity' => 'ASC'], schema: $this->makeSchema()));
 
 		$this->assertContains('order(t._last_user_activity,ASC)', $this->captured);
 	}
 
 	public function testUpdatedStillSortsByItsOwnColumn(): void {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applySorting');
-		$method->invoke($this->search, $this->makeQueryBuilder(), ['@self.updated' => 'DESC'], $this->makeSchema());
+		$method->invoke($this->search, $this->makeQueryBuilder(), new SortRequest(order: ['@self.updated' => 'DESC'], schema: $this->makeSchema()));
 
 		$this->assertContains('order(t._updated,DESC)', $this->captured);
 	}

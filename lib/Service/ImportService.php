@@ -45,7 +45,7 @@ use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Listener\NotifyPushListener;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
-use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
@@ -168,7 +168,7 @@ class ImportService implements ObjectImporterInterface {
 	 * @param \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec Translation CSV codec
 	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail mapper
 	 * @param MappingEngine $mappingEngine Migration-pack mapping engine
-	 * @param ValidateObject $validateObjectHandler Schema validator, used for genuinely
+	 * @param ValidateObjectInterface $validateObjectHandler Schema validator, used for genuinely
 	 *                                              side-effect-free dry-run imports
 	 * @param ContainerInterface $container DI container for lazy IQueue resolution
 	 */
@@ -180,7 +180,7 @@ class ImportService implements ObjectImporterInterface {
 		\OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly MappingEngine $mappingEngine,
-		private readonly ValidateObject $validateObjectHandler,
+		private readonly ValidateObjectInterface $validateObjectHandler,
 		private readonly ContainerInterface $container,
 	) {
 		$this->schemaMapper = $schemaMapper;
@@ -1774,9 +1774,6 @@ class ImportService implements ObjectImporterInterface {
 	 * something other than what the write does, which is the failure D-1
 	 * exists to prevent.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Row transformation requires many type-specific branches
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple column types and transformations create execution paths
-	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
 	public function transformCsvRowToObject(
@@ -1785,43 +1782,16 @@ class ImportService implements ObjectImporterInterface {
 		Schema $schema,
 		?IUser $currentUser = null,
 	): array {
-		// Use instance cache instead of static to prevent issues between requests.
 		$schemaId = $schema->getId();
-		// Ensure schemaId is string for array key.
-		$schemaIdKey = (string)$schemaId;
+		$schemaProperties = $this->cachedSchemaProperties(schema: $schema);
 
-		if (isset($this->schemaPropertiesCache[$schemaIdKey]) === false) {
-			$properties = $schema->getProperties();
-			$this->schemaPropertiesCache[$schemaIdKey] = $properties ?? [];
-		}
-
-		$schemaProperties = $this->schemaPropertiesCache[$schemaIdKey];
-
-		// Pre-allocate arrays for better performance.
 		$objectData = [];
 		$selfData = [
 			'register' => $register->getId(),
 			'schema' => $schemaId,
 		];
 
-		// Single pass through row data with proper column filtering.
-		$isAdmin = $this->isUserAdmin(user: $currentUser);
-
-		// Debug log to verify admin status.
-		$importUsername = 'null';
-		if ($currentUser !== null) {
-			$importUsername = $currentUser->getUID();
-		}
-
-		$this->logger->debug(
-			message: '[ImportService] Processing CSV row',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'isAdmin' => $isAdmin,
-				'username' => $importUsername,
-			]
-		);
+		$isAdmin = $this->isRowImporterAdmin(user: $currentUser);
 
 		// Translatable-property pre-pass (register-i18n Phase 3 wire-in):
 		// turn flat `field_lang` columns into the nested `field: {lang: value}`
@@ -1830,49 +1800,22 @@ class ImportService implements ObjectImporterInterface {
 		// columns; the rest of this loop sees the un-flattened shape.
 		$rowData = $this->translationCsvCodec->unflattenFromCsv($rowData, $schema);
 
-		foreach ($rowData as $key => $value) {
-			// Skip empty values early.
-			if ($value === null || $value === '') {
+		$cells = array_filter($rowData, static fn ($value): bool => $value !== null && $value !== '');
+		foreach ($cells as $key => $value) {
+			$firstChar = ((string)$key)[0] ?? '';
+
+			// `_` columns are ignored; of the `@` columns only `@self.*`, and only for an admin.
+			$selfPropertyName = $this->selfColumnProperty(key: $key, isAdmin: $isAdmin);
+			if ($selfPropertyName !== null) {
+				$selfData[$selfPropertyName] = $this->transformSelfProperty(propertyName: $selfPropertyName, value: $value);
+			}
+
+			if ($firstChar === '_' || $firstChar === '@') {
 				continue;
 			}
 
-			// Ensure $key is a string before accessing as array.
-			$keyString = (string)$key;
-			if (is_string($key) === true) {
-				$keyString = $key;
-			}
-
-			$firstChar = $keyString[0] ?? '';
-
-			if ($firstChar === '_') {
-				// REQUIREMENT: Columns starting with _ are completely ignored.
-				continue;
-			} elseif ($firstChar === '@') {
-				// REQUIREMENT: @ columns only processed if user is admin.
-				if ($isAdmin === false) {
-					continue;
-					// Skip @ columns for non-admin users.
-				}
-
-				if (str_starts_with($key, '@self.') === true) {
-					// Move properties starting with @self. to @self array and remove the @self. prefix.
-					$selfPropertyName = substr($key, 6);
-
-					// Transform special @self properties.
-					$selfData[$selfPropertyName] = $this->transformSelfProperty(
-						propertyName: $selfPropertyName,
-						value: $value
-					);
-				}
-
-				// Note: Other @ columns that don't start with @self. are ignored.
-				continue;
-			}//end if
-
-			// Regular properties - transform based on schema if needed.
 			$objectData[$key] = $value;
-			$hasSchemaProperty = ($schemaProperties[$key] ?? null) !== null;
-			if (is_array($schemaProperties) === true && $hasSchemaProperty === true) {
+			if (($schemaProperties[$key] ?? null) !== null) {
 				$objectData[$key] = $this->transformValueByType(value: $value, propertyDef: $schemaProperties[$key]);
 			}
 		}//end foreach
@@ -1890,6 +1833,60 @@ class ImportService implements ObjectImporterInterface {
 
 		return $objectData;
 	}//end transformCsvRowToObject()
+
+	/**
+	 * The @self property an `@self.<name>` column sets, for an admin; null for any other column.
+	 *
+	 * @param int|string $key     The column name.
+	 * @param bool       $isAdmin Whether the importing user is an admin.
+	 *
+	 * @return string|null The property name.
+	 */
+	private function selfColumnProperty(int|string $key, bool $isAdmin): ?string {
+		if ($isAdmin === false || is_string($key) === false || str_starts_with($key, '@self.') === false) {
+			return null;
+		}
+
+		return substr($key, 6);
+	}//end selfColumnProperty()
+
+	/**
+	 * A schema's properties, cached per schema id on this instance.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array The property definitions.
+	 */
+	private function cachedSchemaProperties(Schema $schema): array {
+		$schemaIdKey = (string)$schema->getId();
+		if (isset($this->schemaPropertiesCache[$schemaIdKey]) === false) {
+			$this->schemaPropertiesCache[$schemaIdKey] = $schema->getProperties() ?? [];
+		}
+
+		return $this->schemaPropertiesCache[$schemaIdKey];
+	}//end cachedSchemaProperties()
+
+	/**
+	 * Whether the importing user is an admin, logged at debug level per row.
+	 *
+	 * @param IUser|null $user The importing user.
+	 *
+	 * @return bool
+	 */
+	private function isRowImporterAdmin(?IUser $user): bool {
+		$isAdmin = $this->isUserAdmin(user: $user);
+		$this->logger->debug(
+			message: '[ImportService] Processing CSV row',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'isAdmin' => $isAdmin,
+				'username' => $user?->getUID() ?? 'null',
+			]
+		);
+
+		return $isAdmin;
+	}//end isRowImporterAdmin()
 
 	/**
 	 * Transform datetime values from various formats to MySQL datetime format

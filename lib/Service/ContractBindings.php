@@ -125,6 +125,10 @@ final class ContractBindings {
 		FlowRunMapperInterface::class => FlowRunMapper::class,
 		EntityRelationMapperInterface::class => EntityRelationMapper::class,
 		RegisterMapperInterface::class => RegisterMapper::class,
+		\OCA\OpenRegister\Db\MagicMapperInterface::class => \OCA\OpenRegister\Db\MagicMapper::class,
+		\OCA\OpenRegister\Service\Object\CacheHandlerInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
+		\OCA\OpenRegister\Service\Object\ValidateObjectInterface::class => \OCA\OpenRegister\Service\Object\ValidateObject::class,
+		\OCA\OpenRegister\Service\Object\SaveObjectInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
 	];
 
 	/**

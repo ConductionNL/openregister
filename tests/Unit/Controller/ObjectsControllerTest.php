@@ -6,6 +6,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -102,7 +103,7 @@ class ObjectsControllerTest extends TestCase {
 		// ObjectService::setRegister()/setSchema(); the ObjectService mock
 		// returns null from the entity getters by default, so entities stay
 		// null (same as the old throwing-DI-stub behavior).
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,
@@ -4306,7 +4307,7 @@ class ObjectsControllerTest extends TestCase {
 
 	public function testCreateWithoutWebhookService(): void {
 		// Create controller without webhook service
-		$controller = new ObjectsController(
+		$controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,
@@ -7336,7 +7337,7 @@ class ObjectsControllerTest extends TestCase {
 		DeepLinkRegistryService&MockObject $registry,
 		IURLGenerator&MockObject $urlGen,
 	): ObjectsController {
-		return new ObjectsController(
+		return ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,
