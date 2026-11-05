@@ -70,11 +70,7 @@ trait ConnectorEntityCallsTrait {
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
 	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		$body = $payload;
-		$body['register'] = $register;
-		$body['schema'] = $schema;
-		$body['object'] = $objectId;
-
+		$body = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: $payload);
 		$response = $this->router->call(
 			provider: $this,
 			method: 'POST',
@@ -100,11 +96,7 @@ trait ConnectorEntityCallsTrait {
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
 	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
-		$body = $payload;
-		$body['register'] = $register;
-		$body['schema'] = $schema;
-		$body['object'] = $objectId;
-
+		$body = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: $payload);
 		$response = $this->router->call(
 			provider: $this,
 			method: 'PUT',
@@ -141,12 +133,13 @@ trait ConnectorEntityCallsTrait {
 	}//end delete()
 
 	/**
-	 * The standard `{register, schema, object, …filters}` context query.
+	 * The standard `{register, schema, object, …filters}` context, used as the
+	 * query of reads and as the body of writes.
 	 *
 	 * @param string              $register Register slug or numeric id.
 	 * @param string              $schema   Schema slug or numeric id.
 	 * @param string              $objectId Object uuid.
-	 * @param array<string,mixed> $filters  Caller filters merged in.
+	 * @param array<string,mixed> $filters  Caller filters or payload merged in.
 	 *
 	 * @return array<string,mixed>
 	 */
