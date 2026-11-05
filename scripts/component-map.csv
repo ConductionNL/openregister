@@ -412,7 +412,6 @@ Controller/Settings/FileSettingsController.php,248,Controller,Configuration,Conf
 Controller/Settings/LlmSettingsController.php,315,Controller,Configuration,Configuration/Controller/Settings/LlmSettingsController.php,0,
 Controller/Settings/SecuritySettingsController.php,127,Controller,Configuration,Configuration/Controller/Settings/SecuritySettingsController.php,0,
 Controller/Settings/ValidationSettingsController.php,166,Controller,Configuration,Configuration/Controller/Settings/ValidationSettingsController.php,0,
-Controller/Settings/VectorSettingsController.php,17,Controller,Configuration,Configuration/Controller/Settings/VectorSettingsController.php,0,
 Controller/SetupController.php,140,Controller,Configuration,Configuration/Controller/SetupController.php,0,
 Controller/ShippedBaselineController.php,36,Controller,Configuration,Configuration/Controller/ShippedBaselineController.php,0,
 Controller/UiController.php,113,Controller,Configuration,Configuration/Controller/UiController.php,0,
@@ -875,7 +874,6 @@ Service/File/DocxTextReplacer.php,112,Service,Files,Files/Service/File/DocxTextR
 Service/File/ExecutableContentDetector.php,141,Service,Files,Files/Service/File/ExecutableContentDetector.php,0,202
 Service/File/FileAuditHandler.php,145,Service,Files,Files/Service/File/FileAuditHandler.php,0,188
 Service/File/FileBatchHandler.php,101,Service,Files,Files/Service/File/FileBatchHandler.php,0,274
-Service/File/FileCrudHandler.php,57,Service,Files,Files/Service/File/FileCrudHandler.php,0,
 Service/File/FileFormattingHandler.php,340,Service,Files,Files/Service/File/FileFormattingHandler.php,0,61
 Service/File/FileLockHandler.php,162,Service,Files,Files/Service/File/FileLockHandler.php,0,166
 Service/File/FileMetadataFormHandler.php,76,Service,Files,Files/Service/File/FileMetadataFormHandler.php,0,
