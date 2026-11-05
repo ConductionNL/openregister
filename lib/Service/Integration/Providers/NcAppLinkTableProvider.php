@@ -52,6 +52,18 @@ trait NcAppLinkTableProvider {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The IntegrationProvider contract fixes the signature.
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		return $this->objectRows(objectId: $objectId);
+	}//end list()
+
+	/**
+	 * The rows linked to an object: none when the app is missing, else the link
+	 * table's rows, else the provider's fallback.
+	 *
+	 * @param string $objectId Object uuid.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	protected function objectRows(string $objectId): array {
 		if ($this->isEnabled() === false) {
 			return [];
 		}
@@ -62,7 +74,7 @@ trait NcAppLinkTableProvider {
 		}
 
 		return $this->unlinkedRows(objectId: $objectId);
-	}//end list()
+	}//end objectRows()
 
 	/**
 	 * The leaf rows of an object's link rows, one per link.
@@ -82,7 +94,7 @@ trait NcAppLinkTableProvider {
 	 *
 	 * @return array<int,object> The link entities.
 	 */
-	private function linkedRows(string $objectId): array {
+	protected function linkedRows(string $objectId): array {
 		try {
 			return $this->linkMapper()->findByObjectUuid($objectId);
 		} catch (Throwable $e) {
