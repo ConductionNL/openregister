@@ -344,6 +344,51 @@ class ContactServiceTest extends TestCase {
 	}
 
 	/**
+	 * A link id scoped to an object is refused, and left alone, when the link belongs to another object.
+	 *
+	 * @return void
+	 */
+	public function testUnlinkContactRefusesALinkOfAnotherObject(): void {
+		$link = new ContactLink();
+		$link->setId(77);
+		$link->setObjectUuid('other-object');
+		$link->setAddressbookId(1);
+		$link->setContactUri('someone.vcf');
+
+		$this->contactLinkMapper->method('find')->with(77)->willReturn($link);
+		$this->cardDavBackend->expects($this->never())->method('getCard');
+		$this->cardDavBackend->expects($this->never())->method('updateCard');
+		$this->contactLinkMapper->expects($this->never())->method('delete');
+
+		try {
+			$this->service->unlinkContact(77, 'abc-123');
+			$this->fail('Expected a 404');
+		} catch (Exception $e) {
+			$this->assertSame(404, $e->getCode());
+			$this->assertSame('Contact link not found', $e->getMessage());
+		}
+	}
+
+	/**
+	 * A link id scoped to its own object is removed as before.
+	 *
+	 * @return void
+	 */
+	public function testUnlinkContactRemovesALinkOfTheGivenObject(): void {
+		$link = new ContactLink();
+		$link->setId(78);
+		$link->setObjectUuid('abc-123');
+		$link->setAddressbookId(1);
+		$link->setContactUri('jan.vcf');
+
+		$this->contactLinkMapper->method('find')->with(78)->willReturn($link);
+		$this->cardDavBackend->method('getCard')->willReturn(false);
+		$this->contactLinkMapper->expects($this->once())->method('delete')->with($link);
+
+		$this->service->unlinkContact(78, 'abc-123');
+	}
+
+	/**
 	 * Idempotency: unlinkContact must drop the link row even when the
 	 * underlying vCard has been removed (CardDavBackend::getCard returns
 	 * false). Phase D-2 found that the registry-path delete was

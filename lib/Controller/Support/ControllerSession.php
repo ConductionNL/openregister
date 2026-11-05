@@ -50,4 +50,20 @@ final class ControllerSession {
 		public readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
+
+	/**
+	 * Whether the session user is an administrator; false without a session user.
+	 *
+	 * @return bool True for an administrator.
+	 *
+	 * @spec openspec/specs/auth-system/spec.md
+	 */
+	public function isAdmin(): bool {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
+
+		return $this->groupManager->isAdmin($user->getUID());
+	}//end isAdmin()
 }//end class

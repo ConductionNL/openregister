@@ -56,54 +56,39 @@
 			<div class="config-section">
 				<h3>{{ t('openregister', '🔢 Vectorization Settings') }}</h3>
 
-				<div class="form-group">
-					<NcCheckboxRadioSwitch
-						v-model="config.vectorizationEnabled"
-						type="switch">
-						{{
-							t(
-								'openregister',
-								'Enable automatic object vectorization',
-							)
-						}}
-					</NcCheckboxRadioSwitch>
-					<small>{{
+				<VectorizationSwitchField
+					v-model="config.vectorizationEnabled"
+					:label="
+						t('openregister', 'Enable automatic object vectorization')
+					"
+					:hint="
 						t(
 							'openregister',
 							'Automatically generate vector embeddings when objects are created or updated',
 						)
-					}}</small>
-				</div>
+					" />
 
 				<div v-if="config.vectorizationEnabled" class="trigger-settings">
 					<h4>{{ t('openregister', 'Vectorization Triggers') }}</h4>
-					<div class="form-group">
-						<NcCheckboxRadioSwitch
-							v-model="config.vectorizeOnCreate"
-							type="switch">
-							{{ t('openregister', 'Vectorize on object creation') }}
-						</NcCheckboxRadioSwitch>
-						<small>{{
+					<VectorizationSwitchField
+						v-model="config.vectorizeOnCreate"
+						:label="t('openregister', 'Vectorize on object creation')"
+						:hint="
 							t(
 								'openregister',
 								'Generate vectors immediately when new objects are created',
 							)
-						}}</small>
-					</div>
+						" />
 
-					<div class="form-group">
-						<NcCheckboxRadioSwitch
-							v-model="config.vectorizeOnUpdate"
-							type="switch">
-							{{ t('openregister', 'Re-vectorize on object update') }}
-						</NcCheckboxRadioSwitch>
-						<small>{{
+					<VectorizationSwitchField
+						v-model="config.vectorizeOnUpdate"
+						:label="t('openregister', 'Re-vectorize on object update')"
+						:hint="
 							t(
 								'openregister',
 								'Update vectors when object data changes (recommended for accurate search)',
 							)
-						}}</small>
-					</div>
+						" />
 				</div>
 			</div>
 
@@ -121,19 +106,15 @@
 					}}
 				</p>
 
-				<div class="form-group">
-					<NcCheckboxRadioSwitch
-						v-model="config.vectorizeAllViews"
-						type="switch">
-						{{ t('openregister', 'Vectorize all views') }}
-					</NcCheckboxRadioSwitch>
-					<small>{{
+				<VectorizationSwitchField
+					v-model="config.vectorizeAllViews"
+					:label="t('openregister', 'Vectorize all views')"
+					:hint="
 						t(
 							'openregister',
 							'Enable vectorization for all existing and future views (may increase costs)',
 						)
-					}}</small>
-				</div>
+					" />
 
 				<div v-if="!config.vectorizeAllViews" class="view-selection">
 					<div class="selection-header">
@@ -204,21 +185,17 @@
 					}}
 				</p>
 
-				<div class="form-group">
-					<NcCheckboxRadioSwitch
-						v-model="config.includeMetadata"
-						type="switch">
-						{{
-							t('openregister', 'Include schema and register metadata')
-						}}
-					</NcCheckboxRadioSwitch>
-					<small>{{
+				<VectorizationSwitchField
+					v-model="config.includeMetadata"
+					:label="
+						t('openregister', 'Include schema and register metadata')
+					"
+					:hint="
 						t(
 							'openregister',
 							'Add schema titles, descriptions, and register information to provide richer context for search',
 						)
-					}}</small>
-				</div>
+					" />
 
 				<div class="form-group">
 					<label for="max-depth">{{
@@ -239,57 +216,27 @@
 					}}</small>
 				</div>
 
-				<div class="form-group">
-					<NcCheckboxRadioSwitch
-						v-model="config.includeRelations"
-						type="switch">
-						{{ t('openregister', 'Include related object references') }}
-					</NcCheckboxRadioSwitch>
-					<small>{{
+				<VectorizationSwitchField
+					v-model="config.includeRelations"
+					:label="t('openregister', 'Include related object references')"
+					:hint="
 						t(
 							'openregister',
 							'Include ids and names of related objects for better contextual search',
 						)
-					}}</small>
-				</div>
+					" />
 			</div>
 
-			<!-- Batch Processing -->
-			<div v-if="config.vectorizationEnabled" class="config-section">
-				<h3>{{ t('openregister', '⚡ Batch Processing') }}</h3>
-
-				<div class="form-group">
-					<label for="batch-size">{{
-						t('openregister', 'Batch Size')
-					}}</label>
-					<input
-						id="batch-size"
-						v-model.number="config.batchSize"
-						type="number"
-						min="1"
-						max="100"
-						step="1"
-						class="input-field" />
-					<small>{{
-						t(
-							'openregister',
-							'Number of objects to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.',
-						)
-					}}</small>
-				</div>
-
-				<div class="form-group">
-					<NcCheckboxRadioSwitch v-model="config.autoRetry" type="switch">
-						{{ t('openregister', 'Auto-retry failed vectorizations') }}
-					</NcCheckboxRadioSwitch>
-					<small>{{
-						t(
-							'openregister',
-							'Automatically retry failed vectorization attempts (max 3 retries)',
-						)
-					}}</small>
-				</div>
-			</div>
+			<VectorizationBatchSection
+				v-if="config.vectorizationEnabled"
+				v-model:batchSize="config.batchSize"
+				v-model:autoRetry="config.autoRetry"
+				:hint="
+					t(
+						'openregister',
+						'Number of objects to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.',
+					)
+				" />
 
 			<!-- Embedding Provider Info -->
 			<div class="config-section">
@@ -327,42 +274,50 @@
 			</div>
 		</div>
 
-		<!-- Dialog Actions -->
 		<template #actions>
-			<NcButton @click="$emit('closing')">
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
-			<NcButton
-				variant="primary"
-				:disabled="saving"
-				@click="saveConfiguration">
-				<template #icon>
-					<NcLoadingIcon v-if="saving" :size="20" />
-					<ContentSave v-else :size="20" />
-				</template>
-				{{
-					saving
-						? t('openregister', 'Saving...')
-						: t('openregister', 'Save Configuration')
-				}}
-			</NcButton>
+			<VectorizationSaveActions
+				:saving="saving"
+				@save="saveConfiguration"
+				@cancel="$emit('closing')" />
 		</template>
 	</NcDialog>
 </template>
 
 <script>
 import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
-import {
-	NcButton,
-	NcCheckboxRadioSwitch,
-	NcDialog,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
+import { NcButton, NcCheckboxRadioSwitch, NcDialog } from '@nextcloud/vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
-import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import VectorizationBatchSection from './vectorization/VectorizationBatchSection.vue'
+import VectorizationSaveActions from './vectorization/VectorizationSaveActions.vue'
+import VectorizationSwitchField from './vectorization/VectorizationSwitchField.vue'
+import {
+	readVectorizeSettings,
+	readViews,
+	writeVectorizeSettings,
+} from './vectorization/objectVectorizationApi.js'
+import { saveSettings } from './vectorization/vectorizationSettings.js'
+
+/**
+ * The object vectorization settings before the stored ones are loaded.
+ *
+ * @return {object} The settings
+ */
+function defaultConfig() {
+	return {
+		vectorizationEnabled: true,
+		vectorizeOnCreate: true,
+		vectorizeOnUpdate: false,
+		vectorizeAllViews: true,
+		enabledViews: [],
+		includeMetadata: true,
+		includeRelations: true,
+		maxNestingDepth: 10,
+		batchSize: 25,
+		autoRetry: true,
+	}
+}
 
 export default {
 	name: 'ObjectManagementModal',
@@ -370,37 +325,23 @@ export default {
 	components: {
 		NcDialog,
 		NcButton,
-		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
 		InformationOutline,
 		AlertCircle,
-		ContentSave,
+		VectorizationBatchSection,
+		VectorizationSaveActions,
+		VectorizationSwitchField,
 	},
 
 	props: {
-		show: {
-			type: Boolean,
-			required: true,
-		},
+		show: { type: Boolean, required: true },
 	},
 
 	data() {
 		return {
-			loading: true,
 			saving: false,
 
-			config: {
-				vectorizationEnabled: true,
-				vectorizeOnCreate: true,
-				vectorizeOnUpdate: false,
-				vectorizeAllViews: true,
-				enabledViews: [],
-				includeMetadata: true,
-				includeRelations: true,
-				maxNestingDepth: 10,
-				batchSize: 25,
-				autoRetry: true,
-			},
+			config: defaultConfig(),
 
 			views: [],
 			embeddingProviderName: 'Not configured',
@@ -433,19 +374,12 @@ export default {
 		 */
 		async loadConfiguration() {
 			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/settings/objects/vectorize'),
-				)
-				if (response.data.success) {
-					this.config = {
-						...this.config,
-						...response.data.data,
-					}
+				const settings = await readVectorizeSettings()
+				if (settings.success) {
+					this.config = { ...this.config, ...settings.data }
 				}
-				this.loading = false
 			} catch (error) {
 				console.error('Failed to load configuration:', error)
-				this.loading = false
 			}
 		},
 
@@ -453,15 +387,7 @@ export default {
 		 * @spec exclude form-state loader for views via API
 		 */
 		async loadViews() {
-			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/views'),
-				)
-				this.views = response.data.results || []
-			} catch (error) {
-				console.error('Failed to load views:', error)
-				this.views = []
-			}
+			this.views = await readViews()
 		},
 
 		/**
@@ -487,30 +413,14 @@ export default {
 		/**
 		 * @spec exclude modal submit handler persisting vectorization config via API
 		 */
-		async saveConfiguration() {
-			this.saving = true
-
-			try {
-				await axios.patch(
-					generateUrl('/apps/openregister/api/settings/objects/vectorize'),
-					this.config,
-				)
-				showSuccess(
-					this.t(
-						'openregister',
-						'Object vectorization configuration saved successfully',
-					),
-				)
-				this.$emit('closing')
-			} catch (error) {
-				showError(
-					this.t('openregister', 'Failed to save configuration: {error}', {
-						error: error.response?.data?.error || error.message,
-					}),
-				)
-			} finally {
-				this.saving = false
-			}
+		saveConfiguration() {
+			return saveSettings(this, {
+				send: () => writeVectorizeSettings(this.config),
+				done: this.t(
+					'openregister',
+					'Object vectorization configuration saved successfully',
+				),
+			})
 		},
 	},
 }
@@ -527,28 +437,13 @@ export default {
 
 @include info-box;
 
-.config-section {
-	margin-bottom: 32px;
+@include config-section;
 
-	h3 {
-		margin: 0 0 8px 0;
-		font-size: 16px;
-		font-weight: 600;
-	}
-
-	h4 {
-		margin: 16px 0 8px 0;
-		font-size: 14px;
-		font-weight: 500;
-		color: var(--color-text-maxcontrast);
-	}
-
-	.section-description {
-		margin: 0 0 16px 0;
-		color: var(--color-text-maxcontrast);
-		font-size: 14px;
-		line-height: 1.5;
-	}
+.config-section h4 {
+	margin: 16px 0 8px 0;
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--color-text-maxcontrast);
 }
 
 .trigger-settings {
@@ -659,27 +554,6 @@ export default {
 
 /* Actions layout */
 @include deep-dialog-actions;
-
-.actions-left {
-	display: flex;
-	gap: 12px;
-	align-items: center;
-}
-
-@include actions-right;
-
-.progress-indicator {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-	min-width: 150px;
-
-	.progress-text {
-		font-size: 12px;
-		color: var(--color-text-maxcontrast);
-		font-weight: 500;
-	}
-}
 
 @include media-max-width-768px;
 </style>

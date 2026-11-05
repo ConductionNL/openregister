@@ -762,14 +762,6 @@
       "count": 1
     }
   },
-  "src/modals/settings/FileManagementModal.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    },
-    "no-console": {
-      "count": 1
-    }
-  },
   "src/modals/settings/FileVectorizationModal.vue": {
     "no-console": {
       "count": 2
@@ -795,11 +787,8 @@
     }
   },
   "src/modals/settings/ObjectManagementModal.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    },
     "no-console": {
-      "count": 3
+      "count": 2
     }
   },
   "src/modals/settings/ObjectVectorizationModal.vue": {
@@ -818,6 +807,11 @@
     }
   },
   "src/modals/settings/vectorization/VectorizationActions.vue": {
+    "@nextcloud/l10n-enforce-ellipsis": {
+      "count": 1
+    }
+  },
+  "src/modals/settings/vectorization/VectorizationSaveActions.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 1
     }

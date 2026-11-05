@@ -50,12 +50,14 @@ class ObjectSourcePlumbingTest extends TestCase {
 		return [
 			'caldav' => [ObjectSource\CalDavVtodoObjectSourceProvider::class],
 			'calendar' => [ObjectSource\CalendarEventObjectSourceProvider::class],
+			'contacts' => [ObjectSource\ContactsObjectSourceProvider::class],
 			'deck' => [ObjectSource\DeckObjectSourceProvider::class],
 			'federated' => [ObjectSource\FederatedObjectSourceProvider::class],
 			'files' => [ObjectSource\FilesObjectSourceProvider::class],
 			'group' => [ObjectSource\GroupObjectSourceProvider::class],
 			'organisation' => [ObjectSource\OrganisationObjectSourceProvider::class],
 			'talk' => [ObjectSource\TalkObjectSourceProvider::class],
+			'user directory' => [ObjectSource\UserDirectoryObjectSourceProvider::class],
 		];
 	}//end countingProviders()
 

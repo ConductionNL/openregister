@@ -40,13 +40,12 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 <script>
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import BulkSelectionDialog from './BulkSelectionDialog.vue'
-import eventBus from '../../eventBus.js'
 import {
-	closeBulkDialog,
-	dropFromSelection,
-	objectTitle,
+	bulkDialogData,
+	bulkDialogMethods,
+	opensWith,
 	reviewStateOf,
-	takeSelection,
+	runBulkAction,
 } from './bulkSelection.js'
 
 export default {
@@ -56,16 +55,7 @@ export default {
 		TrashCanOutline,
 	},
 
-	data() {
-		return {
-			success: null,
-			successMessage: '',
-			loading: false,
-			error: false,
-			closeModalTimeout: null,
-			selectedObjects: [],
-		}
-	},
+	data: bulkDialogData,
 
 	computed: {
 		/**
@@ -90,14 +80,7 @@ export default {
 	},
 
 	watch: {
-		'navigationStore.dialog': function (newValue, oldValue) {
-			if (
-				newValue === 'permanentlyDeleteMultiple'
-				&& oldValue !== 'permanentlyDeleteMultiple'
-			) {
-				this.initializeSelection()
-			}
-		},
+		'navigationStore.dialog': opensWith('permanentlyDeleteMultiple'),
 	},
 
 	mounted() {
@@ -105,36 +88,7 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * Initialize selection from transfer data
-		 *
-		 * @return {void}
-		 * @spec openspec/specs/entity-management-modals/spec.md
-		 */
-		initializeSelection() {
-			takeSelection(this)
-		},
-
-		/**
-		 * Remove object from selection
-		 *
-		 * @param {string} objectId - ID of object to remove
-		 * @return {void}
-		 * @spec exclude Removes one object from the local bulk-selection list; UI selection plumbing.
-		 */
-		removeObject(objectId) {
-			dropFromSelection(this, objectId)
-		},
-
-		/**
-		 * Close the dialog and reset state
-		 *
-		 * @return {void}
-		 * @spec exclude Modal close handler resetting navigationStore.dialog and local state; UI plumbing.
-		 */
-		closeDialog() {
-			closeBulkDialog(this)
-		},
+		...bulkDialogMethods,
 
 		/**
 		 * Permanently delete multiple objects
@@ -148,32 +102,25 @@ export default {
 				return
 			}
 
-			this.loading = true
+			await runBulkAction(this, this.purgeAction())
+		},
 
-			try {
-				const ids = this.objectsToDelete.map((obj) => obj.id)
-				const result = await deletedStore.permanentlyDeleteMultiple(ids)
-
-				this.success = true
-				this.error = false
-
-				this.successMessage = this.purgedMessage(result)
-
-				// Auto-close after 3 seconds
-				this.closeModalTimeout = setTimeout(this.closeDialog, 3000)
-
-				// Emit event to refresh parent list
-				eventBus.emit('deleted-objects-permanently-deleted', ids)
-			} catch (error) {
-				this.success = false
-				this.error =
-					error.message
-					|| t(
-						'openregister',
-						'An error occurred while permanently deleting the objects',
-					)
-			} finally {
-				this.loading = false
+		/**
+		 * What a purge runs and reports.
+		 *
+		 * @return {object} The bulk action
+		 * @spec exclude Bulk-purge confirm handler delegating to deletedStore.permanentlyDeleteMultiple; entity mutation lives in the store, this is modal orchestration plumbing.
+		 */
+		purgeAction() {
+			return {
+				run: (ids) => deletedStore.permanentlyDeleteMultiple(ids),
+				done: (result) => this.purgedMessage(result),
+				event: 'deleted-objects-permanently-deleted',
+				closeAfter: 3000,
+				failure: t(
+					'openregister',
+					'An error occurred while permanently deleting the objects',
+				),
 			}
 		},
 
@@ -186,30 +133,29 @@ export default {
 		 * @spec exclude Bulk-purge confirm handler delegating to deletedStore.permanentlyDeleteMultiple; entity mutation lives in the store, this is modal orchestration plumbing.
 		 */
 		purgedMessage(result) {
-			if (result.deleted > 0) {
-				const message = t(
-					'openregister',
-					'Successfully permanently deleted {count} objects',
-					{ count: result.deleted },
-				)
-				return result.failed > 0
-					? message
-							+ t('openregister', ', {failed} failed', {
-								failed: result.failed,
-							})
-					: message
+			if (!(result.deleted > 0)) {
+				return t('openregister', 'No objects were permanently deleted')
 			}
-			return t('openregister', 'No objects were permanently deleted')
+			const message = t(
+				'openregister',
+				'Successfully permanently deleted {count} objects',
+				{ count: result.deleted },
+			)
+			return message + this.failedNote(result)
 		},
 
 		/**
-		 * Get object title from object data
+		 * The note on failed objects added to the purge message, empty when none failed.
 		 *
-		 * @param {object} object - The object
-		 * @return {string} The object title
+		 * @param {object} result The store's answer, with deleted and failed counts
+		 * @return {string} The note
+		 * @spec exclude Bulk-purge confirm handler delegating to deletedStore.permanentlyDeleteMultiple; entity mutation lives in the store, this is modal orchestration plumbing.
 		 */
-		getObjectTitle(object) {
-			return objectTitle(object)
+		failedNote(result) {
+			if (!(result.failed > 0)) {
+				return ''
+			}
+			return t('openregister', ', {failed} failed', { failed: result.failed })
 		},
 	},
 }

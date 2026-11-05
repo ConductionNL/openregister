@@ -414,9 +414,9 @@ class ContactsController extends Controller {
 			schema: $schema,
 			id: $id,
 			handler: function (ObjectEntity $object) use ($contactUid): JSONResponse {
-				// Numeric param: legacy link-id path.
+				// Numeric param: legacy link-id path, limited to this object's links.
 				if (ctype_digit($contactUid) === true) {
-					$this->contactService->unlinkContact((int)$contactUid);
+					$this->contactService->unlinkContact(linkId: (int)$contactUid, objectUuid: $object->getUuid());
 
 					return new JSONResponse(['success' => true]);
 				}
