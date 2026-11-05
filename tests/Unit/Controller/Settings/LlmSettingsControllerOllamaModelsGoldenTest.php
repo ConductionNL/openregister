@@ -31,6 +31,9 @@ use Psr\Log\LoggerInterface;
  * fixture.
  *
  * @covers \OCA\OpenRegister\Controller\Settings\LlmSettingsController
+ * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsDomain
+ * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsControllerServices
  */
 class LlmSettingsControllerOllamaModelsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/llm-ollama-models-golden.json';
