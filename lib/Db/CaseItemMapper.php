@@ -57,6 +57,7 @@ use Symfony\Component\Uid\Uuid;
  * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
  */
 class CaseItemMapper extends QBMapper {
+	use DeleteByObjectTrait;
 
 	/**
 	 * Constructor.
@@ -288,24 +289,6 @@ class CaseItemMapper extends QBMapper {
 
 		return $total;
 	}//end countByTypeAndState()
-
-	/**
-	 * Delete every plan item of one object. The audit is NOT touched: it is
-	 * append-only and outlives the rows it describes.
-	 *
-	 * @param string $objectUuid The anchoring object's uuid.
-	 *
-	 * @return int How many rows were deleted.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
-	 */
-	public function deleteByObject(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObject()
 
 	/**
 	 * The shared predicate of the stuck-where page and its total.
