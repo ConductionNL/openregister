@@ -1531,21 +1531,33 @@ class ImportService implements ObjectImporterInterface {
 		$summary = $this->withSaveOutcome(summary: $import['summary'], saveResult: $saveResult);
 		if ($import['validation'] === true) {
 			foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
-				$error = [
-					'object' => $invalidItem['object'] ?? $invalidItem,
-					'error' => $invalidItem['error'] ?? 'Validation failed',
-					'type' => $invalidItem['type'] ?? 'ValidationException',
-				];
-				if ($import['sheetTitle'] !== null) {
-					$error = ['sheet' => $import['sheetTitle']] + $error;
-				}
-
-				$summary['errors'][] = $error;
+				$summary['errors'][] = $this->validationError(invalidItem: $invalidItem, sheetTitle: $import['sheetTitle']);
 			}
 		}
 
 		return $summary;
 	}//end saveImportedObjects()
+
+	/**
+	 * One summary error for an object the bulk save rejected, with the sheet title first when there is one.
+	 *
+	 * @param mixed       $invalidItem The rejected item from the save result
+	 * @param string|null $sheetTitle  The sheet title, null for CSV
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function validationError(mixed $invalidItem, ?string $sheetTitle): array {
+		$error = [
+			'object' => $invalidItem['object'] ?? $invalidItem,
+			'error' => $invalidItem['error'] ?? 'Validation failed',
+			'type' => $invalidItem['type'] ?? 'ValidationException',
+		];
+		if ($sheetTitle === null) {
+			return $error;
+		}
+
+		return ['sheet' => $sheetTitle] + $error;
+	}//end validationError()
 
 	/**
 	 * Bulk-save objects with per-object notify_push events suppressed, then flush one collection event.
