@@ -430,7 +430,7 @@ class RelationGraphService {
 	private function edgesFrom(array $uuids, string $language): array {
 		$edges = [];
 		foreach ($uuids as $uuid) {
-			$edges = array_merge($edges, $this->propertyEdges(source: new EdgeSource(uuid: $uuid, language: $language)));
+			$edges = array_merge($edges, $this->propertyEdges(uuid: $uuid, language: $language));
 		}
 
 		// Source two: the stored rows for the links no property can hold. One
@@ -445,44 +445,58 @@ class RelationGraphService {
 	/**
 	 * The edges of the `$ref` relations already recorded on one object.
 	 *
-	 * @param EdgeSource $source The object's uuid and the label language.
+	 * @param string $uuid     The object's uuid.
+	 * @param string $language The language labels are read in.
 	 *
 	 * @return array<int, array<string, mixed>> The outgoing property edges; none when the object cannot be loaded.
 	 */
-	private function propertyEdges(EdgeSource $source): array {
-		$object = $this->loadObject(uuid: $source->uuid);
+	private function propertyEdges(string $uuid, string $language): array {
+		$object = $this->loadObject(uuid: $uuid);
 		if ($object === null) {
 			return [];
 		}
 
-		$source = $source->withSchema(schema: $this->schemaOf(schemaId: $object->getSchema()));
+		$schema = $this->schemaOf(schemaId: $object->getSchema());
 		$edges  = [];
-		foreach (($object->getRelations() ?? []) as $path => $value) {
-			foreach ($this->targetsOf(value: $value) as $target) {
-				if (is_string($path) === true && $target !== $source->uuid) {
-					$edges[] = $this->propertyEdge(source: $source->withPath(path: $path), target: $target);
-				}
-			}
+		foreach ($this->linksOf(relations: ($object->getRelations() ?? []), uuid: $uuid) as [$path, $target]) {
+			$descriptor = $this->relationTypes->descriptorFor(schema: $schema, property: $path, language: $language);
+			$row        = $this->relationTypes->row(descriptor: $descriptor, direction: RelationTypeResolver::DIRECTION_OUTGOING, path: $path);
+			$edges[]    = ['from' => $uuid, 'to' => $target] + self::outgoingDetails(row: $row);
 		}
 
 		return $edges;
 	}//end propertyEdges()
 
 	/**
-	 * One outgoing property edge, labelled by the relation type of its path.
+	 * The relation path and target of each link an object records, without links to itself.
 	 *
-	 * @param EdgeSource $source The object, its schema, the label language and the relation path.
-	 * @param string     $target The uuid the relation points at.
+	 * @param array  $relations The object's recorded relations, by path.
+	 * @param string $uuid      The object's uuid.
 	 *
-	 * @return array<string, mixed> The edge.
+	 * @return array<int, array{0: string, 1: string}> Each link as its path and target uuid.
 	 */
-	private function propertyEdge(EdgeSource $source, string $target): array {
-		$descriptor = $this->relationTypes->descriptorFor(schema: $source->schema(), property: $source->path(), language: $source->language);
-		$row        = $this->relationTypes->row(descriptor: $descriptor, direction: RelationTypeResolver::DIRECTION_OUTGOING, path: $source->path());
+	private function linksOf(array $relations, string $uuid): array {
+		$links = [];
+		foreach ($relations as $path => $value) {
+			foreach ($this->targetsOf(value: $value) as $target) {
+				if (is_string($path) === true && $target !== $uuid) {
+					$links[] = [$path, $target];
+				}
+			}
+		}
 
+		return $links;
+	}//end linksOf()
+
+	/**
+	 * The direction, label, type and kind fields of an outgoing property edge.
+	 *
+	 * @param array<string, mixed> $row The relation type row of the edge's path.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function outgoingDetails(array $row): array {
 		return [
-			'from' => $source->uuid,
-			'to' => $target,
 			'direction' => RelationTypeResolver::DIRECTION_OUTGOING,
 			'label' => ($row['displayLabel'] ?? null),
 			'inverseLabel' => ($row['inverseLabel'] ?? null),
@@ -491,7 +505,7 @@ class RelationGraphService {
 			'origin' => 'property',
 			'kind' => ObjectRelation::KIND_OBJECT,
 		];
-	}//end propertyEdge()
+	}//end outgoingDetails()
 
 	/**
 	 * One edge from a stored relation row, outgoing when its source is on this level.

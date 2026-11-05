@@ -234,7 +234,8 @@ final class RelationAnnotationValidator {
 		$refusals = array_merge(self::referenceRefusals(property: $property), self::typeRefusals(type: $type, vocabularyKeys: $vocabularyKeys));
 		$refusals = array_merge($refusals, self::labelMissingRefusals(declaration: $declaration));
 
-		return array_merge(self::about(subject: $subject, refusals: $refusals), $this->validateDeclaration(declaration: $declaration, subject: $subject));
+		$own = self::about(subject: $subject, refusals: $refusals);
+		return array_merge($own, $this->validateDeclaration(declaration: $declaration, subject: $subject));
 	}//end validateProperty()
 
 	/**
@@ -325,7 +326,8 @@ final class RelationAnnotationValidator {
 			$refusals[] = self::refusal(code: 'relation-symmetric-inverse-label', message: $message);
 		}
 
-		return array_merge(self::about(subject: $subject, refusals: $refusals), $this->validateInherits(declaration: $declaration, subject: $subject));
+		$own = self::about(subject: $subject, refusals: $refusals);
+		return array_merge($own, $this->validateInherits(declaration: $declaration, subject: $subject));
 	}//end validateDeclaration()
 
 	/**

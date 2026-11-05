@@ -128,13 +128,15 @@ class CorrectionService {
 
 		$this->objectService->setRegister(register: $register);
 		$this->objectService->setSchema(schema: $schema);
-		$existing  = $this->objectService->findSilent(id: $id, _extend: [], files: false, register: $register, schema: $schema, _rbac: false, _multitenancy: false);
+		$existing  = $this->objectService->findSilent(
+			id: $id, _extend: [], files: false, register: $register, schema: $schema, _rbac: false, _multitenancy: false
+		);
 		$before    = ($existing->getObject() ?? []);
-		$corrected = $this->objectService->saveObject(object: array_merge($before, $values), register: $register, schema: $schema, uuid: $existing->getUuid());
+		$merged    = array_merge($before, $values);
+		$corrected = $this->objectService->saveObject(object: $merged, register: $register, schema: $schema, uuid: $existing->getUuid());
 
 		$fields  = self::fieldChanges(before: $before, values: $values);
 		$context = ['correction' => ['reason' => $reason, 'right' => self::RIGHT, 'actor' => $user->getUID(), 'fields' => $fields]];
-
 		return ['object' => $corrected, 'audit' => $this->recordCorrection(object: $corrected, context: $context)];
 	}//end correct()
 

@@ -42,7 +42,6 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Relation\RelationTypeResolver
  * @uses   \OCA\OpenRegister\Service\Relation\RelationAnnotationValidator
- * @uses   \OCA\OpenRegister\Service\Relation\EdgeSource
  */
 class RelationGraphEdgesGoldenTest extends TestCase {
 

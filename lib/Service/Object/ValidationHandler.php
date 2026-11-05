@@ -237,81 +237,71 @@ class ValidationHandler {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function validateAndSaveObjectsBySchema(
-		int $registerId,
-		int $schemaId,
-		array $saveCallback,
-		?int $limit = null,
-		int $offset = 0,
-	): array {
+	public function validateAndSaveObjectsBySchema(int $registerId, int $schemaId, array $saveCallback, ?int $limit = null, int $offset = 0): array {
 		$loaded = $this->loadSchemaAndRegister(registerId: $registerId, schemaId: $schemaId);
 		if ($loaded === null) {
-			return [
-				'processed' => 0,
-				'updated' => 0,
-				'failed' => 0,
-				'errors' => [['error' => 'Failed to load schema or register']],
-			];
+			return ['processed' => 0, 'updated' => 0, 'failed' => 0, 'errors' => [['error' => 'Failed to load schema or register']]];
 		}
 
 		$run = new ValidationRun(registerId: $registerId, schemaId: $schemaId);
 		$run->saveCallback = $saveCallback;
-		$run->limit = $limit;
-		$run->offset = $offset;
+		$run->limit        = $limit;
+		$run->offset       = $offset;
 
+		return $this->validateLoaded(loaded: $loaded, run: $run);
+	}//end validateAndSaveObjectsBySchema()
+
+	/**
+	 * Load the schema's objects, then validate and save them chunk by chunk.
+	 *
+	 * @param array         $loaded The loaded schema and register.
+	 * @param ValidationRun $run    The run: schema, save callback, limit and offset.
+	 *
+	 * @return array{processed: int, updated: int, failed: int, total: int, errors: array}
+	 */
+	private function validateLoaded(array $loaded, ValidationRun $run): array {
 		// All objects are stored in magic tables.
 		$this->logger->info(
 			message: '[ValidationHandler] Loading objects for validation',
 			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'schema_id' => $schemaId,
-				'storage_type' => 'magic_table',
-				'limit' => $limit,
-				'offset' => $offset,
+				'file' => __FILE__, 'line' => __LINE__, 'schema_id' => $run->schemaId,
+				'storage_type' => 'magic_table', 'limit' => $run->limit, 'offset' => $run->offset,
 			]
 		);
 
-		$allObjects = $this->loadObjectsForValidation(loaded: $loaded, schemaId: $schemaId);
+		$allObjects = $this->loadObjectsForValidation(loaded: $loaded, schemaId: $run->schemaId);
 		if ($allObjects === null) {
-			return [
-				'processed' => 0,
-				'updated' => 0,
-				'failed' => 0,
-				'total' => 0,
-				'errors' => [['error' => 'Failed to load objects for validation']],
-			];
+			$errors = [['error' => 'Failed to load objects for validation']];
+			return ['processed' => 0, 'updated' => 0, 'failed' => 0, 'total' => 0, 'errors' => $errors];
 		}
 
 		$run->totalObjects = count($allObjects);
-		$allObjects = $this->applyLimitOffset(allObjects: $allObjects, run: $run);
+		$allObjects        = $this->applyLimitOffset(allObjects: $allObjects, run: $run);
 		$this->planChunks(allObjects: $allObjects, run: $run);
-		$totals = $this->processAllChunks(allObjects: $allObjects, run: $run);
+		return $this->completed(totals: $this->processAllChunks(allObjects: $allObjects, run: $run), run: $run);
+	}//end validateLoaded()
 
-		unset($allObjects);
+	/**
+	 * Log and answer the totals of a finished run.
+	 *
+	 * @param array{processed: int, updated: int, failed: int} $totals The chunk totals.
+	 * @param ValidationRun                                     $run    The run.
+	 *
+	 * @return array{processed: int, updated: int, failed: int, total: int, errors: array}
+	 */
+	private function completed(array $totals, ValidationRun $run): array {
 		gc_collect_cycles();
-
 		$this->logger->info(
 			message: '[ValidationHandler] Validation and save completed',
 			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'schema_id' => $schemaId,
-				'total_in_schema' => $run->totalObjects,
-				'objects_processed' => $totals['processed'],
-				'objects_updated' => $totals['updated'],
-				'objects_failed' => $totals['failed'],
+				'file' => __FILE__, 'line' => __LINE__, 'schema_id' => $run->schemaId, 'total_in_schema' => $run->totalObjects,
+				'objects_processed' => $totals['processed'], 'objects_updated' => $totals['updated'], 'objects_failed' => $totals['failed'],
 			]
 		);
 
-		return [
-			'processed' => $totals['processed'],
-			'updated' => $totals['updated'],
-			'failed' => $totals['failed'],
-			'total' => $run->totalObjects,
-			'errors' => [],
-		];
-	}//end validateAndSaveObjectsBySchema()
+		$result = ['processed' => $totals['processed'], 'updated' => $totals['updated'], 'failed' => $totals['failed']];
+		return $result + ['total' => $run->totalObjects, 'errors' => []];
+	}//end completed()
 
 	/**
 	 * Load schema and register entities by their IDs.
