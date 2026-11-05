@@ -118,16 +118,6 @@ class RenderObject {
 	private array $objectsCache = [];
 
 	/**
-	 * Ultra-aggressive preload cache for sub-second performance
-	 *
-	 * Contains ALL relationship objects preloaded in a single query
-	 * for instant access during rendering without any additional database calls.
-	 *
-	 * @var array<string, ObjectEntity>
-	 */
-	private array $ultraPreloadCache = [];
-
-	/**
 	 * Cache of inverse relationships: maps entity UUID to array of referencing objects.
 	 * Used to batch-load inverse relationships for performance optimization.
 	 *
@@ -273,47 +263,6 @@ class RenderObject {
 		private readonly ?LensResolver $lensResolver = null,
 	) {
 	}//end __construct()
-
-	/**
-	 * Set the ultra-aggressive preload cache for maximum performance
-	 *
-	 * This method receives ALL relationship objects loaded in a single query
-	 * and stores them for instant access during rendering, eliminating all
-	 * individual database queries for extended properties.
-	 *
-	 * @param array $ultraPreloadCache Array of preloaded objects indexed by ID/UUID
-	 *
-	 * @psalm-param   array<string, ObjectEntity> $ultraPreloadCache
-	 * @phpstan-param array<string, ObjectEntity> $ultraPreloadCache
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	public function setUltraPreloadCache(array $ultraPreloadCache): void {
-		$this->ultraPreloadCache = $ultraPreloadCache;
-		$this->logger->debug(
-			message: '[RenderObject] Ultra preload cache set',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'cachedObjectCount' => count($ultraPreloadCache),
-			]
-		);
-	}//end setUltraPreloadCache()
-
-	/**
-	 * Get the size of the ultra preload cache for monitoring
-	 *
-	 * @return int Number of objects in the ultra preload cache
-	 *
-	 * @psalm-return int<0, max>
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	public function getUltraCacheSize(): int {
-		return count($this->ultraPreloadCache);
-	}//end getUltraCacheSize()
 
 	/**
 	 * Get a register from cache or database
@@ -522,11 +471,6 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function getObject(int|string $id): ?ObjectEntity {
-		// **ULTRA PERFORMANCE**: Check ultra preload cache first (fastest possible).
-		if (($this->ultraPreloadCache[(string)$id] ?? null) !== null) {
-			return $this->ultraPreloadCache[(string)$id];
-		}
-
 		// **PERFORMANCE OPTIMIZATION**: Use CacheHandler for optimized caching.
 		// First check local cache for backward compatibility.
 		if (($this->objectsCache[$id] ?? null) !== null) {
