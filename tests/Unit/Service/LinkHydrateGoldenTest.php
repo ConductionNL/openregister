@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use DateTimeInterface;
 use OCA\OpenRegister\Service\AnalyticsLinkService;
 use OCA\OpenRegister\Service\CollectiveLinkService;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Service\OpenProjectLinkService;
 use OCA\OpenRegister\Service\TimeTrackerLinkService;
 use OCA\OpenRegister\Service\XwikiLinkService;
@@ -41,6 +42,7 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Service\OpenProjectLinkService
  * @covers \OCA\OpenRegister\Service\TimeTrackerLinkService
  * @covers \OCA\OpenRegister\Service\XwikiLinkService
+ * @covers \OCA\OpenRegister\Service\LinkTarget
  * @uses   \OCA\OpenRegister\Db\AnalyticsLink
  * @uses   \OCA\OpenRegister\Db\CollectiveLink
  * @uses   \OCA\OpenRegister\Db\OpenProjectLink
@@ -131,7 +133,9 @@ class LinkHydrateGoldenTest extends TestCase {
 			$method = 'buildLink';
 		}
 
-		return (fn (...$args) => $this->{$method}(...$args))->call($service, 'obj-1', 3, 4, ...[...$id, $info, 'alice']);
+		$link = (fn (...$args) => $this->{$method}(...$args))->call($service, ...[...$id, $info]);
+		(new LinkTarget('obj-1', 3))->inSchema(4)->stamp($link, 'alice');
+		return $link;
 	}//end build()
 
 	/**
